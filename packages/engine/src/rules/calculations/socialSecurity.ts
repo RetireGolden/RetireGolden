@@ -58,7 +58,7 @@ export const socialSecurityRecords = {
     outputs: [],
     feeds: ['social-security-benefit-annual'],
     statement:
-      'socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly returns max(own, min(own, ownPia) + max(0, spouseBase - ownPia) x spouseFactor), where own is the claimant\'s own benefit as paid, ownPia the claimant\'s PIA and spouseBase one half of the worker\'s PIA: the own benefit plus the excess reduced by the spouse factor (42 U.S.C. 402(q)(3)(B), 402(k)(3)(A); POMS RS 00615.250), and for an own benefit with delayed credits the larger of that benefit and the combined amount computed without them (POMS RS 00615.694). The spouse factor is the spouse reduction, 25/36 of 1% for each of the first 36 months before full retirement age and 5/12 of 1% beyond, at the claimant\'s age in the first month of the spouse benefit (402(q)(6)(A)(ii)): #spouseEntitlementAgeMonths takes the later of the claimant\'s own configured claim and the claimant\'s age in the month the worker\'s benefit starts, the worker\'s configured claim month for a current spouse (the month the claim age is attained, the plan\'s claim-age convention) or, for a divorced spouse, the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a: "the NH must be 62 throughout the first month of entitlement but need not have filed a claim for benefits"), since with deemed filing (402(r)) the claimant is taken to apply for the spouse benefit as soon as it is available. projection/internal/annualSocialSecurity.ts#annualSocialSecurity uses it for the lower earner of a couple, capping the excess by the worker\'s family maximum, socialSecurity/maritalBenefits.ts#maritalBenefitFor for a divorced spouse, and the claim-milestone insight for its prior-year reconstruction. Units: nominal USD per month, in today\'s dollars before COLA and haircut. Rounding: none.',
+      'socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly returns max(own, min(own, ownPia) + max(0, spouseBase - ownPia) x spouseFactor), where own is the claimant\'s own benefit as paid, ownPia the claimant\'s PIA and spouseBase one half of the worker\'s PIA: the own benefit plus the excess reduced by the spouse factor (42 U.S.C. 402(q)(3)(B), 402(k)(3)(A); POMS RS 00615.250), and for an own benefit with delayed credits the larger of that benefit and the combined amount computed without them (POMS RS 00615.694). The spouse factor is the spouse reduction, 25/36 of 1% for each of the first 36 months before full retirement age and 5/12 of 1% beyond, at the claimant\'s age in the first month of the spouse benefit (402(q)(6)(A)(ii)): #spouseEntitlementAgeMonths takes the later of the claimant\'s own configured claim and the claimant\'s age in the month the worker\'s benefit starts, the worker\'s configured claim month for a current spouse (the month the claim age is attained, the plan\'s claim-age convention) or, for a divorced spouse, the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a: "the NH must be 62 throughout the first month of entitlement but need not have filed a claim for benefits"), since with deemed filing (402(r)) the claimant is taken to apply for the spouse benefit as soon as it is available. projection/internal/annualSocialSecurity.ts#annualSocialSecurity uses it for the lower earner of a couple, with half the worker\'s PIA first held to the room his family maximum leaves above his PIA (familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum), socialSecurity/maritalBenefits.ts#maritalBenefitFor for a divorced spouse, and the claim-milestone insight for its prior-year reconstruction. Units: nominal USD per month, in today\'s dollars before COLA and haircut. Rounding: none.',
     formula: {
       expression: 'total = max(own, min(own, ownPia) + max(0, 0.5 x workerPia - ownPia) x f(s)); s = max(ownClaimMonths, workerStartMonth - claimantAgeZeroMonth); f(s) = 1 at s >= FRA, else 1 - (min(36, FRA - s) x 25/36 + max(0, FRA - s - 36) x 5/12) / 100',
       variables: [
@@ -348,6 +348,53 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'ssdi-payable-months': {
+    title: 'SSDI months paid in a year, from the onset month',
+    purpose: 'Count the disability months and converted retirement months an SSDI stream pays in a calendar year, starting after the five-month waiting period.',
+    kind: 'formula',
+    outputs: [],
+    feeds: ['social-security-benefit-annual'],
+    statement:
+      'socialSecurity/disability.ts#ssdiFirstPayableMonthIndex places the first payable month E in the onset year, the birth year plus disability.onsetAge: a given disability.onsetMonth M is read as an onset after the 1st, so the next five months are the waiting period and E is the sixth month after M (42 U.S.C. 423(a)(1), (c)(2); POMS DI 10105.070), and a blank month is read as January 1, so E is June. #ssdiSchedule takes F, the month the worker attains full retirement age by the day-before-birthday rule, and returns no schedule when E is at or after F, when the stream is priced as a retirement claim at its claim age and the projection warns. #ssdiMonthsInYear counts, in year Y, the disability months from E to the month before F and the converted retirement months from F on (42 U.S.C. 402(a)(3)); projection/internal/annualSocialSecurity.ts#annualSocialSecurity pays the PIA for both, times the COLA and haircut factors, and publishes the disability months alone as ssdiPaid. Units: months per year; the benefit in nominal USD. Rounding: none; whole months.',
+    formula: {
+      expression: 'E = 12(b + a) + (m - 1) + 6 for a given month m, or 12(b + a) + 5 for a blank month; no schedule when E >= F; disability(Y) = max(0, min(F, 12Y + 12) - max(E, 12Y)); retirement(Y) = max(0, 12Y + 12 - max(F, 12Y)); SSDI paid = PIA x disability(Y) x cola x haircut',
+      variables: [
+        { symbol: 'b', meaning: 'Calendar year of birth', unit: 'year', domain: 'integer' },
+        { symbol: 'a', meaning: 'disability.onsetAge, the age attained in the onset year', unit: 'years', domain: 'integer 40 to 75' },
+        { symbol: 'm', meaning: 'disability.onsetMonth, read as an onset after the 1st', unit: 'month', domain: 'integer 1 to 12, or blank' },
+        { symbol: 'E', meaning: 'First payable month, counted as 12 x year + month index from January of year 0', unit: 'month index', domain: 'integer' },
+        { symbol: 'F', meaning: 'Month the worker attains full retirement age', unit: 'month index', domain: 'integer' },
+        { symbol: 'Y', meaning: 'Projection year', unit: 'year', domain: 'integer' },
+      ],
+      timing: 'per stream per projection year',
+      rounding: 'none; whole months',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/ssdi-payable-months.md',
+    },
+    limits: [
+      'A month without a day is read as an onset after the 1st: a disability that began on the 1st counts that month and is paid one month sooner, and at full retirement age that month can decide whether there is a disability benefit at all (usc-42-423-c-2-ssdi-five-month-waiting-period)',
+      'A blank month is read as January 1, the earliest start and so the largest amount the statute allows for the onset year',
+      'The application is taken as timely, so the 12 months of retroactivity in 42 U.S.C. 423(b) never limit it, and the waiting period is always applied, with no exception for re-entitlement within five years or for amyotrophic lateral sclerosis',
+      'The published source for the year that holds the FRA month reads own retirement, the benefit in force at the end of the year; the disability months in that year are in ssdiPaid',
+      'The worksheet\'s claim at 70 pays 12 months in 2040 (29,760) under the engine\'s claim-year convention (social-security-payable-months); by statute that benefit starts with June 2040 and pays 17,360 that year',
+      'The annual SGA test applies only in a year that pays disability months and no converted month, and suspends the whole year',
+      'The disability PIA is the PIA the plan gives or derives from earnings, not a PIA computed as if the worker were 62 at the start of the waiting period (20 CFR 404.317)',
+    ],
+    implementedBy: [
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/disability.ts#ssdiFirstPayableMonthIndex',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiSchedule',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiMonthsInYear',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
   'ss-bridge-sizing': {
     title: 'Social Security bridge: age-62 replacement sized as a TIPS ladder',
     purpose:
@@ -501,7 +548,7 @@ export const socialSecurityRecords = {
     limits: [
       'The four band rates 150/272/134/175 percent are the retirement and survivor family maximum, not the disability family maximum, which SSA computes differently',
       'The bend points are eligibility-year values (the year the worker attains 62 under familyMaximumEligibilityYearFromDobParts), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet',
-      'RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker\'s own benefit to the single current-spouse auxiliary; the worker\'s own benefit is never reduced by this ceiling',
+      'RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker\'s PIA (not above the benefit the worker is paid; cfr-20-404-404-family-maximum-counts-the-worker-pia) to the single current-spouse auxiliary. Under this retirement and survivor maximum that room holds a spouse\'s whole original benefit less the dime rounding of the maximum (under 10 cents a month); the disability maximum of a worker on SSDI can leave no room and is not modeled (usc-42-403-a-6-ssdi-family-maximum). The worker\'s own benefit is never reduced by this ceiling',
       'The dime floor is part of the published contract: the test compares the floored figure exactly and treats the unrounded sum as an intermediate',
     ],
     implementedBy: [
@@ -521,7 +568,7 @@ export const socialSecurityRecords = {
     kind: 'composition',
     outputs: ['social-security-benefit-annual'],
     statement:
-      'YearResult.incomes.socialSecurity is the sum over living people of that person\'s benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal (the claimant\'s own monthly PLUS the reduced excess of half the higher PIA over the claimant\'s own PIA, the dual-entitlement-composition record, that excess capped by the family maximum for a current spouse) or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.',
+      'YearResult.incomes.socialSecurity is the sum over living people of that person\'s benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal (the claimant\'s own monthly PLUS the reduced excess of half the higher PIA over the claimant\'s own PIA, the dual-entitlement-composition record; for a current spouse half the higher PIA is first held to the family maximum less that PIA) or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.',
     formula: {
       expression: 'benefit = Σ_people max(own, marital candidate) x months x cola x haircut, less max(0, (wages − limit)/2) capped at the benefit',
       variables: [

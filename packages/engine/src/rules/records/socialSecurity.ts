@@ -216,6 +216,106 @@ export const socialSecurityRecords = {
     ],
   },
 
+  'cfr-20-404-404-family-maximum-counts-the-worker-pia': {
+    title: 'The family maximum counts the worker\'s primary insurance amount, not the benefit the worker is paid',
+    statement:
+      'When the benefits on one worker\'s record exceed the family maximum, the auxiliary benefits are reduced so that the total for a month, counting an amount equal to the worker\'s primary insurance amount, does not exceed the maximum; the worker\'s own benefit is not reduced. The room the auxiliaries share is therefore the family maximum less the PIA, whatever the worker is paid: delayed retirement credits that raise the worker\'s benefit, or an early claim that lowers it, leave the same room. A spouse\'s benefit is held to that room before it is reduced for age and before the spouse\'s own benefit is taken from it (20 CFR 404.410(b); 404.403(a)(5), Example 1). currentSpouseMonthlyUnderFamilyMaximum holds the current spouse\'s original benefit, half the worker\'s PIA, to the family maximum less the PIA (capAuxiliaryForFamilyMaximum), then subtracts her own PIA, reduces the excess for age and adds her own benefit back.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Until 2026-09-27 the engine subtracted the benefit the worker is paid, so a worker who delayed to 70 left less room than the regulation gives and a spouse was under-paid: a worker with a 1,000 PIA claiming at 70 (1,240) left 260 where the regulation leaves 500, and a spouse whose excess was 400 was paid 260 (slice 4 review, F3). The retirement and survivor maximum is at least 150 percent of the PIA before 42 U.S.C. 403(a)(1) decreases it to the next lower dime, so under it the room is at least half the PIA less that rounding (under 10 cents a month): a single current spouse is held back by at most those cents (a spouse with no own PIA on a worker PIA of 1,000.10 gets 500.00 of an original 500.05). The disability maximum of a worker on SSDI, the smaller of 85 percent of the AIME (not less than the PIA) and 150 percent of the PIA (20 CFR 404.403(d-1)), can leave no room at all, and the engine does not model it: it gives an SSDI worker the retirement and survivor maximum (usc-42-403-a-6-ssdi-family-maximum). With more auxiliaries the cap could bind, and the engine models no child benefits. The order matters only when the room is below half the PIA: with a room of 300 on a PIA of 1,000, a spouse with a PIA of 100 at full retirement age is paid 200 on the worker\'s record, where capping after the subtraction would pay 300. Until 2026-09-27 the engine capped after the subtraction and the age reduction, which under the retirement maximum moved no figure by more than cents. A divorced spouse\'s benefit is not reduced for the maximum (20 CFR 404.403(a)(3)), and the engine does not cap it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.404',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.404',
+      quotedText:
+        'If a reduction of monthly benefits is required under the provisions of § 404.403, the monthly benefit amount of each of the persons entitled to a monthly benefits on the same earnings record (with the exception of the individual entitled to old-age or disability insurance benefits) is proportionately reduced so that the total benefits that can be paid in 1 month (including an amount equal to the primary insurance amount of the old-age or disability insurance beneficiary, when applicable) does not exceed the maximum family benefit',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.403(a)(5), Example 1',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403',
+      quotedText: 'Maximum—$900.00 Subtract primary insurance amount—$600.00 Amount available for wife and child—$300.00',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.756, B.1',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615756',
+      quotedText: 'Determine family maximum. • Deduct PIA from maximum. • Divide b. by number of auxiliaries. (Result not to exceed OB)',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.730, 5',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615730',
+      quotedText: 'EXCEPTION: Do not reduce the following for the maximum (even if a DMAX is involved):',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.410(b)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.410',
+      quotedText:
+        'Your wife\'s or husband\'s benefits before any reduction (see §§ 404.304 and 404.333) are reduced first (if necessary) for the family maximum under § 404.403. They are then reduced based on the number of months of entitlement prior to the month you attain full retirement age.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.403(a)(5), Example 1, dual entitlement',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403',
+      quotedText: 'Wife\'s benefit, reduced for maximum—$150.00 Subtract reduction due to dual entitlement—$120.00 Wife\'s benefit—$30.00',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.010, Aged Spouse',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615010',
+      quotedText: 'Reduce the spouse\'s benefit (adjusted for the maximum if necessary) by the number of months of entitlement before FRA.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#resolveCurrentSpouseSpousalAnnualPriorYear',
+    ],
+  },
+
+  'usc-42-403-a-2-D-family-maximum-eligibility-after-disability': {
+    title: 'The family maximum\'s eligibility year does not follow an earlier disability',
+    statement:
+      'The bend points of the family maximum come from the worker\'s year of eligibility, which is generally the year the worker attains 62 or becomes disabled. 42 U.S.C. 403(a)(2)(D) does not count the year of attaining 62 when the worker was entitled to disability insurance benefits in any of the 12 months before, and counts instead the year of eligibility for that disability benefit (20 CFR 404.403(a)(2)). familyMaximumEligibilityYearFromDobParts always takes the year the worker attains 62 (the effective birth year plus 62), including for a worker the plan gives a disability onset whose disability benefit runs until full retirement age, so after that benefit converts, the retirement and survivor maximum is priced on the bend points of a later year than the statute uses.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Recorded as a known limit rather than fixed in the same change, because the fix belongs with the disability maximum the engine also does not model (usc-42-403-a-6-ssdi-family-maximum): while the disability benefit is paid the disability maximum governs, and this eligibility year matters from the conversion at full retirement age on. Later bend points can raise or lower the maximum for the same PIA, depending on which band the PIA falls in, so the error runs both ways. A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; the engine uses the year he attains 62, 2032, which falls back to the latest table on file (2026), and gives 3,435.50. With only a current spouse on the record no figure moves: under the retirement and survivor maximum the room above the PIA holds a spouse\'s whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(2)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'A year shall not be counted as the year of an individual\'s death or eligibility for purposes of this paragraph or paragraph (8) in any case where such individual was entitled to a disability insurance benefit for any of the 12 months immediately preceding the month of such death or eligibility (but there shall be counted instead the year of the individual\'s eligibility for the disability insurance benefits to which he was entitled during such 12 months).',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.403(a)(2)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403',
+      quotedText:
+        'However, where eligibility or death is in 1979 or later, the year of death, attainment of age 62, or beginning of current disability does not control if the insured individual was entitled to a disability benefit within the 12 month period preceding current eligibility or death. Instead the year in which the individual became eligible for the former disability insurance benefit is the year of eligibility.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumEligibilityYearFromDobParts',
+    ],
+  },
+
   'usc-42-403-f-3-retirement-earnings-test': {
     title: 'The earnings test withholds half the excess, a third in the FRA year',
     statement:
@@ -2036,12 +2136,12 @@ export const socialSecurityRecords = {
   'usc-42-423-c-2-ssdi-five-month-waiting-period': {
     title: 'SSDI begins only after a five-month waiting period',
     statement:
-      'Disability insurance benefits begin with the first month after a five consecutive calendar-month waiting period throughout which the worker has been under a disability. The Plan\'s integer-year `disability.onsetAge` is modeled as a January-equivalent onset, so the statutory waiting period is January through May and at most seven post-waiting months are payable in the onset year. disability.ts and annualSocialSecurity.ts instead pay the full annual SSDI amount from the onset year with no waiting-period proration.',
+      'Disability insurance benefits begin with the first month after a waiting period of five consecutive calendar months throughout which the worker has been under a disability, a month counting only when the disability began on or before its first day, and end with the month before the month the worker attains full retirement age, when the same PIA continues as the old-age benefit without a new application. disability.ts#ssdiFirstPayableMonthIndex places the first payable month in the onset year (birth year plus `disability.onsetAge`) at the sixth month after `disability.onsetMonth`, reading the month as an onset after the 1st, and reads a blank month as January 1 (waiting January to May, first payable June). annualSocialSecurity.ts pays the PIA for each month from the first payable month (ssdiMonthsInYear), splits the year that holds the FRA month between disability and converted old-age months, and when the first payable month is at or after the FRA month (ssdiSchedule returns null) pays no disability benefit, prices the stream as a retirement claim at its claim age and warns. Restated 2026-09-27 (decision D-APPROX-FACTS): until then the engine paid a full year from the onset-age year, five to seventeen months more than the statute allows.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Known defect, registered without changing the calculation. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.',
+      'The plan gives the month the disability began but not the day, so the month is read as an onset after the 1st: the next five months are the waiting period and the first payment is for the sixth month after it. A disability that began on the 1st of a month counts that month and is paid one month sooner, so the engine then pays one month too few. At full retirement age that month can decide whether there is a disability benefit at all: a worker who reaches full retirement age in June 2037 and became disabled on December 1, 2036 is paid one disability month, May, and then the automatic conversion, while read as after the 1st the first payment would fall in June itself, so the engine finds no disability benefit and uses the retirement claim age. When the month is left blank it is read as January 1, the earliest start and so the largest amount the statute allows for the onset year: for a 2,000 dollar PIA the engine pays 14,000 in that year where a disability that began in mid March is paid 8,000. The engine also takes the application as timely, so the 12 months of retroactivity in 42 U.S.C. 423(b) and the rule that the waiting period can begin no earlier than the 17th month before the application never limit it, and it always applies the waiting period, which is not required for a worker entitled to disability benefits within the five years before, or for amyotrophic lateral sclerosis. More benefit raises taxable Social Security income, while less benefit is replaced by withdrawals that may be fully taxable, so the direction of the tax error depends on how spending is funded.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2055,32 +2155,96 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
       quotedText:
         'shall be entitled to a disability insurance benefit (i) for each month beginning with the first month after his waiting period (as defined in subsection (c)(2)) in which he becomes so entitled to such insurance benefits,',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 423(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        'and ending with the month preceding whichever of the following months is the earliest: the month in which he dies, the month in which he attains retirement age (as defined in section 416(l) of this title), or, subject to subsection (e), the termination month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(a)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(3) has filed application for old-age insurance benefits or was entitled to disability insurance benefits for the month preceding the month in which he attained retirement age (as defined in section 416(l) of this title),',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 423(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        'An individual who would have been entitled to a disability insurance benefit for any month had he filed application therefor before the end of such month shall be entitled to such benefit for such month if such application is filed before the end of the 12th month immediately succeeding such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 423(c)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        '(B)(i) which begins not earlier than with the first day of the seventeenth month before the month in which such application is filed if such individual is insured for disability insurance benefits in such seventeenth month,',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.315(a)(4)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315',
+      quotedText:
+        '(4) You have been disabled for 5 full consecutive months or no waiting period is required. The 5-month waiting period begins with a month in which you were both insured for disability and disabled. Your waiting period can begin no earlier than the 17th month before the month you apply—no matter how long you were disabled before then. No waiting period is required if:',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.315(a)(4)(i)-(ii)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315',
+      quotedText:
+        '(i) You were previously entitled to disability benefits or to a period of disability under § 404.320 any time within 5 years of the month you again became disabled; or (ii) You have been medically determined to have amyotrophic lateral sclerosis, and we approved your application for disability insurance benefits on or after July 23, 2020.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.316(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316',
+      quotedText:
+        'If a waiting period is required, your benefits cannot begin earlier than the first month following that period.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.316(b)(2)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316',
+      quotedText:
+        '(2) The month before the month you attain full retirement age as defined in § 404.409 (at full retirement age your disability benefits will be automatically changed to old-age benefits);',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS DI 10105.070',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0410105070',
+      quotedText:
+        'The NH has been under a disability for the entire month; i.e., the date of onset is on or before the first day of the month; and',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS DI 10105.070',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0410105070',
+      quotedText:
+        'Entitlement to the DIB begins with the first full calendar month after the waiting period in which all other requirements are met, except where the NH limits the retroactivity of the application.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-27',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/socialSecurity/disability.ts#inSsdiWindow',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiFirstPayableMonthIndex',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiSchedule',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiMonthsInYear',
     ],
   },
 
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': {
     title: 'A reduced retirement claim before later disability onset carries into DIB',
     statement:
-      'When a worker claims reduced old-age benefits at 62 and later becomes entitled to disability insurance benefits before FRA, section 423(a)(2)\'s 402(q) exception and section 402(q)(2) keep a reduction on the disability benefit, and the reduced retirement benefit remains payable until disability onset. annualSocialSecurity.ts enters the SSDI branch whenever `disability.onsetAge` is set below FRA years and `continue`s past the retirement-claim path, so it pays nothing before onset and the full unreduced PIA from onset.',
+      'When a worker claims reduced old-age benefits at 62 and later becomes entitled to disability insurance benefits before FRA, section 423(a)(2)\'s 402(q) exception and section 402(q)(2) keep a reduction on the disability benefit, and the reduced retirement benefit remains payable until disability benefits begin. annualSocialSecurity.ts enters the SSDI branch whenever a disability month is payable before the FRA month and `continue`s past the retirement-claim path, so it pays nothing before the first payable disability month and the full unreduced PIA from it.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Known defect, registered without changing the calculation. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.',
+      'Known defect, registered without changing the calculation. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 in the first full year of disability benefits (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 in that year. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2120,12 +2284,12 @@ export const socialSecurityRecords = {
   'usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion': {
     title: 'SSDI pays the full PIA until retirement age, then the PIA continues as retirement',
     statement:
-      'The monthly SSDI benefit equals the worker\'s PIA, not an early-retirement-reduced amount. Disability entitlement ends before the month retirement age is attained; the engine changes the published source from SSDI to own retirement at FRA but preserves the same PIA amount and does not award delayed credits. That is the correct payable-dollar continuation for the modeled worker-only SSDI path when onset is already active and the five-month waiting period is ignored. This record is limited to that unreduced-amount identity: the five-month waiting period is registered separately at usc-42-423-c-2-ssdi-five-month-waiting-period; the Subpart C eligibility-year computation, which treats the worker as attaining 62 at the start of the waiting period where piaFromEarnings.ts uses the ordinary age-62 year, is unmodeled and deliberately unregistered here pending its own record; and a retirement claim that precedes a later pre-FRA disability onset is registered at usc-42-423-a-2-402-q-retirement-claim-before-disability-onset. Workers\'-compensation and public-disability offsets remain unmodeled and unregistered.',
+      'The monthly SSDI benefit equals the worker\'s PIA, not an early-retirement-reduced amount. Disability entitlement ends before the month retirement age is attained; the engine pays the same PIA for the months from the FRA month as the converted old-age benefit, publishes the source as own retirement from the year that holds the FRA month, and does not award delayed credits. That is the correct payable-dollar continuation for the modeled worker-only SSDI path once the disability benefit is payable. This record is limited to that unreduced-amount identity: the five-month waiting period, which decides the first payable month, is registered separately at usc-42-423-c-2-ssdi-five-month-waiting-period; the Subpart C eligibility-year computation, which treats the worker as attaining 62 at the start of the waiting period where piaFromEarnings.ts uses the ordinary age-62 year, is unmodeled and deliberately unregistered here pending its own record; and a retirement claim that precedes a later pre-FRA disability onset is registered at usc-42-423-a-2-402-q-retirement-claim-before-disability-onset. Workers\'-compensation and public-disability offsets remain unmodeled and unregistered.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The stream\'s `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion test extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.',
+      'The stream\'s `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion test extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation around the gate, which places full retirement age by month.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2165,12 +2329,12 @@ export const socialSecurityRecords = {
   'usc-42-426-b-disability-trial-work-medicare-continuation': {
     title: 'Disabled-worker Medicare continuation after trial work is not modeled',
     statement:
-      'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. SSA POMS DI 28055.001 and the SSA Red Book Extended Medicare Coverage page state the operative beneficiary-facing formulation as at least 93 consecutive months after the nine-month TWP for qualifying continuing disability — not 36 months of cash-benefit EPE added to another 93. Cash-benefit TWP/EPE approximation remains separately attributed; this record does not claim a Medicare coverage engine. The Plan has only an integer SSDI onset age: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts pins that boundary.',
+      'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. SSA POMS DI 28055.001 and the SSA Red Book Extended Medicare Coverage page state the operative beneficiary-facing formulation as at least 93 consecutive months after the nine-month TWP for qualifying continuing disability — not 36 months of cash-benefit EPE added to another 93. Cash-benefit TWP/EPE approximation remains separately attributed; this record does not claim a Medicare coverage engine. The Plan has only the year and month an SSDI disability began: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts pins that boundary.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
       missingInputFacts: [
-      'trial-work-period timing: the stream carries only an integer disability.onsetAge',
+      'trial-work-period timing: the stream carries only the year and month the disability began',
       'the later termination of entitlement',
       'continuing impairment after that termination',
       'the substantial-gainful-activity counterfactual the deeming rule turns on',
@@ -2180,7 +2344,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.',
+      'This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge and disability.onsetMonth; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

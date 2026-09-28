@@ -2,26 +2,26 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 539,
+    "total": 542,
     "byClassification": {
-      "approximated": 119,
+      "approximated": 121,
       "outOfScope": 88,
-      "settled": 326,
+      "settled": 327,
       "unsettled": 6
     },
     "approximatedByKind": {
-      "convention": 22,
-      "fix": 73,
+      "convention": 23,
+      "fix": 74,
       "needs-fact": 24
     },
     "byVolatility": {
       "annuallyIndexed": 90,
       "awaitingGuidance": 12,
-      "staticStatute": 430,
+      "staticStatute": 433,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 349,
+      "federal": 352,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -82,8 +82,8 @@
     "totalFiles": 442,
     "byStatus": {
       "partial": 90,
-      "registered": 117,
-      "rule-free": 235,
+      "registered": 118,
+      "rule-free": 234,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -639,8 +639,8 @@
       "files": 126,
       "byStatus": {
         "partial": 42,
-        "registered": 20,
-        "rule-free": 64
+        "registered": 21,
+        "rule-free": 63
       }
     },
     {
@@ -775,12 +775,12 @@
     {
       "module": "rothAccounts",
       "path": "rule-coverage/rothAccounts.json",
-      "ruleCount": 13
+      "ruleCount": 14
     },
     {
       "module": "socialSecurity",
       "path": "rule-coverage/socialSecurity.json",
-      "ruleCount": 51
+      "ruleCount": 53
     },
     {
       "module": "socialSecurityEarnings",
@@ -825,13 +825,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1581,
+    "entryCount": 1612,
     "fetched": 0,
     "cached": 433,
     "counts": {
       "ELISION-EXACT": 127,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1085,
+      "EXACT": 1116,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 358,
       "PUNCTUATION": 4,
@@ -942,7 +942,7 @@
       },
       {
         "on": "2026-09-27",
-        "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
+        "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record, seven (SSA POMS RS 00615.320 § A.2 is quoted three times, so it is listed three times), was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
         "entries": [
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
@@ -955,6 +955,14 @@
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
             "citation": "SSA POMS RS 00615.320, § A.1"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "SSA POMS RS 00615.320, § A.2"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "SSA POMS RS 00615.320, § A.2"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
@@ -1038,8 +1046,12 @@
       },
       {
         "on": "2026-09-27",
-        "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
+        "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities (42 U.S.C. 415(i)(2)(A)(ii) is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
         "entries": [
+          {
+            "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+            "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+          },
           {
             "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
             "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
@@ -1153,6 +1165,172 @@
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
             "citation": "42 U.S.C. 416(d)(1)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-APPROX-FACTS change (the SSDI onset month and the five-month waiting period): the restated record's ten new authorities (SSA POMS DI 10105.070 is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "42 U.S.C. 423(a)(1)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "42 U.S.C. 402(a)(3)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "42 U.S.C. 423(b)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "42 U.S.C. 423(c)(2)(B)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "20 CFR 404.315(a)(4)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "20 CFR 404.315(a)(4)(i)-(ii)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "20 CFR 404.316(a)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "20 CFR 404.316(b)(2)"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "SSA POMS DI 10105.070"
+          },
+          {
+            "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+            "citation": "SSA POMS DI 10105.070"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-APPROX-FACTS change (the Roth IRA five-year period started by the plan's own first contribution or conversion, and carried through a spousal treat-as-own election): the restated record's seven new authorities (Treas. Reg. 1.408A-6 A-2 is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27, filtered to this record; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.408A-6 A-2"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.408A-6 A-2"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.408A-6 A-4"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.408A-6 A-5(b)"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.408A-6 A-7(b)"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "IRC 402A(d)(2)(B)"
+          },
+          {
+            "id": "irc-408A-d-2-roth-qualified-distribution",
+            "citation": "Treas. Reg. 1.402A-1 A-4(b)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-APPROX-FACTS change (the Roth ordering record's scope restated to Roth IRAs): the designated Roth pro rata authority, checked against its source with verify-quotes on 2026-09-27, filtered to this record; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "irc-408A-d-4-B-roth-distribution-ordering",
+            "citation": "Treas. Reg. 1.402A-1 A-3"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added in the independent review of the D-APPROX-FACTS change (the designated Roth account five-year period the engine does not model, registered as its own approximated record): the new record's four authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all four EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "irc-402A-d-2-designated-roth-five-year-period",
+            "citation": "IRC 402A(d)(1)"
+          },
+          {
+            "id": "irc-402A-d-2-designated-roth-five-year-period",
+            "citation": "IRC 402A(d)(2)(A)"
+          },
+          {
+            "id": "irc-402A-d-2-designated-roth-five-year-period",
+            "citation": "IRC 402A(d)(2)(B)"
+          },
+          {
+            "id": "irc-402A-d-2-designated-roth-five-year-period",
+            "citation": "Treas. Reg. 1.402A-1 A-4(a)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the family maximum fix (the auxiliaries' room is the family maximum less the worker's primary insurance amount, 20 CFR 404.404; slice 4 review F3): the new record's four authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all four EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "20 CFR 404.404"
+          },
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "20 CFR 404.403(a)(5), Example 1"
+          },
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "SSA POMS RS 00615.756, B.1"
+          },
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "SSA POMS RS 00615.730, 5"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added in the independent check of the family maximum fix (the spouse benefit is held to the family maximum before the age reduction and the own-benefit subtraction): 20 CFR 404.410(b), 404.403(a)(5) Example 1 on dual entitlement and POMS RS 00615.010, added to this record; every authority of the record, seven, was checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all seven EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "20 CFR 404.410(b)"
+          },
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement"
+          },
+          {
+            "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+            "citation": "SSA POMS RS 00615.010, Aged Spouse"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added in the independent check of the family maximum fix (the family maximum's eligibility year after an earlier disability, registered as an approximated record): the new record's two authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: both EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+            "citation": "42 U.S.C. 403(a)(2)(D)"
+          },
+          {
+            "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+            "citation": "20 CFR 404.403(a)(2)"
           }
         ]
       }

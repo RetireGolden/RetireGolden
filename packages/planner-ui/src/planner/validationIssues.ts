@@ -287,7 +287,10 @@ const NESTED_LEAF_LABELS: Record<string, string> = {
   'heirTaxByClass.hsa': 'HSA heir tax',
   'earningsProjection.assumedAnnualEarnings': 'Assumed annual earnings',
   'earningsProjection.throughAge': 'Work through age',
-  'disability.onsetAge': 'Disability onset age',
+  // What the Social Security card's fields ask for: the plan stores the onset
+  // as an age, and the card shows it as a calendar year (see displayOffsetOf).
+  'disability.onsetAge': 'Year disability began',
+  'disability.onsetMonth': 'Month disability began',
   // Inherited-IRA facts. The trail alone would read "Inherited › Beneficiary ›
   // Beneficiary birth year"; these are what the account card calls them.
   'inherited.ownerDeathYear': "Original owner's death year",
@@ -523,6 +526,37 @@ export function adviceOf(message: string, path?: string): string {
   if (/^Invalid date/.test(message)) return 'Enter a valid date'
   if (/^Invalid string: must match pattern/.test(message)) return 'Enter a valid value'
   return humanizeSchemaKeys(message)
+}
+
+/**
+ * An engine bound in advice re-expressed in a field's display unit when the
+ * field shows the stored value moved by an offset: "Must be at least 40" for a
+ * disability onset stored as an age reads "Must be at least 2002" beside the
+ * year for someone born in 1962. The field (NumberField's `valueOffset`) and
+ * the card's list (`displayOffsetOf`) both apply it, so they state one bound.
+ */
+export function offsetAdvice(advice: string, offset: number): string {
+  if (offset === 0) return advice
+  const m = /^(Must be (?:at least|at most|more than|less than)) (-?[\d.]+)$/.exec(advice)
+  return m ? `${m[1]} ${Number(m[2]) + offset}` : advice
+}
+
+/**
+ * What the planner adds to the stored value at `path` to show it, read from
+ * the plan: the calendar birth year of the stream's person for a disability
+ * onset, which the plan stores as years since the birth year
+ * (`incomes.N.disability.onsetAge`) and the Social Security card asks for as
+ * the year the disability began (the same birth year is that field's
+ * `valueOffset`). Zero for every other path, and without the plan.
+ */
+export function displayOffsetOf(path: string, plan?: Plan): number {
+  if (!plan) return 0
+  const m = /^incomes\.(\d+)\.disability\.onsetAge$/.exec(path)
+  if (!m) return 0
+  const stream = plan.incomes[Number(m[1])]
+  if (stream?.type !== 'socialSecurity') return 0
+  const person = plan.household.people.find((p) => p.id === stream.personId)
+  return person ? Number(person.dob.slice(0, 4)) : 0
 }
 
 /** The issues that belong to one section's card, plus any the router cannot place. */

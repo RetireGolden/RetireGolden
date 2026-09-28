@@ -206,18 +206,27 @@ value, spousal benefits, and Medicare). The OASDI rate lives in the parameter pa
 ## Disability (SSDI)
 
 A disabled worker receives their **full PIA with no early-retirement reduction** — the defining difference
-from early *retirement* claiming — starting at a disability-onset age (an input, not a medical adjudication).
+from early *retirement* claiming — starting with the first month after a **five-month waiting period**
+(42 U.S.C. 423(a)(1), (c)(2)). The input is the year and month the disability began (`disability.onsetAge`,
+the age attained in the onset year, and the optional `disability.onsetMonth`), a planning assumption, not a
+medical adjudication. A month counts toward the waiting period only when the disability began on or before
+its first day (POMS DI 10105.070), so the engine reads a given month as an onset after the 1st (first payment
+for the sixth month after it) and a blank month as January 1 (first payment for June, seven months in the
+onset year, the largest amount the statute allows). The editor collects the month and the calendar year.
 SSDI is gated by **Substantial Gainful Activity** (earnings above the SGA limit suspend it; annual
 approximation), **converts to the retirement benefit at FRA at the same dollar amount** (continuous — the
-PIA persists, with no delayed-retirement credits), and is taxed under the same provisional-income tiers as
-retirement benefits. An off-by-default `disability` input on the SS stream drives the pure
-`socialSecurity/disability.ts` helper and the `projection/internal/annualSocialSecurity.ts` annual phase;
-`simulatePlan` still owns the annual input/effect wiring, and SGA lives in the parameter pack. Documented
-simplifications / registered gaps: annual `disability.onsetAge` changes the SSDI payment path but does not
-change the earnings helper's ordinary retirement indexing year, computation-year count, or bend points — it
-is a planning assumption, not an SSA disability or insured-status adjudication
-(`usc-42-415-b-2-b-disability-freeze-aime-exclusion`); the five-month waiting period
-(`usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
+PIA persists, with no delayed-retirement credits; in the FRA year `ssdiPaid` carries only the months before
+the FRA month), and is taxed under the same provisional-income tiers as retirement benefits. When the first
+payable month is at or after the month FRA is attained there is no disability benefit: the stream is priced
+as a retirement claim at its claim age and the projection says so. An off-by-default `disability` input on
+the SS stream drives the pure `socialSecurity/disability.ts` helper (`ssdiSchedule`, `ssdiMonthsInYear`) and
+the `projection/internal/annualSocialSecurity.ts` annual phase; `simulatePlan` still owns the annual
+input/effect wiring, and SGA lives in the parameter pack. Documented simplifications / registered gaps: the
+onset date changes the SSDI payment path but does not change the earnings helper's ordinary retirement
+indexing year, computation-year count, or bend points — it is a planning assumption, not an SSA disability
+or insured-status adjudication (`usc-42-415-b-2-b-disability-freeze-aime-exclusion`); the waiting period's
+stated limits (an onset on the 1st paid one month late, a timely application assumed, no re-entitlement or
+ALS exception; `usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
 (`cfr-20-404-1592-trial-work-period`, `cfr-20-404-1592a-extended-period-of-eligibility`), the 24-month
 Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). The
 current-spouse auxiliary and family maximum on an SSDI worker are produced by the generic paths with
@@ -226,8 +235,9 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
 
 ## Documented simplifications / deferred
 
-- **Disability (SSDI)** is modeled (worker's own SSDI + FRA conversion; see above). The disability freeze,
-  five-month waiting period, trial-work / EPE, and 24-month Medicare wait are registered approximations or
+- **Disability (SSDI)** is modeled (worker's own SSDI from the first month after the five-month waiting
+  period + FRA conversion; see above). The disability freeze, the waiting period's day-of-month and
+  application-timing limits, trial-work / EPE, and 24-month Medicare wait are registered approximations or
   note-only absences; living-child auxiliaries remain out of scope. Spouse auxiliary and family maximum on
   SSDI are produced via the generic retirement/survivor paths with the named approximation records above.
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only

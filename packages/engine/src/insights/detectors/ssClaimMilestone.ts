@@ -6,13 +6,12 @@ import { annualSocialSecurityPayableMonths } from '../../projection/internal/ann
 import { claimFactor } from '../../socialSecurity/claimFactor.js'
 import {
   claimStartMonthIndex,
-  spouseDualEntitlementMonthly,
   spouseEntitlementAgeMonths,
   spouseReductionFactorAtAgeMonths,
 } from '../../socialSecurity/dualEntitlement.js'
-import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
+import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
-import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
+import { ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
   computePiaFromEarnings,
@@ -93,11 +92,27 @@ function resolveOwnPiaMonthly(
 }
 
 /**
+ * The stream's disability schedule, or null when it has no disability input or
+ * no disability month is payable before FRA — the same test simulatePlan uses
+ * (socialSecurity/disability.ts#ssdiSchedule), so a stream simulate prices as a
+ * retirement claim is one here too.
+ */
+function ssdiScheduleFor(
+  streamIncome: SocialSecurityIncome | undefined,
+  person: HouseholdPerson,
+): SsdiSchedule | null {
+  if (streamIncome?.disability === undefined) return null
+  const { y, m, d } = socialSecurityDobParts(person)
+  return ssdiSchedule({ year: y, month: m, day: d }, streamIncome.disability)
+}
+
+/**
  * Sum of the claimant's own annual SS benefits at `ageAttained` — same
  * accumulation as the `ssOwnByPerson` map in annualSocialSecurity.ts before a
- * former-spouse benefit can replace them. Each resolved stream contributes (SSDI full-PIA × 12, or
- * retirement pia × claimFactor × payableMonths). Unresolved streams (null PIA
- * and no usable earnings) are skipped, matching that helper's resolved-PIA gate.
+ * former-spouse benefit can replace them. Each resolved stream contributes (SSDI
+ * full PIA × the months its schedule pays that year, or retirement pia ×
+ * claimFactor × payableMonths). Unresolved streams (null PIA and no usable
+ * earnings) are skipped, matching that helper's resolved-PIA gate.
  *
  * Returns null when no stream yields a usable own PIA — caller cannot prove a
  * prior-year marital win over own (same enabling-event fallback as a single
@@ -111,9 +126,6 @@ function resolveOwnAnnualSum(
   asOf: PiaAsOf,
 ): number | null {
   const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(claimant)
-  const personFraYears = fraForBirthYear(
-    effectiveBirthYear(birthYear, birthMonth, birthDay),
-  ).years
 
   let sum = 0
   let anyResolved = false
@@ -123,14 +135,12 @@ function resolveOwnAnnualSum(
     if (pia === null) continue
     anyResolved = true
 
-    // SSDI path (onset before FRA): full PIA, 12 months — same as sim.
-    if (
-      stream.disability?.onsetAge !== undefined &&
-      stream.disability.onsetAge < personFraYears
-    ) {
-      if (ageAttained >= stream.disability.onsetAge) {
-        sum += pia * 12
-      }
+    // SSDI path: full PIA for the disability and converted months the schedule
+    // pays that year (none in the waiting period) — same as sim.
+    const schedule = ssdiScheduleFor(stream, claimant)
+    if (schedule !== null) {
+      const months = ssdiMonthsInYear(schedule, birthYear + ageAttained)
+      sum += pia * (months.disability + months.retirement)
       continue
     }
 
@@ -145,7 +155,8 @@ function resolveOwnAnnualSum(
 /**
  * Sum of the person's own monthly SS rates at `ageAttained` — same accumulation
  * as the `ssActualMonthlyByPerson` map in annualSocialSecurity.ts (pre-former /
- * pre-spousal). Used for current-spouse top-up excess and family-maximum worker actual.
+ * pre-spousal). Used for the current-spouse top-up excess (the family maximum
+ * counts the worker's PIA, not this rate).
  */
 function resolveOwnMonthlyRate(
   plan: Plan,
@@ -155,9 +166,6 @@ function resolveOwnMonthlyRate(
   asOf: PiaAsOf,
 ): number | null {
   const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(person)
-  const personFraYears = fraForBirthYear(
-    effectiveBirthYear(birthYear, birthMonth, birthDay),
-  ).years
 
   let sum = 0
   let anyResolved = false
@@ -167,11 +175,10 @@ function resolveOwnMonthlyRate(
     if (pia === null) continue
     anyResolved = true
 
-    if (
-      stream.disability?.onsetAge !== undefined &&
-      stream.disability.onsetAge < personFraYears
-    ) {
-      if (ageAttained >= stream.disability.onsetAge) {
+    const schedule = ssdiScheduleFor(stream, person)
+    if (schedule !== null) {
+      const months = ssdiMonthsInYear(schedule, birthYear + ageAttained)
+      if (months.disability + months.retirement > 0) {
         sum += pia
       }
       continue
@@ -237,7 +244,6 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     person: coPerson,
     stream: coStream,
     pia: coPia,
-    age: coPersonAgePrior,
   }
   const lower = {
     person: claimant,
@@ -267,23 +273,16 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     ),
   )
   const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age, asOf) ?? 0
-  const higherOwnMonthly =
-    resolveOwnMonthlyRate(plan, higher.person.id, higher.person, higher.age, asOf) ??
-    higher.pia *
-      claimFactor(higherDob.year, higherDob.month, higherDob.day, higher.stream.claimAge)
-  const combinedMonthly = spouseDualEntitlementMonthly({
+  // Half the worker's PIA held first to the room above his PIA, then the
+  // own-PIA subtraction and the age reduction, as the ledger composes it.
+  const spousalTotalMonthly = currentSpouseMonthlyUnderFamilyMaximum({
+    workerPiaMonthly: higher.pia,
+    workerDob: higherDob,
     ownPiaMonthly: lower.pia,
     ownActualMonthly: lowerOwnMonthly,
-    spouseBaseMonthly: 0.5 * higher.pia,
     spouseFactor,
   })
-  const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
-    workerPiaMonthly: higher.pia,
-    workerActualMonthly: higherOwnMonthly,
-    workerDob: higherDob,
-    auxiliaryMonthly: combinedMonthly - lowerOwnMonthly,
-  })
-  return (lowerOwnMonthly + cappedExcessMonthly) * spousalMonths
+  return spousalTotalMonthly * spousalMonths
 }
 
 /**
@@ -461,18 +460,16 @@ function personPayingAuxiliaryOverride(
 }
 
 /**
- * True when this stream is on a valid SSDI path (disability onset before FRA).
- * SSDI is not a retirement filing; claimInForce rows zeroed by an auxiliary
+ * True when this stream is on a valid SSDI path (a disability month is payable
+ * before the FRA month). SSDI is not a retirement filing, and neither is its
+ * automatic conversion at FRA; claimInForce rows zeroed by an auxiliary
  * override on an SSDI sibling must not enter the filing-age transition path.
  */
 function isSsdiPathStream(
   streamIncome: SocialSecurityIncome | undefined,
-  personFraYears: number,
+  person: HouseholdPerson,
 ): boolean {
-  return (
-    streamIncome?.disability?.onsetAge !== undefined &&
-    streamIncome.disability.onsetAge < personFraYears
-  )
+  return ssdiScheduleFor(streamIncome, person) !== null
 }
 
 function formatSource(source: SocialSecurityStreamActivity['source']): string {
@@ -819,12 +816,9 @@ export const ssClaimMilestone: Detector = {
       // A zero-benefit stream (both published amounts $0) is not "already
       // claimed" — keep it out of pre-horizon so a later auxiliary claim on the
       // same stream can still fire (zero-PIA retirement / SSDI auxiliary path).
-      // Calendar birth year for ageAttained alignment with simulatePlan;
-      // FRA uses effectiveBirthYear (Jan-1 rule) exactly as the sim does.
-      const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(person)
-      const personFraYears = fraForBirthYear(
-        effectiveBirthYear(birthYear, birthMonth, birthDay),
-      ).years
+      // Calendar birth year for ageAttained alignment with simulatePlan; the
+      // SSDI path test places FRA by month exactly as the sim does.
+      const { y: birthYear } = socialSecurityDobParts(person)
       const preHorizonStreamIds = new Set<string>()
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
         if (entry.personId !== person.id || !entry.claimInForce) continue
@@ -844,17 +838,15 @@ export const ssClaimMilestone: Detector = {
           (candidate): candidate is SocialSecurityIncome =>
             candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
         )
-        // Disability path already past onset with own-retirement published at
-        // horizon start = automatic FRA conversion already in force (not a filing).
-        // Gate on onsetAge < FRA — the same validity check simulate uses. When
-        // disability.onsetAge >= FRA, simulate treats SSDI metadata as invalid
-        // and falls through to normal retirement (never publishes `ssdi`); do
-        // not suppress those streams as a non-filing conversion.
+        // Disability path with own-retirement published at horizon start =
+        // automatic FRA conversion already in force (not a filing). Gate on the
+        // same validity check simulate uses: a disability month payable before
+        // the FRA month. When there is none, simulate prices the stream as a
+        // retirement claim (never publishes `ssdi`); do not suppress those
+        // streams as a non-filing conversion.
         if (
           entry.source === 'own-retirement' &&
-          streamIncome?.disability?.onsetAge !== undefined &&
-          streamIncome.disability.onsetAge < personFraYears &&
-          projectedPerson.ageAttained > streamIncome.disability.onsetAge
+          isSsdiPathStream(streamIncome, person)
         ) {
           preHorizonStreamIds.add(entry.streamId)
           continue
@@ -901,7 +893,15 @@ export const ssClaimMilestone: Detector = {
       // this year (filing-age transition). Unmodeled zeros (both amounts ≤ 0,
       // no auxiliary override in force, or no filing-age transition) are skipped
       // so later sibling streams still surface. Also skip own-retirement that
-      // follows a published SSDI year on the same stream (FRA conversion).
+      // follows a published SSDI year on the same stream, or that sits on a
+      // valid SSDI path (FRA conversion: a year that pays disability months and
+      // then the FRA month publishes own-retirement with no SSDI year before it).
+      const ssdiPathStreamIds = new Set(
+        ctx.plan.incomes
+          .filter((income): income is SocialSecurityIncome => income.type === 'socialSecurity' && income.personId === person.id)
+          .filter((income) => isSsdiPathStream(income, person))
+          .map((income) => income.id),
+      )
       let firstClaimYear: number | null = null
       let firstClaimStream: SocialSecurityStreamActivity | null = null
       for (const year of projectionYears) {
@@ -914,7 +914,10 @@ export const ssClaimMilestone: Detector = {
               entry.source === 'ssdi' ||
               (
                 entry.source === 'own-retirement' &&
-                streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year - 1)
+                (
+                  ssdiPathStreamIds.has(entry.streamId) ||
+                  streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year - 1)
+                )
               ) ||
               preHorizonStreamIds.has(entry.streamId)
             ) {
@@ -947,7 +950,7 @@ export const ssClaimMilestone: Detector = {
                 candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
             )
             if (
-              isSsdiPathStream(streamIncome, personFraYears) ||
+              isSsdiPathStream(streamIncome, person) ||
               streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year)
             ) {
               return false
@@ -1008,7 +1011,7 @@ export const ssClaimMilestone: Detector = {
       const preWithholdingVisible = isVisiblePositiveAmount(preWithholding)
       const fullyWithheld = !paidVisible && preWithholdingVisible
       const ssdiSuppressed =
-        isSsdiPathStream(income, personFraYears) ||
+        isSsdiPathStream(income, person) ||
         streamPublishedSsdiThrough(projectionYears, firstClaimStream.streamId, firstClaimYear)
       const zeroedFiling =
         !paidVisible &&

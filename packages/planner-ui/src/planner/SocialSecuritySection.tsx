@@ -17,6 +17,7 @@ import {
   summarizeComputation,
 } from '../socialSecurity/explain'
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
+import { ssdiSchedule } from '@retiregolden/engine/socialSecurity/disability'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { LATEST_PUBLISHED_COLA_YEAR } from '@retiregolden/engine/socialSecurity/ssaWageData'
@@ -47,6 +48,14 @@ function survivorFloorLabel(): string {
 }
 
 const newId = () => crypto.randomUUID()
+
+/** The disability onset month choices: a calendar month, or not sure (read as January 1). */
+const DISABILITY_ONSET_MONTH_OPTIONS = [
+  { value: 'unknown', label: 'Not sure' },
+  ...['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(
+    (label, index) => ({ value: String(index + 1), label }),
+  ),
+]
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>
 
@@ -483,15 +492,16 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       <details className="ss-explainer">
         <summary>Disability (SSDI)</summary>
         <p className="card-hint">
-          If you're receiving Social Security disability, your benefit is your <strong>full PIA</strong> (no
-          early-retirement reduction) from the onset age, converting to the retirement benefit at FRA at the same
-          dollar amount. Earnings above Substantial Gainful Activity (SGA) suspend it before FRA. Leave this off
-          for a normal retirement claim.
+          Social Security disability pays your <strong>full PIA</strong>, with no early-retirement reduction. It
+          pays nothing for the first five full months you are disabled, so the plan pays from the sixth month after
+          the month your disability began, or from June if you leave the month as Not sure (read as January 1). At
+          full retirement age it becomes your retirement benefit at the same amount. Before then, earnings above Substantial Gainful Activity (SGA) stop it. Leave this off for a
+          normal retirement claim.
         </p>
         <div className="form-grid">
           <CheckboxField
             label="Receiving Social Security disability (SSDI)"
-            help="SSDI pays your full PIA (no early-retirement reduction) from the disability onset age, is gated by Substantial Gainful Activity, and converts to the retirement benefit at FRA at the same dollar amount (no delayed-retirement credits). It's taxed like retirement benefits."
+            help="Social Security disability pays your full PIA, with no early-retirement reduction, after a five-month waiting period: from the sixth month after the month your disability began, or from June if the month is Not sure. Earnings above Substantial Gainful Activity stop it. At full retirement age it becomes your retirement benefit at the same amount, with no delayed-retirement credits. It is taxed like retirement benefits."
             value={stream.disability != null}
             onCommit={(on) =>
               setStream((s) => {
@@ -500,17 +510,39 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             }
           />
           {stream.disability ? (
-            <NumberField
-              label="Disability onset age"
-              help="The age your disability began. SSDI starts here (not at your retirement claim age) and pays the full PIA. Must be before your full retirement age. An onset at/after FRA is ignored (SSDI converts to retirement at FRA, so it can't start later)."
-              path={`incomes.${streamIndex}.disability.onsetAge`}
-              value={stream.disability.onsetAge}
-              onCommit={(v) =>
-                setStream((s) => {
-                  if (s.disability) s.disability.onsetAge = Math.round(v ?? 62)
-                })
-              }
-            />
+            <>
+              <SelectField
+                label="Month your disability began"
+                help="Social Security pays nothing for the first five full months you are disabled. The first payment is for the sixth month after the month your disability began (the fifth, if it began on the 1st of a month; the plan counts from the sixth). Your award letter shows the date Social Security found your disability began. For a what-if, pick the month you want to test. Not sure counts as January 1, so the first payment is for June of that year, the earliest Social Security allows."
+                path={`incomes.${streamIndex}.disability.onsetMonth`}
+                value={stream.disability.onsetMonth === undefined ? 'unknown' : String(stream.disability.onsetMonth)}
+                options={DISABILITY_ONSET_MONTH_OPTIONS}
+                onCommit={(v) =>
+                  setStream((s) => {
+                    if (!s.disability) return
+                    if (v === 'unknown') delete s.disability.onsetMonth
+                    else s.disability.onsetMonth = Number(v)
+                  })
+                }
+              />
+              <NumberField
+                label="Year your disability began"
+                help="The calendar year your disability began. If the first payment would fall in or after the month you reach full retirement age, there is no disability benefit, and the plan uses your retirement claim age instead."
+                path={`incomes.${streamIndex}.disability.onsetAge`}
+                valueOffset={y}
+                value={stream.disability.onsetAge}
+                warning={
+                  ssdiSchedule({ year: y, month: m, day: d }, stream.disability) === null
+                    ? 'With this date the first payment would come at or after full retirement age, so there is no disability benefit. The plan uses the retirement claim age.'
+                    : null
+                }
+                onCommit={(v) =>
+                  setStream((s) => {
+                    if (s.disability) s.disability.onsetAge = Math.round(v ?? 62)
+                  })
+                }
+              />
+            </>
           ) : null}
         </div>
       </details>

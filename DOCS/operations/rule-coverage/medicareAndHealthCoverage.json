@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2139
+              "line": 2162
             }
           ]
         },
@@ -360,7 +360,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2041
+              "line": 2064
             }
           ]
         },
@@ -436,7 +436,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2335
+              "line": 2358
             }
           ]
         },
@@ -456,28 +456,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
-          "line": 92,
+          "line": 96,
           "note": "deductible medical above the 7.5% floor for a household already itemizing",
           "tests": [
             {
               "title": "omits deductible medical expenses from the itemized total",
-              "line": 107
+              "line": 111
             },
             {
               "title": "ignores unreimbursed medical costs however they are supplied",
-              "line": 123
+              "line": 127
             },
             {
               "title": "reaches the statutory deduction only when the medical amount is smuggled in as another itemized dollar",
-              "line": 134
+              "line": 138
             },
             {
               "title": "overstates tax, by the deduction it cannot see at the marginal rate",
-              "line": 146
+              "line": 150
             },
             {
               "title": "cannot see the election flip a heavy medical year forces",
-              "line": 158
+              "line": 162
             }
           ]
         }
@@ -551,7 +551,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2335
+              "line": 2358
             }
           ]
         },
@@ -832,7 +832,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2041
+              "line": 2064
             }
           ]
         },
@@ -1066,7 +1066,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2139
+              "line": 2162
             }
           ]
         },
@@ -1217,7 +1217,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2139
+              "line": 2162
             }
           ]
         },
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2139
+              "line": 2162
             }
           ]
         },

@@ -25,10 +25,7 @@ import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { applyScenarioPatchInput, createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
-import {
-  effectiveBirthYear,
-  fraForBirthYear,
-} from '@retiregolden/engine/socialSecurity/nra'
+import { ssdiSchedule } from '@retiregolden/engine/socialSecurity/disability'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
@@ -608,6 +605,11 @@ function personForSocialSecurity(plan: Plan, income: SocialSecurityIncome) {
   return plan.household.people.find((person) => person.id === income.personId)
 }
 
+/**
+ * Whether the stream is on the engine's disability path, so its claim age does
+ * not decide when it pays: a disability month is payable before the month full
+ * retirement age is attained (the same test simulatePlan applies).
+ */
 function disabilityControlsClaim(plan: Plan, income: SocialSecurityIncome): boolean {
   if (income.disability === undefined) return false
   const person = personForSocialSecurity(plan, income)
@@ -615,8 +617,7 @@ function disabilityControlsClaim(plan: Plan, income: SocialSecurityIncome): bool
   const year = Number(person.dob.slice(0, 4))
   const month = Number(person.dob.slice(5, 7))
   const day = Number(person.dob.slice(8, 10))
-  const fra = fraForBirthYear(effectiveBirthYear(year, month, day))
-  return income.disability.onsetAge < fra.years
+  return ssdiSchedule({ year, month, day }, income.disability) !== null
 }
 
 function resolvedSocialSecurityPia(
@@ -1156,7 +1157,9 @@ function buildSocialSecurityClaimLever({
       ),
   )
   if (eligible.length === 0) {
-    return unavailable(definition, ['Disability streams use onset age instead of retirement claim age.'])
+    return unavailable(definition, [
+      'Each Social Security stream here is paid as disability, from the end of the five-month waiting period after the month and year the disability began, so its retirement claim age changes nothing. A stream whose disability date leaves no disability month before full retirement age would follow its claim age instead.',
+    ])
   }
   const effectiveChange = eligible.some(
     (stream) =>
@@ -1175,7 +1178,9 @@ function buildSocialSecurityClaimLever({
     return unavailable(definition, ['No Social Security stream has a modeled benefit to change.'])
   }
   if (eligible.length !== streams.length) {
-    warnings.push('Social Security disability streams are left unchanged because onset age controls their start.')
+    warnings.push(
+      'Social Security disability streams whose claim age changes nothing are left unchanged: they are paid from the end of the five-month waiting period after the month and year the disability began. A disability stream whose date leaves no disability month before full retirement age follows its claim age and is changed like any other.',
+    )
   }
   if (eligible.some((stream) => stream.piaMonthly === null && stream.earnings === null)) {
     warnings.push('A changed stream has neither a PIA nor earnings history, so its benefit amount may be unavailable.')

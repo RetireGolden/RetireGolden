@@ -49,6 +49,24 @@ export function boundsForPath(path: string | undefined): SchemaBounds | null {
   }
 }
 
+const shifted = (value: number | undefined, offset: number): number | undefined =>
+  value === undefined ? undefined : value + offset
+
+/**
+ * Bounds moved by `offset`, for a field that shows the stored value plus that
+ * amount (a calendar year for an age stored as years since the birth year).
+ * Null stays null; an offset of 0 returns the bounds unchanged.
+ */
+export function shiftBounds(bounds: SchemaBounds | null, offset: number): SchemaBounds | null {
+  if (!bounds || offset === 0) return bounds
+  return {
+    min: shifted(bounds.min, offset),
+    max: shifted(bounds.max, offset),
+    exclusiveMin: shifted(bounds.exclusiveMin, offset),
+    exclusiveMax: shifted(bounds.exclusiveMax, offset),
+  }
+}
+
 export interface RangeCheck {
   /** Which side of the range the value falls outside, or null when it is allowed. */
   side: 'low' | 'high' | null

@@ -31,16 +31,16 @@
       "label": "credited total-month claim age reconstruction",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        95,
-        97
+        100,
+        102
       ],
       "anchors": [
         {
-          "line": 95,
+          "line": 100,
           "text": "function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {"
         },
         {
-          "line": 96,
+          "line": 101,
           "text": "return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }"
         }
       ]
@@ -50,16 +50,16 @@
       "label": "claim-year payable-month boundaries",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        104,
-        107
+        126,
+        129
       ],
       "anchors": [
         {
-          "line": 104,
+          "line": 126,
           "text": "if (ageAttained < claimAge.years) return 0"
         },
         {
-          "line": 106,
+          "line": 128,
           "text": "return Math.max(0, 12 - claimAge.months)"
         }
       ]
@@ -69,24 +69,25 @@
       "label": "credited claim age, own-retirement and SSDI pay sites",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        112,
-        262
+        134,
+        319
       ],
+      "note": "RE-MEASURED on 2026-09-27 (decision D-APPROX-FACTS): the SSDI pay site now reads the disability schedule by month (ssdiSchedule, ssdiMonthsInYear), so the anchor on the old onset-age read moved to the schedule read and the range ends at the same closing brace of the own-stream loop.",
       "anchors": [
         {
-          "line": 112,
+          "line": 134,
           "text": "const {"
         },
         {
-          "line": 191,
+          "line": 219,
           "text": "for (const stream of incomes) {"
         },
         {
-          "line": 206,
-          "text": "const onsetAge = stream.disability?.onsetAge"
+          "line": 240,
+          "text": "const schedule = stream.disability === undefined"
         },
         {
-          "line": 255,
+          "line": 312,
           "text": "ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)"
         }
       ]
@@ -96,20 +97,20 @@
       "label": "former-spouse divorced and survivor replacement menu",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        264,
-        315
+        321,
+        372
       ],
       "anchors": [
         {
-          "line": 264,
+          "line": 321,
           "text": "const householdIsSingle = people.length === 1"
         },
         {
-          "line": 277,
+          "line": 334,
           "text": "let best: (MaritalBenefitCandidate & { sourceKey: string }) | null = null"
         },
         {
-          "line": 298,
+          "line": 355,
           "text": "const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -119,20 +120,21 @@
       "label": "current-spouse top-up and worker family-maximum cap",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        317,
-        403
+        374,
+        441
       ],
+      "note": "RE-MEASURED on 2026-09-27 (the family maximum room, 20 CFR 404.404 and 404.410(b)): the cap counts the worker's PIA and holds half of it before the age reduction, in one call to currentSpouseMonthlyUnderFamilyMaximum, so the block no longer computes the worker's paid benefit or caps the reduced excess and is 20 lines shorter; the three anchors are the same text.",
       "anchors": [
         {
-          "line": 317,
+          "line": 374,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 327,
+          "line": 384,
           "text": "const lowerPayableMonths = annualSocialSecurityPayableMonths(lowerState.ageAttained, lower.ss.claimAge)"
         },
         {
-          "line": 383,
+          "line": 421,
           "text": "const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -142,20 +144,20 @@
       "label": "current-household survivor step-up and stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        405,
-        468
+        443,
+        506
       ],
       "anchors": [
         {
-          "line": 405,
+          "line": 443,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 417,
+          "line": 455,
           "text": "const payableMonths = annualSocialSecurityPayableMonths(survivorState.ageAttained, survivorStream.claimAge)"
         },
         {
-          "line": 440,
+          "line": 478,
           "text": "const survivorAnnual ="
         }
       ]
@@ -165,20 +167,21 @@
       "label": "SSDI SGA gate, retirement earnings test, withheld-month writes and warnings",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        470,
-        535
+        508,
+        576
       ],
+      "note": "RE-MEASURED on 2026-09-27 (decision D-APPROX-FACTS): the SGA gate reads a per-year flag and SSDI paid is the disability share of the year, two lines longer; the three anchors are the same text.",
       "anchors": [
         {
-          "line": 470,
+          "line": 508,
           "text": "let ssEarningsTestWithheld = 0"
         },
         {
-          "line": 481,
+          "line": 519,
           "text": "if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {"
         },
         {
-          "line": 513,
+          "line": 554,
           "text": "const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))"
         }
       ]
@@ -188,24 +191,24 @@
       "label": "living-household total and ordered per-stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        537,
-        607
+        578,
+        648
       ],
       "anchors": [
         {
-          "line": 537,
+          "line": 578,
           "text": "let socialSecurity = 0"
         },
         {
-          "line": 549,
+          "line": 590,
           "text": "const preWithholdingSumByPerson = new Map<string, number>()"
         },
         {
-          "line": 565,
+          "line": 606,
           "text": "(entry.preWithholdingAnnual > 0 || entry.claimInForce)"
         },
         {
-          "line": 597,
+          "line": 638,
           "text": "return {"
         }
       ],
@@ -216,24 +219,24 @@
       "label": "annual Social Security scalar selection, helper invocation and effect consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        1691,
-        1727
+        1704,
+        1740
       ],
       "anchors": [
         {
-          "line": 1691,
+          "line": 1704,
           "text": "const ssColaFactor ="
         },
         {
-          "line": 1699,
+          "line": 1712,
           "text": "const socialSecurity = annualSocialSecurity({"
         },
         {
-          "line": 1715,
+          "line": 1728,
           "text": "incomes.socialSecurity += socialSecurity.socialSecurity"
         },
         {
-          "line": 1726,
+          "line": 1739,
           "text": "const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } ="
         }
       ]

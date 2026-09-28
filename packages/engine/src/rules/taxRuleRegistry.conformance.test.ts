@@ -1716,6 +1716,25 @@ describe('tax rule registry conformance', () => {
     expect(spurious).toEqual([])
   })
 
+  it('lets a settled rule carry a convention rationale only as reasoning or scope, never as an approximation', () => {
+    // conventionRationale is allowed on any classification (see its doc
+    // comment): on a settled record it is the reasoning behind a reading or a
+    // scope note, and the approximation signal stays with classification and
+    // errorDirection. So a settled record with one records no direction, and a
+    // settled rationale that mentions a limit names the approximated record
+    // that carries it.
+    const ids = new Set<string>(taxRuleIds)
+    const offending = taxRuleIds.filter((ruleId) => {
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification !== 'settled' || rule.conventionRationale === null) return false
+      if (rule.errorDirection !== null) return true
+      const mentionsLimit = /\bstated as a limit\b/u.test(rule.conventionRationale)
+      const namesRecord = [...rule.conventionRationale.matchAll(/\b[a-z]+(?:-[A-Za-z0-9]+){3,}\b/gu)].some((m) => ids.has(m[0]))
+      return mentionsLimit && !namesRecord
+    })
+    expect(offending).toEqual([])
+  })
+
   it('requires a settled rule to record no contrary reading', () => {
     const spurious = taxRuleIds.filter((ruleId) =>
       TAX_RULE_REGISTRY[ruleId].classification === 'settled'

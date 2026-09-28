@@ -354,8 +354,8 @@ export function RetirementAccountEditor({
       {account.type === 'roth' && !account.inherited ? (
         <MoneyField
           label="Contribution basis"
-          help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age, before conversions and earnings, so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
-          hint="Blank = treat whole balance as contributions."
+          help="Your total direct Roth contributions plus any amounts you have already converted into this Roth, less what you have taken out (today's dollars). Both come out before earnings with no income tax, so this is what you can tap tax-free in early retirement. A conversion less than five years old can still owe the 10% penalty before 59½; the plan does not charge it for conversions made before the plan starts. Leave out the conversions and the plan treats them as earnings instead. Leave blank to treat the whole current balance as contributions and conversions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
+          hint="Blank = treat whole balance as contributions and conversions."
           value={account.contributionBasis ?? null}
           allowNull
           onCommit={(v) => set('contributionBasis', v ?? undefined)}

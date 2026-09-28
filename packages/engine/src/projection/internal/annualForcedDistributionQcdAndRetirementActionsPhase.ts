@@ -16,7 +16,7 @@ import {
   isTreatAsOwnEffective,
   type NonpersistedActionPersonAliveEvidence,
 } from '../../strategies/accountEligibility.js'
-import { type RothBasisState } from '../../strategies/rothBasis.js'
+import { startRothFiveYearPeriod, type RothBasisState } from '../../strategies/rothBasis.js'
 import { annualOwnerRmdPlan } from './annualOwnerRmdPlan.js'
 import { planElectionYearOwnerRmdDraws } from './annualOwnedAccountDrawsPhase.js'
 import {
@@ -2432,6 +2432,9 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         // `taxableAmount` is strictly less than `amount`.
         const rb = rothBasis.get(rothPoolKey(destination.account))
         if (rb) {
+          // A first credited conversion into Roth IRAs that started empty also
+          // starts the owner's five-year period (Treas. Reg. 1.408A-6 A-2).
+          if (credited > 0) startRothFiveYearPeriod(rb, year)
           rb.conversionLayers.push({
             year,
             amount: credited,

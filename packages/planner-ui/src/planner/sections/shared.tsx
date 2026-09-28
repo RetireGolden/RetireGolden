@@ -5,20 +5,23 @@
  * item's title for anyone who needs it (#452, #491, #494).
  */
 
+import { useContext } from 'react'
 import { Link } from 'react-router'
 
-import { usePlan, useParsedIssues } from '../planContextCore'
-import { issuesForSection, sectionsWithIssues, type IssueSection } from '../validationIssues'
+import { PlanCtx, usePlan, useParsedIssues } from '../planContextCore'
+import { displayOffsetOf, issuesForSection, offsetAdvice, sectionsWithIssues, type IssueSection } from '../validationIssues'
 
 export function Issues({ section }: { section: IssueSection }) {
   const parsed = useParsedIssues()
+  const plan = useContext(PlanCtx)?.plan
   const mine = issuesForSection(parsed?.all ?? [], section)
   if (mine.length === 0) return null
   return (
     <ul className="issue-list" id={`plan-issues-${section}`} tabIndex={-1} aria-label="Fix these to store the plan">
       {mine.map((i, n) => (
         <li key={`${n}:${i.path}`} title={`${i.path}: ${i.message}`}>
-          <strong>{i.label}</strong>: {i.advice}
+          {/* In the unit the field shows: a year, not an age, for a disability onset. */}
+          <strong>{i.label}</strong>: {offsetAdvice(i.advice, displayOffsetOf(i.path, plan))}
         </li>
       ))}
     </ul>

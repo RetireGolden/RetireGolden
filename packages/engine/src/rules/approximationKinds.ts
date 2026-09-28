@@ -77,6 +77,26 @@
  *   the engine's existing whole-year death convention. Fixed on 2026-09-25
  *   together with usc-42-416-l-survivor-fra-age-60-attainment-cohorts; both
  *   records are settled and have left this list.
+ * - irc-402A-d-2-designated-roth-five-year-period, needs-fact: registered in
+ *   the independent review of decision D-APPROX-FACTS (2026-09-27), which
+ *   found the Roth IRA record saying designated Roth accounts were held to
+ *   the same test when the engine gives them no five-year period. The period
+ *   starts with the first designated Roth contribution under each plan, a
+ *   year the plan does not collect.
+ * - usc-42-403-a-2-D-family-maximum-eligibility-after-disability, fix:
+ *   registered in the independent check of the family maximum fix
+ *   (2026-09-27). The plan holds the disability onset
+ *   (incomes[].disability.onsetAge and onsetMonth), which gives the year of
+ *   eligibility for the disability benefit that the statute counts.
+ *
+ * Reclassified when the plan began collecting the fact (decision
+ * D-APPROX-FACTS, 2026-09-27):
+ * - usc-42-423-c-2-ssdi-five-month-waiting-period, needs-fact to convention:
+ *   the plan now collects the month the disability began
+ *   (`incomes[].disability.onsetMonth`), and the engine pays from the first
+ *   month after the waiting period. What stays approximated is kept on
+ *   purpose: a month with no day is read as an onset after the 1st, and a
+ *   blank month as January 1, the largest amount the statute allows.
  *
  * Fixed after the triage, each settled and removed from this list in the change
  * that fixed it (decision D-SS-LAW-2, 2026-09-27):
@@ -164,12 +184,13 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-401-c-2-earned-income-not-modeled': { kind: 'needs-fact', missingInput: 'annual net self-employment earnings eligible as section 219 compensation' },
   'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': { kind: 'needs-fact', missingInput: 'eligible-rollover-distribution and plan-permission facts for the pension offer' },
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': { kind: 'fix' },
+  'irc-402A-d-2-designated-roth-five-year-period': { kind: 'needs-fact', missingInput: 'the first year each person made a designated Roth contribution under each employer plan, or under an earlier plan whose designated Roth account was rolled into it' },
   'irc-408-d-2-C-annuity-contract-close-of-year-value': { kind: 'convention', reason: 'future insurer FMV or actuarial reserve cannot be inferred without inventing contract economics' },
   'irc-408-d-2-C-projection-pro-rata-measurement-instant': { kind: 'convention', reason: "an IRA balance above about 90 trillion dollars cannot be held to the cent, so that year measures the IRA value before the year's growth instead of after it; no real household reaches that size" },
   'irc-408-d-2-estate-household-basis-allocation': { kind: 'fix' },
   'irc-408-d-8-B-ii-projection-annual-age-proxy': { kind: 'convention', reason: 'the annual legacy gift has no execution date and an invented future date would be false precision' },
   'irc-408A-c-3-roth-contribution-agi-phase-out': { kind: 'fix' },
-  'irc-408A-d-2-roth-qualified-distribution': { kind: 'needs-fact', missingInput: 'first taxable year of any Roth IRA contribution for each person' },
+  'irc-408A-d-2-roth-qualified-distribution': { kind: 'needs-fact', missingInput: 'the first year each person put money into any Roth IRA, which the plan takes as five or more years ago when a Roth IRA holds money at the start, and as the plan\'s own first contribution or conversion when a person\'s Roth IRAs start empty' },
   'irc-408A-d-4-B-converted-layer-taxable-portion-first': { kind: 'fix' },
   'irc-408A-d-4-B-same-year-conversion-aggregation': { kind: 'fix' },
   'irc-414-v-1-plan-permitted-catch-up': { kind: 'needs-fact', missingInput: 'whether each sponsoring plan permits catch-up contributions' },
@@ -224,13 +245,14 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': { kind: 'fix' },
   'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': { kind: 'fix' },
   'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
+  'usc-42-403-a-2-D-family-maximum-eligibility-after-disability': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
   'usc-42-403-f-1-earnings-test-month-charging': { kind: 'fix' },
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': { kind: 'fix' },
-  'usc-42-423-c-2-ssdi-five-month-waiting-period': { kind: 'needs-fact', missingInput: 'disability onset month or exact onset date' },
+  'usc-42-423-c-2-ssdi-five-month-waiting-period': { kind: 'convention', reason: 'the plan asks for the month a disability began but not the day, so the month is read as a start after the 1st, and a blank month as January 1, the earliest start and so the largest amount the law allows for that year' },
   'va-code-58-1-322-03-age-deduction-and-social-security': { kind: 'fix' },
   'vt-stat-32-5830e-social-security-inclusion': { kind: 'fix' },
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': { kind: 'fix' },

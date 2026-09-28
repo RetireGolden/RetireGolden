@@ -120,7 +120,7 @@ describe('spousal benefit and delayed credits', () => {
   // Former deceased survivor PIA bracketed at [999.99, 1000, 1000.01] (DOB
   // 1950-01-01, marriage 15, remarried at 60 — ordinary-widow 9-month path
   // preserved) to bound the statutory base at cent precision. Family maximum
-  // 3553.70 leaves 1420.366 worker room, so caps do not bind either auxiliary.
+  // 3553.70 leaves 1553.70 of room above the worker PIA, so caps do not bind.
   // Public boundary test: screen presence at those former PIAs under the
   // accepted half-PIA base — not certification of payment, timing, or full
   // winner/month/family-max pipeline. Published 2026 p1 survivor stream is a

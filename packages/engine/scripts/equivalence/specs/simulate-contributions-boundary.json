@@ -667,27 +667,27 @@
       "id": "U.callsite.apply",
       "label": "entire ordered commit loop for cached warnings, balances, basis, runtime, QCD, records, and matches",
       "file": "projection/internal/annualContributionReconciliationPhase.ts",
-      "lines": [635, 682],
-      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
+      "lines": [635, 685],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place. RE-MEASURED on 2026-09-27, three lines longer: the Roth contribution-basis write now also starts the owner's five-year period for Roth IRAs that started empty (decision D-APPROX-FACTS), inside this loop.",
       "anchors": [
         { "line": 635, "text": "for (const operation of contributionPlan.operations) {" },
-        { "line": 677, "text": "yearSites?.recordEmployerMatch(operation.record)" },
-        { "line": 678, "text": "state.balance = operation.balanceAfter" },
-        { "line": 680, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
-        { "line": 682, "text": "}" }
+        { "line": 680, "text": "yearSites?.recordEmployerMatch(operation.record)" },
+        { "line": 681, "text": "state.balance = operation.balanceAfter" },
+        { "line": 683, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
+        { "line": 685, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.totals",
       "label": "complete reconciled totals, detached downstream owner allocations, and the phase return",
       "file": "projection/internal/annualContributionReconciliationPhase.ts",
-      "lines": [683, 706],
+      "lines": [686, 709],
       "note": "RE-MEASURED, not shifted: the totals destructuring and the allocation read are unchanged, but what follows them is no longer the year's `iraProRata` map -- it is this phase's own return, which publishes the same eight channels. The range now ends there, and the two interior anchors are new because the closing anchor had to move. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 683, "text": "const {" },
-        { "line": 691, "text": "} = contributionPlan.totals" },
-        { "line": 693, "text": "contributionPlan.employerAllocationByOwner" },
-        { "line": 706, "text": "}" }
+        { "line": 686, "text": "const {" },
+        { "line": 694, "text": "} = contributionPlan.totals" },
+        { "line": 696, "text": "contributionPlan.employerAllocationByOwner" },
+        { "line": 709, "text": "}" }
       ]
     }
   ],

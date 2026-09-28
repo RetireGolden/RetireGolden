@@ -1106,11 +1106,16 @@ export const rothAccountSchema = z.object({
   annualContribution,
   /**
    * Contribution basis (today's dollars): the portion of the starting balance
-   * that is direct contributions, withdrawable tax- and penalty-free at any age.
+   * that is direct contributions plus conversion principal already in the
+   * account, both withdrawn before earnings with no income tax (408A(d)(4)(B)).
    * Drives the Roth ordering + 5-year rules (roadmap V8). Optional — when omitted
    * the engine treats the whole starting balance as seasoned basis, the safe
-   * default that keeps pre-existing plans penalty-free. New annual contributions
-   * add to basis; in-projection conversions start their own 5-year seasoning clocks.
+   * default that keeps pre-existing plans penalty-free. Conversion principal
+   * counted here has no conversion layer, so the 10% recapture on a conversion
+   * less than five years old (408A(d)(3)(F)) is not charged for it; left out of
+   * an entered basis, it would be taxed as earnings instead. New annual
+   * contributions add to basis; in-projection conversions start their own
+   * 5-year seasoning clocks.
    */
   contributionBasis: nonNegative.optional(),
   /**
@@ -1912,15 +1917,33 @@ export const socialSecurityIncomeSchema = z.object({
    * Social Security disability (SSDI). Optional — omitted/undefined ⇒ SSDI is
    * off and the stream behaves as a normal retirement claim (no behavior change
    * for existing plans). When set, the worker receives their full PIA (no
-   * early-retirement reduction) from the onset age, gated by Substantial Gainful
+   * early-retirement reduction) from the first month after the five-month
+   * waiting period (42 U.S.C. 423(a)(1), (c)(2)), gated by Substantial Gainful
    * Activity (earnings over SGA suspend it pre-FRA), converting to the retirement
    * benefit at FRA at the same dollar amount (no delayed-retirement credits).
-   * @see app/src/socialSecurity/disability.ts · DOCS/domain/domain-rules-reference.md §4
+   * When that first month is at or after the FRA month there is no disability
+   * benefit, and the stream is an ordinary retirement claim at `claimAge`.
+   * @see packages/engine/src/socialSecurity/disability.ts · DOCS/domain/domain-rules-reference.md §4
    */
   disability: z
     .object({
-      /** Age at disability onset (the benefit starts here, not at `claimAge`). */
+      /**
+       * The age attained in the calendar year the disability began: the onset
+       * year is the birth year plus this age. `claimAge` does not apply while
+       * a disability benefit is payable.
+       */
       onsetAge: z.number().int().min(40).max(75),
+      /**
+       * Calendar month (1 = January) the disability began, read as a date
+       * after the 1st of that month: the next five months are the waiting
+       * period and the sixth is the first payable month (POMS DI 10105.070).
+       * Optional; omitted reads as January 1 of the onset year (waiting
+       * January to May, first payable June), the earliest start and so the
+       * largest amount the statute allows for that year. Additive — no
+       * schema-version bump; an engine that predates it strips it on parse,
+       * and the plan then reads as the January 1 onset.
+       */
+      onsetMonth: z.number().int().min(1).max(12).optional(),
     })
     .optional(),
   claimAge: z.object({

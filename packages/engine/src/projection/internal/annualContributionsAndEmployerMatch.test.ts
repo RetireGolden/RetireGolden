@@ -288,6 +288,25 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
     }
   })
 
+  it('names a Roth pool only on a Roth row that credits something, with the credit as its basis delta', () => {
+    // annualContributionReconciliationPhase starts a Roth IRA's five-year
+    // period on a contribution only when `rothContributionBasisDelta > 0`,
+    // inside its own `credited > 0` branch. This is why that guard is never
+    // false there: a Roth row that credits nothing carries no pool key, and
+    // one that credits carries its credit as the delta.
+    const cells = (rows: readonly AnnualContributionCreditOperation[]) =>
+      rows.map((row) => [row.credited, row.rothContributionPoolKey, row.rothContributionBasisDelta])
+    // The second Roth IRA finds the owner's IRA limit already used by the first.
+    const result = call([
+      balance(account('roth', 'roth-first', pack.contributionLimits.ira)),
+      balance(account('roth', 'roth-second', 1_000)),
+    ])
+    expect(cells(contributions(result))).toEqual([
+      [pack.contributionLimits.ira, 'rothira:p1', pack.contributionLimits.ira],
+      [0, null, 0],
+    ])
+  })
+
   it('returns taxable basis and aged-IRA section-219 effects explicitly', () => {
     const result = call([
       balance(account('taxable', 'brokerage', 25)),

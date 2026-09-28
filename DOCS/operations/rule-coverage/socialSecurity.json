@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -56,7 +56,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 41
+              "line": 133
             }
           ]
         }
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -199,7 +199,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -217,7 +217,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 41
+              "line": 133
             }
           ]
         }
@@ -228,12 +228,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 288,
+          "line": 411,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
-              "line": 302
+              "line": 425
             }
           ]
         }
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -309,7 +309,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 41
+              "line": 133
             }
           ]
         }
@@ -320,12 +320,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 319,
+          "line": 442,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
-              "line": 333
+              "line": 456
             }
           ]
         }
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -492,7 +492,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -534,6 +534,141 @@
           "kind": "regulation",
           "citation": "20 CFR 404.338(b)",
           "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "title": "The family maximum counts the worker's primary insurance amount, not the benefit the worker is paid",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Until 2026-09-27 the engine subtracted the benefit the worker is paid, so a worker who delayed to 70 left less room than the regulation gives and a spouse was under-paid: a worker with a 1,000 PIA claiming at 70 (1,240) left 260 where the regulation leaves 500, and a spouse whose excess was 400 was paid 260 (slice 4 review, F3). The retirement and survivor maximum is at least 150 percent of the PIA before 42 U.S.C. 403(a)(1) decreases it to the next lower dime, so under it the room is at least half the PIA less that rounding (under 10 cents a month): a single current spouse is held back by at most those cents (a spouse with no own PIA on a worker PIA of 1,000.10 gets 500.00 of an original 500.05). The disability maximum of a worker on SSDI, the smaller of 85 percent of the AIME (not less than the PIA) and 150 percent of the PIA (20 CFR 404.403(d-1)), can leave no room at all, and the engine does not model it: it gives an SSDI worker the retirement and survivor maximum (usc-42-403-a-6-ssdi-family-maximum). With more auxiliaries the cap could bind, and the engine models no child benefits. The order matters only when the room is below half the PIA: with a room of 300 on a PIA of 1,000, a spouse with a PIA of 100 at full retirement age is paid 200 on the worker's record, where capping after the subtraction would pay 300. Until 2026-09-27 the engine capped after the subtraction and the age reduction, which under the retirement maximum moved no figure by more than cents. A divorced spouse's benefit is not reduced for the maximum (20 CFR 404.403(a)(3)), and the engine does not cap it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
+      "implementedBy": [
+        "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
+          "functions": [
+            {
+              "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
+              "line": 201
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 131
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
+          "functions": [
+            {
+              "name": "capAuxiliaryForFamilyMaximum",
+              "line": 76
+            },
+            {
+              "name": "currentSpouseMonthlyUnderFamilyMaximum",
+              "line": 116
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/familyMaximum.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
+          "line": 66,
+          "note": null,
+          "tests": [
+            {
+              "title": "counts the worker's PIA against the family maximum, not the benefit raised by delayed credits",
+              "line": 72
+            },
+            {
+              "title": "holds an auxiliary total above the room to the room",
+              "line": 80
+            },
+            {
+              "title": "leaves a single spouse room for half the PIA under the retirement and survivor maximum, less the dime rounding",
+              "line": 88
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
+          "line": 128,
+          "note": "the maximum on the original benefit, before the own benefit and the age reduction",
+          "tests": [
+            {
+              "title": "holds half the PIA to the room before the own PIA is subtracted",
+              "line": 135
+            },
+            {
+              "title": "does the same for an SSDI worker whose numbers come from one AIME, and reduces for age after the maximum",
+              "line": 147
+            },
+            {
+              "title": "matches the old order whenever the room holds half the PIA, as under the retirement maximum",
+              "line": 172
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.404",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.404"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.403(a)(5), Example 1",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.756, B.1",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615756"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.730, 5",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615730"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.410(b)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.410"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.010, Aged Spouse",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615010"
         }
       ]
     },
@@ -629,11 +764,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1817
+              "line": 1822
             }
           ]
         },
@@ -642,7 +777,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -662,12 +797,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 987,
+          "line": 1110,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 1001
+              "line": 1124
             }
           ]
         }
@@ -720,7 +855,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -1044,7 +1179,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -1096,7 +1231,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -1196,7 +1331,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -1225,12 +1360,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 922,
+          "line": 1045,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 930
+              "line": 1053
             }
           ]
         }
@@ -1402,7 +1537,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 194
+              "line": 201
             }
           ]
         },
@@ -1411,7 +1546,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -1501,7 +1636,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -1519,7 +1654,7 @@
           "functions": [
             {
               "name": "capAuxiliaryForFamilyMaximum",
-              "line": 58
+              "line": 76
             }
           ]
         }
@@ -1530,16 +1665,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 214,
+          "line": 336,
           "note": null,
           "tests": [
             {
               "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
-              "line": 222
+              "line": 344
             },
             {
               "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
-              "line": 246
+              "line": 369
             }
           ]
         }
@@ -1587,7 +1722,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -1677,7 +1812,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -1737,7 +1872,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -1906,7 +2041,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2083,7 +2218,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         }
@@ -2129,7 +2264,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2149,16 +2284,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1125,
+          "line": 1248,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1133
+              "line": 1256
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1160
+              "line": 1283
             }
           ]
         }
@@ -2299,7 +2434,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 194
+              "line": 201
             }
           ]
         },
@@ -2308,7 +2443,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2341,34 +2476,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 442,
+          "line": 565,
           "note": null,
           "tests": [
             {
               "title": "adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims",
-              "line": 450
+              "line": 573
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 485,
+          "line": 608,
           "note": "a worker who files after the claimant",
           "tests": [
             {
               "title": "reduces the excess at the claimant’s age when the worker files, and adds it to her own benefit",
-              "line": 493
+              "line": 616
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 526,
+          "line": 649,
           "note": "a divorced spouse",
           "tests": [
             {
               "title": "pays a divorced spouse her own benefit plus the excess reduced when the ex is first 62 throughout a month",
-              "line": 535
+              "line": 658
             }
           ]
         }
@@ -2439,7 +2574,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2586,7 +2721,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -2595,7 +2730,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2615,16 +2750,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 387,
+          "line": 510,
           "note": null,
           "tests": [
             {
               "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-              "line": 394
+              "line": 517
             },
             {
               "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-              "line": 417
+              "line": 540
             }
           ]
         }
@@ -2679,7 +2814,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -2688,7 +2823,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2808,6 +2943,71 @@
       ]
     },
     {
+      "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+      "title": "The family maximum's eligibility year does not follow an earlier disability",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "approximation": {
+        "kind": "fix"
+      },
+      "conventionRationale": "Recorded as a known limit rather than fixed in the same change, because the fix belongs with the disability maximum the engine also does not model (usc-42-403-a-6-ssdi-family-maximum): while the disability benefit is paid the disability maximum governs, and this eligibility year matters from the conversion at full retirement age on. Later bend points can raise or lower the maximum for the same PIA, depending on which band the PIA falls in, so the error runs both ways. A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; the engine uses the year he attains 62, 2032, which falls back to the latest table on file (2026), and gives 3,435.50. With only a current spouse on the record no figure moves: under the retirement and survivor maximum the room above the PIA holds a spouse's whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
+          "functions": [
+            {
+              "name": "familyMaximumEligibilityYearFromDobParts",
+              "line": 25
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/familyMaximum.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
+          "line": 209,
+          "note": "a worker disabled in 2025, after his disability benefit converts",
+          "tests": [
+            {
+              "title": "prices the maximum on the year he attains 62, not the year of his disability",
+              "line": 215
+            },
+            {
+              "title": "moves no single-spouse figure: the room above the PIA holds half the PIA on either year",
+              "line": 222
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(a)(2)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.403(a)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403"
+        }
+      ]
+    },
+    {
       "id": "usc-42-403-a-2-family-maximum-formula",
       "title": "The family maximum is marginal across three bend points",
       "classification": "settled",
@@ -2831,7 +3031,7 @@
           "functions": [
             {
               "name": "familyMaximumMonthlyFromPia",
-              "line": 33
+              "line": 37
             }
           ]
         },
@@ -2851,12 +3051,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
-          "line": 24,
+          "line": 25,
           "note": null,
           "tests": [
             {
               "title": "applies each rate only to the PIA inside its own band",
-              "line": 28
+              "line": 29
             }
           ]
         }
@@ -2898,7 +3098,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2916,11 +3116,11 @@
           "functions": [
             {
               "name": "capAuxiliaryForFamilyMaximum",
-              "line": 58
+              "line": 76
             },
             {
               "name": "familyMaximumMonthlyFromPia",
-              "line": 33
+              "line": 37
             }
           ]
         }
@@ -2931,12 +3131,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 178,
+          "line": 300,
           "note": null,
           "tests": [
             {
               "title": "uses the retirement/survivor maximum for an SSDI worker and spouse",
-              "line": 186
+              "line": 308
             }
           ]
         }
@@ -2977,7 +3177,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -2997,12 +3197,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 939,
+          "line": 1062,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 948
+              "line": 1071
             }
           ]
         }
@@ -3051,7 +3251,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -3071,12 +3271,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 735,
+          "line": 858,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 744
+              "line": 867
             }
           ]
         }
@@ -3130,7 +3330,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -3405,12 +3605,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1104,
+          "line": 1227,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1112
+              "line": 1235
             }
           ]
         }
@@ -3640,7 +3840,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "Known defect, registered without changing the calculation. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.",
+      "conventionRationale": "Known defect, registered without changing the calculation. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 in the first full year of disability benefits (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 in that year. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3659,7 +3859,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -3668,7 +3868,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -3688,12 +3888,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 141,
+          "line": 263,
           "note": null,
           "tests": [
             {
               "title": "pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge",
-              "line": 149
+              "line": 271
             }
           ]
         }
@@ -3724,7 +3924,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The stream's `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion test extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.",
+      "conventionRationale": "The stream's `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion test extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation around the gate, which places full retirement age by month.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3743,7 +3943,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -3761,7 +3961,7 @@
           "functions": [
             {
               "name": "ssdiMonthlyBenefit",
-              "line": 28
+              "line": 120
             }
           ]
         }
@@ -3772,23 +3972,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 32,
+          "line": 33,
           "note": "integer FRA 67 cohort",
           "tests": [
             {
               "title": "pays the full PIA during SSDI, at FRA, and in the first post-FRA year",
-              "line": 40
+              "line": 41
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 63,
+          "line": 65,
           "note": "1959 FRA 66y10m cohort",
           "tests": [
             {
               "title": "observes the unreduced PIA for a 66y10m FRA cohort around fra.years",
-              "line": 71
+              "line": 73
             }
           ]
         }
@@ -3819,29 +4019,39 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "needs-fact",
-        "missingInput": "disability onset month or exact onset date"
+        "kind": "convention",
+        "reason": "the plan asks for the month a disability began but not the day, so the month is read as a start after the 1st, and a blank month as January 1, the earliest start and so the largest amount the law allows for that year"
       },
-      "conventionRationale": "Known defect, registered without changing the calculation. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.",
+      "conventionRationale": "The plan gives the month the disability began but not the day, so the month is read as an onset after the 1st: the next five months are the waiting period and the first payment is for the sixth month after it. A disability that began on the 1st of a month counts that month and is paid one month sooner, so the engine then pays one month too few. At full retirement age that month can decide whether there is a disability benefit at all: a worker who reaches full retirement age in June 2037 and became disabled on December 1, 2036 is paid one disability month, May, and then the automatic conversion, while read as after the 1st the first payment would fall in June itself, so the engine finds no disability benefit and uses the retirement claim age. When the month is left blank it is read as January 1, the earliest start and so the largest amount the statute allows for the onset year: for a 2,000 dollar PIA the engine pays 14,000 in that year where a disability that began in mid March is paid 8,000. The engine also takes the application as timely, so the 12 months of retroactivity in 42 U.S.C. 423(b) and the rule that the waiting period can begin no earlier than the 17th month before the application never limit it, and it always applies the waiting period, which is not required for a worker entitled to disability benefits within the five years before, or for amyotrophic lateral sclerosis. More benefit raises taxable Social Security income, while less benefit is replaced by withdrawals that may be fully taxable, so the direction of the tax error depends on how spending is funded.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1885
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 109
+              "line": 131
             }
           ]
         },
@@ -3858,8 +4068,16 @@
           "path": "packages/engine/src/socialSecurity/disability.ts",
           "functions": [
             {
-              "name": "inSsdiWindow",
-              "line": 50
+              "name": "ssdiFirstPayableMonthIndex",
+              "line": 67
+            },
+            {
+              "name": "ssdiMonthsInYear",
+              "line": 108
+            },
+            {
+              "name": "ssdiSchedule",
+              "line": 92
             }
           ]
         }
@@ -3870,12 +4088,42 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 108,
-          "note": null,
+          "line": 131,
+          "note": "blank onset month",
           "tests": [
             {
-              "title": "pays a full onset-year SSDI benefit where the waiting period leaves at most seven months",
-              "line": 116
+              "title": "reads a blank onset month as January 1 and pays seven months in the onset year",
+              "line": 140
+            },
+            {
+              "title": "pays the statute amount once the month is given",
+              "line": 147
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 158,
+          "note": "onset on the 1st",
+          "tests": [
+            {
+              "title": "pays nothing in 2030 for a July onset, one month later than an onset on July 1 allows",
+              "line": 167
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 181,
+          "note": "full retirement age edge",
+          "tests": [
+            {
+              "title": "falls through to the claim age, with a warning, when the first payable month is the FRA month",
+              "line": 190
+            },
+            {
+              "title": "pays one disability month and converts at FRA for a November 2036 onset",
+              "line": 202
             }
           ]
         }
@@ -3892,6 +4140,46 @@
           "kind": "statute",
           "citation": "42 U.S.C. 423(a)(1)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(a)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(c)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.315(a)(4)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.315(a)(4)(i)-(ii)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.316(a)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.316(b)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS DI 10105.070",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0410105070"
         }
       ]
     },
@@ -3901,7 +4189,7 @@
       "classification": "outOfScope",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.",
+      "conventionRationale": "This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge and disability.onsetMonth; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3919,7 +4207,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1880
+              "line": 1885
             }
           ]
         },
@@ -3928,7 +4216,7 @@
           "functions": [
             {
               "name": "assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts",
-              "line": 86
+              "line": 180
             }
           ]
         }

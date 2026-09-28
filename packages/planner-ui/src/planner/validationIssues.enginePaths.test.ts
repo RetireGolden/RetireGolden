@@ -283,9 +283,10 @@ function fixture(): Plan {
   const wages = plan.incomes.find((s) => s.type === 'wages')!
   const ss = plan.incomes.find((s) => s.type === 'socialSecurity') as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
   // The SSDI block the Social Security card edits behind its own checkbox, so
-  // `incomes.N.disability.onsetAge` is a field of this plan (#511). Onset at
-  // 60 is inside the schema's 40–75 and before FRA, so the fixture stays valid.
-  ss.disability = { onsetAge: 60 }
+  // `incomes.N.disability.onsetAge` is a field of this plan (#511), and so is
+  // its month. Onset at 60 is inside the schema's 40–75 and before FRA, and
+  // March is inside 1–12, so the fixture stays valid.
+  ss.disability = { onsetAge: 60, onsetMonth: 3 }
   // The rest of the Social Security card's optional blocks: the manual credit
   // count, the earnings projection, and a deceased former spouse (the record
   // shape that reaches every one of the survivor fields at once).

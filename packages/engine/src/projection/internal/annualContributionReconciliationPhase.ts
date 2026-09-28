@@ -37,7 +37,7 @@
 import type { Account } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
-import type { RothBasisState } from '../../strategies/rothBasis.js'
+import { startRothFiveYearPeriod, type RothBasisState } from '../../strategies/rothBasis.js'
 import type {
   RecordedContribution,
   RecordedEmployerMatch,
@@ -658,6 +658,9 @@ export function annualContributionReconciliationPhase(
           const rb = rothBasis.get(operation.rothContributionPoolKey)
           if (rb) {
             rb.contributionBasis += operation.rothContributionBasisDelta
+            // A first contribution into Roth IRAs that started empty starts the
+            // owner's five-year period (§408A(d)(2)(B)) with this tax year.
+            if (operation.rothContributionBasisDelta > 0) startRothFiveYearPeriod(rb, year)
           }
         }
         if (operation.qcdSection219OwnerPersonId !== null) {

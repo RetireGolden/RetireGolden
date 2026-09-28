@@ -173,17 +173,20 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
-  it('uses effectiveBirthYear for the onsetAge < FRA gate (1960-01-01 → FRA 66y10m)', () => {
+  it('uses effectiveBirthYear for the disability FRA gate (1960-01-01 → FRA 66y10m, October 2026)', () => {
     // Jan-1 DOB uses prior calendar year for FRA. 1960-01-01 → effective 1959 →
-    // FRA 66y10m (fra.years = 66). Calendar-year FRA for 1960 is 67; without
-    // the Jan-1 rule, onsetAge 66 would wrongly count as valid SSDI and suppress
-    // a horizon-start own-retirement stream as an automatic FRA conversion.
-    // claimAge.years = 67 so the claim-age pre-horizon arm (age > claimAge.years)
-    // does not fire at age 67 — only the disability FRA gate can suppress.
+    // FRA 66y10m, attained in October 2026 (the day-before-birthday rule). A
+    // May 2026 onset is first payable in November 2026, after that month, so
+    // there is no disability benefit. Calendar-year FRA for 1960 is 67
+    // (January 2027); without the Jan-1 rule, November would wrongly count as
+    // a disability month and suppress a horizon-start own-retirement stream as
+    // an automatic FRA conversion. claimAge.years = 67 so the claim-age
+    // pre-horizon arm (age > claimAge.years) does not fire at age 67 — only the
+    // disability FRA gate can suppress.
     const ctx = context(67, 67, 0)
     expect(ctx.plan.household.people[0]!.dob).toBe('1960-01-01')
-    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
-    income.disability = { onsetAge: 66 }
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number; onsetMonth?: number }; piaMonthly: number }
+    income.disability = { onsetAge: 66, onsetMonth: 5 }
     income.piaMonthly = 2_000
     const years = ctx.projection.result.years as Array<{
       year: number
@@ -212,12 +215,41 @@ describe('Social Security claim milestone detector', () => {
       ]
     }
 
-    // onsetAge 66 is not < effective FRA years 66 → not a conversion suppress.
-    // Without effectiveBirthYear, onsetAge 66 < calendar FRA 67 would silence.
+    // November 2026 is not before the October 2026 FRA month → not a
+    // conversion suppress. Without effectiveBirthYear it would be (January 2027).
     expect(ssClaimMilestone.screen(ctx)).toMatchObject({
       title: "Pat's Social Security claim is imminent",
       severity: 'attention',
     })
+  })
+
+  it('stays silent when the first payable disability month falls in the FRA year (no SSDI year before it)', () => {
+    // Born 1960-06-15: FRA 67 in June 2027. A November 2026 onset has December
+    // to April as its waiting period and May 2027 as its one disability month,
+    // so 2027 pays May plus June to December and publishes own-retirement (the
+    // benefit in force at year end) with no earlier ssdi year. That is the
+    // automatic conversion, not a filing decision.
+    const ctx = context(66, 67, 0)
+    ctx.plan.household.people[0]!.dob = '1960-06-15'
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number; onsetMonth?: number }; piaMonthly: number }
+    income.disability = { onsetAge: 66, onsetMonth: 11 }
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    withSsStreams(years, 'p1', 'ss', 2027, 16_000, 'own-retirement')
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('stays silent when SSDI converts to own-retirement at FRA (no application)', () => {
@@ -3354,5 +3386,160 @@ describe('Social Security claim milestone detector', () => {
     // the detector stays silent. Raising the PIA through the start year itself,
     // by the plan's 3% for 2026 (3,465.30), would make it new.
     expect(ssClaimMilestone.screen(earningsResolvedDivorcedContext(6_800))).toBeNull()
+  })
+  // The year before the start is a disability waiting period (D-APPROX-FACTS).
+  // Pat, born 1960-01-01 (full retirement age 66y10m, attained in October 2026),
+  // became disabled in July 2025: the waiting period is August to December 2025
+  // and the first SSDI payment is for January 2026 (42 U.S.C. 423(c)(2)). The
+  // projection pays her no own benefit in 2025, so the detector's prior-year
+  // own sum (resolveOwnAnnualSum) and own monthly rate (resolveOwnMonthlyRate)
+  // must both read 0 for 2025, as simulatePlan's ssOwnByPerson and
+  // ssActualMonthlyByPerson do, and not a year of her PIA.
+  describe('a prior year that is a disability waiting period', () => {
+    type Rows = Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    const julyOnsetIn2025 = { onsetAge: 65, onsetMonth: 7 }
+
+    it('keeps a divorced-spouse benefit that was the only benefit paid in the waiting year as already paying', () => {
+      // 2025: own benefit 0 (waiting). The divorced-spouse benefit is her own
+      // benefit plus the reduced excess of half the ex's 4,000 PIA over her
+      // 1,000 PIA (402(k)(3)(A)): 0 + 1,000 x 0.658 (her claim at 62, 58
+      // months before FRA), about 7,900 for the year. It beat the own 0 and
+      // was paid, so the 2026 spousal row is not a new claim. Read as a year
+      // of her PIA (12,000), the own benefit would have won and the start-year
+      // row would be announced as a claim.
+      const ctx = context(66, 62, 0)
+      ctx.plan.incomes = [
+        {
+          id: 'ss',
+          type: 'socialSecurity',
+          personId: 'p1',
+          piaMonthly: 1_000,
+          earnings: null,
+          claimAge: { years: 62, months: 0 },
+          disability: julyOnsetIn2025,
+          formerSpouses: [
+            {
+              id: 'former-spouse',
+              relationship: 'divorced',
+              dob: '1950-01-01', // eligible well before the start
+              piaMonthly: 4_000,
+              marriageYears: 12,
+              remarriedAtAge: null,
+            },
+          ],
+        },
+      ] as never
+      for (const year of ctx.projection.result.years as Rows) {
+        year.socialSecurityStreams = [
+          {
+            personId: 'p1',
+            streamId: 'ss',
+            source: 'spousal',
+            annualAmount: 19_900,
+            claimInForce: true,
+            preWithholdingAnnual: 19_900,
+            isSpousalSurvivorGateStream: true,
+          },
+        ]
+      }
+
+      expect(ssClaimMilestone.screen(ctx)).toBeNull()
+    })
+
+    it('keeps a former-spouse survivor benefit that outranked the current-spouse top-up in the waiting year as already paying', () => {
+      // Pat (PIA 1,000, claim 62) is married to Sam (PIA 3,000, claimed at 67
+      // in 2023), who dies at the start (life age 69, first year dead 2026),
+      // and she is the widow of an earlier spouse (PIA 1,000, claimed at his
+      // full retirement age). In 2025, the three sources were:
+      //   own:                0 (waiting period);
+      //   Sam's spousal top-up: her own benefit 0 plus the reduced excess of
+      //     1,500 over her 1,000 PIA, 500 x 0.708 (her spousal entitlement at
+      //     63y0m, when Sam claimed), about 354 a month;
+      //   the widow benefit:  1,000 reduced for her claim at 62, 54 of the 78
+      //     months before her survivor FRA of 66y6m, about 803 a month.
+      // The widow benefit was the highest and was paid, so the 2026 survivor
+      // row stays already paying (the precedence in the test above). Read with
+      // her PIA as the 2025 own rate, the top-up would be about 1,354 a month,
+      // would have outranked the widow benefit, and the death at the start
+      // would announce a new survivor claim.
+      const ctx = context(66, 62, 0)
+      ctx.plan.incomes = [
+        {
+          id: 'ss-claimant',
+          type: 'socialSecurity',
+          personId: 'p1',
+          piaMonthly: 1_000,
+          earnings: null,
+          claimAge: { years: 62, months: 0 },
+          disability: julyOnsetIn2025,
+          formerSpouses: [
+            {
+              id: 'ex-deceased',
+              relationship: 'deceased',
+              dob: '1950-01-01',
+              piaMonthly: 1_000,
+              marriageYears: 15,
+              remarriedAtAge: null,
+            },
+          ],
+        },
+      ] as never
+      ctx.plan.household.people.push({
+        id: 'p2',
+        name: 'Sam',
+        dob: '1956-01-01',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 69, source: 'manual' },
+      })
+      ctx.plan.incomes.push({
+        id: 'ss-decedent',
+        type: 'socialSecurity',
+        personId: 'p2',
+        piaMonthly: 3_000,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      } as never)
+      for (const year of ctx.projection.result.years as Rows) {
+        year.people = [
+          { personId: 'p1', ageAttained: 66 + (year.year - 2026), alive: true, lifeAge: 95 },
+          { personId: 'p2', ageAttained: 70 + (year.year - 2026), alive: false, lifeAge: 69 },
+        ]
+        year.socialSecurityStreams = [
+          {
+            personId: 'p1',
+            streamId: 'ss-claimant',
+            source: 'survivor',
+            annualAmount: 36_000,
+            claimInForce: true,
+            preWithholdingAnnual: 36_000,
+            isSpousalSurvivorGateStream: true,
+          },
+          {
+            personId: 'p2',
+            streamId: 'ss-decedent',
+            source: 'none',
+            annualAmount: 0,
+            claimInForce: false,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: true,
+          },
+        ]
+      }
+
+      expect(ssClaimMilestone.screen(ctx)).toBeNull()
+    })
   })
 })

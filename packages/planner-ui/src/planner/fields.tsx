@@ -11,8 +11,9 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
-import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, type SchemaBounds } from './schemaBounds'
+import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, shiftBounds, type SchemaBounds } from './schemaBounds'
 import { useFieldIssue } from './useFieldIssue'
+import { offsetAdvice } from './validationIssues'
 import { warningFor } from './warnings'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
@@ -461,14 +462,29 @@ export function NumberField({
   max,
   disabled,
   describedBy: describedById,
-}: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
+  valueOffset,
+}: NumericProps & {
+  suffix?: string
+  step?: number
+  min?: number
+  max?: number
+  /**
+   * Show the stored value plus this amount, and commit what is typed minus it:
+   * a calendar year for an age the plan stores as years since the birth year.
+   * The engine's range at `path` and its advice move by the same amount, so
+   * the field and its messages speak in the unit on screen.
+   */
+  valueOffset?: number
+}) {
   const id = useId()
-  const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
+  const offset = valueOffset ?? 0
+  const shown = value === null ? null : value + offset
+  const { text, setText, setFocused } = useLocalText(shown === null ? '' : String(shown))
   // The range is the engine's, read from its schema by path (r3-3): a local
   // min/max could be tighter than what the engine allows and refuse a value it
   // would have accepted. The props remain for controls with no schema path
   // (the import wizard, the lever editors).
-  const schema = boundsForPath(path)
+  const schema = shiftBounds(boundsForPath(path), offset)
   const bounds: SchemaBounds | null = schema ?? (min === undefined && max === undefined ? null : { min, max })
   // While typing, a value outside that range (or text that is not a number at
   // all) is flagged beside the field and commits nothing, so an intermediate
@@ -480,7 +496,7 @@ export function NumberField({
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
   const issue = useFieldIssue(path)
-  const error = rangeError ?? issue?.advice ?? null
+  const error = rangeError ?? (issue ? offsetAdvice(issue.advice, offset) : null)
   // Read from the value the plan holds, not the text being typed, so the note
   // is about what was stored rather than a keystroke on the way there. A
   // cross-field caution from the card fills in where this path has none.
@@ -490,8 +506,8 @@ export function NumberField({
   // here, which is the documented "off" state for the rate overrides and every
   // other zero-floored field. Where 0 is out of range (a claim age, a planning
   // age) there is nothing safe to commit, so the field says so and keeps what
-  // the plan holds.
-  const emptyCommitsZero = !allowNull && outOfRange(0) === null
+  // the plan holds. A field shown with an offset never commits a cleared entry.
+  const emptyCommitsZero = !allowNull && offset === 0 && outOfRange(0) === null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
   const suffixId = suffix ? `${id}-unit` : undefined
@@ -520,14 +536,14 @@ export function NumberField({
         const badInput = e.target.validity?.badInput === true
         if (trimmed === '' && badInput) {
           // Text the field could not parse: the plan kept its value, so show it.
-          setText(value === null ? '' : String(value))
+          setText(shown === null ? '' : String(shown))
           setRangeError(null)
           return
         }
         if (trimmed === '' ? !allowNull && !emptyCommitsZero : !Number.isFinite(n)) {
           // Nothing was committed for non-numeric text ("1e", "-"), or for an
           // emptied field with no safe zero: show the value the plan kept.
-          setText(value === null ? '' : String(value))
+          setText(shown === null ? '' : String(shown))
           setRangeError(null)
           return
         }
@@ -538,7 +554,7 @@ export function NumberField({
         }
         // Out of range on leaving: the entry is not kept and the plan's value
         // comes back, with a note naming the bound it missed.
-        setText(value === null ? '' : String(value))
+        setText(shown === null ? '' : String(shown))
         setRangeError(null)
         setAdjustedNote(notKeptNote(trimmed, side, bounds))
       }}
@@ -565,7 +581,7 @@ export function NumberField({
         } else {
           const { message } = checkRange(n, bounds)
           setRangeError(message)
-          if (message === null) onCommit(n)
+          if (message === null) onCommit(n - offset)
         }
       }}
     />
