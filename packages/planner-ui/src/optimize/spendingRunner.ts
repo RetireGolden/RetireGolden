@@ -2,8 +2,10 @@
  * Runs the sustainable-spending solver on the planner's shared Web Worker
  * (../workers/planner.worker.ts, `spendingSolve` channel) and resolves the
  * summarized result. No wasm — the solver is pure `simulatePlan` bisection.
- * Falls back to a synchronous in-process solve where Worker is unavailable
- * (tests, very old browsers), mirroring ./runner.ts.
+ * A development build (`import.meta.env.DEV`: tests, the dev server) solves
+ * synchronously in-process where Worker is unavailable, mirroring ./runner.ts;
+ * a production build compiles that path out and fails with a stated reason
+ * instead (../workers/spawn.ts).
  */
 
 import type { SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult } from './spendingMessages'
@@ -20,7 +22,7 @@ export function runSpendingSolve(
   req: SpendingSolveRequest,
   options: SpendingSolveRunOptions = {},
 ): Promise<SpendingSolveResult> {
-  if (typeof Worker === 'undefined') {
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) {
     return Promise.resolve().then(() => {
       if (options.signal?.aborted) throw createWorkerRequestAbortError()
       return runSpendingSolveRequest(req)

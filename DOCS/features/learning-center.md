@@ -18,7 +18,7 @@ the per-article `import()` map in
 This document is the **authoring standard**: the product stance, information
 architecture, the article style guide, the topic inventory, and how the planner
 links into articles. Read it before writing or revising Learn content. Rule-heavy
-content carries `lastReviewed` / `reviewCadence` metadata — re-review cadence is in
+content carries `lastReviewed` (index) / `reviewCadence` (editorial sidecar) metadata — re-review cadence is in
 [maintenance-schedule.md](../maintenance-schedule.md).
 
 ## 1. Goals
@@ -282,13 +282,23 @@ type LearningArticle = {
   description: string
   category: LearningCategoryId
   tags: string[]
-  audience: 'beginner' | 'intermediate'
   status: 'stub' | 'draft' | 'ready' | 'needs-review'
   lastReviewed: string
-  reviewCadence: 'annual' | 'rule-change' | 'stable'
   sourceUrls: string[]
   relatedArticles: string[]
   relatedPlannerRoutes: string[]
+}
+```
+
+Editorial review metadata, which no page renders, is one entry per slug in the test-only sidecar
+[testSupport/articleEditorial.ts](../../packages/planner-ui/src/testSupport/articleEditorial.ts), so the
+index that rides the landing critical path carries only what pages read.
+`learn/articleEditorial.test.ts` fails when the index and the sidecar disagree:
+
+```ts
+type ArticleEditorial = {
+  audience: 'beginner' | 'intermediate'
+  reviewCadence: 'annual' | 'rule-change' | 'stable'
   currentYearSensitive: boolean
 }
 ```

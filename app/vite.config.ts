@@ -1,10 +1,12 @@
-import { existsSync } from 'node:fs'
+import { existsSync, globSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { BuildEnvironmentOptions } from 'vite'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
+
+import { howTestedSummaryFromFileGlob } from '../packages/planner-ui/src/planner/howTestedSuites.ts'
 
 // Workspace package sources, as posix paths for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
@@ -108,6 +110,16 @@ const annualProjectionCodeSplitting = {
   ],
 } satisfies ViteCodeSplitting
 
+// "How RetireGolden is tested" prints how many test suites and files the
+// source tree holds. Counted here, once per build, with fs.globSync over the
+// page's own patterns (HOW_TESTED_GLOBS, relative to the page's directory)
+// and injected below as `__RG_HOW_TESTED__`, so the production chunk ships
+// three numbers and eight suite names instead of ~960 test-file paths. The
+// page's development branch globs the same list through import.meta.glob;
+// packages/planner-ui/src/planner/howTestedSuites.test.ts pins the two equal.
+const howTestedDir = `${plannerUiSrc}/planner`
+const howTestedSummary = howTestedSummaryFromFileGlob((pattern) => globSync(pattern, { cwd: howTestedDir }))
+
 // Paths the service worker must fetch instead of answering with the app shell.
 // Mirrors `navigationFallback.exclude` in public/staticwebapp.config.json — the
 // host applies that list to 404s only, but workbox's navigateFallback answers
@@ -135,6 +147,9 @@ const navigateFallbackDenylist = [
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __RG_HOW_TESTED__: JSON.stringify(howTestedSummary),
+  },
   build: {
     rolldownOptions: {
       output: {
@@ -177,7 +192,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon-180x180.png'],
+      // Both empty/off: workbox.globPatterns below already precaches every
+      // .svg and .png in dist/, favicon, touch icon and manifest icons
+      // included. Listing them here as well added each one to the precache
+      // manifest a second time (same URL, same revision), which the bundle
+      // budget counted twice. scripts/bundleBudget.mjs now fails on a URL the
+      // manifest lists twice.
+      includeAssets: [],
+      includeManifestIcons: false,
       manifest: {
         name: 'RetireGolden',
         short_name: 'RetireGolden',

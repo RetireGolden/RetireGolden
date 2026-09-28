@@ -4,8 +4,10 @@
  * schedule. The worker script is shared with Monte Carlo, the spending solver,
  * and relocation compare, so it may already be in the browser's cache; what
  * stays lazy is the ~3 MB HiGHS wasm, which only this channel ever fetches.
- * Falls back to a synchronous in-process solve where Worker is unavailable
- * (tests, very old browsers), mirroring src/mc/pool.ts.
+ * A development build (`import.meta.env.DEV`: tests, the dev server) solves
+ * synchronously in-process where Worker is unavailable, mirroring
+ * src/mc/pool.ts; a production build compiles that path out and fails with a
+ * stated reason instead (../workers/spawn.ts).
  */
 
 import type { OptimizeRequest, OptimizeResponse, OptimizeResult } from './messages'
@@ -15,7 +17,7 @@ import { runWorkerRequest } from '../workers/run'
 import { spawnPlannerWorker } from '../workers/spawn'
 
 export function runOptimize(req: OptimizeRequest): Promise<OptimizeResult> {
-  if (typeof Worker === 'undefined') return runOptimizeRequest(req)
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) return runOptimizeRequest(req)
   return runWorkerRequest<PlannerWorkerEnvelope<'optimize', OptimizeRequest>, OptimizeResponse, OptimizeResult>({
     request: envelope('optimize', req),
     createWorker: spawnPlannerWorker,

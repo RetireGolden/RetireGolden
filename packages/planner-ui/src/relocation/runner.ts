@@ -1,9 +1,10 @@
 /**
  * Runs the relocation-compare sweep on the planner's shared Web Worker
  * (../workers/planner.worker.ts, `relocation` channel) and resolves the
- * comparison. Falls back to a synchronous in-process run
- * where Worker is unavailable (tests, very old browsers), mirroring
- * src/optimize/spendingRunner.ts.
+ * comparison. A development build (`import.meta.env.DEV`: tests, the dev
+ * server) runs synchronously in-process where Worker is unavailable, mirroring
+ * src/optimize/spendingRunner.ts; a production build compiles that path out and
+ * fails with a stated reason instead (../workers/spawn.ts).
  */
 
 import type { RelocationComparison } from '@retiregolden/engine/projection/relocation'
@@ -14,7 +15,7 @@ import type { RelocationCompareRequest, RelocationCompareResponse } from './mess
 import { runRelocationCompareRequest } from './runRelocation'
 
 export function runRelocationCompare(req: RelocationCompareRequest): Promise<RelocationComparison> {
-  if (typeof Worker === 'undefined') return Promise.resolve(runRelocationCompareRequest(req))
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) return Promise.resolve(runRelocationCompareRequest(req))
   return runWorkerRequest<
     PlannerWorkerEnvelope<'relocation', RelocationCompareRequest>,
     RelocationCompareResponse,

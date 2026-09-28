@@ -24,6 +24,22 @@ export interface ParameterSource {
 }
 
 /**
+ * The RMD and QCD group, exported on its own because the QCD post-pass
+ * (actions/annualQcdTaxCharacterPostPass.ts) cites it as evidence: reading it
+ * here, rather than filtering PARAMETER_PROVENANCE by id, lets a bundle that
+ * needs only this entry leave the rest of the catalog out (the planner worker
+ * does). It is the same object PARAMETER_PROVENANCE lists, in its place below.
+ */
+export const RMD_QCD_PARAMETER_SOURCE: ParameterSource = {
+  id: 'rmd-qcd',
+  label: 'Required minimum distributions & QCD',
+  figures:
+    'IRS Uniform Lifetime Table (Pub 590-B, 2022+); RMDs begin at age 73–75 per SECURE 2.0; QCD exclusion limit $111,000.',
+  publisher: 'IRS Publication 590-B',
+  url: 'https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs',
+}
+
+/**
  * One entry per logical assumption group. Order is roughly the order figures
  * appear in a projection (income tax → gains → SS → limits → RMDs → Medicare →
  * SS benefits → ACA → state).
@@ -77,14 +93,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     publisher: 'IRS',
     url: 'https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500',
   },
-  {
-    id: 'rmd-qcd',
-    label: 'Required minimum distributions & QCD',
-    figures:
-      'IRS Uniform Lifetime Table (Pub 590-B, 2022+); RMDs begin at age 73–75 per SECURE 2.0; QCD exclusion limit $111,000.',
-    publisher: 'IRS Publication 590-B',
-    url: 'https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs',
-  },
+  RMD_QCD_PARAMETER_SOURCE,
   {
     id: 'annuity-purchase',
     label: 'Annuity purchase (exclusion ratio & QLAC)',

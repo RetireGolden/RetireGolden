@@ -5,10 +5,12 @@
  * A typed refusal (../workers/refusal.ts) is said in the page's own words and
  * never in the engine's; an error nothing recognises gets a plain sentence
  * that keeps the error's own text as a labelled detail, so a crash can still
- * be reported.
+ * be reported. A runtime with no Web Worker (../workers/spawn.ts) gets its own
+ * reason alone: "run it again" cannot help there.
  */
 
 import { engineRefusalOf, type ComparandRole } from '../workers/refusal'
+import { WorkerUnavailableError } from '../workers/spawn'
 
 function unknownDetail(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error)
@@ -39,6 +41,7 @@ export function insightPreviewErrorSentence(error: unknown): string {
 
 /** The Roth & Tax Optimizer's failure well. */
 export function optimizeErrorSentence(error: unknown): string {
+  if (error instanceof WorkerUnavailableError) return error.message
   const refusal = engineRefusalOf(error)
   if (refusal?.kind === 'non-finite-figure') {
     return "The optimizer couldn't finish this run: one of the figures it compares could not be computed. Check your plan's inputs and its Results page, then run the optimizer again."
@@ -51,6 +54,7 @@ export function optimizeErrorSentence(error: unknown): string {
 
 /** The relocation compare's error line. */
 export function relocationErrorSentence(error: unknown): string {
+  if (error instanceof WorkerUnavailableError) return error.message
   const refusal = engineRefusalOf(error)
   if (refusal?.kind === 'non-finite-figure') {
     const what: Record<ComparandRole, string> = {

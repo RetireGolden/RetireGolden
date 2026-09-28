@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CHUNK_BUDGETS,
+  chunksNamingTestFiles,
   DEFAULT_CHUNK_KIB,
   ENTRY_KIB,
   LANDING_PATH_KIB,
@@ -392,6 +393,27 @@ describe('evaluateBudget — fails closed when a measurement is missing', () => 
     expect(failureText(evaluateBudget(build))).toContain('not on disk')
   })
 
+  it('fails when the precache manifest lists a URL twice, which the total would count twice', () => {
+    // vite-plugin-pwa's includeAssets / includeManifestIcons on top of a
+    // globPattern that already matches the same icons did this to six files.
+    const build = healthyBuild()
+    build.precache.urls.push('pwa-192x192.png', 'pwa-192x192.png')
+    build.precache.sizes['pwa-192x192.png'] = 5 * KIB
+    const result = evaluateBudget(build)
+    expect(failureText(result)).toContain('lists pwa-192x192.png more than once')
+    expect(result.failures).toHaveLength(1)
+    // The row still reports the manifest as listed; the failure is the signal.
+    expect(result.rows.find((r) => r.label.startsWith('PWA precache'))?.label).toBe('PWA precache (4 entries)')
+  })
+
+  it('does not treat distinct URLs as duplicates', () => {
+    const build = healthyBuild()
+    build.precache.urls.push('pwa-192x192.png', 'pwa-512x512.png')
+    build.precache.sizes['pwa-192x192.png'] = 5 * KIB
+    build.precache.sizes['pwa-512x512.png'] = 9 * KIB
+    expect(evaluateBudget(build).failures).toEqual([])
+  })
+
   it('fails when index.html names an entry that was never emitted', () => {
     const build = healthyBuild()
     build.landing.entry = 'index-nothere.js'
@@ -411,5 +433,20 @@ describe('evaluateBudget — the entry is the one index.html loads', () => {
     const result = evaluateBudget(build)
     expect(result.failures).toEqual([])
     expect(result.rows.filter((r) => r.label === 'app entry')).toHaveLength(1)
+  })
+})
+
+describe('chunksNamingTestFiles', () => {
+  it('names every chunk that carries a test-file path, sorted', () => {
+    const chunks = [
+      { name: 'HowTestedPage-b.js', source: 'Object.keys({"../../../engine/src/rmd/rmd.golden.test.ts":0})' },
+      { name: 'Other-a.js', source: 'const x="./widget.test.tsx"' },
+      { name: 'Clean-c.js', source: 'const summary={"externalOracleSuites":["rmd"],"testFileCount":938}' },
+    ]
+    expect(chunksNamingTestFiles(chunks)).toEqual(['HowTestedPage-b.js', 'Other-a.js'])
+  })
+
+  it('is empty when the counts ship as numbers and names', () => {
+    expect(chunksNamingTestFiles([{ name: 'HowTestedPage-b.js', source: 'var t={goldenSuiteCount:25}' }])).toEqual([])
   })
 })

@@ -309,6 +309,23 @@ export function staticImportCycles(chunks) {
 }
 
 /**
+ * Chunks whose source names a test file (`*.test.ts` / `*.test.tsx`), sorted.
+ *
+ * Nothing the browser runs needs a test file's path. "How RetireGolden is
+ * tested" once shipped ~960 of them (58 KiB) as `import.meta.glob` keys just
+ * to count them; its counts are now computed in app/vite.config.ts and
+ * injected, and this keeps any path from coming back.
+ *
+ * `chunks` is `{ name, source }[]`.
+ */
+export function chunksNamingTestFiles(chunks) {
+  return chunks
+    .filter((chunk) => /\.test\.tsx?/.test(chunk.source))
+    .map((chunk) => chunk.name)
+    .sort()
+}
+
+/**
  * The URLs workbox lists in the generated service worker's precache manifest.
  *
  * Returns `null` when the `precacheAndRoute([...])` call cannot be found —
@@ -437,6 +454,16 @@ export function evaluateBudget({ assets, landing, precache }) {
       failures.push(
         `the precache manifest lists ${missing.length} file(s) not on disk (${missing.slice(0, 3).join(', ')}` +
           `${missing.length > 3 ? ', …' : ''}), so its total is understated`,
+      )
+    }
+    // A URL listed twice is fetched once but summed twice, so the row would
+    // overstate the install. vite-plugin-pwa did exactly that for six icons
+    // (includeAssets / includeManifestIcons on top of globPatterns).
+    const duplicates = precache.urls.filter((u, i) => precache.urls.indexOf(u) !== i)
+    if (duplicates.length > 0) {
+      failures.push(
+        `the precache manifest lists ${[...new Set(duplicates)].join(', ')} more than once, so its total ` +
+          'counts them twice (list each file once: see includeAssets in vite.config.ts)',
       )
     }
     const total = kib(precache.urls.reduce((sum, u) => sum + (precache.sizes[u] ?? 0), 0))

@@ -22,7 +22,8 @@ The annual refresh is a **data change, not a code change** (that's the point of 
    and checks each `quotedText` against it — the one check that catches a citation whose page moved under
    it, or a quote that drifted into paraphrase. Needs network, so it is manual and never a CI gate:
    [operations/quote-fidelity.md](operations/quote-fidelity.md).
-5. Review Learning Center articles flagged `currentYearSensitive` (see the last row) and bump their
+5. Review Learning Center articles flagged `currentYearSensitive` (in
+   `packages/planner-ui/src/testSupport/articleEditorial.ts`; see the last row) and bump their
    `lastReviewed`.
 
 ## Calendar refresh
@@ -49,7 +50,7 @@ Typical publication windows; verify the actual release each year. "Updates" poin
 | SPIA payout-rate planning table (annuitization sweep + purchase candidates) | Public quote aggregators (annuity.org life-only sheets, marketplace/insurer calculators) | Rates move with yields; refresh annually with the packs. Last re-anchored 2026-07-15. **Hard items for the next refresh:** replace the extrapolated age-85 anchor and the placeholder QLAC deferred rate with quoted rates | `engine/decisions/spiaQuotes.ts`, domain rules §19 |
 | HECM principal-limit factors + line/loan growth default; HUD MCA / initial+annual MIP for validated mode | HUD HECM PLF tables; HUD Mortgagee Letter MCA ceiling (e.g. ML 2025-22 for 2026) | HUD revises factor tables and MCA occasionally; expected rates move with rates | `params/data/` `hecm` block (`maximumClaimAmount`, `initialMipPct`, `annualMipPct`), provenance id `hecm-plf`, domain rules §19. The Plan must carry a verified transaction kind; only ordinary originations use the validated path. Do not invent MCA/MIP or transaction form in shared logic. |
 | Actuarial longevity guidance | SSA period life table; Academy of Actuaries / SOA Longevity Illustrator | ~Annual / on table refresh | `longevity/`, domain rules §13, `assumption-longevity-planning-age` |
-| Learning Center rule-heavy articles | The article's own `sourceUrls` | Match each article's `reviewCadence` (`annual` for `currentYearSensitive`) | Prose in `learn/content/`; bump `lastReviewed` on the article's entry in `learn/articleIndex.ts` |
+| Learning Center rule-heavy articles | The article's own `sourceUrls` | Match each article's `reviewCadence` (`annual` for `currentYearSensitive`; both in `testSupport/articleEditorial.ts`) | Prose in `learn/content/`; bump `lastReviewed` on the article's entry in `learn/articleIndex.ts` |
 | Competitive landscape (pricing, tiers, features) | Vendor sites | ~Annual or on change | `competitive-analysis` (private planning docs) |
 | Open-source oracle landscape | Project repos/releases | ~Annual | `open-source-landscape` (private planning docs) |
 

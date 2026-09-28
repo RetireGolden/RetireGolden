@@ -26,7 +26,9 @@ this gate exists to prevent. Run a build first.
 unparsable `index.html` or `sw.js`, a precache manifest that yields zero entries, a referenced chunk that
 is not on disk. A size gate whose parser quietly returns nothing is worse than no gate — the build stays
 green and now carries a false assurance. Workbox and Vite own those output formats, so the parsers are
-expected to break someday; when they do, the build stops rather than reporting `0.0 KiB`.
+expected to break someday; when they do, the build stops rather than reporting `0.0 KiB`. The same goes
+for a measurement that would overstate: a precache manifest that lists one URL twice fails, because the
+row would count that file twice while the service worker fetches it once.
 
 Sizes are **KiB (1024 bytes), uncompressed**, matching workbox's own precache report. Vite's build log
 prints kB (1000 bytes), so the same chunk reads ~2.4% larger there. Uncompressed rather than gzip on
@@ -408,3 +410,35 @@ grouping bodies (by category, say) to trade some of the on-demand granularity ba
 Both rows were tightened to the new measurement in the same change. Putting article prose back into the
 index — an eager import from `articleIndex.ts`, or an article body inlined on a metadata entry — is what
 the `learningRegistry` row now exists to catch.
+
+## Taking bytes back: six reductions, no cap moved
+
+On 2026-09-28 `main` measured 5,082.8 of 5,100 KiB of JS and 5,230.4 of 5,250 KiB of precache, and the
+queued branches would have put both about 75 KiB over. This project fixes an overrun by removing bytes the
+browser does not need, never by widening a row, so six reductions landed together instead, each measured
+in turn on that `main` (04e71e59) in raw KiB (all JS / precache). None changes a computed figure: the
+example library and its scenarios, and the full engine equivalence corpus, produce byte-identical output
+before and after.
+
+| # | Change | All JS | Precache |
+|---|---|---:|---:|
+| R1 | planner-ui's seven in-process worker fallbacks become `typeof Worker === 'undefined' && import.meta.env.DEV`, so production ships the solvers once, in the worker (whose chunk is byte-identical) | −132.9 | −132.9 |
+| R2 | "How RetireGolden is tested" gets its counts from `app/vite.config.ts` at build time instead of ~960 test-file paths | −58.8 | −58.8 |
+| R3 | six PWA icons listed once in the precache manifest, not twice | 0 | −27.0 |
+| R4 | the RMD joint life table ships delta-packed, decoded once at module load | −39.9 | −40.0 |
+| R5 | the Learn index drops three editorial fields no page renders (test-only sidecar) | −9.2 | −9.2 |
+| R6 | the QCD post-pass reads its one provenance entry directly, so the worker drops the catalog | −8.9 | −8.8 |
+| | **together, on 04e71e59** | **−249.6** | **−276.7** |
+| | **together, on 4d2d9d67 (with the 2023 life table)**: 5,096.6 → 4,845.6 and 5,244.3 → 4,966.2 | **−251.0** | **−278.1** |
+
+Two guards keep them: the budget fails when any chunk names a `*.test.ts(x)` file
+(`chunksNamingTestFiles`) and when the precache manifest lists a URL twice. R1 is the one behaviour
+change: a production build running where `Worker` does not exist fails with a plain-words reason
+(`packages/planner-ui/src/workers/spawn.ts`) instead of computing on the main thread, and the production
+e2e (`app/e2e-dist/`) now runs Monte Carlo, Optimize, the spending solver and relocation compare from
+the built `dist/`.
+
+Measured and left alone: terser (+339 KiB), `target: esnext` (no change), lazy-loading the example
+builders (moves bytes between chunks), and the second copy of the engine in the worker graph (about
+1 MiB), which only an asynchronous projection on the worker would remove. That is an architecture change,
+not a size fix.

@@ -2,10 +2,10 @@ import { parsePlan, type Plan } from '../model/plan.js'
 import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_DATA_BASIS,
-  PARAMETER_PROVENANCE,
   packForYear,
   type ParameterSource,
 } from '../params/index.js'
+import { RMD_QCD_PARAMETER_SOURCE } from '../params/provenance.js'
 import {
   buildAnnualOwnedNonRothIraPoolCapacity,
   type AnnualOwnedNonRothIraPoolCapacityEvidence,
@@ -174,14 +174,15 @@ function blocked(error: unknown): AnnualQcdTaxCharacterPostPassBlocked {
 }
 function exactPersonalLimit(taxYear: number): AnnualQcdPersonalLimitEvidence {
   const lookup = packForYear(taxYear)
-  const sources = PARAMETER_PROVENANCE.filter((source) => source.id === 'rmd-qcd')
   const dollars = lookup.pack.rmd.qcdAnnualLimit
-  if (lookup.isStandIn || lookup.pack.year !== taxYear || sources.length !== 1 ||
+  if (lookup.isStandIn || lookup.pack.year !== taxYear ||
       !Number.isSafeInteger(dollars) || dollars <= 0) {
     fail('taxParameterUnavailable', `Tax year ${taxYear} lacks an exact sourced QCD limit.`)
   }
   const personalLimitAmount = cents(BigInt(dollars) * 100n, 'QCD personal limit')
-  const parameterSource = { ...sources[0]! }
+  // The catalog's rmd-qcd entry itself (params/provenance.ts), read directly so
+  // the planner worker does not carry the whole catalog to find one entry.
+  const parameterSource = { ...RMD_QCD_PARAMETER_SOURCE }
   const evidenceId = deriveActionStructuralId('annual-qcd-personal-limit', [
     taxYear, personalLimitAmount, lookup.pack.year, parameterSource,
     PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS,

@@ -179,9 +179,12 @@ The supported product API is:
 - the **`./spending-solve` subpath** — `runSpendingSolve` plus
   `SpendingSolveRequest`, `SpendingSolveRunOptions`, `SpendingSolveResult`,
   `SpendingSolveEvidence`, and `SpendingSolveResponse`. It runs the exact-ledger
-  sustainable-spending solve in a Vite-emitted Worker when available and falls
-  back to the identical synchronous solver where `Worker` is unavailable,
-  while retaining a Promise result in both environments. A host may pass an
+  sustainable-spending solve in a Vite-emitted Worker. Where `Worker` is
+  unavailable, a development build (`import.meta.env.DEV`, which includes
+  Vitest) falls back to the identical synchronous solver; a production build
+  has no in-process path, so the Promise rejects with an error that says in
+  plain words that the runtime cannot run background calculations. The same
+  holds for every worker-backed page in the planner tree. A host may pass an
   `AbortSignal` in the runner options to terminate active worker work; an
   already-aborted signal rejects with an `AbortError` before a worker is
   spawned;

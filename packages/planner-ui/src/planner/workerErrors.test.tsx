@@ -28,6 +28,7 @@ import * as pool from '../mc/pool'
 import { MonteCarloPage } from './MonteCarloPage'
 import { SsAnalysisPage } from './SsAnalysisPage'
 import { advanceBy } from '../testSupport/settle'
+import { WORKER_UNAVAILABLE_MESSAGE } from '../workers/spawn'
 
 const actualPool = await vi.importActual<typeof import('../mc/pool')>('../mc/pool')
 const mockedRunMc = vi.mocked(pool.runMonteCarlo)
@@ -99,6 +100,25 @@ describe('MonteCarloPage worker failures', () => {
     expect(container.textContent).toContain('Stress suite error: stress worker exploded')
     expect(stressBtn!.disabled).toBe(false)
     await act(async () => root.unmount())
+  })
+})
+
+describe('MonteCarloPage in a production build without Worker', () => {
+  it('shows the plain-words reason instead of computing on the main thread', async () => {
+    // A production build compiles the in-process path out
+    // (typeof Worker === 'undefined' && import.meta.env.DEV); jsdom has no Worker.
+    vi.stubEnv('DEV', false)
+    try {
+      mockedRunMc.mockImplementation(actualPool.runMonteCarlo)
+      await mount(<MonteCarloPage />, createSamplePlan())
+      await advanceBy(400)
+      expect(container.textContent).toContain(`Simulation error: ${WORKER_UNAVAILABLE_MESSAGE}`)
+      expect(container.querySelector('[role="progressbar"]')).toBeNull()
+      expect(container.querySelector('.error-recovery[role="alert"]')).not.toBeNull()
+      await act(async () => root.unmount())
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

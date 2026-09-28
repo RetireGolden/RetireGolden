@@ -25,6 +25,7 @@ import { renderInline } from './inlineMarkdown'
 import { LEARN_CHART_IDS } from './components/charts'
 import { waitFor } from '../testSupport/settle'
 import { ROUTE_FALLBACK_SELECTOR } from '../testSupport/lazyRoutes'
+import { ARTICLE_EDITORIAL } from '../testSupport/articleEditorial'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const CATEGORY_IDS = new Set(LEARNING_CATEGORIES.map((c) => c.id))
@@ -389,8 +390,9 @@ describe('learning registry integrity', () => {
   it('keeps retirement healthcare cost guidance source-backed and annual-reviewable', () => {
     const article = getArticle('what-retirement-healthcare-really-costs')
     expect(article ? isReadable(article) : false).toBe(true)
-    expect(article!.currentYearSensitive).toBe(true)
-    expect(article!.reviewCadence).toBe('annual')
+    // Editorial metadata is in the test-only sidecar, not the shipped index.
+    expect(ARTICLE_EDITORIAL['what-retirement-healthcare-really-costs']!.currentYearSensitive).toBe(true)
+    expect(ARTICLE_EDITORIAL['what-retirement-healthcare-really-costs']!.reviewCadence).toBe('annual')
     expect(article!.sourceUrls).toEqual(
       expect.arrayContaining([
         expect.stringContaining('cms.gov'),
@@ -506,7 +508,7 @@ describe('learning registry integrity', () => {
 
   it('requires sources for current-year-sensitive content-bearing articles', () => {
     // Stubs are exempt (no content yet); enforce once an article has content.
-    for (const a of LEARNING_ARTICLES.filter((x) => x.status !== 'stub' && x.currentYearSensitive)) {
+    for (const a of LEARNING_ARTICLES.filter((x) => x.status !== 'stub' && ARTICLE_EDITORIAL[x.slug]!.currentYearSensitive)) {
       expect(a.sourceUrls.length, a.slug).toBeGreaterThan(0)
     }
   })
