@@ -169,6 +169,31 @@ describe('Social Security analysis page on the engine models', () => {
     expect(text()).toContain('$415k')
   })
 
+  it('the divorced-spouse note shows only where the ranking prices the record: a claimant living alone, not a couple (PR #757 review 1)', async () => {
+    const ex: FormerSpouse = { id: 'ex', relationship: 'divorced', dob: '1966-02-10', piaMonthly: 2_000, marriageYears: 12, remarriedAtAge: null }
+    const note = 'With a living ex-spouse, this ranking pays what the plan pays'
+    await render(singlePlan('1964-06-15', 'female', { piaMonthly: 800, formerSpouses: [ex] }))
+    await openTab('Benefits only')
+    expect(text()).toContain(note)
+
+    const draft = createEmptyPlan({ newId: id })
+    draft.household.filingStatus = 'marriedFilingJointly'
+    draft.household.people = [
+      { id: 'p1', name: 'Pat', dob: '1964-06-15', sex: 'female', retirementAge: null, longevity: { planningAge: 92, source: 'manual' } },
+      { id: 'p2', name: 'Robin', dob: '1963-03-01', sex: 'male', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+    ]
+    draft.incomes = [
+      { type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: 800, earnings: null, claimAge: { years: 67, months: 0 }, formerSpouses: [ex] },
+      { type: 'socialSecurity', id: id(), personId: 'p2', piaMonthly: 2_400, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    const parsed = parsePlan(draft)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    await render(parsed.plan)
+    await openTab('Benefits only')
+    expect(text()).toContain('A former spouse\'s record is not counted for a person in a couple.')
+    expect(text()).not.toContain(note)
+  })
+
   it('the couple primer calls PIA x 12 the full-retirement-age benefit', async () => {
     await render(getExampleById('example-couple')!.build())
     await waitFor(() => container.querySelector('.skeleton') === null && text().includes('full-retirement-age benefit (PIA)'), {

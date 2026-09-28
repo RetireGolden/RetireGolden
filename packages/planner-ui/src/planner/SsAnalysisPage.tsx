@@ -1111,9 +1111,19 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const best = ranking.ranked[0]
   const current = currentClaim(plan, personIds)
   const keyOf = (claim: Readonly<Record<string, number>>) => personIds.map((id) => claim[id]).join('-')
-  const hasLivingDivorcedRecord = plan.incomes.some(
-    (s) => s.type === 'socialSecurity' && (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
-  )
+  // The ranking prices a living ex's record only for a claimant living alone:
+  // a couple's model does not read former-spouse records, and a lone claimant
+  // in a two-person household is not single. The note is shown only when the
+  // record is priced.
+  const rankingPricesDivorcedRecord =
+    plan.household.people.length === 1 &&
+    personIds.length === 1 &&
+    plan.incomes.some(
+      (s) =>
+        s.type === 'socialSecurity' &&
+        s.personId === personIds[0] &&
+        (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
+    )
 
   return (
     <div>
@@ -1159,7 +1169,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         personName={personName}
       />
 
-      {hasLivingDivorcedRecord ? (
+      {rankingPricesDivorcedRecord ? (
         <div className="callout callout--note" role="note">
           With a living ex-spouse, this ranking pays what the plan pays once the spouse benefit starts: your own benefit
           plus the part of half the ex&apos;s PIA above your own PIA, reduced for your age in the first month the ex is 62
