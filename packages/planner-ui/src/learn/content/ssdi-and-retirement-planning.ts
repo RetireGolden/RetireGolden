@@ -14,7 +14,7 @@ export const blocks: ArticleBlock[] = [
     type: 'list',
     items: [
       'SSDI pays your **full PIA** with no early-retirement reduction, even if disability began years before 62. Because SSDI already pays the full PIA, waiting earns no delayed-retirement credits.',
-      'SSDI pays nothing for the first **five full months** you are disabled. The first payment is for the sixth month after the month your disability began.',
+      'SSDI pays nothing for the first **five full months** you are disabled. The planner pays from the sixth month after the month your disability began, or from June of that year if you choose **Not sure** for the month, which it reads as January 1.',
       'At full retirement age it **converts automatically** to the retirement benefit at the same dollar amount (no jump, no paperwork).',
       'Before FRA, earning over the **Substantial Gainful Activity (SGA)** limit suspends SSDI; this is not the same as the retirement earnings test.',
     ],
@@ -58,7 +58,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'How to use this in RetireGolden' },
   {
     type: 'prose',
-    md: 'On the Social Security step, expand **Disability (SSDI)** and enter the month and year your disability began as a planning assumption (not an SSA eligibility determination). The planner pays your full PIA from the sixth month after that month (instead of your retirement claim age), applies the SGA gate before FRA, and continues the same amount through FRA conversion, flowing into the normal tax, IRMAA, and ACA calculations like any other Social Security income. If you are not sure of the month, the plan assumes January 1, so the first payment is for June of that year: the earliest Social Security allows, and so the largest amount for that year.',
+    md: 'On the Social Security step, expand **Disability (SSDI)** and enter the month and year your disability began as a planning assumption (not an SSA eligibility determination). With a month, the planner pays your full PIA from the sixth month after it. If you choose **Not sure**, the plan assumes January 1, so the first payment is for June of that year: the earliest Social Security allows, and so the largest amount for that year. Either way it pays that instead of your retirement claim age, applies the SGA gate before FRA, and continues the same amount through FRA conversion, flowing into the normal tax, IRMAA, and ACA calculations like any other Social Security income.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

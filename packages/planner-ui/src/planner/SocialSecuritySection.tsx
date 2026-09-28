@@ -493,15 +493,15 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         <summary>Disability (SSDI)</summary>
         <p className="card-hint">
           Social Security disability pays your <strong>full PIA</strong>, with no early-retirement reduction. It
-          pays nothing for the first five full months you are disabled, so the first payment is for the sixth month
-          after the month your disability began. At full retirement age it becomes your retirement benefit at the
-          same amount. Before then, earnings above Substantial Gainful Activity (SGA) stop it. Leave this off for a
+          pays nothing for the first five full months you are disabled, so the plan pays from the sixth month after
+          the month your disability began, or from June if you leave the month as Not sure (read as January 1). At
+          full retirement age it becomes your retirement benefit at the same amount. Before then, earnings above Substantial Gainful Activity (SGA) stop it. Leave this off for a
           normal retirement claim.
         </p>
         <div className="form-grid">
           <CheckboxField
             label="Receiving Social Security disability (SSDI)"
-            help="Social Security disability pays your full PIA, with no early-retirement reduction, starting after a five-month waiting period. Earnings above Substantial Gainful Activity stop it. At full retirement age it becomes your retirement benefit at the same amount, with no delayed-retirement credits. It is taxed like retirement benefits."
+            help="Social Security disability pays your full PIA, with no early-retirement reduction, after a five-month waiting period: from the sixth month after the month your disability began, or from June if the month is Not sure. Earnings above Substantial Gainful Activity stop it. At full retirement age it becomes your retirement benefit at the same amount, with no delayed-retirement credits. It is taxed like retirement benefits."
             value={stream.disability != null}
             onCommit={(on) =>
               setStream((s) => {
