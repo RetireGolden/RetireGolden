@@ -1,15 +1,15 @@
 # Mutation receipt: oasdi-paid-in-today-dollars
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/oasdiReturn.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts b/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
-index daade33e..94666c53 100644
+index a429129e..8b7b610f 100644
 --- a/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
 +++ b/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
-@@ -136,7 +136,7 @@ export function oasdiPaidIn(earnings: readonly YearEarning[], options: OasdiPaid
+@@ -140,7 +140,7 @@ export function oasdiPaidIn(earnings: readonly YearEarning[], options: OasdiPaid
    const years = [...new Set([...entered.keys(), ...projected.keys()])].sort((a, b) => a - b)
    for (const year of years) {
      const rates = ratesForYear(year)
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (oasdiReturn.paidIn.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Its production file's lines moved when the latest tax-rate year became a constant (PR #757 review 5), so it is re-executed on the current code. The baseline is green (oasdiReturn.paidIn.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/socialSecurity/analysis/oasdiReturn.paidIn.evidence.test.ts (8 tests | 2 failed) 8ms
+ ❯ src/socialSecurity/analysis/oasdiReturn.paidIn.evidence.test.ts (8 tests | 2 failed) 7ms
    ❯ oasdi-paid-in-today-dollars — Social Security tax paid in, in today's dollars (8)
-     × case A: each year's effective rate and base, restated by CPI-U to 2025 and 2.5% to 2026 (225,418.24) 5ms
-     × case P: the projection's years 2026 to 2042 are the projected work, 17 x 3,720, beside the 116,507.46 paid in so far 1ms
+     × case A: each year's effective rate and base, restated by CPI-U to 2025 and 2.5% to 2026 (225,418.24) 4ms
+     × case P: the projection's years 2026 to 2042 are the projected work, 17 x 3,720, beside the 116,507.46 paid in so far 0ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 6 passed (8)
