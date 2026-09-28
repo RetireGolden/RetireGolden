@@ -29,24 +29,29 @@ const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: stri
   'published-source': { label: 'Published source', title: 'Comes from a cited publication (statute, agency figure, or documented dataset).' },
 }
 
+/**
+ * The questionnaire results saved in this browser, by person slot, which date a
+ * questionnaire planning age's table (the plan does not store it).
+ */
+function savedQuestionnaireAges(): (SavedQuestionnaireAge | null)[] {
+  return [loadLongevity(), loadLongevityPartner()].map((saved): SavedQuestionnaireAge | null =>
+    saved
+      ? {
+          planningAge: questionnairePlanningAge(saved.result),
+          ...(saved.result.tableEdition ? { tableEdition: saved.result.tableEdition } : {}),
+        }
+      : null,
+  )
+}
+
 export function AssumptionsCardPage() {
   const { plan } = usePlan()
   const startYear = currentStartYear()
-  // The questionnaire results saved in this browser date a questionnaire
-  // planning age's table (the plan does not store it).
-  const savedQuestionnaire = useMemo(
-    () =>
-      [loadLongevity(), loadLongevityPartner()].map((saved): SavedQuestionnaireAge | null =>
-        saved
-          ? {
-              planningAge: questionnairePlanningAge(saved.result),
-              ...(saved.result.tableEdition ? { tableEdition: saved.result.tableEdition } : {}),
-            }
-          : null,
-      ),
-    [],
-  )
-  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear, savedQuestionnaire), [plan, startYear, savedQuestionnaire])
+  // Storage is read again whenever the plan changes: completing the
+  // questionnaire writes both the saved result and the plan's planning age,
+  // so a result saved or cleared while the card is open is picked up with the
+  // plan it produced (PR #759 review round 2).
+  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear, savedQuestionnaireAges()), [plan, startYear])
   const sourceById = useMemo(() => new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s])), [])
 
   return (
