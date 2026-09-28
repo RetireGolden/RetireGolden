@@ -305,6 +305,16 @@ interface TaxRuleRecordCommonFields {
    * withdrawn, no IRS or judicial source addresses a month-end or leap-day
    * birth, and the convention chosen is an engineering decision rather than a
    * legal conclusion. Anything published from such a rule must say so.
+   *
+   * Any classification may carry one, a settled record included (about half
+   * do). On a settled record it holds the reasoning behind a reading the
+   * authority leaves to the engine, or a scope note: what the record covers
+   * and which record takes over where it stops. It is never the signal that a
+   * figure is approximated; that is `classification` with its
+   * `errorDirection` and its entry in approximationKinds.ts, so a consumer
+   * must not read a non-null rationale as an open approximation. A settled
+   * record's rationale that points at a limit names the record that carries
+   * it. taxRuleRegistry.conformance.test.ts holds settled records to this.
    */
   readonly conventionRationale: string | null
   /**

@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -199,7 +199,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -228,12 +228,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 384,
+          "line": 411,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
-              "line": 398
+              "line": 425
             }
           ]
         }
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -320,12 +320,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 415,
+          "line": 442,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
-              "line": 429
+              "line": 456
             }
           ]
         }
@@ -492,7 +492,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -571,7 +571,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -777,7 +777,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -797,12 +797,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1083,
+          "line": 1110,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 1097
+              "line": 1124
             }
           ]
         }
@@ -1231,7 +1231,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -1331,7 +1331,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -1360,12 +1360,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1018,
+          "line": 1045,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 1026
+              "line": 1053
             }
           ]
         }
@@ -1546,7 +1546,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -1636,7 +1636,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -1665,16 +1665,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 309,
+          "line": 336,
           "note": null,
           "tests": [
             {
               "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
-              "line": 317
+              "line": 344
             },
             {
               "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
-              "line": 342
+              "line": 369
             }
           ]
         }
@@ -2041,7 +2041,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -2264,7 +2264,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -2284,16 +2284,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1221,
+          "line": 1248,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1229
+              "line": 1256
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1256
+              "line": 1283
             }
           ]
         }
@@ -2443,7 +2443,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -2476,34 +2476,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 538,
+          "line": 565,
           "note": null,
           "tests": [
             {
               "title": "adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims",
-              "line": 546
+              "line": 573
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 581,
+          "line": 608,
           "note": "a worker who files after the claimant",
           "tests": [
             {
               "title": "reduces the excess at the claimant’s age when the worker files, and adds it to her own benefit",
-              "line": 589
+              "line": 616
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 622,
+          "line": 649,
           "note": "a divorced spouse",
           "tests": [
             {
               "title": "pays a divorced spouse her own benefit plus the excess reduced when the ex is first 62 throughout a month",
-              "line": 631
+              "line": 658
             }
           ]
         }
@@ -2574,7 +2574,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -2730,7 +2730,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -2750,16 +2750,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 483,
+          "line": 510,
           "note": null,
           "tests": [
             {
               "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-              "line": 490
+              "line": 517
             },
             {
               "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-              "line": 513
+              "line": 540
             }
           ]
         }
@@ -2823,7 +2823,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3098,7 +3098,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3131,12 +3131,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 273,
+          "line": 300,
           "note": null,
           "tests": [
             {
               "title": "uses the retirement/survivor maximum for an SSDI worker and spouse",
-              "line": 281
+              "line": 308
             }
           ]
         }
@@ -3177,7 +3177,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3197,12 +3197,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1035,
+          "line": 1062,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 1044
+              "line": 1071
             }
           ]
         }
@@ -3251,7 +3251,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3271,12 +3271,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 831,
+          "line": 858,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 840
+              "line": 867
             }
           ]
         }
@@ -3330,7 +3330,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3605,12 +3605,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1200,
+          "line": 1227,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1208
+              "line": 1235
             }
           ]
         }
@@ -3868,7 +3868,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -3888,12 +3888,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 236,
+          "line": 263,
           "note": null,
           "tests": [
             {
               "title": "pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge",
-              "line": 244
+              "line": 271
             }
           ]
         }
@@ -3943,7 +3943,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },
@@ -4051,7 +4051,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 122
+              "line": 131
             }
           ]
         },

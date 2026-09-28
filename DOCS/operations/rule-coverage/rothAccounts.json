@@ -1066,7 +1066,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record covers Roth IRAs. The engine applies the same order to withdrawals from a designated Roth account in an employer plan, where the law instead splits a nonqualified distribution pro rata between contributions and earnings, treating the account as a separate contract; that difference is stated as a limit on the qualified distribution record and is not settled here.",
+      "conventionRationale": "This record covers Roth IRAs. The engine applies the same order to withdrawals from a designated Roth account in an employer plan, where the law instead splits a nonqualified distribution pro rata between contributions and earnings, treating the account as a separate contract; that difference is stated as a limit on the qualified distribution record (irc-408A-d-2-roth-qualified-distribution) and is not settled here.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
