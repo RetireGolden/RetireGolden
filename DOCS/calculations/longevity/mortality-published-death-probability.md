@@ -56,4 +56,4 @@ feeds: `longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-c
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, D-LIFE-TABLE-2023 derivation (sections 2, 4 and 6 item 2; the table-end figures in exact rational arithmetic from the printed columns); independently checked (F4: the table-end figures reproduced; F6 item 2). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, D-LIFE-TABLE-2023 derivation (sections 2, 4 and 6 item 2; the table-end figures in exact rational arithmetic from the printed columns); independently checked (F4: the table-end figures reproduced; F6 item 2) (both in RetireGolden-Docs, `calculations/bidirectional-validation-plan-2026-09-13/evidence/life-table-2023-derivation.md` and `calculations/bidirectional-validation-plan-2026-09-13/evidence/life-table-2023-check.md`, at commit `75e1cf87`). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.

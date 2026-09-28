@@ -182,7 +182,10 @@ export interface KnownLifeTableEdition {
  * The editions a stored figure can name, a closed set: the 2022 period table
  * of the 2025 Trustees Report, which the engine carried until 2026-09-27
  * (its page, `table4c6_2022_TR2025.html`, was read live that day by the
- * D-LIFE-TABLE-2023 derivation, its check and its review), and the table the
+ * D-LIFE-TABLE-2023 derivation, its check and its review, all three in
+ * RetireGolden-Docs at calculations/bidirectional-validation-plan-2026-09-13/
+ * evidence/life-table-2023-{derivation,check,review}.md, commit 75e1cf87),
+ * and the table the
  * engine carries now. A yearly refresh adds the outgoing edition with its page.
  */
 export const KNOWN_LIFE_TABLE_EDITIONS: readonly KnownLifeTableEdition[] = Object.freeze([

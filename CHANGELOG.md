@@ -6,7 +6,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 - **Changed: the life table is SSA's 2023 period table, read as published, and a sex
   that is not stated is the average of the male and female chances (displayed numbers
-  change)** (decision D-LIFE-TABLE-2023; derived and independently checked). The engine
+  change)** (decision D-LIFE-TABLE-2023; derived, independently checked and the
+  implementation independently reviewed, RetireGolden-Docs
+  `evidence/life-table-2023-{derivation,check,review}.md` at commit `75e1cf87`). The engine
   carried the life expectancy column of SSA's 2022 period table (2025 Trustees Report)
   and rebuilt each year's death probability from it by the half-year identity. It now
   carries SSA's Table 4C6 for 2023, as used in the 2026 Trustees Report: the probability
