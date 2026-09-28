@@ -3,9 +3,15 @@
  * through `import.meta.glob`, for vitest and the dev server, where nothing
  * injects `__RG_HOW_TESTED__`. `import.meta.glob` takes only literals, so the
  * patterns are repeated here; ./howTestedSuites.test.ts fails if they drift
- * from HOW_TESTED_GLOBS. A production build never imports this module
- * (HowTestedPage reaches it only under `import.meta.env.DEV`), so the ~960
- * test-file paths it names stay out of the shipped chunk.
+ * from HOW_TESTED_GLOBS.
+ *
+ * This module is in every build's source graph: HowTestedPage imports it
+ * statically. In a production build its only call sits in the
+ * `import.meta.env.DEV` branch, which Vite folds to false, so tree-shaking
+ * drops the call, this module and the ~960 test-file paths it would name. The
+ * backstop is the bundle budget: app/scripts/check-bundle-budget.mjs fails the
+ * build if any chunk in dist names a `*.test.ts(x)` file
+ * (chunksNamingTestFiles), so the paths cannot reach the shipped app unnoticed.
  *
  * Sibling-workspace globs (engine, app harness tests) resolve when this file
  * is built inside the RetireGolden monorepo. In an external consumer of the
