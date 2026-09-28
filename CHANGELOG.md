@@ -25,7 +25,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     "Every claim here is already made", naming who claimed and when, on the In-your-plan
     tab (10 of 125 ranking pairs; the bracket-fill couple was told "claim at 70 / 70 …
     your current choice" under three rankings) and on the Benefits-only tab (which offered
-    "Apply 70 / 70"); the co-optimization's candidates fall from 66 to 46.
+    "Apply 70 / 70"); the co-optimization's candidates fall from 66 to 46. The
+    Benefits-only tab also compares with the plan's claim months: a 67y 6m claim no
+    longer marks the whole-year 67 row current or withholds its Apply (no example claims
+    with months).
   - **The claim-age sweep** (`decisions/claimAgeSweep.ts#sweepClaimAges`, R12): the
     winner's change is signed and measured from the plan as entered, claim months
     included, in dollars of the plan's last year, which the page names. Four
