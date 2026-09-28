@@ -218,6 +218,28 @@ export function isCurrentLifeTableEdition(stored: LifeTableEdition | undefined):
   )
 }
 
+/**
+ * How far the survival curve's own life expectancy is from SSA's printed e(x)
+ * at the questionnaire's ages, 18 to 110: the largest |E(1) - e(x)| for a man
+ * or a woman ('average' is their mean, so its gap is no larger), where E(1) is
+ * the curve's expectancy at hazard power 1, 0.5 + the sum of S(t), on the
+ * published q closed at 119 (montecarlo/survival.ts; record
+ * survival-hazard-from-expectancy-multiplier). It exists because e is printed
+ * to two decimals, SSA's person-years within a year of age need not be one
+ * half, and SSA's table continues past 119. On the 2023 table it is
+ * 0.004961383989225965 years, a man of 46 (0.00496138398922941 in exact
+ * arithmetic). Published beside the table it is a fact about, for the
+ * questionnaire's results card to print; curveExpectancyGap.test.ts
+ * recomputes it from the columns, so a table refresh that moves it fails
+ * until it is restated (PR #759 review 8).
+ */
+export const CURVE_EXPECTANCY_GAP: {
+  readonly maxYears: number
+  readonly age: number
+  readonly sex: 'male' | 'female'
+  readonly ages: readonly [number, number]
+} = Object.freeze({ maxYears: 0.004961383989225965, age: 46, sex: 'male', ages: Object.freeze([18, 110] as const) })
+
 function at(column: readonly number[], age: number): number {
   const i = Math.round(age)
   if (i < 0) return column[0]!
@@ -229,8 +251,8 @@ function at(column: readonly number[], age: number): number {
  * SSA's printed remaining life expectancy e(x) at an age (linear between
  * integer ages for a fractional age); 'average' is the mean of the male and
  * female values. The longevity questionnaire prints it as its baseline. The
- * survival curve's own expectancy differs from it by at most a few thousandths
- * of a year (record survival-hazard-from-expectancy-multiplier).
+ * survival curve's own expectancy differs from it by at most
+ * #CURVE_EXPECTANCY_GAP (record survival-hazard-from-expectancy-multiplier).
  */
 export function baselineRemainingYears(age: number, sex: Sex): number {
   const male = SSA_PERIOD_LIFE_TABLE.male.e

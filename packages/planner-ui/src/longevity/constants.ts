@@ -1,5 +1,10 @@
 import { STORAGE_KEYS } from '../data/localStore'
-import { CURRENT_LIFE_TABLE_EDITION, SSA_PERIOD_LIFE_TABLE, knownLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+import {
+  CURRENT_LIFE_TABLE_EDITION,
+  CURVE_EXPECTANCY_GAP,
+  SSA_PERIOD_LIFE_TABLE,
+  knownLifeTableEdition,
+} from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LifeTableEdition } from '@retiregolden/engine/longevity/types'
 
 /** localStorage key for saved longevity answers + last result (primary / household member A) */
@@ -60,6 +65,16 @@ export function storedLifeTablePhrase(stored: LifeTableEdition | undefined): str
 /** An edition named in running text: "period life table for 2023, as used in the 2026 Trustees Report". */
 export function lifeTableName(edition: LifeTableEdition): string {
   return `period life table for ${edition.periodYear}, as used in the ${edition.trusteesReportYear} Trustees Report`
+}
+
+/**
+ * The engine's published gap between the survival curve's life expectancy and
+ * SSA's printed one (engine/longevity/ssaPeriodLifeTable.ts#CURVE_EXPECTANCY_GAP),
+ * rounded up to the thousandth so "at most" stays true: "0.005" on the 2023
+ * table. Read from the engine, so a table refresh restates it (PR #759 review 8).
+ */
+export function curveExpectancyGapText(maxYears: number = CURVE_EXPECTANCY_GAP.maxYears): string {
+  return (Math.ceil(maxYears * 1000) / 1000).toFixed(3)
 }
 
 /** The SSA period life table the engine carries now (longevity/ssaPeriodLifeTable.ts). */

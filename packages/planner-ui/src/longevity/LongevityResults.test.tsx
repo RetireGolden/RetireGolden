@@ -11,6 +11,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
+import { curveExpectancyGapText } from './constants'
 import { LongevityResults } from './LongevityResults'
 
 let root: Root | null = null
@@ -82,7 +83,8 @@ describe('LongevityResults and the SSA table edition', () => {
     expect(text).toContain('SSA period life table, 2023 (2026 Trustees Report)')
     expect(text).toContain('using 2023 mortality rates')
     expect(el.querySelector('a')!.getAttribute('href')).toBe('https://www.ssa.gov/oact/STATS/table4c6.html')
-    expect(text).toContain('The life expectancy they imply differs from SSA\'s printed figure above by at most 0.005 years.')
+    expect(curveExpectancyGapText()).toBe('0.005')
+    expect(text).toContain(`The life expectancy they imply differs from SSA's printed figure above by at most ${curveExpectancyGapText()} years.`)
     expect(el.querySelector('[data-testid="longevity-older-table"]')).toBeNull()
   })
 

@@ -1,4 +1,4 @@
-import { BASELINE_CITATION, lifeTableCitation } from './constants'
+import { BASELINE_CITATION, curveExpectancyGapText, lifeTableCitation } from './constants'
 import { isCurrentLifeTableEdition, storedLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
 
@@ -72,7 +72,7 @@ export function LongevityResults({ data, onEdit, onClear, resultsHeading }: Long
             <li>
               <strong>Same table elsewhere in the planner:</strong> the percentile planning age and the lifespans
               Monte Carlo draws use this table&apos;s death probabilities. The life expectancy they imply differs from
-              SSA&apos;s printed figure above by at most 0.005 years.
+              SSA&apos;s printed figure above by at most {curveExpectancyGapText()} years.
             </li>
           ) : null}
         </ul>

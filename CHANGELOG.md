@@ -78,7 +78,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     sources and restates a percentile pick with the table edition it was made on.
   - **The questionnaire** prints SSA's 2023 life expectancy (a man of 65: 18.12, was
     17.48; a woman: 20.66, was 20.12), names the edition from the table's source record,
-    and says how far the curve's own life expectancy is from the printed one.
+    and says how far the curve's own life expectancy is from the printed one: at most
+    0.005 years, the engine's published
+    `longevity/ssaPeriodLifeTable#CURVE_EXPECTANCY_GAP` (0.00496 years, a man of 46)
+    rounded up to the thousandth, which a test recomputes from the columns so a table
+    refresh restates it.
   - **Stored figures keep their edition.** A percentile pick and a saved questionnaire
     result record the table edition they were computed on (`tableEdition`); one saved
     before this change has none, was made on the 2022 table, and is labelled so: the
@@ -1698,27 +1702,27 @@ has — rather than the runtime contract a consumer needs on the landing page.
   female: { q, e } }`, SSA's 2023 period table) with `LAST_TABLE_AGE`,
   `CURRENT_LIFE_TABLE_EDITION`, `LIFE_TABLE_EDITION_BEFORE_THE_FIELD`,
   `storedLifeTableEdition`, `isCurrentLifeTableEdition`, `KNOWN_LIFE_TABLE_EDITIONS`,
-  `knownLifeTableEdition` and the types `KnownLifeTableEdition`, `PeriodLifeTable`,
-  `PeriodLifeTableColumns` and `PeriodLifeTableSource`; `baselineRemainingYears` keeps its
-  signature and reads the 2023 life expectancies. `montecarlo/mortality#annualMortality`
-  no longer accepts 'average': it takes the new `TableSex` ('male' | 'female') and throws
-  a `RangeError` for anything else, since 'average' has no single death probability (read
-  `montecarlo/survival#survivalCurve`). `SurvivalCurve` gains
-  `deathProbabilityGivenAlive`. `longevity/types` gains `LifeTableEdition` and the
-  optional `LongevityResult.tableEdition`, and the plan schema's `longevity.percentile`
-  the optional `tableEdition`. planner-ui (published source): `longevity/constants` gains
-  `lifeTableCitation` (over the known editions only), `lifeTableName`,
-  `storedLifeTablePhrase`, `UNRECOGNIZED_LIFE_TABLE_EDITION` and `LifeTableCitation`,
-  `longevity/storage` gains `questionnairePlanningAge`,
-  `planner/assumptionsExport#buildAssumptionsSnapshot` takes an optional third argument,
-  the saved questionnaire results by person slot (`SavedQuestionnaireAge`), and
-  `BASELINE_CITATION` is built from the engine's source record. RetireGolden-Pro and
-  RetireGolden-MCP import none of the renamed or narrowed exports. The one-year death
-  probability lives in the new leaf module `montecarlo/deathProbability`
-  (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`), which `montecarlo/mortality`
-  re-exports, so the mortality and survival modules no longer import each other. A
-  non-finite age (NaN, +Infinity or -Infinity) now throws a `RangeError` in
-  `sampleDeathAge`, `jointLastSurvivorExpectancy` (for either life) and
+  `knownLifeTableEdition`, `CURVE_EXPECTANCY_GAP` and the types `KnownLifeTableEdition`,
+  `PeriodLifeTable`, `PeriodLifeTableColumns` and `PeriodLifeTableSource`;
+  `baselineRemainingYears` keeps its signature and reads the 2023 life expectancies.
+  `montecarlo/mortality#annualMortality` no longer accepts 'average': it takes the new
+  `TableSex` ('male' | 'female') and throws a `RangeError` for anything else, since
+  'average' has no single death probability (read `montecarlo/survival#survivalCurve`).
+  `SurvivalCurve` gains `deathProbabilityGivenAlive`. `longevity/types` gains
+  `LifeTableEdition` and the optional `LongevityResult.tableEdition`, and the plan
+  schema's `longevity.percentile` the optional `tableEdition`. planner-ui (published
+  source): `longevity/constants` gains `lifeTableCitation` (over the known editions only),
+  `lifeTableName`, `storedLifeTablePhrase`, `curveExpectancyGapText`,
+  `UNRECOGNIZED_LIFE_TABLE_EDITION` and `LifeTableCitation`, `longevity/storage` gains
+  `questionnairePlanningAge`, `planner/assumptionsExport#buildAssumptionsSnapshot` takes
+  an optional third argument, the saved questionnaire results by person slot
+  (`SavedQuestionnaireAge`), and `BASELINE_CITATION` is built from the engine's source
+  record. RetireGolden-Pro and RetireGolden-MCP import none of the renamed or narrowed
+  exports. The one-year death probability lives in the new leaf module
+  `montecarlo/deathProbability` (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`), which
+  `montecarlo/mortality` re-exports, so the mortality and survival modules no longer
+  import each other. A non-finite age (NaN, +Infinity or -Infinity) now throws a
+  `RangeError` in `sampleDeathAge`, `jointLastSurvivorExpectancy` (for either life) and
   `hazardForExpectancyMultiplier` (for every multiplier, 1 included), where each returned
   a number: `sampleDeathAge` 119 for NaN or +Infinity and a draw from age 0 for -Infinity;
   `jointLastSurvivorExpectancy` NaN, the other life's expectancy for +Infinity and 120.5

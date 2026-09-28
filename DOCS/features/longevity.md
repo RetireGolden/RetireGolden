@@ -32,7 +32,9 @@ is surfaced inside the planner via the Longevity modal rather than a standalone 
   values). The survival curve behind the percentile planning age, the Monte Carlo lifespans and the Social
   Security expected values reads the published q(x) instead (record `mortality-published-death-probability`),
   so its own life expectancy differs from the printed e by at most 0.005 years at the questionnaire's ages
-  (record `survival-hazard-from-expectancy-multiplier`). The engine closes the table at 119, where SSA prints
+  (record `survival-hazard-from-expectancy-multiplier`; the engine publishes the largest gap as
+  `ssaPeriodLifeTable.ts#CURVE_EXPECTANCY_GAP`, 0.00496 years for a man of 46, which the results card prints
+  rounded up and a test recomputes from the columns). The engine closes the table at 119, where SSA prints
   q = 0.926604.
 - **"Average" sex** is a person whose sex the plan does not state: every survival probability is the mean of
   the male and female ones, as for someone equally likely to be either (the 50/50 mixture of the two
