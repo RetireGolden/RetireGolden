@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 958f225cf668fa684bdbc05fca4240d7a8601474.
+ * Output families imported from the output-family census at commit 087248709efc6fe8f317fe33757997002f5748f4.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -4601,9 +4601,9 @@ const families = {
     "relocation": null
   },
   "social-security-break-even": {
-    "title": "age",
+    "title": "Claiming break-even age",
     "group": "social-security",
-    "meaning": "Age at which cumulative benefits from one claiming strategy overtake another.",
+    "meaning": "Age at which the cumulative own retirement benefit of a later claim age overtakes an earlier one's, with the cumulative benefits by age in the plan's dollars for each year.",
     "unit": "age",
     "basis": "n/a",
     "dimensions": [],
@@ -4612,12 +4612,12 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "claiming break-even age"
+        "selector": "Break-even tab callout \"waiting until L pulls ahead around age X\" and the chart's cumulative benefit tooltips"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven"
     }
   },
   "social-security-bridge-sizing": {
@@ -4687,8 +4687,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings"
     }
   },
   "social-security-credit-estimate": {
@@ -4707,14 +4707,14 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/credits.ts#estimateCredits"
     }
   },
   "social-security-expected-present-value": {
-    "title": "expectedPv",
+    "title": "Benefits-only expected present value",
     "group": "social-security",
-    "meaning": "Present value of expected Social Security benefits after discounting and weighting payments by survival.",
+    "meaning": "Present value in today's dollars of expected Social Security benefits under a claiming strategy, each year priced by the ledger's Social Security rules, weighted by survival and discounted at a real rate.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
@@ -4723,18 +4723,18 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "expected present value of benefits"
+        "selector": "Benefits-only tab ranking \"Expected PV\" column and \"Highest expected value\" callout; paid-in panel \"Expected lifetime benefits from YEAR (PV)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/expectedValue.ts#expectedPvCouple"
     }
   },
   "social-security-fica-return-ratio": {
     "title": "Benefits-to-contributions ratio",
     "group": "social-security",
-    "meaning": "Expected present value of lifetime benefits divided by employee OASDI tax paid in.",
+    "meaning": "The benefits a person is paid, on their own record or a former spouse's when larger (those already received plus the expected present value of the rest), divided by the OASDI tax their career pays (paid in so far and on the projected work the PIA counts), both in today's dollars.",
     "unit": "factor",
     "basis": "n/a",
     "dimensions": [],
@@ -4743,58 +4743,18 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Paid-in table \"Ratio (get back ÷ paid in)\""
+        "selector": "Paid-in table \"Ratio (get back ÷ paid in)\" and \"Benefits already received (YEAR dollars)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/oasdiReturn.ts#benefitsToContributionsRatio"
     }
   },
   "social-security-oasdi-paid-in": {
     "title": "OASDI paid in",
     "group": "social-security",
-    "meaning": "Employee OASDI payroll tax paid over the earnings history used by the Social Security analysis.",
-    "unit": "usd",
-    "basis": "nominal",
-    "dimensions": [],
-    "kind": "ui-native",
-    "engineSource": null,
-    "surfaces": [
-      {
-        "surface": "ss-page",
-        "selector": "Paid-in table \"Paid in (OASDI)\" and \"Employer paid (context)\""
-      }
-    ],
-    "relocation": {
-      "status": "pending",
-      "target": null
-    }
-  },
-  "social-security-pia-annualized": {
-    "title": "PIA annualized",
-    "group": "social-security",
-    "meaning": "A claimant's monthly primary insurance amount times twelve, as the survivor-switching explainer prints it.",
-    "unit": "usd",
-    "basis": "nominal",
-    "dimensions": [],
-    "kind": "ui-transformation",
-    "engineSource": null,
-    "surfaces": [
-      {
-        "surface": "ss-page",
-        "selector": "Survivor switching paragraph \"about $X/yr\""
-      }
-    ],
-    "relocation": {
-      "status": "pending",
-      "target": null
-    }
-  },
-  "social-security-survivor-switch-pv": {
-    "title": "survivorClaimAge",
-    "group": "social-security",
-    "meaning": "Expected present value of a survivor strategy that switches between own and survivor benefits.",
+    "meaning": "Employee (or self-employed) OASDI payroll tax paid over the earnings history, and on the projected work the PIA counts, each year at that year's effective statutory rate and wage base, restated in today's dollars by CPI-U; the employer's share beside each as context.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
@@ -4803,32 +4763,72 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "survivor switching expected PV"
+        "selector": "Paid-in table \"Paid in so far (OASDI, YEAR dollars)\", \"What your projected work will pay (FIRST–LAST, YEAR dollars)\", \"Employer paid so far (context)\" and \"Employer's share of the projected work (context)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn"
     }
   },
-  "social-security-zero-year-replacement-gain": {
-    "title": "Zero-year replacement PIA gain",
+  "social-security-pia-annualized": {
+    "title": "PIA annualized",
     "group": "social-security",
-    "meaning": "Rough monthly PIA gain from replacing one $0 computation year with a year of indexed earnings.",
+    "meaning": "A claimant's monthly primary insurance amount (the full-retirement-age benefit, in the plan's first year) times twelve, as the couple primer prints it.",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-transformation",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "CoupleStrategyPanel couple primer \"full-retirement-age benefit (PIA): $X/yr against $Y/yr\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly"
+    }
+  },
+  "social-security-survivor-switch-pv": {
+    "title": "Survivor switching expected PV",
+    "group": "social-security",
+    "meaning": "Expected present value of a widow(er)'s strategy that takes the survivor benefit and the own benefit at chosen ages and switches between them, with strategies paying the same benefits shown once.",
+    "unit": "usd",
+    "basis": "real",
     "dimensions": [],
     "kind": "ui-native",
     "engineSource": null,
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "SocialSecuritySection PIA explainer \"would add roughly $X/mo\""
+        "selector": "Survivor vs. personal timing table \"Strategy\" and \"Expected PV\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies"
+    }
+  },
+  "social-security-zero-year-replacement-gain": {
+    "title": "Zero-year replacement PIA gain",
+    "group": "social-security",
+    "meaning": "Monthly PIA gain from replacing the latest $0 base year with a year of the sample earnings, recomputed exactly through the benefit formula and given in the dollars of the PIA the step shows.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-native",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "SocialSecuritySection PIA explainer \"Replacing your $0 year in YEAR with about $X of earnings would add $Y/mo\", or, for a year already past, \"Had you earned about $X in YEAR, one of your $0 years, your benefit would be $Y/mo higher in START dollars\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#zeroYearReplacementGain"
     }
   },
   "solved-initial-withdrawal-rate-pct": {

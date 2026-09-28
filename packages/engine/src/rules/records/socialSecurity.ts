@@ -347,11 +347,13 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/socialSecurity/earningsTest.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestWithheldAnnual',
     ],
   },
 
@@ -2568,7 +2570,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The rate is carried in the tax-year parameters and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The parameters and their type are listed instead, which are the files a later reader would change.',
+      'The rate is carried as the 2026 row of socialSecurity/oasdiTaxRates.ts, the SSA table of OASDI tax rates by year, and read by the paid-in figure of the Social Security analysis (socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn), which applies each year\'s effective rate; a year after the table uses this current-law row.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2580,14 +2582,14 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 1990,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-27',
     implementedBy: [
-      'packages/engine/src/params/data/year2026.ts',
-      'packages/engine/src/params/types.ts',
+      'packages/engine/src/socialSecurity/oasdiTaxRates.ts',
+      'packages/engine/src/socialSecurity/analysis/oasdiReturn.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/data/year2026.ts#year2026',
-      'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR',
+      'packages/engine/src/socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

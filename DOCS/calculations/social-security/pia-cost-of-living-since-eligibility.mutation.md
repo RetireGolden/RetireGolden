@@ -1,15 +1,15 @@
 # Mutation receipt: pia-cost-of-living-since-eligibility
 
-Executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2 in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 7aba1b6f..48010980 100644
+index d90a5df9..f9aacc5d 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -297,7 +297,7 @@ export function piaWithCostOfLivingIncreases(
+@@ -318,7 +318,7 @@ export function piaWithCostOfLivingIncreases(
  ): PiaWithCostOfLivingIncreases {
    let pia = piaMonthly
    const standInYears: number[] = []
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Executed for the new record (decision D-SS-LAW-2): the mutation reverts the fix, applying no cost-of-living increase. The baseline is green (piaFromEarnings.costOfLiving.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for B2-P1 slice 4 because lines moved above its hunk (the survival curve, the PIA resolver and the zero-year gain, or simulatePlan's COLA helpers) or its test file gained cases; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.costOfLiving.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.costOfLiving.evidence.test.ts (4 tests | 3 failed) 42ms
+ ❯ src/socialSecurity/piaFromEarnings.costOfLiving.evidence.test.ts (4 tests | 3 failed) 44ms
    ❯ pia-cost-of-living-since-eligibility — An earnings-history PIA raised by the cost-of-living increases since eligibility (4)
      × cases A and B: the published chain, floored to the dime each year (3,364.40 and 3,379.20) 3ms
-     × case A: the ledger pays the start-year PIA (40,372.80 in 2027, not 34,156.80) 37ms
+     × case A: the ledger pays the start-year PIA (40,372.80 in 2027, not 34,156.80) 38ms
      × case C: unannounced years use the plan's COLA assumption, with a warning (42,002.40 in 2028) 0ms
 
  Test Files  1 failed (1)

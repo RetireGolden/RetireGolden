@@ -113,9 +113,32 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'social-security',
     label: 'Social Security COLA & wage base',
     figures:
-      '2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,690/mo (non-blind); OASDI payroll tax 6.2% (employee).',
+      '2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,690/mo (non-blind).',
     publisher: 'SSA',
     url: 'https://www.ssa.gov/news/en/cola/factsheets/2026.html',
+  },
+  {
+    id: 'social-security-tax-rates',
+    label: 'Social Security tax rates by year',
+    figures:
+      'OASDI payroll tax 6.2% (employee) and 12.4% (self-employed) in 2026, and each year\'s effective rate from 1937, used for what you paid in.',
+    publisher: 'SSA Office of the Chief Actuary',
+    url: 'https://www.ssa.gov/oact/progdata/oasdiRates.html',
+  },
+  {
+    id: 'social-security-credits',
+    label: 'Social Security credits (quarters of coverage)',
+    figures: 'One credit per $1,890 of covered earnings in 2026, at most four a year; each year\'s amount from 1978.',
+    publisher: 'SSA Office of the Chief Actuary',
+    url: 'https://www.ssa.gov/oact/cola/QC.html',
+  },
+  {
+    id: 'cpi-u',
+    label: 'Consumer prices (CPI-U annual averages)',
+    figures:
+      'CPI-U annual averages 1937–2025 (321.943 in 2025), used to restate Social Security taxes paid in today\'s dollars.',
+    publisher: 'BLS',
+    url: 'https://data.bls.gov/timeseries/CUUR0000SA0',
   },
   {
     id: 'federal-poverty-line',

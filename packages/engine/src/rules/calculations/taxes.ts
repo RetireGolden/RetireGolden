@@ -255,19 +255,19 @@ export const taxesRecords = {
     kind: 'data',
     outputs: [],
     feeds: ['tax-total-annual'],
-    statement: 'params/provenance.ts#PARAMETER_PROVENANCE is a human-maintained ordered catalog of 16 stable assumption-group IDs, labels, key-figure summaries, publishers, and URLs surfaced to users; it does not itself calculate tax or benefit amounts.',
+    statement: 'params/provenance.ts#PARAMETER_PROVENANCE is a human-maintained ordered catalog of 19 stable assumption-group IDs, labels, key-figure summaries, publishers, and URLs surfaced to users; it does not itself calculate tax or benefit amounts.',
     formula: null,
     justification: {
       kind: 'dataset',
       source: {
-        citation: 'RetireGolden parameter provenance catalog; DOCS/calculations/taxes/parameter-provenance-catalog.md, extracted 2026-09-14 and revised 2026-09-27 (one ACA entry per coverage year)',
+        citation: 'RetireGolden parameter provenance catalog; DOCS/calculations/taxes/parameter-provenance-catalog.md, extracted 2026-09-14 and revised 2026-09-27 (one ACA entry per coverage year; the Social Security tax rate, credit and CPI-U sources)',
         url: 'https://github.com/RetireGolden/RetireGolden/blob/main/packages/engine/src/params/provenance.ts',
         asOf: '2026-09-27',
         retrievedOn: '2026-09-17',
         rights: 'Project-owned catalog under AGPL-3.0; factual links and figures attributed to per-entry publishers. Linked reuse terms not audited.',
       },
-      transformation: 'Human summarization of linked authorities; digest is SHA-256 of the worksheet\'s ordered 16-ID array encoded as compact UTF-8 JSON. Extraction date is not a shared authority retrieval date.',
-      digest: 'sha256:f44fdd43fbe4918cb60c01906931194eac08c3e70cb4612649eacdc7888b1b1c',
+      transformation: 'Human summarization of linked authorities; digest is SHA-256 of the worksheet\'s ordered 19-ID array encoded as compact UTF-8 JSON. Extraction date is not a shared authority retrieval date.',
+      digest: 'sha256:4d55f6856d61b9ebb99fe037dfaec4d7dda79fb171aabe4c8194176eda7e2526',
     },
     limits: [
       'No direct census family: actions/annualQcdTaxCharacterPostPass.ts reads the rmd-qcd entry as source provenance for QCD tax-character evidence feeding annual tax. This is a metadata dependency, not a numerical tax formula. The worksheet checks ordered IDs, count and uniqueness, not correctness or freshness of the summaries. Per-entry authorities need independent verification on refresh.',

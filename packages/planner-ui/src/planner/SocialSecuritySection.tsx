@@ -9,17 +9,19 @@ import { useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router'
 
 import type { FormerSpouse, IncomeStream, Person } from '@retiregolden/engine/model/plan'
-import {
-  bendTierForAime,
-  CREDITS_FOR_ELIGIBILITY,
-  estimateCredits,
-  replaceZeroYearGain,
-  summarizeComputation,
-} from '../socialSecurity/explain'
+import { CREDITS_FOR_ELIGIBILITY, estimateCredits } from '@retiregolden/engine/socialSecurity/analysis/credits'
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { ssdiSchedule } from '@retiregolden/engine/socialSecurity/disability'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
-import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
+import {
+  bendTierForAime,
+  streamPiaFromEarningsInput,
+  zeroYearReplacementGain,
+  zeroYearSampleEarnings,
+  type PiaAsOf,
+  type PiaFromEarningsInput,
+  type PiaFromEarningsResult,
+} from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { LATEST_PUBLISHED_COLA_YEAR } from '@retiregolden/engine/socialSecurity/ssaWageData'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
 import {
@@ -66,11 +68,17 @@ function yearSpan(first: number, last: number): string {
   return `${first} through ${last}`
 }
 
-/** Teaching panel: how the earnings history becomes a PIA (AIME, zero years, bend tier). */
-function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResult; sampleEarnings: number | null }) {
-  const s = summarizeComputation(detail)
+/**
+ * Teaching panel: how the earnings history becomes a PIA (AIME, zero years, bend
+ * tier). The counts and the zero-year gain are the engine's: the gain re-runs
+ * the benefit formula with the latest $0 year given the sample earnings, in the
+ * dollars of the PIA the card shows (with the cost-of-living increases since
+ * eligibility). A replaced year already past is said as one.
+ */
+function AimeExplainer({ detail, input, asOf }: { detail: PiaFromEarningsResult; input: PiaFromEarningsInput; asOf: PiaAsOf }) {
   const tier = bendTierForAime(detail.aime, detail.eligibilityYear)
-  const gain = sampleEarnings && sampleEarnings > 0 ? replaceZeroYearGain(detail, sampleEarnings) : null
+  const sample = zeroYearSampleEarnings(input)
+  const gain = sample !== null ? zeroYearReplacementGain(input, sample, asOf) : null
   const tierAside =
     tier.label === '90%' ? ', the most valuable tier' : tier.label === '15%' ? ', the least valuable tier, so extra earnings add little' : ''
   return (
@@ -78,12 +86,12 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
       <summary>How this benefit is built: AIME &amp; bend points</summary>
       <ul>
         <li>
-          Averages your top <strong>{s.computationYearCount}</strong> earning years (wage-indexed) into an AIME of{' '}
+          Averages your top <strong>{detail.computationYearCount}</strong> earning years (wage-indexed) into an AIME of{' '}
           <strong>{fmtMoney(detail.aime)}/mo</strong>.
         </li>
-        {s.zeroYearsInAime > 0 ? (
+        {detail.zeroYearsInAime > 0 ? (
           <li>
-            <strong>{s.zeroYearsInAime}</strong> of those {s.computationYearCount} years are $0. Each one pulls the
+            <strong>{detail.zeroYearsInAime}</strong> of those {detail.computationYearCount} years are $0. Each one pulls the
             average down.
           </li>
         ) : (
@@ -92,10 +100,15 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
         <li>
           Your next dollar of AIME is credited at the <strong>{tier.label}</strong> bend-point rate{tierAside}.
         </li>
-        {gain !== null && s.zeroYearsInAime > 0 ? (
+        {gain !== null && gain.year < asOf.startYear ? (
           <li>
-            Replacing one $0 year with about {fmtMoney(sampleEarnings!)} of earnings would add roughly{' '}
-            <strong>{fmtMoney(gain)}/mo</strong>: a rough estimate at the current bend rate.
+            Had you earned about {fmtMoney(gain.amount)} in {gain.year}, one of your $0 years, your benefit would be{' '}
+            <strong>{fmtMoney(gain.startYearGainMonthly)}/mo</strong> higher in {asOf.startYear} dollars.
+          </li>
+        ) : gain !== null ? (
+          <li>
+            Replacing your $0 year in {gain.year} with about {fmtMoney(gain.amount)} of earnings would add{' '}
+            <strong>{fmtMoney(gain.startYearGainMonthly)}/mo</strong>.
           </li>
         ) : null}
       </ul>
@@ -131,7 +144,7 @@ function EligibilityNote({
         <div className="callout callout--warn">
           {est.estimated ? 'Estimated' : 'Entered'} <strong>{est.credits}</strong> of the {CREDITS_FOR_ELIGIBILITY}{' '}
           credits needed, not yet eligible for a personal retirement benefit. Add covered-work years above or set the
-          credit count if the estimate is off (it assumes 4 credits per substantial year).
+          credit count if the estimate is off (it counts up to 4 credits a year at each year's SSA earnings amount).
         </div>
       ) : null}
     </div>
@@ -412,6 +425,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
   const earnings = stream.earnings ?? []
   const mostRecentEarnings =
     earnings.length > 0 ? earnings.reduce((a, b) => (b.year >= a.year ? b : a)).amount : null
+  const earningsInput = streamPiaFromEarningsInput(stream, person)
   const projYears = (resolved.detail?.indexedYears ?? []).filter((y2) => y2.projected)
   const projectedYears = projYears.length
   const projectedRange = projectedYears > 0 ? `${projYears[0]!.year}–${projYears[projectedYears - 1]!.year}` : ''
@@ -690,9 +704,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             </p>
           ) : null}
 
-          {resolved.detail ? (
-            <AimeExplainer detail={resolved.detail} sampleEarnings={projectedAmount ?? mostRecentEarnings} />
-          ) : null}
+          {resolved.detail && earningsInput ? <AimeExplainer detail={resolved.detail} input={earningsInput} asOf={piaAsOf} /> : null}
 
           <EligibilityNote
             stream={stream}

@@ -1,11 +1,11 @@
 # Mutation receipt: survival-hazard-from-expectancy-multiplier
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -109,7 +109,7 @@ export function jointSurvivalPercentileAge(
+@@ -188,7 +188,7 @@ export function jointSurvivalPercentileAge(
  function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
    const from = Math.floor(Math.max(age, 0))
    let s = 1
@@ -26,18 +26,18 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (12 tests | 2 failed) 8ms
+ ❯ src/montecarlo/survival.evidence.test.ts (15 tests | 2 failed) 63ms
    ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier, solved by bisection (3)
-     × the identity multiplier m = 1 solves to hazard power 1 within 1e-6 4ms
+     × the identity multiplier m = 1 solves to hazard power 1 within 1e-6 3ms
      × the adjusted expectancy at the solved power reproduces the 17.48 baseline 1ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 10 passed (12)
+      Tests  2 failed | 13 passed (15)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -51,13 +51,13 @@ AssertionError: hazardPower 0.9363404188535241 is not within {"abs":0.000001} of
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:174:9
-    172|         withinTolerance(hazard, expected, example.tolerance),
-    173|         `hazardPower ${hazard} is not within ${JSON.stringify(example.…
-    174|       ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:229:9
+    227|         withinTolerance(hazard, expected, example.tolerance),
+    228|         `hazardPower ${hazard} is not within ${JSON.stringify(example.…
+    229|       ).toBe(true)
        |         ^
-    175|     })
-    176|
+    230|     })
+    231|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -70,13 +70,13 @@ AssertionError: adjustedExpectancyYears 17.98000000001623 is not within {"abs":0
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:194:9
-    192|         withinTolerance(expectancy, expected, example.tolerance),
-    193|         `adjustedExpectancyYears ${expectancy} is not within ${JSON.st…
-    194|       ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:249:9
+    247|         withinTolerance(expectancy, expected, example.tolerance),
+    248|         `adjustedExpectancyYears ${expectancy} is not within ${JSON.st…
+    249|       ).toBe(true)
        |         ^
-    195|     })
-    196|   },
+    250|     })
+    251|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

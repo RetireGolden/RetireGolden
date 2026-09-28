@@ -85,6 +85,237 @@
       }
     },
     {
+      "id": "aime-zero-year-count",
+      "title": "Zero years in the averaged earnings",
+      "kind": "formula",
+      "outputs": [
+        "social-security-computation-summary-counts"
+      ],
+      "feeds": [],
+      "purpose": "Count how many of the years averaged into a worker's AIME have no earnings.",
+      "statement": "socialSecurity/piaFromEarnings.ts#computePiaFromEarnings publishes zeroYearsInAime, the number of entries of yearsUsedInAime, the indexed amounts it averaged into the AIME, that are 0, beside computationYearCount, the number of those years. Units: years. Rounding: none; integers.",
+      "formula": {
+        "expression": "zeroYearsInAime = count of v in yearsUsedInAime with v = 0",
+        "variables": [
+          {
+            "symbol": "yearsUsedInAime",
+            "meaning": "Indexed earnings of the benefit computation years, the largest after the dropout",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "once per earnings history",
+        "rounding": "none"
+      },
+      "limits": [
+        "Counts the years this computation averaged, so it follows its computation-year window: always 35 years for a worker whose window has 40, the base years from 22 to 61 (usc-42-415-b-2-b-ii-iii-initial-computation-base-window)"
+      ],
+      "worksheet": "DOCS/calculations/social-security/aime-zero-year-count.md",
+      "mutation": "DOCS/calculations/social-security/aime-zero-year-count.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "benefits-to-contributions-ratio",
+      "title": "Benefits received per dollar of Social Security tax paid",
+      "kind": "formula",
+      "outputs": [
+        "social-security-fica-return-ratio"
+      ],
+      "feeds": [],
+      "purpose": "Compare the benefits a person is paid, on their own record or a former spouse's when larger, with the Social Security tax their career pays, both in today's dollars.",
+      "statement": "socialSecurity/analysis/oasdiReturn.ts#oasdiReturnForPerson takes, for a person with an earnings history and a PIA the projection can pay, the expected present value of their benefits from the start year (socialSecurity/analysis/expectedValue.ts#expectedPvSingle at the stream's claim age with its months and the former-spouse records, the household single or not), the benefits already received from the claim year to the year before the start at the start-year amount (#singleBenefitInYear for each of those years, with no discount), and the OASDI tax in today's dollars (#oasdiPaidIn): paid in so far, and on the projected work, the years socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly's computation fills from the earnings projection, so the tax and the PIA cover the same career; #benefitsToContributionsRatio divides the sum of the first two by the sum of the last two, and gives no ratio when nothing is paid in. A benefit the ledger pays as a disability benefit from its onset (#disabilityReplacesClaimAge) gets no comparison, and the page says why. Units: a pure number. Rounding: none; the page prints two decimals and \"x\".",
+      "formula": {
+        "expression": "ratio = (getBackPv + receivedBeforeStart) / (paidInToday + projectedToday), none when the sum <= 0",
+        "variables": [
+          {
+            "symbol": "getBackPv",
+            "meaning": "Expected present value of the benefits from the start year",
+            "unit": "usd",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "receivedBeforeStart",
+            "meaning": "Benefits from the claim year to the year before the start, at the start-year amount",
+            "unit": "usd",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "paidInToday",
+            "meaning": "OASDI tax paid so far, in start-year dollars",
+            "unit": "usd",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "projectedToday",
+            "meaning": "OASDI tax on the projected work the PIA counts, in start-year dollars",
+            "unit": "usd",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "once, at the start year",
+        "rounding": "none"
+      },
+      "limits": [
+        "The tax paid is restated for prices only, with no interest, while the future benefits are discounted at the chosen real rate",
+        "The benefits the person is paid on their own record, or on a former spouse's when larger (a divorced spouse's only in a single household); the insurance value of disability and survivor benefits, benefits paid to others on the record and a current spouse's benefit are left out",
+        "No earnings test: benefits the ledger would withhold while the person works are counted as paid",
+        "A benefit paid as a disability benefit from its onset is not compared, since the claim age the get-back is priced at would not start it",
+        "Benefits already received are counted at the start-year amount, a constant real amount, not as they were paid",
+        "The employer's share is shown beside it as context, not counted in the tax paid"
+      ],
+      "worksheet": "DOCS/calculations/social-security/benefits-to-contributions-ratio.md",
+      "mutation": "DOCS/calculations/social-security/benefits-to-contributions-ratio.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/oasdiReturn.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "covered-work-credit-estimate",
+      "title": "Covered-work credit estimate",
+      "kind": "formula",
+      "outputs": [
+        "social-security-credit-estimate"
+      ],
+      "feeds": [],
+      "purpose": "Estimate the Social Security credits an earnings history earns, against the 40 a retirement benefit generally needs.",
+      "statement": "socialSecurity/analysis/credits.ts#estimateCredits returns the entered credit count when there is one; otherwise it adds the history's rows by calendar year and sums #creditsForYear: from 1978, min(4, floor(earnings / that year's quarter-of-coverage amount)) with SSA's amounts (socialSecurity/ssaWageData.ts#QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR, $250 in 1978 to $1,890 in 2026, the latest for a later year); before 1978, min(4, floor(earnings / 50)); nothing before 1937; capped at 40 in total. Eligible means at least 40. Units: credits. Rounding: floor for each year.",
+      "formula": {
+        "expression": "credits = min(40, sum_y min(4, floor(E(y) / QC(y)))), QC(y) = SSA amount from 1978, 50 before, no credit before 1937",
+        "variables": [
+          {
+            "symbol": "E(y)",
+            "meaning": "Covered earnings in year y, the rows for the year added",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "QC(y)",
+            "meaning": "Earnings that earn one quarter of coverage in year y",
+            "unit": "usd",
+            "domain": "50 before 1978; 250 to 1,890 from 1978"
+          }
+        ],
+        "timing": "once per earnings history",
+        "rounding": "floor for each year"
+      },
+      "limits": [
+        "Years before 1978 were credited by calendar quarter with $50 of wages in the quarter, which an annual amount cannot show; the estimate counts the most such a year could earn, one per $50 up to four",
+        "The $100 self-employment rule before 1978 is not applied separately",
+        "Not an insured-status determination: no quarter assignment, and no disability or survivor rules; the warning invites the user to enter the count",
+        "A year after 2026 uses the 2026 amount until SSA publishes its own"
+      ],
+      "worksheet": "DOCS/calculations/social-security/covered-work-credit-estimate.md",
+      "mutation": "DOCS/calculations/social-security/covered-work-credit-estimate.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/credits.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/credits.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "cpi-u-annual-average",
+      "title": "Consumer Price Index annual averages",
+      "kind": "data",
+      "outputs": [],
+      "feeds": [
+        "social-security-oasdi-paid-in"
+      ],
+      "purpose": "The yearly consumer price level used to restate past Social Security taxes in today's dollars.",
+      "statement": "socialSecurity/cpiU.ts#CPI_U_ANNUAL_AVERAGE carries the annual average of the Consumer Price Index for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (BLS series CUUR0000SA0, 1982-84 = 100), for each year from 1937 through 2025, #CPI_U_LATEST_YEAR. Units: index points. Rounding: none; one decimal before 2007 and three after, as published.",
+      "formula": null,
+      "limits": [
+        "October 2025 was not collected; the 2025 average is the one published",
+        "A year after 2025 has no average, and the paid-in figure uses the plan's inflation from 2025 on"
+      ],
+      "worksheet": "DOCS/calculations/social-security/cpi-u-annual-average.md",
+      "mutation": "DOCS/calculations/social-security/cpi-u-annual-average.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/cpiU.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/cpiU.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "delayed-retirement-credit-factor",
       "title": "Delayed retirement credit factor",
       "kind": "formula",
@@ -156,7 +387,8 @@
       "kind": "composition",
       "outputs": [],
       "feeds": [
-        "social-security-benefit-annual"
+        "social-security-benefit-annual",
+        "social-security-expected-present-value"
       ],
       "purpose": "Pay a person entitled to both an own benefit and a spouse or divorced-spouse benefit the own benefit plus the reduced excess of half the worker's PIA over the own PIA.",
       "statement": "socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly returns max(own, min(own, ownPia) + max(0, spouseBase - ownPia) x spouseFactor), where own is the claimant's own benefit as paid, ownPia the claimant's PIA and spouseBase one half of the worker's PIA: the own benefit plus the excess reduced by the spouse factor (42 U.S.C. 402(q)(3)(B), 402(k)(3)(A); POMS RS 00615.250), and for an own benefit with delayed credits the larger of that benefit and the combined amount computed without them (POMS RS 00615.694). The spouse factor is the spouse reduction, 25/36 of 1% for each of the first 36 months before full retirement age and 5/12 of 1% beyond, at the claimant's age in the first month of the spouse benefit (402(q)(6)(A)(ii)): #spouseEntitlementAgeMonths takes the later of the claimant's own configured claim and the claimant's age in the month the worker's benefit starts, the worker's configured claim month for a current spouse (the month the claim age is attained, the plan's claim-age convention) or, for a divorced spouse, the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a: \"the NH must be 62 throughout the first month of entitlement but need not have filed a claim for benefits\"), since with deemed filing (402(r)) the claimant is taken to apply for the spouse benefit as soon as it is available. projection/internal/annualSocialSecurity.ts#annualSocialSecurity uses it for the lower earner of a couple, with half the worker's PIA first held to the room his family maximum leaves above his PIA (familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum), socialSecurity/maritalBenefits.ts#maritalBenefitFor for a divorced spouse, and the claim-milestone insight for its prior-year reconstruction. Units: nominal USD per month, in today's dollars before COLA and haircut. Rounding: none.",
@@ -415,6 +647,133 @@
       }
     },
     {
+      "id": "oasdi-paid-in-today-dollars",
+      "title": "Social Security tax paid in, in today's dollars",
+      "kind": "formula",
+      "outputs": [
+        "social-security-oasdi-paid-in"
+      ],
+      "feeds": [
+        "social-security-fica-return-ratio"
+      ],
+      "purpose": "Sum the Social Security tax paid over an earnings history, and the tax the projected work the benefit estimate counts will pay, at each year's rate and wage base, restated in today's dollars by consumer prices.",
+      "statement": "socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn adds the history's rows by calendar year, and for each year from 1937 to the start year taxes the year's earnings capped at its contribution and benefit base (socialSecurity/ssaWageData.ts#WAGE_BASE_BY_YEAR, the latest base for a later year) at the year's effective rate (socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR: the employee's, or the self-employed rate; the 2026 row for a later year), and restates the tax by I(y) = CPI(L)/CPI(y) x (1 + i)^(start year - L) for a year up to L, the latest year with a published CPI-U annual average (socialSecurity/cpiU.ts), and (1 + i)^(start year - y) after it, with i the plan's inflation. An entered year through the start year is paid in so far; the projected work, the years the PIA computation's earnings projection fills (passed by #oasdiReturnForPerson from socialSecurity/piaFromEarnings.ts#computePiaFromEarnings) and any entered year after the start, is taxed the same way and restated from the start year at the latest, a factor of 1 after it, since the PIA computation counts a later year at its face amount on the latest base and wage index. It publishes the person's tax and the employer's on each part, the one paid so far also as paid, and names the years it did not count: before 1937, or self-employed before 1951. Units: start-year dollars and dollars as paid. Rounding: none.",
+      "formula": {
+        "expression": "paidInToday = sum over entered y <= start of min(E(y), base(y)) x rate(y) / 100 x I(y); projectedToday = sum over projected y of min(E(y), base(y)) x rate(y) / 100 x I(min(y, start)); I(y) = CPI(L)/CPI(y) x (1 + i)^(start - L) for y <= L, else (1 + i)^(start - y)",
+        "variables": [
+          {
+            "symbol": "E(y)",
+            "meaning": "Covered earnings in year y, the rows for the year added",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "base(y)",
+            "meaning": "Contribution and benefit base for year y",
+            "unit": "usd/year",
+            "domain": "positive from 1937"
+          },
+          {
+            "symbol": "rate(y)",
+            "meaning": "Effective OASDI rate for year y: the employee's, or the self-employed rate",
+            "unit": "percent",
+            "domain": "1 to 12.4"
+          },
+          {
+            "symbol": "CPI(y), L",
+            "meaning": "CPI-U annual average for year y; the latest year published",
+            "unit": "index, year",
+            "domain": "positive; 2025"
+          },
+          {
+            "symbol": "i",
+            "meaning": "The plan's yearly inflation",
+            "unit": "rate/year",
+            "domain": "above -1"
+          }
+        ],
+        "timing": "calendar years from 1937 to the start year, and the projected years after it",
+        "rounding": "none; the page prints whole dollars"
+      },
+      "limits": [
+        "Restated for prices only: no interest is credited on the tax paid, while the benefits it is compared with are discounted at a real rate",
+        "The self-employed credits of 2.7, 2.3 and 2.0 percent in 1984, 1985 and 1986 to 1989 were allowed against the combined OASDI and HI tax and are not allocated to OASDI by the source, so the self-employed figure for those years is high by at most those credits",
+        "The employer exemption of 2010 for certain new hires is employer-specific and not modeled",
+        "Years after the latest published CPI-U annual average, and the step from it to the start year, use the plan's inflation",
+        "The history is taken as taxed Social Security earnings: for a self-employed year, net earnings from self-employment, with no separate self-employment deduction",
+        "The projected work is the PIA computation's: its assumed earnings at their face amount on the latest published base and today's rates, and only the years its window counts, through the year the person turns 61; with an entered PIA there is no projected work"
+      ],
+      "worksheet": "DOCS/calculations/social-security/oasdi-paid-in-today-dollars.md",
+      "mutation": "DOCS/calculations/social-security/oasdi-paid-in-today-dollars.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/oasdiReturn.ts",
+        "packages/engine/src/socialSecurity/oasdiTaxRates.ts",
+        "packages/engine/src/socialSecurity/cpiU.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/oasdiReturn.paidIn.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "oasdi-tax-rate-history",
+      "title": "Social Security tax rates by year",
+      "kind": "data",
+      "outputs": [],
+      "feeds": [
+        "social-security-oasdi-paid-in"
+      ],
+      "purpose": "The Social Security tax rate each payer actually paid in each year since 1937.",
+      "statement": "socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR carries, for every year from 1937 through 2026, the employee's, the employer's and the self-employed OASDI tax rate in percent of taxable earnings, from the SSA table of tax rates: the trust-fund rate, except the employee's 5.4 percent in 1984 and 4.2 percent in 2011 and 2012 and the self-employed 10.4 percent in 2011 and 2012, which the table's footnotes give as the effective rates; there is no self-employed rate before 1951. Units: percent. Rounding: none; the published figures.",
+      "formula": null,
+      "limits": [
+        "The self-employed credits of 1984 to 1989, which the source gives against the combined OASDI and HI tax, are not applied",
+        "A year after 2026 uses the 2026 rates, current law, until the table is extended"
+      ],
+      "worksheet": "DOCS/calculations/social-security/oasdi-tax-rate-history.md",
+      "mutation": "DOCS/calculations/social-security/oasdi-tax-rate-history.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/oasdiTaxRates.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/oasdiTaxRates.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "pia-cost-of-living-since-eligibility",
       "title": "An earnings-history PIA raised by the cost-of-living increases since eligibility",
       "kind": "formula",
@@ -452,7 +811,7 @@
       "limits": [
         "An entered PIA is taken to be in the first year's dollars already, as a PIA shown on a current SSA statement is",
         "A year between the last announced increase and the projection's first year uses the plan's COLA assumption, a stand-in the projection warns about; the ledger's COLA from the first year on is social-security-cola-factor",
-        "The projection, the claim-milestone insight and planner-ui's resolvePia (the Social Security step's computed PIA and the analysis page's models) read the start-year PIA; the planner's AIME explainer shows the eligibility-year computation",
+        "The projection, the claim-milestone insight and the planner's Social Security pages read the start-year PIA through socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly (social-security-pia-resolution); the planner's AIME explainer shows the eligibility-year computation",
         "COLA_PCT_BY_YEAR ends with the increase effective December 2025. From 2027-01-01 the planner's first year is 2027, so every earnings-history PIA past eligibility takes the plan's COLA assumption for the December 2026 increase, with the projection's warning, until SSA's 2026 increase, announced in October 2026, is added to the table with the yearly parameter refresh",
         "The PIA is not recomputed for later earnings (usc-42-415-f-2-post-entitlement-pia-recomputation)"
       ],
@@ -560,7 +919,7 @@
       ],
       "feeds": [],
       "purpose": "The Social Security cash the household is paid in one projection year, after the earnings test.",
-      "statement": "YearResult.incomes.socialSecurity is the sum over living people of that person's benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal (the claimant's own monthly PLUS the reduced excess of half the higher PIA over the claimant's own PIA, the dual-entitlement-composition record; for a current spouse half the higher PIA is first held to the family maximum less that PIA) or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.",
+      "statement": "YearResult.incomes.socialSecurity is the sum over living people of that person's benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal (the claimant's own monthly PLUS the reduced excess of half the higher PIA over the claimant's own PIA, the dual-entitlement-composition record; for a current spouse half the higher PIA is first held to the family maximum less that PIA) or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test (socialSecurity/earningsTest.ts#earningsTestWithheldAnnual, which annualSocialSecurity.ts calls) then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.",
       "formula": {
         "expression": "benefit = Σ_people max(own, marital candidate) x months x cola x haircut, less max(0, (wages − limit)/2) capped at the benefit",
         "variables": [
@@ -614,7 +973,8 @@
       "assumption": null,
       "justificationKind": "derivation",
       "implementedBy": [
-        "packages/engine/src/projection/internal/annualSocialSecurity.ts"
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/socialSecurity/earningsTest.ts"
       ],
       "provenance": {
         "derivedBy": "codex",
@@ -634,15 +994,98 @@
       }
     },
     {
+      "id": "social-security-claim-break-even",
+      "title": "Claiming break-even ages and cumulative benefits",
+      "kind": "model",
+      "outputs": [
+        "social-security-break-even"
+      ],
+      "feeds": [],
+      "purpose": "Chart one person's cumulative own benefit at a few claim ages in the plan's dollars, and the age each later claim catches up.",
+      "statement": "socialSecurity/analysis/breakEven.ts#claimBreakEven accumulates, for each compared whole-year claim age c and each age a from 62 through the chart's last age, in calendar year y = birth year + a, the benefit 0 before c and otherwise the start-year PIA x the claim factor for c years and 0 months x 12 x socialSecurity/colaFactor.ts#socialSecurityColaFactor for y x #socialSecurityHaircutFactor for y, the two factors projection/simulate.ts#simulatePlan multiplies every benefit by; the running total is B_c(a) = B_c(a - 1) x (1 + g) + benefit_c(a) at the chosen return g. For each pair of claim ages e < l it walks the ages at which B_e is positive and reports the first age a with D(a) = B_l(a) - B_e(a) >= 0, at a - 1 + (-D(a - 1)) / (D(a) - D(a - 1)) when the previous difference was negative, else at a; none when no age by the chart's end. #breakEvenClaimAges gives the page's comparison: 62, the full-retirement-age year and 70, each no earlier than the age reached in the start year; a claim age before it is refused. Units: nominal dollars of each year, ages in years. Rounding: none; the page prints the crossing to a tenth of a year and the dollars to whole dollars.",
+      "formula": {
+        "expression": "B_c(a) = B_c(a - 1)(1 + g) + [a >= c] x PIA x f(c) x 12 x cola(y) x cut(y); crossing(e, l) = a - 1 + (-D(a - 1))/(D(a) - D(a - 1)), D = B_l - B_e",
+        "variables": [
+          {
+            "symbol": "PIA",
+            "meaning": "The monthly PIA the projection pays from in its first year",
+            "unit": "usd/month",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "f(c)",
+            "meaning": "Claim factor for a claim at c years and 0 months",
+            "unit": "1",
+            "domain": "0.70 to 1.32"
+          },
+          {
+            "symbol": "cola(y), cut(y)",
+            "meaning": "The projection's cost-of-living factor (1 in its first year) and trust-fund haircut for year y",
+            "unit": "1",
+            "domain": "positive"
+          },
+          {
+            "symbol": "g",
+            "meaning": "Yearly return on benefits already received",
+            "unit": "rate/year",
+            "domain": "0, 3%, 5% or 7% on the page"
+          },
+          {
+            "symbol": "c, e, l",
+            "meaning": "Whole-year claim ages",
+            "unit": "years",
+            "domain": "62 to 70, none before the age reached in the first year"
+          }
+        ],
+        "timing": "annual, a whole year of benefits in the claim-age year",
+        "rounding": "none; the page rounds for display"
+      },
+      "limits": [
+        "The person's own retirement benefit only: no spouse, survivor or divorced-spouse benefit, no earnings test, no taxes, and no mortality, since every charted age is taken as reached",
+        "Whole-year claim ages, paid for the whole claim-age year, as the ledger pays a claim at a whole age",
+        "The crossing interpolates linearly between yearly totals; within a year the true running total steps monthly",
+        "The dollars are each year's own dollars, as the projection pays them; the chart does not deflate them to today's dollars",
+        "A benefit paid as a disability benefit from its onset has no claim age to compare, and the page says so instead of charting it"
+      ],
+      "worksheet": "DOCS/calculations/social-security/social-security-claim-break-even.md",
+      "mutation": "DOCS/calculations/social-security/social-security-claim-break-even.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/breakEven.ts",
+        "packages/engine/src/socialSecurity/colaFactor.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/breakEven.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "social-security-cola-factor",
       "title": "Social Security COLA factor",
       "kind": "model",
       "outputs": [],
       "feeds": [
-        "social-security-benefit-annual"
+        "social-security-benefit-annual",
+        "social-security-break-even",
+        "social-security-expected-present-value"
       ],
       "purpose": "Compound the benefit escalator from the projection start, with no escalation in the first year.",
-      "statement": "projection/internal/annualSocialSecurity.ts#annualSocialSecurity receives an ssColaFactor that compounds from the projection start, with factor 1 in the first year, using either the plan's general inflation rate or its fixed ssCola rate; projection/simulate.ts#simulatePlan builds it. For a fixed rate the factor at year offset n is (1 + rate)^n, so the published benefit of a stream already in force scales by exactly that factor against its start-year amount. Units: a dimensionless factor. Rounding: none.",
+      "statement": "projection/internal/annualSocialSecurity.ts#annualSocialSecurity receives an ssColaFactor that compounds from the projection start, with factor 1 in the first year, using either the plan's general inflation rate or its fixed ssCola rate, and an ssHaircutFactor. projection/simulate.ts#simulatePlan builds both with socialSecurity/colaFactor.ts#socialSecurityColaFactor, to which it passes its own inflation factor (a Monte Carlo path's when one is supplied), and #socialSecurityHaircutFactor (1 - cutPct / 100 from the haircut year, else 1); the break-even chart and the benefits-only expected value call the same two functions on the plan's deterministic inflation. For a fixed rate the factor at year offset n is (1 + rate)^n, so the published benefit of a stream already in force scales by exactly that factor against its start-year amount. Units: a dimensionless factor. Rounding: none.",
       "formula": {
         "expression": "ssColaFactor(y) = (1 + ssCola.annualPct / 100)^(y - startYear) for the fixed mode, or the plan inflation factor from startYear to y for matchInflation",
         "variables": [
@@ -680,16 +1123,106 @@
       "assumption": null,
       "justificationKind": "derivation",
       "implementedBy": [
+        "packages/engine/src/socialSecurity/colaFactor.ts",
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "cursor"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualSocialSecurity.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "social-security-expected-value",
+      "title": "Benefits-only expected present value of Social Security",
+      "kind": "model",
+      "outputs": [
+        "social-security-expected-present-value"
+      ],
+      "feeds": [
+        "social-security-fica-return-ratio"
+      ],
+      "purpose": "Value a claiming strategy by its benefits alone: each year's benefits, priced by the ledger's rules, weighted by the chance of being alive and discounted.",
+      "statement": "socialSecurity/analysis/expectedValue.ts#expectedPvSingle sums, for each year t from the start year while the person is at most 119, S(t) x monthly(t) x payable months(t) x scale(y) x (1 + r)^-t, where S is montecarlo/survival.ts#survivalCurve from the current age, monthly is the start-year PIA x the claim factor with its months or a larger former-spouse benefit socialSecurity/maritalBenefits.ts#bestMaritalBenefit would pay that year (a divorced spouse's only for a single household), the payable months are the ledger's, and scale(y) is the ledger's COLA factor over its inflation factor times the haircut (1 when the COLA matches inflation and there is no haircut). #expectedPvCouple sums, for independent lives, S_A(t) S_B(t) both(t) plus, for each earlier death year k of one spouse, the survivor's S(t) x the other's probability of dying in year k x alone(t, k): both(t) pays each own benefit, and the lower earner by PIA (the second on a tie, as the ledger) the own benefit plus the spouse excess reduced for their age in the spouse benefit's first month (socialSecurity/dualEntitlement.ts, capped by the worker's family maximum) for the months both are paid; alone(t, k) pays the survivor, once their own claim has started, the larger of the own benefit and the widow(er) benefit, on the deceased's claimed benefit or, if the deceased had not claimed by the December death, the benefit for the month before it, reduced for the survivor's age in January after the death or at their own later claim, and then held to the widow's limit when the deceased claimed before full retirement age (socialSecurity/survivorBenefit.ts). #benefitsOnlyRanking prices every whole-year claim-age combination from 62 to 70 (none before the age reached in the start year; 70 alone past it) for one or two claimants on the PIA the projection pays from, and ranks them highest first; a claimant whose benefit is paid as a disability benefit from its onset is named instead. Units: start-year dollars. Rounding: none.",
+      "formula": {
+        "expression": "single: sum_t S(t) m(t) n(t) s(y) (1 + r)^-t; couple: sum_t (1 + r)^-t s(y) [S_A S_B both(t) + sum_{k<t} S_A(t) D_B(k) alone_A(t, k) + sum_{k<t} S_B(t) D_A(k) alone_B(t, k)]",
+        "variables": [
+          {
+            "symbol": "S(t)",
+            "meaning": "Probability of being alive t years after the start year, from the engine's survival curve",
+            "unit": "1",
+            "domain": "[0, 1]"
+          },
+          {
+            "symbol": "D(k)",
+            "meaning": "Probability of dying in year k, alive through it",
+            "unit": "1",
+            "domain": "[0, 1]"
+          },
+          {
+            "symbol": "m(t), n(t)",
+            "meaning": "The monthly benefit paid and its payable months in year t",
+            "unit": "usd/month, months",
+            "domain": "nonnegative; 0 to 12"
+          },
+          {
+            "symbol": "s(y)",
+            "meaning": "The COLA factor over the inflation factor, times the haircut, for year y",
+            "unit": "1",
+            "domain": "positive"
+          },
+          {
+            "symbol": "r",
+            "meaning": "Real discount rate",
+            "unit": "rate/year",
+            "domain": "above -1; 0 to 8% on the page"
+          }
+        ],
+        "timing": "annual, from the start year to age 119",
+        "rounding": "none"
+      },
+      "limits": [
+        "Independent lifetimes on the SSA period table applied to the cohort",
+        "Annual steps: a whole year of benefits in each year the survival weight reaches, and deaths in December of the death year, the ledger's convention",
+        "One claim age per person: a widow(er) is paid from the later of the year after the death and their own claim year, and cannot take the widow(er) benefit first and their own later, as in the ledger (usc-42-402-r-survivor-deemed-filing-exemption); the survivor switching analysis covers a widow(er) living alone",
+        "No earnings test: benefits the ledger would withhold while a claimant works are counted as paid, and the analysis page names each person whose plan wages would do that at a claim age it shows",
+        "No taxes, disability benefit, child benefit or lump-sum death payment",
+        "The family maximum is applied with the ledger's own helper (socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum): half the worker's PIA is held first to the maximum less that PIA (20 CFR 404.404), which is at least half the PIA, so with one spouse it cannot bind beyond the rounding of the maximum to the dime",
+        "A death before 62 passes on the PIA as entered, as the survivor benefit calculation does",
+        "Former-spouse records of a person in a couple are not priced, although the ledger prices a deceased-spouse record for such a person",
+        "Benefits are scheduled in full unless the plan sets a haircut, and are worth their start-year amount in real terms unless the plan's COLA differs from its inflation"
+      ],
+      "worksheet": "DOCS/calculations/social-security/social-security-expected-value.md",
+      "mutation": "DOCS/calculations/social-security/social-security-expected-value.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/expectedValue.ts",
+        "packages/engine/src/socialSecurity/analysis/claimants.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/montecarlo/survival.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/expectedValue.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,
@@ -755,6 +1288,50 @@
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualSocialSecurity.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "social-security-pia-resolution",
+      "title": "The PIA a Social Security stream is paid from",
+      "kind": "composition",
+      "outputs": [
+        "social-security-pia-annualized"
+      ],
+      "feeds": [
+        "social-security-benefit-annual"
+      ],
+      "purpose": "Resolve a stream's monthly PIA once, for the projection, its insights and the Social Security pages.",
+      "statement": "socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly returns the entered PIA as entered; otherwise, for a stream with an earnings history, the PIA #computePiaFromEarnings gives on the history and its projection (#streamPiaFromEarningsInput, the projection defaulting to the person's retirement age), raised by #piaWithCostOfLivingIncreases from the eligibility year through the year before the projection starts, with the years whose increase SSA has not announced; otherwise no PIA, with the reason: no PIA and no earnings history, or the computation's error. projection/simulate.ts#simulatePlan, the claim-milestone insight and the planner's Social Security pages all call it. The couple primer prints the resolved PIA x 12. Units: dollars a month. Rounding: the PIA's own, to the dime.",
+      "formula": null,
+      "limits": [
+        "An entered PIA is taken to be in the first year's dollars already, as a PIA shown on a current SSA statement is",
+        "The yearly figure the couple primer prints is PIA x 12, the benefit at full retirement age, not the benefit at the claim age"
+      ],
+      "worksheet": "DOCS/calculations/social-security/social-security-pia-resolution.md",
+      "mutation": "DOCS/calculations/social-security/social-security-pia-resolution.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,
@@ -933,7 +1510,9 @@
       "kind": "composition",
       "outputs": [],
       "feeds": [
-        "social-security-benefit-annual"
+        "social-security-benefit-annual",
+        "social-security-expected-present-value",
+        "social-security-survivor-switch-pv"
       ],
       "purpose": "Reduce the survivor base for the survivor's age, then cut it to the widow's limit when the deceased was paid a reduced benefit.",
       "statement": "socialSecurity/survivorBenefit.ts#survivorBenefitMonthly takes the survivor base as the larger of the deceased's PIA and the deceased's actual benefit (42 U.S.C. 402(e)(2)(A) and (C)) and multiplies it by the widow(er) factor #survivorReductionFactor returns: a linear ramp from 71.5% at age 60 to 100% at the SURVIVOR full retirement age, clamped to 0.715 at or before 60 and to 1 at or after that FRA. When the deceased was ever entitled to an old-age benefit reduced for an early claim, the result is then cut, if it is greater than both, to the larger of the deceased's actual benefit and 82.5% of the deceased's PIA (402(e)(2)(D), \"after application of subsection (q)\"; POMS RS 00615.320 A.3). A deceased with no PIA returns zero. Units: nominal USD per month, in today's dollars before COLA and haircut. Rounding: none.",
@@ -1089,6 +1668,147 @@
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "survivor-switching-expected-value",
+      "title": "Survivor and own benefit switching for a widow(er)",
+      "kind": "model",
+      "outputs": [
+        "social-security-survivor-switch-pv"
+      ],
+      "feeds": [],
+      "purpose": "Rank the orders in which a widow(er) living alone can take the survivor benefit and their own, by expected value.",
+      "statement": "socialSecurity/analysis/survivorSwitching.ts#survivorSwitchingInputs takes a single household's one claimant and, of the deceased or surviving-divorced former-spouse records that pass the ledger's modeled widow(er) gates, the one whose survivor benefit at the claimant's survivor full retirement age is largest (the first on a tie), with the deceased's benefit the PIA x the deceased's claim factor (full retirement age when none is entered); a claimant whose benefit is paid as a disability benefit from its onset gets none. #expectedPvSwitch values a strategy as the sum over ages from the current age to 119 of S x the larger claimed yearly benefit x s(y) x (1 + r)^-(age - current age), with s(y) the plan's COLA factor over its inflation factor times the haircut for the year the age is reached (socialSecurity/analysis/expectedValue.ts#realBenefitScale, the ranking's own), the survivor benefit from socialSecurity/survivorBenefit.ts#survivorBenefitMonthly at its whole-year age and the own benefit at its claim factor, S the engine's survival curve. #rankSwitchStrategies offers survivor ages (the current age, at least 60, and the survivor full retirement age's year) and own ages (the current age from 62 to 70, the full retirement age's year, 70), every pairing and each alone, keeps one strategy per distinct yearly stream (the one with fewer claims, then the earlier survivor age, then the earlier own age), and ranks them by value, ties in the same order. Units: start-year dollars. Rounding: none.",
+      "formula": {
+        "expression": "EV(s, o) = sum_{a = x..119} S(a) x max([a >= s] W(s), [a >= o] P f(o)) x 12 x s(y) x (1 + r)^-(a - x)",
+        "variables": [
+          {
+            "symbol": "W(s)",
+            "meaning": "Monthly widow(er) benefit at survivor age s",
+            "unit": "usd/month",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "P f(o)",
+            "meaning": "Own PIA x the claim factor at own age o",
+            "unit": "usd/month",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "x",
+            "meaning": "Age in the start year",
+            "unit": "years",
+            "domain": "integer"
+          },
+          {
+            "symbol": "s(y)",
+            "meaning": "The COLA factor over the inflation factor, times the haircut, for the year y the age a is reached",
+            "unit": "1",
+            "domain": "positive"
+          },
+          {
+            "symbol": "r",
+            "meaning": "Real discount rate",
+            "unit": "rate/year",
+            "domain": "above -1"
+          }
+        ],
+        "timing": "annual, from the start year to age 119",
+        "rounding": "none"
+      },
+      "limits": [
+        "Whole-year ages: the survivor benefit at the current age (at least 60) or the survivor full retirement age's year; the own benefit at the current age (62 to 70), the full retirement age's year or 70",
+        "The deceased's benefit is the claim age entered for the record, or full retirement age when none is; a death before the deceased claimed is priced only through the claim age entered",
+        "Single households only; no earnings test (benefits withheld while working are counted as paid), taxes or child benefits",
+        "A benefit paid as a disability benefit from its onset is not ranked, since no own claim age starts it",
+        "Survival on the engine's one curve, the SSA period table"
+      ],
+      "worksheet": "DOCS/calculations/social-security/survivor-switching-expected-value.md",
+      "mutation": "DOCS/calculations/social-security/survivor-switching-expected-value.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/survivorSwitching.ts",
+        "packages/engine/src/socialSecurity/analysis/expectedValue.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/survivorSwitching.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "zero-year-replacement-gain",
+      "title": "PIA gain from replacing a year with no earnings",
+      "kind": "composition",
+      "outputs": [
+        "social-security-zero-year-replacement-gain"
+      ],
+      "feeds": [],
+      "purpose": "Show how much one more year of earnings in place of a $0 year would add to the monthly benefit, computed exactly.",
+      "statement": "socialSecurity/piaFromEarnings.ts#zeroYearReplacementGain re-runs #computePiaFromEarnings on the same input with the latest base year whose earnings, reported or projected, are $0 given the sample amount, the window, projection and indexing year unchanged (so the amount is capped at that year's base and indexed only if the year is at or before the indexing year), and publishes that year, the amount, the eligibility-year PIA before and after, their difference, and, given the projection's first year, the difference of the two PIAs each raised by the cost-of-living increases from the eligibility year through the year before it (#piaWithCostOfLivingIncreases, as the resolved PIA is), the gain in that year's dollars that the page prints; there is no gain when the history does not compute, no averaged year is $0, or the amount is not positive. #zeroYearSampleEarnings gives the explainer's sample: the projection's assumed earnings for its first projected year, else the latest reported year's amount. #bendTierForAime gives the explainer's tier line, the bend-point rate of the next dollar of AIME. Units: dollars a month at full retirement age, in the eligibility year's dollars and in the projection's first year's. Rounding: the PIA's own, to the dime; each difference is rounded to the dime against float error.",
+      "formula": {
+        "expression": "gain = PIA(history with raw(Y) := amount) - PIA(history), Y = the latest base year with raw earnings 0",
+        "variables": [
+          {
+            "symbol": "Y",
+            "meaning": "The replaced base year",
+            "unit": "year",
+            "domain": "a base year whose earnings are 0"
+          },
+          {
+            "symbol": "amount",
+            "meaning": "Sample covered earnings put in year Y",
+            "unit": "usd/year",
+            "domain": "positive"
+          }
+        ],
+        "timing": "once per earnings history",
+        "rounding": "each PIA floored to the dime; the difference rounded to the dime"
+      },
+      "limits": [
+        "Inherits the earnings computation's conventions and registered limits: indexing floored to the dollar, the computation-year window, and stand-in tables for years not yet published",
+        "The replaced year is the latest $0 base year; replacing an earlier one would index the sample, describing earnings that can no longer be earned. For a person 62 or older every base year has passed, so the page says what the year would have added had it been worked",
+        "A year worked after 61 is outside the computation's base window (usc-42-415-f-2-post-entitlement-pia-recomputation)"
+      ],
+      "worksheet": "DOCS/calculations/social-security/zero-year-replacement-gain.md",
+      "mutation": "DOCS/calculations/social-security/zero-year-replacement-gain.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,

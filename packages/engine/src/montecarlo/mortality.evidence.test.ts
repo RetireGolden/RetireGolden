@@ -87,9 +87,8 @@ describeCalculation(
       expect(MAX_AGE).toBe(119)
       expect(annualMortality(MAX_AGE, sex)).toBe(1)
       // The planner-ui copy of this identity (socialSecurity/expectedPv.ts)
-      // is proved to agree with annualMortality in that package's own suite,
-      // expectedPv.mortalityParity.test.ts, so this file never loads a UI
-      // module (record limits; relocation packet B2-P1).
+      // was deleted by B2-P1 slice 4: the Social Security analysis models
+      // read montecarlo/survival.ts#survivalCurve, which reads this.
     })
   },
 )

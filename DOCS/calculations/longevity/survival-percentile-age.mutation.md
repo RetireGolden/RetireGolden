@@ -1,11 +1,11 @@
 # Mutation receipt: survival-percentile-age
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -63,8 +63,10 @@ export function survivalPercentileAge(
+@@ -142,8 +142,10 @@ export function survivalPercentileAge(
    let best = from
    for (let age = from; age <= MAX_AGE; age++) {
      s *= annualSurvival(age, sex, hazard)
@@ -30,20 +30,20 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (12 tests | 3 failed) 8ms
+ ❯ src/montecarlo/survival.evidence.test.ts (15 tests | 3 failed) 62ms
    ❯ survival-percentile-age — Survival-percentile planning age: oldest age reached with probability at least pct/100 (3)
-     × the oldest age with conditional survival >= 97% from 65 is 66 4ms
+     × the oldest age with conditional survival >= 97% from 65 is 66 3ms
      × is bounded below by the current age: a 100% threshold returns 65 0ms
    ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (4)
      × exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return 0ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 9 passed (12)
+      Tests  3 failed | 12 passed (15)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
@@ -57,13 +57,13 @@ AssertionError: expected 67 to be 66 // Object.is equality
 - 66
 + 67
 
- ❯ src/montecarlo/survival.evidence.test.ts:65:67
-     63|
-     64|     it('the oldest age with conditional survival >= 97% from 65 is 66'…
-     65|       expect(survivalPercentileAge(currentAge, sex, pct, hazard)).toBe…
+ ❯ src/montecarlo/survival.evidence.test.ts:120:67
+    118|
+    119|     it('the oldest age with conditional survival >= 97% from 65 is 66'…
+    120|       expect(survivalPercentileAge(currentAge, sex, pct, hazard)).toBe…
        |                                                                   ^
-     66|     })
-     67|
+    121|     })
+    122|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
@@ -76,13 +76,13 @@ AssertionError: expected 66 to be 65 // Object.is equality
 - 65
 + 66
 
- ❯ src/montecarlo/survival.evidence.test.ts:77:67
-     75|       // Boundary of the claim: S(66) < 1, so no later age qualifies a…
-     76|       // current age, already reached, is the answer.
-     77|       expect(survivalPercentileAge(currentAge, sex, 100, hazard)).toBe…
+ ❯ src/montecarlo/survival.evidence.test.ts:132:67
+    130|       // Boundary of the claim: S(66) < 1, so no later age qualifies a…
+    131|       // current age, already reached, is the answer.
+    132|       expect(survivalPercentileAge(currentAge, sex, 100, hazard)).toBe…
        |                                                                   ^
-     78|     })
-     79|   },
+    133|     })
+    134|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
@@ -95,13 +95,13 @@ AssertionError: expected 66 to be 65 // Object.is equality
 - 65
 + 66
 
- ❯ src/montecarlo/survival.evidence.test.ts:142:84
-    140|     it('exceeds the single-life 99th-percentile age of 65, which the l…
-    141|       // The worksheet's second wrong reading: one person's answer.
-    142|       expect(survivalPercentileAge(primary.age, primary.sex, pct, prim…
+ ❯ src/montecarlo/survival.evidence.test.ts:197:84
+    195|     it('exceeds the single-life 99th-percentile age of 65, which the l…
+    196|       // The worksheet's second wrong reading: one person's answer.
+    197|       expect(survivalPercentileAge(primary.age, primary.sex, pct, prim…
        |                                                                                    ^
-    143|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGr…
-    144|     })
+    198|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGr…
+    199|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```

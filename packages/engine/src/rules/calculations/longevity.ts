@@ -20,7 +20,14 @@ export const longevityRecords = {
     // percentile ages consume q(x), and the death-age draw the Monte Carlo
     // aggregates walks it year by year. No surface publishes it.
     outputs: [],
-    feeds: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
+    feeds: [
+      'longevity-survival-percentile-age',
+      'monte-carlo-success-rate',
+      'monte-carlo-ending-investable-histogram',
+      'social-security-expected-present-value',
+      'social-security-survivor-switch-pv',
+      'social-security-fica-return-ratio',
+    ],
     statement:
       'For the embedded SSA 2022 period table of remaining life expectancy e(x) at integer ages 0..119 (male, female, or their elementwise average for sex "average") and an age a, let x = floor(a). q(x) = 1 - (e(x) - 0.5)/(e(x+1) + 0.5), clamped into [0, 1]. x < 0 returns 0; x >= 119, the last row, returns 1, forcing death at the table endpoint. Units: probability of death within one year. Rounding: none.',
     formula: {
@@ -42,12 +49,14 @@ export const longevityRecords = {
       'The period table is applied unchanged to the cohort; the identity describes the table, not an individual\'s risk',
       'The result is clamped into [0, 1] and a negative age returns 0; neither case is flagged',
       'Sex "average" derives q(x) from the elementwise mean of the male and female e(x) rows, not from the mean of the two q(x) values',
-      'DUPLICATION: packages/planner-ui/src/socialSecurity/expectedPv.ts#oneYearSurvival re-derives p(x) = (e(x) - 0.5)/(e(x+1) + 0.5) from the same rows (with an optional multiplier scaling e(x) and Math.round instead of floor on the age); a mortality parity test (packages/planner-ui/src/socialSecurity/expectedPv.mortalityParity.test.ts) proves the two agree at multiplier 1 for the worksheet rows x = 65, 66, 67 within 1e-12, in the planner-ui suite so the engine suite never loads a UI module. Moving the UI copy into the engine is packet B2-P1 of the bidirectional validation plan',
+      'q(x) is rebuilt from the printed two-decimal e(x), not read from the published q(x) column of the same table: at 65 it is 0.0179294 against the published 0.017897 for men and 0.0110887 against 0.011018 for women; the largest relative difference is 7.3 percent (men, 42) and 20.7 percent (women, 22) over ages 20 to 109 and 2.0 and 3.5 percent over 62 to 100, and below 20 it reaches q = 0 at men\'s age 8 and women\'s age 10; survival from 65 to 95 is 0.065184 against 0.065310 for men',
+      'The table is the 2022 period table SSA used in the 2025 Trustees Report; the page now shows the 2023 table of the 2026 report, and moving to it and to the published q(x) is a separate reviewed data change',
+      'The one curve the engine uses: the Social Security analysis models (the benefits-only expected value, survivor switching and the paid-in ratio) read it through survival-probability-product; no copy of the identity remains in the planner',
     ],
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#annualMortality'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'mortality-sampled-death-age': {
     title: 'Sampled death age: inverse-Bernoulli walk over annual death probabilities',
@@ -136,9 +145,14 @@ export const longevityRecords = {
     // Carlo reaches mortality through sampleDeathAge and the q(x) identity, not
     // through this product. No surface publishes the product itself.
     outputs: [],
-    feeds: ['longevity-survival-percentile-age'],
+    feeds: [
+      'longevity-survival-percentile-age',
+      'social-security-expected-present-value',
+      'social-security-survivor-switch-pv',
+      'social-security-fica-return-ratio',
+    ],
     statement:
-      'For current age c, target age g, sex and hazard power h (default 1): with from = floor(max(c, 0)) and to = floor(g), S = product over x = from..to-1 of (1 - q(x))^h, where the factor is 0 when q(x) >= 1. Returns 1 when to <= from, and 0 as soon as the running product reaches 0. Units: probability. Rounding: none.',
+      'montecarlo/survival.ts#survivalCurve is the engine\'s one survival curve: for a whole starting age a (at least 0), sex and hazard power h (a positive finite number, default 1), survivalTo(t) = product over x = a..a+t-1 of (1 - q(x))^h, multiplied left to right, where the factor is 0 when q(x) >= 1; 1 for t <= 0, and 0 once the running product reaches 0; deathProbabilityInYear(t) = survivalTo(t) x (1 - (1 - q(a + t))^h). A fractional age or an invalid hazard is refused. #survivalProbabilityTo(c, sex, g, h) is a view of it: with from = floor(max(c, 0)) and to = floor(g), it returns 1 when to <= from and otherwise the curve from `from` at t = to - from, the same product in the same order. The Social Security analysis models read the curve. Units: probability. Rounding: none.',
     formula: {
       expression: 'S(c -> g) = prod_{x=from}^{to-1} (1 - q(x))^h; S = 1 when to <= from',
       variables: [
@@ -157,16 +171,17 @@ export const longevityRecords = {
     limits: [
       'Ages are floored; a fractional current or target age is not interpolated',
       'A target at or below the current age returns exactly 1 without consulting the table',
-      'The hazard power is not validated; a non-positive h is used as passed',
-      'annualSurvival is module-private; the evidence reaches it through survivalProbabilityTo',
+      'survivalProbabilityTo does not validate the hazard power (a non-positive h is used as passed); survivalCurve refuses one',
+      'annualSurvival is module-private; survivalCurve and survivalProbabilityTo read it, and the evidence reaches it through both',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: [
+      'packages/engine/src/montecarlo/survival.ts#survivalCurve',
       'packages/engine/src/montecarlo/survival.ts#survivalProbabilityTo',
       'packages/engine/src/montecarlo/survival.ts#annualSurvival',
     ],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survival-percentile-age': {
     title: 'Survival-percentile planning age: oldest age reached with probability at least pct/100',

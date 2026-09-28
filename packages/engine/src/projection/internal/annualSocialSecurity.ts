@@ -23,6 +23,7 @@ import {
   ssdiSuspendedBySga,
 } from '../../socialSecurity/disability.js'
 import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
+import { earningsTestWithheldAnnual } from '../../socialSecurity/earningsTest.js'
 import { maritalBenefitFor, type MaritalBenefitCandidate } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../../socialSecurity/nra.js'
 import { neverClaimedDeceasedFactor, survivorBenefitMonthly, widowEntitlementAgeMonths } from '../../socialSecurity/survivorBenefit.js'
@@ -535,13 +536,14 @@ export function annualSocialSecurity(
     const person = personById.get(personId)!
     const { y, m, d } = socialSecurityDobParts(person)
     const fraYears = fraForBirthYear(effectiveBirthYear(y, m, d)).years
-    let withheld = 0
-    if (s.ageAttained < fraYears) {
-      withheld = Math.max(0, (wages - pack.socialSecurity.earningsTestBelowFraAnnual * limitGrowth) / 2)
-    } else if (s.ageAttained === fraYears) {
-      withheld = Math.max(0, (wages - pack.socialSecurity.earningsTestFraYearAnnual * limitGrowth) / 3)
-    }
-    withheld = Math.min(withheld, benefit)
+    const withheld = earningsTestWithheldAnnual({
+      ageAttained: s.ageAttained,
+      fraYears,
+      wages,
+      benefit,
+      belowFraExemptAnnual: pack.socialSecurity.earningsTestBelowFraAnnual * limitGrowth,
+      fraYearExemptAnnual: pack.socialSecurity.earningsTestFraYearAnnual * limitGrowth,
+    })
     if (withheld > 0) {
       ssOwnByPerson.set(personId, benefit - withheld)
       ssEarningsTestWithheld += withheld

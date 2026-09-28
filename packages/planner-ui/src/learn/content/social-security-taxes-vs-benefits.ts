@@ -13,20 +13,21 @@ export const blocks: ArticleBlock[] = [
   {
     type: 'list',
     items: [
-      'You paid the **OASDI** payroll tax (6.2% as an employee, 12.4% if self-employed) on covered earnings up to each year’s **taxable wage base**.',
-      'The "get back" side is the **survival-weighted expected value** of your lifetime benefits, not a literal account balance.',
+      'You paid the **OASDI** payroll tax on covered earnings up to each year’s **taxable wage base**, at that year’s rate: 6.2% as an employee and 12.4% if self-employed today, less in most earlier years.',
+      'Both sides are in today’s dollars: the tax you paid is adjusted for price inflation, with no interest added.',
+      'The "get back" side is the benefits you have already received plus the **survival-weighted expected value** of the rest, not a literal account balance.',
       'The ratio is an **individual-level illustration**, not the program’s actuarial return, and it excludes the value of disability and survivor insurance, spousal benefits, and Medicare.',
     ],
   },
   { type: 'heading', text: 'What you paid in' },
   {
     type: 'prose',
-    md: 'Each paycheck, 6.2% of your covered wages (up to the annual taxable wage base, $184,500 in 2026) goes to the OASDI part of FICA. Your employer pays another 6.2%; the self-employed pay both halves (12.4%) as SECA. This view sums the OASDI tax over your earnings history and **intentionally excludes the 1.45% Medicare HI tax**, because the "get back" side is the retirement benefit, not Medicare. The employer share is shown as context, not added to what you paid.',
+    md: 'Each paycheck, 6.2% of your covered wages (up to the annual taxable wage base, $184,500 in 2026) goes to the OASDI part of FICA. Your employer pays another 6.2%; the self-employed pay both halves (12.4%) as SECA. The rate was lower in most years before 1990, and 4.2% for employees in 2011 and 2012; this view applies each year’s rate and wage base, and restates each year’s tax in today’s dollars with the Consumer Price Index, adding no interest. It sums the OASDI tax over your earnings history and **intentionally excludes the 1.45% Medicare HI tax**, because the "get back" side is the retirement benefit, not Medicare. The employer share is shown as context, not added to what you paid.',
   },
   { type: 'heading', text: 'What you get back' },
   {
     type: 'prose',
-    md: 'The "get back" figure is the **mortality-weighted expected present value** of your lifetime retirement benefits at your chosen claim age, the same method used by the actuarial "Benefits only" view. Each future year’s benefit is multiplied by the probability you survive to receive it and discounted to today’s dollars at a real rate. This is the *expected* value, not a guarantee; living longer raises it, dying sooner lowers it.',
+    md: 'The "get back" figure is the **mortality-weighted expected present value** of your lifetime retirement benefits at your chosen claim age, the same method used by the actuarial "Benefits only" view. Each future year’s benefit is multiplied by the probability you survive to receive it and discounted to today’s dollars at a real rate. This is the *expected* value, not a guarantee; living longer raises it, dying sooner lowers it. If you already collect benefits, the ones you have received count too, at today’s benefit amount.',
   },
   {
     type: 'table',
@@ -35,12 +36,12 @@ export const blocks: ArticleBlock[] = [
     rows: [
       [
         'What you paid in',
-        'Your 6.2% OASDI share on covered wages, or the full 12.4% SECA if self-employed, summed over your earnings history',
-        'The 1.45% Medicare HI tax, and the employer 6.2% unless you were self-employed',
+        'Your OASDI share at each year’s rate (6.2% today), or the self-employment rate if self-employed, on covered wages, summed over your earnings history in today’s dollars',
+        'The 1.45% Medicare HI tax, the employer’s share unless you were self-employed, and any interest',
       ],
       [
         'What you get back',
-        'Retirement benefits at your chosen claim age, weighted by survival probability and discounted to today\'s dollars',
+        'Benefits already received, plus future retirement benefits at your claim age, weighted by survival probability and discounted to today\'s dollars',
         'Spousal, survivor, and disability protection, plus any benefit paid on your record to someone else',
       ],
       [
@@ -68,6 +69,6 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Where to use this in the app' },
   {
     type: 'prose',
-    md: 'On **Social Security analysis** (the Benefits-only tab), expand "What you paid in vs. what you get back." It uses the earnings history you entered on the Social Security step, so enter an earnings record (or import your mySSA statement) to see it. A self-employed toggle applies the 12.4% rate.',
+    md: 'On **Social Security analysis** (the Benefits-only tab), expand "What you paid in vs. what you get back." It uses the earnings history you entered on the Social Security step, so enter an earnings record (or import your mySSA statement) to see it. A self-employed toggle applies each year’s self-employment rate.',
   },
 ]

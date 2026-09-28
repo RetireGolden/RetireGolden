@@ -1,15 +1,15 @@
 # Mutation receipt: aime-covered-earnings-cap
 
-Executed 2026-09-27 against RetireGolden base `81d4bf03` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `81d4bf03` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 7aba1b6f..b3224fe0 100644
+index d90a5df9..84c0ab36 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -125,7 +125,7 @@ function capEarnings(year: number, amount: number): number {
+@@ -132,7 +132,7 @@ function capEarnings(year: number, amount: number): number {
    // are not counted. The base is SSA's for every year from 1937, and the latest
    // published one for projected/future years SSA has not set yet (otherwise high
    // earners' projected years would inflate AIME past the taxable maximum).
@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed for decision D-SS-LAW-2 because lines were added above its hunk (the cost-of-living increases since eligibility); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.wageBase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for B2-P1 slice 4 because lines moved above its hunk (the survival curve, the PIA resolver and the zero-year gain, or simulatePlan's COLA helpers) or its test file gained cases; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.wageBase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
  ❯ src/socialSecurity/piaFromEarnings.wageBase.evidence.test.ts (3 tests | 2 failed) 7ms
    ❯ aime-covered-earnings-cap — Covered earnings counted up to each year's contribution and benefit base, from 1951 (3)

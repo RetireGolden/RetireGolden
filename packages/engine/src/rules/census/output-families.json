@@ -1236,30 +1236,34 @@
   {
     "id": "social-security-break-even",
     "group": "social-security",
-    "title": "age",
-    "meaning": "Age at which cumulative benefits from one claiming strategy overtake another.",
+    "title": "Claiming break-even age",
+    "meaning": "Age at which the cumulative own retirement benefit of a later claim age overtakes an earlier one's, with the cumulative benefits by age in the plan's dollars for each year.",
     "unit": "age",
     "basis": "n/a",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/breakEven.ts",
-        "symbol": "computeBreakEven"
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "BreakEvenTab"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "claiming break-even age"
+        "selector": "Break-even tab callout \"waiting until L pulls ahead around age X\" and the chart's cumulative benefit tooltips"
       }
     ],
     "transformations": [
-      "Accumulate competing annual benefit streams and report each cumulative crossover age."
+      "socialSecurity/analysis/breakEven.ts#claimBreakEven: for each compared claim age, accumulate PIA × claim factor × 12 × the ledger's COLA factor and haircut for each calendar year (compounded at the chosen return), and report each pair's crossing age by linear interpolation of the unrounded annual totals; the page rounds the age to a tenth and the dollars to whole dollars."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/socialSecurity/breakEven.ts#computeBreakEven (COLA compounded from age 62 on a today's-dollar PIA; crossings on whole-dollar-rounded totals) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven on the ledger's COLA factor and haircut (owner decision R6), which BreakEvenTab reads.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven"
+    }
   },
   {
     "transformations": [],
@@ -1337,11 +1341,11 @@
   },
   {
     "transformations": [
-      "Count the entries of the engine PiaFromEarningsResult.yearsUsedInAime equal to 0; computationYearCount passes through from the engine result."
+      "socialSecurity/piaFromEarnings.ts#computePiaFromEarnings publishes computationYearCount and zeroYearsInAime, the number of averaged years whose indexed earnings are $0; the explainer prints both."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/socialSecurity/explain.ts#summarizeComputation until B2-P1 slice 4; now engine PiaFromEarningsResult.zeroYearsInAime, which AimeExplainer reads.",
     "dimensions": [],
     "basis": "n/a",
     "id": "social-security-computation-summary-counts",
@@ -1352,8 +1356,8 @@
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/explain.ts",
-        "symbol": "summarizeComputation"
+        "path": "planner-ui/src/planner/SocialSecuritySection.tsx",
+        "symbol": "AimeExplainer"
       }
     ],
     "surfaces": [
@@ -1361,15 +1365,19 @@
         "surface": "ss-page",
         "selector": "SocialSecuritySection \"Averages your top N earning years ... M of those years are $0\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings"
+    }
   },
   {
     "transformations": [
-      "For each earnings year with a positive amount add min(4, floor(amount / CREDIT_EARNINGS)), capped at 40."
+      "socialSecurity/analysis/credits.ts#estimateCredits: an entered count wins; otherwise, for each calendar year's total earnings, min(4, floor(amount / that year's quarter-of-coverage amount)) from 1978 (SSA's table, the latest amount for a later year), min(4, floor(amount / 50)) before 1978 (the most a year could earn), nothing before 1937, capped at 40 in total."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "CREDIT_EARNINGS is a hard-coded 1,810 in explain.ts; rendered in SocialSecuritySection.tsx.",
+    "notes": "Computed in planner-ui/src/socialSecurity/explain.ts#estimateCredits (the 2025 amount, 1,810, for every year) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/credits.ts#estimateCredits with SSA's quarter-of-coverage amount for each year from 1978 (socialSecurity/ssaWageData.ts#QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR, 2026's $1,890 included), which EligibilityNote reads. Owner decision R10 kept the single amount until a per-year table existed; the table is added here.",
     "dimensions": [],
     "basis": "n/a",
     "id": "social-security-credit-estimate",
@@ -1380,8 +1388,8 @@
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/explain.ts",
-        "symbol": "estimateCredits"
+        "path": "planner-ui/src/planner/SocialSecuritySection.tsx",
+        "symbol": "EligibilityNote"
       }
     ],
     "surfaces": [
@@ -1389,179 +1397,207 @@
         "surface": "ss-page",
         "selector": "SocialSecuritySection credits hint \"Estimated N of 40\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/credits.ts#estimateCredits"
+    }
   },
   {
     "id": "social-security-expected-present-value",
     "group": "social-security",
-    "title": "expectedPv",
-    "meaning": "Present value of expected Social Security benefits after discounting and weighting payments by survival.",
+    "title": "Benefits-only expected present value",
+    "meaning": "Present value in today's dollars of expected Social Security benefits under a claiming strategy, each year priced by the ledger's Social Security rules, weighted by survival and discounted at a real rate.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/expectedPv.ts",
-        "symbol": "expectedPvSingle"
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "BenefitsOnlyTab"
       },
       {
-        "path": "planner-ui/src/socialSecurity/expectedPv.ts",
-        "symbol": "expectedPvCouple"
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "FicaReturnPanel"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "expected present value of benefits"
+        "selector": "Benefits-only tab ranking \"Expected PV\" column and \"Highest expected value\" callout; paid-in panel \"Expected lifetime benefits from YEAR (PV)\""
       }
     ],
     "transformations": [
-      "Survival-weight and discount each annual benefit; couple mode also models joint and survivor states."
+      "socialSecurity/analysis/expectedValue.ts#expectedPvSingle and #expectedPvCouple, ranked by #benefitsOnlyRanking: weight each year's benefit (priced by the ledger's rules: claim factor with months and payable months, dual entitlement from the spouse benefit's first month, the widow(er) benefit on the deceased's actual or never-claimed benefit reduced at the first month of widow(er) entitlement and then held to the widow's limit, the former-spouse benefits a single claimant is paid) by survival from the engine's curve, scale it by the real COLA drift and haircut, and discount at the real rate; couples sum over the year of the first death."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/socialSecurity/expectedPv.ts (#expectedPvSingle, #expectedPvCouple, and ssAnalysis.ts#benefitsOnlyRanking with the divorced floor) until B2-P1 slice 4, with a simplified spouse floor, the survivor keeping the larger own benefit and its own survival curve; now engine engine/src/socialSecurity/analysis/expectedValue.ts on the ledger's spouse, divorced and widow(er) rules and the engine's survival curve (owner decision R7), which BenefitsOnlyTab and FicaReturnPanel read.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/expectedValue.ts#expectedPvCouple"
+    }
   },
   {
     "transformations": [
-      "Divide expectedPvSingle(...) by ficaOasdiPaidIn(...).paidIn when paid-in is positive."
+      "socialSecurity/analysis/oasdiReturn.ts#oasdiReturnForPerson: (the expected PV at the person's claim age, with months and the former-spouse benefits the ledger would pay, a divorced spouse's only in a single household, plus the benefits received from the claim year to the year before the start at the start-year amount) / (the OASDI paid in so far plus the OASDI on the projected work the PIA counts), in today's dollars (#benefitsToContributionsRatio); no ratio when nothing is paid in, and no comparison for a disability benefit from its onset."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/SsAnalysisPage.tsx#FicaReturnPanel (expectedPvSingle over a nominal one-rate sum) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/oasdiReturn.ts (owner decision R8), which FicaReturnPanel reads. The benefits already received are counted since this slice.",
     "dimensions": [],
     "basis": "n/a",
     "id": "social-security-fica-return-ratio",
     "group": "social-security",
     "title": "Benefits-to-contributions ratio",
-    "meaning": "Expected present value of lifetime benefits divided by employee OASDI tax paid in.",
+    "meaning": "The benefits a person is paid, on their own record or a former spouse's when larger (those already received plus the expected present value of the rest), divided by the OASDI tax their career pays (paid in so far and on the projected work the PIA counts), both in today's dollars.",
     "unit": "factor",
     "kind": "ui-native",
     "uiSources": [
       {
         "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
-        "symbol": "SsAnalysisPage"
+        "symbol": "FicaReturnPanel"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Paid-in table \"Ratio (get back ÷ paid in)\""
+        "selector": "Paid-in table \"Ratio (get back ÷ paid in)\" and \"Benefits already received (YEAR dollars)\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/oasdiReturn.ts#benefitsToContributionsRatio"
+    }
   },
   {
     "id": "social-security-oasdi-paid-in",
     "group": "social-security",
     "title": "OASDI paid in",
-    "meaning": "Employee OASDI payroll tax paid over the earnings history used by the Social Security analysis.",
-    "unit": "usd",
-    "basis": "nominal",
-    "dimensions": [],
-    "kind": "ui-native",
-    "uiSources": [
-      {
-        "path": "planner-ui/src/socialSecurity/ficaReturn.ts",
-        "symbol": "ficaOasdiPaidIn"
-      }
-    ],
-    "surfaces": [
-      {
-        "surface": "ss-page",
-        "selector": "Paid-in table \"Paid in (OASDI)\" and \"Employer paid (context)\""
-      }
-    ],
-    "transformations": [
-      "Sum employee OASDI tax (earnings capped at each year's wage base times the employee rate) across the covered earnings history; employerPaid is the matching employer share, zero when self-employed."
-    ],
-    "candidateRuleIds": [],
-    "status": "identified",
-    "notes": ""
-  },
-  {
-    "transformations": [
-      "Multiply the resolved monthly PIA (a plan input or the engine earnings-record PIA) by 12."
-    ],
-    "candidateRuleIds": [],
-    "status": "identified",
-    "notes": "",
-    "dimensions": [],
-    "basis": "nominal",
-    "id": "social-security-pia-annualized",
-    "group": "social-security",
-    "title": "PIA annualized",
-    "meaning": "A claimant's monthly primary insurance amount times twelve, as the survivor-switching explainer prints it.",
-    "unit": "usd",
-    "kind": "ui-transformation",
-    "uiSources": [
-      {
-        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
-        "symbol": "SsAnalysisPage"
-      }
-    ],
-    "surfaces": [
-      {
-        "surface": "ss-page",
-        "selector": "Survivor switching paragraph \"about $X/yr\""
-      }
-    ]
-  },
-  {
-    "id": "social-security-survivor-switch-pv",
-    "group": "social-security",
-    "title": "survivorClaimAge",
-    "meaning": "Expected present value of a survivor strategy that switches between own and survivor benefits.",
+    "meaning": "Employee (or self-employed) OASDI payroll tax paid over the earnings history, and on the projected work the PIA counts, each year at that year's effective statutory rate and wage base, restated in today's dollars by CPI-U; the employer's share beside each as context.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-        "symbol": "expectedPvSwitch"
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "FicaReturnPanel"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "survivor switching expected PV"
+        "selector": "Paid-in table \"Paid in so far (OASDI, YEAR dollars)\", \"What your projected work will pay (FIRST–LAST, YEAR dollars)\", \"Employer paid so far (context)\" and \"Employer's share of the projected work (context)\""
       }
     ],
     "transformations": [
-      "Discount and survival-weight each own-to-survivor benefit switching strategy."
+      "socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn: for each entered year from 1937 to the start year, the year's earnings capped at its contribution and benefit base, times its effective rate (socialSecurity/oasdiTaxRates.ts), times CPI-U(latest)/CPI-U(year) and the plan's inflation from the latest CPI-U year to the start year (paid in so far); the projected years the PIA computation fills, and entered years after the start, taxed the same way at their face amount (the projected work); years before 1937, or self-employed before 1951, are named and not counted."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/socialSecurity/ficaReturn.ts#ficaOasdiPaidIn (today's 6.2% for every year, no base before 1979, a nominal sum labelled today's dollars) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn (owner decision R8), which FicaReturnPanel reads.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn"
+    }
   },
   {
     "transformations": [
-      "Divide indexedAnnual by 12 × computationYearCount to get the AIME rise, then multiply by the next-dollar bend-point rate (0.90, 0.32 or 0.15) for the eligibility year."
+      "× 12 of the engine's resolved monthly PIA (socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly), a unit conversion."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Rendered in the household income editor (SocialSecuritySection.tsx), which the surface vocabulary has no name for; recorded under ss-page.",
+    "notes": "PIA resolved by planner-ui/src/planner/ssAnalysis.ts#resolvePia (a mirror of the ledger's) until B2-P1 slice 4; now the engine's one resolver, which the ledger, the claim-milestone insight and the pages call; the × 12 is presentation.",
     "dimensions": [],
-    "basis": "nominal",
+    "basis": "real",
+    "id": "social-security-pia-annualized",
+    "group": "social-security",
+    "title": "PIA annualized",
+    "meaning": "A claimant's monthly primary insurance amount (the full-retirement-age benefit, in the plan's first year) times twelve, as the couple primer prints it.",
+    "unit": "usd",
+    "kind": "ui-transformation",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "CoupleStrategyPanel"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "CoupleStrategyPanel couple primer \"full-retirement-age benefit (PIA): $X/yr against $Y/yr\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly"
+    }
+  },
+  {
+    "id": "social-security-survivor-switch-pv",
+    "group": "social-security",
+    "title": "Survivor switching expected PV",
+    "meaning": "Expected present value of a widow(er)'s strategy that takes the survivor benefit and the own benefit at chosen ages and switches between them, with strategies paying the same benefits shown once.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-native",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "SurvivorSwitchingPanel"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "Survivor vs. personal timing table \"Strategy\" and \"Expected PV\""
+      }
+    ],
+    "transformations": [
+      "socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies: for each strategy, weight the larger claimed yearly benefit (the survivor benefit from the ledger's helper, the widow's limit after the age reduction) by survival from the engine's curve, scale it by the plan's COLA drift and haircut (expectedValue.ts#realBenefitScale, as the ranking) and discount it; strategies with the same yearly stream collapse to the one with fewer claims, then earlier ages; no input for a disability benefit from its onset."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/socialSecurity/survivorSwitching.ts#expectedPvSwitch (with the page's own best-record selection) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/survivorSwitching.ts (#survivorSwitchingInputs picks the record), with identical streams collapsed, which SurvivorSwitchingPanel reads and labels.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies"
+    }
+  },
+  {
+    "transformations": [
+      "socialSecurity/piaFromEarnings.ts#zeroYearReplacementGain: re-run computePiaFromEarnings with the latest base year whose earnings are $0 given the sample (the first projected year's assumed earnings, else the latest reported year's, #zeroYearSampleEarnings), the window and indexing unchanged, raise both PIAs by the cost-of-living increases from the eligibility year through the year before the start (#piaWithCostOfLivingIncreases), and publish the difference (startYearGainMonthly)."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/socialSecurity/explain.ts#replaceZeroYearGain (the raw sample over 12 × N at the current bend rate) until B2-P1 slice 4; now engine engine/src/socialSecurity/piaFromEarnings.ts#zeroYearReplacementGain (owner decision R9), which AimeExplainer reads, naming the replaced year. Rendered in the household income editor, which the surface vocabulary has no name for; recorded under ss-page.",
+    "dimensions": [],
+    "basis": "real",
     "id": "social-security-zero-year-replacement-gain",
     "group": "social-security",
     "title": "Zero-year replacement PIA gain",
-    "meaning": "Rough monthly PIA gain from replacing one $0 computation year with a year of indexed earnings.",
+    "meaning": "Monthly PIA gain from replacing the latest $0 base year with a year of the sample earnings, recomputed exactly through the benefit formula and given in the dollars of the PIA the step shows.",
     "unit": "usd",
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/socialSecurity/explain.ts",
-        "symbol": "replaceZeroYearGain"
+        "path": "planner-ui/src/planner/SocialSecuritySection.tsx",
+        "symbol": "AimeExplainer"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "SocialSecuritySection PIA explainer \"would add roughly $X/mo\""
+        "selector": "SocialSecuritySection PIA explainer \"Replacing your $0 year in YEAR with about $X of earnings would add $Y/mo\", or, for a year already past, \"Had you earned about $X in YEAR, one of your $0 years, your benefit would be $Y/mo higher in START dollars\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/socialSecurity/piaFromEarnings.ts#zeroYearReplacementGain"
+    }
   },
   {
     "id": "survivor-scenario-row-estate-delta",

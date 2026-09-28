@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { taxCalculatorFor } from './useProjection'
-import { expectedPvSingle } from '../socialSecurity/expectedPv'
-import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, divorcedSpouseTotalMonthly, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
+import { benefitsOnlyRanking, expectedPvSingle, singleBenefitInYear } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
+import { candidateClaimAges, claimingPeople, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -241,22 +241,26 @@ describe('benefitsOnlyRanking', () => {
   }
 
   it('prices a divorced spouse as the ledger does: own benefit plus the reduced excess (707.50 at 62, not 650)', () => {
+    // The engine's ranking prices the record with the ledger's own
+    // maritalBenefitFor (the dual-entitlement composition) and pays it from the
+    // year of the first month the ex is 62 throughout, 2028, as the ledger does.
     const plan = divorcedCaseB(62)
     const person = plan.household.people[0]!
     const stream = ssStreamFor(plan, 'p1')!
-    expect(divorcedSpouseTotalMonthly(person, stream, 800, 62, true)).toBeCloseTo(707.5, 9)
-    // At 67 both benefits start at FRA: 800 + 200 = 1,000.
-    expect(divorcedSpouseTotalMonthly(person, stream, 800, 67, true)).toBeCloseTo(1_000, 9)
-    expect(divorcedSpouseTotalMonthly(person, stream, 800, 62, false)).toBe(0)
-    const row = benefitsOnlyRanking(plan, 0.02, 2026).rows.find((x) => x.claimByPersonId['p1'] === 62)!
-    const input = {
-      currentAge: 62,
+    const claimant = (claimYears: number) => ({
       dob: { year: 1964, month: 6, day: 15 },
       sex: person.sex,
       piaMonthly: 800,
-      claimAge: { years: 62, months: 0 },
-    }
-    expect(row.expectedPv).toBeCloseTo(expectedPvSingle({ ...input, benefitFloorMonthly: 707.5 }, { discountRate: 0.02 }), 6)
+      claimAge: { years: claimYears, months: 0 },
+      formerSpouses: stream.formerSpouses ?? [],
+    })
+    expect(singleBenefitInYear(claimant(62), { single: true }, 2027)).toBe(560 * 12)
+    expect(singleBenefitInYear(claimant(62), { single: true }, 2028) / 12).toBeCloseTo(707.5, 9)
+    // At 67 both benefits start at FRA: 800 + 200 = 1,000.
+    expect(singleBenefitInYear(claimant(67), { single: true }, 2031) / 12).toBeCloseTo(1_000, 9)
+    expect(singleBenefitInYear(claimant(62), { single: false }, 2028)).toBe(560 * 12)
+    const row = benefitsOnlyRanking(plan, 0.02, 2026).rows.find((x) => x.claimByPersonId['p1'] === 62)!
+    expect(row.expectedPv).toBe(expectedPvSingle(claimant(62), { single: true }, { startYear: 2026, discountRate: 0.02, assumptions: plan.assumptions }))
   })
 
   it('does not grant divorced-spousal once remarried (couple household)', () => {

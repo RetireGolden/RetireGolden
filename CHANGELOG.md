@@ -4,6 +4,85 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the Social Security analysis models move into the engine; the break-even
+  chart shows the plan's dollars, the benefits-only ranking prices couples on the
+  ledger's rules, and "what you paid in" is in today's dollars (displayed numbers
+  change)** (B2-P1 slice 4, owner decisions R6 to R10 of D-B2P1-PARITY; derived and
+  independently checked, RetireGolden-Docs `evidence/b2p1-slice4-*.md`). Nine figures on
+  the Social Security analysis page and the Social Security step were computed in
+  planner-ui; each is now an engine function the page reads, with a calculation record,
+  a worksheet, evidence and an executed mutation receipt:
+  - **Break-even** (`socialSecurity/analysis/breakEven.ts`, R6): the cumulative benefits
+    are the start-year PIA × the claim factor × 12 × the ledger's own cost-of-living
+    factor and benefit cut for each year (`socialSecurity/colaFactor.ts`, which
+    `simulatePlan` now calls with its own inflation path, so no Monte Carlo path moves),
+    not a cost-of-living adjustment compounded from 62; crossings are found on the
+    unrounded totals. On the 29 examples: 252 callouts, none changes; 6,684 of 9,116
+    tooltip values change, by (1 + inflation)^(62 − age) (0.906 at 66 to 2.685 at 22).
+  - **Benefits-only expected value** (`socialSecurity/analysis/expectedValue.ts`, R7):
+    each year's benefits follow the ledger's rules (claim months; a couple's lower
+    earner paid the own benefit plus the reduced spouse excess from the month the spouse
+    benefit starts; after a death, the widow(er) benefit on the deceased's actual or
+    never-claimed benefit, reduced at the first month of widow(er) entitlement and then
+    held to the widow's limit; a divorced spouse only from the year of the first month the
+    ex is 62 throughout, the ledger's gate), the
+    COLA drift and haircut of the plan's assumptions, and the engine's one survival curve
+    (`montecarlo/survival.ts#survivalCurve`, which `survivalProbabilityTo` is now a view
+    of, bit for bit). The 18 single examples and bracket-fill-roth do not change at any
+    rate. Six couples change: at the default 2%, example-couple's best stays 70/62 at
+    $841k (was $852k), survivor-years' moves from 67/70 ($851k) to 64/69 ($853k),
+    annuity-purchases-estate and no-annuity-brokerage stay 70/63 at $784k ($792k), and the
+    two 401(k) couples stay 70/62 at $425k ($442k); over the 17 slider rates 980 of 3,519
+    displayed rows and 41 top claim ages change. A claimant whose benefit is a disability
+    benefit from its onset is no longer ranked or charted by claim age; the page says why.
+  - **What you paid in** (`socialSecurity/analysis/oasdiReturn.ts`, R8; the module is
+    named for OASDI, the Social Security part of FICA, since it leaves out Medicare): each
+    year at its effective OASDI rate (SSA's table, `socialSecurity/oasdiTaxRates.ts`) on
+    earnings capped at that year's base, restated in today's dollars by the BLS CPI-U
+    annual averages (`socialSecurity/cpiU.ts`); the ratio adds the benefits already
+    received for someone collecting, and the tax the projected work the PIA counts will
+    pay ("paid in so far" and "what your projected work will pay"), so both sides cover
+    the same career. A 40-year $50,000 career paid in $225,418 in 2026 dollars, not
+    $119,307 at one rate, and its ratio is 2.38, not 3.80; a 45-year-old with a projection
+    to 65 is shown 1.53, not 2.36 over the history alone. A disability benefit from its
+    onset gets a sentence, not a ratio. No example has an earnings history.
+  - **Survivor switching** (`socialSecurity/analysis/survivorSwitching.ts`): strategies
+    that pay the same benefits are shown once (fewer claims, then earlier ages), and each
+    year carries the plan's COLA drift and benefit cut, as the ranking beside it does.
+    No example has a deceased former spouse.
+  - **The Social Security step** (`socialSecurity/piaFromEarnings.ts`,
+    `socialSecurity/analysis/credits.ts`): the AIME explainer's counts are the engine's;
+    the zero-year gain is recomputed exactly and names the replaced year (R9: $110 a month,
+    not $229, for a $300,000 sample), in the dollars of the PIA the step shows, and for
+    someone 62 or older, whose $0 years have passed, says what the year would have added
+    ($23 a month in 2026 dollars, not $18 in 2020's, for the review's case); the credit estimate uses SSA's quarter-of-coverage
+    amount for each year from 1978, $1,890 in 2026 (R10's single-year amount is retired).
+  - **One PIA resolver** (`piaFromEarnings.ts#resolveStreamPiaMonthly`) for the ledger, the
+    claim-milestone insight and the pages; the couple primer calls PIA × 12 the
+    full-retirement-age benefit.
+  - **What the benefits-only views leave out, said on the page**: the benefits-only tab, the
+    feature doc and the Learning Center name the differences from the plan (no earnings
+    test, a couple member's former-spouse records not counted, one claim age per person)
+    instead of saying the rules are the same, and a notice names each person whose plan
+    wages would have the earnings test hold back part of a benefit at a claim age the tab
+    shows (example-couple: Alex at 64 or 65, Sam at 62 or 63). It is found with the
+    ledger's own earnings test, now one function (`socialSecurity/earningsTest.ts`) that
+    the projection and `socialSecurity/analysis/earningsTestReach.ts` both call; no
+    projected number moves. Modeling the earnings test in those views is a separate
+    decision (D-SS-ANALYSIS-EARNINGS-TEST).
+  - **The family maximum in the couple model** is the ledger's own
+    (`familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum`, the room above the
+    worker's PIA since #756), so a worker who claimed after full retirement age leaves a
+    spouse the whole excess in both: $500 a month, not $360, in the review's case.
+  - **Sources**: the Assumptions card and the report's source list cite SSA's tax-rate
+    table for the 6.2% rate (it was attributed to the COLA fact sheet), and add SSA's
+    quarter-of-coverage table and BLS's CPI-U (three new entries in
+    `params/provenance.ts#PARAMETER_PROVENANCE`, 19 in all).
+  planner-ui's `socialSecurity/{breakEven,expectedPv,ficaReturn,survivorSwitching,explain}.ts`
+  are deleted. RetireGolden-Pro renders these pages through planner-ui's routes and
+  imports none of the modules, so it picks the changes up with the next planner-ui
+  bump; RetireGolden-MCP has no Social Security analysis tool.
+
 - **Fixed: a spouse benefit is capped by the family maximum less the worker's primary
   insurance amount, not less the benefit the worker is paid (displayed numbers change
   only where the old cap bound; none of the 29 examples or their 10 scenarios moves)**
@@ -1349,6 +1428,36 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **Social Security analysis (B2-P1 slice 4):** the parameter field
+  `socialSecurity.oasdiEmployeeRatePct` is removed from `ParameterPack` and the 2026
+  parameters (its one reader, the planner's paid-in panel, reads the rate table
+  `@retiregolden/engine/socialSecurity/oasdiTaxRates` now). `PiaFromEarningsResult` gains
+  the required `zeroYearsInAime`, and `PiaFromEarningsInput.earnings` and
+  `piaInputFromEarnings`'s `earnings` are `readonly YearEarning[]`. New engine modules:
+  `socialSecurity/analysis/{breakEven,expectedValue,oasdiReturn,survivorSwitching,credits}`,
+  `socialSecurity/colaFactor`, `socialSecurity/oasdiTaxRates`, `socialSecurity/cpiU`;
+  new exports `montecarlo/survival#survivalCurve` and `SurvivalCurve`,
+  `socialSecurity/piaFromEarnings#resolveStreamPiaMonthly`, `#streamPiaFromEarningsInput`,
+  `#zeroYearReplacementGain` (with an optional `asOf` and the result's
+  `startYearGainMonthly`), `#zeroYearSampleEarnings`, `#bendTierForAime`, and
+  `socialSecurity/ssaWageData#QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR` and
+  `#quarterOfCoverageAmountForYearOrLatest`; `socialSecurity/earningsTest#earningsTestWithheldAnnual`
+  and `socialSecurity/analysis/earningsTestReach#earningsTestReach`;
+  `socialSecurity/analysis/expectedValue#realBenefitScale`; `socialSecurity/analysis/claimants`
+  (`socialSecurityStreamFor`, `socialSecurityClaimants`, `benefitsOnlyClaimAges`,
+  `disabilityReplacesClaimAge`, which `expectedValue` re-exports, so a page that needs only
+  the claimants does not load the models). `socialSecurity/analysis/oasdiReturn`
+  exports `oasdiReturnForPerson`, `OasdiReturn` and `OasdiReturnOptions` (named for OASDI;
+  the slice's draft called them `ficaReturn*`, never published), and `OasdiPaidIn` carries
+  the projected work (`projectedToday`, `projectedEmployerToday`, `projectedYears`);
+  `survivorSwitching#SwitchingOptions` requires the plan's `assumptions`.
+  `params#PARAMETER_PROVENANCE` gains the ids `social-security-tax-rates`,
+  `social-security-credits` and `cpi-u`. planner-ui (published source): the modules
+  `socialSecurity/{breakEven,expectedPv,ficaReturn,survivorSwitching,explain}` are deleted,
+  and `planner/ssAnalysis` loses `benefitsOnlyRanking`, `BenefitsPvRow` and `CLAIM_AGES`
+  (the ranking is `@retiregolden/engine/socialSecurity/analysis/expectedValue#benefitsOnlyRanking`,
+  whose rows now carry `disabilityPersonIds` beside them).
 
 - **Family maximum room:** `AuxiliaryFamilyMaximumInput`
   (`@retiregolden/engine/socialSecurity/familyMaximum`) no longer has

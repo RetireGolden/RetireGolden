@@ -23,19 +23,20 @@ import { runMonteCarlo } from '../mc/pool'
 import { sizeBridge, type BridgeSizing } from '@retiregolden/engine/ladder/bridge'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { TipsLadder } from '@retiregolden/engine/model/plan'
-import { computeBreakEven } from '../socialSecurity/breakEven'
-import { rankSwitchStrategies } from '../socialSecurity/survivorSwitching'
+import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
+import { earningsTestReach } from '@retiregolden/engine/socialSecurity/analysis/earningsTestReach'
 import {
-  passesModeledOrdinaryWidowRecordGates,
-  passesModeledSurvivingDivorcedRecordGates,
-} from '@retiregolden/engine/socialSecurity/maritalBenefits'
-import { survivorBenefitMonthly } from '@retiregolden/engine/socialSecurity/survivorBenefit'
-import { ficaOasdiPaidIn } from '../socialSecurity/ficaReturn'
-import { expectedPvSingle } from '../socialSecurity/expectedPv'
-import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+  benefitsOnlyClaimAges,
+  benefitsOnlyRanking,
+  disabilityReplacesClaimAge,
+} from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
+import { oasdiReturnForPerson } from '@retiregolden/engine/socialSecurity/analysis/oasdiReturn'
+import {
+  rankSwitchStrategies,
+  survivorSwitchingInputs,
+  type SwitchStrategy,
+} from '@retiregolden/engine/socialSecurity/analysis/survivorSwitching'
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
-import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
-import { packForYear } from '@retiregolden/engine/params'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import { moneyLastsValue } from './format'
 import { usePlan } from './planContextCore'
@@ -47,7 +48,6 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import {
-  benefitsOnlyRanking,
   candidateClaimAges,
   claimingPeople,
   dobParts,
@@ -78,7 +78,7 @@ const OBJECTIVE_CHOICES: ReadonlyArray<{ value: ObjectivePolicyId; label: string
   'bridge-durability',
 ].map((id) => ({ value: id as ObjectivePolicyId, label: objectivePolicies[id as ObjectivePolicyId].label }))
 
-function ageLabel(claim: Record<string, number>, ids: string[]): string {
+function ageLabel(claim: Readonly<Record<string, number>>, ids: string[]): string {
   return ids.map((id) => claim[id]).join(' / ')
 }
 
@@ -764,14 +764,15 @@ function CoupleStrategyPanel({ personName, best }: { personName: (id: string) =>
     <div className="callout callout--info">
       {samePia ? (
         <>
-          Both benefits are about {fmtMoneyCompact(higher.pia * 12)}/yr. When the first spouse dies the survivor keeps the
-          larger of the two checks, so delaying either claim raises the survivor floor.
+          Both full-retirement-age benefits (PIA) are about {fmtMoneyCompact(higher.pia * 12)}/yr. When the first spouse
+          dies the survivor keeps the larger of the two checks, so delaying either claim raises the survivor floor.
         </>
       ) : (
         <>
-          <strong>{higherName}</strong> has the higher benefit ({fmtMoneyCompact(higher.pia * 12)}/yr vs{' '}
-          {fmtMoneyCompact(lower.pia * 12)}/yr for {lowerName}). After the first death the survivor keeps only the larger
-          check, so delaying <strong>{higherName}</strong>’s claim protects whoever lives longest.
+          <strong>{higherName}</strong> has the larger full-retirement-age benefit (PIA):{' '}
+          {fmtMoneyCompact(higher.pia * 12)}/yr against {fmtMoneyCompact(lower.pia * 12)}/yr for {lowerName}. After the
+          first death the survivor keeps only the larger check, so delaying <strong>{higherName}</strong>’s claim protects
+          whoever lives longest.
         </>
       )}
       {patternNote}
@@ -917,30 +918,30 @@ function CoupleHeatmap({
 
 /**
  * Break-even education (V7 phase 2). The simple cumulative-benefit lens for one
- * person's own retirement benefit, with COLA and an optional investment return.
- * Deliberately lean copy. The conceptual narrative is the V9 Learning Center's
- * job; the In-your-plan sweep is the complete answer.
+ * person's own retirement benefit, with an optional investment return. The
+ * engine accumulates the benefits in the plan's own dollars (the ledger's
+ * cost-of-living factor and benefit cut for each year) and finds the
+ * crossings; the page rounds them for display. Deliberately lean copy. The
+ * conceptual narrative is the V9 Learning Center's job; the In-your-plan sweep
+ * is the complete answer.
  */
 function BreakEvenTab({ personIds, personName }: { personIds: string[]; personName: (id: string) => string }) {
   const { plan } = usePlan()
-  const people = claimingPeople(plan)
+  const startYear = currentStartYear()
+  const people = claimingPeople(plan, startYear)
   const [selectedId, setSelectedId] = useState(personIds[0]!)
   const [growthPct, setGrowthPct] = useState(0)
 
   const entry = people.find((p) => p.person.id === selectedId) ?? people[0]!
-  const { person, pia } = entry
+  const { person, pia, stream } = entry
   const { y, m, d } = dobParts(person)
-  const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
-  const currentAge = currentStartYear() - y
+  const dob = { year: y, month: m, day: d }
   const throughAge = person.longevity.planningAge
-  const cola = plan.assumptions.ssCola.mode === 'fixed' ? plan.assumptions.ssCola.annualPct : plan.assumptions.inflationPct
-
-  const claimAges = Array.from(new Set([62, fra.years, 70]))
-    .sort((a, b) => a - b)
-    .filter((a) => a >= currentAge)
+  const disability = disabilityReplacesClaimAge(stream, person)
+  const claimAges = breakEvenClaimAges(dob, startYear)
   const result =
-    claimAges.length >= 2
-      ? computeBreakEven({ dob: { year: y, month: m, day: d }, piaMonthly: pia, claimAges, colaPct: cola, growthPct, throughAge })
+    !disability && claimAges.length >= 2
+      ? claimBreakEven({ dob, piaMonthly: pia, claimAges, startYear, assumptions: plan.assumptions, growthPct, throughAge })
       : null
 
   const personSelect =
@@ -953,6 +954,15 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
         ))}
       </div>
     ) : null
+
+  if (disability) {
+    return (
+      <div>
+        {personSelect}
+        <p className="card-hint">{disabilityNote(personName(entry.person.id))}</p>
+      </div>
+    )
+  }
 
   if (!result) {
     return (
@@ -970,18 +980,26 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
     for (const a of claimAges) row[`a${a}`] = pt.cumulative[a]!
     return row
   })
+  const { ssCola, ssHaircut, inflationPct } = plan.assumptions
+  const colaText =
+    ssCola.mode === 'fixed'
+      ? `a ${ssCola.annualPct}% yearly cost-of-living increase`
+      : `cost-of-living increases that match the plan's ${inflationPct}% inflation`
+  const cutText = ssHaircut ? ` and the plan's ${ssHaircut.cutPct}% benefit cut from ${ssHaircut.fromYear}` : ''
 
   return (
     <div>
       <p className="card-hint">
         Claim early and collect sooner, or wait for a bigger check? This compares the cumulative lifetime benefit from{' '}
-        {personName(selectedId)}'s own retirement benefit at each claim age, COLA {cola}%, checks invested at the chosen
-        return{' '}
-        <HelpTip text="Pedagogical view. It ignores spousal/survivor benefits, taxes, and the rest of your portfolio; the In-your-plan sweep is the complete answer. A higher assumed return rewards claiming early, pushing break-even later." />.
+        {personName(selectedId)}'s own retirement benefit at each claim age, in the plan's dollars for each year ({colaText}
+        {cutText}), with checks invested at the chosen return{' '}
+        <HelpTip text="Pedagogical view. It ignores spousal and survivor benefits, the earnings test, taxes, and the rest of your portfolio; the In-your-plan sweep is the complete answer. Each year's benefit is the amount the projection pays that year. A higher assumed return rewards claiming early, pushing break-even later." />.
         It's the simple lens. The In-your-plan tab is the complete one.
       </p>
 
       {personSelect}
+
+      <EarningsTestNotice claimAgesByPersonId={{ [person.id]: claimAges }} personName={personName} />
 
       <div className="seg mb-md" role="group" aria-label="Investment return on benefits">
         {[0, 3, 5, 7].map((g) => (
@@ -1001,7 +1019,7 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
               <>claiming at {c.late} never catches up by age {throughAge}{growthPct > 0 ? ` at a ${growthPct}% return` : ''}.</>
             ) : (
               <>
-                waiting until {c.late} pulls ahead around age <strong>{c.age}</strong>.
+                waiting until {c.late} pulls ahead around age <strong>{Math.round(c.age * 10) / 10}</strong>.
               </>
             )}
           </div>
@@ -1024,9 +1042,60 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
           </ResponsiveContainer>
         </div>
         <p className="muted small">
-          Cumulative benefits received through each age{growthPct > 0 ? `, with each check invested at ${growthPct}%` : ''}.
+          Cumulative benefits received through each age, in each year's dollars{growthPct > 0 ? `, with each check invested at ${growthPct}%` : ''}.
         </p>
       </div>
+    </div>
+  )
+}
+
+/** Why a claim-age analysis leaves out a person whose benefit is a disability benefit from its onset. */
+function disabilityNote(name: string): string {
+  return `${name}'s benefit is a disability benefit, paid from the onset of the disability rather than from a claim age, so there is no claim age to compare here.`
+}
+
+/** Whole-year ages in words: runs of consecutive ages as "62 to 66", the rest listed with "or". */
+function ageListText(ages: readonly number[]): string {
+  const runs: string[] = []
+  let first = ages[0]!
+  let last = first
+  for (const age of [...ages.slice(1), Number.NaN]) {
+    if (age === last + 1) {
+      last = age
+      continue
+    }
+    runs.push(first === last ? `${first}` : last === first + 1 ? `${first} or ${last}` : `${first} to ${last}`)
+    first = age
+    last = age
+  }
+  return runs.length <= 2 ? runs.join(' or ') : `${runs.slice(0, -1).join(', ')} or ${runs[runs.length - 1]}`
+}
+
+/**
+ * Names each person whose wages in the plan would have part of their benefit
+ * withheld under the earnings test at a claim age this tab shows. The
+ * benefits-only views count those benefits as paid; the engine tests each year
+ * with the ledger's own earnings-test function.
+ */
+function EarningsTestNotice({
+  claimAgesByPersonId,
+  personName,
+}: {
+  claimAgesByPersonId: Readonly<Record<string, readonly number[]>>
+  personName: (id: string) => string
+}) {
+  const { plan } = usePlan()
+  const reach = earningsTestReach(plan, claimAgesByPersonId, currentStartYear())
+  if (reach.length === 0) return null
+  return (
+    <div className="callout callout--note" role="note">
+      {reach.map(({ personId, claimAges }) => (
+        <p key={personId} style={{ margin: 0 }}>
+          {personName(personId)}'s wages in this plan would have part of their benefit held back under the earnings test
+          if they claimed at {ageListText(claimAges)}. This view counts those benefits as paid; the In-your-plan tab holds
+          them back.
+        </p>
+      ))}
     </div>
   )
 }
@@ -1041,7 +1110,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   )
   const best = ranking.ranked[0]
   const current = currentClaim(plan, personIds)
-  const keyOf = (claim: Record<string, number>) => personIds.map((id) => claim[id]).join('-')
+  const keyOf = (claim: Readonly<Record<string, number>>) => personIds.map((id) => claim[id]).join('-')
   const hasLivingDivorcedRecord = plan.incomes.some(
     (s) => s.type === 'socialSecurity' && (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
   )
@@ -1051,13 +1120,15 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect annual timing, how couple benefits are combined, and eligibility assumptions, not only taxes and portfolio growth.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth. Benefits are in today's dollars; a cost-of-living increase below inflation, or a benefit cut in the plan's assumptions, lowers the later years." />. It uses most of the In-your-plan tab's Social Security rules, but not all of them. There is no earnings test, so benefits the plan would hold back while someone is still working are counted as paid. A former spouse's record is not counted for a person in a couple. And each person has one claim age. Beyond those, the two tabs differ by taxes, portfolio growth, and the plan's fixed planning ages, which this view replaces with the chance of being alive.
       </p>
       {personIds.length === 2 ? (
         <p className="card-hint">
-          For couples, benefits are priced year by year. The lower earner receives the larger of their reduced own
-          benefit or a reduced half of the partner&apos;s PIA (monthly at FRA). That simplified rule can differ from In
-          your plan, which pays reduced own plus a separately reduced spousal top-up.
+          For couples, benefits are priced year by year. While both are alive, the lower earner receives their own
+          benefit plus a reduced spousal top-up once both have claimed. After the first death, the survivor keeps the
+          larger of their own benefit and the survivor benefit, which is reduced if it starts before their survivor full
+          retirement age. Each person has one claim age, so a survivor cannot take the survivor benefit first and switch
+          to their own later.
         </p>
       ) : null}
       <div className="form-grid" style={{ maxWidth: '22rem' }}>
@@ -1079,14 +1150,26 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       </div>
 
+      <EarningsTestNotice
+        claimAgesByPersonId={Object.fromEntries(
+          plan.household.people
+            .filter((person) => personIds.includes(person.id))
+            .map((person) => [person.id, benefitsOnlyClaimAges(person, currentStartYear())]),
+        )}
+        personName={personName}
+      />
+
       {hasLivingDivorcedRecord ? (
         <div className="callout callout--note" role="note">
           With a living ex-spouse, this ranking pays what the plan pays once the spouse benefit starts: your own benefit
           plus the part of half the ex&apos;s PIA above your own PIA, reduced for your age in the first month the ex is 62
-          throughout. It pays that amount from your selected claim age onward and does not wait for the ex to turn 62.
-          Marriage-length and currently-unmarried gates still apply. The In-your-plan tab waits for the year the spouse
-          benefit starts, and does not check full SSA entitlement rules.
+          throughout. As in the In-your-plan tab, it pays that from the year that month falls in, and only while you are
+          unmarried after a marriage of at least ten years; neither tab checks the full SSA entitlement rules.
         </div>
+      ) : null}
+
+      {ranking.disabilityPersonIds.length > 0 ? (
+        <p className="card-hint">{ranking.disabilityPersonIds.map((id) => disabilityNote(personName(id))).join(' ')}</p>
       ) : null}
 
       {best ? (
@@ -1096,7 +1179,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           {fmtMoneyCompact(best.expectedPv)}.
           {keyOf(best.claimByPersonId) !== keyOf(current) ? (
             <div style={{ marginTop: '0.6rem' }}>
-              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy(best.claimByPersonId)}>
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy({ ...best.claimByPersonId })}>
                 Apply {ageLabel(best.claimByPersonId, personIds)}
               </button>
             </div>
@@ -1104,33 +1187,35 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       ) : null}
 
-      <ScrollRegion label="Expected value by claim age" style={{ border: 'none' }}>
-        <table className="claim-table">
-          <thead>
-            <tr>
-              <th scope="col">Claim age{personIds.length === 2 ? 's' : ''}</th>
-              <th scope="col">Expected PV</th>
-              <th scope="col" aria-label="apply" />
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.ranked.slice(0, 10).map((r) => {
-              const isCurrent = keyOf(r.claimByPersonId) === keyOf(current)
-              return (
-                <tr key={keyOf(r.claimByPersonId)} className={isCurrent ? 'claim-row--current' : undefined}>
-                  <td>{ageLabel(r.claimByPersonId, personIds)}</td>
-                  <td>{fmtMoneyCompact(r.expectedPv)}</td>
-                  <td>
-                    <button type="button" className="btn btn-secondary btn-small" disabled={isCurrent || readOnly} onClick={() => applyStrategy(r.claimByPersonId)}>
-                      Use
-                    </button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </ScrollRegion>
+      {ranking.ranked.length > 0 ? (
+        <ScrollRegion label="Expected value by claim age" style={{ border: 'none' }}>
+          <table className="claim-table">
+            <thead>
+              <tr>
+                <th scope="col">Claim age{personIds.length === 2 ? 's' : ''}</th>
+                <th scope="col">Expected PV</th>
+                <th scope="col" aria-label="apply" />
+              </tr>
+            </thead>
+            <tbody>
+              {ranking.ranked.slice(0, 10).map((r) => {
+                const isCurrent = keyOf(r.claimByPersonId) === keyOf(current)
+                return (
+                  <tr key={keyOf(r.claimByPersonId)} className={isCurrent ? 'claim-row--current' : undefined}>
+                    <td>{ageLabel(r.claimByPersonId, personIds)}</td>
+                    <td>{fmtMoneyCompact(r.expectedPv)}</td>
+                    <td>
+                      <button type="button" className="btn btn-secondary btn-small" disabled={isCurrent || readOnly} onClick={() => applyStrategy({ ...r.claimByPersonId })}>
+                        Use
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </ScrollRegion>
+      ) : null}
       {ranking.ranked.length > 10 ? <p className="muted small">Showing the top 10 of {ranking.ranked.length} combinations.</p> : null}
 
       <SurvivorSwitchingPanel discountPct={discountPct} />
@@ -1140,19 +1225,21 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 }
 
 /**
- * "What you paid in vs. what you get back" — an education/context readout (no
- * engine-tax change). Paid-in = OASDI payroll tax over the entered earnings
- * history (employee 6.2% / self-employed 12.4%, capped at the wage base); get-back
- * = the survival-weighted expected PV of lifetime benefits at the chosen claim age
- * (reusing the tested `expectedPvSingle` path). Only renders when an earnings
- * history is present; Quick-PIA plans get a note.
+ * "What you paid in vs. what you get back": an education and context readout
+ * (the projection taxes no working-years wages). The engine restates the OASDI
+ * tax paid over the entered earnings history, and the tax the projected work
+ * the PIA counts will pay, in today's dollars at each year's rate and wage
+ * cap, and prices the benefits the person is paid (on their own record, or a
+ * former spouse's when larger): those already received and the
+ * survival-weighted expected value of the rest at the current claim age. Only
+ * renders when an earnings history is present; Quick-PIA plans get a note, and
+ * a disability benefit from its onset gets the same sentence as the ranking.
  */
 function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
   const [selfEmployed, setSelfEmployed] = useState(false)
   const startYear = currentStartYear()
   const people = claimingPeople(plan, startYear)
-  const { pack } = packForYear(startYear)
   const discountRate = discountPct / 100
 
   const withEarnings = people.filter((p) => p.stream.earnings && p.stream.earnings.length > 0)
@@ -1162,15 +1249,17 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
       <summary>What you paid in vs. what you get back</summary>
       <p className="card-hint">
         An illustrative "return on your Social Security taxes": the OASDI payroll tax you paid over your earnings
-        history, beside the survival-weighted expected value of your lifetime benefits at your current claim age. This
-        is an individual-level illustration, not the program's actuarial return, and it excludes the insurance value of
-        disability/survivor benefits, spousal benefits, and Medicare.{' '}
+        history and the tax your projected work will pay, in today's dollars, beside the benefits you are paid (on your
+        record, or a former spouse's when larger): those already received and the survival-weighted expected value of
+        the rest at your current claim age. This is an individual-level illustration,
+        not the program's actuarial return, and it excludes the insurance value of disability and survivor benefits,
+        benefits paid to others on your record, and Medicare.{' '}
         <LearnLink {...LEARN.ssTaxesVsBenefits} variant="inline" />
       </p>
       <div className="form-grid" style={{ maxWidth: '24rem' }}>
         <CheckboxField
-          label="Self-employed (12.4% OASDI)"
-          help="Toggles the OASDI rate from the employee share (6.2%) to the self-employed total (12.4%). A simplification applied uniformly to your earnings history."
+          label="Self-employed"
+          help="Uses each year's self-employment tax rate, both halves of the tax (12.4% today), instead of the employee's share (6.2% today)."
           value={selfEmployed}
           onCommit={setSelfEmployed}
         />
@@ -1178,41 +1267,56 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
       {withEarnings.length === 0 ? (
         <p className="muted small">Enter an earnings history on the Social Security step to see what you paid in.</p>
       ) : (
-        withEarnings.map(({ person, stream, pia }) => {
-          const { y, m, d } = dobParts(person)
-          const paidIn = ficaOasdiPaidIn(stream.earnings ?? [], {
-            oasdiEmployeeRatePct: pack.socialSecurity.oasdiEmployeeRatePct,
-            selfEmployed,
-          })
-          const getBack = expectedPvSingle(
-            {
-              currentAge: Math.max(0, startYear - y),
-              dob: { year: y, month: m, day: d },
-              sex: person.sex,
-              piaMonthly: pia,
-              claimAge: stream.claimAge,
-            },
-            { discountRate },
-          )
-          const ratio = paidIn.paidIn > 0 ? getBack / paidIn.paidIn : 0
+        withEarnings.map(({ person, stream }) => {
+          if (disabilityReplacesClaimAge(stream, person)) {
+            return (
+              <p key={person.id} className="card-hint">
+                {disabilityNote(person.name)}
+              </p>
+            )
+          }
+          const result = oasdiReturnForPerson(plan, person.id, { startYear, discountRate, selfEmployed })
+          if (result === null) return null
+          const { paid } = result
           return (
             <div key={person.id} className="callout callout--info" style={{ marginTop: '0.6rem' }}>
               <strong>{person.name}</strong>
               <ScrollRegion label={`Paid in vs. received: ${person.name}`} style={{ border: 'none' }}>
                 <table className="claim-table">
                   <tbody>
-                    <tr><td>Paid in (OASDI)</td><td>{fmtMoney(paidIn.paidIn)}</td></tr>
-                    {paidIn.employerPaid > 0 ? (
-                      <tr><td className="muted small">Employer paid (context)</td><td className="muted small">{fmtMoney(paidIn.employerPaid)}</td></tr>
+                    <tr><td>Paid in so far (OASDI, {startYear} dollars)</td><td>{fmtMoney(paid.paidInToday)}</td></tr>
+                    {paid.projectedYears.length > 0 ? (
+                      <tr>
+                        <td>What your projected work will pay ({paid.projectedYears[0]}–{paid.projectedYears[paid.projectedYears.length - 1]}, {startYear} dollars)</td>
+                        <td>{fmtMoney(paid.projectedToday)}</td>
+                      </tr>
                     ) : null}
-                    <tr><td>Expected lifetime benefits (PV)</td><td>{fmtMoneyCompact(getBack)}</td></tr>
-                    <tr><td>Ratio (get back ÷ paid in)</td><td>{ratio > 0 ? `${ratio.toFixed(2)}×` : '—'}</td></tr>
+                    {paid.employerToday > 0 ? (
+                      <tr><td className="muted small">Employer paid so far (context)</td><td className="muted small">{fmtMoney(paid.employerToday)}</td></tr>
+                    ) : null}
+                    {paid.projectedEmployerToday > 0 ? (
+                      <tr><td className="muted small">Employer's share of the projected work (context)</td><td className="muted small">{fmtMoney(paid.projectedEmployerToday)}</td></tr>
+                    ) : null}
+                    {result.receivedBeforeStart > 0 ? (
+                      <tr><td>Benefits already received ({startYear} dollars)</td><td>{fmtMoney(result.receivedBeforeStart)}</td></tr>
+                    ) : null}
+                    <tr><td>Expected lifetime benefits from {startYear} (PV)</td><td>{fmtMoneyCompact(result.getBackPv)}</td></tr>
+                    <tr><td>Ratio (get back ÷ paid in)</td><td>{result.ratio === null ? '—' : `${result.ratio.toFixed(2)}×`}</td></tr>
                   </tbody>
                 </table>
               </ScrollRegion>
+              {paid.excludedYears.length > 0 ? (
+                <p className="muted small mt-xs">
+                  Not counted: earnings in {paid.excludedYears.join(', ')}, from a year before Social Security taxed this
+                  kind of work.
+                </p>
+              ) : null}
               <p className="muted small mt-xs">
-                At a {discountPct}% real discount rate. Excludes Medicare tax, disability/survivor insurance value, and
-                spousal benefits; the OASDI rate is applied uniformly over your career.
+                At a {discountPct}% real discount rate. Paid in uses each year's tax rate and wage cap, adjusted to{' '}
+                {startYear} dollars for price inflation with no interest added. The projected work is the earnings your
+                benefit estimate assumes, taxed the same way (today's rate and wage cap for a year not yet set). The ratio
+                divides by both. Excludes Medicare tax,
+                disability and survivor insurance value, and benefits paid to others on your record.
               </p>
             </div>
           )
@@ -1222,78 +1326,40 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   )
 }
 
+/** A switching strategy in words, e.g. "Survivor at 60, switch to own at 70". */
+function switchStrategyLabel(strategy: SwitchStrategy): string {
+  const { survivorClaimAge: s, ownClaimAge: o } = strategy
+  if (s !== null && o !== null) {
+    return s <= o ? `Survivor at ${s}, switch to own at ${o}` : `Own at ${o}, switch to survivor at ${s}`
+  }
+  if (s !== null) return `Survivor only, at ${s}`
+  if (o !== null) return `Own only, at ${o}`
+  return 'Claim nothing'
+}
+
 /**
  * Survivor ↔ personal switching for a widowed single user: rank strategies that
  * sequence the survivor benefit and the person's own benefit. Shown only when the
  * single person has a deceased former spouse whose survivor benefit is preserved.
+ * The engine picks the record and ranks the strategies; the page labels them.
  */
 function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
-  const people = claimingPeople(plan)
+  const startYear = currentStartYear()
+  const people = claimingPeople(plan, startYear)
   if (plan.household.people.length !== 1 || people.length !== 1) return null
-  const { person, pia, stream } = people[0]!
-  const eligible = (stream.formerSpouses ?? []).filter(
-    (record) => passesModeledOrdinaryWidowRecordGates(record) || passesModeledSurvivingDivorcedRecordGates(record),
-  )
-  if (eligible.length === 0) return null
-  // Pick the deceased ex whose **payable** survivor benefit is highest (not raw
-  // PIA): after RIB-LIM + the deceased's claim-age factor, a lower-PIA ex who
-  // delayed can beat a higher-PIA ex who claimed early. Each ex's payable is
-  // computed at the claimant's survivor FRA (the maximum survivor benefit each
-  // record can provide), mirroring how the ledger's `bestMaritalBenefit` picks
-  // the largest candidate.
-  const { y, m, d } = dobParts(person)
-  const claimantEffYear = effectiveBirthYear(y, m, d)
-  const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(claimantEffYear))
-  const survivorFraClaimAge = { years: Math.floor(survivorFraMonths / 12), months: survivorFraMonths % 12 }
-  let bestEx = eligible[0]!
-  let bestPayable = 0
-  for (const r of eligible) {
-    const exDobYear = Number(r.dob.slice(0, 4))
-    const exDobMonth = Number(r.dob.slice(5, 7))
-    const exDobDay = Number(r.dob.slice(8, 10))
-    const exFra = fraForBirthYear(effectiveBirthYear(exDobYear, exDobMonth, exDobDay))
-    const exClaimAge = r.deceasedClaimAge ?? { years: exFra.years, months: exFra.extraMonths }
-    const actual = r.piaMonthly * claimFactor(exDobYear, exDobMonth, exDobDay, exClaimAge)
-    const payable = survivorBenefitMonthly({
-      deceasedPiaMonthly: r.piaMonthly,
-      deceasedActualMonthly: actual,
-      survivorClaimAge: survivorFraClaimAge,
-      survivorFraMonths,
-    })
-    if (payable > bestPayable) {
-      bestPayable = payable
-      bestEx = r
-    }
-  }
-  const exDobYear = Number(bestEx.dob.slice(0, 4))
-  const exDobMonth = Number(bestEx.dob.slice(5, 7))
-  const exDobDay = Number(bestEx.dob.slice(8, 10))
-  const exFra = fraForBirthYear(effectiveBirthYear(exDobYear, exDobMonth, exDobDay))
-  const exClaimAge = bestEx.deceasedClaimAge ?? { years: exFra.years, months: exFra.extraMonths }
-  const survivorMonthly = bestEx.piaMonthly * claimFactor(exDobYear, exDobMonth, exDobDay, exClaimAge)
-  if (survivorMonthly <= 0) return null
-
-  const ranked = rankSwitchStrategies(
-    {
-      dob: { year: y, month: m, day: d },
-      sex: person.sex,
-      currentAge: currentStartYear() - y,
-      ownPiaMonthly: pia,
-      survivorMonthly,
-      deceasedPiaMonthly: bestEx.piaMonthly,
-    },
-    { discountRate: discountPct / 100 },
-  ).slice(0, 5)
+  const input = survivorSwitchingInputs(plan, people[0]!.person.id, startYear)
+  if (input === null) return null
+  const ranked = rankSwitchStrategies(input, { discountRate: discountPct / 100, assumptions: plan.assumptions }).slice(0, 5)
 
   return (
     <div className="mt-lg">
       <h3>Survivor vs. personal timing</h3>
       <p className="card-hint">
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
-        growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value at{' '}
-        {discountPct}%{' '}
-        <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed." />.
+        growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value in
+        today's dollars at {discountPct}%, with the plan's cost-of-living increases and any benefit cut{' '}
+        <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed, and strategies that pay the same benefits are shown once." />.
       </p>
       <ScrollRegion label="Survivor vs. personal timing" style={{ border: 'none' }}>
         <table className="claim-table">
@@ -1304,12 +1370,15 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
             </tr>
           </thead>
           <tbody>
-            {ranked.map((r, i) => (
-              <tr key={r.label} className={i === 0 ? 'claim-row--best' : undefined}>
-                <td>{r.label}</td>
-                <td>{fmtMoneyCompact(r.expectedPv)}</td>
-              </tr>
-            ))}
+            {ranked.map((r, i) => {
+              const label = switchStrategyLabel(r.strategy)
+              return (
+                <tr key={label} className={i === 0 ? 'claim-row--best' : undefined}>
+                  <td>{label}</td>
+                  <td>{fmtMoneyCompact(r.expectedPv)}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </ScrollRegion>

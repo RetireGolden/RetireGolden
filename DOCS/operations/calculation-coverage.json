@@ -233,6 +233,15 @@
       "simple-candidate-evaluation-lifetime-tax-delta",
       "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
+      "social-security-break-even",
+      "social-security-computation-summary-counts",
+      "social-security-credit-estimate",
+      "social-security-expected-present-value",
+      "social-security-fica-return-ratio",
+      "social-security-oasdi-paid-in",
+      "social-security-pia-annualized",
+      "social-security-survivor-switch-pv",
+      "social-security-zero-year-replacement-gain",
       "solved-initial-withdrawal-rate-pct",
       "solved-spending-rounded-to-hundred",
       "spending-guardrail-factor-annual",
@@ -247,32 +256,14 @@
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
       "mcp-compare-ending-after-tax-estate-delta",
-      "social-security-break-even",
       "social-security-claiming-sweep-objective",
-      "social-security-computation-summary-counts",
-      "social-security-credit-estimate",
-      "social-security-expected-present-value",
-      "social-security-fica-return-ratio",
-      "social-security-oasdi-paid-in",
-      "social-security-pia-annualized",
-      "social-security-survivor-switch-pv",
-      "social-security-zero-year-replacement-gain",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "relocationPending": [
-      "social-security-break-even",
       "social-security-claiming-sweep-objective",
-      "social-security-computation-summary-counts",
-      "social-security-credit-estimate",
-      "social-security-expected-present-value",
-      "social-security-fica-return-ratio",
-      "social-security-oasdi-paid-in",
-      "social-security-pia-annualized",
-      "social-security-survivor-switch-pv",
-      "social-security-zero-year-replacement-gain",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
@@ -706,9 +697,35 @@
         "pia-from-aime-bend-points",
         "social-security-cola-factor",
         "social-security-payable-months",
+        "social-security-pia-resolution",
         "ssdi-payable-months",
         "survivor-benefit-rib-lim",
         "survivor-reduction-entitlement-month"
+      ],
+      "social-security-break-even": [
+        "social-security-cola-factor"
+      ],
+      "social-security-expected-present-value": [
+        "dual-entitlement-composition",
+        "mortality-ex-to-qx-identity",
+        "social-security-cola-factor",
+        "survival-probability-product",
+        "survivor-benefit-rib-lim"
+      ],
+      "social-security-fica-return-ratio": [
+        "mortality-ex-to-qx-identity",
+        "oasdi-paid-in-today-dollars",
+        "social-security-expected-value",
+        "survival-probability-product"
+      ],
+      "social-security-oasdi-paid-in": [
+        "cpi-u-annual-average",
+        "oasdi-tax-rate-history"
+      ],
+      "social-security-survivor-switch-pv": [
+        "mortality-ex-to-qx-identity",
+        "survival-probability-product",
+        "survivor-benefit-rib-lim"
       ],
       "solved-initial-withdrawal-rate-pct": [
         "solved-spending-rounding",
@@ -844,16 +861,16 @@
     }
   },
   "records": {
-    "total": 244,
+    "total": 255,
     "byKind": {
-      "composition": 83,
-      "data": 17,
-      "formula": 87,
-      "model": 57
+      "composition": 85,
+      "data": 19,
+      "formula": 91,
+      "model": 60
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 239
+      "derivation": 250
     }
   },
   "oracleExamples": [
@@ -1016,9 +1033,9 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 70,
+    "catalogued": 76,
     "excludedWithReason": 0,
-    "notYetReviewed": 164
+    "notYetReviewed": 165
   },
   "shards": [
     {
@@ -1074,7 +1091,7 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 15
+      "recordCount": 26
     },
     {
       "group": "spendingAndWithdrawals",

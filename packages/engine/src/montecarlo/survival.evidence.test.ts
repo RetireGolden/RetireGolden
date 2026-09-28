@@ -1,14 +1,32 @@
 import { expect, it } from 'vitest'
 import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
-import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
-import { MAX_AGE, type Sex } from './mortality.js'
+import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
+import { annualMortality, MAX_AGE, type Sex } from './mortality.js'
 import {
   hazardForExpectancyMultiplier,
   jointSurvivalPercentileAge,
+  survivalCurve,
   survivalPercentileAge,
   survivalProbabilityTo,
   type SurvivalPerson,
 } from './survival.js'
+
+// The survival curve's cases, from the worksheet's Expected table (revision of 2026-09-27).
+const curveRows = worksheetExpectedRows('DOCS/calculations/longevity/survival-probability-product.md')
+const curveValue = (label: string): number => worksheetNumber(curveRows.get(label)![0]!)
+
+/** The product as survivalProbabilityTo computed it before the curve existed, kept to pin the view bit for bit. */
+function retiredProduct(currentAge: number, sex: Sex, targetAge: number): number {
+  const from = Math.floor(Math.max(currentAge, 0))
+  const to = Math.floor(targetAge)
+  let s = 1
+  for (let age = from; age < to; age++) {
+    const q = annualMortality(age, sex)
+    s *= q >= 1 ? 0 : Math.pow(1 - q, 1)
+    if (s <= 0) return 0
+  }
+  return s
+}
 
 describeCalculation(
   'survival-probability-product',
@@ -40,6 +58,43 @@ describeCalculation(
       // Domain endpoint of the claim: an empty product.
       expect(survivalProbabilityTo(currentAge, sex, currentAge, hazard)).toBe(example.expected.atCurrentAge)
       expect(survivalProbabilityTo(currentAge, sex, currentAge - 1, hazard)).toBe(example.expected.atCurrentAge)
+    })
+
+    it('survivalCurve: a man of 117 survives one year with 0.09/1.04, two with 0.04 of that, three not at all', () => {
+      const curve = survivalCurve(117, 'male')
+      expect(curve.survivalTo(0)).toBe(1)
+      expect(curve.survivalTo(1)).toBe(curveValue('Male from 117, survivalTo(1)'))
+      expect(curve.survivalTo(2)).toBe(curveValue('Male from 117, survivalTo(2)'))
+      expect(curve.survivalTo(3)).toBe(curveValue('Male from 117, survivalTo(3)'))
+      const deaths = [0, 1, 2, 3].map((t) => curve.deathProbabilityInYear(t))
+      expect(withinTolerance(deaths.reduce((sum, p) => sum + p, 0), 1, { abs: 1e-15 })).toBe(true)
+    })
+
+    it('survivalCurve: a woman of 63 reaches 67 with 0.9580296085257168, and her yearly deaths sum to 1', () => {
+      const curve = survivalCurve(63, 'female')
+      expect(withinTolerance(curve.survivalTo(4), curveValue('Female from 63, survivalTo(4)'), { rel: 1e-15 })).toBe(true)
+      let total = 0
+      for (let t = 0; t <= MAX_AGE + 1 - 63; t++) total += curve.deathProbabilityInYear(t)
+      expect(withinTolerance(total, 1, { abs: 1e-12 })).toBe(true)
+      expect(() => survivalCurve(64.5, 'female')).toThrow(RangeError)
+      expect(() => survivalCurve(63, 'female', 0)).toThrow(RangeError)
+      // Before the start there is no death to weigh.
+      expect(curve.deathProbabilityInYear(-1)).toBe(0)
+    })
+
+    it('survivalProbabilityTo is the curve, bit for bit the product it computed before, at every integer pair and sex', () => {
+      const mismatches: string[] = []
+      for (const s of ['male', 'female', 'average'] as const) {
+        for (let from = 0; from <= MAX_AGE + 1; from++) {
+          const curve = survivalCurve(from, s)
+          for (let to = from + 1; to <= MAX_AGE + 2; to++) {
+            const view = survivalProbabilityTo(from, s, to)
+            if (view !== retiredProduct(from, s, to) || view !== curve.survivalTo(to - from)) mismatches.push(`${s} ${from}->${to}`)
+          }
+        }
+      }
+      // A count and the first few pairs, so a failure stays readable.
+      expect({ count: mismatches.length, first: mismatches.slice(0, 5) }).toEqual({ count: 0, first: [] })
     })
   },
 )

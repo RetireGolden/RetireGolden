@@ -26,8 +26,89 @@ function annualSurvival(age: number, sex: Sex, hazard: number): number {
 }
 
 /**
+ * The engine's one survival curve for a life aged `fromAge` today: the running
+ * product of the one-year survivals `annualSurvival` (the SSA table's q(x)
+ * from `annualMortality`, raised to the hazard power) over integer ages.
+ * `survivalProbabilityTo` is a view of it, and the Social Security analysis
+ * models read it, so a probability of being alive at a later age comes from
+ * this one product.
+ */
+export interface SurvivalCurve {
+  readonly fromAge: number
+  readonly sex: Sex
+  readonly hazard: number
+  /**
+   * P(alive at age fromAge + t | alive at fromAge), for a whole number of
+   * years t: 1 at t <= 0, and 0 once the product passes the table's end.
+   */
+  survivalTo(t: number): number
+  /**
+   * P(dies in year t, between ages fromAge + t and fromAge + t + 1):
+   * survivalTo(t) × (1 − that year's one-year survival); 0 for t < 0.
+   */
+  deathProbabilityInYear(t: number): number
+}
+
+function wholeYears(t: number): number {
+  if (!Number.isInteger(t)) throw new RangeError(`A survival curve is read at whole years; got ${t}`)
+  return t
+}
+
+/**
+ * Builds the running product without checking its arguments, so
+ * `survivalProbabilityTo` keeps its own domain (it floors ages and uses any
+ * hazard as passed) while sharing the product with `survivalCurve`.
+ */
+function runningSurvival(fromAge: number, sex: Sex, hazard: number): SurvivalCurve {
+  // products[t] is the product of the first t one-year survivals, multiplied
+  // left to right; once it reaches 0 every later product is 0. Past the
+  // table's last age (q = 1 there) every product is 0, so the walk stops.
+  const products: number[] = [1]
+  const survivalTo = (t: number): number => {
+    const years = wholeYears(t)
+    if (years <= 0) return 1
+    const index = Math.min(years, MAX_AGE + 2)
+    while (products.length <= index) {
+      const last = products[products.length - 1]!
+      products.push(last <= 0 ? 0 : last * annualSurvival(fromAge + products.length - 1, sex, hazard))
+    }
+    return products[index]!
+  }
+  return {
+    fromAge,
+    sex,
+    hazard,
+    survivalTo,
+    deathProbabilityInYear(t: number): number {
+      const years = wholeYears(t)
+      if (years < 0) return 0
+      const alive = survivalTo(years)
+      if (alive <= 0) return 0
+      return alive * (1 - annualSurvival(fromAge + years, sex, hazard))
+    },
+  }
+}
+
+/**
+ * The survival curve of a life aged `fromAge` (a whole number of years, at
+ * least 0) under the proportional-hazards power `hazard` (1 = the table, above
+ * 1 = worse health). A fractional age, or a hazard that is not a positive
+ * finite number, is refused rather than rounded or used as passed.
+ */
+export function survivalCurve(fromAge: number, sex: Sex, hazard = 1): SurvivalCurve {
+  if (!Number.isInteger(fromAge) || fromAge < 0) {
+    throw new RangeError(`A survival curve starts at a whole age of at least 0; got ${fromAge}`)
+  }
+  if (!Number.isFinite(hazard) || hazard <= 0) {
+    throw new RangeError(`A survival curve's hazard power must be a positive finite number; got ${hazard}`)
+  }
+  return runningSurvival(fromAge, sex, hazard)
+}
+
+/**
  * Probability someone `currentAge` today is still alive at `targetAge`
  * (product of one-year survivals over integer ages). 1 for targetAge ≤ current.
+ * A view of the survival curve from the floored current age.
  */
 export function survivalProbabilityTo(
   currentAge: number,
@@ -37,12 +118,10 @@ export function survivalProbabilityTo(
 ): number {
   const from = Math.floor(Math.max(currentAge, 0))
   const to = Math.floor(targetAge)
-  let s = 1
-  for (let age = from; age < to; age++) {
-    s *= annualSurvival(age, sex, hazard)
-    if (s <= 0) return 0
-  }
-  return s
+  // Not later (a NaN target included, as the empty product always was): 1.
+  if (!(to > from)) return 1
+  // An infinite target reads the product past the table's end, which is 0.
+  return runningSurvival(from, sex, hazard).survivalTo(Number.isFinite(to) ? to - from : MAX_AGE + 2)
 }
 
 /**

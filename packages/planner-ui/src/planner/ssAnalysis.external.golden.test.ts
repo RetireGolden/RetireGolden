@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { couplePlan, singlePersonPlan, socialSecurityIncome, validatePlan } from '@retiregolden/engine/testing/planFixtures'
-import { benefitsOnlyRanking } from './ssAnalysis'
+import { benefitsOnlyRanking } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
 
 /**
  * ORACLE-007 (DOCS/external-oracles.md) - Social Security claiming vs

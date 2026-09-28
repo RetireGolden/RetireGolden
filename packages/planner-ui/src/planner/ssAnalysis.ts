@@ -6,7 +6,8 @@
  *    deterministic projection and rank by ending after-tax estate (the choice
  *    interacts with taxes, Roth conversions, IRMAA, ACA, RMDs);
  *  - benefits-only: mortality-weighted expected present value of the benefits
- *    alone (socialSecurity/expectedPv), the actuarial lens.
+ *    alone, the actuarial lens, which the engine computes
+ *    (@retiregolden/engine/socialSecurity/analysis/expectedValue).
  *
  * @see DOCS/features/social-security.md
  */
@@ -22,33 +23,17 @@ import {
   socialSecurityClaimGridGenerator,
   type ObjectivePolicyId,
 } from '@retiregolden/engine/decisions'
+// The claimants module, not expectedValue: the Social Security step imports
+// this file eagerly, and the models belong to the analysis page's own chunk.
+import { benefitsOnlyClaimAges, socialSecurityClaimants } from '@retiregolden/engine/socialSecurity/analysis/claimants'
 import {
-  expectedPvCouple,
-  expectedPvSingle,
-  type ClaimantInput,
-} from '../socialSecurity/expectedPv'
-import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
-import {
-  divorcedExFirstMonthIndex,
-  spouseDualEntitlementMonthly,
-  spouseEntitlementAgeMonths,
-  spouseReductionFactorAtAgeMonths,
-} from '@retiregolden/engine/socialSecurity/dualEntitlement'
-import { DIVORCED_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
-import {
-  computePiaFromEarnings,
-  isPiaFromEarningsError,
-  piaInputFromEarnings,
-  piaWithCostOfLivingIncreases,
-  resolveEarningsProjection,
+  resolveStreamPiaMonthly,
   socialSecurityColaAssumptionPct,
   type PiaFromEarningsResult,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>
-
-export const CLAIM_AGES = [62, 63, 64, 65, 66, 67, 68, 69, 70] as const
 
 export function dobParts(person: Person): { y: number; m: number; d: number } {
   return { y: Number(person.dob.slice(0, 4)), m: Number(person.dob.slice(5, 7)), d: Number(person.dob.slice(8, 10)) }
@@ -57,12 +42,11 @@ export function dobParts(person: Person): { y: number; m: number; d: number } {
 /**
  * Claim ages worth considering for a person: 62–70, but never earlier than the
  * age they have already reached (you can't claim in the past). Someone already
- * past 70 is left with 70.
+ * past 70 is left with 70. The engine's grid, which its benefits-only ranking
+ * uses too.
  */
 export function candidateClaimAges(person: Person, startYear: number): number[] {
-  const currentAge = startYear - dobParts(person).y
-  const ages = CLAIM_AGES.filter((a) => a >= currentAge)
-  return ages.length > 0 ? ages : [70]
+  return benefitsOnlyClaimAges(person, startYear)
 }
 
 export function ssStreamFor(plan: Plan, personId: string): SsStream | undefined {
@@ -101,51 +85,40 @@ export interface ResolvedPia {
 }
 
 /**
- * Resolve a stream's PIA the same way the projection does
- * (projection/simulate.ts, the resolved-PIA loop): entered, or derived from
- * earnings and raised by the cost-of-living increases since eligibility to the
- * projection's first year, so the analysis page's models and the household
- * step show the amount the ledger pays from.
+ * A stream's PIA from the engine's one resolver
+ * (socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly, which the
+ * projection and the claim-milestone insight call too): entered, or derived
+ * from earnings and raised by the cost-of-living increases since eligibility
+ * to the projection's first year, with the household step's warnings.
  */
 export function resolvePia(person: Person, stream: SsStream, asOf: PiaAsOf): ResolvedPia {
-  if (stream.piaMonthly !== null) return { piaMonthly: stream.piaMonthly, warning: null, detail: null }
-  if (!stream.earnings || stream.earnings.length === 0) {
-    return { piaMonthly: null, warning: 'No PIA entered and no earnings history.', detail: null }
-  }
-  const { y, m, d } = dobParts(person)
-  const projection = resolveEarningsProjection(stream.earningsProjection, person.retirementAge)
-  const result = computePiaFromEarnings(piaInputFromEarnings(y, m, d, stream.earnings, projection))
-  if (isPiaFromEarningsError(result)) {
-    return { piaMonthly: null, warning: `Earnings history could not be used (${result.code}).`, detail: null }
-  }
-  const atStart = piaWithCostOfLivingIncreases(result.piaMonthly, result.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct)
-  const warnings = [
-    result.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
-    atStart.standInYears.length > 0
-      ? `PIA uses the plan's COLA assumption for cost-of-living increases SSA has not yet announced (${atStart.standInYears.join(', ')}).`
-      : null,
-  ].filter((w): w is string => w !== null)
-  return {
-    piaMonthly: atStart.piaMonthly,
-    warning: warnings.length > 0 ? warnings.join(' ') : null,
-    detail: result,
+  const resolved = resolveStreamPiaMonthly(stream, person, asOf)
+  switch (resolved.status) {
+    case 'entered':
+      return { piaMonthly: resolved.piaMonthly, warning: null, detail: null }
+    case 'noPiaNoEarnings':
+      return { piaMonthly: null, warning: 'No PIA entered and no earnings history.', detail: null }
+    case 'earningsError':
+      return { piaMonthly: null, warning: `Earnings history could not be used (${resolved.error.code}).`, detail: null }
+    case 'fromEarnings': {
+      const warnings = [
+        resolved.detail.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
+        resolved.standInColaYears.length > 0
+          ? `PIA uses the plan's COLA assumption for cost-of-living increases SSA has not yet announced (${resolved.standInColaYears.join(', ')}).`
+          : null,
+      ].filter((w): w is string => w !== null)
+      return { piaMonthly: resolved.piaMonthly, warning: warnings.length > 0 ? warnings.join(' ') : null, detail: resolved.detail }
+    }
   }
 }
 
 /**
  * People who have a Social Security stream with a resolvable benefit, each
- * with the PIA the projection starting in `startYear` pays from.
+ * with the PIA the projection starting in `startYear` pays from (the engine's
+ * socialSecurityClaimants, which the benefits-only ranking reads too).
  */
 export function claimingPeople(plan: Plan, startYear: number = currentStartYear()): { person: Person; stream: SsStream; pia: number }[] {
-  const out: { person: Person; stream: SsStream; pia: number }[] = []
-  const asOf = piaAsOfPlan(plan, startYear)
-  for (const person of plan.household.people) {
-    const stream = ssStreamFor(plan, person.id)
-    if (!stream) continue
-    const { piaMonthly } = resolvePia(person, stream, asOf)
-    if (piaMonthly !== null && piaMonthly > 0) out.push({ person, stream, pia: piaMonthly })
-  }
-  return out
+  return socialSecurityClaimants(plan, startYear).map(({ person, stream, piaMonthly }) => ({ person, stream, pia: piaMonthly }))
 }
 
 // ---------------------------------------------------------------------------
@@ -309,107 +282,6 @@ export function refineClaimingMonthly(
   return { claimByPersonId: best, summary: bestSummary }
 }
 
-// ---------------------------------------------------------------------------
-// Benefits-only (actuarial) ranking
-// ---------------------------------------------------------------------------
-
-export interface BenefitsPvRow {
-  claimByPersonId: Record<string, number>
-  expectedPv: number
-}
-
-function claimantInput(person: Person, pia: number, claimYears: number, startYear: number): ClaimantInput {
-  const { y, m, d } = dobParts(person)
-  return {
-    currentAge: Math.max(0, startYear - y),
-    dob: { year: y, month: m, day: d },
-    sex: person.sex,
-    piaMonthly: pia,
-    claimAge: { years: claimYears, months: 0 },
-  }
-}
-
-/**
- * The monthly benefit a currently-unmarried claimant is paid on the best
- * divorced-spouse record, the ledger's dual-entitlement composition
- * (@retiregolden/engine socialSecurity/dualEntitlement.ts): the own benefit at
- * the claim age, held at the own PIA, plus half the ex's PIA less the own PIA,
- * reduced for the claimant's age in the first month of the spouse benefit (the
- * later of the own claim and the first month the ex is 62 throughout), and
- * never less than the own benefit. 0 when no ex meets the marriage-duration
- * gate or the household is a couple. Benefits-only is one amount for every year
- * from the claim, so it pays this from the claim age even when the ex is not
- * yet 62; the ledger (In your plan) waits for the year the spouse benefit
- * starts. Survivor benefits are handled by the survivor-switching analysis.
- */
-export function divorcedSpouseTotalMonthly(
-  person: Person,
-  stream: SsStream,
-  ownPiaMonthly: number,
-  claimYears: number,
-  householdSingle: boolean,
-): number {
-  if (!householdSingle) return 0
-  const { y, m, d } = dobParts(person)
-  const claimantDob = { year: y, month: m, day: d }
-  const ownActualMonthly = ownPiaMonthly * claimFactor(y, m, d, { years: claimYears, months: 0 })
-  let best = 0
-  for (const r of stream.formerSpouses ?? []) {
-    if (r.relationship !== 'divorced' || r.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) continue
-    const exDob = { year: Number(r.dob.slice(0, 4)), month: Number(r.dob.slice(5, 7)), day: Number(r.dob.slice(8, 10)) }
-    const spouseAgeMonths = spouseEntitlementAgeMonths(claimantDob, claimYears * 12, divorcedExFirstMonthIndex(exDob))
-    best = Math.max(
-      best,
-      spouseDualEntitlementMonthly({
-        ownPiaMonthly,
-        ownActualMonthly,
-        spouseBaseMonthly: 0.5 * r.piaMonthly,
-        spouseFactor: spouseReductionFactorAtAgeMonths(claimantDob, spouseAgeMonths),
-      }),
-    )
-  }
-  return best
-}
-
-/**
- * Mortality-weighted expected PV of benefits for every claim-age combination,
- * ranked descending. Ignores the portfolio and taxes — the pure insurance view.
- */
-export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear = currentStartYear()): {
-  personIds: string[]
-  rows: BenefitsPvRow[]
-  ranked: BenefitsPvRow[]
-} {
-  const people = claimingPeople(plan, startYear)
-  const personIds = people.map((p) => p.person.id)
-  const householdSingle = plan.household.people.length === 1
-  const rows: BenefitsPvRow[] = []
-
-  if (people.length === 1) {
-    const { person, pia, stream } = people[0]!
-    for (const age of candidateClaimAges(person, startYear)) {
-      const benefitFloorMonthly = divorcedSpouseTotalMonthly(person, stream, pia, age, householdSingle)
-      const pv = expectedPvSingle({ ...claimantInput(person, pia, age, startYear), benefitFloorMonthly }, { discountRate })
-      rows.push({ claimByPersonId: { [person.id]: age }, expectedPv: pv })
-    }
-  } else if (people.length === 2) {
-    const a = people[0]!
-    const b = people[1]!
-    for (const ageA of candidateClaimAges(a.person, startYear)) {
-      for (const ageB of candidateClaimAges(b.person, startYear)) {
-        const pv = expectedPvCouple(
-          claimantInput(a.person, a.pia, ageA, startYear),
-          claimantInput(b.person, b.pia, ageB, startYear),
-          { discountRate },
-        )
-        rows.push({ claimByPersonId: { [a.person.id]: ageA, [b.person.id]: ageB }, expectedPv: pv })
-      }
-    }
-  }
-
-  const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
-  return { personIds, rows, ranked }
-}
 /** Half a unit of the objective metric (a dollar or a year): closer than this is the same score. */
 const FLAT_TOLERANCE = 0.5
 

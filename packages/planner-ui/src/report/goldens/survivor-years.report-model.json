@@ -518,10 +518,28 @@
           "url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles"
         },
         {
-          "figures": "2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,690/mo (non-blind); OASDI payroll tax 6.2% (employee).",
+          "figures": "2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,690/mo (non-blind).",
           "label": "Social Security COLA & wage base",
           "publisher": "SSA",
           "url": "https://www.ssa.gov/news/en/cola/factsheets/2026.html"
+        },
+        {
+          "figures": "OASDI payroll tax 6.2% (employee) and 12.4% (self-employed) in 2026, and each year's effective rate from 1937, used for what you paid in.",
+          "label": "Social Security tax rates by year",
+          "publisher": "SSA Office of the Chief Actuary",
+          "url": "https://www.ssa.gov/oact/progdata/oasdiRates.html"
+        },
+        {
+          "figures": "One credit per $1,890 of covered earnings in 2026, at most four a year; each year's amount from 1978.",
+          "label": "Social Security credits (quarters of coverage)",
+          "publisher": "SSA Office of the Chief Actuary",
+          "url": "https://www.ssa.gov/oact/cola/QC.html"
+        },
+        {
+          "figures": "CPI-U annual averages 1937–2025 (321.943 in 2025), used to restate Social Security taxes paid in today's dollars.",
+          "label": "Consumer prices (CPI-U annual averages)",
+          "publisher": "BLS",
+          "url": "https://data.bls.gov/timeseries/CUUR0000SA0"
         },
         {
           "figures": "2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year; 2026 HHS guideline ($15,960 first person, +$5,680 each additional) applied to the 2027 ACA coverage year. Each coverage year uses the guidelines in effect when its open enrollment began, as published.",

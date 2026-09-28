@@ -1,50 +1,54 @@
 # Mutation receipt: survival-probability-product
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) with the mutation restated on the curve's view, since survivalProbabilityTo became a view of survivalCurve in B2-P1 slice 4, and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -38,7 +38,7 @@ export function survivalProbabilityTo(
-   const from = Math.floor(Math.max(currentAge, 0))
-   const to = Math.floor(targetAge)
-   let s = 1
--  for (let age = from; age < to; age++) {
-+  for (let age = from; age <= to; age++) {
-     s *= annualSurvival(age, sex, hazard)
-     if (s <= 0) return 0
-   }
+diff --git a/packages/engine/src/montecarlo/survival.ts b/packages/engine/src/montecarlo/survival.ts
+index 1bc5e9f2..9dd0bf01 100644
+--- a/packages/engine/src/montecarlo/survival.ts
++++ b/packages/engine/src/montecarlo/survival.ts
+@@ -121,7 +121,7 @@ export function survivalProbabilityTo(
+   // Not later (a NaN target included, as the empty product always was): 1.
+   if (!(to > from)) return 1
+   // An infinite target reads the product past the table's end, which is 0.
+-  return runningSurvival(from, sex, hazard).survivalTo(Number.isFinite(to) ? to - from : MAX_AGE + 2)
++  return runningSurvival(from, sex, hazard).survivalTo(Number.isFinite(to) ? to - from + 1 : MAX_AGE + 2)
+ }
+ 
+ /**
 ```
 
-This multiplies through the target age as well, the worksheet's first wrong reading (one period too many): S(67) becomes p65 p66 p67 = 0.943802822411680, a 0.0193 miss against 1e-12, and the domain endpoint fails because a target equal to the current age now consumes one factor (0.98207 instead of 1). The percentile, joint and hazard blocks in the same file fail where they read `survivalProbabilityTo` for their intermediate checks; the three production percentile and hazard functions do not call it, so their own assertions still pass.
+This multiplies through the target age as well, the worksheet's first wrong reading (one period too many), now in the view survivalProbabilityTo takes of the survival curve: S(67) becomes p65 p66 p67 = 0.943802822411680, a 0.0193 miss against 1e-12, and the view no longer equals the retired product at any pair. The empty product at a target equal to the current age is returned before the view is read, so that assertion still passes; the percentile, joint and hazard blocks fail where they read survivalProbabilityTo.
 
 ## Command
 
 ```
-npx vitest run src/montecarlo/survival.evidence.test.ts
+NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/survival.evidence.test.ts
 ```
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (12 tests | 6 failed) 9ms
-   ❯ survival-probability-product — Conditional survival to a target age: product of hazard-adjusted one-year survivals (2)
+ ❯ src/montecarlo/survival.evidence.test.ts (15 tests | 6 failed) 68ms
+   ❯ survival-probability-product — Conditional survival to a target age: product of hazard-adjusted one-year survivals (5)
      × multiplies p65 and p66 from the SSA male rows: S(67) = 0.963150477964002 4ms
-     × returns exactly 1 when the target age is not later than the current age 1ms
+     × survivalProbabilityTo is the curve, bit for bit the product it computed before, at every integer pair and sex 59ms
    ❯ survival-percentile-age — Survival-percentile planning age: oldest age reached with probability at least pct/100 (3)
      × brackets the threshold: S(66) >= 0.97 and S(67) < 0.97 0ms
    ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (4)
      × single-life survival to 69, 70, 71 matches the worksheet within 1e-9 0ms
      × either-alive survival 1 - (1 - S)^2 qualifies at 70 (0.9905 >= 0.99) and fails at 71 (0.9856) 0ms
    ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier, solved by bisection (3)
-     × the adjusted expectancy at the solved power reproduces the 17.48 baseline 1ms
+     × the adjusted expectancy at the solved power reproduces the 17.48 baseline 0ms
 
  Test Files  1 failed (1)
-      Tests  6 failed | 6 passed (12)
+      Tests  6 failed | 9 passed (15)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
@@ -58,44 +62,54 @@ AssertionError: survivalProbability 0.9438028224116805 is not within {"abs":1e-1
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:36:9
-     34|         withinTolerance(survival, expected, example.tolerance),
-     35|         `survivalProbability ${survival} is not within ${JSON.stringif…
-     36|       ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:54:9
+     52|         withinTolerance(survival, expected, example.tolerance),
+     53|         `survivalProbability ${survival} is not within ${JSON.stringif…
+     54|       ).toBe(true)
        |         ^
-     37|     })
-     38|
+     55|     })
+     56|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
 
- FAIL  src/montecarlo/survival.evidence.test.ts > survival-probability-product — Conditional survival to a target age: product of hazard-adjusted one-year survivals > returns exactly 1 when the target age is not later than the current age
-AssertionError: expected 0.9820705610179296 to be 1 // Object.is equality
+ FAIL  src/montecarlo/survival.evidence.test.ts > survival-probability-product — Conditional survival to a target age: product of hazard-adjusted one-year survivals > survivalProbabilityTo is the curve, bit for bit the product it computed before, at every integer pair and sex
+AssertionError: expected { count: 21402, first: [ …(5) ] } to deeply equal { count: +0, first: [] }
 
 - Expected
 + Received
 
-- 1
-+ 0.9820705610179296
+  {
+-   "count": 0,
+-   "first": [],
++   "count": 21402,
++   "first": [
++     "male 0->1",
++     "male 0->2",
++     "male 0->3",
++     "male 0->4",
++     "male 0->5",
++   ],
+  }
 
- ❯ src/montecarlo/survival.evidence.test.ts:41:74
-     39|     it('returns exactly 1 when the target age is not later than the cu…
-     40|       // Domain endpoint of the claim: an empty product.
-     41|       expect(survivalProbabilityTo(currentAge, sex, currentAge, hazard…
-       |                                                                          ^
-     42|       expect(survivalProbabilityTo(currentAge, sex, currentAge - 1, ha…
-     43|     })
+ ❯ src/montecarlo/survival.evidence.test.ts:97:75
+     95|       }
+     96|       // A count and the first few pairs, so a failure stays readable.
+     97|       expect({ count: mismatches.length, first: mismatches.slice(0, 5)…
+       |                                                                           ^
+     98|     })
+     99|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
 
  FAIL  src/montecarlo/survival.evidence.test.ts > survival-percentile-age — Survival-percentile planning age: oldest age reached with probability at least pct/100 > brackets the threshold: S(66) >= 0.97 and S(67) < 0.97
 AssertionError: expected 0.9631504779640019 to be greater than or equal to 0.97
- ❯ src/montecarlo/survival.evidence.test.ts:70:66
-     68|     it('brackets the threshold: S(66) >= 0.97 and S(67) < 0.97', () =>…
-     69|       // The worksheet's two comparisons, through the product record's…
-     70|       expect(survivalProbabilityTo(currentAge, sex, 66, hazard)).toBeG…
+ ❯ src/montecarlo/survival.evidence.test.ts:125:66
+    123|     it('brackets the threshold: S(66) >= 0.97 and S(67) < 0.97', () =>…
+    124|       // The worksheet's two comparisons, through the product record's…
+    125|       expect(survivalProbabilityTo(currentAge, sex, 66, hazard)).toBeG…
        |                                                                  ^
-     71|       expect(survivalProbabilityTo(currentAge, sex, 67, hazard)).toBeL…
-     72|     })
+    126|       expect(survivalProbabilityTo(currentAge, sex, 67, hazard)).toBeL…
+    127|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
 
@@ -108,13 +122,13 @@ AssertionError: single-life survival to 69 0.9025074165078647 is not within {"ab
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:120:11
-    118|           withinTolerance(survival, expected, example.tolerance),
-    119|           `single-life survival to ${age} ${survival} is not within ${…
-    120|         ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:175:11
+    173|           withinTolerance(survival, expected, example.tolerance),
+    174|           `single-life survival to ${age} ${survival} is not within ${…
+    175|         ).toBe(true)
        |           ^
-    121|       }
-    122|     })
+    176|       }
+    177|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
 
@@ -127,13 +141,13 @@ AssertionError: either-alive survival to 69 0.990495196164029 is not within {"ab
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:134:11
-    132|           withinTolerance(eitherAlive, expected, example.tolerance),
-    133|           `either-alive survival to ${age} ${eitherAlive} is not withi…
-    134|         ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:189:11
+    187|           withinTolerance(eitherAlive, expected, example.tolerance),
+    188|           `either-alive survival to ${age} ${eitherAlive} is not withi…
+    189|         ).toBe(true)
        |           ^
-    135|       }
-    136|       expect(joint['70']!).toBeGreaterThanOrEqual(pct / 100)
+    190|       }
+    191|       expect(joint['70']!).toBeGreaterThanOrEqual(pct / 100)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
 
@@ -146,13 +160,13 @@ AssertionError: adjustedExpectancyYears 16.497929438989615 is not within {"abs":
 - true
 + false
 
- ❯ src/montecarlo/survival.evidence.test.ts:194:9
-    192|         withinTolerance(expectancy, expected, example.tolerance),
-    193|         `adjustedExpectancyYears ${expectancy} is not within ${JSON.st…
-    194|       ).toBe(true)
+ ❯ src/montecarlo/survival.evidence.test.ts:249:9
+    247|         withinTolerance(expectancy, expected, example.tolerance),
+    248|         `adjustedExpectancyYears ${expectancy} is not within ${JSON.st…
+    249|       ).toBe(true)
        |         ^
-    195|     })
-    196|   },
+    250|     })
+    251|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 ```

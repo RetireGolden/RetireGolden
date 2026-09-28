@@ -1,15 +1,15 @@
 # Mutation receipt: survivor-benefit-rib-lim
 
-Executed 2026-09-27 against RetireGolden base `7e21cd29` (branch `claude/social-security-law-2`; no pull request is open yet) for the restatement under decision D-SS-LAW-2, replacing the mutation this receipt carried until then (it dropped the widow-limit floor from code the restatement removed), and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `7e21cd29` (branch `claude/social-security-law-2`; no pull request is open yet) for the restatement under decision D-SS-LAW-2, replacing the mutation this receipt carried until then (it dropped the widow-limit floor from code the restatement removed), and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/survivorBenefit.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/survivorBenefit.ts b/packages/engine/src/socialSecurity/survivorBenefit.ts
-index da89ad89..10f471a8 100644
+index 5c18cee8..94c6ad9b 100644
 --- a/packages/engine/src/socialSecurity/survivorBenefit.ts
 +++ b/packages/engine/src/socialSecurity/survivorBenefit.ts
-@@ -101,7 +101,7 @@ export function survivorBenefitMonthly(input: SurvivorBenefitInput): number {
+@@ -102,7 +102,7 @@ export function survivorBenefitMonthly(input: SurvivorBenefitInput): number {
    if (input.deceasedPiaMonthly <= 0) return 0
    const ageMonths = input.survivorClaimAge.years * 12 + input.survivorClaimAge.months
    const reduced =
@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Executed for the restated record (decision D-SS-LAW-2): the mutation reverts the fix, taking the widow's limit as the base and reducing it for age. Re-executed after the independent review made deceasedEverReduced optional, which changed the line after the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survivorBenefit.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for B2-P1 slice 4 because a comment above its hunk or in its test file changed (the planner-ui copy of the survival curve is deleted, and the survivor helper names its two analysis callers); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survivorBenefit.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
  ❯ src/socialSecurity/survivorBenefit.evidence.test.ts (6 tests | 3 failed) 6ms
    ❯ survivor-benefit-rib-lim — Survivor benefit under RIB-LIM (6)

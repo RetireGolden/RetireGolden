@@ -247,14 +247,6 @@ export interface ParameterPack {
      * higher; not modeled.) @see DOCS/domain/domain-rules-reference.md §4 SSDI
      */
     sgaMonthlyNonBlind: number
-    /**
-     * Employee-side OASDI payroll-tax rate (%). The employer pays the same again;
-     * the self-employed pay double (12.4%). Used only for the "what you paid in
-     * vs. what you get back" education readout (no working-years tax is modeled in
-     * the projection). Statutory since 1990; applied uniformly over the career
-     * (historical rate drift pre-1990 is a documented simplification).
-     */
-    oasdiEmployeeRatePct: number
   }
 
   /** HHS poverty guidelines used for ACA in this coverage year. */

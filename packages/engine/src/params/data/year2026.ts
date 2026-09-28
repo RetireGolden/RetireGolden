@@ -229,8 +229,6 @@ export const year2026: ParameterPack = {
     // $1,690; it names $1,620 as the 2025 amount this supersedes. Source: SSA,
     // Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047.
     sgaMonthlyNonBlind: 1_690,
-    // Employee-side OASDI payroll tax rate (statutory since 1990). Source: SSA.
-    oasdiEmployeeRatePct: 6.2,
   },
 
   // HHS 2025 poverty guidelines (the 2026 Marketplace coverage year's) and the

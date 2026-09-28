@@ -84,12 +84,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 442 |
+| Engine source files | 453 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 90 |
-| registered | 118 |
-| rule-free | 234 |
+| partial | 91 |
+| registered | 121 |
+| rule-free | 241 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -112,7 +112,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | rules | 68 | 0 | 22 | 46 | 0 |
 | scenarios | 11 | 0 | 0 | 11 | 0 |
 | schema | 9 | 0 | 0 | 9 | 0 |
-| socialSecurity | 11 | 2 | 8 | 1 | 0 |
+| socialSecurity | 22 | 3 | 11 | 8 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 9 | 3 | 5 | 1 | 0 |
 | tax | 19 | 12 | 6 | 1 | 0 |
@@ -198,6 +198,7 @@ None.
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-09-05 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selector registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool (ownedIraSourceIds); December 31 measurement and filing-grade completeness/rollover contracts remain residual |
 | projection/simulate.ts | 2026-09-06 | ordered annual projection orchestration. It keeps the earnings-test month counts (all months, and those withheld from a spouse or a widow(er) benefit) across years for annualSocialSecurity. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly |
 | rmd/applicableAge.ts | 2026-09-05 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (adding deriveRbdComparison only; applicableAgeAttainYears sibling listings on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
+| socialSecurity/analysis/credits.ts | 2026-09-27 | the covered-work credit estimate (covered-work-credit-estimate). Residual: the quarter-of-coverage counting of 42 U.S.C. 413(a)(2)(A) and 20 CFR 404.143(a), the annual amount from 1978 and $50 a quarter before, has no rule record; the calculation record states and cites it |
 | socialSecurity/maritalBenefits.ts | 2026-09-27 | Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-27 | Initial-computation base window and annual indexed-earnings penny rounding registered as approximations on records/socialSecurityEarnings.ts; the computation-year count with the 1951 floor, the contribution and benefit base cap and the cost-of-living increases since eligibility are settled there. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | The isTreatAsOwnEffective pre-2020 helper cutoff is registered narrowly as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary (helper only; classifyInheritedRegime and spouseTreatAsOwnCatchUp cutoffs are independent). The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch. |
