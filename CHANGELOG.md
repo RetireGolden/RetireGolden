@@ -18,7 +18,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     `simulatePlan` now calls with its own inflation path, so no Monte Carlo path moves),
     not a cost-of-living adjustment compounded from 62; crossings are found on the
     unrounded totals. On the 29 examples: 252 callouts, none changes; 6,684 of 9,116
-    tooltip values change, by (1 + inflation)^(62 − age) (0.906 at 66 to 2.685 at 22).
+    tooltip values change. Each charted person's values move by one factor,
+    (1 + the plan's inflation)^(62 − age), (1.025)^(62 − age) at the default 2.5%:
+    measured, from 0.9060 for the person aged 66 (survivor-years' Chris) to 2.6851
+    for the youngest, aged 22 (Nova in no-head-start-grad and trump-account-head-start);
+    the next youngest, aged 25, moves by 2.4933, and the three people aged 62, whose
+    factor is 1, keep theirs.
   - **Benefits-only expected value** (`socialSecurity/analysis/expectedValue.ts`, R7):
     each year's benefits follow the ledger's rules (claim months; a couple's lower
     earner paid the own benefit plus the reduced spouse excess from the month the spouse
