@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeCalculation, worksheetExpectedRows, worksheetNumber } from '../../rules/describeCalculation.js'
+import { ssaQuarterOfCoverageAmounts } from '../../testing/socialSecuritySources.test-support.js'
 import { QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR } from '../ssaWageData.js'
 import { creditsForYear, estimateCredits } from './credits.js'
 
@@ -55,10 +56,18 @@ describeCalculation(
     })
 
     it("carries SSA's quarter-of-coverage amount for every year 1978 to 2026, 2026's $1,890 included", () => {
-      const sheet = [...rows].filter(([key]) => key.startsWith('QC ')).map(([key, cells]) => [Number(key.slice(3)), worksheetNumber(cells[0]!)] as const)
-      expect(Object.keys(QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR).map(Number).sort((a, b) => a - b)).toEqual(sheet.map(([year]) => year))
-      expect(sheet.filter(([year, amount]) => QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[year] !== amount)).toEqual([])
+      // SSA's own series (DOCS/calculations/social-security/sources/ssa-quarter-of-coverage.table.html,
+      // cut from the captured QC.html), not the worksheet's copy of it.
+      const page = ssaQuarterOfCoverageAmounts()
+      const years = Object.keys(QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR).map(Number).sort((a, b) => a - b)
+      expect(years).toEqual([...page.keys()].sort((a, b) => a - b))
+      expect(years).toHaveLength(49)
+      expect(years.filter((year) => QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[year] !== page.get(year))).toEqual([])
+      expect(page.get(1978)).toBe(250)
       expect(QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[2026]).toBe(1_890)
+      // The worksheet's QC rows are a copy of the same page.
+      const sheet = [...rows].filter(([key]) => key.startsWith('QC ')).map(([key, cells]) => [Number(key.slice(3)), worksheetNumber(cells[0]!)] as const)
+      expect(sheet.filter(([year, amount]) => page.get(year) !== amount)).toEqual([])
       // A later year uses the latest published amount.
       expect(creditsForYear(2030, 7_560)).toBe(4)
       expect(creditsForYear(2030, 7_559)).toBe(3)

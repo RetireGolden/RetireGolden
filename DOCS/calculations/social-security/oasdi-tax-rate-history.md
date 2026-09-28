@@ -13,6 +13,8 @@ SSA, "Social Security Tax Rates" (ssa.gov/oact/progdata/oasdiRates.html; the der
 
 The same footnote records self-employed credits of 2.7, 2.3 and 2.0 percent in 1984, 1985 and 1986-89 "against the combined OASDI and HI taxes"; the page does not allocate them to OASDI, so the self-employed rates for those years are the trust-fund rates, high by at most those credits (a stated limit of `oasdi-paid-in-today-dollars`). IRC 3101(a) sets today's employee rate, "6.2 percent of the wages", and IRC 1401(a) today's 12.4 percent self-employment rate.
 
+The rate table and its footnotes, cut byte for byte from that capture, are committed as `sources/ssa-oasdi-rates.table.html` (the capture's URL, its whole-page SHA-256 and the byte range are in `sources/manifest.json`). The evidence test (`oasdiTaxRates.evidence.test.ts`) parses the table, applies footnotes a and c from their own text, and compares every year and payer of `oasdiTaxRates.ts` with the result.
+
 ## Inputs
 
 The downloaded page, parsed by the derivation's script into `ssa-data.json` (employee, trust-fund and self-employed columns, with the footnote adjustments); the independent check compared the rates with the live page.

@@ -36,3 +36,8 @@ DOCS/operations/walkthroughs/*.json linguist-generated=true
 packages/engine/src/rules/census/*.json linguist-generated=true
 packages/engine/src/rules/outputFamilies.ts linguist-generated=true
 packages/engine/src/rules/outputFieldCoverage.ts linguist-generated=true
+# The publishers' own bytes behind the Social Security data tables (BLS CPI-U,
+# SSA's tax rates and quarters of coverage). Evidence tests parse them and
+# check each file's SHA-256 against sources/manifest.json, so a checkout must
+# never rewrite a byte; they are captures, not code to review.
+DOCS/calculations/social-security/sources/** -text linguist-generated=true
