@@ -1,9 +1,20 @@
 /**
  * Explore → Social Security: two views of the claiming decision.
- *  - "In your plan": sweep every claim-age combination through the full
- *    projection, ranked by ending after-tax estate; apply the winner.
+ *  - "In your plan": the engine's whole-plan sweep
+ *    (decisions/claimAgeSweep.ts#sweepClaimAges) runs every whole-year
+ *    claim-age combination of the plan's open claims through the full
+ *    projection and ranks the rows by the objective the reader chooses (the
+ *    after-tax estate by default). It refuses, and the page says why, when
+ *    every claim was already made, when every open claim is a disability
+ *    benefit, and when a Marketplace year's premium tax credit cannot be
+ *    priced; a claim already made or a disability benefit beside an open claim
+ *    is held as it is. A best claim age is crowned, offered to apply and
+ *    refined to the month only on verdict 'winner'; a flat ranking, a current
+ *    claim that already leads and a refusal get a note instead. Changes are
+ *    signed against the plan as entered, claim months included.
  *  - "Benefits only": mortality-weighted expected present value of the
- *    benefits alone (the actuarial / insurance lens).
+ *    benefits alone (the actuarial / insurance lens), with claims already made
+ *    held at their own age.
  */
 
 import { useEffect, useMemo, useState } from 'react'
