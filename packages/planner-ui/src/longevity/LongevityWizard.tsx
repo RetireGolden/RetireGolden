@@ -129,8 +129,8 @@ export function LongevityWizard({
         <fieldset className="wizard-fieldset">
           <legend>Life table column</legend>
           <p className="field-hint">
-            SSA publishes separate male and female period expectancies. Pick the row to use, or
-            average both.
+            SSA publishes separate male and female period expectancies. Pick the column to use.
+            &quot;Not stated&quot; averages the two, as for someone equally likely to be either.
           </p>
           <RadioRow
             name="sex"
@@ -139,7 +139,7 @@ export function LongevityWizard({
             options={[
               { value: 'male', label: 'Male table' },
               { value: 'female', label: 'Female table' },
-              { value: 'average', label: 'Average of male and female' },
+              { value: 'average', label: 'Not stated (average of male and female)' },
             ]}
           />
         </fieldset>

@@ -4,13 +4,13 @@
   "registry": {
     "total": 542,
     "byClassification": {
-      "approximated": 121,
+      "approximated": 120,
       "outOfScope": 88,
-      "settled": 327,
+      "settled": 328,
       "unsettled": 6
     },
     "approximatedByKind": {
-      "convention": 23,
+      "convention": 22,
       "fix": 74,
       "needs-fact": 24
     },
@@ -79,9 +79,9 @@
     }
   },
   "attestations": {
-    "totalFiles": 457,
+    "totalFiles": 458,
     "byStatus": {
-      "partial": 92,
+      "partial": 93,
       "registered": 121,
       "rule-free": 244,
       "unswept": 0
@@ -222,9 +222,14 @@
       "note": "Source-system eligibility vocabulary, state basis and HSA activity completeness contracts; not independent proof of state eligibility or basis recovery."
     },
     {
+      "path": "montecarlo/deathProbability.ts",
+      "sweptOn": "2026-09-27",
+      "note": "Reads SSA's published q(x) from the period life table registered at longevity/ssaPeriodLifeTable.ts (ssa-table-4c6-period-life-table-vintage), cataloged as calculation record mortality-published-death-probability; the closed last row is an engine convention stated in that record, with no separate statutory claim, and this consumer is deliberately not pinned"
+    },
+    {
       "path": "montecarlo/mortality.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned"
+      "sweptOn": "2026-09-27",
+      "note": "Draws death ages and the joint expectancy off the survival curve, which reads the period life table registered at longevity/ssaPeriodLifeTable.ts (ssa-table-4c6-period-life-table-vintage) through montecarlo/deathProbability.ts; the 'average' mixture is an engine convention stated in survival-probability-product, with no separate statutory claim, and this consumer is deliberately not pinned"
     },
     {
       "path": "params/state/data/year2026.ts",
@@ -629,9 +634,9 @@
     },
     {
       "directory": "montecarlo",
-      "files": 11,
+      "files": 12,
       "byStatus": {
-        "partial": 1,
+        "partial": 2,
         "rule-free": 10
       }
     },

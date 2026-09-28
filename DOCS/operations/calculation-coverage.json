@@ -93,7 +93,6 @@
       "ladder-value-annual",
       "long-term-care-benefit-annual",
       "longevity-depletion-year",
-      "longevity-survival-percentile-age",
       "magi-annual",
       "medicare-premiums-annual",
       "monte-carlo-average-longest-cut-spell-years",
@@ -220,6 +219,7 @@
       "insight-impact-lifetime-tax-delta",
       "insight-monte-carlo-success-delta",
       "longevity-last-funded-year",
+      "longevity-survival-percentile-age",
       "optimizer-schedule-conversion-total",
       "pension-election-annuity-present-value",
       "relocation-tax-comparison",
@@ -410,7 +410,10 @@
         "treasury-real-yield-curve-2026"
       ],
       "income-annuity-annual": [
-        "mortality-joint-last-survivor-expectancy"
+        "mortality-joint-last-survivor-expectancy",
+        "mortality-published-death-probability",
+        "ssa-period-life-table",
+        "survival-probability-product"
       ],
       "income-floor-ladder-yield-pct": [
         "ladder-real-yield-interpolation",
@@ -490,7 +493,8 @@
         "longevity-depletion-year"
       ],
       "longevity-survival-percentile-age": [
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
+        "ssa-period-life-table",
         "survival-hazard-from-expectancy-multiplier",
         "survival-probability-product"
       ],
@@ -566,10 +570,11 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "rng-derived-path-seed",
-        "rng-mulberry32-reference-stream"
+        "rng-mulberry32-reference-stream",
+        "ssa-period-life-table"
       ],
       "monte-carlo-guardrail-action-counts": [
         "balance-risk-guardrail-step",
@@ -620,11 +625,12 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "risk-based-starting-investable",
         "rng-derived-path-seed",
-        "rng-mulberry32-reference-stream"
+        "rng-mulberry32-reference-stream",
+        "ssa-period-life-table"
       ],
       "optimizer-recommended-conversion-annual": [
         "allocation-account-expected-return",
@@ -707,15 +713,17 @@
       ],
       "social-security-expected-present-value": [
         "dual-entitlement-composition",
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
         "social-security-cola-factor",
+        "ssa-period-life-table",
         "survival-probability-product",
         "survivor-benefit-rib-lim"
       ],
       "social-security-fica-return-ratio": [
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
         "oasdi-paid-in-today-dollars",
         "social-security-expected-value",
+        "ssa-period-life-table",
         "survival-probability-product"
       ],
       "social-security-oasdi-paid-in": [
@@ -723,7 +731,8 @@
         "oasdi-tax-rate-history"
       ],
       "social-security-survivor-switch-pv": [
-        "mortality-ex-to-qx-identity",
+        "mortality-published-death-probability",
+        "ssa-period-life-table",
         "survival-probability-product",
         "survivor-benefit-rib-lim"
       ],
@@ -736,8 +745,13 @@
       ],
       "spending-base-annual": [
         "abw-expected-real-return",
+        "joint-survival-percentile-age",
+        "mortality-published-death-probability",
         "spending-shape-annual-delta-phases",
-        "spending-shape-preset-compilation"
+        "spending-shape-preset-compilation",
+        "ssa-period-life-table",
+        "survival-percentile-age",
+        "survival-probability-product"
       ],
       "spending-care-cost-gross-annual": [
         "long-term-care-shock-sampling"
@@ -864,16 +878,16 @@
     }
   },
   "records": {
-    "total": 261,
+    "total": 262,
     "byKind": {
       "composition": 85,
-      "data": 19,
+      "data": 20,
       "formula": 93,
       "model": 64
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 256
+      "derivation": 257
     }
   },
   "oracleExamples": [
@@ -1064,7 +1078,7 @@
     {
       "group": "longevity",
       "path": "calculation-coverage/longevity.json",
-      "recordCount": 9
+      "recordCount": 10
     },
     {
       "group": "medicareAndAca",

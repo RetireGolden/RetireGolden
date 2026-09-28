@@ -168,6 +168,25 @@ export const planJsonSchema: JsonSchemaDocument = {
                       "partnerHealthMultiplier": {
                         "type": "number",
                         "exclusiveMinimum": 0
+                      },
+                      "tableEdition": {
+                        "type": "object",
+                        "properties": {
+                          "periodYear": {
+                            "type": "integer",
+                            "minimum": 1900,
+                            "maximum": 2200
+                          },
+                          "trusteesReportYear": {
+                            "type": "integer",
+                            "minimum": 1900,
+                            "maximum": 2200
+                          }
+                        },
+                        "required": [
+                          "periodYear",
+                          "trusteesReportYear"
+                        ]
                       }
                     },
                     "required": [

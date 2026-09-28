@@ -96,6 +96,29 @@ describe('buildAssumptionsSnapshot', () => {
     expect(law.rows.find((r) => r.id === 'recent-magi')!.provenance).toBe('user-set')
     expect(law.rows.find((r) => r.id === 'ss-haircut')!.value).toContain('not modeled')
   })
+
+  it('restates a percentile pick with the SSA table edition it was made on, and cites the life table', () => {
+    const plan = fixturePlan()
+    const pat = plan.household.people[0]!
+    const rowOf = (longevity: typeof pat.longevity) => {
+      const s = buildAssumptionsSnapshot({ ...plan, household: { ...plan.household, people: [{ ...pat, longevity }] } }, 2026)
+      return { row: s.groups.find((g) => g.id === 'longevity')!.rows.find((r) => r.id === 'person-0')!, text: assumptionsExportText(s) }
+    }
+    // Stored before the edition was recorded: made on the 2022 table.
+    const older = rowOf({ planningAge: 93, source: 'percentile', percentile: { pct: 25, joint: false } })
+    expect(older.row.value).toBe('retires at 65, plan runs to age 93 (25% survival percentile, SSA 2022 period life table, 2025 Trustees Report)')
+    expect(older.row.sourceId).toBe('ssa-life-table')
+    expect(older.row.provenance).toBe('published-source')
+    expect(older.text).toContain('plan runs to age 93 (25% survival percentile, SSA 2022 period life table, 2025 Trustees Report) (published source) [SSA Office of the Chief Actuary: https://www.ssa.gov/oact/STATS/table4c6.html]')
+    const current = rowOf({ planningAge: 94, source: 'percentile', percentile: { pct: 10, joint: true, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } } })
+    expect(current.row.value).toBe('retires at 65, plan runs to age 94 (10% survival percentile, joint, SSA 2023 period life table, 2026 Trustees Report)')
+    const model = rowOf({ planningAge: 88, source: 'model' })
+    expect(model.row.value).toBe('retires at 65, plan runs to age 88 (life-expectancy questionnaire estimate)')
+    expect(model.row.sourceId).toBe('ssa-life-table')
+    const manual = rowOf({ planningAge: 92, source: 'manual' })
+    expect(manual.row.sourceId).toBeUndefined()
+    expect(manual.row.provenance).toBe('user-set')
+  })
 })
 
 describe('assumptionsExportText', () => {

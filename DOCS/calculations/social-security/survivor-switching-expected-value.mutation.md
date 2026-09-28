@@ -1,6 +1,6 @@
 # Mutation receipt: survivor-switching-expected-value
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `c7edd464` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/survivorSwitching.ts`
 
@@ -20,7 +20,7 @@ index 81cea9a8..83ef7108 100644
    }
 ```
 
-This keeps one strategy per pair of ages rather than per yearly stream, the retired ranking and the worksheet's last wrong reading: case A lists eleven strategies, four of them at $415k, rather than six.
+This keeps one strategy per pair of ages rather than per yearly stream, the retired ranking and the worksheet's last wrong reading: case A lists eleven strategies, four of them at $423k, rather than six.
 
 ## Command
 
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survivorSwitching.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging slice 4's final history into D-LIFE-TABLE-2023 (the 2023 table's values on slice 4's final code). The baseline is green (survivorSwitching.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/socialSecurity/analysis/survivorSwitching.evidence.test.ts (7 tests | 3 failed) 19ms
+ ❯ src/socialSecurity/analysis/survivorSwitching.evidence.test.ts (7 tests | 3 failed) 30ms
    ❯ survivor-switching-expected-value — Survivor and own benefit switching for a widow(er) (7)
-     × case A: six distinct strategies, the survivor benefit at 62 alone first ($415k), each at the worksheet's value 6ms
-     × case B: the plan's COLA drift and cut scale each year, so survivor at 60 then own at 70 ranks first; survivor ages start at 60 1ms
+     × case A: six distinct strategies, the survivor benefit at 62 alone first ($423k), each at the worksheet's value 11ms
+     × case B: the plan's COLA drift and cut scale each year, so survivor at 60 then own at 70 ranks first; survivor ages start at 60 2ms
      × case C: a widow of 65 is offered own ages from 65, never a past claim at 62 1ms
 
  Test Files  1 failed (1)
@@ -50,7 +50,7 @@ RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/socialSecurity/analysis/survivorSwitching.evidence.test.ts > survivor-switching-expected-value — Survivor and own benefit switching for a widow(er) > case A: six distinct strategies, the survivor benefit at 62 alone first ($415k), each at the worksheet's value
+ FAIL  src/socialSecurity/analysis/survivorSwitching.evidence.test.ts > survivor-switching-expected-value — Survivor and own benefit switching for a widow(er) > case A: six distinct strategies, the survivor benefit at 62 alone first ($423k), each at the worksheet's value
 AssertionError: case A: expected [ 'Survivor only, at 62', …(10) ] to deeply equal [ 'Survivor only, at 62', …(5) ]
 
 - Expected

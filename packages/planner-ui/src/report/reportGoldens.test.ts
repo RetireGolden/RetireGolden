@@ -74,6 +74,10 @@
  * Proc. 2025-25) and "ACA premium tax credit, 2027 coverage" (Rev. Proc.
  * 2026-26, rp-26-26.pdf), in every golden and in each model's
  * parameter-sources block; nothing else in any golden changed.
+ * 2026-09-27 (decision D-LIFE-TABLE-2023, its review's M3): the parameter
+ * appendix and each model's parameter-sources block gain the "SSA period life
+ * table" row (Table 4C6, the 2023 period table of the 2026 Trustees Report),
+ * after the CPI-U row; nothing else in any golden changed.
  */
 import { describe, expect, it } from 'vitest'
 

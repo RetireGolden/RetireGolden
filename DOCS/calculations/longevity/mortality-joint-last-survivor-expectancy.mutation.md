@@ -1,22 +1,22 @@
 # Mutation receipt: mortality-joint-last-survivor-expectancy
 
-Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied: the planner-ui comparison moved to the planner-ui suite, and B2-P1 slice 4 deleted it with the planner-ui copy of the identity; that run replaced the same-day run against base `2dc2011c`), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied: the planner-ui comparison moved to the planner-ui suite, and B2-P1 slice 4 deleted it with the planner-ui copy of the identity; that run replaced the same-day run against base `2dc2011c`), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/mortality.ts`
 
 ```diff
-@@ -61,7 +61,7 @@ export function jointLastSurvivorExpectancy(ageA: number, sexA: Sex, ageB: numbe
+@@ -50,7 +50,7 @@
+   const survivalB = lifeSurvival(ageB, sexB)
+   let expectancy = 0.5
    for (let t = 1; t <= MAX_AGE + 1; t++) {
-     survivalA *= 1 - annualMortality(ageA + t - 1, sexA)
-     survivalB *= 1 - annualMortality(ageB + t - 1, sexB)
--    expectancy += 1 - (1 - survivalA) * (1 - survivalB)
-+    expectancy += survivalA
+-    expectancy += 1 - (1 - survivalA(t)) * (1 - survivalB(t))
++    expectancy += survivalA(t)
    }
    return expectancy
  }
 ```
 
-This adds the single-life survival instead of the either-alive probability, the worksheet's first wrong reading: 0.5 + 0.04 = 0.54 years instead of 0.5784, a 0.0384 miss against the 1e-12 tolerance. The endpoint case (both at 119) still returns 0.5 under the mutation, so only the worksheet example fails.
+This adds the single-life survival instead of the either-alive probability, the worksheet's first wrong reading: 0.5 + 0.11752 = 0.61752 years for the two men of 118 instead of 0.7212290496, a 0.1037 miss against the 1e-12 tolerance, and the 70/67 and 'average' cases fail with it. The endpoint case (both at 119) still returns 0.5 under the mutation.
 
 ## Command
 
@@ -26,23 +26,25 @@ npx vitest run src/montecarlo/mortality.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for B2-P1 slice 4 because a comment above its hunk or in its test file changed (the planner-ui copy of the survival curve is deleted, and the survivor helper names its two analysis callers); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (mortality.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (mortality.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/montecarlo/mortality.evidence.test.ts (11 tests | 1 failed) 6ms
-   ❯ mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives (4)
-     × two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years 3ms
+ ❯ src/montecarlo/mortality.evidence.test.ts (16 tests | 3 failed) 172ms
+   ❯ mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives (5)
+     × two male lives at 118: 0.5 + (1 - 0.88248^2) = 0.7212290496 years 4ms
+     × a man of 70 and a woman of 67: 21.80655867930931 years; two 'average' lives of those ages: the mean of the four sex pairings, 21.52705755500049 0ms
+     × floors fractional ages, and a negative age survives with certainty until it reaches 0 0ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 10 passed (11)
+      Tests  3 failed | 13 passed (16)
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives > two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years
-AssertionError: jointExpectancyYears 0.54 is not within {"abs":1e-12} of the worksheet's 0.5784: expected false to be true // Object.is equality
+ FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives > two male lives at 118: 0.5 + (1 - 0.88248^2) = 0.7212290496 years
+AssertionError: jointExpectancyYears 0.61752 is not within {"abs":1e-12} of the worksheet's 0.7212290496: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -50,15 +52,53 @@ AssertionError: jointExpectancyYears 0.54 is not within {"abs":1e-12} of the wor
 - true
 + false
 
- ❯ src/montecarlo/mortality.evidence.test.ts:184:9
-    182|         withinTolerance(expectancy, expected, example.tolerance),
-    183|         `jointExpectancyYears ${expectancy} is not within ${JSON.strin…
-    184|       ).toBe(true)
+ ❯ src/montecarlo/mortality.evidence.test.ts:257:9
+    255|         withinTolerance(expectancy, expected, example.tolerance),
+    256|         `jointExpectancyYears ${expectancy} is not within ${JSON.strin…
+    257|       ).toBe(true)
        |         ^
-    185|     })
-    186|
+    258|     })
+    259|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives > a man of 70 and a woman of 67: 21.80655867930931 years; two 'average' lives of those ages: the mean of the four sex pairings, 21.52705755500049
+AssertionError: 70/67: 14.66361168311186: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/montecarlo/mortality.evidence.test.ts:269:111
+    267|     it('a man of 70 and a woman of 67: 21.80655867930931 years; two \'…
+    268|       const mixed = jointLastSurvivorExpectancy(70, 'male', 67, 'femal…
+    269|       expect(withinTolerance(mixed, jointValue('Man of 70, woman of 67…
+       |                                                                                                               ^
+    270|       const bothAverage = jointLastSurvivorExpectancy(70, 'average', 6…
+    271|       expect(withinTolerance(bothAverage, jointValue('Two \'average\' …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives > floors fractional ages, and a negative age survives with certainty until it reaches 0
+AssertionError: 0.61752: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/montecarlo/mortality.evidence.test.ts:282:130
+    280|     it('floors fractional ages, and a negative age survives with certa…
+    281|       const floored = jointLastSurvivorExpectancy(118.7, 'male', 118.2…
+    282|       expect(withinTolerance(floored, jointValue('Two men of 118.7 and…
+       |                                                                                                                                  ^
+    283|       expect(floored).toBe(jointLastSurvivorExpectancy(118, 'male', 11…
+    284|       const negative = jointLastSurvivorExpectancy(-2, 'male', 118, 'm…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```
 
 ## Revert

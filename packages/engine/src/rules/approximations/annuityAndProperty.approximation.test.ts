@@ -160,8 +160,11 @@ describeRule('treas-reg-1-72-5-b-2-joint-and-survivor-expected-return', {
   readings: {
     // $1,200 × 16.0 + $600 × (22.0 − 16.0) = $22,800.
     statuteTakesTheJointMultipleFromTableVI: PRESCRIBED_EXPECTED_RETURN,
-    // Same decomposition, joint expectancy from the SSA-based mortality model.
-    engineDerivesTheJointExpectancyFromSsaMortality: 22330.89,
+    // Same decomposition, joint expectancy from the SSA-based mortality model:
+    // SSA's published 2023 q for a man of 70 and a woman of 67 give a joint
+    // last-survivor expectancy of 21.80655867930931 years, so
+    // $1,200 x 16.0 + $600 x (21.80655867930931 - 16.0) = $22,683.94.
+    engineDerivesTheJointExpectancyFromSsaMortality: 22683.94,
   },
   accepted: 'statuteTakesTheJointMultipleFromTableVI',
   produced: 'engineDerivesTheJointExpectancyFromSsaMortality',

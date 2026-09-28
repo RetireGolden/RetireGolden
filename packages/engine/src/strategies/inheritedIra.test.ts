@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
+import { baselineRemainingYears } from '../longevity/ssaPeriodLifeTable.js'
 import { packForYear } from '../params/index.js'
 import {
   beneficiaryRemainingLifeExpectancy,
@@ -149,15 +149,16 @@ describeRule('treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator', {
   // § 1.401(a)(9)-9(b)". Its entry at 51 is 35.3 years, so 300,000 / 35.3 =
   // 8,498.58.
   //
-  // The rejected reading is the SSA 2022 period table this engine carries for
-  // longevity modelling, averaged across the male and female columns: 30.03
-  // years at 51, so 300,000 / 30.03 = 9,990.01. It is not the prescribed table,
-  // it is not unisex as published, and the distribution it sizes is 17.6
-  // percent larger than the regulation requires — forced ordinary income pulled
-  // into the early years of the window.
+  // The rejected reading is the SSA period table this engine carries for
+  // longevity modelling (the 2023 period table of the 2026 Trustees Report),
+  // averaged across the male and female columns: 30.80 years at 51, so
+  // 300,000 / 30.80 = 9,740.26. It is not the prescribed table, it is not
+  // unisex as published, and the distribution it sizes is 14.6 percent larger
+  // than the regulation requires — forced ordinary income pulled into the early
+  // years of the window.
   readings: {
     singleLifeTableOfTheRegulation: 8_498.58,
-    rejectedSsaPeriodTable: 9_990.01,
+    rejectedSsaPeriodTable: 9_740.26,
   },
   accepted: 'singleLifeTableOfTheRegulation',
 }, ({ accepted, readings }) => {

@@ -209,7 +209,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 516
+              "line": 537
             }
           ]
         },
@@ -1081,7 +1081,7 @@
           "functions": [
             {
               "name": "pensionSchema",
-              "line": 1217
+              "line": 1238
             }
           ]
         },
@@ -2051,7 +2051,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 825
+              "line": 846
             }
           ]
         },
@@ -2172,34 +2172,34 @@
           "tests": [
             {
               "title": "sizes the annual amount from the Single Life Table, not the SSA period table",
-              "line": 164
+              "line": 165
             },
             {
               "title": "carries the published divisor, not an approximation of it",
-              "line": 169
+              "line": 170
             },
             {
               "title": "is unisex, so no SSA column can be recovered from the amount",
-              "line": 177
+              "line": 178
             }
           ]
         },
         {
           "path": "packages/engine/src/strategies/inheritedIra.test.ts",
-          "line": 187,
+          "line": 188,
           "note": "fixed at the first distribution year or redetermined each year",
           "tests": [
             {
               "title": "reduces the initial expectancy by one a year rather than re-reading the table",
-              "line": 213
+              "line": 214
             },
             {
               "title": "reads the table once, at the age reached in the year after death",
-              "line": 218
+              "line": 219
             },
             {
               "title": "does not turn on the age the beneficiary happens to be now",
-              "line": 233
+              "line": 234
             }
           ]
         }
@@ -2754,7 +2754,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 825
+              "line": 846
             }
           ]
         },
@@ -4301,7 +4301,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 516
+              "line": 537
             }
           ]
         },

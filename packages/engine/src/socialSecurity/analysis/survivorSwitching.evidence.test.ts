@@ -106,7 +106,7 @@ describeCalculation(
     mutation: MUTATION,
   },
   () => {
-    it('case A: six distinct strategies, the survivor benefit at 62 alone first ($415k), each at the worksheet\'s value', () => {
+    it('case A: six distinct strategies, the survivor benefit at 62 alone first ($423k), each at the worksheet\'s value', () => {
       expectRanking('A', caseA, atA)
     })
 
@@ -115,7 +115,7 @@ describeCalculation(
       // Without the drift and cut the switch from own at 62 to survivor at 67 would rank first.
       const flat = rankSwitchStrategies(caseB, { discountRate: 0.02, assumptions: matchInflation })
       expect(label(flat[0]!.strategy)).toBe('Own at 62, switch to survivor at 67')
-      expect(withinTolerance(flat[0]!.expectedPv, 348_406.9008453028, { rel: 1e-12 })).toBe(true)
+      expect(withinTolerance(flat[0]!.expectedPv, 357_348.56791882106, { rel: 1e-12 })).toBe(true)
     })
 
     it('case C: a widow of 65 is offered own ages from 65, never a past claim at 62', () => {

@@ -404,7 +404,7 @@ export function MonteCarloPage() {
               box (#473). The one-line hint rides in the ⓘ bubble. */}
           <CheckboxField
             label="Model longevity"
-            help="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex). Outcomes are then weighted by how long people actually live, dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger."
+            help="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex; a sex not stated draws from the average of the male and female chances). Outcomes are then weighted by how long people actually live, dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger."
             hint="Draw lifespans from mortality tables instead of the fixed planning age."
             value={stochasticLongevity}
             onCommit={setStochasticLongevity}

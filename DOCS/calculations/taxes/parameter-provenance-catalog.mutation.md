@@ -1,15 +1,15 @@
 # Mutation receipt: parameter-provenance-catalog
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `f9f2685b` (branch `claude/public-record-wording`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `57fe86cf` (branch `claude/aca-2027-coverage-year`, pull request #750), and re-executed 2026-09-27 against RetireGolden base `b6d48615` (branch `claude/decided-small-items`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `f9f2685b` (branch `claude/public-record-wording`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `57fe86cf` (branch `claude/aca-2027-coverage-year`, pull request #750), and re-executed 2026-09-27 against RetireGolden base `b6d48615` (branch `claude/decided-small-items`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `c7edd464` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/params/provenance.ts`
 
 ```diff
 diff --git a/packages/engine/src/params/provenance.ts b/packages/engine/src/params/provenance.ts
-index 7b0ec044..73c36151 100644
+index 3eeac539..7317476b 100644
 --- a/packages/engine/src/params/provenance.ts
 +++ b/packages/engine/src/params/provenance.ts
-@@ -168,7 +168,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
+@@ -176,7 +176,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
      url: 'https://www.irs.gov/pub/irs-drop/rp-26-26.pdf',
    },
    {
@@ -30,22 +30,25 @@ npx.cmd vitest run src/params/provenance.evidence.test.ts
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (provenance.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging slice 4's final history into D-LIFE-TABLE-2023 (the 2023 table's values on slice 4's final code). The baseline is green (provenance.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/params/provenance.evidence.test.ts (1 test | 1 failed) 4ms
+ ❯ src/params/provenance.evidence.test.ts (1 test | 1 failed) 8ms
    ❯ parameter-provenance-catalog — Parameter provenance catalog (1)
-     × preserves the ordered nineteen catalog IDs with zero duplicates 4ms
+     × preserves the ordered twenty catalog IDs with zero duplicates 7ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
 
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/params/provenance.evidence.test.ts > parameter-provenance-catalog — Parameter provenance catalog > preserves the ordered nineteen catalog IDs with zero duplicates
+ FAIL  src/params/provenance.evidence.test.ts > parameter-provenance-catalog — Parameter provenance catalog > preserves the ordered twenty catalog IDs with zero duplicates
 AssertionError: expected 'omitted-real-yield-curve' to be 'real-yield-curve' // Object.is equality
 
 Expected: "real-yield-curve"

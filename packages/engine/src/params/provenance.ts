@@ -141,6 +141,14 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     url: 'https://data.bls.gov/timeseries/CUUR0000SA0',
   },
   {
+    id: 'ssa-life-table',
+    label: 'SSA period life table',
+    figures:
+      'Table 4C6, the 2023 period table (2026 Trustees Report): the death probability and life expectancy by sex at each age 0–119, as published; the last row is closed at 119. Used for survival-percentile planning ages and spending horizons, Monte Carlo lifespans, Social Security expected values and joint-and-survivor annuity exclusion ratios.',
+    publisher: 'SSA Office of the Chief Actuary',
+    url: 'https://www.ssa.gov/oact/STATS/table4c6.html',
+  },
+  {
     id: 'federal-poverty-line',
     label: 'Federal poverty guideline (ACA)',
     figures:

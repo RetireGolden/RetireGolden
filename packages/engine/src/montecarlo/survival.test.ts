@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
-import { annualMortality, MAX_AGE } from './mortality.js'
+import { annualMortality, MAX_AGE, type TableSex } from './mortality.js'
 import {
   hazardForExpectancyMultiplier,
   jointSurvivalPercentileAge,
@@ -46,7 +45,7 @@ describe('survivalPercentileAge', () => {
   })
 
   it('lands in the SSA ballpark for a 65-year-old male (median ≈ 83, 25th ≈ 89-92)', () => {
-    // e(65, male) = 17.48 ⇒ median death age just above 83 (the distribution skews).
+    // e(65, male) = 18.12 ⇒ median death age just above 83 (the distribution skews).
     const median = survivalPercentileAge(65, 'male', 50)
     expect(median).toBeGreaterThanOrEqual(82)
     expect(median).toBeLessThanOrEqual(86)
@@ -91,21 +90,24 @@ describe('jointSurvivalPercentileAge', () => {
 })
 
 describe('hazardForExpectancyMultiplier', () => {
-  it('returns ~1 for the identity multiplier', () => {
-    expect(hazardForExpectancyMultiplier(65, 'male', 1)).toBeCloseTo(1, 1)
+  it('returns exactly 1 for the identity multiplier', () => {
+    expect(hazardForExpectancyMultiplier(65, 'male', 1)).toBe(1)
   })
 
-  it('reproduces the requested expectancy scaling within tolerance', () => {
-    for (const m of [0.8, 0.9, 1.1]) {
-      const h = hazardForExpectancyMultiplier(65, 'female', m)
-      // Recompute expectancy under h and compare against m × baseline.
+  it('reproduces the requested expectancy scaling of the curve\'s own expectancy within tolerance', () => {
+    const expectancy = (sex: TableSex, h: number): number => {
       let s = 1
       let e = 0.5
       for (let a = 65; a <= MAX_AGE; a++) {
-        s *= Math.pow(1 - annualMortality(a, 'female'), h)
+        s *= Math.pow(1 - annualMortality(a, sex), h)
         e += s
       }
-      expect(e).toBeCloseTo(m * baselineRemainingYears(65, 'female'), 1)
+      return e
+    }
+    for (const m of [0.8, 0.9, 1.1]) {
+      const h = hazardForExpectancyMultiplier(65, 'female', m)
+      // Recompute the expectancy under h and compare against m × the expectancy at power 1.
+      expect(expectancy('female', h)).toBeCloseTo(m * expectancy('female', 1), 6)
     }
   })
 

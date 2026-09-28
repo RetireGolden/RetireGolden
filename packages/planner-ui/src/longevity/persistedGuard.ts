@@ -1,4 +1,4 @@
-import type { LongevityAnswers, LongevityPersisted, LongevityResult } from '@retiregolden/engine/longevity/types'
+import type { LifeTableEdition, LongevityAnswers, LongevityPersisted, LongevityResult } from '@retiregolden/engine/longevity/types'
 
 const SEX: LongevityAnswers['sex'][] = ['male', 'female', 'average']
 const BMI: LongevityAnswers['bmiCategory'][] = [
@@ -86,8 +86,24 @@ function parseAnswers(raw: unknown): LongevityAnswers | null {
   }
 }
 
+/**
+ * The saved result's table edition: absent on a result saved before the field
+ * existed (read as the 2022 table by storedLifeTableEdition), and otherwise
+ * two whole years. Anything else is corruption: `null`.
+ */
+function parseTableEdition(raw: unknown): LifeTableEdition | undefined | null {
+  if (raw === undefined) return undefined
+  if (!isRecord(raw)) return null
+  const periodYear = num(raw.periodYear)
+  const trusteesReportYear = num(raw.trusteesReportYear)
+  if (periodYear == null || trusteesReportYear == null || !Number.isInteger(periodYear) || !Number.isInteger(trusteesReportYear)) return null
+  return { periodYear, trusteesReportYear }
+}
+
 function parseResult(raw: unknown): LongevityResult | null {
   if (!isRecord(raw)) return null
+  const tableEdition = parseTableEdition(raw.tableEdition)
+  if (tableEdition === null) return null
   const baselineRemainingYears = num(raw.baselineRemainingYears)
   const rawMultiplier = num(raw.rawMultiplier)
   const appliedMultiplier = num(raw.appliedMultiplier)
@@ -107,6 +123,7 @@ function parseResult(raw: unknown): LongevityResult | null {
     return null
   }
   return {
+    ...(tableEdition === undefined ? {} : { tableEdition }),
     baselineRemainingYears,
     rawMultiplier,
     appliedMultiplier,

@@ -3,14 +3,19 @@
  * page now reads the engine's models, and this pins, row by row, what that
  * changed and what it did not, against copies of the retired planner-ui
  * functions kept here (socialSecurity/breakEven.ts#computeBreakEven and
- * socialSecurity/expectedPv.ts#expectedPvSingle with its survival curve).
+ * socialSecurity/expectedPv.ts#expectedPvSingle, whose survival curve, the
+ * identity on the 2022 table's e(x), is replaced by one read off SSA's
+ * published q since D-LIFE-TABLE-2023).
  *
  * - Break-even (owner decision R6): every crossing callout the retired chart
  *   printed is unchanged, and every cumulative value is the retired one times
  *   (1 + c)^(62 - age in the start year), the plan's dollars.
  * - Benefits only (R7): a single claimant with no former-spouse record prices
- *   within 1e-12 of the retired model at all 17 slider rates; couples price on
- *   the ledger's spouse and survivor rules, and their 2% headlines are pinned.
+ *   within 1e-12 of the retired model's sum at all 17 slider rates, on a
+ *   survival curve read straight off SSA's published q (since D-LIFE-TABLE-2023;
+ *   an 'average' single is exactly the mean of a man and a woman); couples
+ *   price on the ledger's spouse and survivor rules, and their 2% headlines are
+ *   pinned.
  * - The couple primer's PIA x 12 is unchanged.
  *
  * @see DOCS/calculations/social-security/social-security-claim-break-even.md
@@ -20,7 +25,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { Sex } from '@retiregolden/engine/longevity/types'
-import { FEMALE, MALE } from '@retiregolden/engine/longevity/ssaPeriod2022'
+import { SSA_PERIOD_LIFE_TABLE } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
 import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
 import { benefitsOnlyRanking } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
@@ -82,31 +87,34 @@ function callout(early: number, late: number, age: number | null, throughAge: nu
   return age === null ? `${early} vs ${late}: never by ${throughAge}` : `${early} vs ${late}: around age ${age}`
 }
 
-/** The retired survival curve: cumulative products from age 0, S(a -> b) = cum[b] / cum[a]. */
-function retiredSurvival(sex: Sex): (from: number, to: number) => number {
-  const remaining = (age: number): number => {
-    const i = Math.max(0, Math.min(Math.round(age), MALE.length - 1))
-    return sex === 'average' ? (MALE[i]! + FEMALE[i]!) / 2 : sex === 'male' ? MALE[i]! : FEMALE[i]!
-  }
-  const cum: number[] = [1]
-  for (let age = 0; age < MALE.length; age++) {
-    const p = (remaining(age) - 0.5) / (remaining(age + 1) + 0.5)
-    cum.push(cum[age]! * Math.max(0, Math.min(1, p)))
+/**
+ * The survival curve read straight off SSA's published q(x) (the 2023 period
+ * table the engine carries), independently of the engine's curve: the product
+ * of (1 - q) over the whole ages from `from` to `to` - 1, with the table's last
+ * row closed (q = 1 from 119); for 'average', the mean of the man's and the
+ * woman's products. Until D-LIFE-TABLE-2023 this was the retired planner-ui
+ * curve, the half-year identity on the 2022 table's printed e(x).
+ */
+function publishedSurvival(sex: Sex): (from: number, to: number) => number {
+  const product = (column: readonly number[], from: number, to: number): number => {
+    let s = 1
+    for (let age = from; age < to; age++) s *= age >= 119 ? 0 : 1 - column[age]!
+    return s
   }
   return (from, to) => {
     if (to <= from) return 1
-    const a = Math.max(0, Math.min(Math.round(from), cum.length - 1))
-    const b = Math.max(0, Math.min(Math.round(to), cum.length - 1))
-    return cum[a]! <= 0 ? 0 : cum[b]! / cum[a]!
+    const male = product(SSA_PERIOD_LIFE_TABLE.male.q, from, to)
+    const female = product(SSA_PERIOD_LIFE_TABLE.female.q, from, to)
+    return sex === 'average' ? (male + female) / 2 : sex === 'male' ? male : female
   }
 }
 
-/** The retired single expected PV (no floor: none of the examples has a former-spouse record). */
+/** The retired single expected PV (no floor: none of the examples has a former-spouse record), on the published survival. */
 function retiredExpectedPvSingle(currentAge: number, dob: { year: number; month: number; day: number }, sex: Sex, pia: number, claimYears: number, rate: number): number {
-  const survival = retiredSurvival(sex)
+  const survival = publishedSurvival(sex)
   const benefit = pia * claimFactor(dob.year, dob.month, dob.day, { years: claimYears, months: 0 }) * 12
   let pv = 0
-  for (let age = Math.max(currentAge, claimYears); age <= MALE.length - 1; age++) {
+  for (let age = Math.max(currentAge, claimYears); age <= SSA_PERIOD_LIFE_TABLE.male.q.length - 1; age++) {
     pv += survival(currentAge, age) * benefit * Math.pow(1 + rate, -(age - currentAge))
   }
   return pv
@@ -150,7 +158,7 @@ describe('B2-P1 slice 4 on the 29 example plans', () => {
     expect(values).toBeGreaterThan(0)
   })
 
-  it('benefits only: a single claimant with no former spouse prices within 1e-12 of the retired model at every rate', () => {
+  it('benefits only: a single claimant with no former spouse prices within 1e-12 of the retired sum on SSA\'s published q (for \'average\', the mean of a man and a woman) at every rate', () => {
     let rows = 0
     for (const { id, plan } of examples) {
       const people = claimingPeople(plan, START)
@@ -176,12 +184,15 @@ describe('B2-P1 slice 4 on the 29 example plans', () => {
       const best = ranking.ranked[0]!
       return `${ranking.personIds.map((personId) => best.claimByPersonId[personId]).join('/')} ${fmtMoneyCompact(best.expectedPv)}`
     }
-    expect(headline('example-couple')).toBe('70/62 $841k')
-    expect(headline('survivor-years')).toBe('64/69 $853k')
-    expect(headline('annuity-purchases-estate')).toBe('70/63 $784k')
-    expect(headline('no-annuity-brokerage')).toBe('70/63 $784k')
-    expect(headline('all-401k-no-bridge')).toBe('70/62 $425k')
-    expect(headline('brokerage-bridge-401k')).toBe('70/62 $425k')
+    // On SSA's 2023 period table (D-LIFE-TABLE-2023); on the 2022 table's
+    // identity they were 70/62 $841k, 64/69 $853k, 70/63 $784k twice and
+    // 70/62 $425k twice. The two 401(k) couples are two 'average' people each.
+    expect(headline('example-couple')).toBe('70/62 $865k')
+    expect(headline('survivor-years')).toBe('64/70 $876k')
+    expect(headline('annuity-purchases-estate')).toBe('70/63 $805k')
+    expect(headline('no-annuity-brokerage')).toBe('70/63 $805k')
+    expect(headline('all-401k-no-bridge')).toBe('70/62 $442k')
+    expect(headline('brokerage-bridge-401k')).toBe('70/62 $442k')
   })
 
   it("the couple primer's PIA x 12 is the resolved PIA, unchanged", () => {

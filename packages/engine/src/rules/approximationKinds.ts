@@ -41,10 +41,6 @@
  *   per-recipient income is known; the credit and election facts are not.
  *
  * Reclassified from the triage, each against the rule's own record and code:
- * - ssa-table-4c6-period-life-table-vintage, fix to convention: the record
- *   says the table "is refreshed deliberately, not silently" in a reviewed
- *   change, a standing yearly process (DOCS/maintenance-schedule.md) that
- *   recurs after every refresh.
  * - aca-26-51-815-b-3-ten-million-dollar-gain-exemption, fix to convention:
  *   the record calls the population one the engine "will essentially never
  *   see, which is a reason to record the gap rather than to model it".
@@ -106,6 +102,13 @@
  * - usc-42-415-b-2-a-i-computation-years-five-year-dropout: the earnings window
  *   starts at 1951, so the computation years are the elapsed years less five,
  *   fixed with the contribution and benefit base table back to 1937.
+ *
+ * Settled and removed from this list (decision D-LIFE-TABLE-2023, 2026-09-27):
+ * - ssa-table-4c6-period-life-table-vintage, a convention until then (the
+ *   embedded table trailed SSA's newest one between reviewed refreshes): the
+ *   engine now carries the 2023 period table SSA publishes, so the figure is
+ *   the authority's and the record is settled (TaxRuleClassification); its
+ *   yearly re-verification stays with volatility annuallyIndexed.
  *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
@@ -232,7 +235,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'poms-rs-00615-482-arf-crediting-months': { kind: 'fix' },
   'ri-gen-laws-44-30-12-social-security-and-pension-modification': { kind: 'fix' },
   'sc-code-12-6-1170-retirement-income-deduction': { kind: 'fix' },
-  'ssa-table-4c6-period-life-table-vintage': { kind: 'convention', reason: 'the life table is updated on purpose in a reviewed yearly change, because a new table changes results, so between updates it trails the newest table SSA has published' },
   'treas-reg-1-1012-1-c-lot-basis-and-holding-period': { kind: 'convention', reason: 'specific-lot selection decades ahead is unknowable where the plan stores aggregate basis' },
   'treas-reg-1-1275-7-f-1-deflation-adjustment-income': { kind: 'fix' },
   'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': { kind: 'fix' },

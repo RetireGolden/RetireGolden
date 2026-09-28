@@ -75,12 +75,12 @@ function singlePlan(dob: string, sex: 'male' | 'female', stream: Record<string, 
 }
 
 describe('Social Security analysis page on the engine models', () => {
-  it('benefits only, example-couple: the 2% headline is the engine\'s (70 / 62, $841k) and the couple copy states the rules', async () => {
+  it('benefits only, example-couple: the 2% headline is the engine\'s (70 / 62, $865k) and the couple copy states the rules', async () => {
     await render(getExampleById('example-couple')!.build())
     await openTab('Benefits only')
     const page = text()
     expect(page).toContain('Highest expected value: claim at 70 / 62')
-    expect(page).toContain('expected PV $841k')
+    expect(page).toContain('expected PV $865k')
     expect(page).toContain('the lower earner receives their own benefit plus a reduced spousal top-up once both have claimed')
     expect(page).not.toContain('larger of their reduced own benefit or a reduced half')
   })
@@ -121,7 +121,7 @@ describe('Social Security analysis page on the engine models', () => {
     expect(text()).toContain("Pat's benefit is a disability benefit")
   })
 
-  it('paid in: each year\'s rate and base in 2026 dollars ($225,418), and the ratio on the start-year PIA (2.38×)', async () => {
+  it('paid in: each year\'s rate and base in 2026 dollars ($225,418), and the ratio on the start-year PIA (2.46×)', async () => {
     const earnings = Array.from({ length: 40 }, (_, i) => ({ year: 1982 + i, amount: 50_000 }))
     await render(singlePlan('1960-05-01', 'male', { earnings }))
     await openTab('Benefits only')
@@ -129,14 +129,14 @@ describe('Social Security analysis page on the engine models', () => {
     expect(page).toContain('Paid in so far (OASDI, 2026 dollars)$225,418')
     expect(page).toContain('Employer paid so far (context)$228,683')
     expect(page).not.toContain('What your projected work will pay')
-    expect(page).toContain('Ratio (get back ÷ paid in)2.38×')
+    expect(page).toContain('Ratio (get back ÷ paid in)2.46×')
     expect(page).not.toContain('3.80×')
     // The panel names the parts the Learning Center article describes (learn/socialSecurityTaxesVsBenefits.article.test.ts).
     expect(page).toContain("the tax your projected work will pay, in today's dollars")
     expect(page).toContain("(on your record, or a former spouse's when larger): those already received")
   })
 
-  it('paid in: the projected work the PIA counts is paid in too, so the ratio is 1.53×, not 2.36×', async () => {
+  it('paid in: the projected work the PIA counts is paid in too, so the ratio is 1.59×, not 2.46×', async () => {
     const earnings = Array.from({ length: 23 }, (_, i) => ({ year: 2003 + i, amount: 60_000 }))
     const plan = singlePlan('1981-06-15', 'male', { earnings, earningsProjection: { assumedAnnualEarnings: 60_000, throughAge: 65 } })
     const draft = structuredClone(plan)
@@ -146,8 +146,8 @@ describe('Social Security analysis page on the engine models', () => {
     const page = text()
     expect(page).toContain('Paid in so far (OASDI, 2026 dollars)$116,507')
     expect(page).toContain('What your projected work will pay (2026–2042, 2026 dollars)$63,240')
-    expect(page).toContain('Ratio (get back ÷ paid in)1.53×')
-    expect(page).not.toContain('2.36×')
+    expect(page).toContain('Ratio (get back ÷ paid in)1.59×')
+    expect(page).not.toContain('2.46×')
   })
 
   it('paid in: a disability benefit from its onset gets the sentence, not a ratio', async () => {
@@ -209,7 +209,7 @@ describe('Social Security analysis page on the engine models', () => {
       'Own only, at 70',
       'Own only, at 67',
     ])
-    expect(text()).toContain('$415k')
+    expect(text()).toContain('$423k')
   })
 
   it('the divorced-spouse note shows only where the ranking prices the record: a claimant living alone, not a couple (PR #757 review 1)', async () => {

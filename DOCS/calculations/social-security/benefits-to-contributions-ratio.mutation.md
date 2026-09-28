@@ -1,6 +1,6 @@
 # Mutation receipt: benefits-to-contributions-ratio
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757), and re-executed 2026-09-28 against RetireGolden base `a24a985a` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/oasdiReturn.ts`
 
@@ -19,7 +19,7 @@ index a429129e..225b4c5f 100644
  }
 ```
 
-This leaves out the benefits already received, the worksheet's third wrong reading (the derivation's problem 7): case A, not yet collecting, is unchanged, but case B's ratio falls from 2.85 to 2.30.
+This leaves out the benefits already received, the worksheet's third wrong reading (the derivation's problem 7): case A, not yet collecting, and case P are unchanged, but case B's ratio falls from 2.9290 to 2.3730 (2.93 to 2.37 on the page).
 
 ## Command
 
@@ -29,14 +29,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Its production file's lines moved when the latest tax-rate year became a constant (PR #757 review 5), so it is re-executed on the current code. The baseline is green (oasdiReturn.ratio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging main (#757) into D-LIFE-TABLE-2023: the review fixes re-pointed this receipt's hunk after LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR moved oasdiReturn.ts, and this branch restates case B to the 2023 table (2.93, not 2.37), so the killing test's title changed. The baseline is green (oasdiReturn.ratio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts (5 tests | 1 failed) 12ms
+ ❯ src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts (5 tests | 1 failed) 22ms
    ❯ benefits-to-contributions-ratio — Benefits received per dollar of Social Security tax paid (5)
-     × case B: a person collecting since 2023 counts the three years already received (2.85, not 2.30) 4ms
+     × case B: a person collecting since 2023 counts the three years already received (2.93, not 2.37) 7ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 4 passed (5)
@@ -47,8 +47,8 @@ RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts > benefits-to-contributions-ratio — Benefits received per dollar of Social Security tax paid > case B: a person collecting since 2023 counts the three years already received (2.85, not 2.30)
-AssertionError: B ratio: 2.295122462644769 against the worksheet's 2.8511272534295995: expected false to be true // Object.is equality
+ FAIL  src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts > benefits-to-contributions-ratio — Benefits received per dollar of Social Security tax paid > case B: a person collecting since 2023 counts the three years already received (2.93, not 2.37)
+AssertionError: B ratio: 2.3730272172907876 against the worksheet's 2.9290320080756196: expected false to be true // Object.is equality
 
 - Expected
 + Received

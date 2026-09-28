@@ -24,7 +24,7 @@ Survivor at 62: the widow(er) factor is 1 − 0.285 × 60/84 = 0.796428571, so 2
 
 The survivor benefit at 62 exceeds every own amount, so "survivor at 62, then own at 62, 67 or 70" pays 1,911.43 every year, the same stream as "survivor only, at 62": one strategy, kept as survivor only. Likewise survivor at 67 (1,980) exceeds own at 67 and 70, so those pairings are "survivor only, at 67". "Own at 62, switch to survivor at 67" pays 1,050 for five years and then 1,980: a different stream, kept.
 
-**B.** Survivor at 60: 2,000 × 0.715 = 1,430 (no limit: the deceased never took a reduced benefit); at 67: 2,000. Own at 62, 67, 70: 840, 1,200, 1,488. Each year's amount is multiplied by scale(y) = (1.02/1.025)^(y − 2026), times 0.8 from 2034: 0.995122 in 2027, 0.956945 × 0.8 = 0.765556 in 2035, the year she turns 69. Survivor at 60 then own at 62 or 67 is survivor at 60 alone (1,430 exceeds 840 and 1,200); survivor at 60 then own at 70 pays 1,430 to 69 and 1,488 from 70, a different stream. Without the drift and cut the switch from own at 62 to survivor at 67 ranks first (348,406.90 against 334,517.77); with them the later survivor years are worth less, and survivor at 60 then own at 70 ranks first.
+**B.** Survivor at 60: 2,000 × 0.715 = 1,430 (no limit: the deceased never took a reduced benefit); at 67: 2,000. Own at 62, 67, 70: 840, 1,200, 1,488. Each year's amount is multiplied by scale(y) = (1.02/1.025)^(y − 2026), times 0.8 from 2034: 0.995122 in 2027, 0.956945 × 0.8 = 0.765556 in 2035, the year she turns 69. Survivor at 60 then own at 62 or 67 is survivor at 60 alone (1,430 exceeds 840 and 1,200); survivor at 60 then own at 70 pays 1,430 to 69 and 1,488 from 70, a different stream. Without the drift and cut the switch from own at 62 to survivor at 67 ranks first (357,348.57 against 341,319.19); with them the later survivor years are worth less, and survivor at 60 then own at 70 ranks first.
 
 **C.** Survivor at 65 (780 months against a survivor full retirement age of 802): 1 − 0.285 × 22/82 = 0.923537, so 2,786.67 × 0.923537 = 2,573.59; at 66 (792 months): 1 − 0.285 × 10/82 = 0.965244, 2,689.81. Own at 65, 67, 70: 2,000 × (1 − 24 × 5/900) = 1,733.33, 2,000, 2,480. Every survivor amount exceeds every own amount, so each pairing that starts with the survivor benefit is that survivor benefit alone, and own at 65 then survivor at 66 is kept. Own ages start at 65: a claim at 62 or 63 is in the past and is not offered.
 
@@ -32,27 +32,29 @@ The survivor benefit at 62 exceeds every own amount, so "survivor at 62, then ow
 
 | Case: strategy | Expected PV |
 |---|---:|
-| A: Survivor only, at 62 | 414,887.98433343583 |
-| A: Own at 62, switch to survivor at 67 | 377,121.8512265504 |
-| A: Survivor only, at 67 | 317,678.2949539328 |
-| A: Own only, at 70 | 242,685.79499672135 |
-| A: Own only, at 67 | 240,665.37496510052 |
-| A: Own only, at 62 | 227,909.31874818786 |
-| B: Survivor at 60, switch to own at 70 | 276,824.4111395492 |
-| B: Own at 62, switch to survivor at 67 | 271,713.16028197797 |
-| B: Survivor only, at 60 | 271,597.92672448105 |
-| B: Survivor only, at 67 | 227,601.36350347087 |
-| B: Own only, at 62 | 139,704.3694499649 |
-| B: Own only, at 67 | 136,560.81810208247 |
-| B: Own only, at 70 | 134,086.35878657125 |
-| C: Own at 65, switch to survivor at 66 | 523,626.4862094006 |
-| C: Survivor only, at 65 | 511,982.8713822639 |
-| C: Survivor only, at 66 | 502,826.4862094006 |
-| C: Own only, at 70 | 353,549.5657901028 |
-| C: Own only, at 67 | 350,606.17709731637 |
-| C: Own only, at 65 | 344,824.720973272 |
+| A: Survivor only, at 62 | 423,379.4782211079 |
+| A: Own at 62, switch to survivor at 67 | 385,837.9868067318 |
+| A: Survivor only, at 67 | 326,304.123883093 |
+| A: Own only, at 70 | 250,509.69318397678 |
+| A: Own only, at 67 | 247,200.09385082786 |
+| A: Own only, at 62 | 232,573.92861921855 |
+| B: Survivor at 60, switch to own at 70 | 281,757.01279284194 |
+| B: Own at 62, switch to survivor at 67 | 278,144.5787973238 |
+| B: Survivor only, at 60 | 276,357.45142424677 |
+| B: Survivor only, at 67 | 233,887.58233068977 |
+| B: Own only, at 62 | 142,489.78104552373 |
+| B: Own only, at 67 | 140,332.5493984139 |
+| B: Own only, at 70 | 138,526.67787017403 |
+| C: Own at 65, switch to survivor at 66 | 535,281.9217035525 |
+| C: Survivor only, at 65 | 523,134.68603762885 |
+| C: Survivor only, at 66 | 514,481.9217035524 |
+| C: Own only, at 70 | 364,061.1173324963 |
+| C: Own only, at 67 | 359,251.33765557106 |
+| C: Own only, at 65 | 352,335.5608701224 |
 
-Each case's rows are its whole ranking, in this order. Tolerance: 1e−12 relative. The survivor benefit at 62 in case A is 1,911.4285714285716 a month (1e−9 absolute). The retired page's top five: survivor at 62, switch to own at 70 ($379k); own at 62, switch to survivor at 67 ($377k); and three rows at $342k.
+Each case's rows are its whole ranking, in this order. Tolerance: 1e−12 relative. The survivor benefit at 62 in case A is 1,911.4285714285716 a month (1e−9 absolute). The retired page's top five, on the 2022 table: survivor at 62, switch to own at 70 ($379k); own at 62, switch to survivor at 67 ($377k); and three rows at $342k.
+
+Revision 2026-09-27 (D-LIFE-TABLE-2023): the values are on SSA's published 2023 q(x) (`mortality-published-death-probability`); the order of every case is unchanged. On the 2022 table's identity case A was 414,887.98, 377,121.85, 317,678.29, 242,685.79, 240,665.37 and 227,909.32, case B 276,824.41 to 134,086.36 and case C 523,626.49 to 344,824.72. They are the slice review's independent model (`ssmodel.py`, importing nothing from the engine) with its q(x) replaced by SSA's published 2023 column and nothing else changed; run with its own 2022 q it reproduces every previous value to the last digit, and the D-LIFE-TABLE-2023 derivation's own model gives case A to within four units in the last place.
 
 ## Wrong readings
 
@@ -60,8 +62,8 @@ Each case's rows are its whole ranking, in this order. Tolerance: 1e−12 relati
 - No limit at all: 2,400 at 67 rather than 1,980.
 - The deceased's PIA as the base, ignoring an early claim: 2,400 at 67.
 - The worker full retirement age where the survivor's applies: the same for births from 1962, different for 1957 to 1961.
-- Strategies with the same stream printed separately: four rows at $415k in case A.
-- No COLA drift or haircut (the model before this restatement): case B ranks the switch from own at 62 to survivor at 67 first, at 348,406.90.
+- Strategies with the same stream printed separately: four rows at $423k in case A.
+- No COLA drift or haircut (the model before this restatement): case B ranks the switch from own at 62 to survivor at 67 first, at 357,348.57.
 - Survivor ages from 62 whatever the widow's age: case B loses survivor at 60.
 - Own ages from 62 whatever the widow's age: case C offers claims at 62 she can no longer make.
 
@@ -72,3 +74,5 @@ outputs: `social-security-survivor-switch-pv`.
 ## Provenance
 
 Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-survivor-switch-pv.md` (survivor amounts by hand, values by its independent model); independently checked (C5; its correction 10 added the tie-break). Cases B and C: the slice review's findings F13 and F16, their values by the review's independent model (`ssmodel.py`, written from the statute and SSA's tables, importing nothing from the engine) with the drift and cut added, and their survivor and own amounts by hand above. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed (the slice review, by the same model family as the author, does not count as the independent review).
+
+Revision 2026-09-27 (D-LIFE-TABLE-2023): the survival-weighted values restated on SSA's published 2023 q(x) by claude (opus 5.5), with the slice review's independent model (`ssmodel.py`, which imports nothing from the engine) given SSA's 2023 column in place of its q(x) and 'average' as the mixture of the two sexes' curves, cross-checked against the D-LIFE-TABLE-2023 derivation's model and its independent check where they overlap; not yet reviewed.

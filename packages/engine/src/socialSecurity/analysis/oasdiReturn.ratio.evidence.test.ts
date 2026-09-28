@@ -34,7 +34,7 @@ function careerPlan(dob: string, firstYear: number, lastYear: number, amount = 5
   return validatePlan(plan)
 }
 
-/** Case P: born 1981-06-15 on the average table, retiring at 65, $60,000 a year 2003-2025 and projected at $60,000 to 65. */
+/** Case P: born 1981-06-15, sex 'average' (the mixture of the two survival curves), retiring at 65, $60,000 a year 2003-2025 and projected at $60,000 to 65. */
 function projectedCareerPlan(): Plan {
   const plan = singlePersonPlan({ dob: '1981-06-15', retirementAge: 65, planningAge: 90 })
   plan.assumptions.inflationPct = 2.5
@@ -77,7 +77,7 @@ describeCalculation(
     mutation: MUTATION,
   },
   () => {
-    it('case A: 536,350.60 of expected benefits over 225,418.24 paid in, both in 2026 dollars (2.38)', () => {
+    it('case A: 553,781.61 of expected benefits over 225,418.24 paid in, both in 2026 dollars (2.46)', () => {
       expect(socialSecurityClaimants(planA, 2026)[0]!.piaMonthly).toBe(value('A PIA 2026'))
       const result = oasdiReturnForPerson(planA, 'p1', at2026)!
       expectValue(result.getBackPv, 'A get-back PV')
@@ -85,20 +85,20 @@ describeCalculation(
       expectValue(result.paid.paidInToday, 'A paid in today')
       expect(result.paid.projectedToday).toBe(0)
       expectValue(result.ratio!, 'A ratio')
-      expect(result.ratio!.toFixed(2)).toBe('2.38')
+      expect(result.ratio!.toFixed(2)).toBe('2.46')
     })
 
-    it('case B: a person collecting since 2023 counts the three years already received (2.85, not 2.30)', () => {
+    it('case B: a person collecting since 2023 counts the three years already received (2.93, not 2.37)', () => {
       expect(socialSecurityClaimants(planB, 2026)[0]!.piaMonthly).toBe(value('B PIA 2026'))
       const result = oasdiReturnForPerson(planB, 'p1', at2026)!
       expectValue(result.getBackPv, 'B get-back PV')
       expectValue(result.receivedBeforeStart, 'B received before start')
       expectValue(result.paid.paidInToday, 'B paid in today')
       expectValue(result.ratio!, 'B ratio')
-      expect((result.getBackPv / result.paid.paidInToday).toFixed(2)).toBe('2.30')
+      expect((result.getBackPv / result.paid.paidInToday).toFixed(2)).toBe('2.37')
     })
 
-    it('case P: the projected work the PIA counts is paid in too, 1.53 rather than 2.36 over the history alone', () => {
+    it('case P: the projected work the PIA counts is paid in too, 1.59 rather than 2.46 over the history alone', () => {
       const plan = projectedCareerPlan()
       expect(socialSecurityClaimants(plan, 2026)[0]!.piaMonthly).toBe(value('P PIA 2026'))
       const result = oasdiReturnForPerson(plan, 'p1', at2026)!
@@ -107,7 +107,7 @@ describeCalculation(
       expect(withinTolerance(result.paid.projectedToday, value('P projected work'), { abs: 1e-6 })).toBe(true)
       expect(result.paid.projectedYears).toEqual(Array.from({ length: 17 }, (_, i) => 2026 + i))
       expectValue(result.ratio!, 'P ratio')
-      expect(result.ratio!.toFixed(2)).toBe('1.53')
+      expect(result.ratio!.toFixed(2)).toBe('1.59')
     })
 
     it('in a couple, a divorced spouse\'s benefit is not in the get-back, as the ledger pays it only to a single claimant', () => {

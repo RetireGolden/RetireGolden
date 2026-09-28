@@ -8,10 +8,12 @@
  * everywhere else in this section.
  */
 
+import { CURRENT_LIFE_TABLE_EDITION } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { SpendingPolicy } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
 import { NumberField, PercentField, SelectField } from '../fields'
+import { lifeTableName } from '../../longevity/constants'
 import { LEARN } from '../learnLinks'
 
 export function AbwPolicyFields() {
@@ -90,7 +92,7 @@ export function AbwPolicyFields() {
       ) : null}
       <SelectField
         label="Amortize to"
-        help="The horizon the balance is spread over. Planning age uses the household's plan horizon. The survival percentiles amortize to the age you (for couples: either of you) have a 25% or 10% chance of reaching, the unadjusted SSA life table, with no health-questionnaire adjustment even if your planning age used one, a shorter, spendier horizon than a conservative planning age."
+        help={`The horizon the balance is spread over. Planning age uses the household's plan horizon. The survival percentiles amortize to the age you (for couples: either of you) have a 25% or 10% chance of reaching on SSA's ${lifeTableName(CURRENT_LIFE_TABLE_EDITION)}, unadjusted, with no health-questionnaire adjustment even if your planning age used one, a shorter, spendier horizon than a conservative planning age. The age is worked out again on every projection, so it moves when the table is updated.`}
         learn={LEARN.longevity}
         value={e.spendingPolicy.abw?.horizon ?? 'planningAge'}
         options={[

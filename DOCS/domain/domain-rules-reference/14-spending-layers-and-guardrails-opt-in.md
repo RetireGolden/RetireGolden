@@ -118,8 +118,8 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
 - **Survival-percentile planning ages** (Household screen "Percentile";
   [engine/montecarlo/survival.ts](../../../packages/engine/src/montecarlo/survival.ts)): planning age expressed as
   "the age I/we have a 25% (10%) chance of reaching", single or joint ("either of us", independent
-  lifetimes: 1 − (1−S_a)(1−S_b)), from the same SSA 2022 q(x) derivation as the stochastic-longevity
-  engine. Optional health adjustment: the longevity questionnaire's remaining-years multiplier converts to
+  lifetimes: 1 − (1−S_a)(1−S_b)), from the same survival curve on SSA's published q(x) (the 2023 period
+  table) as the stochastic-longevity engine. Optional health adjustment: the longevity questionnaire's remaining-years multiplier converts to
   a proportional-hazards power (q′ = 1 − (1−q)^h, h solved by bisection so the adjusted expectancy matches),
   the Actuaries Longevity Illustrator's smoker/health-adjustment pattern without a second factor set. The
   picked age is written once with provenance (`longevity.source = 'percentile'`, spec kept for restating) —

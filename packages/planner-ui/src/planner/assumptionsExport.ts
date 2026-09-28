@@ -19,6 +19,7 @@ import {
   resolveAssetClassParams,
   DEFAULT_ASSET_CLASS_PARAMS,
 } from '@retiregolden/engine/allocation/assetClasses'
+import { storedLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import { createEmptyPlan, ASSET_CLASS_IDS, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import {
   LATEST_PACK_YEAR,
@@ -212,10 +213,10 @@ function longevityGroup(plan: Plan): AssumptionGroup {
       ...plan.household.people.map((p, i): AssumptionRow => ({
         id: `person-${i}`,
         label: `${p.name}: retirement & planning age`,
-        value: `${p.retirementAge !== null ? `retires at ${p.retirementAge}, ` : ''}plan runs to age ${p.longevity.planningAge}${p.longevity.source === 'percentile' && p.longevity.percentile ? ` (${p.longevity.percentile.pct}% survival percentile${p.longevity.percentile.joint ? ', joint' : ''})` : ''}`,
-        // 'model' and 'percentile' both derive from the SSA period table.
+        value: `${p.retirementAge !== null ? `retires at ${p.retirementAge}, ` : ''}plan runs to age ${p.longevity.planningAge}${longevityOrigin(p.longevity)}`,
+        // 'model' and 'percentile' both derive from SSA's period life table.
         provenance: p.longevity.source === 'manual' ? 'user-set' : 'published-source',
-        sourceId: undefined,
+        sourceId: p.longevity.source === 'manual' ? undefined : 'ssa-life-table',
       })),
     ],
   }
@@ -296,6 +297,22 @@ function strategyGroup(plan: Plan): AssumptionGroup {
       { id: 'qcd', label: 'Qualified charitable distributions', value: plan.strategies.qcdAnnual > 0 ? `${fmtMoney(plan.strategies.qcdAnnual)}/yr` : 'none', provenance: plan.strategies.qcdAnnual > 0 ? 'user-set' : 'app-default' },
     ],
   }
+}
+
+/**
+ * How a planning age that is not typed in was set. A percentile pick names the
+ * SSA table edition it was computed on (a pick stored before the edition was
+ * recorded was made on the 2022 table); the questionnaire's estimate is not
+ * stored with an edition on the plan, so it names none.
+ */
+function longevityOrigin(longevity: Plan['household']['people'][number]['longevity']): string {
+  if (longevity.source === 'percentile' && longevity.percentile) {
+    const { pct, joint, tableEdition } = longevity.percentile
+    const edition = storedLifeTableEdition(tableEdition)
+    return ` (${pct}% survival percentile${joint ? ', joint' : ''}, SSA ${edition.periodYear} period life table, ${edition.trusteesReportYear} Trustees Report)`
+  }
+  if (longevity.source === 'model') return ' (life-expectancy questionnaire estimate)'
+  return ''
 }
 
 function taxParametersGroup(): AssumptionGroup {

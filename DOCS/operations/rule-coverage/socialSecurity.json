@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -764,11 +764,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1822
+              "line": 1843
             }
           ]
         },
@@ -855,7 +855,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -1179,7 +1179,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -1451,35 +1451,32 @@
     },
     {
       "id": "ssa-table-4c6-period-life-table-vintage",
-      "title": "The longevity tables are the SSA period life table, one edition behind the live host",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "convention",
-        "reason": "the life table is updated on purpose in a reviewed yearly change, because a new table changes results, so between updates it trails the newest table SSA has published"
-      },
-      "conventionRationale": "The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so an edition update changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways: longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.",
+      "title": "The longevity tables are SSA's 2023 period life table (2026 Trustees Report)",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Settled by the classification rule (TaxRuleClassification in rules/taxRuleRegistry.ts): \"approximated\" is for a figure the engine computes that is knowably not the one the authority requires, and the embedded columns are the ones SSA publishes today (calculation record ssa-period-life-table). SSA replaces the table every year; that is what volatility annuallyIndexed carries, not a reason to call the record approximated: taxRuleDueOn puts it on the rules:due queue 120 days after verifiedOn, and verify:quotes re-reads the quoted introduction and row 65 against the live page, where they stop matching the day SSA posts the next edition. A new edition changes results (the Monte Carlo lifespans with longevity modelled, the percentile planning ages, the Social Security expected values and joint-and-survivor annuity multiples), so the refresh is a reviewed data change of longevity/ssaPeriodLifeTable.ts, not a silent one.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2026-12-27",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-01-25",
       "implementedBy": [
-        "packages/engine/src/longevity/ssaPeriod2022.ts"
+        "packages/engine/src/longevity/ssaPeriodLifeTable.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/longevity/ssaPeriod2022.ts",
+          "path": "packages/engine/src/longevity/ssaPeriodLifeTable.ts",
           "functions": [
             {
-              "name": "FEMALE",
-              "line": 21
+              "name": "SSA_PERIOD_LIFE_TABLE",
+              "line": 70
             },
             {
-              "name": "MALE",
-              "line": 8
+              "name": "baselineRemainingYears",
+              "line": 202
             }
           ]
         }
@@ -1490,11 +1487,11 @@
       "fixtures": [
         {
           "path": "packages/engine/src/montecarlo/mortality.test.ts",
-          "line": 58,
+          "line": 59,
           "note": null,
           "tests": [
             {
-              "title": "carries the 2022-period life expectancies at 65 for both sexes",
+              "title": "carries the 2023-period life expectancies at 65 for both sexes",
               "line": 66
             }
           ]
@@ -1722,7 +1719,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -1767,7 +1764,7 @@
           "functions": [
             {
               "name": "householdSchema",
-              "line": 240
+              "line": 261
             }
           ]
         }
@@ -1812,7 +1809,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -1872,7 +1869,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -2218,7 +2215,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         }
@@ -2721,7 +2718,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -2814,7 +2811,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -3869,7 +3866,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -4052,7 +4049,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },
@@ -4217,7 +4214,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1885
+              "line": 1906
             }
           ]
         },

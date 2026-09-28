@@ -3,6 +3,7 @@ import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
 import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
+import { LAST_TABLE_AGE, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
 import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
 import { FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR, QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { stateParamsFor } from './state/index.js'
@@ -402,6 +403,17 @@ function cpiUClauses(): FigureClause[] {
   ]
 }
 
+// Not a tax-year parameter: SSA's period life table, whose edition and range
+// the row names from the table's own source record.
+function ssaLifeTableClauses(): FigureClause[] {
+  const { periodYear, trusteesReportYear, rows } = SSA_PERIOD_LIFE_TABLE.source
+  return [
+    { label: 'table edition', clause: `the ${periodYear} period table (${trusteesReportYear} Trustees Report)` },
+    { label: 'ages carried', clause: `at each age 0–${rows - 1}` },
+    { label: 'closed last row', clause: `the last row is closed at ${LAST_TABLE_AGE}` },
+  ]
+}
+
 function federalPovertyLineClauses(): FigureClause[] {
   const block2027 = acaParametersForCoverageYear(2027).params
   return [
@@ -601,6 +613,7 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'social-security-tax-rates': socialSecurityTaxRateClauses,
   'social-security-credits': socialSecurityCreditClauses,
   'cpi-u': cpiUClauses,
+  'ssa-life-table': ssaLifeTableClauses,
   'federal-poverty-line': federalPovertyLineClauses,
   'aca-ptc': acaPtcClauses,
   'aca-ptc-2027': acaPtc2027Clauses,
@@ -746,6 +759,11 @@ describe('parameter provenance', () => {
     expect(byId('aca-ptc').figures).not.toContain('2026-26')
     expect(byId('aca-ptc-2027').url).toBe('https://www.irs.gov/pub/irs-drop/rp-26-26.pdf')
     expect(byId('aca-ptc-2027').figures).not.toContain('2025-25')
+  })
+
+  it('links the life table to the page the engine read it from', () => {
+    expect(byId('ssa-life-table').url).toBe(SSA_PERIOD_LIFE_TABLE.source.url)
+    expect(byId('ssa-life-table').publisher).toBe('SSA Office of the Chief Actuary')
   })
 
   it('has unique ids', () => {

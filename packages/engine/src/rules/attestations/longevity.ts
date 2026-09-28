@@ -9,6 +9,6 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const longevityAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
-  'longevity/ssaPeriod2022.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'Table provenance and vintage registered under ssa-table-4c6-period-life-table-vintage, approximated with the embedded 2022-period value pinned against the currently published 2023-period table' }),
+  'longevity/ssaPeriodLifeTable.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-27', note: 'Table provenance and edition registered under ssa-table-4c6-period-life-table-vintage, settled: the embedded columns are SSA\'s 2023 period table of the 2026 Trustees Report, the edition the page presents; cataloged as calculation record ssa-period-life-table' }),
   'longevity/types.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
 })

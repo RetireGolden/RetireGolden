@@ -799,11 +799,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1101
+              "line": 1122
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1047
+              "line": 1068
             }
           ]
         }
@@ -1389,20 +1389,20 @@
         },
         {
           "path": "packages/engine/src/strategies/sepp.test.ts",
-          "line": 199,
+          "line": 200,
           "note": null,
           "tests": [
             {
               "title": "amortizes the balance at the permitted rate over the permitted divisor",
-              "line": 224
+              "line": 225
             },
             {
               "title": "is not the straight-line figure the rmd method produces in its first year",
-              "line": 228
+              "line": 229
             },
             {
               "title": "does not amortize over a divisor the notice never permitted",
-              "line": 237
+              "line": 238
             }
           ]
         }
@@ -1558,38 +1558,38 @@
           "tests": [
             {
               "title": "sizes the payment from a permitted table rather than the SSA period table",
-              "line": 92
+              "line": 93
             },
             {
               "title": "carries the published Single Life divisor, not an approximation of it",
-              "line": 98
+              "line": 99
             },
             {
               "title": "takes the birthday-age entry whole rather than interpolating between rows",
-              "line": 106
+              "line": 107
             },
             {
               "title": "is unisex, so the SSA table cannot be recovered for either sex",
-              "line": 116
+              "line": 117
             }
           ]
         },
         {
           "path": "packages/engine/src/strategies/sepp.test.ts",
-          "line": 127,
+          "line": 128,
           "note": "direction: which permitted table sizes the larger payment",
           "tests": [
             {
               "title": "pays the Single Life figure, which EXCEEDS the Uniform Lifetime figure",
-              "line": 165
+              "line": 166
             },
             {
               "title": "reads the other permitted table off the same pack, so neither figure is a guess",
-              "line": 174
+              "line": 175
             },
             {
               "title": "holds the same direction at every age both tables publish a row for",
-              "line": 181
+              "line": 182
             }
           ]
         }
@@ -1648,20 +1648,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/sepp.test.ts",
-          "line": 245,
+          "line": 246,
           "note": null,
           "tests": [
             {
               "title": "uses the 5% floor of the ceiling, which no rate environment can breach",
-              "line": 259
+              "line": 260
             },
             {
               "title": "prices the series above what the superseded 120% ceiling would allow",
-              "line": 265
+              "line": 266
             },
             {
               "title": "defaults to the ceiling floor rather than requiring a rate argument",
-              "line": 275
+              "line": 276
             }
           ]
         }
@@ -2053,7 +2053,7 @@
           "functions": [
             {
               "name": "seppElectionSchema",
-              "line": 503
+              "line": 524
             }
           ]
         },

@@ -22,7 +22,9 @@ import {
 const WORKSHEET = 'DOCS/calculations/social-security/social-security-expected-value.md'
 const MUTATION = 'DOCS/calculations/social-security/social-security-expected-value.mutation.md'
 
-// The Expected table's first two columns: the model's value and the retired model's.
+// The Expected table's first two columns: the model's value, and the retired
+// model's on the 2022 table (the record of what slice 4 replaced; since
+// D-LIFE-TABLE-2023 it is two changes back, not a value to reproduce).
 const rows = worksheetExpectedRows(WORKSHEET)
 const expectedOf = (label: string): number => worksheetNumber(rows.get(label)![0]!)
 const retiredOf = (label: string): number => worksheetNumber(rows.get(label)![1]!)
@@ -77,12 +79,14 @@ describeCalculation(
     mutation: MUTATION,
   },
   () => {
-    it('single cases S-A, S-B and S-E: the claim months count, and S-A and S-E equal the retired model', () => {
+    it('single cases S-A, S-B and S-E: the claim months count, and a man of 117 is paid at 117, 118 and 119, and not at 120', () => {
       expectPv(expectedPvSingle(cases.sA, single, options), 'S-A')
       expectPv(expectedPvSingle(cases.sB, single, options), 'S-B')
       expectPv(expectedPvSingle(cases.sE, single, options), 'S-E')
-      expect(withinTolerance(expectedPvSingle(cases.sA, single, options), retiredOf('S-A'), { rel: 1e-12 })).toBe(true)
-      expect(withinTolerance(expectedPvSingle(cases.sB, single, options), retiredOf('S-B'), { rel: 1e-6 })).toBe(false)
+      // Six months of credits past full retirement age: S-B is not S-A.
+      expect(withinTolerance(expectedPvSingle(cases.sB, single, options), expectedOf('S-A'), { rel: 1e-6 })).toBe(false)
+      // S-E's closed form: 12,600 x [1 + 0.159543/1.02 + 0.159543 x 0.11752/1.0404], paid at 117, 118 and 119, nothing at 120.
+      expectPv(12_600 * (1 + 0.159543 / 1.02 + (0.159543 * 0.11752) / 1.0404), 'S-E')
     })
 
     it('S-C: a divorced spouse is paid from the year of the first month the ex is 62 throughout, own plus the excess reduced at 765 months (707.50)', () => {

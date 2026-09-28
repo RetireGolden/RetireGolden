@@ -179,6 +179,14 @@ is an editable patch root, so a stored scenario can hold a whole v4 income array
 and both an operation's `value` and its `before` are migrated (migrating only the
 first would leave every income-touching scenario reading as conflicted).
 
+Within v5, a person's survival-percentile pick (`household.people[].longevity.percentile`)
+gains the optional `tableEdition` (`{ periodYear, trusteesReportYear }`): the SSA period life
+table edition the pick was computed on, written by the percentile picker. It has no default. A
+pick without it was made before the field existed, on the 2022 period table of the 2025 Trustees
+Report, and the planner labels it so. An engine that predates the field (0.3.0, which
+RetireGolden-Pro and RetireGolden-MCP pin) drops it when it parses and re-saves a plan, since the
+object is not strict; the pick's age is kept, and back in this planner it reads as a 2022 pick.
+
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the
 versioned `retiregolden.scenario-patch` operation document instead; the engine validates that document

@@ -411,7 +411,7 @@
           "functions": [
             {
               "name": "jointLastSurvivorExpectancy",
-              "line": 57
+              "line": 48
             }
           ]
         },
@@ -445,15 +445,15 @@
           "tests": [
             {
               "title": "the accepted figure is Example 2 arithmetic, not a number chosen here",
-              "line": 181
+              "line": 184
             },
             {
               "title": "understates the expected return prescribed by Table VI",
-              "line": 188
+              "line": 191
             },
             {
               "title": "varies by sex, which a unisex Table VI cannot do",
-              "line": 197
+              "line": 200
             }
           ]
         }

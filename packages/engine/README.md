@@ -128,7 +128,7 @@ supported runtime API.
 | `tax/` | Federal + state tax engine, ACA credit, Medicare/IRMAA |
 | `rmd/` | Required minimum distributions (SECURE 2.0) |
 | `socialSecurity/` | Claiming factors, NRA/FRA, PIA from earnings, spousal/survivor/family-maximum, disability |
-| `longevity/` | SSA 2022 period life table + shared types |
+| `longevity/` | SSA period life table (the 2023 period table of the 2026 Trustees Report, q and e) + shared types |
 | `strategies/` | Roth-conversion sizing (fill-to-target), withdrawal ordering, SEPP, inherited-IRA, the optimizer |
 | `projection/` | Deterministic annual ledger + summaries/comparison |
 | `montecarlo/` | Seedable RNG, market models (lognormal, historical bootstrap), path runner + aggregation, mortality/survival |

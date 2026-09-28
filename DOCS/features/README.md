@@ -30,7 +30,7 @@ change at a future year (mid-plan moves). Longevity per person produces a planni
 the plan horizon runs to the later death age, with survivor years modeled after the first death
 (filing status flips to single, survivor SS benefit, RMD changes). The planning age can also be set from
 a **survival percentile** — "the age I/we have a 25% (or 10%) chance of reaching", single or joint
-("either of us" for couples), from the SSA 2022 table
+("either of us" for couples), from SSA's period life table (the 2023 table of the 2026 Trustees Report)
 ([engine/montecarlo/survival.ts](../../packages/engine/src/montecarlo/survival.ts)) with an optional
 proportional-hazards adjustment derived from the saved longevity questionnaire. The picked age is written
 once with provenance (`longevity.source = 'percentile'`) and never silently recomputed; typing a number
