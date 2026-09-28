@@ -1157,7 +1157,9 @@ function buildSocialSecurityClaimLever({
       ),
   )
   if (eligible.length === 0) {
-    return unavailable(definition, ['Disability streams use onset age instead of retirement claim age.'])
+    return unavailable(definition, [
+      'Each Social Security stream here is paid as disability, from the end of the five-month waiting period after the month and year the disability began, so its retirement claim age changes nothing. A stream whose disability date leaves no disability month before full retirement age would follow its claim age instead.',
+    ])
   }
   const effectiveChange = eligible.some(
     (stream) =>
@@ -1176,7 +1178,9 @@ function buildSocialSecurityClaimLever({
     return unavailable(definition, ['No Social Security stream has a modeled benefit to change.'])
   }
   if (eligible.length !== streams.length) {
-    warnings.push('Social Security disability streams are left unchanged because onset age controls their start.')
+    warnings.push(
+      'Social Security disability streams whose claim age changes nothing are left unchanged: they are paid from the end of the five-month waiting period after the month and year the disability began. A disability stream whose date leaves no disability month before full retirement age follows its claim age and is changed like any other.',
+    )
   }
   if (eligible.some((stream) => stream.piaMonthly === null && stream.earnings === null)) {
     warnings.push('A changed stream has neither a PIA nor earnings history, so its benefit amount may be unavailable.')

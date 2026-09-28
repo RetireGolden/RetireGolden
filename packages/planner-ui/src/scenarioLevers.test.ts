@@ -1429,7 +1429,42 @@ describe('scenario lever contract', () => {
 
     expect(normalRetirement.ok).toBe(true)
     expect(disability.ok).toBe(false)
-    if (!disability.ok) expect(disability.issues.join(' ')).toContain('Disability streams')
+    if (!disability.ok) {
+      expect(disability.issues.join(' ')).toContain('paid as disability, from the end of the five-month waiting period after the month and year the disability began')
+      expect(disability.issues.join(' ')).toContain('leaves no disability month before full retirement age would follow its claim age')
+    }
+  })
+
+  it('leaves a disability-path stream unchanged, says why, and changes one that falls through to its claim age', () => {
+    // Two people in the example couple. The first, born 1960-01-02 (FRA 67,
+    // January 2027), has a May 2026 onset: first payable November 2026, so
+    // November and December are disability months and the claim age changes
+    // nothing for that stream. The second has a 2036 onset, after her FRA, so
+    // there is no disability month and her stream is an ordinary claim.
+    const plan = buildExampleCouple()
+    const [first, second] = plan.household.people
+    first!.dob = '1960-01-02'
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const firstStream = streams.find((income) => income.personId === first!.id)!
+    const secondStream = streams.find((income) => income.personId === second!.id)!
+    firstStream.piaMonthly = 2_000
+    firstStream.disability = { onsetAge: 66, onsetMonth: 5 }
+    firstStream.claimAge = { years: 62, months: 0 }
+    secondStream.piaMonthly = 1_500
+    secondStream.disability = { onsetAge: 2036 - Number(second!.dob.slice(0, 4)) }
+    const result = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, context)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.warnings.join(' ')).toContain('Social Security disability streams whose claim age changes nothing are left unchanged')
+    expect(result.warnings.join(' ')).toContain('follows its claim age and is changed like any other')
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const claimOf = (personId: string) =>
+      applied.plan.incomes.find((income) => income.type === 'socialSecurity' && income.personId === personId)
+    expect(claimOf(first!.id)).toMatchObject({ claimAge: { years: 62, months: 0 } })
+    expect(claimOf(second!.id)).toMatchObject({ claimAge: { years: 70, months: 0 } })
   })
 
   it('preserves the effective pre-projection residence in relocation scenarios', () => {
