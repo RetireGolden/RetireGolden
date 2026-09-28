@@ -13,6 +13,7 @@ import {
   assumptionsExportText,
   buildAssumptionsSnapshot,
   type AssumptionsSnapshot,
+  type SavedQuestionnaireAge,
 } from './assumptionsExport'
 
 let counter = 0
@@ -95,6 +96,71 @@ describe('buildAssumptionsSnapshot', () => {
     const law = s.groups.find((g) => g.id === 'law-toggles')!
     expect(law.rows.find((r) => r.id === 'recent-magi')!.provenance).toBe('user-set')
     expect(law.rows.find((r) => r.id === 'ss-haircut')!.value).toContain('not modeled')
+  })
+
+  describe('the life table a planning age cites (PR #759 review 1)', () => {
+    const plan = fixturePlan()
+    const pat = plan.household.people[0]!
+    const rowOf = (longevity: typeof pat.longevity, saved: readonly (SavedQuestionnaireAge | null)[] = []) => {
+      const s = buildAssumptionsSnapshot({ ...plan, household: { ...plan.household, people: [{ ...pat, longevity }] } }, 2026, saved)
+      const row = s.groups.find((g) => g.id === 'longevity')!.rows.find((r) => r.id === 'person-0')!
+      const line = assumptionsExportText(s).split('\n').find((l) => l.startsWith(`- ${row.label}:`))!
+      const json = (JSON.parse(assumptionsExportJson(s)) as AssumptionsSnapshot).groups.find((g) => g.id === 'longevity')!.rows[1]!
+      return { row, line, json }
+    }
+    const PAGE_2022 = '[SSA Office of the Chief Actuary: https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html]'
+    const PAGE_2023 = '[SSA Office of the Chief Actuary: https://www.ssa.gov/oact/STATS/table4c6.html]'
+
+    it('cites a pick stored before the edition was recorded to the 2022 table it was made on', () => {
+      const older = rowOf({ planningAge: 93, source: 'percentile', percentile: { pct: 25, joint: false } })
+      expect(older.row.value).toBe('retires at 65, plan runs to age 93 (25% survival percentile, SSA 2022 period life table, 2025 Trustees Report)')
+      expect(older.row.sourceId).toBe('ssa-life-table-2022')
+      expect(older.row.provenance).toBe('published-source')
+      expect(older.line.endsWith(`(published source) ${PAGE_2022}`)).toBe(true)
+      expect(older.line).not.toContain('table4c6.html')
+      expect(older.json).toEqual(older.row)
+    })
+
+    it('cites a pick made on the 2023 table to the 2023 table', () => {
+      const current = rowOf({ planningAge: 94, source: 'percentile', percentile: { pct: 10, joint: true, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } } })
+      expect(current.row.value).toBe('retires at 65, plan runs to age 94 (10% survival percentile, joint, SSA 2023 period life table, 2026 Trustees Report)')
+      expect(current.row.sourceId).toBe('ssa-life-table')
+      expect(current.line.endsWith(PAGE_2023)).toBe(true)
+    })
+
+    it('names an edition outside the known set as not recognized and cites no table', () => {
+      const unknown = rowOf({ planningAge: 94, source: 'percentile', percentile: { pct: 10, joint: false, tableEdition: { periodYear: 2024, trusteesReportYear: 2027 } } })
+      expect(unknown.row.value).toBe('retires at 65, plan runs to age 94 (10% survival percentile, SSA period life table, table edition not recognized)')
+      expect(unknown.row.sourceId).toBeUndefined()
+      expect(unknown.line).not.toContain('[SSA')
+    })
+
+    it('dates a questionnaire age by the result saved for that person when it gives the plan’s age, else says the edition is not recorded', () => {
+      const model = { planningAge: 88, source: 'model' } as const
+      const notRecorded = 'retires at 65, plan runs to age 88 (life-expectancy questionnaire estimate, table edition not recorded)'
+      // Nothing saved in this browser.
+      expect(rowOf(model).row.value).toBe(notRecorded)
+      expect(rowOf(model).row.sourceId).toBeUndefined()
+      expect(rowOf(model).line).not.toContain('[SSA')
+      // A saved result that gives another age did not set this one.
+      expect(rowOf(model, [{ planningAge: 90, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } }]).row.value).toBe(notRecorded)
+      // The partner's saved result does not date the primary person's age.
+      expect(rowOf(model, [null, { planningAge: 88, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } }]).row.value).toBe(notRecorded)
+      const on2023 = rowOf(model, [{ planningAge: 88, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } }])
+      expect(on2023.row.value).toBe('retires at 65, plan runs to age 88 (life-expectancy questionnaire estimate, SSA 2023 period life table, 2026 Trustees Report)')
+      expect(on2023.row.sourceId).toBe('ssa-life-table')
+      // Saved before the edition was recorded: the 2022 table.
+      const on2022 = rowOf(model, [{ planningAge: 88 }])
+      expect(on2022.row.value).toBe('retires at 65, plan runs to age 88 (life-expectancy questionnaire estimate, SSA 2022 period life table, 2025 Trustees Report)')
+      expect(on2022.row.sourceId).toBe('ssa-life-table-2022')
+      expect(on2022.line.endsWith(PAGE_2022)).toBe(true)
+    })
+
+    it('leaves a typed-in age user-set, with no source', () => {
+      const manual = rowOf({ planningAge: 92, source: 'manual' })
+      expect(manual.row.sourceId).toBeUndefined()
+      expect(manual.row.provenance).toBe('user-set')
+    })
   })
 })
 

@@ -537,14 +537,14 @@ export const socialSecurityRecords = {
     ],
   },
   'ssa-table-4c6-period-life-table-vintage': {
-    title: 'The longevity tables are the SSA period life table, one edition behind the live host',
+    title: 'The longevity tables are SSA\'s 2023 period life table (2026 Trustees Report)',
     statement:
-      'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (life expectancy at 65: male 17.48 embedded versus 18.12 published, female 20.12 embedded versus 20.66 published).',
-    classification: 'approximated',
+      'The engine\'s death probabilities and life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as the page presents it on 2026-09-27: the 2023 period table used in the 2026 Trustees Report, both columns for both sexes (life expectancy at 65: male 18.12, female 20.66; the death probability at 65: male 0.016455, female 0.010188). When SSA publishes the next edition, the embedded table trails it until a reviewed data change replaces it.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so an edition update changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways: longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.',
+      'Settled by the classification rule (TaxRuleClassification in rules/taxRuleRegistry.ts): "approximated" is for a figure the engine computes that is knowably not the one the authority requires, and the embedded columns are the ones SSA publishes today (calculation record ssa-period-life-table). SSA replaces the table every year; that is what volatility annuallyIndexed carries, not a reason to call the record approximated: taxRuleDueOn puts it on the rules:due queue 120 days after verifiedOn, and verify:quotes re-reads the quoted introduction and row 65 against the live page, where they stop matching the day SSA posts the next edition. A new edition changes results (the Monte Carlo lifespans with longevity modelled, the percentile planning ages, the Social Security expected values and joint-and-survivor annuity multiples), so the refresh is a reviewed data change of longevity/ssaPeriodLifeTable.ts, not a silent one.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'agencyGuidance',
@@ -556,13 +556,13 @@ export const socialSecurityRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-27',
     implementedBy: [
-      'packages/engine/src/longevity/ssaPeriod2022.ts',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/longevity/ssaPeriod2022.ts#MALE',
-      'packages/engine/src/longevity/ssaPeriod2022.ts#FEMALE',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#SSA_PERIOD_LIFE_TABLE',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#baselineRemainingYears',
     ],
   },
 

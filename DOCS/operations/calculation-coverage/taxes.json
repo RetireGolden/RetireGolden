@@ -770,7 +770,7 @@
         "tax-total-annual"
       ],
       "purpose": "Preserve the ordered source catalog that accompanies parameter assumptions.",
-      "statement": "params/provenance.ts#PARAMETER_PROVENANCE is a human-maintained ordered catalog of 19 stable assumption-group IDs, labels, key-figure summaries, publishers, and URLs surfaced to users; it does not itself calculate tax or benefit amounts.",
+      "statement": "params/provenance.ts#PARAMETER_PROVENANCE is a human-maintained ordered catalog of 21 stable assumption-group IDs, labels, key-figure summaries, publishers, and URLs surfaced to users; it does not itself calculate tax or benefit amounts.",
       "formula": null,
       "limits": [
         "No direct census family: actions/annualQcdTaxCharacterPostPass.ts reads the rmd-qcd entry as source provenance for QCD tax-character evidence feeding annual tax. This is a metadata dependency, not a numerical tax formula. The worksheet checks ordered IDs, count and uniqueness, not correctness or freshness of the summaries. Per-entry authorities need independent verification on refresh."
@@ -778,9 +778,9 @@
       "worksheet": "DOCS/calculations/taxes/parameter-provenance-catalog.md",
       "mutation": "DOCS/calculations/taxes/parameter-provenance-catalog.mutation.md",
       "dataset": {
-        "citation": "RetireGolden parameter provenance catalog; DOCS/calculations/taxes/parameter-provenance-catalog.md, extracted 2026-09-14 and revised 2026-09-27 (one ACA entry per coverage year; the Social Security tax rate, credit and CPI-U sources)",
+        "citation": "RetireGolden parameter provenance catalog; DOCS/calculations/taxes/parameter-provenance-catalog.md, extracted 2026-09-14 and revised 2026-09-27 and 2026-09-28 (one ACA entry per coverage year; the Social Security tax rate, credit and CPI-U sources; SSA's period life table and its earlier edition)",
         "url": "https://github.com/RetireGolden/RetireGolden/blob/main/packages/engine/src/params/provenance.ts",
-        "asOf": "2026-09-27",
+        "asOf": "2026-09-28",
         "retrievedOn": "2026-09-17"
       },
       "ruleIds": null,

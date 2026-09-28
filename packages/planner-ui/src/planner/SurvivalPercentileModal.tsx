@@ -2,21 +2,25 @@
  * Survival-percentile planning-age picker (spending-paths & SWR-lenses plan,
  * Goal 4). Expresses the planning age as "the age I/we have a 25% (10%) chance
  * of reaching" — the standard longevity-risk framing the Actuaries Longevity
- * Illustrator popularized — computed from the same SSA 2022 table as the
- * stochastic-longevity engine (engine/montecarlo/survival.ts). The age is
- * computed once at pick time and written as an ordinary planning age with
- * provenance; it is never silently recomputed later (the anti-drift rule the
- * spending presets follow). A manual edit of the field remains the override.
+ * Illustrator popularized — computed from the engine's one survival curve on
+ * SSA's period life table (engine/montecarlo/survival.ts), the curve the
+ * stochastic-longevity engine reads. The age is computed once at pick time and
+ * written as an ordinary planning age with provenance, including the table
+ * edition it was computed on; it is never silently recomputed later (the
+ * anti-drift rule the spending presets follow). A manual edit of the field
+ * remains the override.
  */
 
 import { useMemo, useState } from 'react'
 
+import { CURRENT_LIFE_TABLE_EDITION } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { Person } from '@retiregolden/engine/model/plan'
 import {
   hazardForExpectancyMultiplier,
   jointSurvivalPercentileAge,
   survivalPercentileAge,
 } from '@retiregolden/engine/montecarlo/survival'
+import { lifeTableName } from '../longevity/constants'
 import { loadLongevity, loadLongevityPartner } from '../longevity/storage'
 import { CheckboxField, SelectField } from './fields'
 import { Modal } from './Modal'
@@ -98,17 +102,25 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
         ...(useHealth && isJoint && savedPartner
           ? { partnerHealthMultiplier: savedPartner.result.appliedMultiplier }
           : {}),
+        // The table the age was computed on, so the pick keeps its label after a table refresh.
+        tableEdition: { ...CURRENT_LIFE_TABLE_EDITION },
       },
     })
     onClose()
   }
 
+  const averageInPlay = person.sex === 'average' || (joint && partner?.sex === 'average')
+
   return (
     <Modal title={`Planning age from a survival percentile, ${person.name}`} onClose={onClose} width="40rem">
-      <p className="card-hint">
+      <p className="card-hint" data-testid="percentile-source">
         Instead of guessing an age, plan to the age you have only a chosen chance of reaching. Probabilities come
-        from the Social Security Administration 2022 period life table, the same table behind the questionnaire
-        and the Monte Carlo longevity model. The result is written as an ordinary planning age you can still edit.
+        from the Social Security Administration&apos;s {lifeTableName(CURRENT_LIFE_TABLE_EDITION)}, the same table behind the
+        questionnaire and the Monte Carlo longevity model.
+        {averageInPlay
+          ? ' For a person whose sex is not stated, each chance is the average of the male and female chances.'
+          : ''}{' '}
+        The result is written as an ordinary planning age you can still edit.
       </p>
       <div className="form-grid">
         <SelectField

@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
   baselineRemainingYears,
-  FEMALE,
-  MALE,
-} from '@retiregolden/engine/longevity/ssaPeriod2022'
+  SSA_PERIOD_LIFE_TABLE,
+} from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import { computeLongevity } from './model'
 
-describe('ssaPeriod2022', () => {
+describe('ssaPeriodLifeTable', () => {
   it('has 120 rows for ages 0–119 (male and female)', () => {
-    expect(MALE.length).toBe(120)
-    expect(FEMALE.length).toBe(120)
+    expect(SSA_PERIOD_LIFE_TABLE.male.e.length).toBe(120)
+    expect(SSA_PERIOD_LIFE_TABLE.female.e.length).toBe(120)
   })
 
-  it('matches SSA 2022 TR table spot checks', () => {
-    expect(baselineRemainingYears(65, 'male')).toBeCloseTo(17.48, 4)
-    expect(baselineRemainingYears(65, 'female')).toBeCloseTo(20.12, 4)
-    expect(baselineRemainingYears(40, 'male')).toBeCloseTo(37.67, 4)
+  it('matches SSA 2023 period table (2026 TR) spot checks', () => {
+    expect(baselineRemainingYears(65, 'male')).toBeCloseTo(18.12, 4)
+    expect(baselineRemainingYears(65, 'female')).toBeCloseTo(20.66, 4)
+    expect(baselineRemainingYears(40, 'male')).toBeCloseTo(38.59, 4)
   })
 
   it('averages male and female baselines for sex average', () => {
@@ -40,7 +39,9 @@ describe('computeLongevity', () => {
 
   it('returns central near baseline when all neutral factors', () => {
     const r = computeLongevity(baseAnswers)
-    expect(r.baselineRemainingYears).toBeCloseTo(24.94, 2)
+    expect(r.baselineRemainingYears).toBeCloseTo(25.73, 2)
+    // Saved with the table it was computed on.
+    expect(r.tableEdition).toEqual({ periodYear: 2023, trusteesReportYear: 2026 })
     expect(r.appliedMultiplier).toBeGreaterThan(0.99)
     expect(r.appliedMultiplier).toBeLessThanOrEqual(1.12)
     expect(r.centralRemainingYears).toBeCloseTo(r.baselineRemainingYears * r.appliedMultiplier, 4)

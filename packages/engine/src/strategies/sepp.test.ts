@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
+import { baselineRemainingYears } from '../longevity/ssaPeriodLifeTable.js'
 import { packForYear, uniformLifetimeDivisor } from '../params/index.js'
 import { seppActive, seppAnnualAmount, SEPP_AMORTIZATION_RATE_PCT } from './sepp.js'
 
@@ -77,15 +77,16 @@ describeRule('notice-2022-6-3-02-a-permitted-life-expectancy-tables', {
   // Table in 1.401(a)(9)-9(d). The Single Life entry at 55 is 31.6 years, so
   // 500,000 / 31.6 = 15,822.78.
   //
-  // The rejected reading is the SSA 2022 period table this engine carries for
-  // longevity modelling, averaged across the male and female columns:
-  // 26.64 years at 55, so 500,000 / 26.64 = 18,768.77. It is not a table the
-  // notice permits, it is not unisex as published, and the payment it sizes is
-  // 18.6 percent larger than the largest the notice would allow on these facts
-  // — which is penalty-free early income the exception does not cover.
+  // The rejected reading is the SSA period table this engine carries for
+  // longevity modelling (the 2023 period table of the 2026 Trustees Report),
+  // averaged across the male and female columns: 27.37 years at 55, so
+  // 500,000 / 27.37 = 18,268.18. It is not a table the notice permits, it is
+  // not unisex as published, and the payment it sizes is 15.5 percent larger
+  // than the largest the notice would allow on these facts — which is
+  // penalty-free early income the exception does not cover.
   readings: {
     singleLifeTablePermittedByTheNotice: 15_822.78,
-    ssaPeriodTableNotAmongThePermittedThree: 18_768.77,
+    ssaPeriodTableNotAmongThePermittedThree: 18_268.18,
   },
   accepted: 'singleLifeTablePermittedByTheNotice',
 }, ({ accepted, readings }) => {

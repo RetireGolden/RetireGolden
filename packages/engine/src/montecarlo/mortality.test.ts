@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
+import { baselineRemainingYears } from '../longevity/ssaPeriodLifeTable.js'
 import { annualMortality, MAX_AGE, sampleDeathAge } from './mortality.js'
 import { createRng } from './rng.js'
 
 describe('annualMortality', () => {
   it('matches plausible SSA period-table rates in mid-retirement', () => {
-    // SSA 2022: male q(65) ≈ 1.6–1.9%, female lower.
+    // SSA's 2023 period table: male q(65) = 0.016455, female 0.010188.
     expect(annualMortality(65, 'male')).toBeGreaterThan(0.01)
     expect(annualMortality(65, 'male')).toBeLessThan(0.025)
     expect(annualMortality(65, 'female')).toBeLessThan(annualMortality(65, 'male'))
@@ -37,7 +37,7 @@ describe('sampleDeathAge', () => {
     }
   })
 
-  it('mean sampled lifespan ≈ current age + life expectancy (validates the q(x) derivation)', () => {
+  it('mean sampled lifespan ≈ current age + life expectancy (the published q against the printed e)', () => {
     const rng = createRng(12345)
     const currentAge = 65
     const N = 20_000
@@ -51,21 +51,22 @@ describe('sampleDeathAge', () => {
 })
 
 describe('period life table vintage', () => {
-  // The engine embeds the 2022 period table (2025 TR): male e(65) = 17.48.
-  // The live Table 4C6 now presents the 2023 period table (2026 TR), where
-  // male e(65) = 18.12. Registered approximated with the embedded value
-  // pinned, so the next vintage refresh must come through this fixture.
+  // The engine carries SSA's 2023 period table (2026 Trustees Report), the
+  // edition Table 4C6 presents: male e(65) = 18.12, female 20.66. The previous
+  // edition (the 2022 period table of the 2025 Trustees Report) printed 17.48
+  // and 20.12. Settled: the embedded table is the published one, so the next
+  // edition must come through this fixture and the record's quoted text.
   describeRule('ssa-table-4c6-period-life-table-vintage', {
     readings: {
-      currentlyPublishedTwentyTwentyThreePeriod: { male: 18.12, female: 20.66 },
-      embeddedTwentyTwentyTwoPeriod: { male: 17.48, female: 20.12 },
+      publishedTwentyTwentyThreePeriod: { male: 18.12, female: 20.66 },
+      previousTwentyTwentyTwoPeriod: { male: 17.48, female: 20.12 },
     },
-    accepted: 'currentlyPublishedTwentyTwentyThreePeriod',
-    produced: 'embeddedTwentyTwentyTwoPeriod',
-  }, ({ produced }) => {
-    it('carries the 2022-period life expectancies at 65 for both sexes', () => {
-      expect(baselineRemainingYears(65, 'male')).toBe(produced.male)
-      expect(baselineRemainingYears(65, 'female')).toBe(produced.female)
+    accepted: 'publishedTwentyTwentyThreePeriod',
+  }, ({ accepted, readings }) => {
+    it('carries the 2023-period life expectancies at 65 for both sexes', () => {
+      expect(baselineRemainingYears(65, 'male')).toBe(accepted.male)
+      expect(baselineRemainingYears(65, 'female')).toBe(accepted.female)
+      expect(baselineRemainingYears(65, 'male')).not.toBe(readings.previousTwentyTwentyTwoPeriod.male)
     })
   })
 })

@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router'
 
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
+import { loadLongevity, loadLongevityPartner, questionnairePlanningAge } from '../longevity/storage'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
 import { currentStartYear } from './useProjection'
@@ -19,6 +20,7 @@ import {
   assumptionsExportText,
   buildAssumptionsSnapshot,
   type AssumptionProvenance,
+  type SavedQuestionnaireAge,
 } from './assumptionsExport'
 
 const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: string }> = {
@@ -27,10 +29,29 @@ const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: stri
   'published-source': { label: 'Published source', title: 'Comes from a cited publication (statute, agency figure, or documented dataset).' },
 }
 
+/**
+ * The questionnaire results saved in this browser, by person slot, which date a
+ * questionnaire planning age's table (the plan does not store it).
+ */
+function savedQuestionnaireAges(): (SavedQuestionnaireAge | null)[] {
+  return [loadLongevity(), loadLongevityPartner()].map((saved): SavedQuestionnaireAge | null =>
+    saved
+      ? {
+          planningAge: questionnairePlanningAge(saved.result),
+          ...(saved.result.tableEdition ? { tableEdition: saved.result.tableEdition } : {}),
+        }
+      : null,
+  )
+}
+
 export function AssumptionsCardPage() {
   const { plan } = usePlan()
   const startYear = currentStartYear()
-  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear), [plan, startYear])
+  // Storage is read again whenever the plan changes: completing the
+  // questionnaire writes both the saved result and the plan's planning age,
+  // so a result saved or cleared while the card is open is picked up with the
+  // plan it produced (PR #759 review round 2).
+  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear, savedQuestionnaireAges()), [plan, startYear])
   const sourceById = useMemo(() => new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s])), [])
 
   return (

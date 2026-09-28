@@ -15,6 +15,7 @@ import { createSamplePlan } from '../testSupport/samplePlan'
 import { buildAssumptionsSnapshot, assumptionsExportText } from './assumptionsExport'
 import { currentStartYear } from './useProjection'
 import { AssumptionsCardPage } from './AssumptionsCardPage'
+import { clearLongevity, saveLongevity } from '../longevity/storage'
 import { HowTestedPage } from './HowTestedPage'
 
 let root: Root | null = null
@@ -68,6 +69,43 @@ describe('AssumptionsCardPage', () => {
       button.click()
     })
     expect(writeText).toHaveBeenCalledWith(assumptionsExportText(buildAssumptionsSnapshot(plan, currentStartYear())))
+  })
+
+  it('dates a questionnaire planning age by the result saved in this browser, and links that table (PR #759 review 1)', () => {
+    const plan = createSamplePlan()
+    const person = plan.household.people[0]!
+    person.longevity = { planningAge: 88, source: 'model' }
+    const page = () =>
+      render(
+        <PlanCtx.Provider value={{ plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+          <AssumptionsCardPage />
+        </PlanCtx.Provider>,
+      )
+    const result = {
+      baselineRemainingYears: 18.12, rawMultiplier: 1, appliedMultiplier: 1, centralRemainingYears: 18.12,
+      bandLowRemainingYears: 16.3, bandHighRemainingYears: 19.6, illustrativePlanningAge: 87.6,
+    }
+    const answers = {
+      age: 65, sex: 'male', bmiCategory: 'normal', smoking: 'never', alcohol: 'moderate', activity: 'moderate',
+      diabetes: 'no', selfRatedHealth: 'good', parentalLongevity: 'unknown',
+    } as const
+    try {
+      // Saved before the edition was recorded: the 2022 table, and its page.
+      saveLongevity({ version: 1, updatedAt: '2026-09-01T00:00:00.000Z', answers, result })
+      let el = page()
+      expect(el.textContent).toContain('plan runs to age 88 (life-expectancy questionnaire estimate, SSA 2022 period life table, 2025 Trustees Report)')
+      const personRow = () => Array.from(el.querySelectorAll('tr')).find((tr) => tr.textContent.includes(`${person.name}: retirement & planning age`))!
+      expect(personRow().querySelector('a')!.getAttribute('href')).toBe('https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html')
+      act(() => root!.unmount())
+      container?.remove()
+      root = null
+      clearLongevity()
+      el = page()
+      expect(el.textContent).toContain('plan runs to age 88 (life-expectancy questionnaire estimate, table edition not recorded)')
+      expect(personRow().querySelector('a')).toBeNull()
+    } finally {
+      clearLongevity()
+    }
   })
 })
 

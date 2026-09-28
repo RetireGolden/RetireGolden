@@ -1,4 +1,5 @@
-import { BASELINE_CITATION } from './constants'
+import { BASELINE_CITATION, curveExpectancyGapText, lifeTableCitation } from './constants'
+import { isCurrentLifeTableEdition, storedLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
 
 export interface LongevityResultsProps {
@@ -13,6 +14,11 @@ export interface LongevityResultsProps {
 export function LongevityResults({ data, onEdit, onClear, resultsHeading }: LongevityResultsProps) {
   const { answers, result, updatedAt } = data
   const updated = new Date(updatedAt).toLocaleString()
+  // A result saved on an earlier table keeps that table's label: its numbers
+  // were computed on it (a result saved before the field existed is 2022's).
+  const edition = storedLifeTableEdition(result.tableEdition)
+  const citation = lifeTableCitation(edition)
+  const current = isCurrentLifeTableEdition(result.tableEdition)
 
   return (
     <div className="results">
@@ -47,7 +53,8 @@ export function LongevityResults({ data, onEdit, onClear, resultsHeading }: Long
         <ul className="results-list">
           <li>
             <strong>Population baseline:</strong> {result.baselineRemainingYears.toFixed(2)} remaining
-            years at age {answers.age} ({answers.sex === 'average' ? 'average of male/female' : `${answers.sex} table`}).
+            years at age {answers.age}
+            {answers.sex === 'average' ? ', sex Not stated (average of male and female)' : ` (${answers.sex} table)`}.
           </li>
           <li>
             <strong>Lifestyle / health factor (combined):</strong>{' '}
@@ -56,12 +63,25 @@ export function LongevityResults({ data, onEdit, onClear, resultsHeading }: Long
           </li>
           <li>
             <strong>Source:</strong>{' '}
-            <a href={BASELINE_CITATION.url} target="_blank" rel="noreferrer">
-              {BASELINE_CITATION.label}
+            <a href={citation.url} target="_blank" rel="noreferrer">
+              {citation.label}
             </a>
-            . {BASELINE_CITATION.note}
+            . {citation.note}
           </li>
+          {current ? (
+            <li>
+              <strong>Same table elsewhere in the planner:</strong> the percentile planning age and the lifespans
+              Monte Carlo draws use this table&apos;s death probabilities. The life expectancy they imply differs from
+              SSA&apos;s printed figure above by at most {curveExpectancyGapText()} years.
+            </li>
+          ) : null}
         </ul>
+        {current ? null : (
+          <p className="muted" data-testid="longevity-older-table">
+            Saved on the {citation.label}. The planner now uses the {BASELINE_CITATION.label}. Edit your answers to
+            recompute this estimate on it.
+          </p>
+        )}
       </section>
 
       <p className="muted small">Last saved locally: {updated}</p>

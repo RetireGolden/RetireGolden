@@ -1,5 +1,5 @@
 import { combinedMultiplier } from './factors'
-import { baselineRemainingYears } from '@retiregolden/engine/longevity/ssaPeriod2022'
+import { baselineRemainingYears, CURRENT_LIFE_TABLE_EDITION } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LongevityAnswers, LongevityResult } from '@retiregolden/engine/longevity/types'
 
 const MULT_MIN = 0.55
@@ -20,6 +20,9 @@ export function computeLongevity(answers: LongevityAnswers): LongevityResult {
     answers.age + Math.max(0, Math.round(central))
 
   return {
+    // The edition the baseline was read from, saved with the result so a
+    // later table refresh labels it rather than relabelling it.
+    tableEdition: { ...CURRENT_LIFE_TABLE_EDITION },
     baselineRemainingYears: baseline,
     rawMultiplier: raw,
     appliedMultiplier: applied,

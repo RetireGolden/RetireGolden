@@ -1,9 +1,11 @@
 /**
  * Longevity calculation records.
  *
- * One slice of the calculation registry: the SSA-table death-probability
- * identity, the stochastic death-age draw and joint expectancy built on it,
- * and the survival-percentile helpers (single, joint, and the hazard power a
+ * One slice of the calculation registry: SSA's period life table as the engine
+ * carries it, the published death probability read from it, the one survival
+ * curve built on it (with 'average' as the mixture of the two sexes), the
+ * stochastic death-age draw and joint expectancy that read the curve, and the
+ * survival-percentile helpers (single, joint, and the hazard power a
  * questionnaire multiplier maps to). `../calculationRegistry.ts` composes
  * every slice into `CALCULATION_REGISTRY`; read it for what a record must
  * carry.
@@ -11,14 +13,13 @@
 import type { CalculationRecord } from '../calculationRegistry.js'
 
 export const longevityRecords = {
-  'mortality-ex-to-qx-identity': {
-    title: 'One-year death probability from SSA remaining life expectancy',
-    purpose:
-      'The annual death probability q(x) every survival curve and stochastic-longevity draw reads from the embedded SSA period table.',
-    kind: 'formula',
-    // A mortality rate is an intermediate: the survival product and the
-    // percentile ages consume q(x), and the death-age draw the Monte Carlo
-    // aggregates walks it year by year. No surface publishes it.
+  'ssa-period-life-table': {
+    title: 'SSA period life table, 2023 (2026 Trustees Report)',
+    purpose: 'The death probabilities and life expectancies by age and sex that every survival figure and the longevity questionnaire read.',
+    kind: 'data',
+    // A table is an input: the death probability, the survival curve and the
+    // questionnaire's baseline read it, and no surface publishes one of its
+    // cells as a family's number.
     outputs: [],
     feeds: [
       'longevity-survival-percentile-age',
@@ -27,39 +28,81 @@ export const longevityRecords = {
       'social-security-expected-present-value',
       'social-security-survivor-switch-pv',
       'social-security-fica-return-ratio',
+      'income-annuity-annual',
+      'spending-base-annual',
     ],
     statement:
-      'For the embedded SSA 2022 period table of remaining life expectancy e(x) at integer ages 0..119 (male, female, or their elementwise average for sex "average") and an age a, let x = floor(a). q(x) = 1 - (e(x) - 0.5)/(e(x+1) + 0.5), clamped into [0, 1]. x < 0 returns 0; x >= 119, the last row, returns 1, forcing death at the table endpoint. Units: probability of death within one year. Rounding: none.',
+      'longevity/ssaPeriodLifeTable.ts#SSA_PERIOD_LIFE_TABLE carries SSA\'s Table 4C6 period life table for 2023, as used in the 2026 Trustees Report: the probability of dying within one year, q(x), and the period life expectancy, e(x), at each exact age x from 0 to 119, for men and for women, as printed (q to six decimals, e to two), read from SSA\'s page on 2026-09-27. Its source record names the page, the table\'s caption, the period and Trustees Report years, the read date, an Internet Archive capture of the page and the SHA-256 of the four columns in a canonical text, which the evidence rebuilds from the numbers. #LAST_TABLE_AGE is the last row, 119. #baselineRemainingYears reads e: the printed e(x) at a whole age, linear between the two rows at a fractional one, and for \'average\' the mean of the male and female values; the longevity questionnaire prints it as its baseline. #CURRENT_LIFE_TABLE_EDITION names the edition a percentile pick or a saved questionnaire result records, and #storedLifeTableEdition reads a stored figure that names none as made on the 2022 period table of the 2025 Trustees Report, the table the engine carried before. Units: probability; years. Rounding: none; the printed figures.',
+    formula: null,
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/longevity/ssa-period-life-table.md',
+    },
+    limits: [
+      'The number-of-lives columns SSA also prints are not carried; nothing reads them',
+      'A period table: 2023\'s death rates at every age, applied to a person\'s whole remaining life, not a cohort projection with future mortality improvement',
+      'When SSA publishes the next edition, the embedded table trails it until a reviewed data change replaces it; the tax-rule record for the table\'s edition (SSA Table 4C6) names it and is re-verified yearly (annuallyIndexed, the rules:due queue and verify:quotes, whose quoted introduction and row 65 stop matching the page when the edition changes)',
+      'The last row is closed: the engine reads q(119) as 1 (mortality-published-death-probability) although the table prints 0.926604 there for both sexes; the printed value is carried, not read',
+      'Which projections read it. The year-by-year projection reads the table in two cases only: when a plan\'s amortization-based spending is set to amortize to the age reached with a 25 or 10 percent chance (projection/simulate.ts, through survival-percentile-age and joint-survival-percentile-age, worked out again on every projection), and when a plan holds a joint-and-survivor annuity whose exclusion ratio is fixed (projection/annuityForms.ts, through mortality-joint-last-survivor-expectancy). Such a plan gets new year-by-year figures when the table changes: under-saved-single with its spending amortized to the 25 percent age ends with an after-tax estate of $9,840 on the 2022 table and $212,538 on the 2023 table. The Social Security analysis page, the percentile picker, the questionnaire and Monte Carlo with longevity modelled read it on their own pages; a percentile pick is stored once with its edition and not recomputed',
+    ],
+    implementedBy: ['packages/engine/src/longevity/ssaPeriodLifeTable.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#SSA_PERIOD_LIFE_TABLE',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#LAST_TABLE_AGE',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#baselineRemainingYears',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#CURRENT_LIFE_TABLE_EDITION',
+      'packages/engine/src/longevity/ssaPeriodLifeTable.ts#storedLifeTableEdition',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'mortality-published-death-probability': {
+    title: 'One-year death probability: SSA\'s published q(x)',
+    purpose:
+      'The annual death probability of a man or a woman that every survival curve and stochastic-longevity draw reads, straight from SSA\'s published table.',
+    kind: 'formula',
+    // A mortality rate is an intermediate: the survival curve, the percentile
+    // ages and the death-age draw consume it. No surface publishes it.
+    outputs: [],
+    feeds: [
+      'longevity-survival-percentile-age',
+      'monte-carlo-success-rate',
+      'monte-carlo-ending-investable-histogram',
+      'social-security-expected-present-value',
+      'social-security-survivor-switch-pv',
+      'social-security-fica-return-ratio',
+      'income-annuity-annual',
+      'spending-base-annual',
+    ],
+    statement:
+      'montecarlo/deathProbability.ts#annualMortality(age, sex) (re-exported by montecarlo/mortality.ts), for a man or a woman of age a with x = floor(a): the probability of dying within one year is the death probability SSA publishes for that sex and exact age x in Table 4C6 (ssa-period-life-table), for x from 0 to 118. At 119 and above it is 1: the table\'s last row is closed, so a life at 119 dies during that year, although SSA prints 0.926604 there. Below 0 it is 0. A person whose sex is \'average\' has no single death probability, and the function refuses \'average\' with a RangeError; the survival curve builds \'average\' as the mixture of the two sexes (survival-probability-product). Units: probability. Rounding: none; the published six decimals.',
     formula: {
-      expression: 'q(x) = 1 - (e(x) - 0.5)/(e(x+1) + 0.5) for 0 <= x < 119; q(x) = 1 for x >= 119; q(x) = 0 for x < 0',
+      expression: 'q(a) = q_SSA(sex, floor(a)) for 0 <= floor(a) <= 118; q(a) = 1 for floor(a) >= 119; q(a) = 0 for floor(a) < 0',
       variables: [
-        { symbol: 'x', meaning: 'Integer age (the floor of the requested age)', unit: 'years', domain: 'integer' },
-        { symbol: 'e(x)', meaning: 'SSA period remaining life expectancy at exact age x', unit: 'years', domain: 'e(x) >= 0.5 within the table' },
-        { symbol: 'q(x)', meaning: 'Probability of dying between ages x and x+1', unit: '1', domain: '0 <= q(x) <= 1' },
+        { symbol: 'a', meaning: 'Age as passed', unit: 'years', domain: 'real' },
+        { symbol: 'q_SSA(sex, x)', meaning: 'SSA\'s published probability of dying within one year at exact age x, male or female column (ssa-period-life-table)', unit: '1', domain: '[0, 1], six decimals' },
+        { symbol: 'q(a)', meaning: 'Probability of dying between ages floor(a) and floor(a) + 1', unit: '1', domain: '0 <= q(a) <= 1' },
       ],
       timing: 'one-year transition between consecutive integer ages',
       rounding: 'none',
     },
     justification: {
       kind: 'derivation',
-      worksheet: 'DOCS/calculations/longevity/mortality-ex-to-qx-identity.md',
+      worksheet: 'DOCS/calculations/longevity/mortality-published-death-probability.md',
     },
     limits: [
-      'Half-year convention: deaths are assumed uniformly distributed within each age interval, so e(x) = E[complete years] + 0.5; this is a modeling convention, not an SSA-published q(x)',
-      'The period table is applied unchanged to the cohort; the identity describes the table, not an individual\'s risk',
-      'The result is clamped into [0, 1] and a negative age returns 0; neither case is flagged',
-      'Sex "average" derives q(x) from the elementwise mean of the male and female e(x) rows, not from the mean of the two q(x) values',
-      'q(x) is rebuilt from the printed two-decimal e(x), not read from the published q(x) column of the same table: at 65 it is 0.0179294 against the published 0.017897 for men and 0.0110887 against 0.011018 for women; the largest relative difference is 7.3 percent (men, 42) and 20.7 percent (women, 22) over ages 20 to 109 and 2.0 and 3.5 percent over 62 to 100, and below 20 it reaches q = 0 at men\'s age 8 and women\'s age 10; survival from 65 to 95 is 0.065184 against 0.065310 for men',
-      'The table is the 2022 period table SSA used in the 2025 Trustees Report; the page now shows the 2023 table of the 2026 report, and moving to it and to the published q(x) is a separate reviewed data change',
-      'The one curve the engine uses: the Social Security analysis models (the benefits-only expected value, survivor switching and the paid-in ratio) read it through survival-probability-product; no copy of the identity remains in the planner',
+      'The table end: SSA prints q(119) = 0.926604 for both sexes, and e(119) = 0.58, which counts life past 120; the engine closes the table at 119 instead, as the Monte Carlo horizon and the expected-value loops assume. Reading the printed q(119) and closing the table at 120 would change the chance of being alive at 120 from 0 to 6.8e-12 for a man and 2.3e-11 for a woman of 65, 2.8e-7 at 110, 0.00138 at 117 and 0.0734 for someone already 119, and would change no survival probability to an age below 120',
+      'The period table is applied unchanged to the person\'s whole remaining life: it describes 2023\'s death rates, not an individual\'s risk or future mortality improvement',
+      'No interpolation within a year of age: a fractional age reads the row of its whole years',
+      'A negative age returns 0 and is not flagged',
     ],
-    implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
-    implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#annualMortality'],
+    implementedBy: ['packages/engine/src/montecarlo/deathProbability.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/deathProbability.ts#annualMortality'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'mortality-sampled-death-age': {
-    title: 'Sampled death age: inverse-Bernoulli walk over annual death probabilities',
+    title: 'Sampled death age: a year-by-year walk down the survival curve',
     purpose: 'The last full age alive a stochastic-longevity path draws for each person.',
     kind: 'model',
     // No family carries a death-age field; the draw decides on which paths a
@@ -69,13 +112,13 @@ export const longevityRecords = {
     outputs: [],
     feeds: ['monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
     statement:
-      'Starting at x = floor(max(currentAge, 0)): for each integer age x < 119, draw one uniform U in [0, 1) from the path RNG; if U < q(x) return x (alive through x, dead before x + 1), otherwise advance to x + 1. Reaching x = 119 returns 119 without a draw. One draw per year survived, in age order, so the result is deterministic for a fixed RNG stream. Units: integer age. Rounding: the starting age is floored.',
+      'With x0 = floor(max(currentAge, 0)): if x0 >= 119 return 119 without a draw. Otherwise, for t = 0, 1, ... while x0 + t < 119, draw one uniform U in [0, 1) from the path RNG; if U < g(t) return x0 + t (alive through that age, dead before the next), otherwise advance. g(t) is the survival curve\'s probability of dying in year t given alive at its start (survival-probability-product): q(x0 + t) for a man or a woman, and for \'average\' the mixture\'s 1 - S(t + 1)/S(t) from x0. Reaching 119 returns 119 without a further draw. One draw per year survived plus one in the year of death, in age order, so the result is deterministic for a fixed RNG stream, and the drawn age has the curve\'s distribution: P(death at x0 + t) = S(t) - S(t + 1), for \'average\' the mixture\'s. Units: integer age. Rounding: the starting age is floored.',
     formula: {
-      expression: 'death age = min{ x >= x0 : U_x < q(x) }, or 119 when no such x < 119 exists',
+      expression: 'death age = min{ x0 + t : U_t < g(t) }, or 119 when no such t with x0 + t < 119 exists; g(t) = P(dies in year t | alive at x0 + t)',
       variables: [
         { symbol: 'x0', meaning: 'Starting integer age, floor(max(currentAge, 0))', unit: 'years', domain: 'integer >= 0' },
-        { symbol: 'U_x', meaning: 'Uniform draw consumed at age x', unit: '1', domain: '[0, 1)' },
-        { symbol: 'q(x)', meaning: 'One-year death probability at x (mortality-ex-to-qx-identity)', unit: '1', domain: '[0, 1]' },
+        { symbol: 'U_t', meaning: 'Uniform draw consumed in year t', unit: '1', domain: '[0, 1)' },
+        { symbol: 'g(t)', meaning: 'The survival curve\'s probability of dying in year t given alive at its start: q(x0 + t) for a man or a woman (mortality-published-death-probability), 1 - S(t + 1)/S(t) for \'average\' (survival-probability-product)', unit: '1', domain: '[0, 1]' },
       ],
       timing: 'annual; one draw per integer age from the current age until death',
       rounding: 'starting age floored; the result is an integer',
@@ -86,14 +129,15 @@ export const longevityRecords = {
     },
     limits: [
       'Period-table hazards are applied throughout the remaining lifetime; the draw does not predict an individual\'s death',
-      'No proportional-hazards adjustment: sampled deaths use the unadjusted q(x), so the longevity questionnaire\'s multiplier does not reach the stochastic draw',
+      'No proportional-hazards adjustment: sampled deaths use the curve at power 1, so the longevity questionnaire\'s multiplier does not reach the stochastic draw',
       'Exactly one RNG draw is consumed per year survived, so the death age shifts every later draw on the same path stream',
-      'The table endpoint (age 119) forces death; nobody is sampled past it',
+      'For \'average\' the yearly probability is the mixture\'s from the current age, not a mean of the two q: the survivors of a mixed group become more female with age, so from 65 it is 0.0142164 at 66 against the mean q 0.014227 (the walk still takes one draw per year)',
+      'The table endpoint (age 119) forces death; nobody is sampled past it (mortality-published-death-probability)',
     ],
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#sampleDeathAge'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'mortality-joint-last-survivor-expectancy': {
     title: 'Joint last-survivor life expectancy of two independent lives',
@@ -110,12 +154,12 @@ export const longevityRecords = {
     outputs: [],
     feeds: ['income-annuity-annual'],
     statement:
-      'For lives A and B at integer ages a and b with their own sex tables, e = 0.5 + sum over t = 1..120 of [1 - (1 - S_A(t))(1 - S_B(t))], where S_A(t) = product over k = 0..t-1 of (1 - q(a + k)) is A\'s probability of surviving t more years and S_B likewise. Lifetimes are independent. Because q = 1 at age 119, a life past the table contributes S = 0 and later terms add only the other life\'s survival. Units: years. Rounding: none.',
+      'For lives A and B at ages a and b, each with its own sex, e = 0.5 + sum over t = 1..120 of [1 - (1 - S_A(t))(1 - S_B(t))], where S_A(t) is A\'s probability of being alive t years on, read from the survival curve from A\'s floored age (survival-probability-product): for a man or a woman the product of (1 - q) over the t ages, for \'average\' the mean of the man\'s and the woman\'s; a negative age survives with certainty until it reaches 0. S_B likewise. Lifetimes are independent. Because the table\'s last row is closed (q = 1 at 119), a life past the table contributes S = 0 and later terms add only the other life\'s survival. Units: years. Rounding: none.',
     formula: {
-      expression: 'e = 0.5 + sum_{t=1..120} [1 - (1 - S_A(t))(1 - S_B(t))]; S(t) = prod_{k<t} (1 - q(age + k))',
+      expression: 'e = 0.5 + sum_{t=1..120} [1 - (1 - S_A(t))(1 - S_B(t))]; S(t) = the survival curve from the floored age at power 1 (for average, the mean of the male and female curves)',
       variables: [
-        { symbol: 'a, b', meaning: 'Current integer ages of the two lives', unit: 'years', domain: 'integer >= 0' },
-        { symbol: 'S_A(t), S_B(t)', meaning: 'Probability each life survives t more years', unit: '1', domain: '[0, 1], nonincreasing in t' },
+        { symbol: 'a, b', meaning: 'Current ages of the two lives, floored', unit: 'years', domain: 'real' },
+        { symbol: 'S_A(t), S_B(t)', meaning: 'Probability each life survives t more years (survival-probability-product)', unit: '1', domain: '[0, 1], nonincreasing in t' },
         { symbol: 'e', meaning: 'Expected years until the second death', unit: 'years', domain: 'e >= 0.5' },
       ],
       timing: 'annual survival steps; the 0.5 is the within-year death convention',
@@ -128,38 +172,41 @@ export const longevityRecords = {
     limits: [
       'Independent lifetimes; shared household hazards are not modeled and can be understated',
       'Curtate expectation plus one half; no hazard adjustment is applied to either life',
-      'Ages are used as passed (annualMortality floors them); a negative age is treated as 0 by the caller, not here',
+      'Ages are floored, and a negative age survives with certainty until it reaches 0; the caller is expected to pass ages of at least 0',
+      'Two \'average\' lives are each a man or a woman with probability 1/2, independently of each other, so the expectancy is the average over the four equally likely sex pairings (it is bilinear in the two curves); it is not the reading "an opposite-sex couple, order unknown", which averages only the two mixed pairings (70 and 67: 21.5271 against 21.5732 years)',
       'The census exposes no joint-expectancy output; income-annuity-annual is named as the nearest family because the joint-and-survivor exclusion multiple shapes that income\'s taxable portion',
+      'Every projection of a plan holding a joint-and-survivor annuity whose exclusion ratio is fixed reads it (projection/annuityForms.ts#annuityExclusionMultiple), so such a plan\'s taxable annuity income and taxes move when the table changes: annuity-purchases-estate with its annuity made 50 percent joint-and-survivor pays lifetime taxes of $349,346 on the 2022 table and $349,238 on 2023',
     ],
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#jointLastSurvivorExpectancy'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survival-probability-product': {
-    title: 'Conditional survival to a target age: product of hazard-adjusted one-year survivals',
-    purpose: 'The probability someone alive today is still alive at a later integer age, on the SSA table with an optional health hazard.',
+    title: 'The survival curve: product of hazard-adjusted one-year survivals, and the 50/50 mixture for \'average\'',
+    purpose: 'The probability someone alive today is still alive at a later integer age, on SSA\'s published death probabilities with an optional health hazard.',
     kind: 'formula',
-    // A survival product is an intermediate: the percentile-age searches walk
-    // it for the threshold crossing, and nothing else consumes it. The Monte
-    // Carlo reaches mortality through sampleDeathAge and the q(x) identity, not
-    // through this product. No surface publishes the product itself.
+    // A survival curve is an intermediate: the percentile-age searches, the
+    // hazard solver, the death-age draw, the joint expectancy and the Social
+    // Security models read it. No surface publishes the curve itself.
     outputs: [],
     feeds: [
       'longevity-survival-percentile-age',
       'social-security-expected-present-value',
       'social-security-survivor-switch-pv',
       'social-security-fica-return-ratio',
+      'income-annuity-annual',
+      'spending-base-annual',
     ],
     statement:
-      'montecarlo/survival.ts#survivalCurve is the engine\'s one survival curve: for a whole starting age a (at least 0), sex and hazard power h (a positive finite number, default 1), survivalTo(t) = product over x = a..a+t-1 of (1 - q(x))^h, multiplied left to right, where the factor is 0 when q(x) >= 1; 1 for t <= 0, and 0 once the running product reaches 0; deathProbabilityInYear(t) = survivalTo(t) x (1 - (1 - q(a + t))^h). A fractional age or an invalid hazard is refused. #survivalProbabilityTo(c, sex, g, h) is a view of it: with from = floor(max(c, 0)) and to = floor(g), it returns 1 when to <= from and otherwise the curve from `from` at t = to - from, the same product in the same order. The Social Security analysis models read the curve. Units: probability. Rounding: none.',
+      'montecarlo/survival.ts#survivalCurve is the engine\'s one survival curve, for a whole starting age a (at least 0), sex and hazard power h (a positive finite number, default 1). For a man or a woman, survivalTo(t) = product over x = a..a+t-1 of (1 - q(x))^h (mortality-published-death-probability), multiplied left to right, where the factor is 0 when q(x) >= 1; 1 for t <= 0, and 0 once the running product reaches 0; deathProbabilityInYear(t) = survivalTo(t) x (1 - (1 - q(a + t))^h); and deathProbabilityGivenAlive(t) = 1 - (1 - q(a + t))^h, which at h = 1 is q(a + t) itself. For \'average\', survivalTo(t) is the mean of the man\'s and the woman\'s survivalTo(t) from a, each under the power h: the chance for someone equally likely to be either; deathProbabilityInYear(t) = survivalTo(t) - survivalTo(t + 1); and deathProbabilityGivenAlive(t) = 1 - survivalTo(t + 1)/survivalTo(t), or 1 once survivalTo(t) is 0. Both death probabilities are 0 for t < 0. A fractional age or an invalid hazard is refused. #survivalProbabilityTo(c, sex, g, h) is a view of it: with from = floor(max(c, 0)) and to = floor(g), it returns 1 when to <= from and otherwise the curve from `from` at t = to - from, the same product in the same order. The percentile ages, the hazard solver, the death-age draw, the joint expectancy and the Social Security analysis models read the curve. Units: probability. Rounding: none.',
     formula: {
-      expression: 'S(c -> g) = prod_{x=from}^{to-1} (1 - q(x))^h; S = 1 when to <= from',
+      expression: 'S(t) = prod_{x=a}^{a+t-1} (1 - q(x))^h for a man or a woman; S_average(t) = (S_male(t) + S_female(t))/2; S = 1 when t <= 0',
       variables: [
-        { symbol: 'from, to', meaning: 'Floored current and target ages', unit: 'years', domain: 'integer, from >= 0' },
-        { symbol: 'q(x)', meaning: 'One-year death probability at x (mortality-ex-to-qx-identity)', unit: '1', domain: '[0, 1]' },
-        { symbol: 'h', meaning: 'Proportional-hazards power (q\' = 1 - (1 - q)^h; h > 1 is worse health)', unit: '1', domain: 'h > 0' },
-        { symbol: 'S', meaning: 'Probability of being alive at the target age', unit: '1', domain: '[0, 1]' },
+        { symbol: 'a, t', meaning: 'Whole starting age and whole years elapsed', unit: 'years', domain: 'integer, a >= 0' },
+        { symbol: 'q(x)', meaning: 'SSA\'s published one-year death probability at x for the sex (mortality-published-death-probability)', unit: '1', domain: '[0, 1]' },
+        { symbol: 'h', meaning: 'Proportional-hazards power (q\' = 1 - (1 - q)^h; h > 1 is worse health), applied to each sex before mixing', unit: '1', domain: 'h > 0' },
+        { symbol: 'S', meaning: 'Probability of being alive t years on', unit: '1', domain: '[0, 1]' },
       ],
       timing: 'annual; one factor per integer age from the current age up to, not including, the target',
       rounding: 'none',
@@ -173,6 +220,9 @@ export const longevityRecords = {
       'A target at or below the current age returns exactly 1 without consulting the table',
       'survivalProbabilityTo does not validate the hazard power (a non-positive h is used as passed); survivalCurve refuses one',
       'annualSurvival is module-private; survivalCurve and survivalProbabilityTo read it, and the evidence reaches it through both',
+      '\'average\' is the 50/50 mixture of the two sexes\' curves from the person\'s current age, not a q(x) table: its one-year chance of dying given alive depends on the starting age, because the survivors of a mixed group become more female with age (at 90: 0.14086 for a mixture formed at 22, 0.14155 at 65 and 0.14327 at 85, against the mean q 0.144317). Every survival probability, the life expectancy (0.5 plus the sum of the survivals) and every expected value linear in the curve are the means of the male and female ones; ages read off the curve and hazard powers solved on it are not (at 65 the ages reached with 50, 25 and 10 percent chance are 85, 91 and 95, against 83, 89 and 94 for a man and 86, 92 and 96 for a woman)',
+      'The hazard power applies to each sex\'s curve before mixing: the person is one sex or the other, with that sex\'s death rates raised to h, and one power serves both halves',
+      'Two \'average\' people are independent mixtures: each is a man or a woman with probability 1/2, independently of the partner, so a couple\'s expected value, joint expectancy or either-alive probability is the average over the four equally likely sex pairings (man-man, man-woman, woman-man, woman-woman). It is not the reading "an opposite-sex couple, order unknown", which averages only the two mixed pairings; that reading differs by up to 0.135 percent of a benefits-only row on the examples\' two couples of \'average\' people (all-401k-no-bridge and brokerage-bridge-401k) and changes no top claim age at 0, 2 or 4 percent',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: [
@@ -181,22 +231,24 @@ export const longevityRecords = {
       'packages/engine/src/montecarlo/survival.ts#annualSurvival',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survival-percentile-age': {
     title: 'Survival-percentile planning age: oldest age reached with probability at least pct/100',
     purpose: 'The single-life planning age the assumptions card previews: the age a person has a pct% chance of reaching.',
     kind: 'formula',
     outputs: ['longevity-survival-percentile-age'],
+    // The amortization-based spending horizon reads it on every projection.
+    feeds: ['spending-base-annual'],
     statement:
-      'For current age c, sex, percentage p and hazard power h (default 1): threshold = min(max(p, 0.1), 100)/100. Starting at from = floor(max(c, 0)) with S = 1 and best = from, for x = from..119 multiply S by (1 - q(x))^h; while S >= threshold record best = x + 1, and stop at the first x whose S falls below the threshold. Returns best: the oldest integer age whose conditional survival from c is at least the threshold, always >= from. Units: integer age. Rounding: none.',
+      'For current age c, sex, percentage p and hazard power h (default 1): threshold = min(max(p, 0.1), 100)/100. With from = floor(max(c, 0)) and best = from, for t = 1, 2, ... while from + t <= 120, read S(t), the survival curve from `from` under h (survival-probability-product; for \'average\' the mixture); while S(t) >= threshold record best = from + t, and stop at the first t whose S(t) falls below the threshold. Returns best: the oldest integer age whose conditional survival from c is at least the threshold, always >= from. Units: integer age. Rounding: none.',
     formula: {
       expression: 'age* = max{ g >= from : S(from -> g) >= p/100 }, with S(from -> from) = 1',
       variables: [
         { symbol: 'from', meaning: 'Floored current age', unit: 'years', domain: 'integer >= 0' },
         { symbol: 'p', meaning: 'Percent chance of reaching the age, clamped to [0.1, 100]', unit: 'percent', domain: '0.1 <= p <= 100' },
-        { symbol: 'S(from -> g)', meaning: 'Conditional survival to g (survival-probability-product)', unit: '1', domain: '[0, 1], nonincreasing in g' },
-        { symbol: 'age*', meaning: 'Survival-percentile planning age', unit: 'years', domain: 'from <= age* <= 119' },
+        { symbol: 'S(from -> g)', meaning: 'Conditional survival to g, read off the survival curve (survival-probability-product)', unit: '1', domain: '[0, 1], nonincreasing in g' },
+        { symbol: 'age*', meaning: 'Survival-percentile planning age', unit: 'years', domain: 'from <= age* <= max(119, from)' },
       ],
       timing: 'annual survival steps over integer ages',
       rounding: 'none',
@@ -208,21 +260,25 @@ export const longevityRecords = {
     limits: [
       'The percentage is clamped to [0.1, 100] before use, a bound the signature comment does not state; a value passed as a probability (0.97) is read as 0.97%',
       'Survival is nonincreasing, so the qualifying ages form an initial interval and the loop may stop at the first failure',
-      'The signature comment bounds the result by MAX_AGE + 1 (120); since q(119) = 1 the survival to 120 is 0 and 119 is the largest value actually returned',
+      'The signature comment bounds the result by MAX_AGE + 1 (120); the table\'s last row is closed (q(119) = 1, mortality-published-death-probability), so the survival to 120 is 0 and the largest value actually returned is 119, or the floored current age when that is older (a current age of 125 returns 125, which it has already reached)',
+      'For \'average\' the age is read off the mixture\'s curve and is not the mean of the male and female ages (at 65, 50/25/10 percent: 85/91/95, against 83/89/94 for a man and 86/92/96 for a woman)',
       'The planner-ui SurvivalPercentileModal clamps the result to 60..120 before it becomes the plan\'s planning age; that clamp is presentation and is not part of this record',
+      'The year-by-year projection reads this age for a single, at hazard 1, as the horizon a plan\'s amortization-based spending amortizes to when it is set to the age reached with a 25 or 10 percent chance (projection/simulate.ts). Unlike a percentile pick, which is stored once with its edition, that horizon is worked out again on every projection, so the plan\'s figures move when the table changes: under-saved-single on the 25 percent horizon (age 90 on the 2022 table, 91 on 2023) ends with an after-tax estate of $9,840 on the 2022 table and $212,538 on 2023',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#survivalPercentileAge'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'joint-survival-percentile-age': {
     title: 'Joint (either-survives) percentile age on the primary\'s age clock',
     purpose: 'The couple\'s planning age: the oldest primary age at which at least one of two independent lives is alive with probability at least pct/100.',
     kind: 'formula',
     outputs: ['longevity-survival-percentile-age'],
+    // The amortization-based spending horizon reads it on every projection.
+    feeds: ['spending-base-annual'],
     statement:
-      'With from = floor(max(primary.age, 0)), partnerFrom = floor(max(partner.age, 0)) and threshold = min(max(p, 0.1), 100)/100: for t = 0, 1, ... while from + t <= 120, let P(t) = 1 - (1 - S_primary(t))(1 - S_partner(t)), where each S(t) is the product of (1 - q)^h over the t ages from that person\'s own starting age under that person\'s hazard (default 1). Record best = from + t while P(t) >= threshold; stop at the first t below the threshold, or once both survivals are 0. Returns best; P(0) = 1, so the result is always >= from and never below the primary\'s single-life answer. Units: integer primary age. Rounding: none.',
+      'With from = floor(max(primary.age, 0)), partnerFrom = floor(max(partner.age, 0)) and threshold = min(max(p, 0.1), 100)/100: for t = 0, 1, ... while from + t <= 120, let P(t) = 1 - (1 - S_primary(t))(1 - S_partner(t)), where each S(t) is that person\'s survival curve from their own floored age under their hazard (default 1), read t years on (survival-probability-product; for \'average\' the mixture). Record best = from + t while P(t) >= threshold; stop at the first t below the threshold, or once both survivals are 0. Returns best; P(0) = 1, so the result is always >= from and never below the primary\'s single-life answer. Units: integer primary age. Rounding: none.',
     formula: {
       expression: 'age* = max{ from + t : 1 - (1 - S_primary(t))(1 - S_partner(t)) >= p/100 }',
       variables: [
@@ -243,14 +299,16 @@ export const longevityRecords = {
       'The partner\'s clock is offset by the age difference and advances with the primary\'s; the answer is a primary age, not a partner age',
       'The percentage is clamped to [0.1, 100] before use, a bound the signature comment does not state',
       'Each person\'s hazard power applies to that person\'s own curve; a missing hazard is 1',
+      'Two \'average\' people are independent mixtures, so P(t) is the average over the four equally likely sex pairings (survival-probability-product)',
+      'The year-by-year projection reads this age for a couple, at hazard 1, as the horizon a plan\'s amortization-based spending amortizes to when it is set to the age at least one of them reaches with a 25 or 10 percent chance (projection/simulate.ts), worked out again on every projection: example-couple on the 10 percent horizon ends with an after-tax estate of $1,378,752 on the 2022 table and $1,659,513 on 2023',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#jointSurvivalPercentileAge'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survival-hazard-from-expectancy-multiplier': {
-    title: 'Hazard power for a remaining-years multiplier, solved by bisection',
+    title: 'Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection',
     purpose: 'Turns the longevity questionnaire\'s remaining-years multiplier into the proportional-hazards power the percentile ages use.',
     kind: 'model',
     // The worksheet names longevity-survival-percentile-age "upstream": the
@@ -259,12 +317,12 @@ export const longevityRecords = {
     outputs: [],
     feeds: ['longevity-survival-percentile-age'],
     statement:
-      'Given age, sex and multiplier m: target = max(0.1, m) x e_baseline(age, sex), the SSA remaining expectancy (linearly interpolated for a fractional age, averaged across sexes for "average"). E(h) = 0.5 + sum over x = from..119 of S(x), where S is the running product of (1 - q(x))^h from from = floor(max(age, 0)) and the sum stops once S <= 1e-12. E is strictly decreasing in h. If E(0.2) <= target return 0.2; if E(8) >= target return 8; otherwise bisect [0.2, 8] for 40 halvings, raising lo to the midpoint when E(mid) > target and lowering hi otherwise, and return the final midpoint. For m = 1, E(1) rebuilt from the derived q(x) matches e_baseline within the worksheet\'s 1e-6 absolute tolerance rather than exactly, because the embedded SSA e(x) rows are rounded to two decimals; the root is therefore h = 1 within that tolerance (exactly 1 only for an internally consistent table), and the bisection\'s final interval width is 7.8/2^40. Units: dimensionless hazard power. Rounding: none.',
+      'Given age, sex and multiplier m: at m = 1 the power is exactly 1. Otherwise target = max(0.1, m) x E(1), where E(h) = 0.5 + the sum over t = 1, 2, ... (while from + t <= 120) of S_h(t), the survival curve from from = floor(max(age, 0)) under power h (survival-probability-product; for \'average\' the mixture, one power for both sexes), and the sum stops once S_h(t) <= 1e-12. E is strictly decreasing in h. If E(0.2) <= target return 0.2; if E(8) >= target return 8; otherwise bisect [0.2, 8] for 40 halvings, raising lo to the midpoint when E(mid) > target and lowering hi otherwise, and return the final midpoint. So the adjusted curve\'s expectancy is m times the unadjusted curve\'s own, the ratio the questionnaire\'s multiplier means (its central estimate is its baseline times m). Units: dimensionless hazard power. Rounding: none.',
     formula: {
-      expression: 'h* = argsolve_h E(h) = max(0.1, m) e_baseline, h in [0.2, 8]; E(h) = 0.5 + sum_x prod_{k<=x} (1 - q(k))^h',
+      expression: 'h* = 1 when m = 1; otherwise h* solves E(h) = max(0.1, m) E(1) on [0.2, 8]; E(h) = 0.5 + sum_t S_h(t)',
       variables: [
         { symbol: 'm', meaning: 'Remaining-years multiplier from the longevity questionnaire (m < 1 is shorter)', unit: '1', domain: 'floored at 0.1' },
-        { symbol: 'e_baseline', meaning: 'SSA remaining life expectancy at the age and sex', unit: 'years', domain: '> 0' },
+        { symbol: 'E(1)', meaning: 'The survival curve\'s own remaining expectancy at power 1, at the floored age', unit: 'years', domain: '> 0' },
         { symbol: 'E(h)', meaning: 'Remaining expectancy under hazard power h', unit: 'years', domain: 'strictly decreasing in h' },
         { symbol: 'h*', meaning: 'Solved hazard power', unit: '1', domain: '0.2 <= h* <= 8' },
       ],
@@ -280,16 +338,19 @@ export const longevityRecords = {
       'The result is clamped to [0.2, 8] and the multiplier floored at 0.1, so extreme questionnaire answers cannot degenerate the curve; the clamps are unstated in the signature comment',
       'The questionnaire\'s factors are not validated here; the record maps a given multiplier, whatever its source',
       'The expectancy sum stops once the running survival falls to 1e-12, and the bisection runs a fixed 40 halvings rather than to a stated tolerance',
-      'expectancyUnderHazard is module-private; the evidence recomputes the adjusted expectancy through survivalProbabilityTo at the solved power',
-      'The worksheet example is the identity point m = 1, so the evidence pins the fixed point and the expectancy identity, not the bisection away from it; the survival tests (survival.test.ts) cover direction and monotonicity for m = 0.8 and 1.12, and a non-identity worksheet case is owed by a later derive round',
+      'expectancyUnderHazard is module-private; the evidence recomputes the expectancies through survivalCurve',
+      'The multiplier is matched as a ratio of the curve\'s own expectancies. The questionnaire prints SSA\'s e(x) as its baseline, which differs from the curve\'s E(1) by at most 0.005 years at every questionnaire age from 18 to 110 (largest 0.00496, a man of 46; -0.0045 at 110; at 65 a man\'s E(1) is 18.1163 against the printed 18.12), because e is printed to two decimals, SSA\'s person-years within a year of age need not be exactly one half, and SSA\'s table continues past 119 while the engine closes it. The gap is published with the table as longevity/ssaPeriodLifeTable.ts#CURVE_EXPECTANCY_GAP, which the questionnaire\'s results card prints rounded up to the thousandth and longevity/curveExpectancyGap.test.ts recomputes from the columns',
+      'm = 1 returns 1 exactly rather than bisected; the bisection cannot land on 1 (on the 2022 table it returned 0.9999999999989995 at every age and sex). Aiming at m times the curve\'s own E(1), rather than m times the printed e, moves a questionnaire-adjusted percentile age by one year in 1, 1, 2 and 3 of 837 picks (ages 18 to 110, three sexes, 50, 25 and 10 percent) at m = 0.8, 0.9, 1.1 and 1.12, compared with aiming at the printed e on the same table; at m = 1 the printed-e target would move one pick of 837 (a woman of 25 at 10 percent, 95 to 96) and this one moves none',
+      'For \'average\' one power applies to both halves of the mixture, and it is not the mean of the male and female powers (m = 0.8 at 65: 1.70016, against 1.63807 for a man and 1.76442 for a woman)',
+      'The worksheet pins the identity point m = 1 at all 279 age and sex points from 18 to 110 and one non-identity case, m = 0.8 at 65 for each sex; the survival tests (survival.test.ts) cover direction and monotonicity for m = 0.8 and 1.12',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: [
       'packages/engine/src/montecarlo/survival.ts#hazardForExpectancyMultiplier',
       'packages/engine/src/montecarlo/survival.ts#expectancyUnderHazard',
     ],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'longevity-depletion-year': {
     title: 'Depletion year: the first projection year whose shortfall clears the funding tolerance',

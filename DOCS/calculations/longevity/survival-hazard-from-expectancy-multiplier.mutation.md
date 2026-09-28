@@ -1,22 +1,26 @@
 # Mutation receipt: survival-hazard-from-expectancy-multiplier
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -188,7 +188,7 @@ export function jointSurvivalPercentileAge(
- function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
-   const from = Math.floor(Math.max(age, 0))
-   let s = 1
--  let e = 0.5
-+  let e = 0
-   for (let a = from; a <= MAX_AGE; a++) {
-     s *= annualSurvival(a, sex, hazard)
-     e += s
+diff --git a/packages/engine/src/montecarlo/survival.ts b/packages/engine/src/montecarlo/survival.ts
+index 268d6b3c..8df9e9e6 100644
+--- a/packages/engine/src/montecarlo/survival.ts
++++ b/packages/engine/src/montecarlo/survival.ts
+@@ -265,7 +265,7 @@ function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
+  */
+ export function hazardForExpectancyMultiplier(age: number, sex: Sex, m: number): number {
+   if (!Number.isFinite(age)) throw new RangeError(`A hazard power is solved at a finite age; got ${age}`)
+-  if (m === 1) return 1
++
+   const target = Math.max(0.1, m) * expectancyUnderHazard(age, sex, 1)
+   let lo = 0.2 // far healthier than the table
+   let hi = 8 // far sicker than the table
 ```
 
-This drops the half-year convention from the solver's expectancy: the bisection then solves sum S(t) = 17.48 instead of 0.5 + sum S(t) = 17.48, which needs a healthier curve, and lands at h = 0.9363, a 0.0637 miss against the 1e-6 tolerance. The adjusted expectancy recomputed with the convention at that power is 17.98, a 0.5 miss. The worksheet says its two named wrong readings both pass the identity case, so the mutation targets the convention the identity relies on instead.
+This deletes the exact return at m = 1, so the identity point is bisected like any other multiplier. The bisection cannot land on 1: it returns a power within about 1e-12 of 1 but not 1, and the identity assertion, which compares with === 1 rather than a tolerance, fails at all 279 age and sex points; the pick at m = 1 does not move, since the power is that close. The non-identity case at m = 0.8 does not read the deleted line and still passes.
 
 ## Command
 
@@ -26,59 +30,52 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (15 tests | 2 failed) 63ms
-   ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier, solved by bisection (3)
-     × the identity multiplier m = 1 solves to hazard power 1 within 1e-6 3ms
-     × the adjusted expectancy at the solved power reproduces the 17.48 baseline 1ms
+ ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 1 failed) 223ms
+   ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection (5)
+     × the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110 77ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 13 passed (15)
+      Tests  1 failed | 21 passed (22)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/montecarlo/survival.evidence.test.ts > survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier, solved by bisection > the identity multiplier m = 1 solves to hazard power 1 within 1e-6
-AssertionError: hazardPower 0.9363404188535241 is not within {"abs":0.000001} of the worksheet's 1: expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ src/montecarlo/survival.evidence.test.ts:229:9
-    227|         withinTolerance(hazard, expected, example.tolerance),
-    228|         `hazardPower ${hazard} is not within ${JSON.stringify(example.…
-    229|       ).toBe(true)
-       |         ^
-    230|     })
-    231|
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
-
- FAIL  src/montecarlo/survival.evidence.test.ts > survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier, solved by bisection > the adjusted expectancy at the solved power reproduces the 17.48 baseline
-AssertionError: adjustedExpectancyYears 17.98000000001623 is not within {"abs":0.000001} of the worksheet's 17.48: expected false to be true // Object.is equality
+ FAIL  src/montecarlo/survival.evidence.test.ts > survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection > the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110
+AssertionError: expected { count: 279, first: [ …(5) ] } to deeply equal { count: +0, first: [] }
 
 - Expected
 + Received
 
-- true
-+ false
+  {
+-   "count": 0,
+-   "first": [],
++   "count": 279,
++   "first": [
++     "male 18: 0.9999999999989995",
++     "male 19: 0.9999999999989995",
++     "male 20: 0.9999999999989995",
++     "male 21: 0.9999999999989995",
++     "male 22: 0.9999999999989995",
++   ],
+  }
 
- ❯ src/montecarlo/survival.evidence.test.ts:249:9
-    247|         withinTolerance(expectancy, expected, example.tolerance),
-    248|         `adjustedExpectancyYears ${expectancy} is not within ${JSON.st…
-    249|       ).toBe(true)
-       |         ^
-    250|     })
-    251|   },
+ ❯ src/montecarlo/survival.evidence.test.ts:304:67
+    302|         }
+    303|       }
+    304|       expect({ count: misses.length, first: misses.slice(0, 5) }).toEq…
+       |                                                                   ^
+    305|     })
+    306|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ## Revert

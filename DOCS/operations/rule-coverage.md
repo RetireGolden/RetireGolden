@@ -12,11 +12,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 542 |
-| Classification: approximated | 121 |
+| Classification: approximated | 120 |
 | Classification: outOfScope | 88 |
-| Classification: settled | 327 |
+| Classification: settled | 328 |
 | Classification: unsettled | 6 |
-| Approximated kind: convention | 23 |
+| Approximated kind: convention | 22 |
 | Approximated kind: fix | 74 |
 | Approximated kind: needs-fact | 24 |
 | Volatility: annuallyIndexed | 90 |
@@ -84,10 +84,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 457 |
+| Engine source files | 458 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 92 |
+| partial | 93 |
 | registered | 121 |
 | rule-free | 244 |
 | unswept | 0 |
@@ -105,7 +105,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
 | model | 9 | 6 | 0 | 3 | 0 |
-| montecarlo | 11 | 1 | 0 | 10 | 0 |
+| montecarlo | 12 | 2 | 0 | 10 | 0 |
 | params | 10 | 2 | 6 | 2 | 0 |
 | projection | 127 | 42 | 21 | 64 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
@@ -152,7 +152,8 @@ None.
 | model/planCrossFieldChecks.ts | 2026-09-05 | qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-05 | IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals |
 | model/stateTaxPlanFacts.ts | 2026-09-12 | Source-system eligibility vocabulary, state basis and HSA activity completeness contracts; not independent proof of state eligibility or basis recovery. |
-| montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
+| montecarlo/deathProbability.ts | 2026-09-27 | Reads SSA's published q(x) from the period life table registered at longevity/ssaPeriodLifeTable.ts (ssa-table-4c6-period-life-table-vintage), cataloged as calculation record mortality-published-death-probability; the closed last row is an engine convention stated in that record, with no separate statutory claim, and this consumer is deliberately not pinned |
+| montecarlo/mortality.ts | 2026-09-27 | Draws death ages and the joint expectancy off the survival curve, which reads the period life table registered at longevity/ssaPeriodLifeTable.ts (ssa-table-4c6-period-life-table-vintage) through montecarlo/deathProbability.ts; the 'average' mixture is an engine convention stated in survival-probability-product, with no separate statutory claim, and this consumer is deliberately not pinned |
 | params/state/data/year2026.ts | 2026-09-09 | ca-ftb-2026-540-es-standard-deduction names the California TY2026 estimated-tax worksheet single/MFJ deduction cells and computeStateTaxableIncome only — retained 2025 Schedule X/Y brackets, continuous lower-income schedule behavior, credits, and whole-return figures remain outside that settled record; mn-dor-2026-rate-schedule-and-standard-deduction names the Minnesota TY2026 single/MFJ deduction and bracket cells plus taxable-income and bracketTax enforcers; mn-stat-290-0132-subd-26-social-security-inclusion remains approximated with zero runtime subtraction (indexed simplified thresholds versus unindexed alternate maxima are source-discriminated in the record, not modeled). de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax; oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names the OH TY2026 single/MFJ 2.75% band cells with baseTax $332; the optional StateTaxBracket.baseTax field represents cumulative schedule tax. iowa-code-422-7-8-social-security-subtraction and il-ita-203-a-2-L-social-security-subtraction name the IA and IL TY2026 packs with taxesSocialSecurity:false enforcers; nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name the NJ, NY, and PA packs likewise — fixture discriminators only, not whole-return certification. md-tax-10-209-pension-exclusion and ga-code-48-7-27-retirement-and-social-security-exclusion pack cells are exercised by relational fixture extensions (MD gross-SS cap offset limb approximated; GA SS subtraction settled). Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation / me-mrs-36-5122-2-m2-m3-2026-pension-deduction $49,824 TY2026 maximum without SS offset military separation M-3 phaseout or plan qualification, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. la-ldr-it540es-2026-standard-deduction covers Louisiana TY2026 single/MFJ deduction cells; or-lro-2026-rate-schedule-and-standard-deduction covers refreshed Oregon cells while disclosing continuous marginal versus printed whole-dollar base taxes. Calendar-year CA, LA, MN, OH, and OR records expire after 2026; stateParamsFor may reuse the 2026 pack in later plan years as a stand-in. Not complete law coverage. |
 | params/state/index.ts | 2026-09-05 | conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |

@@ -194,7 +194,15 @@ export const personSchema = z.object({
   id: idSchema,
   name: z.string().min(1),
   dob: isoDate,
-  /** 'average' supported for parity with the longevity model's baseline table. */
+  /**
+   * Which of SSA's period life table columns applies. 'average' is a person
+   * whose sex the plan does not state: every survival probability is the mean
+   * of the male and female ones, as for someone equally likely to be either
+   * (the 50/50 mixture of the two survival curves from the current age,
+   * engine/montecarlo/survival.ts#survivalCurve), and two 'average' people
+   * are independent mixtures. The questionnaire's baseline is the mean of the
+   * two printed life expectancies.
+   */
   sex: z.enum(['female', 'male', 'average']),
   /** Age at which wages stop and retirement-phase rules begin. */
   retirementAge: z.number().min(30).max(80).nullable(),
@@ -204,8 +212,9 @@ export const personSchema = z.object({
     source: z.enum(['model', 'manual', 'percentile']),
     /**
      * Provenance when source = 'percentile': the pick that produced
-     * `planningAge` ("the age I/we have a `pct`% chance of reaching", SSA 2022
-     * period table via engine/montecarlo/survival.ts). Recorded so the UI can
+     * `planningAge` ("the age I/we have a `pct`% chance of reaching", on SSA's
+     * period life table via engine/montecarlo/survival.ts; `tableEdition` says
+     * which edition). Recorded so the UI can
      * restate and re-offer the pick — the age itself is computed once at pick
      * time and never silently recomputed (the anti-drift rule presets follow).
      */
@@ -219,6 +228,18 @@ export const personSchema = z.object({
         healthMultiplier: z.number().positive().optional(),
         /** Joint picks only: the partner's questionnaire multiplier, when it was also applied. */
         partnerHealthMultiplier: z.number().positive().optional(),
+        /**
+         * The SSA period life table edition the pick was made on. Absent on a
+         * pick made before the field existed (2026-09-27), which was made on
+         * the 2022 period table of the 2025 Trustees Report
+         * (engine/longevity/ssaPeriodLifeTable.ts#storedLifeTableEdition).
+         */
+        tableEdition: z
+          .object({
+            periodYear: z.number().int().min(1900).max(2200),
+            trusteesReportYear: z.number().int().min(1900).max(2200),
+          })
+          .optional(),
       })
       .optional(),
   }),

@@ -80,7 +80,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         }
@@ -217,20 +217,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 222,
+          "line": 225,
           "note": null,
           "tests": [
             {
               "title": "classifies the depreciation as ordinary income rather than capital gain",
-              "line": 243
+              "line": 246
             },
             {
               "title": "leaves the capital-gain slice short by the depreciation",
-              "line": 248
+              "line": 251
             },
             {
               "title": "returns no field in which a 25 percent ceiling could be carried",
-              "line": 255
+              "line": 258
             }
           ]
         }
@@ -491,7 +491,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         },
@@ -651,7 +651,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         },
@@ -762,27 +762,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 296,
+          "line": 299,
           "note": "a seller who fails the two-year test entirely",
           "tests": [
             {
               "title": "excludes the whole gain from a sale that qualifies for nothing",
-              "line": 305
+              "line": 308
             },
             {
               "title": "takes no input by which any eligibility test could be expressed",
-              "line": 315
+              "line": 318
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 350,
+          "line": 353,
           "note": "gain allocated to periods of nonqualified use after 2008",
           "tests": [
             {
               "title": "excludes the nonqualified-use share along with the rest",
-              "line": 359
+              "line": 362
             }
           ]
         }
@@ -1129,7 +1129,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         },
@@ -1193,7 +1193,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         }
@@ -1600,7 +1600,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1778
+              "line": 1799
             }
           ]
         },
@@ -1666,7 +1666,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         },
@@ -1734,7 +1734,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 442
+              "line": 463
             }
           ]
         }
@@ -1978,7 +1978,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1778
+              "line": 1799
             }
           ]
         },
@@ -2062,7 +2062,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1778
+              "line": 1799
             }
           ]
         },
@@ -2131,7 +2131,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1778
+              "line": 1799
             }
           ]
         },

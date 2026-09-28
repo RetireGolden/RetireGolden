@@ -1242,6 +1242,18 @@
           "url": "https://data.bls.gov/timeseries/CUUR0000SA0"
         },
         {
+          "figures": "Table 4C6, the 2023 period table (2026 Trustees Report): the death probability and life expectancy by sex at each age 0–119, as published; the last row is closed at 119. Used for survival-percentile planning ages and spending horizons, Monte Carlo lifespans, Social Security expected values and joint-and-survivor annuity exclusion ratios.",
+          "label": "SSA period life table",
+          "publisher": "SSA Office of the Chief Actuary",
+          "url": "https://www.ssa.gov/oact/STATS/table4c6.html"
+        },
+        {
+          "figures": "Table 4C6, the 2022 period table (2025 Trustees Report), which the planner used until September 2026. A survival-percentile or questionnaire planning age made before then was computed on it and is cited here; the planner now uses the 2023 table.",
+          "label": "SSA period life table, earlier edition",
+          "publisher": "SSA Office of the Chief Actuary",
+          "url": "https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html"
+        },
+        {
           "figures": "2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year; 2026 HHS guideline ($15,960 first person, +$5,680 each additional) applied to the 2027 ACA coverage year. Each coverage year uses the guidelines in effect when its open enrollment began, as published.",
           "label": "Federal poverty guideline (ACA)",
           "publisher": "HHS",

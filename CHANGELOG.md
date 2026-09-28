@@ -4,6 +4,138 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the life table is SSA's 2023 period table, read as published, and a sex
+  that is not stated is the average of the male and female chances (displayed numbers
+  change)** (decision D-LIFE-TABLE-2023; derived, independently checked and the
+  implementation independently reviewed, RetireGolden-Docs
+  `evidence/life-table-2023-{derivation,check,review}.md` at commit `75e1cf87`). The engine
+  carried the life expectancy column of SSA's 2022 period table (2025 Trustees Report)
+  and rebuilt each year's death probability from it by the half-year identity. It now
+  carries SSA's Table 4C6 for 2023, as used in the 2026 Trustees Report: the probability
+  of dying within one year and the life expectancy at every age 0 to 119, for men and for
+  women, as printed, read from SSA's page on 2026-09-27
+  (`longevity/ssaPeriodLifeTable.ts`, with a source record whose SHA-256 of the columns
+  the evidence rebuilds from the numbers). Every survival figure reads the published
+  column through the engine's one survival curve (`montecarlo/survival.ts#survivalCurve`).
+  - **The table end.** The last row is closed: a life at 119 dies during that year,
+    although SSA prints 0.926604 there. Reading it would change the chance of reaching 120
+    by at most 2.3e-11 for anyone 65, and by 0.0734 for someone already 119.
+  - **"Average" sex** (a person whose sex the plan does not state: every new plan's first
+    person, a partner added on the Household page, a spouse imported from a tax return)
+    is now the 50/50 mixture of the male and female survival curves from the person's
+    current age: every survival probability, the life expectancy and every expected value
+    is the average of the male and female ones (percentile ages and hazard powers read
+    off the curve are not). It was the half-year identity on the averaged life
+    expectancies. Two "average" people are independent mixtures, so a couple's values
+    average the four sex pairings; reading them as "an opposite-sex couple, order
+    unknown" would differ by up to 0.135% of a benefits-only row on the examples. The
+    Household and questionnaire options read "Not stated (average of male and female)",
+    and the Household help no longer says sex is only the life-expectancy baseline: it
+    also sets the percentile planning age, the survival-percentile spending horizon, the
+    Social Security expected values, the Monte Carlo lifespans and a joint-and-survivor
+    annuity's taxable share. The Monte Carlo "Model longevity" help says a sex not
+    stated draws from the average of the male and female chances.
+  - **The health adjustment** (`hazardForExpectancyMultiplier`) returns exactly 1 for the
+    questionnaire multiplier 1 (it returned 0.9999999999989995), and otherwise aims at the
+    multiplier times the curve's own life expectancy rather than SSA's printed one, which
+    differs from it by at most 0.005 years at the questionnaire's ages. Compared with the
+    old target on the new table, this moves 1, 1, 2 and 3 of 837 health-adjusted
+    percentile picks by one year at multipliers 0.8, 0.9, 1.1 and 1.12, and at 1 moves
+    none (the old target moved one).
+  - **On the 29 examples.** The benefits-only top claim age changes at the default 2% on
+    14 of the 23 examples that rank a claim age (the 11 single claimants whose sex is not
+    stated, 68 to 69; glidepath-allocation and static-allocation-control, 66 to 68;
+    survivor-years, 64/69 to 64/70) and in 57 of their 391 example-and-rate tables over
+    the 17 slider rates; bracket-fill-roth and rmd-irmaa, whose claims are all made, rank
+    none since B2-P1 slice 5. Every 2% headline rises, by 2.76% (survivor-years, $853k to
+    $876k) to 5.02% (no-head-start-grad and trump-account-head-start, $117k to $123k);
+    example-couple $841k to $865k. Of the 150 survival-percentile ages the picker offers
+    the examples' 36 people, 116 rise by one year and none falls; no example stores a
+    pick. With "Model longevity" on (1,000 paths, the page's seed and headline model, each
+    example as the app loads it), 22 of the 29 Monte Carlo success rates fall
+    (guardrails-flex-goals most, 22.5% to 20.1%), 6 do not move at a tenth of a point and
+    1 rises (no-annuity-brokerage, 97.7% to 97.9%). The headline success rate and every
+    example golden do not read the curve and do not move, and neither does the
+    year-by-year projection of the 29 examples, nor what slice 5 computes from it (the
+    claim-age sweep and its month refinement, the Optimize page's claim-age option and the
+    survivor page's figures). No example has a joint-and-survivor annuity; the regulation
+    fixture's expected return moves from $22,330.89 to $22,683.94, still below Table VI's
+    $22,800. On the Social Security page's evidence cases the 40-year career's ratio is
+    2.46 (was 2.38) and the projected career's 1.59 (was 1.53); survivor switching's case
+    A tops at $423k (was $415k).
+  - **Plans whose year-by-year projection moves.** The projection reads the table in two
+    cases, and a plan in either gets new year-by-year figures, and new figures wherever
+    they are read, the claim-age sweep, the Optimize page and the survivor page included:
+    spending set to amortize to the age reached with a 25% or 10% chance (the
+    amortization-based spending policy's survival-percentile horizon, worked out again on
+    every projection rather than stored), and a joint-and-survivor annuity, whose
+    exclusion ratio is priced on the joint life expectancy. Measured on the examples with
+    those settings: under-saved-single with its spending amortized to the 25% age (90 on
+    the 2022 table, 91 on 2023) ends with an after-tax estate of $212,538 rather than
+    $9,840; example-couple on the 10% joint horizon $1,659,513 rather than $1,378,752;
+    annuity-purchases-estate with its annuity made 50% joint-and-survivor pays $349,238 of
+    lifetime taxes rather than $349,346. The notice is this entry, the spending horizon's
+    help (which names the table edition and says the age is worked out again on every
+    projection), and the Assumptions card, which now lists the life table among its
+    sources and restates a percentile pick with the table edition it was made on.
+  - **The questionnaire** prints SSA's 2023 life expectancy (a man of 65: 18.12, was
+    17.48; a woman: 20.66, was 20.12), names the edition from the table's source record,
+    and says how far the curve's own life expectancy is from the printed one: at most
+    0.005 years, the engine's published
+    `longevity/ssaPeriodLifeTable#CURVE_EXPECTANCY_GAP` (0.00496 years, a man of 46)
+    rounded up to the thousandth, which a test recomputes from the columns so a table
+    refresh restates it.
+  - **Stored figures keep their edition.** A percentile pick and a saved questionnaire
+    result record the table edition they were computed on (`tableEdition`); one saved
+    before this change has none, was made on the 2022 table, and is labelled so: the
+    Household line reads "(SSA 2022 period life table; the planner now uses the 2023
+    table)", the questionnaire result links the 2022 page and says the planner has moved
+    on. The editions a stored figure can name are a closed set, the 2022 and 2023 tables,
+    each with SSA's own page (`longevity/ssaPeriodLifeTable#KNOWN_LIFE_TABLE_EDITIONS`):
+    any other edition, or a saved result's value that is not an edition, reads "table
+    edition not recognized" and links SSA's live page, and the saved result is kept; the
+    Assumptions card and its exports print "(25% survival percentile, SSA 2022 period life
+    table, 2025 Trustees Report)" and cite SSA's page for the 2022 table. There every
+    planning age cites the edition it was computed on, never the current table by default:
+    a questionnaire age, whose edition the plan does not store, takes the edition of the
+    questionnaire result saved in this browser for that person when that result gives the
+    plan's age, and otherwise reads "(life-expectancy questionnaire estimate, table
+    edition not recorded)" and cites no table; an unrecognized edition cites none either.
+    The Social Security form helpers (`socialSecurity/ssFormUtils`) reuse a saved result's
+    age as it was saved, with no label; they have no caller in the planner's pages today.
+    Plan storage: the plan schema's `longevity.percentile` gains the optional
+    `tableEdition` (`{ periodYear, trusteesReportYear }`); saved plans stay valid,
+    `CURRENT_PLAN_SCHEMA_VERSION` stays 5, and `schema/plan.v5.json` is regenerated
+    (`DOCS/features/plan-file-format.md` lists the field). The questionnaire's
+    localStorage result gains the same optional field. A plan that makes a round trip
+    through an engine that predates the field (0.3.0, which RetireGolden-Pro and
+    RetireGolden-MCP pin) loses `tableEdition`, because that engine drops keys it does not
+    know; the pick keeps its age, and back in this planner a 2023 pick then reads as a
+    2022 pick. The effect is on the label only, and in the older direction: the pick is
+    shown as made on an earlier table than it was, with the note that the planner now uses
+    the 2023 table, and no figure changes.
+  - **Sources.** `params/provenance.ts#PARAMETER_PROVENANCE` gains `ssa-life-table` (SSA's
+    Table 4C6, the 2023 period table of the 2026 Trustees Report) and
+    `ssa-life-table-2022` (SSA's page for the 2022 period table of the 2025 Trustees
+    Report, which the Assumptions card cites for a planning age made on it), 21 ids in
+    all; the Assumptions card and the report's parameter appendix list them, and the
+    report goldens take the rows. The table's source record no longer carries a SHA-256 of
+    its archive capture, which could not be recomputed (the archive's rendering carries a
+    per-fetch footer); the columns' own SHA-256 is the table's hash, and the capture's URL
+    and time stay.
+  - **Records.** New calculation records `ssa-period-life-table` and
+    `mortality-published-death-probability`; `mortality-ex-to-qx-identity` is retired;
+    the survival, sampled-death, joint-expectancy, percentile and hazard records are
+    restated (statements and formula blocks), with worksheets and mutation receipts. The
+    vintage record `ssa-table-4c6-period-life-table-vintage` is settled: the embedded
+    table is the one SSA publishes, and its yearly re-verification stays with
+    `annuallyIndexed`, the `rules:due` queue and `verify:quotes`.
+  RetireGolden-Pro renders these pages through planner-ui and imports none of the changed
+  modules, so it picks the numbers up with the next planner-ui and engine bump.
+  RetireGolden-MCP defaults every person to "average" and reads no survival figure; its
+  tool description of "average" (`src/buildPlan.ts`) should say "the mean of the male and
+  female survival probabilities" at its next engine bump.
+
 - **Changed: the claim-age sweep and the survivor figures move into the engine; claims
   already made are no longer searched, no claim age is ranked against a premium credit
   the ledger cannot price, and the survivor lever adds to the plan's conversions
@@ -1564,6 +1696,42 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **Life table (decision D-LIFE-TABLE-2023):** the subpath
+  `@retiregolden/engine/longevity/ssaPeriod2022` is renamed
+  `@retiregolden/engine/longevity/ssaPeriodLifeTable`, and its `MALE` and `FEMALE` life
+  expectancy arrays are replaced by `SSA_PERIOD_LIFE_TABLE` (`{ source, male: { q, e },
+  female: { q, e } }`, SSA's 2023 period table) with `LAST_TABLE_AGE`,
+  `CURRENT_LIFE_TABLE_EDITION`, `LIFE_TABLE_EDITION_BEFORE_THE_FIELD`,
+  `storedLifeTableEdition`, `isCurrentLifeTableEdition`, `KNOWN_LIFE_TABLE_EDITIONS`,
+  `knownLifeTableEdition`, `CURVE_EXPECTANCY_GAP` and the types `KnownLifeTableEdition`,
+  `PeriodLifeTable`, `PeriodLifeTableColumns` and `PeriodLifeTableSource`;
+  `baselineRemainingYears` keeps its signature and reads the 2023 life expectancies.
+  `montecarlo/mortality#annualMortality` no longer accepts 'average': it takes the new
+  `TableSex` ('male' | 'female') and throws a `RangeError` for anything else, since
+  'average' has no single death probability (read `montecarlo/survival#survivalCurve`).
+  `SurvivalCurve` gains `deathProbabilityGivenAlive`. `longevity/types` gains
+  `LifeTableEdition` and the optional `LongevityResult.tableEdition`, and the plan
+  schema's `longevity.percentile` the optional `tableEdition`. planner-ui (published
+  source): `longevity/constants` gains `lifeTableCitation` (over the known editions only),
+  `lifeTableName`, `storedLifeTablePhrase`, `curveExpectancyGapText`,
+  `UNRECOGNIZED_LIFE_TABLE_EDITION` and `LifeTableCitation`, `longevity/storage` gains
+  `questionnairePlanningAge`, `planner/assumptionsExport#buildAssumptionsSnapshot` takes
+  an optional third argument, the saved questionnaire results by person slot
+  (`SavedQuestionnaireAge`), and `BASELINE_CITATION` is built from the engine's source
+  record. RetireGolden-Pro and RetireGolden-MCP import none of the renamed or narrowed
+  exports. The one-year death probability lives in the new leaf module
+  `montecarlo/deathProbability` (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`), which
+  `montecarlo/mortality` re-exports, so the mortality and survival modules no longer
+  import each other. A non-finite age (NaN, +Infinity or -Infinity) now throws a
+  `RangeError` in `sampleDeathAge`, `jointLastSurvivorExpectancy` (for either life) and
+  `hazardForExpectancyMultiplier` (for every multiplier, 1 included), where each returned
+  a number: `sampleDeathAge` 119 for NaN or +Infinity and a draw from age 0 for -Infinity;
+  `jointLastSurvivorExpectancy` NaN, the other life's expectancy for +Infinity and 120.5
+  for -Infinity; `hazardForExpectancyMultiplier` about 0.2 for NaN, 0.2 or 8 for +Infinity
+  and the power at age 0 for -Infinity. No caller passes such an age (ages come from whole
+  birth years), so no figure moves. The source record's `archive` loses `sha256`, and
+  `PARAMETER_PROVENANCE` gains the ids `ssa-life-table` and `ssa-life-table-2022`.
 
 - **Claim-age searches and the survivor analysis (B2-P1 slice 5):** new modules
   `decisions/claimAgeSweep` (`sweepClaimAges`, `refineClaimAgeMonthly`, `refineClaimMonths`,

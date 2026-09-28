@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 
+import { CURRENT_LIFE_TABLE_EDITION, isCurrentLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+
+import { storedLifeTablePhrase } from '../../longevity/constants'
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { updatePersonDob } from '../eligibilityFactActions'
 import { SINGLE_WITH_PARTNER_NOTE } from '../filingStatusNotice'
@@ -136,12 +139,12 @@ export function HouseholdSection() {
               />
               <SelectField
                 label="Sex"
-                help="Only used as the baseline for the life-expectancy estimate (SSA period life tables differ by sex). Pick 'Average' to use a blended table."
+                help="Picks which Social Security life table applies to this person. It sets the life-expectancy estimate, the survival-percentile planning age, the survival-percentile spending horizon, the Social Security expected values, the lifespans Monte Carlo draws when it models longevity, and the taxable share of a joint-and-survivor annuity. 'Not stated' averages the male and female chances of being alive at each age, as for someone equally likely to be either."
                 value={person.sex}
                 options={[
                   { value: 'female', label: 'Female' },
                   { value: 'male', label: 'Male' },
-                  { value: 'average', label: 'Average' },
+                  { value: 'average', label: 'Not stated (average of male and female)' },
                 ]}
                 onCommit={(v) => update((d) => void (d.household.people[i]!.sex = v))}
               />
@@ -187,7 +190,11 @@ export function HouseholdSection() {
                   person.longevity.percentile.partnerHealthMultiplier !== undefined
                     ? ', health-adjusted'
                     : ''}{' '}
-                  (SSA 2022 table). Re-open Percentile to refresh it as ages change.
+                  ({storedLifeTablePhrase(person.longevity.percentile.tableEdition)}
+                  {isCurrentLifeTableEdition(person.longevity.percentile.tableEdition)
+                    ? ''
+                    : `; the planner now uses the ${CURRENT_LIFE_TABLE_EDITION.periodYear} table`}
+                  ). Re-open Percentile to refresh it as ages change.
                 </p>
               ) : null}
             </div>

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { combinedMultiplier } from '../longevity/factors'
 import { loadLongevity } from '../longevity/storage'
 import { loadSs, saveSs, SS_STORAGE_KEY, type SsFormSnapshot } from './storage'
 import { CLAIM_OPTIONS, defaultEndAge, initialSsForm, parseDob, SS_CHART_LINE_COLORS } from './ssFormUtils'
@@ -54,8 +55,27 @@ describe('ssFormUtils', () => {
   it('defaults the end age to the saved longevity estimate, else 90', () => {
     vi.mocked(loadLongevity).mockReturnValue(null)
     expect(defaultEndAge()).toBe(90)
-    vi.mocked(loadLongevity).mockReturnValue({ result: { illustrativePlanningAge: 94 } } as ReturnType<typeof loadLongevity>)
+    vi.mocked(loadLongevity).mockReturnValue({
+      result: { illustrativePlanningAge: 94, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } },
+    } as ReturnType<typeof loadLongevity>)
     expect(defaultEndAge()).toBe(94)
+  })
+
+  it('reuses a result saved on the 2022 table as it was saved', () => {
+    // A man of 55 whose result was saved before the edition field existed: its
+    // age was computed on the 2022 table (e(55) = 24.94), and it is reused as
+    // saved rather than recomputed on the 2023 table (25.73). These form
+    // helpers have no caller in the planner's pages today (PR #759 review 2),
+    // so no label is shown beside the age.
+    const answers = {
+      age: 55, sex: 'male', bmiCategory: 'normal', smoking: 'never', alcohol: 'moderate', activity: 'moderate',
+      diabetes: 'no', selfRatedHealth: 'good', parentalLongevity: 'unknown',
+    } as const
+    const applied = Math.min(1.12, Math.max(0.55, combinedMultiplier(answers)))
+    const saved2022 = 55 + Math.round(24.94 * applied)
+    expect(55 + Math.round(25.73 * applied)).not.toBe(saved2022)
+    vi.mocked(loadLongevity).mockReturnValue({ answers, result: { illustrativePlanningAge: saved2022 } } as ReturnType<typeof loadLongevity>)
+    expect(defaultEndAge()).toBe(saved2022)
   })
 
   it('starts from the saved form when there is one, else from the defaults', () => {

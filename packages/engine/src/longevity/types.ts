@@ -42,7 +42,26 @@ export interface LongevityAnswers {
   parentalLongevity: ParentalLongevity
 }
 
+/**
+ * An edition of SSA's period life table (Table 4C6): the year of the death
+ * rates and the Trustees Report that used them. A stored figure computed on the
+ * table (a percentile pick, a saved questionnaire result) records it, so the
+ * figure is labelled with the edition it was made on after the engine moves to
+ * a later one.
+ */
+export interface LifeTableEdition {
+  readonly periodYear: number
+  readonly trusteesReportYear: number
+}
+
 export interface LongevityResult {
+  /**
+   * The table edition the result was computed on. A result saved before the
+   * field existed has none, and was made on the 2022 period table
+   * (ssaPeriodLifeTable.ts#storedLifeTableEdition).
+   */
+  tableEdition?: LifeTableEdition
+  /** SSA's printed e(x) at the age, from `tableEdition` */
   baselineRemainingYears: number
   /** Product of lifestyle/health factors (before clamp) */
   rawMultiplier: number

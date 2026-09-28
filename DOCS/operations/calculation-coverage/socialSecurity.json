@@ -1407,6 +1407,7 @@
       },
       "limits": [
         "Independent lifetimes on the SSA period table applied to the cohort",
+        "A person whose sex is 'average' has the 50/50 mixture of the two sexes' survival curves (survival-probability-product), so a single's value is exactly the mean of a man's and a woman's; a couple of two 'average' people is the average over the four equally likely sex pairings, not \"an opposite-sex couple, order unknown\", which would differ by up to 0.135 percent of a row on the examples' two such couples and change no top claim age at 0, 2 or 4 percent",
         "Annual steps: a whole year of benefits in each year the survival weight reaches, and deaths in December of the death year, the ledger's convention",
         "One claim age per person: a widow(er) is paid from the later of the year after the death and their own claim year, and cannot take the widow(er) benefit first and their own later, as in the ledger (usc-42-402-r-survivor-deemed-filing-exemption); the survivor switching analysis covers a widow(er) living alone",
         "No earnings test: benefits the ledger would withhold while a claimant works are counted as paid, and the analysis page names each person whose plan wages would do that at a claim age it shows",
