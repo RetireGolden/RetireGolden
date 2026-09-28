@@ -1,6 +1,7 @@
 /**
- * Pins for three `approximated` registry records — two in the federal tax
- * engine's itemized-deduction build, one in the Roth withdrawal split.
+ * Pins for four `approximated` registry records — two in the federal tax
+ * engine's itemized-deduction build, two in the Roth withdrawal split (the
+ * Roth IRA five-year period, and the designated Roth account's missing one).
  *
  * Each fixture states the figure the authority supports and the figure this
  * engine actually returns, and asserts the engine returns the second. The day
@@ -18,8 +19,11 @@
 import { describe, expect, it } from 'vitest'
 import { describeRule } from '../describeRule.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
-import { splitRothWithdrawal, type RothBasisState } from '../../strategies/rothBasis.js'
+import { splitRothWithdrawal, startRothFiveYearPeriod, type RothBasisState } from '../../strategies/rothBasis.js'
+import { simulatePlan } from '../../projection/simulate.js'
 import type { TaxYearInput } from '../../projection/types.js'
+import { createFlatTaxCalculator } from '../../testing/flatTax.js'
+import { singlePersonPlan, validatePlan } from '../../testing/planFixtures.js'
 
 /**
  * A single filer in 2026 with no preferential income and no Social Security,
@@ -252,25 +256,28 @@ describe('federal tax and Roth basis approximations', () => {
 
   // IRC 408A(d)(2) makes a distribution qualified only if BOTH an (A) event has
   // happened AND the distribution falls after the 5-taxable-year period that
-  // begins with the first year the individual contributed to any Roth IRA.
-  // `splitRothWithdrawal` (packages/engine/src/strategies/rothBasis.ts:81)
-  // tests `age >= ROTH_QUALIFIED_AGE` and nothing else, and `RothBasisState`
-  // carries no first-Roth-year at all, so the five-year period is absent from
-  // the type as well as from the arithmetic.
+  // begins with the first year the individual contributed to any Roth IRA, one
+  // period per owner (Treas. Reg. 1.408A-6 A-2). The plan does not collect that
+  // year, so `splitRothWithdrawal` reads the period from the owner pool's
+  // `fiveYearPeriodStartYear`, which simulatePlan fills only when a person's
+  // Roth IRAs hold nothing at the start (D-APPROX-FACTS, 2026-09-27). The
+  // presumption errs in both directions, one fixture each.
   //
-  // The case this misses is the one a late conversion ladder produces: a
-  // 62-year-old whose first Roth IRA was opened in 2024 takes a 2026
-  // distribution. The (A)(i) age event is met, the 5-taxable-year period
-  // (2024–2028) is not, so the $50,000 of earnings is ordinary income. The
-  // engine reports $0.
+  // Under-taxing: a 62-year-old whose Roth IRA, first funded in 2024, holds
+  // money when the plan starts takes a 2026 distribution. The (A)(i) age event
+  // is met, the period (2024-2028) is not, so the $50,000 of earnings is
+  // ordinary income. The engine presumes a funded Roth IRA past its period
+  // and reports $0.
   describeRule('irc-408A-d-2-roth-qualified-distribution', {
-    readings: { statute: 50_000, engineTestsAttainedAgeOnly: 0 },
+    readings: { statute: 50_000, fundedRothIraPresumedPastThePeriod: 0 },
     accepted: 'statute',
-    produced: 'engineTestsAttainedAgeOnly',
-    note: 'earnings taxed inside the five-taxable-year period, past the age event',
+    produced: 'fundedRothIraPresumedPastThePeriod',
+    note: 'a Roth IRA funded at the start, first funded less than five years before',
   }, ({ accepted, produced }) => {
     const firstRothContributionYear = 2024
     const distributionYear = 2026
+    // As simulatePlan seeds a Roth IRA that holds money at the start: basis,
+    // no conversion layers, and no period start (presumed met).
     const state: RothBasisState = { contributionBasis: 10_000, conversionLayers: [] }
 
     it('treats earnings as tax-free inside the five-taxable-year period', () => {
@@ -282,7 +289,7 @@ describe('federal tax and Roth basis approximations', () => {
       expect(split.contributions).toBe(10_000)
       expect(split.conversions).toBe(0)
       expect(split.earnings).toBe(accepted)
-      // The earnings came out; the engine simply does not tax them.
+      // The earnings came out; the engine does not tax them.
       expect(split.taxableOrdinary).toBe(produced)
       expect(split.taxableOrdinary).not.toBe(accepted)
       // 408A(d)(2)(B) failing also costs the 408A(d)(1) exclusion for 72(t)
@@ -291,22 +298,10 @@ describe('federal tax and Roth basis approximations', () => {
       expect(split.penalty).toBe(0)
     })
 
-    it('has nowhere to put the first-Roth-year fact that would change the answer', () => {
-      // Asserted on the state the ENGINE builds, not on the literal above: a
-      // first-contribution-year field added to `RothBasisState` would surface
-      // here and fail, which is the point.
-      const carried = splitRothWithdrawal(state, 60_000, distributionYear, 62).next
-      expect(Object.keys(carried).sort()).toEqual(['contributionBasis', 'conversionLayers'])
-
-      // And supplying the fact under the names a fix would give it changes
-      // nothing, because nothing reads it.
-      const supplied = splitRothWithdrawal({
-        ...state,
-        firstRothContributionYear,
-        firstContributionYear: firstRothContributionYear,
-        rothEstablishedYear: firstRothContributionYear,
-      } as RothBasisState, 60_000, distributionYear, 62)
-      expect(supplied.taxableOrdinary).toBe(produced)
+    it('taxes them once the pool carries the first year, so only the missing fact is the gap', () => {
+      const known = splitRothWithdrawal({ ...state, fiveYearPeriodStartYear: firstRothContributionYear }, 60_000, distributionYear, 62)
+      expect(known.taxableOrdinary).toBe(accepted)
+      expect(known.penalty).toBe(0)
     })
 
     it('runs the other way too, on the attained-age-60 proxy for 59.5', () => {
@@ -319,6 +314,87 @@ describe('federal tax and Roth basis approximations', () => {
       expect(split.earnings).toBe(50_000)
       expect(split.taxableOrdinary).toBe(50_000)
       expect(split.penalty).toBe(5_000)
+    })
+  })
+
+  // Over-taxing: a person who funded a Roth IRA in 2015 and emptied it before
+  // the plan starts has a period that ran out in 2019, so every later
+  // distribution at 59.5 or older is qualified. With her Roth IRAs empty at the
+  // start the engine presumes she never had one, and the plan's own 2026
+  // contribution starts the period, so a 2028 distribution at 62 is taxed on
+  // its $50,000 of earnings where the statute taxes nothing.
+  describeRule('irc-408A-d-2-roth-qualified-distribution', {
+    readings: { statute: 0, periodStartedByThePlansFirstContribution: 50_000 },
+    accepted: 'statute',
+    produced: 'periodStartedByThePlansFirstContribution',
+    note: 'a Roth IRA emptied before the start, funded again by the plan',
+  }, ({ accepted, produced }) => {
+    it('taxes earnings the statute treats as qualified', () => {
+      // As simulatePlan seeds Roth IRAs that start empty, then the plan's first
+      // contribution (annualContributionReconciliationPhase).
+      const state: RothBasisState = { contributionBasis: 0, conversionLayers: [], fiveYearPeriodStartYear: null }
+      startRothFiveYearPeriod(state, 2026)
+      state.contributionBasis += 10_000
+      expect(state.fiveYearPeriodStartYear).toBe(2026)
+
+      const split = splitRothWithdrawal(state, 60_000, 2028, 62)
+
+      expect(split.earnings).toBe(50_000)
+      expect(split.taxableOrdinary).toBe(produced)
+      expect(split.taxableOrdinary).not.toBe(accepted)
+      expect(split.penalty).toBe(0)
+      // With the true first year (2015) the distribution is qualified.
+      expect(splitRothWithdrawal({ ...state, fiveYearPeriodStartYear: 2015 }, 60_000, 2028, 62).taxableOrdinary).toBe(accepted)
+    })
+  })
+
+  // 26 U.S.C. 402A(d)(2)(B) gives a designated Roth account its own
+  // five-taxable-year period, from the first designated Roth contribution under
+  // the same plan (Treas. Reg. 1.402A-1 A-4(a)); a distribution inside it is
+  // not qualified, and 402A(d)(1) excludes only a qualified one. The engine
+  // gives a designated Roth account no period at all.
+  //
+  // A 62-year-old (born 1964-03-15) whose employer plan's designated Roth
+  // account, first contributed to in 2024, holds 30,000 at the start, 21,000 of
+  // it her designated Roth contributions and 9,000 earnings, with no growth,
+  // takes all of it in 2026 for a 30,000 goal. The period runs 2024 through
+  // 2028, so the distribution is nonqualified; the account is a separate
+  // contract under 72(e)(8) (Treas. Reg. 1.402A-1 A-3), and a distribution of
+  // the whole contract includes all of its income, 9,000, whatever the pro rata
+  // split of a partial one. At 62 the 59.5 event is met, so there is no 10%
+  // tax. The engine treats the distribution as qualified and includes nothing.
+  describeRule('irc-402A-d-2-designated-roth-five-year-period', {
+    readings: { statute: 9_000, engineGivesDesignatedRothNoPeriod: 0 },
+    accepted: 'statute',
+    produced: 'engineGivesDesignatedRothNoPeriod',
+    note: 'a designated Roth account funded at the start, first contributed to less than five years before',
+  }, ({ accepted, produced }) => {
+    it('includes nothing from a whole-account distribution inside the period', () => {
+      const plan = singlePersonPlan({ dob: '1964-03-15', planningAge: 70, retirementAge: 62 })
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+      plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Spending from the designated Roth account', year: 2026, amount: 30_000 }]
+      plan.accounts = [{
+        type: 'roth',
+        id: 'designated-roth',
+        name: 'Designated Roth account',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'employer',
+        balance: 30_000,
+        annualContribution: 0,
+        contributionBasis: 21_000,
+      }]
+      const y = simulatePlan(validatePlan(plan), { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) }).years[0]!
+
+      // The whole account comes out, so the statute's figure is all of its income.
+      expect(y.withdrawals.roth).toBeCloseTo(30_000, 6)
+      expect(y.withdrawals.roth - 21_000).toBeCloseTo(accepted, 6)
+      expect(y.magi).toBeCloseTo(produced, 6)
+      expect(y.magi).not.toBeCloseTo(accepted, 0)
+      expect(y.penalties).toBe(0)
     })
   })
 })

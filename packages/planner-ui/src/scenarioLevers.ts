@@ -25,10 +25,7 @@ import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { applyScenarioPatchInput, createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
-import {
-  effectiveBirthYear,
-  fraForBirthYear,
-} from '@retiregolden/engine/socialSecurity/nra'
+import { ssdiSchedule } from '@retiregolden/engine/socialSecurity/disability'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
@@ -608,6 +605,11 @@ function personForSocialSecurity(plan: Plan, income: SocialSecurityIncome) {
   return plan.household.people.find((person) => person.id === income.personId)
 }
 
+/**
+ * Whether the stream is on the engine's disability path, so its claim age does
+ * not decide when it pays: a disability month is payable before the month full
+ * retirement age is attained (the same test simulatePlan applies).
+ */
 function disabilityControlsClaim(plan: Plan, income: SocialSecurityIncome): boolean {
   if (income.disability === undefined) return false
   const person = personForSocialSecurity(plan, income)
@@ -615,8 +617,7 @@ function disabilityControlsClaim(plan: Plan, income: SocialSecurityIncome): bool
   const year = Number(person.dob.slice(0, 4))
   const month = Number(person.dob.slice(5, 7))
   const day = Number(person.dob.slice(8, 10))
-  const fra = fraForBirthYear(effectiveBirthYear(year, month, day))
-  return income.disability.onsetAge < fra.years
+  return ssdiSchedule({ year, month, day }, income.disability) !== null
 }
 
 function resolvedSocialSecurityPia(

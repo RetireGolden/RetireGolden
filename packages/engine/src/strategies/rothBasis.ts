@@ -12,11 +12,22 @@
  *                       10% penalty (a non-qualified distribution).
  *
  * The engine approximates the 59½ boundary as "age 60 attained," matching the
- * traditional early-withdrawal penalty elsewhere in the simulation. It does not
- * model the §408A(d)(2)(B) five-taxable-year period or a household first-Roth-
- * year fact; qualified earnings are inferred from attained age alone. Conversion
+ * traditional early-withdrawal penalty elsewhere in the simulation. Conversion
  * layers each carry their own explicit five-year recapture clock, which is the
  * case that actually matters for the early-retirement "conversion ladder."
+ *
+ * The owner's own five-taxable-year period (§408A(d)(2)(B); Treas. Reg.
+ * 1.408A-6 A-2: one period per owner across all Roth IRAs, from January 1 of
+ * the first year for which a contribution, or in which a conversion, was made)
+ * is carried on the owner's Roth IRA pool as `fiveYearPeriodStartYear`. The
+ * plan does not collect that first year, so the engine knows it only when a
+ * person's Roth IRAs hold nothing when the plan starts: it then starts the
+ * period with the plan's own first contribution or conversion, presuming no
+ * earlier Roth IRA that was emptied or closed. A Roth IRA that holds money at
+ * the start is presumed past its period. Failing the period changes only the
+ * tax on earnings at the qualified age: contributions and conversions come out
+ * first (§408A(d)(4)(B), A-8) and the 72(t) additional tax does not apply at
+ * 59½ (72(t)(2)(A)(i)), nor to the conversion recapture (A-5(b)).
  */
 
 /** The engine's 59½ proxy: no early-withdrawal penalty once age 60 is attained. */
@@ -44,6 +55,49 @@ export interface RothBasisState {
   contributionBasis: number
   /** Conversion principal layers, oldest first; penalized if tapped <5y while pre-59½. */
   conversionLayers: RothConversionLayer[]
+  /**
+   * The owner's §408A(d)(2)(B) five-taxable-year period, on an owned Roth IRA
+   * pool only. Absent: presumed met (a Roth IRA that held money when the plan
+   * started), or a designated Roth pool, which this period does not govern and
+   * whose own §402A(d)(2)(B) period the engine does not model, so a draw at 60
+   * or later is qualified (irc-402A-d-2-designated-roth-five-year-period).
+   * `null`: the owner's Roth IRAs started empty and the plan has not yet
+   * contributed or converted into them. A year: the tax year the period began,
+   * the plan's own first contribution or conversion, or the earlier of that and
+   * a late spouse's first year after a treat-as-own election (A-7(b)).
+   */
+  fiveYearPeriodStartYear?: number | null
+}
+
+/**
+ * Starts a pool's five-year period with the year the plan first puts money into
+ * it, when the pool is waiting for one (`null`). A pool presumed met, or already
+ * started, is left alone.
+ */
+export function startRothFiveYearPeriod(state: RothBasisState, year: number): void {
+  if (state.fiveYearPeriodStartYear === null) state.fiveYearPeriodStartYear = year
+}
+
+/**
+ * The survivor's five-year period once she treats a late spouse's Roth IRA as
+ * her own. Treas. Reg. 1.408A-6 A-7(b): the period "with respect to any of the
+ * surviving spouse's Roth IRAs (including the one that the surviving spouse
+ * treats as his or her own) ends at the earlier of the end of either the
+ * 5-taxable-year period for the decedent or the 5-taxable-year period
+ * applicable to the spouse's own Roth IRAs", so it starts with the earlier
+ * first year. `ownStart` is her own pool's period as the engine holds it:
+ * absent when her Roth IRAs held money at the start (presumed met, so the
+ * earlier end is already past), `null` when they started empty and the plan
+ * has not funded them (her own period has not begun), a year otherwise; pass
+ * `null` when she has no owned Roth IRA in the plan.
+ */
+export function rothFiveYearPeriodAfterTreatAsOwn(
+  ownStart: number | null | undefined,
+  decedentFirstYear: number,
+): number | undefined {
+  if (ownStart === undefined) return undefined
+  if (ownStart === null) return decedentFirstYear
+  return Math.min(ownStart, decedentFirstYear)
 }
 
 export interface RothWithdrawalSplit {
@@ -78,7 +132,14 @@ export function splitRothWithdrawal(
   year: number,
   age: number,
 ): RothWithdrawalSplit {
-  const qualified = age >= ROTH_QUALIFIED_AGE
+  // The 59½ event (the engine's attained-60 proxy). It alone lifts the 72(t)
+  // additional tax, on earnings and on the conversion recapture alike.
+  const ageEvent = age >= ROTH_QUALIFIED_AGE
+  // A distribution is qualified only when the owner's five-year period has also
+  // run (§408A(d)(2)(B)); an unknown or not-yet-started period is taken as met.
+  const periodStart = state.fiveYearPeriodStartYear
+  const periodMet = periodStart === undefined || periodStart === null || year - periodStart >= ROTH_SEASONING_YEARS
+  const qualified = ageEvent && periodMet
   let remaining = Math.max(0, amount)
 
   // 1) Contributions — always tax- and penalty-free.
@@ -102,18 +163,18 @@ export function splitRothWithdrawal(
     // The recapture penalty applies only to the taxable share of the principal
     // tapped; nondeductible basis that was converted recaptures nothing.
     const taxableTake = layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
-    if (year - layer.year < ROTH_SEASONING_YEARS && !qualified) penalty += taxableTake * 0.1
+    if (year - layer.year < ROTH_SEASONING_YEARS && !ageEvent) penalty += taxableTake * 0.1
     const left = layer.amount - take
     if (left > 0) conversionLayers.push({ year: layer.year, amount: left, taxableAmount: layer.taxableAmount - taxableTake })
   }
 
-  // 3) Earnings — last out. Non-qualified (pre-59½) earnings are ordinary income
-  //    plus the 10% penalty; qualified earnings are tax- and penalty-free.
+  // 3) Earnings — last out. Non-qualified earnings are ordinary income, plus the
+  //    10% penalty before 59½; qualified earnings are tax- and penalty-free.
   const earnings = remaining
   let taxableOrdinary = 0
   if (earnings > 0 && !qualified) {
     taxableOrdinary = earnings
-    penalty += earnings * 0.1
+    if (!ageEvent) penalty += earnings * 0.1
   }
 
   return {
@@ -122,7 +183,9 @@ export function splitRothWithdrawal(
     earnings,
     penalty,
     taxableOrdinary,
-    next: { contributionBasis, conversionLayers },
+    next: periodStart === undefined
+      ? { contributionBasis, conversionLayers }
+      : { contributionBasis, conversionLayers, fiveYearPeriodStartYear: periodStart },
   }
 }
 
@@ -216,6 +279,8 @@ export function applyConversionPrincipalDebt(
  * consumption. The walk continues past a partial taxable blocker so free
  * layers behind it still absorb residual seed.
  * Residual past every conversion layer is earnings and is consequential.
+ * The owner's five-year period does not enter: an assumed seed exists only in a
+ * pool that held money at the start, whose period the engine presumes met.
  *
  * `unseasonedTaxableSpill` / `earningsSpill` break `consequentialSpill` into the
  * two characters so callers can mirror `splitRothWithdrawal` on live vs

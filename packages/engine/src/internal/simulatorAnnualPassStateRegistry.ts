@@ -73,7 +73,7 @@ function cloneIraProRata(value: IraProRataYear): IraProRataYear {
 }
 
 function cloneRothBasis(value: RothBasisState): RothBasisState {
-  return {
+  const clone: RothBasisState = {
     contributionBasis: value.contributionBasis,
     conversionLayers: value.conversionLayers.map((layer) => ({
       year: layer.year,
@@ -81,6 +81,8 @@ function cloneRothBasis(value: RothBasisState): RothBasisState {
       taxableAmount: layer.taxableAmount,
     })),
   }
+  if (value.fiveYearPeriodStartYear !== undefined) clone.fiveYearPeriodStartYear = value.fiveYearPeriodStartYear
+  return clone
 }
 
 function cloneAllocationTrackState(

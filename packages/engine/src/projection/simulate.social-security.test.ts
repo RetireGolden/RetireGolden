@@ -13,6 +13,7 @@ import { year2026 } from '../params/data/year2026.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { AWI_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { simulatePlan } from './simulate.js'
+import { ssdiNotPayableBeforeFraWarning } from './internal/annualSocialSecurity.js'
 import { claimFactor } from '../socialSecurity/claimFactor.js'
 import {
   basePlan,
@@ -57,9 +58,10 @@ describe('social security', () => {
     })
   })
 
-  // Born 1959 → FRA 66y10m. simulate.ts gates the SSDI branch with fra.years
-  // only (66), ignoring extraMonths. Observe the unreduced-amount path around
-  // that gate; if the cohort misbehaves, stop and print rather than pin settled.
+  // Born 1959 → FRA 66y10m, attained in April 2026. The SSDI schedule places
+  // FRA by month (disability months to March 2026, the converted benefit from
+  // April). Observe the unreduced-amount path around that month; if the
+  // cohort misbehaves, stop and print rather than pin settled.
   describeRule('usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion', {
     readings: {
       fullPiaAroundNonIntegerFra: { beforeFraYears: 24_000, atFraYears: 24_000, afterFraYears: 24_000 },
@@ -88,8 +90,8 @@ describe('social security', () => {
         afterFraYears: socialSecurityIncomeIn(result, 2026),
       }
 
-      // If this cohort misbehaves under the fra.years-only gate, print and stop
-      // rather than pinning a settled identity that is not true.
+      // If this cohort misbehaves around the FRA month, print and stop rather
+      // than pinning a settled identity that is not true.
       if (
         observed.beforeFraYears !== 24_000 ||
         observed.atFraYears !== 24_000 ||
@@ -103,41 +105,134 @@ describe('social security', () => {
     })
   })
 
-  // January-equivalent onset: waiting period Jan–May; first month after waiting
-  // period is June, so statute pays at most Jun–Dec = 7 months in the onset year.
+  // The independent check's worker (D-APPROX-FACTS): born 1970-06-15, so FRA
+  // 67 is attained in June 2037; PIA 2,000, no COLA; onsetAge 60, so the onset
+  // year is 2030. Onset after the 1st of month M: waiting M+1 to M+5, first
+  // payable M+6 (42 U.S.C. 423(a)(1), (c)(2); POMS DI 10105.070).
+  function ssdiWorkerPlan(disability: { onsetAge: number; onsetMonth?: number }, claimAgeYears = 62): Plan {
+    const plan = basePlan()
+    plan.household.people[0] = {
+      id: 'p1', name: 'Pat', dob: '1970-06-15', sex: 'average',
+      retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+    }
+    plan.incomes = [{
+      type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+      disability, claimAge: { years: claimAgeYears, months: 0 },
+    }]
+    plan.accounts = [cash(2_000_000)]
+    return plan
+  }
+  const ssdiRun = (plan: Plan) => simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+
+  // A blank month reads as January 1 (waiting January to May, first payable
+  // June: 7 months in 2030), the largest amount the statute allows for the
+  // onset year. For a worker whose disability in fact began in mid-March 2030
+  // the statute pays September to December, 8,000.
   describeRule('usc-42-423-c-2-ssdi-five-month-waiting-period', {
     readings: {
-      sevenPostWaitingMonthsInOnsetYear: 14_000,
-      fullAnnualFromOnsetAge: 24_000,
+      marchOnsetStatute: 8_000,
+      blankMonthReadAsJanuaryFirst: 14_000,
     },
-    accepted: 'sevenPostWaitingMonthsInOnsetYear',
-    produced: 'fullAnnualFromOnsetAge',
+    accepted: 'marchOnsetStatute',
+    produced: 'blankMonthReadAsJanuaryFirst',
+    note: 'blank onset month',
   }, ({ accepted, produced }) => {
-    it('pays a full onset-year SSDI benefit where the waiting period leaves at most seven months', () => {
-      const plan = basePlan()
-      // Age 58 in 2026 → January-equivalent onset in the start year.
-      plan.household.people[0] = {
-        id: 'p1', name: 'Pat', dob: '1968-06-15', sex: 'average',
-        retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
-      }
-      plan.incomes = [{
-        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
-        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
-      }]
-      plan.accounts = [cash(2_000_000)]
+    it('reads a blank onset month as January 1 and pays seven months in the onset year', () => {
+      const observed = socialSecurityIncomeIn(ssdiRun(ssdiWorkerPlan({ onsetAge: 60 })), 2030)
 
-      const observed = socialSecurityIncomeIn(
-        simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }),
-        2026,
-      )
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+    })
+
+    it('pays the statute amount once the month is given', () => {
+      const result = ssdiRun(ssdiWorkerPlan({ onsetAge: 60, onsetMonth: 3 }))
+      expect(socialSecurityIncomeIn(result, 2030)).toBeCloseTo(accepted, 6)
+      expect(socialSecurityIncomeIn(result, 2031)).toBeCloseTo(24_000, 6)
+    })
+  })
+
+  // The month is read as an onset after the 1st. An onset on July 1, 2030 has
+  // July as its first waiting month and December 2030 as its first payable
+  // month (2,000 in 2030); read as after the 1st, the waiting period is August
+  // to December and nothing is paid until January 2031.
+  describeRule('usc-42-423-c-2-ssdi-five-month-waiting-period', {
+    readings: {
+      julyFirstOnsetStatute: 2_000,
+      monthReadAsAfterTheFirst: 0,
+    },
+    accepted: 'julyFirstOnsetStatute',
+    produced: 'monthReadAsAfterTheFirst',
+    note: 'onset on the 1st',
+  }, ({ accepted, produced }) => {
+    it('pays nothing in 2030 for a July onset, one month later than an onset on July 1 allows', () => {
+      const observed = socialSecurityIncomeIn(ssdiRun(ssdiWorkerPlan({ onsetAge: 60, onsetMonth: 7 })), 2030)
 
       expect(observed).toBeCloseTo(produced, 6)
       expect(observed).not.toBeCloseTo(accepted, 6)
     })
   })
 
+  // At the full-retirement-age edge the one-month limit decides whether there
+  // is a disability benefit at all. An onset on December 1, 2036 has December
+  // to April as its waiting period, May 2037 as its one disability month and
+  // the automatic conversion from June (42 U.S.C. 402(a)(3)): 8 x 2,000 in 2037.
+  // Read as after the 1st, the first payable month would be June 2037, the FRA
+  // month itself, so there is no disability benefit and the claim at 70 governs.
+  describeRule('usc-42-423-c-2-ssdi-five-month-waiting-period', {
+    readings: {
+      decemberFirstOnsetStatute: 16_000,
+      noDisabilityBenefitClaimAtSeventy: 0,
+    },
+    accepted: 'decemberFirstOnsetStatute',
+    produced: 'noDisabilityBenefitClaimAtSeventy',
+    note: 'full retirement age edge',
+  }, ({ accepted, produced }) => {
+    it('falls through to the claim age, with a warning, when the first payable month is the FRA month', () => {
+      const result = ssdiRun(ssdiWorkerPlan({ onsetAge: 66, onsetMonth: 12 }, 70))
+      const observed = socialSecurityIncomeIn(result, 2037)
+
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+      expect(result.warnings).toContain(ssdiNotPayableBeforeFraWarning('Pat'))
+      // The engine's claim-year convention pays 12 months at 70 in 2040
+      // (1.24 x 2,000 x 12); the statute starts in June 2040 (17,360).
+      expect(socialSecurityIncomeIn(result, 2040)).toBeCloseTo(29_760, 6)
+    })
+
+    it('pays one disability month and converts at FRA for a November 2036 onset', () => {
+      const result = ssdiRun(ssdiWorkerPlan({ onsetAge: 66, onsetMonth: 11 }, 70))
+      const y2037 = result.years.find((row) => row.year === 2037)!
+      expect(y2037.incomes.socialSecurity).toBeCloseTo(16_000, 6)
+      expect(y2037.ssdiPaid).toBeCloseTo(2_000, 6)
+      expect(result.warnings).not.toContain(ssdiNotPayableBeforeFraWarning('Pat'))
+    })
+  })
+
+  it("names the person whose disability date leaves no disability month, so a couple's two streams are told apart", () => {
+    // Pat's December 2036 onset leaves none (first payable June 2037, her FRA
+    // month); Sam, born the same day, has a 2030 onset and is paid SSDI.
+    const plan = ssdiWorkerPlan({ onsetAge: 66, onsetMonth: 12 }, 70)
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1970-06-15', sex: 'average',
+      retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+    })
+    plan.incomes.push({
+      type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 2_000, earnings: null,
+      disability: { onsetAge: 60, onsetMonth: 3 }, claimAge: { years: 62, months: 0 },
+    })
+    const result = ssdiRun(plan)
+    expect(result.warnings).toContain(ssdiNotPayableBeforeFraWarning('Pat'))
+    expect(result.warnings).not.toContain(ssdiNotPayableBeforeFraWarning('Sam'))
+    expect(ssdiNotPayableBeforeFraWarning('Pat')).toBe(
+      "The date Pat's disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), so Pat's benefit is priced as a retirement claim at the claim age.",
+    )
+  })
+
   // claimAge 62 precedes disability.onsetAge 65: engine suppresses pre-onset
   // reduced retirement and pays full PIA from onset (ignoring 402(q) carry-in).
+  // The post-onset year observed is 2030, the first full year after the
+  // waiting period of a 2029 onset.
   describeRule('usc-42-423-a-2-402-q-retirement-claim-before-disability-onset', {
     readings: {
       reducedRetirementThenQ2ReducedDib: { preOnsetYear: 16_800, postOnsetYear: 19_200 },
@@ -148,7 +243,7 @@ describe('social security', () => {
   }, ({ accepted, produced }) => {
     it('pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge', () => {
       const plan = basePlan()
-      // Age 62 in 2026, onset at 65 → 2029; FRA 67 in 2031.
+      // Age 62 in 2026, onset at 65 → 2029, first full year 2030; FRA 67 in 2031.
       plan.household.people[0] = {
         id: 'p1', name: 'Pat', dob: '1964-06-15', sex: 'average',
         retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
@@ -162,7 +257,7 @@ describe('social security', () => {
       const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
       const observed = {
         preOnsetYear: socialSecurityIncomeIn(result, 2026),
-        postOnsetYear: socialSecurityIncomeIn(result, 2029),
+        postOnsetYear: socialSecurityIncomeIn(result, 2030),
       }
 
       expect(observed).toEqual(produced)
@@ -223,7 +318,8 @@ describe('social security', () => {
       const plan = basePlan()
       plan.household.filingStatus = 'marriedFilingJointly'
       plan.household.people = [
-        { id: 'p1', name: 'Disabled worker', dob: '1968-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        // Onset at 58 in 2025, so 2026 is a full year of disability benefits.
+        { id: 'p1', name: 'Disabled worker', dob: '1967-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
         { id: 'p2', name: 'Eligible spouse', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
       ]
       plan.incomes = [
@@ -1276,19 +1372,29 @@ describe('social security', () => {
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
     // Age 66 (2026, SSDI window) and age 67 (2027, FRA conversion): full PIA.
+    // FRA is attained in June 2027, so January to May are disability months
+    // and June on is the converted old-age benefit (the same PIA).
     const y2026 = result.years.find((y) => y.year === 2026)!
     const y2027 = result.years.find((y) => y.year === 2027)!
+    const y2028 = result.years.find((y) => y.year === 2028)!
     expect(y2026.incomes.socialSecurity).toBeCloseTo(2_000 * 12, 6)
     expect(y2026.ssdiPaid).toBeCloseTo(2_000 * 12, 6)
     expect(y2027.incomes.socialSecurity).toBeCloseTo(2_000 * 12, 6)
-    expect(y2027.ssdiPaid).toBeCloseTo(2_000 * 12, 6)
+    expect(y2027.ssdiPaid).toBeCloseTo(2_000 * 5, 6)
+    expect(y2028.incomes.socialSecurity).toBeCloseTo(2_000 * 12, 6)
+    expect(y2028.ssdiPaid).toBe(0)
   })
 
   it('SSDI is suspended when wages exceed Substantial Gainful Activity (SGA)', () => {
-    // Same worker, now earning $60k (above the 2026 SGA × 12 = $19,440) while in
-    // the SSDI window. Benefits resume at FRA once wages stop (retirementAge 67).
+    // Same worker, now earning $60k (above the 2026 SGA × 12 = $19,440) through
+    // 2027, the year she attains FRA (June), and retiring at 68. The annual SGA
+    // test applies only to a year wholly in the disability window
+    // (disability.ts#inSsdiWindow): 2027 holds the FRA month, from which the
+    // benefit is the converted old-age benefit that SGA does not reach, and an
+    // annual plan cannot place the year's wages in the five disability months,
+    // so that year is paid in full though the wages continue.
     const plan = basePlan()
-    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1960-06-15', retirementAge: 67 }
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1960-06-15', retirementAge: 68 }
     plan.incomes = [
       wages(60_000),
       {
@@ -1304,13 +1410,16 @@ describe('social security', () => {
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // Age 66 (working, in window): SGA suspends SSDI. Age 67 (FRA, wages stop): resumes.
+    // Age 66 (working, in window): SGA suspends SSDI. Age 67 (the FRA year,
+    // still working): not suspended, five disability months and seven of the
+    // converted benefit, as in the year without wages above.
     const y2026 = result.years.find((y) => y.year === 2026)!
     const y2027 = result.years.find((y) => y.year === 2027)!
     expect(y2026.incomes.socialSecurity).toBe(0)
     expect(y2026.ssdiPaid).toBe(0)
+    expect(y2027.incomes.wages).toBeCloseTo(60_000, 6)
     expect(y2027.incomes.socialSecurity).toBeCloseTo(2_000 * 12, 6)
-    expect(y2027.ssdiPaid).toBeCloseTo(2_000 * 12, 6)
+    expect(y2027.ssdiPaid).toBeCloseTo(2_000 * 5, 6)
     expect(result.warnings.join(' ')).toContain('SGA')
   })
 
@@ -1348,6 +1457,8 @@ describe('social security', () => {
     const y2027 = result.years.find((y) => y.year === 2027)!
     expect(y2027.incomes.socialSecurity).toBeCloseTo(2_000 * 12, 6)
     expect(y2027.ssdiPaid).toBe(0)
+    // The fall-through is said, not silent.
+    expect(result.warnings).toContain(ssdiNotPayableBeforeFraWarning('Pat'))
   })
 
   it('tops the lower earner up to the spousal benefit while both are alive', () => {
@@ -1369,6 +1480,62 @@ describe('social security', () => {
     // High = 48,000. Household = 24,000 + 48,000.
     const y2030 = result.years.find((y) => y.year === 2030)! // both 68
     expect(y2030.incomes.socialSecurity).toBeCloseTo(72_000, 6)
+  })
+
+  it('pays the spouse up to the family maximum less the worker\'s PIA, not less his benefit with delayed credits (20 CFR 404.404)', () => {
+    // The slice 4 review's case (F3). The worker, born 1964-01-15, has a PIA
+    // of 1,000 and claims at 70 in 2034: 1,000 x 1.24 = 1,240 a month. His
+    // family maximum (eligibility year 2026) is 1.50 x 1,000 = 1,500. The
+    // spouse, born 1964-06-15 with a PIA of 100, claims at her FRA of 67 in
+    // 2031; once he files she is also paid the excess of half his PIA over
+    // hers, 500 - 100 = 400, unreduced (she is past FRA by then). The room is
+    // 1,500 - 1,000 = 500, so the 400 is paid in full: 100 + 400 = 500 a month.
+    // 2035 (both paid all year): 12 x (1,240 + 500) = 20,880. Counting his
+    // 1,240 instead leaves 260: 12 x (1,240 + 100 + 260) = 19,200.
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      { id: 'p1', name: 'Worker', dob: '1964-01-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      { id: 'p2', name: 'Spouse', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+    ]
+    plan.incomes = [
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 1_000, earnings: null, claimAge: { years: 70, months: 0 } },
+      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 100, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    plan.accounts = [cash(5_000_000)]
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+
+    const y2035 = result.years.find((y) => y.year === 2035)!
+    expect(y2035.incomes.socialSecurity).toBeCloseTo(12 * (1_240 + 100 + 400), 6)
+    expect(y2035.incomes.socialSecurity).not.toBeCloseTo(12 * (1_240 + 100 + 260), 0)
+  })
+
+  it('leaves the same room above the PIA when the worker claims early (20 CFR 404.404)', () => {
+    // A real early claim. The worker, born 1964-01-15, has a PIA of 1,000.10
+    // and claims at 62 in 2026: 70 percent, 700.07 a month. His family maximum
+    // (eligibility 2026) is 1.50 x 1,000.10 = 1,500.15, floored to the dime,
+    // 1,500.10, so the room above his PIA is 500.00. The spouse, born the same
+    // day with no own PIA, claims at her FRA of 67 in 2031: her original
+    // benefit, half his PIA, 500.05, is held to the 500.00 of room, unreduced.
+    // 2032: 12 x (700.07 + 500.00) = 14,400.84. Counting his reduced 700.07
+    // instead would leave 800.03 of room and pay her the whole 500.05:
+    // 12 x (700.07 + 500.05) = 14,401.44.
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      { id: 'p1', name: 'Worker', dob: '1964-01-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      { id: 'p2', name: 'Spouse', dob: '1964-01-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+    ]
+    plan.incomes = [
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 1_000.1, earnings: null, claimAge: { years: 62, months: 0 } },
+      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    plan.accounts = [cash(5_000_000)]
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+
+    const y2032 = result.years.find((y) => y.year === 2032)!
+    expect(y2032.incomes.socialSecurity).toBeCloseTo(12 * (0.7 * 1_000.1 + 500), 6)
+    expect(y2032.incomes.socialSecurity).not.toBeCloseTo(12 * (0.7 * 1_000.1 + 0.5 * 1_000.1), 2)
   })
 
   it('does not pay spousal before the higher earner has claimed', () => {
@@ -1442,7 +1609,7 @@ describe('social security', () => {
     expect(y2031.incomes.socialSecurity).toBeCloseTo(highAnnual + 0.5 * 4_000 * 12, 6)
   })
 
-  it('caps current-spouse spousal benefits with the worker family maximum', () => {
+  it('leaves a spouse uncapped by the family maximum when the worker delays: the room is above his PIA, not his benefit (20 CFR 404.404)', () => {
     const plan = basePlan()
     plan.household.filingStatus = 'marriedFilingJointly'
     plan.household.people = [
@@ -1456,12 +1623,17 @@ describe('social security', () => {
     plan.accounts = [cash(5_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // PIA 1,000 is below the first 2022 family-max bend point, so MFB = 150% PIA.
-    // The worker delayed to 124% PIA (1,240), leaving $260/mo of auxiliary room on
-    // that record. The low earner keeps their own $124/mo (100 PIA × 1.24 at 70) and
-    // adds the capped $260 excess ⇒ $384/mo, not just the $260 auxiliary room.
+    // PIA 1,000 is below the first 2022 family-max bend point, so MFB = 150% PIA
+    // = 1,500. The worker delayed to 124% PIA (1,240), but the room the spouse
+    // shares is the maximum less his PIA, 500 (20 CFR 404.404), which holds her
+    // whole excess of 500 - 100 = 400. Her own 124/mo (100 PIA x 1.24 at 70) and
+    // the combination: the larger of her own benefit and her own PIA plus the
+    // excess, 100 + 400 = 500 (the DRCs sit inside the 500, POMS RS 00615.694),
+    // so the household is 1,240 + 500 a month. Counting his 1,240 left only 260
+    // of room and paid her 124 + 260 = 384.
     const y2030 = result.years.find((y) => y.year === 2030)!
-    expect(y2030.incomes.socialSecurity).toBeCloseTo((1_240 + 124 + 260) * 12, 6)
+    expect(y2030.incomes.socialSecurity).toBeCloseTo((1_240 + 500) * 12, 6)
+    expect(y2030.incomes.socialSecurity).not.toBeCloseTo((1_240 + 124 + 260) * 12, 0)
   })
 
   it('prorates current-spouse spousal benefits by both claim months', () => {

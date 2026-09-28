@@ -426,7 +426,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2335
+              "line": 2358
             }
           ]
         },
@@ -530,7 +530,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2335
+              "line": 2358
             }
           ]
         },
@@ -550,20 +550,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
-          "line": 186,
+          "line": 190,
           "note": "interest on acquisition debt of $1.5M, twice the $750,000 limit",
           "tests": [
             {
               "title": "deducts the whole interest figure with no principal limit applied",
-              "line": 198
+              "line": 202
             },
             {
               "title": "ignores the acquisition-debt principal however it is supplied",
-              "line": 214
+              "line": 218
             },
             {
               "title": "understates tax against the return that respects the cap",
-              "line": 233
+              "line": 237
             }
           ]
         }

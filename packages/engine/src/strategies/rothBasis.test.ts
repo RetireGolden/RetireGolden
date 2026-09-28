@@ -7,7 +7,9 @@ import {
   emptyRothBasis,
   freeRothCoverCapacity,
   ROTH_QUALIFIED_AGE,
+  rothFiveYearPeriodAfterTreatAsOwn,
   splitRothWithdrawal,
+  startRothFiveYearPeriod,
   type RothBasisState,
 } from './rothBasis.js'
 
@@ -41,6 +43,100 @@ describe('splitRothWithdrawal — ordering', () => {
       { year: 2020, amount: 5_000, taxableAmount: 5_000 },
       { year: 2024, amount: 15_000, taxableAmount: 15_000 },
     ])
+  })
+})
+
+// The owner's five-taxable-year period (26 U.S.C. 408A(d)(2)(B)). A distribution
+// is qualified only after the 59.5 event (the engine's attained-60 proxy) AND
+// after the period; failing the period taxes only earnings, since contributions
+// and conversions come out first (408A(d)(4)(B); Treas. Reg. 1.408A-6 A-8), and
+// at 60 or older there is no 10% tax on the earnings (72(t)(2)(A)(i)) or on the
+// conversion recapture (A-5(b)). The cases are the D-APPROX-FACTS derivation's
+// unit table, confirmed by its independent check.
+describe('splitRothWithdrawal — the owner five-year period', () => {
+  const caseA: RothBasisState = { contributionBasis: 10_000, conversionLayers: [], fiveYearPeriodStartYear: 2024 }
+
+  it('taxes earnings at 62 inside the period, with no 10% tax (case A, 2026 and 2028)', () => {
+    for (const [year, age] of [[2026, 62], [2028, 64]] as const) {
+      const r = splitRothWithdrawal(caseA, 60_000, year, age)
+      expect(r.contributions).toBe(10_000)
+      expect(r.earnings).toBe(50_000)
+      expect(r.taxableOrdinary).toBe(50_000)
+      expect(r.penalty).toBe(0)
+    }
+  })
+
+  it('leaves earnings tax-free from the fifth year after the first (case A, 2029)', () => {
+    const r = splitRothWithdrawal(caseA, 60_000, 2029, 65)
+    expect(r.taxableOrdinary).toBe(0)
+    expect(r.penalty).toBe(0)
+  })
+
+  it('changes nothing before 60, where earnings are already taxed and penalized (case B)', () => {
+    const withPeriod = splitRothWithdrawal(caseA, 60_000, 2026, 55)
+    const presumedMet = splitRothWithdrawal({ contributionBasis: 10_000, conversionLayers: [] }, 60_000, 2026, 55)
+    expect(withPeriod.taxableOrdinary).toBe(50_000)
+    expect(withPeriod.penalty).toBe(5_000)
+    expect(presumedMet).toEqual({ ...withPeriod, next: presumedMet.next })
+  })
+
+  it('taxes only the earnings past a young conversion, with no recapture at 61 (case C)', () => {
+    const caseC: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2025, amount: 40_000, taxableAmount: 40_000 }],
+      fiveYearPeriodStartYear: 2025,
+    }
+    const at61 = splitRothWithdrawal(caseC, 45_000, 2027, 61)
+    expect(at61.conversions).toBe(40_000)
+    expect(at61.taxableOrdinary).toBe(5_000)
+    expect(at61.penalty).toBe(0)
+    // At 57 the conversion recapture (10% of 40,000) and the earnings tax and
+    // 10% (5,000 and 500) apply with or without the period.
+    const at57 = splitRothWithdrawal(caseC, 45_000, 2027, 57)
+    expect(at57.taxableOrdinary).toBe(5_000)
+    expect(at57.penalty).toBeCloseTo(4_500, 9)
+  })
+
+  it('taxes a late opener\'s earnings inside the period its first conversion started', () => {
+    const lateOpener: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 100_000, taxableAmount: 100_000 }],
+      fiveYearPeriodStartYear: 2026,
+    }
+    const r = splitRothWithdrawal(lateOpener, 115_000, 2029, 65)
+    expect(r.conversions).toBe(100_000)
+    expect(r.taxableOrdinary).toBe(15_000)
+    expect(r.penalty).toBe(0)
+  })
+
+  it('takes a period not yet started, or presumed met, as met, and carries the period in next', () => {
+    expect(splitRothWithdrawal({ contributionBasis: 10_000, conversionLayers: [], fiveYearPeriodStartYear: null }, 60_000, 2026, 62).taxableOrdinary).toBe(0)
+    expect(splitRothWithdrawal({ contributionBasis: 10_000, conversionLayers: [] }, 60_000, 2026, 62).taxableOrdinary).toBe(0)
+    expect(splitRothWithdrawal(caseA, 5_000, 2026, 62).next.fiveYearPeriodStartYear).toBe(2024)
+    expect('fiveYearPeriodStartYear' in splitRothWithdrawal({ contributionBasis: 10_000, conversionLayers: [] }, 5_000, 2026, 62).next).toBe(false)
+  })
+})
+
+describe('startRothFiveYearPeriod and rothFiveYearPeriodAfterTreatAsOwn', () => {
+  it('starts only a period that is waiting for its first contribution or conversion', () => {
+    const waiting: RothBasisState = { contributionBasis: 0, conversionLayers: [], fiveYearPeriodStartYear: null }
+    startRothFiveYearPeriod(waiting, 2027)
+    expect(waiting.fiveYearPeriodStartYear).toBe(2027)
+    startRothFiveYearPeriod(waiting, 2029)
+    expect(waiting.fiveYearPeriodStartYear).toBe(2027)
+    const presumedMet: RothBasisState = { contributionBasis: 5_000, conversionLayers: [] }
+    startRothFiveYearPeriod(presumedMet, 2027)
+    expect('fiveYearPeriodStartYear' in presumedMet).toBe(false)
+  })
+
+  it('ends the survivor\'s period at the earlier of hers and the decedent\'s (Treas. Reg. 1.408A-6 A-7(b))', () => {
+    // Her own Roth IRAs held money at the start: presumed met, so the earlier end is past.
+    expect(rothFiveYearPeriodAfterTreatAsOwn(undefined, 2024)).toBeUndefined()
+    // None of her own yet (or none at all): the decedent's period is the only one.
+    expect(rothFiveYearPeriodAfterTreatAsOwn(null, 2024)).toBe(2024)
+    // Both known: the earlier first year starts the period that ends first.
+    expect(rothFiveYearPeriodAfterTreatAsOwn(2027, 2024)).toBe(2024)
+    expect(rothFiveYearPeriodAfterTreatAsOwn(2022, 2024)).toBe(2022)
   })
 })
 

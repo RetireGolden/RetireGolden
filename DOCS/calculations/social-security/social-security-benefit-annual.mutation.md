@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-benefit-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e2f92f05` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `5f917180` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `c9e60e7c` (branch `claude/social-security-law-2`, pull request #755) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e2f92f05` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `5f917180` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `c9e60e7c` (branch `claude/social-security-law-2`, pull request #755), and re-executed 2026-09-27 against RetireGolden base `32763d9d` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `6628b1c8` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `4fde8e43` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `89c0fe4a` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `96da3ad0` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualSocialSecurity.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualSocialSecurity.ts b/packages/engine/src/projection/internal/annualSocialSecurity.ts
-index 73fe8398..f8022b00 100644
+index 93da096e..811d2dee 100644
 --- a/packages/engine/src/projection/internal/annualSocialSecurity.ts
 +++ b/packages/engine/src/projection/internal/annualSocialSecurity.ts
-@@ -496,7 +496,7 @@ export function annualSocialSecurity(
+@@ -511,7 +511,7 @@ export function annualSocialSecurity(
      const fraYears = fraForBirthYear(effectiveBirthYear(y, m, d)).years
      let withheld = 0
      if (s.ageAttained < fraYears) {
@@ -30,20 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for decision D-SS-LAW-2 (the review of RetireGolden #755) because lines moved above its hunk in annualSocialSecurity.ts (the per-record key for withheld widow(er) and spouse months, and the former-spouse menu priced record by record); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.benefitAnnual.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for the independent check of the family maximum fix (the spouse benefit held to the maximum before the age reduction), because lines moved above its hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.benefitAnnual.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 C:/rgwt/engine14/packages/engine
 
- ❯ src/projection/internal/annualSocialSecurity.benefitAnnual.evidence.test.ts (4 tests | 1 failed) 38ms
+ ❯ src/projection/internal/annualSocialSecurity.benefitAnnual.evidence.test.ts (4 tests | 1 failed) 36ms
    ❯ social-security-benefit-annual — Annual household Social Security benefit (4)
      × withholds half the excess wages below FRA, paying 19000 of a 24000 benefit 5ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)
 
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯

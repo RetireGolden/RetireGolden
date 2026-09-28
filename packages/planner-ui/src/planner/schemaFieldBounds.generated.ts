@@ -132,6 +132,7 @@ export const SCHEMA_FIELD_BOUNDS: Record<string, SchemaBounds> = {
   'incomes.N.claimAge.years': { min: 62, max: 70 },
   'incomes.N.coveredQuarters': { min: 0, max: 40 },
   'incomes.N.disability.onsetAge': { min: 40, max: 75 },
+  'incomes.N.disability.onsetMonth': { min: 1, max: 12 },
   'incomes.N.earningsProjection.throughAge': { min: 50, max: 75 },
   'incomes.N.endAge': { min: 30, max: 80 },
   'incomes.N.endYear': { min: 1900, max: 2200 },

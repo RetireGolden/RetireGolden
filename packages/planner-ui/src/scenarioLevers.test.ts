@@ -1407,7 +1407,11 @@ describe('scenario lever contract', () => {
     )
     const janFirstStream = janFirst.incomes.find((income) => income.type === 'socialSecurity')!
     janFirstStream.piaMonthly = 2_000
-    janFirstStream.disability = { onsetAge: 66 }
+    // A May 2026 onset is first payable in November 2026. Born 1960-01-01, FRA
+    // (66y10m from the effective birth year 1959) is attained in October 2026,
+    // so there is no disability month; born 1960-01-02, FRA 67 is January 2027
+    // and November and December 2026 are disability months.
+    janFirstStream.disability = { onsetAge: 66, onsetMonth: 5 }
     janFirstStream.claimAge = { years: 62, months: 0 }
     const normalRetirement = buildScenarioLever(
       janFirst,

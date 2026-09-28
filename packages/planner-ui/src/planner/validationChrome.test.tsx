@@ -5,7 +5,7 @@
  * right card, and never hands the engine a value a field's own range forbids.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
@@ -411,23 +411,98 @@ describe('validation chrome', () => {
         </MemoryRouter>,
       )
     })
+    // The control shows the calendar year (birth year + onset age) and moves
+    // the engine's bound and advice into years with it (D-APPROX-FACTS).
+    const birthYear = Number(plan.household.people.find((p) => p.id === stream.personId)!.dob.slice(0, 4))
     const onset = container.querySelector<HTMLInputElement>(`input[data-path="${path}"]`)
-    expect(onset, 'the onset-age control names its schema path').not.toBeNull()
-    expect(onset!.value).toBe('12')
+    expect(onset, 'the onset-year control names its schema path').not.toBeNull()
+    expect(onset!.value).toBe(String(birthYear + 12))
     expect(onset!.getAttribute('aria-invalid')).toBe('true')
     const error = onset!.closest('.field')!.querySelector('.field-error')!
-    expect(error.textContent).toBe('Must be at least 40')
+    expect(error.textContent).toBe(`Must be at least ${birthYear + 40}`)
     expect(onset!.getAttribute('aria-describedby')).toContain(error.id)
     // The range the control enforces is the engine's, read from the path —
     // the literals the field used to hardcode are gone.
-    expect(onset!.getAttribute('min')).toBe('40')
-    expect(onset!.getAttribute('max')).toBe('75')
+    expect(onset!.getAttribute('min')).toBe(String(birthYear + 40))
+    expect(onset!.getAttribute('max')).toBe(String(birthYear + 75))
     // The other person's onset field is untouched: one issue, one field.
     expect(container.querySelectorAll('.field-error')).toHaveLength(1)
     // And the card still lists it in words, named for the person whose stream
-    // it is rather than for its slot in the incomes array.
+    // it is rather than for its slot in the incomes array, and in the field's
+    // own terms: the year, with the same bound the field states.
     expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toContain(
-      'Social Security (Alex): Disability onset age: Must be at least 40',
+      `Social Security (Alex): Year disability began: Must be at least ${birthYear + 40}`,
     )
+  })
+
+  it('a field shown with an offset commits the typed value less the offset (D-APPROX-FACTS)', async () => {
+    // The onset field shows a calendar year for an age the plan stores as
+    // years since the birth year: born 1970, typing 2030 stores 60.
+    const onCommit = vi.fn()
+    await act(async () => {
+      root.render(
+        <NumberField label="Year your disability began" path="incomes.0.disability.onsetAge" value={50} valueOffset={1970} onCommit={onCommit} />,
+      )
+    })
+    const input = container.querySelector<HTMLInputElement>('input')!
+    expect(input.value).toBe('2020')
+    await typeInto(input, '2030')
+    expect(onCommit).toHaveBeenLastCalledWith(60)
+  })
+
+  it('the disability year field stores the year less the birth year, and "Not sure" clears the month (D-APPROX-FACTS)', async () => {
+    // Edited through the Social Security card with a plan that takes the
+    // edits, as the workspace does: typing 2020 for Alex, born in 1962,
+    // stores an onset age of 58, and choosing "Not sure" for the month leaves
+    // it blank (read as January 1), not January.
+    const initial = createSamplePlan()
+    const index = initial.incomes.findIndex((s) => s.type === 'socialSecurity')
+    const stream = initial.incomes[index] as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+    stream.disability = { onsetAge: 60, onsetMonth: 3 }
+    const birthYear = Number(initial.household.people.find((p) => p.id === stream.personId)!.dob.slice(0, 4))
+    expect(birthYear, 'the example couple\'s first person').toBe(1962)
+    let stored: Plan = initial
+    function Workspace() {
+      const [plan, setPlan] = useState(initial)
+      const value: PlanContextValue = {
+        plan,
+        update: (mutator) => {
+          const draft = structuredClone(stored)
+          mutator(draft)
+          stored = draft
+          setPlan(draft)
+        },
+        discardPendingSave: () => undefined,
+        saveState: 'saved',
+        issues: [],
+      }
+      return (
+        <MemoryRouter>
+          <PlanCtx.Provider value={value}>
+            <SocialSecuritySection />
+          </PlanCtx.Provider>
+        </MemoryRouter>
+      )
+    }
+    await act(async () => {
+      root.render(<Workspace />)
+    })
+    const disability = () =>
+      (stored.incomes[index] as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>).disability
+    const year = container.querySelector<HTMLInputElement>(`input[data-path="incomes.${index}.disability.onsetAge"]`)!
+    expect(year.value).toBe('2022')
+    await typeInto(year, '2020')
+    expect(disability()).toEqual({ onsetAge: 58, onsetMonth: 3 })
+    expect(year.value).toBe('2020')
+
+    const month = container.querySelector<HTMLSelectElement>(`select[data-path="incomes.${index}.disability.onsetMonth"]`)!
+    expect(month.value).toBe('3')
+    await act(async () => {
+      month.value = 'unknown'
+      month.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(disability()).toEqual({ onsetAge: 58 })
+    expect(Object.hasOwn(disability()!, 'onsetMonth')).toBe(false)
+    expect(month.value).toBe('unknown')
   })
 })

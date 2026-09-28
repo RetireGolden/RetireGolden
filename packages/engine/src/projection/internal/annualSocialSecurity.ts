@@ -12,12 +12,17 @@ import type { ParameterPack } from '../../params/types.js'
 import { claimFactor, creditedAgeMonths, type ClaimAge } from '../../socialSecurity/claimFactor.js'
 import {
   claimStartMonthIndex,
-  spouseDualEntitlementMonthly,
   spouseEntitlementAgeMonths,
   spouseReductionFactorAtAgeMonths,
 } from '../../socialSecurity/dualEntitlement.js'
-import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../../socialSecurity/disability.js'
-import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
+import {
+  inSsdiWindow,
+  ssdiMonthlyBenefit,
+  ssdiMonthsInYear,
+  ssdiSchedule,
+  ssdiSuspendedBySga,
+} from '../../socialSecurity/disability.js'
+import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
 import { maritalBenefitFor, type MaritalBenefitCandidate } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../../socialSecurity/nra.js'
 import { neverClaimedDeceasedFactor, survivorBenefitMonthly, widowEntitlementAgeMonths } from '../../socialSecurity/survivorBenefit.js'
@@ -95,6 +100,14 @@ export interface AnnualSocialSecurityResult {
 function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {
   return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }
 }
+
+/**
+ * Said, naming the person, when a disability onset leaves no disability month
+ * before full retirement age, so the stream is priced as a retirement claim at
+ * its claim age instead. Before 2026-09-27 this fall-through was silent.
+ */
+export const ssdiNotPayableBeforeFraWarning = (personName: string): string =>
+  `The date ${personName}'s disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), so ${personName}'s benefit is priced as a retirement claim at the claim age.`
 
 /** Annual-ledger approximation: a same-year claim pays only months after the claim month. */
 export function annualSocialSecurityPayableMonths(
@@ -186,7 +199,10 @@ export function annualSocialSecurity(
     }
     return entry
   }
-  const ssdiByPerson = new Map<string, { onsetAge: number; benefit: number; fraYears: number }>()
+  // Per person on a disability path this year: the share of the stream's paid
+  // months that are disability months (the rest are the converted old-age
+  // benefit from the FRA month), and whether the annual SGA test applies.
+  const ssdiByPerson = new Map<string, { disabilityShare: number; sgaApplies: boolean }>()
 
   for (const stream of incomes) {
     if (stream.type !== 'socialSecurity') continue
@@ -203,39 +219,55 @@ export function annualSocialSecurity(
     const { y, m, d } = socialSecurityDobParts(person)
     const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
 
-    const onsetAge = stream.disability?.onsetAge
-    const ssdiPath = onsetAge !== undefined && onsetAge < fra.years
+    // A disability onset replaces this stream's retirement-claim path when a
+    // disability month is payable before the full-retirement-age month
+    // (42 U.S.C. 423(a)(1), (c)(2)). When the first payable month is at or after
+    // it, entitlement never begins: the stream is an ordinary retirement claim
+    // at its claim age, and the plan says so.
+    const schedule = stream.disability === undefined
+      ? null
+      : ssdiSchedule({ year: y, month: m, day: d }, stream.disability)
+    if (stream.disability !== undefined && schedule === null) warningValues.push(ssdiNotPayableBeforeFraWarning(person.name))
     // A worker who died before the year his benefit would first have been paid
-    // (his configured claim age, or a pre-FRA disability onset) never claimed.
-    // His survivor is priced on the benefit he would upon application have
-    // received for the month before his death (42 U.S.C. 402(e)(2)(C)), from
-    // the first year after the death, whatever claim age the plan configured.
-    // The ledger keeps a person alive through the whole year he attains his
-    // life age, so December, the latest month that allows, is the death month.
-    const firstPaidAge = ssdiPath ? onsetAge : stream.claimAge.years
-    if (!s.alive && s.lifeAge !== undefined && firstPaidAge > s.lifeAge) {
+    // (his configured claim age, or the first month after the disability waiting
+    // period) never claimed. His survivor is priced on the benefit he would upon
+    // application have received for the month before his death (42 U.S.C.
+    // 402(e)(2)(C)), from the first year after the death, whatever claim age the
+    // plan configured. The ledger keeps a person alive through the whole year he
+    // attains his life age, so December, the latest month that allows, is the
+    // death month, and a waiting period that ends after it pays nothing.
+    const firstPaidYear = schedule !== null
+      ? Math.floor(schedule.firstPayableMonthIndex / 12)
+      : y + stream.claimAge.years
+    if (!s.alive && s.lifeAge !== undefined && firstPaidYear > y + s.lifeAge) {
       const monthly = pia * neverClaimedDeceasedFactor({ year: y, month: m, day: d }, y + s.lifeAge, 12)
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
       continue
     }
 
-    // A pre-FRA disability onset replaces this stream's retirement-claim path.
-    // Onset at or after FRA is intentionally invalid here and falls through to
-    // ordinary retirement rather than creating a second SSDI case.
-    if (onsetAge !== undefined && onsetAge < fra.years) {
-      if (s.ageAttained >= onsetAge) {
+    if (schedule !== null) {
+      // Disability months run from the first payable month to the month before
+      // FRA; from the FRA month the same PIA is the converted old-age benefit
+      // (402(a)(3)), with no new filing decision and no delayed credits.
+      const months = ssdiMonthsInYear(schedule, year)
+      const paidMonths = months.disability + months.retirement
+      if (paidMonths > 0) {
         const monthly = ssdiMonthlyBenefit(pia)
-        const annual = monthly * 12 * ssColaFactor * ssHaircutFactor
+        const annual = monthly * paidMonths * ssColaFactor * ssHaircutFactor
         // Keep computation rows for deceased workers as survivor anchors, but
-        // publish only while alive. At FRA the same dollars change source from
-        // SSDI to own retirement without representing a new filing decision.
+        // publish only while alive. The published source is the benefit in
+        // force at the end of the year: own retirement from the year that holds
+        // the FRA month, whose disability months are in `ssdiPaid`.
         ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
         ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
-        ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
+        ssdiByPerson.set(stream.personId, {
+          disabilityShare: months.disability / paidMonths,
+          sgaApplies: inSsdiWindow(months),
+        })
         if (s.alive) {
           streamPub.claimInForce = true
           streamPub.preWithholdingAnnual += annual
-          streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
+          streamPub.source = months.retirement > 0 ? 'own-retirement' : 'ssdi'
         }
       }
       continue
@@ -333,20 +365,6 @@ export function annualSocialSecurity(
         const lowerFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
 
         const higherDob = socialSecurityDobParts(higher.p)
-        const workerActualMonthly =
-          ssActualMonthlyByPerson.get(higher.p.id) ??
-          higher.ss.pia *
-            claimFactor(
-              higherDob.y,
-              higherDob.m,
-              higherDob.d,
-              creditedClaimAgeFor(
-                higher.p,
-                higher.ss.claimAge,
-                higherState.ageAttained,
-                fraTotalMonths(fraForBirthYear(effectiveBirthYear(higherDob.y, higherDob.m, higherDob.d))),
-              ),
-            )
         // The spouse benefit starts in the later of the lower earner's own claim
         // month and the month the worker's benefit starts (deemed filing, 402(r)),
         // and is reduced for the lower earner's age then (402(q)(6)(A)(ii)).
@@ -363,23 +381,18 @@ export function annualSocialSecurity(
           lowerState.ageAttained,
           lowerFraMonths,
         )
-        // Own benefit plus the separately reduced excess (402(q)(3)(B), (k)(3)(A)).
-        // The worker-record family maximum caps only that excess; the lower
-        // earner's own benefit stays on that person's record unchanged.
+        // Own benefit plus the separately reduced excess (402(q)(3)(B), (k)(3)(A)),
+        // with half the worker's PIA held first to the family maximum room above
+        // his PIA (20 CFR 404.404, 404.410(b)), whatever the worker is paid; the
+        // lower earner's own benefit stays on that person's record unchanged.
         const lowerOwnMonthly = ssActualMonthlyByPerson.get(lower.p.id) ?? 0
-        const combinedMonthly = spouseDualEntitlementMonthly({
+        const spousalTotalMonthly = currentSpouseMonthlyUnderFamilyMaximum({
+          workerPiaMonthly: higher.ss.pia,
+          workerDob: { year: higherDob.y, month: higherDob.m, day: higherDob.d },
           ownPiaMonthly: lower.ss.pia,
           ownActualMonthly: lowerOwnMonthly,
-          spouseBaseMonthly: 0.5 * higher.ss.pia,
           spouseFactor: spouseReductionFactorAtAgeMonths(lowerDob, spouseAgeMonths),
         })
-        const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
-          workerPiaMonthly: higher.ss.pia,
-          workerActualMonthly,
-          workerDob: { year: higherDob.y, month: higherDob.m, day: higherDob.d },
-          auxiliaryMonthly: combinedMonthly - lowerOwnMonthly,
-        })
-        const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
         const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
         const own = ssOwnByPerson.get(lower.p.id) ?? 0
         if (spousalAnnual > own) {
@@ -475,7 +488,7 @@ export function annualSocialSecurity(
     const ssdi = ssdiByPerson.get(personId)
     if (ssdi) {
       let paid = benefit
-      if (inSsdiWindow(s.ageAttained, ssdi.onsetAge, ssdi.fraYears)) {
+      if (ssdi.sgaApplies) {
         const wages = wagesByPerson.get(personId) ?? 0
         const annualSga = pack.socialSecurity.sgaMonthlyNonBlind * 12 * limitGrowth
         if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {
@@ -486,7 +499,9 @@ export function annualSocialSecurity(
           )
         }
       }
-      ssdiPaid += paid
+      // Only the disability months are SSDI; in the year that holds the FRA
+      // month the months from it on are the converted old-age benefit.
+      ssdiPaid += paid * ssdi.disabilityShare
       continue
     }
     const wages = wagesByPerson.get(personId) ?? 0

@@ -31,7 +31,7 @@ import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
   ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
 } from '../moneyTolerance.js'
-import { type RothBasisState } from '../../strategies/rothBasis.js'
+import { startRothFiveYearPeriod, type RothBasisState } from '../../strategies/rothBasis.js'
 import {
   annualAggregateRothConversionPlan,
   withAnnualAggregateRothConversionReservations,
@@ -832,6 +832,9 @@ export function annualAggregateRothConversionPhase(
         if (credit.convertedPlanDollars > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
           const rb = rothBasis.get(rothPoolKey(destinationAccount))
           if (rb) {
+            // A first conversion into Roth IRAs that started empty also starts
+            // the owner's five-year period (Treas. Reg. 1.408A-6 A-2).
+            startRothFiveYearPeriod(rb, year)
             rb.conversionLayers.push({
               year,
               amount: credit.convertedPlanDollars,

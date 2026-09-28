@@ -706,6 +706,7 @@
         "pia-from-aime-bend-points",
         "social-security-cola-factor",
         "social-security-payable-months",
+        "ssdi-payable-months",
         "survivor-benefit-rib-lim",
         "survivor-reduction-entitlement-month"
       ],
@@ -843,16 +844,16 @@
     }
   },
   "records": {
-    "total": 243,
+    "total": 244,
     "byKind": {
       "composition": 83,
       "data": 17,
-      "formula": 86,
+      "formula": 87,
       "model": 57
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 238
+      "derivation": 239
     }
   },
   "oracleExamples": [
@@ -1073,7 +1074,7 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 14
+      "recordCount": 15
     },
     {
       "group": "spendingAndWithdrawals",

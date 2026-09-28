@@ -4,6 +4,156 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a spouse benefit is capped by the family maximum less the worker's primary
+  insurance amount, not less the benefit the worker is paid (displayed numbers change
+  only where the old cap bound; none of the 29 examples or their 10 scenarios moves)**
+  (found by the slice 4 review, F3). 20 CFR 404.404 reduces the auxiliaries so that the
+  month's total, "including an amount equal to the primary insurance amount" of the
+  worker, stays within the family maximum, and POMS RS 00615.756 says "Deduct PIA from
+  maximum"; the worker's own benefit is not reduced (RS 00615.730). The engine subtracted
+  what the worker is paid, so a worker who delayed left too little room: a worker born
+  1964-01-15 with a $1,000 PIA claiming at 70 ($1,240) has a family maximum of $1,500,
+  which leaves $500 for his spouse, not $260. His spouse (born 1964-06-15, PIA $100,
+  claiming at 67) is now paid her whole $400 excess, and the household's 2035 Social
+  Security is $20,880 rather than $19,200. An early claim leaves the same room too. The
+  spouse's original benefit, half the worker's PIA, now meets that room first, before her
+  own benefit is taken from it and before the age reduction (20 CFR 404.410(b); POMS
+  RS 00615.010), where the engine capped the reduced excess last; the two orders differ
+  only when the room is below half the PIA. Under the retirement and survivor maximum,
+  at least 150 percent of the PIA before it is floored to the dime, the room holds a
+  single spouse's whole original benefit less that rounding (under 10 cents a month), so
+  a single spouse is held back by cents at most; the disability maximum of a worker on
+  SSDI can leave no room at all, and the engine does not model it
+  (`usc-42-403-a-6-ssdi-family-maximum`). The claim-milestone insight's mirror of the
+  current-spouse top-up composes the benefit the same way. New settled record
+  `cfr-20-404-404-family-maximum-counts-the-worker-pia` (20 CFR 404.404, 404.403(a)(5)
+  Example 1 (twice), 404.410(b), POMS RS 00615.756 B.1, RS 00615.730 and RS 00615.010, all
+  seven quotes checked live), with fixtures on the review's case and on an SSDI worker
+  whose disability maximum leaves room for less than half the PIA (room 300 on a PIA of
+  1,000: 200 paid to a spouse with a PIA of 100, where capping last paid 300), and
+  projection tests for a delayed and an early claim; the `family-maximum-bend-points`
+  calculation's limit now says the room is above the PIA.
+
+- **Fixed: Social Security disability is paid from the first month after the
+  five-month waiting period, placed by the month the disability began (displayed
+  numbers change for every SSDI plan whose onset year is the plan's first year or
+  later)** (decision D-APPROX-FACTS, revisited 2026-09-27; derivation and independent
+  check in RetireGolden-Docs `evidence/approx-facts-*.md`). 42 U.S.C. 423(a)(1) and
+  (c)(2) pay nothing until five full calendar months of disability have passed, and a
+  month counts only when the disability began on or before its first day (POMS DI
+  10105.070). The engine paid a full year from the onset-age year: 5 to 17 months more
+  than any onset date allows. New optional plan field `incomes[].disability.onsetMonth`
+  (1 to 12; additive, no schema-version bump; `plan.v5.json` regenerated): an onset
+  after the 1st of month M is first paid in M+6. For a worker born 1970-06-15 with a
+  $2,000 PIA and a 2030 onset, 2030 pays $12,000 for January, $8,000 for March, $2,000
+  for June and nothing for July to December, where it paid $24,000; an October onset
+  pays $18,000 in 2031 and a December onset $14,000. Disability entitlement ends with
+  the month before the month full retirement age is attained and the same PIA continues
+  as the old-age benefit (42 U.S.C. 402(a)(3)): `ssdiPaid` now carries only the
+  disability months of that year and none after it (it counted the converted benefit
+  as SSDI for life), and the stream's published `source` reads `own-retirement` from the
+  year that holds the FRA month, now placed by month (a worker born 1959-06-15, whose
+  FRA of 66y10m falls in April 2026, now reads `ssdi` for all of 2025). When the first payable month is at or after the FRA month there is
+  no disability benefit: the stream is priced as a retirement claim at its claim age
+  and the projection warns, naming the person (`ssdiNotPayableBeforeFraWarning`); the old
+  onset-at-or-after-FRA fall-through was silent. An onset age equal to the FRA years
+  can now pay disability months where the engine priced a retirement claim. With a
+  blank month that takes a birthday after July 1 when FRA is a whole number of years,
+  but for the cohorts born 1955 to 1959, whose FRA adds 2 to 10 months, a birthday
+  after May 1 (1955) or March 1 (1956) is enough, and from 1957 any birthday but
+  January 1 (1957, 1958) or any at all (1959): born 1959-02-15 with an onset age of 66
+  (FRA 66y10m, attained December 2025), 2025 now pays June to November as disability
+  and December as the converted benefit. A
+  worker who dies before his first payable year is treated as never having claimed.
+  The claim-milestone insight and the planner's claim-age lever apply the same test.
+- **Changed: a blank disability onset month reads as January 1** (same decision). The
+  waiting period is then January to May and the first payment is for June: seven
+  months in the onset year, the earliest start and so the largest amount the statute
+  allows, where the engine paid twelve. Every SSDI plan saved before this change has a
+  blank month, so its onset year pays $14,000 rather than $24,000 on a $2,000 PIA; an
+  onset year before the plan's first year does not move. A plan saved with a month and
+  then opened and saved by an engine that predates this field (0.3.0 in RetireGolden-Pro
+  and RetireGolden-MCP) loses the month silently, and then reads as the January 1
+  onset. That pays up to 12 months more than the month the user gave when the given
+  month also leaves a disability month. When it leaves none, the stripped plan turns
+  the retirement claim into a disability benefit from June of the onset year, which
+  pays more early and less later: for a worker born 1970-06-15 with a $2,000 PIA, a
+  December 2036 onset and a claim at 70, the plan with the month pays nothing until
+  2040 and then $29,760 a year (the claim at 70 with delayed credits); stripped, it pays
+  $14,000 in 2036 and $24,000 a year from 2037, $86,000 (43 months) more through 2039
+  and then $5,760 a year less, with no delayed credits.
+- **Changed: the planner's disability block asks for the month and the year the
+  disability began** (same decision). The year field stores `onsetAge` (year minus
+  birth year) through a new `NumberField` `valueOffset`, so the engine's bounds and
+  advice read in years; "Not sure" leaves the month blank. The three sentences that said
+  disability pays "from the onset age" now describe the waiting period, the card warns
+  when the date leaves no disability month before full retirement age, and the SSDI
+  article in the Learning Center says the same. Record
+  `usc-42-423-c-2-ssdi-five-month-waiting-period` is restated and reclassified from
+  needs-fact to convention (needs-fact 24 to 23, convention 22 to 23), with its stated limits:
+  a month is read as an onset after the 1st (one month late for an onset on the 1st,
+  which at the FRA edge can remove the only disability month), the application is
+  taken as timely (423(b), 423(c)(2)(B)), and re-entitlement within five years and ALS,
+  which need no waiting period, are not modeled. New calculation `ssdi-payable-months`.
+- **Fixed: a Roth IRA's five-year period starts with the plan's own first contribution
+  or conversion when the person's Roth IRAs start empty, and a surviving spouse keeps
+  her late spouse's first Roth year (numbers change only for such plans; none of the 29
+  examples moves)** (same decision). 26 U.S.C. 408A(d)(2)(B) makes Roth IRA earnings
+  qualified only after five tax years from the first year any of the owner's Roth IRAs
+  was funded (Treas. Reg. 1.408A-6 A-2). The plan does not collect that year and the
+  revisited decision does not add it (rule 6: it moved no example plan in 117 scenario
+  runs, and without a field for conversion principal already in a Roth IRA it would
+  have taxed that principal as earnings). With no input: when a person's Roth IRAs hold
+  nothing at the start, the plan's first contribution or conversion starts the period,
+  and earnings withdrawn at 60 or older inside it are ordinary income with no 10% tax
+  (a Roth IRA opened by a 2026 conversion and spent down in 2028 at 64 is taxed on the
+  earnings; in 2031 they are tax-free); and a spouse who treats a late spouse's Roth IRA
+  as her own takes the earlier of the two first years (A-7(b)), which the handoff
+  dropped. Both presumptions can be wrong, in opposite directions. A Roth IRA that
+  holds money at the start is still presumed past its period, which under-taxes one
+  first funded less than five years before the start. And someone who funded a Roth
+  IRA before the plan starts and emptied it is presumed never to have had one, so the
+  plan's first contribution or conversion starts a new period and earnings the statute
+  treats as qualified are taxed, which over-taxes.
+  `RothBasisState` gains the optional `fiveYearPeriodStartYear`; new
+  `startRothFiveYearPeriod` and `rothFiveYearPeriodAfterTreatAsOwn`. Record
+  `irc-408A-d-2-roth-qualified-distribution` stays needs-fact, restated in both
+  directions, with two false sentences deleted; `irc-408A-d-4-B-roth-distribution-ordering`
+  is scoped to Roth IRAs.
+- **Changed: the Roth contribution-basis help asks for conversions already in the
+  account as well as direct contributions** (same decision). The old text asked for
+  direct contributions only, so conversion principal already in a Roth IRA when the
+  plan starts was treated as earnings (taxed, and before 59½ penalized) for anyone who
+  followed it. Conversions made before the plan starts have no layer of their own, so
+  the 10% recapture on one less than five years old is not charged: a stated limit on
+  the qualified-distribution record, with the designated Roth account's pro rata rule
+  and a designated Roth rollover into a Roth IRA, until each has its own record.
+- **Known limit registered: a designated Roth account has no five-year period in the
+  engine** (same decision, found in its independent review). The qualified-distribution
+  record said designated Roth accounts in employer plans were "held to the same test"
+  as a Roth IRA; the engine gives them no five-year period at all, so a distribution at
+  60 or older is treated as qualified. 26 U.S.C. 402A(d)(2)(B) gives each plan's
+  designated Roth account its own period, from the first designated Roth contribution
+  under that plan (Treas. Reg. 1.402A-1 A-4(a)), and a distribution inside it is not
+  qualified. The plan does not collect that year, and the engine does not start a
+  period when the plan funds an empty designated Roth account either. The error runs
+  one way, under-taxing: earnings drawn at 60 or older inside the period are shown tax
+  free. New approximated record `irc-402A-d-2-designated-roth-five-year-period`
+  (needs-fact 23 to 24; approximation kinds 73 / 24 / 23), with a fixture pinning a
+  whole-account distribution at 62 inside the period: the statute includes its 9,000
+  of earnings, the engine none. The qualified-distribution record now says what the
+  engine does.
+- **Follow-ups outside this repository (same decision):** RetireGolden-Pro and
+  RetireGolden-MCP pin engine 0.3.0, which strips `incomes[].disability.onsetMonth` on
+  parse, so release the MCP and then Pro on the new engine promptly; the MCP's
+  `update_plan` can set the month through `add_income`/`replace_income`, its typed
+  `build_plan` path has no disability month, its engine-skew caveat says a document
+  "was imported as supplied" when fields were stripped, its protocol baseline hashes
+  (`resource.sha256`, `resource.readSha256`, `describe_plan_schema_full`,
+  `meta.enginePackage`) must be regenerated, and `skills/retiregolden/references/plan-json.md`
+  should list the month; Pro's intake grammar refuses the three-level path, so a mapper
+  must write the whole `disability` object.
+
 - **Fixed: a PIA computed from an earnings history now receives the cost-of-living
   increases since eligibility (displayed numbers change for an entered earnings history
   of anyone born 1963 or earlier)** (decision D-SS-LAW-2, problem P12, found by the
@@ -1197,6 +1347,22 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **Family maximum room:** `AuxiliaryFamilyMaximumInput`
+  (`@retiregolden/engine/socialSecurity/familyMaximum`) no longer has
+  `workerActualMonthly`; `capAuxiliaryForFamilyMaximum` caps at the family maximum less
+  `workerPiaMonthly` (20 CFR 404.404). A caller that passed the field must drop it. New
+  beside it: an optional `familyMaximumMonthly` input, for a caller with a maximum other
+  than the retirement and survivor one, and `currentSpouseMonthlyUnderFamilyMaximum`,
+  the current spouse's total benefit with the maximum applied before the age reduction.
+
+- **SSDI window (decision D-APPROX-FACTS):** `inSsdiWindow`
+  (`@retiregolden/engine/socialSecurity/disability`) now takes the year's
+  `SsdiYearMonths` (from `ssdiMonthsInYear`) instead of `(ageAttained, onsetAge,
+  fraYears)`, and is true only in a year that pays disability months and no converted
+  month. New exports beside it: `SSDI_WAITING_PERIOD_MONTHS`, `ssdiFirstPayableMonthIndex`,
+  `ssdiSchedule`, `ssdiMonthsInYear` and the `SsdiOnset`, `SsdiSchedule` and
+  `SsdiYearMonths` types.
 
 - **Social Security spouse benefits (decision D-SS-LAW-2):** the module
   `@retiregolden/engine/socialSecurity/currentSpouseBenefit` and its

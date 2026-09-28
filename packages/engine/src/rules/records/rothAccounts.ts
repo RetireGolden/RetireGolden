@@ -80,12 +80,12 @@ export const rothAccountRecords = {
   'irc-408A-d-2-roth-qualified-distribution': {
     title: 'Roth qualified distribution and the five-taxable-year period',
     statement:
-      'A Roth distribution escapes gross income only if it is qualified, and that takes two things at once: one of the events in 408A(d)(2)(A), which are attaining age 59.5, death, disability, and a qualified special purpose distribution, and a distribution made after the 5-taxable year period beginning with the first taxable year for which the individual made any Roth IRA contribution. The engine tests one thing, whether attained age has reached 60, so it models neither the event date nor the five-year period.',
+      'A Roth distribution escapes gross income only if it is qualified, and that takes two things at once: one of the events in 408A(d)(2)(A), which are attaining age 59.5, death, disability, and a qualified special purpose distribution, and a distribution made after the 5-taxable year period beginning with the first taxable year for which the individual made any Roth IRA contribution, one period per owner for all Roth IRAs (Treas. Reg. 1.408A-6 A-2). Failing it taxes only earnings, since contributions and conversions come out first (408A(d)(4)(B); A-4, A-8), and at 59.5 or later adds no 72(t) tax. splitRothWithdrawal tests the age event as attained age 60 (ROTH_QUALIFIED_AGE) and the period from the owner Roth IRA pool\'s fiveYearPeriodStartYear. The plan does not collect the first year, so the engine knows the period only in two cases: when a person\'s Roth IRAs hold nothing at the start, simulatePlan seeds the period as not started and the plan\'s own first contribution or conversion starts it (startRothFiveYearPeriod); and when a surviving spouse treats a late spouse\'s Roth IRA as her own, the earlier of the two first years carries over (A-7(b), rothFiveYearPeriodAfterTreatAsOwn). A Roth IRA that holds money at the start is presumed past its period. Restated 2026-09-27 (decision D-APPROX-FACTS): until then no period was modeled.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Two independent errors sit under the single age test, and this record states both because neither covers the other. The five-taxable-year period is not modelled at all, and its absence under-taxes: a 62-year-old whose first Roth IRA was opened two years ago is shown tax-free earnings that the statute makes ordinary income and exposes to the 72(t) tax, which is exactly the case a conversion ladder started late in life produces. The attained-age-60 test is a second and separate error: it is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The five-year period cannot be recovered from account state the projection already holds, because 408A(d)(2)(B) runs it per individual from the first contribution to any Roth IRA rather than per account; closing this needs a household-level first-Roth-year fact, not a change to the withdrawal split. Until then nothing from this path is filing-grade on the taxability of Roth earnings.',
+      'Two independent errors remain, and this record states both because neither covers the other. First, the plan does not collect the year each person first put money into any Roth IRA, so the five year period is presumed, and the presumption errs both ways. A Roth IRA that holds money when the plan starts is presumed past its period: for one first funded less than five years before the start, earnings withdrawn at 60 or older after every contribution and conversion dollar has come out are shown tax free where the statute makes them ordinary income, which under-taxes. A person whose Roth IRAs hold nothing at the start is presumed never to have had one, so the plan\'s own first contribution or conversion starts the period: for someone who funded a Roth IRA before and later emptied or closed it, the true period began earlier, and earnings the statute treats as qualified are taxed, which over-taxes. Second, the attained-age-60 test is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The death, disability and special purpose events are not modeled for Roth IRAs. Designated Roth accounts in employer plans are held to the attained-age test with no five-year period at all, since their pools carry no fiveYearPeriodStartYear, and to the same order: the missing per-plan period of 26 U.S.C. 402A(d)(2)(B) is registered as irc-402A-d-2-designated-roth-five-year-period, and a nonqualified distribution from one, which the statute splits pro rata between contributions and earnings (Treas. Reg. 1.402A-1 A-3), comes out contributions first. Two further limits are stated here until each has its own record. Conversion principal already in a Roth IRA when the plan starts has no conversion layer: it is treated as contributions when it is included in the contribution basis, and as earnings when it is left out of an entered basis. And a rollover from a designated Roth account into a Roth IRA, which also starts the period (Treas. Reg. 1.408A-10 A-4(a)), is not modeled. Nothing from this path is filing-grade on the taxability of Roth earnings.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -104,16 +104,116 @@ export const rothAccountRecords = {
       citation: 'IRC 408A(d)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText: 'Any qualified distribution from a Roth IRA shall not be includible in gross income.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-2',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6',
+      quotedText:
+        "A-2. The 5-taxable-year period described in A-1 of this section begins on the first day of the individual's taxable year for which the first regular contribution is made to any Roth IRA of the individual or, if earlier, the first day of the individual's taxable year in which the first conversion contribution is made to any Roth IRA of the individual.",
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-2',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6',
+      quotedText:
+        'Thus, each Roth IRA owner has only one 5-taxable-year period described in A-1 of this section for all the Roth IRAs of which he or she is the owner.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-4',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6',
+      quotedText:
+        "is includible in the owner's gross income to the extent that the amount of the distribution, when added to the amount of all prior distributions from the owner's Roth IRAs (whether or not they were qualified distributions) and reduced by the amount of those prior distributions previously includible in gross income, exceeds the owner's contributions to all his or her Roth IRAs.",
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-5(b)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6',
+      quotedText: 'The exceptions under section 72(t) also apply to such a distribution.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-7(b)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6',
+      quotedText:
+        "However, if a surviving spouse treats the Roth IRA as his or her own, the 5-taxable-year period with respect to any of the surviving spouse's Roth IRAs (including the one that the surviving spouse treats as his or her own) ends at the earlier of the end of either the 5-taxable-year period for the decedent or the 5-taxable-year period applicable to the spouse's own Roth IRAs.",
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(d)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'A payment or distribution from a designated Roth account shall not be treated as a qualified distribution if such payment or distribution is made within the 5-taxable-year period beginning with the earlier of- (i) the first taxable year for which the individual made a designated Roth contribution to any designated Roth account established for such individual under the same applicable retirement plan, or',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.402A-1 A-4(b)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.402A-1',
+      quotedText:
+        "Generally, an employee's 5-taxable-year period of participation is determined separately for each plan (within the meaning of section 414(l)) in which the employee participates.",
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/rothBasis.ts',
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/strategies/rothBasis.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#ROTH_QUALIFIED_AGE',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+      'packages/engine/src/strategies/rothBasis.ts#startRothFiveYearPeriod',
+      'packages/engine/src/strategies/rothBasis.ts#rothFiveYearPeriodAfterTreatAsOwn',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts#annualContributionReconciliationPhase',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts#annualAggregateRothConversionPhase',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+    ],
+  },
+
+  'irc-402A-d-2-designated-roth-five-year-period': {
+    title: 'The five-taxable-year period of a designated Roth account is not modeled',
+    statement:
+      'A distribution from a designated Roth account in an employer plan is qualified, and so not included in gross income, only if it is made on or after one of the events in 408A(d)(2)(A) other than a qualified special purpose distribution, which are attaining age 59.5, death and disability, and after the 5-taxable-year period beginning with the first taxable year for which the individual made a designated Roth contribution under the same plan, or under an earlier plan whose designated Roth account was rolled into it (26 U.S.C. 402A(d)(1), (d)(2); Treas. Reg. 1.402A-1 A-4(a)). The engine gives a designated Roth account no five-year period: simulatePlan seeds the period only on the Roth IRA pool of each person, so a designated Roth pool carries no fiveYearPeriodStartYear and splitRothWithdrawal treats a distribution from it at attained age 60 or later as qualified, whether the account holds money when the plan starts or starts empty and is funded by the plan.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The plan does not collect the year each person first made a designated Roth contribution under each employer plan, so the period cannot be placed for an account that holds money at the start, and the engine does not start one when the plan funds an empty designated Roth account either, as it does for a Roth IRA. The error runs one way. The period can only make a distribution nonqualified, so leaving it out can only leave out income the statute taxes: earnings withdrawn at 60 or older inside the period are shown tax free where the statute includes them in income. Before the age event the distribution is nonqualified whatever the period, so the period changes nothing there (the engine tests 59.5 as attained age 60, registered as irc-72-t-2-A-i-age-59-half-annual-proxy). A nonqualified distribution from a designated Roth account is taxed pro rata between contributions and earnings (Treas. Reg. 1.402A-1 A-3), where the engine takes contributions first; that separate limit is stated on irc-408A-d-2-roth-qualified-distribution. Nothing from this path is filing-grade on the taxability of designated Roth earnings.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText: 'Any qualified distribution from a designated Roth account shall not be includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(d)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified distribution" has the meaning given such term by section 408A(d)(2)(A) (without regard to clause (iv) thereof).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(d)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'A payment or distribution from a designated Roth account shall not be treated as a qualified distribution if such payment or distribution is made within the 5-taxable-year period beginning with the earlier of- (i) the first taxable year for which the individual made a designated Roth contribution to any designated Roth account established for such individual under the same applicable retirement plan, or (ii) if a rollover contribution was made to such designated Roth account from a designated Roth account previously established for such individual under another applicable retirement plan, the first taxable year for which the individual made a designated Roth contribution to such previously established account.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.402A-1 A-4(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.402A-1',
+      quotedText:
+        'The 5-taxable-year period of participation described in A-2 of this section for a plan is the period of 5 consecutive taxable years that begins with the first day of the first taxable year in which the employee makes a designated Roth contribution to any designated Roth account established for the employee under the same plan and ends when 5 consecutive taxable years have been completed.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/strategies/rothBasis.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -203,11 +303,12 @@ export const rothAccountRecords = {
   'irc-408A-d-4-B-roth-distribution-ordering': {
     title: 'Roth withdrawals consume contributions, conversions, then earnings',
     statement:
-      'For a nonqualified Roth distribution, regular contributions are consumed first, qualified rollover contributions are consumed next on a first-in, first-out basis, and earnings are reached last. The engine therefore spends direct contribution basis before conversion layers and conversion principal before earnings. The within-conversion allocation is registered separately because the engine currently does not consume its taxable portion first.',
+      'For a nonqualified Roth IRA distribution, regular contributions are consumed first, qualified rollover contributions are consumed next on a first-in, first-out basis, and earnings are reached last. The engine therefore spends direct contribution basis before conversion layers and conversion principal before earnings. The within-conversion allocation is registered separately because the engine currently does not consume its taxable portion first. This record covers Roth IRAs only: splitRothWithdrawal also splits withdrawals from designated Roth accounts, where section 402A and Treas. Reg. 1.402A-1 A-3 prorate a nonqualified distribution under 72(e)(8) instead; that is a stated limit of irc-408A-d-2-roth-qualified-distribution (scope restated 2026-09-27, decision D-APPROX-FACTS).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'This record covers Roth IRAs. The engine applies the same order to withdrawals from a designated Roth account in an employer plan, where the law instead splits a nonqualified distribution pro rata between contributions and earnings, treating the account as a separate contract; that difference is stated as a limit on the qualified distribution record and is not settled here.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -221,11 +322,17 @@ export const rothAccountRecords = {
       url: 'https://www.irs.gov/publications/p590b',
       quotedText:
         'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Earnings on contributions.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.402A-1 A-3',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.402A-1',
+      quotedText:
+        'the portion of any distribution that is includible in gross income as an amount allocable to income on the contract and the portion not includible in gross income as an amount allocable to investment in the contract is determined under section 72(e)(8), treating the designated Roth account as a separate contract.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-27',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',

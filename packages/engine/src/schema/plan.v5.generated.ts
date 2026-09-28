@@ -4816,6 +4816,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                     "type": "integer",
                     "minimum": 40,
                     "maximum": 75
+                  },
+                  "onsetMonth": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
                   }
                 },
                 "required": [

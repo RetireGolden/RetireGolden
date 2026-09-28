@@ -557,7 +557,12 @@ export interface YearResult {
   ltcgZeroHeadroom: number
   /** Benefits withheld by the retirement earnings test (working early claimants). */
   ssEarningsTestWithheld: number
-  /** SSDI paid this year (included in `incomes.socialSecurity`; 0 when disability is off). */
+  /**
+   * SSDI paid this year (included in `incomes.socialSecurity`; 0 when disability
+   * is off): the disability months only. In the year that holds the month full
+   * retirement age is attained, the months from it on are the converted old-age
+   * benefit and are not counted here, nor is any later year.
+   */
   ssdiPaid: number
   /**
    * Total tax for the year at the accepted funding fixed point: the composed

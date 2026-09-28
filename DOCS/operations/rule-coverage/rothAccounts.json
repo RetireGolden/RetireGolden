@@ -78,6 +78,88 @@
       ]
     },
     {
+      "id": "irc-402A-d-2-designated-roth-five-year-period",
+      "title": "The five-taxable-year period of a designated Roth account is not modeled",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "the first year each person made a designated Roth contribution under each employer plan, or under an earlier plan whose designated Roth account was rolled into it"
+      },
+      "conventionRationale": "The plan does not collect the year each person first made a designated Roth contribution under each employer plan, so the period cannot be placed for an account that holds money at the start, and the engine does not start one when the plan funds an empty designated Roth account either, as it does for a Roth IRA. The error runs one way. The period can only make a distribution nonqualified, so leaving it out can only leave out income the statute taxes: earnings withdrawn at 60 or older inside the period are shown tax free where the statute includes them in income. Before the age event the distribution is nonqualified whatever the period, so the period changes nothing there (the engine tests 59.5 as attained age 60, registered as irc-72-t-2-A-i-age-59-half-annual-proxy). A nonqualified distribution from a designated Roth account is taxed pro rata between contributions and earnings (Treas. Reg. 1.402A-1 A-3), where the engine takes contributions first; that separate limit is stated on irc-408A-d-2-roth-qualified-distribution. Nothing from this path is filing-grade on the taxability of designated Roth earnings.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 396
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "splitRothWithdrawal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
+          "line": 366,
+          "note": "a designated Roth account funded at the start, first contributed to less than five years before",
+          "tests": [
+            {
+              "title": "includes nothing from a whole-account distribution inside the period",
+              "line": 372
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.402A-1 A-4(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1"
+        }
+      ]
+    },
+    {
       "id": "irc-402A-e-1-A-plesa-optional-designated-roth-subaccount",
       "title": "A PLESA is an optional designated-Roth subaccount of an employer plan",
       "classification": "outOfScope",
@@ -405,30 +487,78 @@
       "errorDirection": "bothDirections",
       "approximation": {
         "kind": "needs-fact",
-        "missingInput": "first taxable year of any Roth IRA contribution for each person"
+        "missingInput": "the first year each person put money into any Roth IRA, which the plan takes as five or more years ago when a Roth IRA holds money at the start, and as the plan's own first contribution or conversion when a person's Roth IRAs start empty"
       },
-      "conventionRationale": "Two independent errors sit under the single age test, and this record states both because neither covers the other. The five-taxable-year period is not modelled at all, and its absence under-taxes: a 62-year-old whose first Roth IRA was opened two years ago is shown tax-free earnings that the statute makes ordinary income and exposes to the 72(t) tax, which is exactly the case a conversion ladder started late in life produces. The attained-age-60 test is a second and separate error: it is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The five-year period cannot be recovered from account state the projection already holds, because 408A(d)(2)(B) runs it per individual from the first contribution to any Roth IRA rather than per account; closing this needs a household-level first-Roth-year fact, not a change to the withdrawal split. Until then nothing from this path is filing-grade on the taxability of Roth earnings.",
+      "conventionRationale": "Two independent errors remain, and this record states both because neither covers the other. First, the plan does not collect the year each person first put money into any Roth IRA, so the five year period is presumed, and the presumption errs both ways. A Roth IRA that holds money when the plan starts is presumed past its period: for one first funded less than five years before the start, earnings withdrawn at 60 or older after every contribution and conversion dollar has come out are shown tax free where the statute makes them ordinary income, which under-taxes. A person whose Roth IRAs hold nothing at the start is presumed never to have had one, so the plan's own first contribution or conversion starts the period: for someone who funded a Roth IRA before and later emptied or closed it, the true period began earlier, and earnings the statute treats as qualified are taxed, which over-taxes. Second, the attained-age-60 test is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The death, disability and special purpose events are not modeled for Roth IRAs. Designated Roth accounts in employer plans are held to the attained-age test with no five-year period at all, since their pools carry no fiveYearPeriodStartYear, and to the same order: the missing per-plan period of 26 U.S.C. 402A(d)(2)(B) is registered as irc-402A-d-2-designated-roth-five-year-period, and a nonqualified distribution from one, which the statute splits pro rata between contributions and earnings (Treas. Reg. 1.402A-1 A-3), comes out contributions first. Two further limits are stated here until each has its own record. Conversion principal already in a Roth IRA when the plan starts has no conversion layer: it is treated as contributions when it is included in the contribution basis, and as earnings when it is left out of an entered basis. And a rollover from a designated Roth account into a Roth IRA, which also starts the period (Treas. Reg. 1.408A-10 A-4(a)), is not modeled. Nothing from this path is filing-grade on the taxability of Roth earnings.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts",
+        "packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/rothBasis.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPhase",
+              "line": 216
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts",
+          "functions": [
+            {
+              "name": "annualContributionReconciliationPhase",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 348
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 396
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/strategies/rothBasis.ts",
           "functions": [
             {
               "name": "ROTH_QUALIFIED_AGE",
-              "line": 23
+              "line": 34
+            },
+            {
+              "name": "rothFiveYearPeriodAfterTreatAsOwn",
+              "line": 94
             },
             {
               "name": "splitRothWithdrawal",
-              "line": 75
+              "line": 129
+            },
+            {
+              "name": "startRothFiveYearPeriod",
+              "line": 77
             }
           ]
         }
@@ -439,20 +569,31 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
-          "line": 266,
-          "note": "earnings taxed inside the five-taxable-year period, past the age event",
+          "line": 271,
+          "note": "a Roth IRA funded at the start, first funded less than five years before",
           "tests": [
             {
               "title": "treats earnings as tax-free inside the five-taxable-year period",
-              "line": 276
+              "line": 283
             },
             {
-              "title": "has nowhere to put the first-Roth-year fact that would change the answer",
-              "line": 294
+              "title": "taxes them once the pool carries the first year, so only the missing fact is the gap",
+              "line": 301
             },
             {
               "title": "runs the other way too, on the attained-age-60 proxy for 59.5",
-              "line": 312
+              "line": 307
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
+          "line": 326,
+          "note": "a Roth IRA emptied before the start, funded again by the plan",
+          "tests": [
+            {
+              "title": "taxes earnings the statute treats as qualified",
+              "line": 332
             }
           ]
         }
@@ -474,6 +615,36 @@
           "kind": "statute",
           "citation": "IRC 408A(d)(1)",
           "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-2",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-4",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-5(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-7(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.402A-1 A-4(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1"
         }
       ]
     },
@@ -752,11 +923,11 @@
           "functions": [
             {
               "name": "ROTH_SEASONING_YEARS",
-              "line": 25
+              "line": 36
             },
             {
               "name": "splitRothWithdrawal",
-              "line": 75
+              "line": 129
             }
           ]
         }
@@ -767,20 +938,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 274,
+          "line": 370,
           "note": null,
           "tests": [
             {
               "title": "recaptures only so much of the conversion as was includible at the time",
-              "line": 287
+              "line": 383
             },
             {
               "title": "applies 72(t) without taxing the conversion principal a second time",
-              "line": 293
+              "line": 389
             },
             {
               "title": "runs the five-taxable-year period from the year of that conversion",
-              "line": 300
+              "line": 396
             }
           ]
         }
@@ -830,15 +1001,15 @@
           "functions": [
             {
               "name": "applyConversionPrincipalDebt",
-              "line": 167
+              "line": 230
             },
             {
               "name": "assumedSeedConsequentialSpill",
-              "line": 228
+              "line": 293
             },
             {
               "name": "splitRothWithdrawal",
-              "line": 75
+              "line": 129
             }
           ]
         }
@@ -849,12 +1020,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 217,
+          "line": 313,
           "note": "the taxable portion of a conversion layer precedes its nontaxable portion",
           "tests": [
             {
               "title": "prorates a conversion layer taxable portion across a partial withdrawal, diverging from the statute",
-              "line": 230
+              "line": 326
             }
           ]
         }
@@ -885,14 +1056,14 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": null,
+      "conventionRationale": "This record covers Roth IRAs. The engine applies the same order to withdrawals from a designated Roth account in an employer plan, where the law instead splits a nonqualified distribution pro rata between contributions and earnings, treating the account as a separate contract; that difference is stated as a limit on the qualified distribution record and is not settled here.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-25",
-      "dueOn": "2027-08-25",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
         "packages/engine/src/strategies/rothBasis.ts"
       ],
@@ -902,7 +1073,7 @@
           "functions": [
             {
               "name": "splitRothWithdrawal",
-              "line": 75
+              "line": 129
             }
           ]
         }
@@ -913,34 +1084,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 113,
+          "line": 209,
           "note": "regular contributions, conversion principal, then earnings",
           "tests": [
             {
               "title": "consumes regular contributions before conversion principal",
-              "line": 137
+              "line": 233
             }
           ]
         },
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 147,
+          "line": 243,
           "note": "earnings reached last",
           "tests": [
             {
               "title": "reaches earnings only after both basis pools are exhausted",
-              "line": 159
+              "line": 255
             }
           ]
         },
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 176,
+          "line": 272,
           "note": "qualified rollover contribution layers are first-in, first-out",
           "tests": [
             {
               "title": "debits the oldest conversion layer before later conversion layers",
-              "line": 189
+              "line": 285
             }
           ]
         }
@@ -957,6 +1128,11 @@
           "kind": "irsPublication",
           "citation": "IRS Publication 590-B (2025), Ordering Rules for Distributions",
           "url": "https://www.irs.gov/publications/p590b"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.402A-1 A-3",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1"
         }
       ]
     },
@@ -995,7 +1171,7 @@
           "functions": [
             {
               "name": "splitRothWithdrawal",
-              "line": 75
+              "line": 129
             }
           ]
         }
@@ -1006,12 +1182,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/rothBasis.test.ts",
-          "line": 247,
+          "line": 343,
           "note": "same-year nontaxable layer ahead of taxable layer understates 72(t)",
           "tests": [
             {
               "title": "consumes a same-year nontaxable conversion layer before a later taxable one in array order",
-              "line": 260
+              "line": 356
             }
           ]
         }

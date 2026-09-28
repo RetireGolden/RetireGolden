@@ -4,9 +4,9 @@
   "urlCount": 433,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1581,
+  "entryCount": 1612,
   "counts": {
-    "EXACT": 1085,
+    "EXACT": 1116,
     "PDF-WORD-LEVEL": 358,
     "ELISION-EXACT": 127,
     "PUNCTUATION": 4,
@@ -3058,6 +3058,116 @@
       "diagnosis": null
     },
     {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.408A-6 A-2",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6",
+      "quoteSha256": "62d7f492ba8c8bae",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.408A-6 A-2",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6",
+      "quoteSha256": "8adec130c7890c01",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.408A-6 A-4",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6",
+      "quoteSha256": "561fb5dbf2966e03",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.408A-6 A-5(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6",
+      "quoteSha256": "30dc2c2a815a7e9f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.408A-6 A-7(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408A-6",
+      "quoteSha256": "ee4e5dbc5cf0e604",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "IRC 402A(d)(2)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim",
+      "quoteSha256": "921a52059506158c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "citation": "Treas. Reg. 1.402A-1 A-4(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1",
+      "quoteSha256": "717dd89c82a62191",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402A-d-2-designated-roth-five-year-period",
+      "citation": "IRC 402A(d)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim",
+      "quoteSha256": "e1439bad4df90aea",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402A-d-2-designated-roth-five-year-period",
+      "citation": "IRC 402A(d)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim",
+      "quoteSha256": "282c1b476cc2be23",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402A-d-2-designated-roth-five-year-period",
+      "citation": "IRC 402A(d)(2)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim",
+      "quoteSha256": "3e08ae8c57187a1c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402A-d-2-designated-roth-five-year-period",
+      "citation": "Treas. Reg. 1.402A-1 A-4(a)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1",
+      "quoteSha256": "f8b1a1c0157382b2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-408A-d-3-F-roth-conversion-recapture",
       "citation": "IRC 408A(d)(3)(F)(i)",
       "host": "www.law.cornell.edu",
@@ -3125,6 +3235,16 @@
       "quoteSha256": "13d7bb35caf1f6ae",
       "verdict": "ELISION-EXACT",
       "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-4-B-roth-distribution-ordering",
+      "citation": "Treas. Reg. 1.402A-1 A-3",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.402A-1",
+      "quoteSha256": "387d1361fc809d90",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6468,6 +6588,96 @@
       "diagnosis": null
     },
     {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "20 CFR 404.404",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.404",
+      "quoteSha256": "28aa039740db51fb",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "20 CFR 404.403(a)(5), Example 1",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403",
+      "quoteSha256": "5ec52f3032087db4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "SSA POMS RS 00615.756, B.1",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615756",
+      "quoteSha256": "048b86962965349f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "SSA POMS RS 00615.730, 5",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615730",
+      "quoteSha256": "559516aa8d00ad9d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "20 CFR 404.410(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.410",
+      "quoteSha256": "8c28974801f39a60",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403",
+      "quoteSha256": "14e170d0d96405d9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+      "citation": "SSA POMS RS 00615.010, Aged Spouse",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615010",
+      "quoteSha256": "57b9f96ae50fbbcd",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+      "citation": "42 U.S.C. 403(a)(2)(D)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "96a433c7bf3b0e44",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+      "citation": "20 CFR 404.403(a)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.403",
+      "quoteSha256": "00287772ca3b3c46",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-403-f-3-retirement-earnings-test",
       "citation": "42 U.S.C. 403(f)(3)",
       "host": "www.law.cornell.edu",
@@ -7880,6 +8090,106 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim",
       "quoteSha256": "f7a8bb5cbaaaf1ba",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "42 U.S.C. 423(a)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim",
+      "quoteSha256": "a78f8ebb393de6dc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "42 U.S.C. 402(a)(3)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "9a3b2c48567e66b9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "42 U.S.C. 423(b)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim",
+      "quoteSha256": "9ae2b90412234677",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "42 U.S.C. 423(c)(2)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim",
+      "quoteSha256": "646f5126f6b52b6a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "20 CFR 404.315(a)(4)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315",
+      "quoteSha256": "35e17d74cb73d5f6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "20 CFR 404.315(a)(4)(i)-(ii)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.315",
+      "quoteSha256": "730c169490125a6f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "20 CFR 404.316(a)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316",
+      "quoteSha256": "8a4d77be1b3e4b8f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "20 CFR 404.316(b)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.316",
+      "quoteSha256": "5a0b8fb7a47db5ff",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "SSA POMS DI 10105.070",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0410105070",
+      "quoteSha256": "8a87f8aed74a1ae2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "citation": "SSA POMS DI 10105.070",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0410105070",
+      "quoteSha256": "3620655d94659b1a",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -16135,7 +16445,7 @@
     },
     {
       "on": "2026-09-27",
-      "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
+      "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record, seven (SSA POMS RS 00615.320 § A.2 is quoted three times, so it is listed three times), was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
       "entries": [
         {
           "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
@@ -16148,6 +16458,14 @@
         {
           "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
           "citation": "SSA POMS RS 00615.320, § A.1"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "SSA POMS RS 00615.320, § A.2"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "SSA POMS RS 00615.320, § A.2"
         },
         {
           "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
@@ -16231,8 +16549,12 @@
     },
     {
       "on": "2026-09-27",
-      "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
+      "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities (42 U.S.C. 415(i)(2)(A)(ii) is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
       "entries": [
+        {
+          "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+          "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+        },
         {
           "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
           "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
@@ -16346,6 +16668,172 @@
         {
           "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
           "citation": "42 U.S.C. 416(d)(1)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-APPROX-FACTS change (the SSDI onset month and the five-month waiting period): the restated record's ten new authorities (SSA POMS DI 10105.070 is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "42 U.S.C. 423(a)(1)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "42 U.S.C. 402(a)(3)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "42 U.S.C. 423(b)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "42 U.S.C. 423(c)(2)(B)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "20 CFR 404.315(a)(4)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "20 CFR 404.315(a)(4)(i)-(ii)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "20 CFR 404.316(a)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "20 CFR 404.316(b)(2)"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "SSA POMS DI 10105.070"
+        },
+        {
+          "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+          "citation": "SSA POMS DI 10105.070"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-APPROX-FACTS change (the Roth IRA five-year period started by the plan's own first contribution or conversion, and carried through a spousal treat-as-own election): the restated record's seven new authorities (Treas. Reg. 1.408A-6 A-2 is quoted twice, so it is listed twice), each checked against its source with verify-quotes on 2026-09-27, filtered to this record; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.408A-6 A-2"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.408A-6 A-2"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.408A-6 A-4"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.408A-6 A-5(b)"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.408A-6 A-7(b)"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "IRC 402A(d)(2)(B)"
+        },
+        {
+          "id": "irc-408A-d-2-roth-qualified-distribution",
+          "citation": "Treas. Reg. 1.402A-1 A-4(b)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-APPROX-FACTS change (the Roth ordering record's scope restated to Roth IRAs): the designated Roth pro rata authority, checked against its source with verify-quotes on 2026-09-27, filtered to this record; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "irc-408A-d-4-B-roth-distribution-ordering",
+          "citation": "Treas. Reg. 1.402A-1 A-3"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added in the independent review of the D-APPROX-FACTS change (the designated Roth account five-year period the engine does not model, registered as its own approximated record): the new record's four authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all four EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "irc-402A-d-2-designated-roth-five-year-period",
+          "citation": "IRC 402A(d)(1)"
+        },
+        {
+          "id": "irc-402A-d-2-designated-roth-five-year-period",
+          "citation": "IRC 402A(d)(2)(A)"
+        },
+        {
+          "id": "irc-402A-d-2-designated-roth-five-year-period",
+          "citation": "IRC 402A(d)(2)(B)"
+        },
+        {
+          "id": "irc-402A-d-2-designated-roth-five-year-period",
+          "citation": "Treas. Reg. 1.402A-1 A-4(a)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the family maximum fix (the auxiliaries' room is the family maximum less the worker's primary insurance amount, 20 CFR 404.404; slice 4 review F3): the new record's four authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all four EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "20 CFR 404.404"
+        },
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "20 CFR 404.403(a)(5), Example 1"
+        },
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "SSA POMS RS 00615.756, B.1"
+        },
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "SSA POMS RS 00615.730, 5"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added in the independent check of the family maximum fix (the spouse benefit is held to the family maximum before the age reduction and the own-benefit subtraction): 20 CFR 404.410(b), 404.403(a)(5) Example 1 on dual entitlement and POMS RS 00615.010, added to this record; every authority of the record, seven, was checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: all seven EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "20 CFR 404.410(b)"
+        },
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement"
+        },
+        {
+          "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
+          "citation": "SSA POMS RS 00615.010, Aged Spouse"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added in the independent check of the family maximum fix (the family maximum's eligibility year after an earlier disability, registered as an approximated record): the new record's two authorities, each checked against its source with verify-quotes on 2026-09-27 (fetched live that day), filtered to this record: both EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+          "citation": "42 U.S.C. 403(a)(2)(D)"
+        },
+        {
+          "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
+          "citation": "20 CFR 404.403(a)(2)"
         }
       ]
     }

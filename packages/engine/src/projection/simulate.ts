@@ -113,7 +113,7 @@ import {
 import {
   rmdApplicablePlanForAccount as identifyRmdApplicablePlan,
 } from '../rmd/rmdApplicablePlanForAccount.js'
-import { type RothBasisState } from '../strategies/rothBasis.js'
+import { rothFiveYearPeriodAfterTreatAsOwn, type RothBasisState } from '../strategies/rothBasis.js'
 import {
   initializeInheritedRothPoolState,
   inheritedRothPoolKey,
@@ -802,6 +802,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * Per-attempt scoped with the other Roth observation maps.
    */
   const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
+  const ownedRothIraStartBalanceByPool = new Map<string, number>()
   for (const account of plan.accounts) {
     if (account.type !== 'roth') continue
     // Seed only pure owned Roth; an inherited Roth (pre- or post-S2) stays out.
@@ -812,12 +813,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const existing = rothBasis.get(key)
     if (existing) existing.contributionBasis += startBasis
     else rothBasis.set(key, { contributionBasis: startBasis, conversionLayers: [] })
+    if (key.startsWith('rothira:')) {
+      ownedRothIraStartBalanceByPool.set(key, (ownedRothIraStartBalanceByPool.get(key) ?? 0) + account.balance)
+    }
     if (assumedSeed > 0) {
       rothAssumedContributionRemaining.set(
         key,
         (rothAssumedContributionRemaining.get(key) ?? 0) + assumedSeed,
       )
     }
+  }
+  // The owner's five-year period (26 U.S.C. 408A(d)(2)(B)) runs from the first
+  // year any Roth IRA of that person was funded, which the plan does not
+  // collect. When a person's Roth IRAs hold nothing at the start, the period is
+  // started by the plan's own first contribution or conversion into them
+  // (startRothFiveYearPeriod), presuming no earlier Roth IRA that was emptied or
+  // closed; a Roth IRA that holds money at the start is presumed past it.
+  for (const [key, startBalance] of ownedRothIraStartBalanceByPool) {
+    if (startBalance <= 0) rothBasis.get(key)!.fiveYearPeriodStartYear = null
   }
   // HSA medical-expense subledger (account/HSA/fixed-asset depth plan, steps
   // 2–3). Qualified withdrawals from cap-mode HSAs are limited to the
@@ -2216,10 +2229,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             const ownerKey = rothPoolKey(state.account)
             const prior = rothBasis.get(ownerKey)
+            // Treas. Reg. 1.408A-6 A-7(b): once the survivor treats the Roth IRA
+            // as her own, her period for all her Roth IRAs ends at the earlier of
+            // the decedent's and her own, so the decedent's first year carries
+            // over instead of being dropped with the inherited pool.
+            const fiveYearPeriodStartYear = rothFiveYearPeriodAfterTreatAsOwn(
+              prior === undefined ? null : prior.fiveYearPeriodStartYear,
+              pool.firstRothContributionTaxYear,
+            )
             rothBasis.set(ownerKey, {
               contributionBasis: (prior?.contributionBasis ?? 0) + handoff.contributionBasis,
               conversionLayers: [...(prior?.conversionLayers ?? []), ...handoff.conversionLayers]
                 .sort((a, b) => a.year - b.year),
+              ...(fiveYearPeriodStartYear === undefined ? {} : { fiveYearPeriodStartYear }),
             })
             inheritedRothPools.delete(key)
             completedSpousalRothBasisHandoffs.add(key)

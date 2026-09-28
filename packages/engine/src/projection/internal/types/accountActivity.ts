@@ -187,7 +187,11 @@ export interface QualifiedAnnuityPaymentActivity {
 
 /**
  * Benefit source the Social Security pass actually paid for a stream this year.
- * Published fact — detectors must not re-derive eligibility or precedence.
+ * Published fact — detectors must not re-derive eligibility or precedence. A
+ * disability stream reads `ssdi` while every paid month is a disability month
+ * and `own-retirement` from the year that holds the month full retirement age
+ * is attained (the benefit in force at the end of that year); that year's
+ * disability months are in `YearResult.ssdiPaid`.
  */
 export type SocialSecurityBenefitSource =
   | 'own-retirement'
