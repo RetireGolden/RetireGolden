@@ -1,6 +1,6 @@
 # Mutation receipt: covered-work-credit-estimate
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `deeb732a` (branch `claude/b2p1-slice4-ss-models`, pull request #757) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/credits.ts`
 
@@ -30,19 +30,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The baseline is green (credits.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+PR #757 review 4 moved the evidence tests off the worksheets onto the committed BLS and SSA source files, so the tests' titles, counts and lines changed; the mutations are unchanged. The baseline is green (credits.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/socialSecurity/analysis/credits.evidence.test.ts (6 tests | 3 failed) 7ms
+ ❯ src/socialSecurity/analysis/credits.evidence.test.ts (6 tests | 3 failed) 18ms
    ❯ covered-work-credit-estimate — Covered-work credit estimate (6)
-     × case A: each year at its own quarter-of-coverage amount (11, where one 2025 amount gave 5) 5ms
+     × case A: each year at its own quarter-of-coverage amount (11, where one 2025 amount gave 5) 12ms
      × case B: a year before 1978 counts at most one credit per $50, up to four (15) 1ms
-     × carries SSA's quarter-of-coverage amount for every year 1978 to 2026, 2026's $1,890 included 1ms
+     × carries SSA's quarter-of-coverage amount for every year 1978 to 2026, 2026's $1,890 included 2ms
 
  Test Files  1 failed (1)
       Tests  3 failed | 3 passed (6)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
@@ -60,13 +63,13 @@ AssertionError: expected { credits: 5, eligible: false, …(1) } to deeply equal
     "estimated": true,
   }
 
- ❯ src/socialSecurity/analysis/credits.evidence.test.ts:34:24
-     32|     it('case A: each year at its own quarter-of-coverage amount (11, w…
-     33|       const estimate = estimateCredits(caseA, null)
-     34|       expect(estimate).toEqual({ credits: credits('A'), eligible: elig…
+ ❯ src/socialSecurity/analysis/credits.evidence.test.ts:35:24
+     33|     it('case A: each year at its own quarter-of-coverage amount (11, w…
+     34|       const estimate = estimateCredits(caseA, null)
+     35|       expect(estimate).toEqual({ credits: credits('A'), eligible: elig…
        |                        ^
-     35|       expect(estimate.credits).not.toBe(worksheetNumber(rows.get('A')!…
-     36|     })
+     36|       expect(estimate.credits).not.toBe(worksheetNumber(rows.get('A')!…
+     37|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
@@ -83,13 +86,13 @@ AssertionError: expected { credits: 5, eligible: false, …(1) } to deeply equal
     "estimated": true,
   }
 
- ❯ src/socialSecurity/analysis/credits.evidence.test.ts:39:44
-     37|
-     38|     it('case B: a year before 1978 counts at most one credit per $50, …
-     39|       expect(estimateCredits(caseB, null)).toEqual({ credits: credits(…
+ ❯ src/socialSecurity/analysis/credits.evidence.test.ts:40:44
+     38|
+     39|     it('case B: a year before 1978 counts at most one credit per $50, …
+     40|       expect(estimateCredits(caseB, null)).toEqual({ credits: credits(…
        |                                            ^
-     40|       expect(creditsForYear(1975, 900)).toBe(4)
-     41|       expect(creditsForYear(1975, 120)).toBe(2)
+     41|       expect(creditsForYear(1975, 900)).toBe(4)
+     42|       expect(creditsForYear(1975, 120)).toBe(2)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
@@ -102,13 +105,13 @@ AssertionError: expected 4 to be 3 // Object.is equality
 - 3
 + 4
 
- ❯ src/socialSecurity/analysis/credits.evidence.test.ts:64:43
-     62|       // A later year uses the latest published amount.
-     63|       expect(creditsForYear(2030, 7_560)).toBe(4)
-     64|       expect(creditsForYear(2030, 7_559)).toBe(3)
+ ❯ src/socialSecurity/analysis/credits.evidence.test.ts:73:43
+     71|       // A later year uses the latest published amount.
+     72|       expect(creditsForYear(2030, 7_560)).toBe(4)
+     73|       expect(creditsForYear(2030, 7_559)).toBe(3)
        |                                           ^
-     65|     })
-     66|   },
+     74|     })
+     75|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```

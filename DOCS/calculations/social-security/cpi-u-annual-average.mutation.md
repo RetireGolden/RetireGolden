@@ -1,6 +1,6 @@
 # Mutation receipt: cpi-u-annual-average
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `deeb732a` (branch `claude/b2p1-slice4-ss-models`, pull request #757) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/cpiU.ts`
 
@@ -30,40 +30,43 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The baseline is green (cpiU.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+PR #757 review 4 moved the evidence tests off the worksheets onto the committed BLS and SSA source files, so the tests' titles, counts and lines changed; the mutations are unchanged. The baseline is green (cpiU.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/socialSecurity/cpiU.evidence.test.ts (2 tests | 2 failed) 7ms
-   ❯ cpi-u-annual-average — Consumer Price Index annual averages (2)
-     × carries the annual average for every year 1937 to 2025, as the worksheet transcribes it 5ms
-     × uses the published averages where a recomputed monthly mean differs (1948, 1952, 1953, 1959, 1962, 1966) 1ms
+ ❯ src/socialSecurity/cpiU.evidence.test.ts (5 tests | 2 failed) 23ms
+   ❯ cpi-u-annual-average — Consumer Price Index annual averages (5)
+     × carries BLS's published annual average for every year 1937 to 2025: the API's M13 where it returned one, the data viewer's column for 1996-2015 9ms
+     × uses the published averages where a recomputed monthly mean differs (1948, 1952, 1953, 1959, 1962, 1966) 2ms
 
  Test Files  1 failed (1)
-      Tests  2 failed (2)
+      Tests  2 failed | 3 passed (5)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/socialSecurity/cpiU.evidence.test.ts > cpi-u-annual-average — Consumer Price Index annual averages > carries the annual average for every year 1937 to 2025, as the worksheet transcribes it
-AssertionError: expected [ '1948' ] to deeply equal []
+ FAIL  src/socialSecurity/cpiU.evidence.test.ts > cpi-u-annual-average — Consumer Price Index annual averages > carries BLS's published annual average for every year 1937 to 2025: the API's M13 where it returned one, the data viewer's column for 1996-2015
+AssertionError: expected [ '1948: 24 against BLS\'s 24.1' ] to deeply equal []
 
 - Expected
 + Received
 
 - []
 + [
-+   "1948",
++   "1948: 24 against BLS's 24.1",
 + ]
 
- ❯ src/socialSecurity/cpiU.evidence.test.ts:32:48
-     30|       expect(CPI_U_LATEST_YEAR).toBe(expected.latest)
-     31|       const mismatches = [...rows].filter(([year, cells]) => CPI_U_ANN…
-     32|       expect(mismatches.map(([year]) => year)).toEqual([])
-       |                                                ^
-     33|     })
-     34|
+ ❯ src/socialSecurity/cpiU.evidence.test.ts:52:26
+     50|         if (CPI_U_ANNUAL_AVERAGE[year] !== published) mismatches.push(…
+     51|       }
+     52|       expect(mismatches).toEqual([])
+       |                          ^
+     53|       // Which source gives which years: the API's averages are missin…
+     54|       expect(years.filter((year) => !api.has(year))).toEqual(Array.fro…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -83,13 +86,13 @@ AssertionError: expected [ 24, 26.5, 26.7, 29.1, 30.2, 32.4 ] to deeply equal [ 
     30.2,
     32.4,
 
- ❯ src/socialSecurity/cpiU.evidence.test.ts:36:94
-     34|
-     35|     it('uses the published averages where a recomputed monthly mean di…
-     36|       expect([1948, 1952, 1953, 1959, 1962, 1966].map((year) => CPI_U_…
+ ❯ src/socialSecurity/cpiU.evidence.test.ts:74:94
+     72|
+     73|     it('uses the published averages where a recomputed monthly mean di…
+     74|       expect([1948, 1952, 1953, 1959, 1962, 1966].map((year) => CPI_U_…
        |                                                                                              ^
-     37|       expect(CPI_U_ANNUAL_AVERAGE[2024]).toBe(313.689)
-     38|       expect(CPI_U_ANNUAL_AVERAGE[2025]).toBe(321.943)
+     75|       expect(CPI_U_ANNUAL_AVERAGE[2024]).toBe(313.689)
+     76|       expect(CPI_U_ANNUAL_AVERAGE[2025]).toBe(321.943)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
