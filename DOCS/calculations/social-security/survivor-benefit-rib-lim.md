@@ -66,8 +66,10 @@ Exact figures: case A after 1,911.428571428571…, before 1,576.928571428571…;
 
 outputs: none.
 
-feeds: `social-security-benefit-annual`.
+feeds: `social-security-benefit-annual`, `social-security-expected-present-value`, `social-security-survivor-switch-pv`.
 
 ## Provenance
 
 The formula and case A are from the B2-P1 slice 4 derivation (problem 2) and its independent check (A2, with the correction to the general form), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute and POMS text are quoted from uscode.house.gov and secure.ssa.gov as saved by that check. Cases B, C and D and every figure above were recomputed by hand and by a script that does not import the engine. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+
+Revision 2026-09-27 (B2-P1 slice 4): the benefits-only expected value and the survivor switching analysis, now engine models, price the widow(er) benefit with this helper, so the record feeds their families too. No value changes. Restated by claude (opus 5.5); not yet reviewed.

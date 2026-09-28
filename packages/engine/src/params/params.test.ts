@@ -655,21 +655,6 @@ describe('parameter pack provenance', () => {
       expect((accepted - readings.unadjustedRegulationBase) % 10_000).toBe(0)
     })
   })
-
-  // 3101(a) imposes the tax on the employee at a flat 6.2 percent. The
-  // employer pays the same again and a self-employed individual pays both, so
-  // quoting one figure for the other is a factor of two rather than a rounding.
-  describeRule('irc-3101-a-oasdi-employee-tax-rate', {
-    readings: { employeeShare: 6.2, combinedEmployerAndEmployee: 12.4 },
-    accepted: 'employeeShare',
-  }, ({ accepted, readings }) => {
-    it('carries the employee side rather than the combined rate', () => {
-      expect(pack.socialSecurity.oasdiEmployeeRatePct).toBe(accepted)
-      expect(pack.socialSecurity.oasdiEmployeeRatePct).not.toBe(readings.combinedEmployerAndEmployee)
-      expect(pack.socialSecurity.oasdiEmployeeRatePct * 2)
-        .toBeCloseTo(readings.combinedEmployerAndEmployee, 10)
-    })
-  })
 })
 
 describe('trustees default haircut', () => {

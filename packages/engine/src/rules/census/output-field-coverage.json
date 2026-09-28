@@ -4068,602 +4068,6 @@
     "reasonKind": "dimension-coordinate"
   },
   {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "module",
-    "field": "age",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.age field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "module",
-    "field": "multiplier",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.multiplier field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "SurvivalCurve",
-    "field": "fromAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivalCurve.fromAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "SurvivalCurve",
-    "field": "toAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivalCurve.toAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "survivalCurve",
-    "field": "cum",
-    "tsType": "number[]",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The survivalCurve.cum field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "survivalCurve",
-    "field": "fromAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The survivalCurve.fromAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "survivalCurve",
-    "field": "toAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The survivalCurve.toAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "currentAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.currentAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "month",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.month field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "day",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.day field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "piaMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.piaMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "longevityMultiplier",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.longevityMultiplier field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ClaimantInput",
-    "field": "benefitFloorMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ClaimantInput.benefitFloorMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ExpectedPvOptions",
-    "field": "discountRate",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ExpectedPvOptions.discountRate field is a run-size setting or execution count that describes calculation effort.",
-    "reasonKind": "sample-size-or-count-setting"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/expectedPv.ts",
-    "owner": "ExpectedPvOptions",
-    "field": "maxAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ExpectedPvOptions.maxAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "month",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.month field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "day",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.day field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "piaMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.piaMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "claimAges",
-    "tsType": "number[]",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.claimAges field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "colaPct",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.colaPct field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "growthPct",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.growthPct field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenInput",
-    "field": "throughAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BreakEvenInput.throughAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenPoint",
-    "field": "age",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-break-even"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenCrossing",
-    "field": "early",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-break-even"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenCrossing",
-    "field": "late",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-break-even"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "BreakEvenCrossing",
-    "field": "age",
-    "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "social-security-break-even"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "computeBreakEven",
-    "field": "a",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The computeBreakEven.a field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "computeBreakEven",
-    "field": "age",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The computeBreakEven.age field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "computeBreakEven",
-    "field": "crossAge",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The computeBreakEven.crossAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/breakEven.ts",
-    "owner": "computeBreakEven",
-    "field": "prevDiff",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The computeBreakEven.prevDiff field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "FicaPaidInResult",
-    "field": "paidIn",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-oasdi-paid-in"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "FicaPaidInResult",
-    "field": "employerPaid",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-oasdi-paid-in"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "FicaPaidInOptions",
-    "field": "oasdiEmployeeRatePct",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The FicaPaidInOptions.oasdiEmployeeRatePct field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "FicaPaidInOptions",
-    "field": "wageBaseFallback",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The FicaPaidInOptions.wageBaseFallback field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "ficaOasdiPaidIn",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The ficaOasdiPaidIn.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/ficaReturn.ts",
-    "owner": "ficaOasdiPaidIn",
-    "field": "amount",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Earnings-history amount iterated by the paid-in sum.",
-    "reasonKind": "input-parameter"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "month",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.month field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "day",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.day field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "currentAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.currentAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "ownPiaMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.ownPiaMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "survivorMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.survivorMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "deceasedPiaMonthly",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.deceasedPiaMonthly field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingInput",
-    "field": "longevityMultiplier",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingInput.longevityMultiplier field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchStrategy",
-    "field": "survivorClaimAge",
-    "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "social-security-survivor-switch-pv"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchStrategy",
-    "field": "ownClaimAge",
-    "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "social-security-survivor-switch-pv"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchResult",
-    "field": "expectedPv",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-survivor-switch-pv"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingOptions",
-    "field": "discountRate",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingOptions.discountRate field is a run-size setting or execution count that describes calculation effort.",
-    "reasonKind": "sample-size-or-count-setting"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/survivorSwitching.ts",
-    "owner": "SwitchingOptions",
-    "field": "maxAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SwitchingOptions.maxAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "BendTier",
-    "field": "marginalRate",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "label-or-category",
-    "reason": "BendTier.marginalRate: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "BendTier",
-    "field": "first",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "label-or-category",
-    "reason": "BendTier.first: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "BendTier",
-    "field": "second",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "label-or-category",
-    "reason": "BendTier.second: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "bendTierForAime",
-    "field": "aime",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "AIME argument to the bend-tier lookup (engine piaFromEarnings output passed in).",
-    "reasonKind": "input-parameter"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "bendTierForAime",
-    "field": "eligibilityYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The bendTierForAime.eligibilityYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "ComputationSummary",
-    "field": "computationYearCount",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-computation-summary-counts"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "ComputationSummary",
-    "field": "zeroYearsInAime",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-computation-summary-counts"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "ComputationSummary",
-    "field": "divisorMonths",
-    "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "AIME divisor (12 × computation years); SocialSecuritySection.tsx prints the year counts, not the divisor."
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "replaceZeroYearGain",
-    "field": "indexedAnnual",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Sample indexed earnings the explainer plugs in.",
-    "reasonKind": "input-parameter"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "CreditEstimate",
-    "field": "credits",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-credit-estimate"
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "estimateCredits",
-    "field": "override",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "User-entered credit count that overrides the estimate.",
-    "reasonKind": "input-parameter"
-  },
-  {
     "source": "planner-ui/src/planner/ssAnalysis.ts",
     "owner": "dobParts",
     "field": "y",
@@ -4708,8 +4112,10 @@
     "owner": "ResolvedPia",
     "field": "piaMonthly",
     "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "social-security-claiming-sweep-objective"
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "The resolved monthly PIA (the engine's resolveStreamPiaMonthly, the amount the projection pays from) that the page's models read; the Social Security step prints it as the computed PIA, and the couple primer's yearly figure is social-security-pia-annualized."
   },
   {
     "source": "planner-ui/src/planner/ssAnalysis.ts",
@@ -4746,54 +4152,6 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "social-security-claiming-sweep-objective"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "BenefitsPvRow",
-    "field": "expectedPv",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-expected-present-value"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "module",
-    "field": "pia",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.pia field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "module",
-    "field": "claimYears",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.claimYears field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "module",
-    "field": "startYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "benefitsOnlyRanking",
-    "field": "discountRate",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The benefitsOnlyRanking.discountRate field is a run-size setting or execution count that describes calculation effort.",
-    "reasonKind": "sample-size-or-count-setting"
   },
   {
     "source": "planner-ui/src/planner/survivorAnalysis.ts",
@@ -7295,35 +6653,11 @@
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
     "owner": "SsAnalysisPage",
-    "field": "ratio",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-fica-return-ratio"
-  },
-  {
-    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
-    "owner": "SsAnalysisPage",
-    "field": "getBack",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-expected-present-value"
-  },
-  {
-    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
-    "owner": "SsAnalysisPage",
     "field": "piaAnnual",
     "tsType": "number",
     "disposition": "family",
     "familyId": "social-security-pia-annualized",
-    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input, or the engine earnings-record piaMonthly raised by the cost-of-living increases since eligibility through the year before the plan starts, as the ledger pays it) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
-  },
-  {
-    "source": "planner-ui/src/socialSecurity/explain.ts",
-    "owner": "replaceZeroYearGain",
-    "field": "return",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-zero-year-replacement-gain"
+    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA the engine's resolveStreamPiaMonthly gives, through claimingPeople: a plan input, or the earnings-record PIA raised by the cost-of-living increases since eligibility through the year before the plan starts, as the ledger pays it) by 12 and prints it through fmtMoneyCompact as the full-retirement-age benefit '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -10844,5 +10178,433 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "insight-monte-carlo-success-delta"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenPoint",
+    "field": "age",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The age of each point on the break-even chart's axis.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenPoint",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The calendar year of each chart point, whose COLA factor and haircut the benefits carry.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenPoint",
+    "field": "cumulative",
+    "tsType": "Readonly<Record<number, number>>",
+    "disposition": "family",
+    "familyId": "social-security-break-even"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenCrossing",
+    "field": "early",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The earlier of the two claim ages a crossing compares, printed as the callout's first age.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenCrossing",
+    "field": "late",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The later of the two claim ages a crossing compares, printed as the callout's second age.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenCrossing",
+    "field": "age",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "social-security-break-even"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenResult",
+    "field": "factors",
+    "tsType": "Readonly<Record<number, number>>",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The claim factor of each compared claim age, published beside the series; the page prints the dollars, not the factors.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/expectedValue.ts",
+    "owner": "BenefitsPvRow",
+    "field": "expectedPv",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-expected-present-value"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/expectedValue.ts",
+    "owner": "BenefitsPvRow",
+    "field": "claimByPersonId",
+    "tsType": "Readonly<Record<string, number>>",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The whole-year claim age of each person a ranking row prices, printed as the row's claim ages.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/expectedValue.ts",
+    "owner": "ExpectedValueOptions",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The year the present value is taken at and whose dollars it is in; ages are this year less the birth year.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/expectedValue.ts",
+    "owner": "ExpectedValueOptions",
+    "field": "discountRate",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The real discount rate the page's slider sets, printed beside the ranking.",
+    "reasonKind": "sample-size-or-count-setting"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "paidInToday",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-oasdi-paid-in"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "employerToday",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-oasdi-paid-in"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "projectedToday",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-oasdi-paid-in"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "projectedEmployerToday",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-oasdi-paid-in"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "projectedYears",
+    "tsType": "readonly number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The projected years in the projected-work sum, printed as the range in that row's label.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "paidInNominal",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The same tax in the dollars actually withheld, published for evidence; the panel prints today's dollars.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "employerNominal",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The employer's tax in the dollars actually paid, published for evidence; the panel prints today's dollars.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "excludedYears",
+    "tsType": "readonly number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Years with earnings the sum does not count (before 1937, or self-employed before 1951), named in the panel's not-counted note.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiPaidIn",
+    "field": "cpiLatestYear",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The latest year with a published CPI-U annual average, after which the plan's inflation restates the tax; not printed.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiReturn",
+    "field": "getBackPv",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-expected-present-value"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiReturn",
+    "field": "receivedBeforeStart",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-fica-return-ratio"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/oasdiReturn.ts",
+    "owner": "OasdiReturn",
+    "field": "ratio",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "social-security-fica-return-ratio"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchingInput",
+    "field": "currentAge",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The widow(er)'s age in the start year, the present value's reference.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchingInput",
+    "field": "ownPiaMonthly",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The widow(er)'s own monthly PIA, the start-year amount the projection pays from.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchingInput",
+    "field": "deceasedPiaMonthly",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The deceased former spouse's monthly PIA from the plan's record.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchingInput",
+    "field": "deceasedActualMonthly",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The deceased's benefit, the PIA times the deceased's claim factor, on which the survivor benefit is priced.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchStrategy",
+    "field": "survivorClaimAge",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "social-security-survivor-switch-pv"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchStrategy",
+    "field": "ownClaimAge",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "social-security-survivor-switch-pv"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchResult",
+    "field": "expectedPv",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-survivor-switch-pv"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/survivorSwitching.ts",
+    "owner": "SwitchingOptions",
+    "field": "discountRate",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The real discount rate the page's slider sets, printed above the table.",
+    "reasonKind": "sample-size-or-count-setting"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/credits.ts",
+    "owner": "CreditEstimate",
+    "field": "credits",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-credit-estimate"
+  },
+  {
+    "source": "engine/src/socialSecurity/analysis/credits.ts",
+    "owner": "estimateCredits",
+    "field": "override",
+    "tsType": "number | null | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "User-entered credit count that overrides the estimate.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "BendTier",
+    "field": "marginalRate",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are SSA data.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "BendTier",
+    "field": "first",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The eligibility year's first bend point, which decides the tier label; SSA data.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "BendTier",
+    "field": "second",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The eligibility year's second bend point, which decides the tier label; SSA data.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "bendTierForAime",
+    "field": "aime",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "AIME argument to the bend-tier lookup (the earnings computation's own result).",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "bendTierForAime",
+    "field": "eligibilityYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The year the worker turns 62, whose bend points the tier is read against.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The replaced base year, the latest whose earnings are $0, named in the explainer's sentence.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "amount",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The sample earnings put in the replaced year, printed in the explainer's sentence.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "piaBefore",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The eligibility-year PIA before the replacement, published for evidence; the explainer prints the gain.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "piaAfter",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The eligibility-year PIA after the replacement, published for evidence; the explainer prints the gain.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "gainMonthly",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The gain in the eligibility year's dollars, published for evidence; the explainer prints startYearGainMonthly, the gain in the dollars of the PIA it shows.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/socialSecurity/piaFromEarnings.ts",
+    "owner": "ZeroYearReplacement",
+    "field": "startYearGainMonthly",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-zero-year-replacement-gain"
+  },
+  {
+    "source": "planner-ui/src/planner/SocialSecuritySection.tsx",
+    "owner": "AimeExplainer",
+    "field": "computationYearCount",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-computation-summary-counts",
+    "note": "detail.computationYearCount, the engine's PiaFromEarningsResult.computationYearCount, printed as \"Averages your top N earning years\"."
+  },
+  {
+    "source": "planner-ui/src/planner/SocialSecuritySection.tsx",
+    "owner": "AimeExplainer",
+    "field": "zeroYearsInAime",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-computation-summary-counts",
+    "note": "detail.zeroYearsInAime, the engine's PiaFromEarningsResult.zeroYearsInAime, printed as \"M of those N years are $0\"."
   }
 ]

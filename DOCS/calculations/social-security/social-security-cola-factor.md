@@ -40,8 +40,10 @@ Exact derived factors: `1`, `1.028`, `1.056784`. Fixture tolerance: `1e-12`, bec
 
 outputs: none.
 
-feeds: `social-security-benefit-annual`.
+feeds: `social-security-benefit-annual`, `social-security-break-even`, `social-security-expected-present-value`.
 
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-four.md in this directory.
+
+Revision 2026-09-27 (B2-P1 slice 4, owner decision R6): the factor and the haircut are two functions, `socialSecurity/colaFactor.ts#socialSecurityColaFactor` and `#socialSecurityHaircutFactor`. `projection/simulate.ts#simulatePlan` calls them with its own inflation-factor function, so a Monte Carlo path's inflation series still drives its factor and no path moves (the independent check's correction 6); the break-even chart and the benefits-only expected value call the same two on the plan's deterministic inflation, so their dollars are the plan's. The worksheet's cases are unchanged. Restated by claude (opus 5.5); not yet reviewed.

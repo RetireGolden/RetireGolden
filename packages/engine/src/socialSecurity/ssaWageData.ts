@@ -352,6 +352,70 @@ export const COLA_PCT_BY_YEAR: Readonly<Record<number, number>> = {
   2025: 2.8,
 } as const
 
+/**
+ * The earnings that earn one quarter of coverage (one "credit"), dollars, for
+ * each year from 1978, when the annual reporting rule began, through 2026:
+ * SSA's "Quarter of Coverage" table (ssa.gov/oact/cola/QC.html). 42 U.S.C.
+ * 413(a)(2)(A)(ii) credits each portion of a year's covered earnings equal to
+ * that year's amount, and 20 CFR 404.143(a) allows at most four a year; 413(d)
+ * set $250 for 1978 and indexes later amounts. Before 1978 a quarter of
+ * coverage was a calendar quarter with $50 of wages (413(a)(2)(A)(i)).
+ */
+export const QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR: Readonly<Record<number, number>> = {
+  1978: 250,
+  1979: 260,
+  1980: 290,
+  1981: 310,
+  1982: 340,
+  1983: 370,
+  1984: 390,
+  1985: 410,
+  1986: 440,
+  1987: 460,
+  1988: 470,
+  1989: 500,
+  1990: 520,
+  1991: 540,
+  1992: 570,
+  1993: 590,
+  1994: 620,
+  1995: 630,
+  1996: 640,
+  1997: 670,
+  1998: 700,
+  1999: 740,
+  2000: 780,
+  2001: 830,
+  2002: 870,
+  2003: 890,
+  2004: 900,
+  2005: 920,
+  2006: 970,
+  2007: 1000,
+  2008: 1050,
+  2009: 1090,
+  2010: 1120,
+  2011: 1120,
+  2012: 1130,
+  2013: 1160,
+  2014: 1200,
+  2015: 1220,
+  2016: 1260,
+  2017: 1300,
+  2018: 1320,
+  2019: 1360,
+  2020: 1410,
+  2021: 1470,
+  2022: 1510,
+  2023: 1640,
+  2024: 1730,
+  2025: 1810,
+  2026: 1890,
+} as const
+
+/** The first year with an annual quarter-of-coverage amount; earlier years were credited by calendar quarter. */
+export const FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR = 1978
+
 function maxTableYear<T extends Record<number, unknown>>(table: T): number {
   let m = -Infinity
   for (const k of Object.keys(table)) {
@@ -375,6 +439,9 @@ export const LATEST_PUBLISHED_WAGE_BASE_YEAR = maxTableYear(WAGE_BASE_BY_YEAR)
 
 /** Latest year for which `COLA_PCT_BY_YEAR` has SSA's announced increase. */
 export const LATEST_PUBLISHED_COLA_YEAR = maxTableYear(COLA_PCT_BY_YEAR)
+
+/** Latest year for which `QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR` has SSA's amount. */
+export const LATEST_PUBLISHED_QUARTER_OF_COVERAGE_YEAR = maxTableYear(QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR)
 
 /** The first year with a contribution and benefit base: Social Security taxes began in 1937. */
 export const FIRST_WAGE_BASE_YEAR = 1937
@@ -427,6 +494,17 @@ export function familyMaximumBendPointsForEligibilityYearOrLatest(eligibilityYea
   const direct = FAMILY_MAXIMUM_BEND_POINTS[eligibilityYear]
   if (direct) return direct
   return FAMILY_MAXIMUM_BEND_POINTS[LATEST_FAMILY_MAXIMUM_BEND_POINT_ELIGIBILITY_YEAR]!
+}
+
+/**
+ * The quarter-of-coverage amount for a year from 1978: SSA's published
+ * amount, or the latest published one for a later year SSA has not set
+ * (illustrative only); undefined before 1978, when quarters were credited by
+ * calendar quarter rather than by an annual amount.
+ */
+export function quarterOfCoverageAmountForYearOrLatest(year: number): number | undefined {
+  if (year < FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR) return undefined
+  return QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[year] ?? QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[LATEST_PUBLISHED_QUARTER_OF_COVERAGE_YEAR]!
 }
 
 export function wageBaseForYear(year: number): number | undefined {

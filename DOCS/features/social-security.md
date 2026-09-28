@@ -8,10 +8,14 @@ claiming wizard UI was retired (its `/social-security` route now redirects to th
 
 **Code:** claiming/PIA math in [packages/engine/src/socialSecurity/](../../packages/engine/src/socialSecurity/)
 (`nra.ts`, `benefitFactor.ts`, `claimFactor.ts`, `piaFromEarnings.ts`, `ssaWageData.ts`, `maritalBenefits.ts`,
-`dualEntitlement.ts`, `survivorBenefit.ts`, `familyMaximum.ts`, `disability.ts`); educational and import
-modules in [packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/)
-(`ssaStatementXml.ts`, `breakEven.ts`, `explain.ts`, `expectedPv.ts`, `ficaReturn.ts`, `survivorSwitching.ts`,
-`persistedSsGuard.ts`, `ssFormUtils.ts`); the analysis UI in
+`dualEntitlement.ts`, `survivorBenefit.ts`, `familyMaximum.ts`, `disability.ts`, `colaFactor.ts`,
+`oasdiTaxRates.ts`, `cpiU.ts`); the analysis models in
+[packages/engine/src/socialSecurity/analysis/](../../packages/engine/src/socialSecurity/analysis/)
+(`breakEven.ts`, `expectedValue.ts`, `oasdiReturn.ts`, `survivorSwitching.ts`, `credits.ts`), with the one
+survival curve in [montecarlo/survival.ts](../../packages/engine/src/montecarlo/survival.ts) (moved from
+planner-ui by B2-P1 slice 4, 2026-09-27); import modules in
+[packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/)
+(`ssaStatementXml.ts`, `persistedSsGuard.ts`, `ssFormUtils.ts`); the analysis UI in
 [planner/SsAnalysisPage.tsx](../../packages/planner-ui/src/planner/SsAnalysisPage.tsx) +
 [planner/ssAnalysis.ts](../../packages/planner-ui/src/planner/ssAnalysis.ts) and entry in
 [planner/SocialSecuritySection.tsx](../../packages/planner-ui/src/planner/SocialSecuritySection.tsx).
@@ -77,7 +81,7 @@ with the Jan-1 rule ([nra.ts](../../packages/engine/src/socialSecurity/nra.ts)).
 Beyond personal retirement benefits, the household ledger models the core marital benefit menu; the
 Benefits-only analysis separately illustrates survivor switching
 ([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
-[survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
+[analysis/survivorSwitching.ts](../../packages/engine/src/socialSecurity/analysis/survivorSwitching.ts)):
 
 - **Dual entitlement to an own and a spouse benefit**, for a current spouse while both are alive and for a divorced spouse: the claimant is paid the own benefit plus the excess of half the worker's PIA over the own PIA, reduced by the spouse factor for the claimant's age in the first month of the spouse benefit (42 U.S.C. 402(q)(3)(B), 402(k)(3)(A); POMS RS 00615.250, and RS 00615.694 when the own benefit carries delayed credits: `max(own, min(own, ownPIA) + max(0, 0.5 × workerPIA - ownPIA) × spouse factor)`, [dualEntitlement.ts](../../packages/engine/src/socialSecurity/dualEntitlement.ts)). With deemed filing ([42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim), for people who attain 62 after 2015), the spouse benefit starts in the later of the claimant's own claim and the month the worker's benefit starts, or for a divorced spouse the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a), and the annual ledger pays the spouse benefit for the whole of the year it starts, so for an ex born in December after the 2nd it starts the year after the ex turns 62; the plan offers one claim age rather than a restricted spouse-only claim. The current-spouse excess alone is capped to the room left under the worker's SSA retirement/survivor family maximum. A two-person household and configured claim dates are the product's stand-ins for marriage and the months of application; they do not establish SSA eligibility or an actual entitlement month (`usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, `usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). Until 2026-09-27 only simultaneous early claims got this composition; a worker filing later, a claimant with delayed credits and every divorced spouse got the larger of the own benefit and the reduced half. No child/dependent auxiliaries are modeled (`usc-42-402-d-2-child-survivor-benefit`).
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
@@ -161,23 +165,32 @@ The headline capability. Two complementary views, mirroring the two questions in
   play (delaying to 70 to open low-income years for cheap conversions), and the counter-case (claim early
   so a Roth keeps compounding). No new solver is needed — claim age is a small discrete grid.
 - **"Benefits only" (actuarial view)** — the Open-Social-Security-style lens: expected present value per
-  claim age, each future **year** weighted by survival probability (SSA period tables, optionally the
-  longevity multiplier) and discounted at a user-set **real** rate (~long TIPS yield)
-  ([socialSecurity/expectedPv.ts](../../packages/planner-ui/src/socialSecurity/expectedPv.ts)). It needs no
-  accounts and serves as the cross-check against Open Social Security. Couples use annual cash flows and a
-  simplified both-alive rule: the lower earner receives max(reduced own benefit, reduced 50% of the higher
-  earner's PIA); after the first death the survivor keeps the larger of the two claimed benefits. That
-  educational model is not ledger-equivalent to the whole-plan engine and can differ from the guarded
-  early-claim own-plus-excess composition. For a currently unmarried household with a living divorced ex on the
-  plan, the ranking floor assumes each ex meets the ex-worker condition from your selected claim age
-  onward—it does not wait for the ex to turn 62—and still applies marriage-length and currently-unmarried
-  gates. The In-your-plan sweep uses its documented calendar-year age-62 approximation, not full SSA
-  entitlement adjudication. A follow-up actuarial floor must vary by availability year, not assume eligibility
-  once at claim year.
+  claim age, each future **year** weighted by survival probability (the engine's one survival curve on the SSA
+  period table) and discounted at a user-set **real** rate (~long TIPS yield)
+  ([socialSecurity/analysis/expectedValue.ts](../../packages/engine/src/socialSecurity/analysis/expectedValue.ts),
+  `social-security-expected-value`). It needs no accounts and serves as the cross-check against Open Social
+  Security. Since B2-P1 slice 4 (owner decision R7) each year's benefits follow the ledger's own Social Security
+  rules: the claim factor with its months; while both spouses are alive, the lower earner's own benefit plus the
+  spouse excess reduced for their age when the spouse benefit starts; after the first death, the larger of the
+  survivor's own benefit and the widow(er) benefit on the deceased's actual benefit (or, if the deceased had not
+  claimed, the benefit for the month before the death), reduced for the survivor's age in the first month of
+  widow(er) entitlement and held to the widow's limit when the deceased claimed early; for a single person, a
+  divorced-spouse benefit only from the year of the first month the ex is 62 throughout, as the ledger pays it
+  (the same dual-entitlement composition). A COLA below the plan's inflation, or a benefit cut,
+  lowers the later years. Each person keeps one claim age, so a survivor cannot take the survivor benefit first and
+  their own later in this view (the switching panel covers a widow(er) living alone), and former-spouse records of
+  a person in a couple are not priced here. A benefit the ledger pays as a disability benefit from its onset has no
+  claim age to rank, and the page says so.
 
-When the two views disagree, differences can come from annual timing, couple-benefit composition,
-eligibility assumptions, and tax and portfolio effects; they should not be attributed solely to taxes and
-portfolio.
+The benefits-only view uses most of the plan's Social Security rules, not all of them. It has no earnings test,
+so benefits the plan would hold back while someone is still working are counted as paid; it does not count a
+former spouse's record for a person in a couple; and each person has one claim age. When the plan's wages would
+have the earnings test withhold part of someone's benefit at a claim age the page shows, the page names that
+person (`socialSecurity/analysis/earningsTestReach.ts`, which tests each year with the ledger's own
+`socialSecurity/earningsTest.ts#earningsTestWithheldAnnual`). Beyond those, the two views differ by taxes,
+portfolio growth and the plan's fixed planning ages, which the benefits-only view replaces with survival odds.
+Modeling the earnings test and those records in the benefits-only models is a separate decision
+(D-SS-ANALYSIS-EARNINGS-TEST).
 
 The Roth & Tax Optimizer can also **co-optimize the claim age jointly with a conversion schedule** — a
 default-off "Also optimize Social Security claim age" toggle on the Optimize tab runs a full optimize per
@@ -187,21 +200,39 @@ bounded claim candidate and applies the winning claim change and schedule togeth
 ## Break-even education
 
 A straight cumulative break-even chart plus a growth-adjusted view (0/3/5/7% return), framed as a
-pedagogical lens *alongside* the whole-plan sweep ([breakEven.ts](../../packages/planner-ui/src/socialSecurity/breakEven.ts),
-[explain.ts](../../packages/planner-ui/src/socialSecurity/explain.ts)). On-page copy is lean; the conceptual narrative
+pedagogical lens *alongside* the whole-plan sweep
+([socialSecurity/analysis/breakEven.ts](../../packages/engine/src/socialSecurity/analysis/breakEven.ts),
+`social-security-claim-break-even`). Its dollars are the plan's (owner decision R6): each year's benefit is the
+start-year PIA times the claim factor times the ledger's own cost-of-living factor and benefit cut for that
+year, the same factors the projection multiplies by, and the crossing ages are found on the unrounded totals.
+The Social Security step's AIME explainer counts the averaged $0 years from the engine's computation and
+recomputes the gain from replacing the latest $0 year exactly through the benefit formula
+(`zero-year-replacement-gain`, R9), in the dollars of the PIA the step shows (with the cost-of-living increases
+since eligibility); for someone 62 or older that year has passed, and the step says what it would have added had
+it been worked. The credit note counts each year's credits at SSA's
+quarter-of-coverage amount for that year (`covered-work-credit-estimate`). On-page copy is lean; the conceptual narrative
 (what break-even is, COLA, common mistakes, why the whole-plan sweep is the better answer) lives in the
 [Learning Center](learning-center.md), which deep-links into the chart.
 
 ## "What you paid in vs. what you get back"
 
 An education/context readout (not a working-years tax inside the projection — `simulate` never taxes
-pre-retirement wages): a pure helper ([socialSecurity/ficaReturn.ts](../../packages/planner-ui/src/socialSecurity/ficaReturn.ts))
-sums the **OASDI** payroll tax (employee 6.2% / self-employed 12.4%, capped at each year's taxable wage base,
-OASDI-only — not the 1.45% Medicare HI) over the entered earnings history, beside the survival-weighted
-expected PV of lifetime benefits at the chosen claim age (reusing the tested `expectedPvSingle` path).
-Shown as a collapsible panel on the Social Security analysis page with a self-employed toggle and heavy
-caveats (individual illustration, not the program's actuarial return; excludes disability/survivor insurance
-value, spousal benefits, and Medicare). The OASDI rate lives in the parameter pack.
+pre-retirement wages): the engine ([socialSecurity/analysis/oasdiReturn.ts](../../packages/engine/src/socialSecurity/analysis/oasdiReturn.ts),
+owner decision R8) sums the **OASDI** payroll tax over the entered earnings history ("paid in so far") and over the
+projected work the PIA counts, the years its earnings projection fills ("what your projected work will pay",
+at today's rate and wage cap for a year not yet set), so both sides of the ratio cover the same career, each year
+at that year's
+effective rate (SSA's table, [oasdiTaxRates.ts](../../packages/engine/src/socialSecurity/oasdiTaxRates.ts):
+5.4% for employees in 1984, 4.2% in 2011-2012, and the self-employed rates) on the earnings capped at that
+year's wage base from 1937, OASDI-only (not the 1.45% Medicare HI), and restates it in today's dollars by the
+BLS CPI-U annual averages ([cpiU.ts](../../packages/engine/src/socialSecurity/cpiU.ts)) with no interest. Beside it
+are the benefits the person is paid (on their own record, or a former spouse's when larger): those already
+received (at the start-year amount) and the survival-weighted expected PV of the rest at the stream's claim age,
+and their ratio to the tax paid. A benefit paid as a disability benefit from its onset has no claim age to price,
+and the panel says so instead of showing a ratio. Shown as a
+collapsible panel on the Social Security analysis page with a self-employed toggle and caveats (individual
+illustration, not the program's actuarial return; excludes disability and survivor insurance value, benefits paid
+to others on the record, and Medicare).
 
 ## Disability (SSDI)
 

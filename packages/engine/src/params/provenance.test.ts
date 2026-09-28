@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
 import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
+import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
+import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
+import { FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR, QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { stateParamsFor } from './state/index.js'
 import type { StateTaxParams } from './state/types.js'
 
@@ -371,10 +374,31 @@ function socialSecurityClauses(): FigureClause[] {
       label: 'SSDI SGA monthly amount',
       clause: `SSDI SGA ${usd(pack.socialSecurity.sgaMonthlyNonBlind)}/mo (non-blind)`,
     },
+  ]
+}
+
+// Not tax-year parameters: SSA's rate table, whose current-law row the
+// paid-in figure reads, SSA's quarter-of-coverage table and BLS's CPI-U.
+function socialSecurityTaxRateClauses(): FigureClause[] {
+  return [
     {
-      label: 'OASDI employee payroll rate',
-      clause: `OASDI payroll tax ${pctOneDecimal(pack.socialSecurity.oasdiEmployeeRatePct)} (employee)`,
+      label: 'OASDI employee and self-employed rates',
+      clause: `OASDI payroll tax ${pctOneDecimal(OASDI_TAX_RATE_BY_YEAR[2026]!.employee)} (employee) and ${pctOneDecimal(OASDI_TAX_RATE_BY_YEAR[2026]!.selfEmployed!)} (self-employed) in 2026`,
     },
+  ]
+}
+
+function socialSecurityCreditClauses(): FigureClause[] {
+  return [
+    { label: 'quarter-of-coverage amount', clause: `One credit per ${usd(QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR[2026]!)} of covered earnings in 2026` },
+    { label: 'first year of the table', clause: `each year's amount from ${FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR}` },
+  ]
+}
+
+function cpiUClauses(): FigureClause[] {
+  return [
+    { label: 'CPI-U years', clause: `CPI-U annual averages 1937–${CPI_U_LATEST_YEAR}` },
+    { label: 'latest CPI-U average', clause: `(${CPI_U_ANNUAL_AVERAGE[CPI_U_LATEST_YEAR]} in ${CPI_U_LATEST_YEAR})` },
   ]
 }
 
@@ -574,6 +598,9 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'hecm-plf': hecmPlfClauses,
   'medicare-irmaa': medicareIrmaaClauses,
   'social-security': socialSecurityClauses,
+  'social-security-tax-rates': socialSecurityTaxRateClauses,
+  'social-security-credits': socialSecurityCreditClauses,
+  'cpi-u': cpiUClauses,
   'federal-poverty-line': federalPovertyLineClauses,
   'aca-ptc': acaPtcClauses,
   'aca-ptc-2027': acaPtc2027Clauses,

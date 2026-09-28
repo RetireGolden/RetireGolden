@@ -1,0 +1,274 @@
+{
+  "about": "The publishers' own bytes behind socialSecurity/cpiU.ts, socialSecurity/oasdiTaxRates.ts and ssaWageData.ts#QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR. The evidence tests parse these files and compare every row of the three tables with them. sha256 is of the committed file; capture, where present, is the whole captured page the file was cut from.",
+  "files": [
+    {
+      "file": "bls-cpiu/api-v2-annual-1936-1945.json",
+      "bytes": 11194,
+      "sha256": "6c35b435eb23a06863be54c2c3a02bbe2b699e786b171e96f1780ee3b930e645",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1936",
+          "endyear": "1945",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-1946-1955.json",
+      "bytes": 11193,
+      "sha256": "1fc22a50cb5e57b081e680ed662a995d7281046882911d0b1a7c917055adf191",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1946",
+          "endyear": "1955",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-1956-1965.json",
+      "bytes": 11193,
+      "sha256": "5cd48104c379f606714c054268d37915c2e3cbedebe46a93b611d42646ace282",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1956",
+          "endyear": "1965",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-1966-1975.json",
+      "bytes": 11193,
+      "sha256": "68927adf7ee45961ed97c5052c9ec40c02e1f56c79569b6007ace893101c9bbf",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1966",
+          "endyear": "1975",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-1976-1985.json",
+      "bytes": 11224,
+      "sha256": "6fcb9ebf18b41f8882999c4c24c15f78218e679ae05a8f83453ab7c1cf11c5f7",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1976",
+          "endyear": "1985",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-1986-1995.json",
+      "bytes": 11323,
+      "sha256": "1ea0e405825b83b70949d3fc449653b642794877fbd82d77be244d3032d83183",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1986",
+          "endyear": "1995",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v2-annual-2016-2025.json",
+      "bytes": 11653,
+      "sha256": "38656fe85b9482c4c8730176789ffcdfc67413773af5626b144ba0ef22cb68a4",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers, U.S. city average, all items, not seasonally adjusted (CUUR0000SA0): monthly values and the annual average, period M13",
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "2016",
+          "endyear": "2025",
+          "annualaverage": true
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim"
+    },
+    {
+      "file": "bls-cpiu/api-v1-monthly-1987-1996.json",
+      "bytes": 10463,
+      "sha256": "d063ec82fb3bee4b3d8e5c14a8d6f082addacc0a95c561c92a9b35a104613d03",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers (CUUR0000SA0): monthly values",
+      "url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1987",
+          "endyear": "1996"
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim",
+      "note": "For 1996 to 2015 the API refused the annual-average request (its daily limit); these monthly values, averaged at BLS precision, reproduce the published averages of those years."
+    },
+    {
+      "file": "bls-cpiu/api-v1-monthly-1997-2006.json",
+      "bytes": 10463,
+      "sha256": "01a61dd55ec95559fa28a35cc1a2eb81391694094abe2b9ad8ebb0dd5696e015",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers (CUUR0000SA0): monthly values",
+      "url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "1997",
+          "endyear": "2006"
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim",
+      "note": "For 1996 to 2015 the API refused the annual-average request (its daily limit); these monthly values, averaged at BLS precision, reproduce the published averages of those years."
+    },
+    {
+      "file": "bls-cpiu/api-v1-monthly-2007-2016.json",
+      "bytes": 10703,
+      "sha256": "57c44e9b525260221a5e4236cc9ef82e545314108de4f167bfb56dca7b2fa257",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CPI for All Urban Consumers (CUUR0000SA0): monthly values",
+      "url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+      "request": {
+        "method": "POST",
+        "body": {
+          "seriesid": [
+            "CUUR0000SA0"
+          ],
+          "startyear": "2007",
+          "endyear": "2016"
+        }
+      },
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent check",
+      "form": "the response body, verbatim",
+      "note": "For 1996 to 2015 the API refused the annual-average request (its daily limit); these monthly values, averaged at BLS precision, reproduce the published averages of those years."
+    },
+    {
+      "file": "bls-cpiu/data-viewer-annual-1937-2025.json",
+      "bytes": 1657,
+      "sha256": "1c09f35a455a837e7dcfcfd4abd69ce627b95a064551b8f18886ef14bb437ae1",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "title": "CUUR0000SA0, the data viewer table's \"Annual\" column, 1937 to 2025",
+      "url": "https://data.bls.gov/timeseries/CUUR0000SA0?years_option=specific_years&from_year=1937&to_year=2025&include_graphs=false&output_view=data&annualAveragesRequested=true",
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 independent review",
+      "form": "the column as read from the rendered page by a DOM script (the page is not in this file); every year, not only 1996 to 2015, which the API did not return"
+    },
+    {
+      "file": "ssa-oasdi-rates.table.html",
+      "bytes": 9333,
+      "sha256": "d9f1e140733b0a7af76a913dd14e0d61b39ad6f3fdf1ccf8a0d908f5b15c9fa1",
+      "publisher": "Social Security Administration, Office of the Chief Actuary",
+      "title": "Social Security Tax Rates: the rate table and its footnotes a to d",
+      "url": "https://web.archive.org/web/20260616092622id_/https://www.ssa.gov/oact/progdata/oasdiRates.html",
+      "original": "https://www.ssa.gov/oact/progdata/oasdiRates.html",
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 derivation (an Internet Archive capture of 2026-06-16; ssa.gov refuses non-browser clients)",
+      "form": "a contiguous byte range of the captured page, from its rate table's opening tag through the table's closing tag, footnotes included",
+      "capture": {
+        "bytes": 41717,
+        "sha256": "fdb4991df9f178fa8c9ee3b0dfff6f679e1a051e484b969faacd2cd763719bad",
+        "rangeStart": 23428,
+        "rangeEnd": 32761
+      }
+    },
+    {
+      "file": "ssa-quarter-of-coverage.table.html",
+      "bytes": 4661,
+      "sha256": "b59da8d2a6c6e9952573676b3dacdf520d27d9a27fa963596159a8e48a571016",
+      "publisher": "Social Security Administration, Office of the Chief Actuary",
+      "title": "Quarter of Coverage: \"Amount of earnings needed to earn one quarter of coverage\", 1978 to 2026",
+      "url": "https://web.archive.org/web/20260922194019id_/https://www.ssa.gov/oact/COLA/QC.html",
+      "original": "https://www.ssa.gov/oact/COLA/QC.html",
+      "retrievedOn": "2026-09-27",
+      "retrievedBy": "the B2-P1 slice 4 derivation (an Internet Archive capture of 2026-09-22)",
+      "form": "a contiguous byte range of the captured page (served gzip-encoded), from the series table's anchor through its closing center tag",
+      "capture": {
+        "bytes": 39411,
+        "sha256": "3e91a0ea94d3d947c611eb0c6234ff901cde94fc41eaed91fe7ceee44597bafc",
+        "servedBytes": 12118,
+        "servedSha256": "d7288e471a5eeb07bbedef529123e117ac40d2a992d92ac8773b2f2405dffe2f",
+        "rangeStart": 25700,
+        "rangeEnd": 30361
+      }
+    }
+  ]
+}

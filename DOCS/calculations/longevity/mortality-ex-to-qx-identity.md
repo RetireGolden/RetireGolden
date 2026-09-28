@@ -30,8 +30,10 @@ The three `q(x)` values and the two-year survival above, absolute tolerance `1e-
 
 ## Family
 
-`longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`.
+`longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`; since 2026-09-27 also `social-security-expected-present-value`, `social-security-survivor-switch-pv` and `social-security-fica-return-ratio`, whose models read q(x) through the survival curve.
 
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-14, by independent recomputation without executing the engine; see REVIEW-2026-09-14.md in this directory.
+
+Revision 2026-09-27 (B2-P1 slice 4): the record's DUPLICATION limit is deleted, since planner-ui's copy of the identity (`socialSecurity/expectedPv.ts#oneYearSurvival`, with its unused multiplier) and its parity test are gone and the Social Security analysis models read `montecarlo/survival.ts#survivalCurve`. Two limits are added from the slice's derivation (`survival-curve.md`) and its independent check (B3, B4): the identity rebuilds q(x) from the printed two-decimal e(x) rather than reading SSA's published q(x) (at 65, 0.0179294 against 0.017897 for men and 0.0110887 against 0.011018 for women; up to 7.3 and 20.7 percent over ages 20 to 109, 2.0 and 3.5 percent over 62 to 100, and q = 0 at men's age 8 and women's age 10), and the table is the 2022 period table of the 2025 Trustees Report while SSA's page now shows the 2023 table; both are left for the separate reviewed data change decided as D-LIFE-TABLE-2023. No value changes. Restated by claude (opus 5.5); not yet reviewed.

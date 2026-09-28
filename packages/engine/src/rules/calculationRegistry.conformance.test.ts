@@ -1499,7 +1499,7 @@ describe('calculation registry conformance', () => {
       }
     }
     expect(violations).toEqual([])
-    // Slice 1 of B2-P1 moved eleven, slice 2 nine and slice 3 six; a later slice adds to the list.
+    // Slice 1 of B2-P1 moved eleven, slice 2 nine, slice 3 six and slice 4 nine; a later slice adds to the list.
     expect(
       Object.entries(families)
         .filter(([, family]) => family.relocation?.status === 'done')
@@ -1529,6 +1529,15 @@ describe('calculation registry conformance', () => {
       'insight-monte-carlo-success-delta',
       'optimizer-schedule-conversion-total',
       'relocation-tax-comparison',
+      'social-security-break-even',
+      'social-security-computation-summary-counts',
+      'social-security-credit-estimate',
+      'social-security-expected-present-value',
+      'social-security-fica-return-ratio',
+      'social-security-oasdi-paid-in',
+      'social-security-pia-annualized',
+      'social-security-survivor-switch-pv',
+      'social-security-zero-year-replacement-gain',
       'solved-initial-withdrawal-rate-pct',
       'solved-spending-rounded-to-hundred',
       'spending-shape-delta-vs-flat',

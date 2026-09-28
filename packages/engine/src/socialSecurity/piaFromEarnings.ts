@@ -4,6 +4,7 @@
  * @see DOCS/features/social-security.md
  */
 
+import { socialSecurityDobParts } from './annualTiming.js'
 import { effectiveBirthYear } from './nra.js'
 import {
   awiForYear,
@@ -49,7 +50,7 @@ export interface PiaFromEarningsInput {
   dobMonth: number
   dobDay: number
   /** Calendar years and covered earnings; years outside the base window are ignored. */
-  earnings: YearEarning[]
+  earnings: readonly YearEarning[]
   /** Last calendar year with covered earnings; later base years are treated as zero (unless projected). */
   lastEarningsYear: number
   /** Optional: fill base years after `lastEarningsYear` with assumed earnings instead of zero. */
@@ -75,6 +76,12 @@ export interface PiaFromEarningsResult {
   /** After dropout / top-35 selection, in eligibility-year dollars (indexed or nominal per rules). */
   yearsUsedInAime: number[]
   computationYearCount: number
+  /**
+   * How many of `yearsUsedInAime` are $0: benefit computation years with no
+   * indexed earnings, each one lowering the average. It counts the years this
+   * computation averaged, so it follows its computation-year window.
+   */
+  zeroYearsInAime: number
   /** How many base years were filled by the future-earnings projection. */
   projectedYearCount: number
   aime: number
@@ -144,6 +151,18 @@ function indexCoveredEarnings(
  * Full earnings-history → AIME → PIA path for a retirement benefit illustration.
  */
 export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarningsResult | PiaFromEarningsError {
+  return computeWithReplacedYear(input, null)
+}
+
+/**
+ * The computation, with one base year's raw earnings optionally replaced after
+ * the window, the projection and the indexing year are set from `input`, so a
+ * replacement changes that year's earnings and nothing else.
+ */
+function computeWithReplacedYear(
+  input: PiaFromEarningsInput,
+  replaced: { readonly year: number; readonly amount: number } | null,
+): PiaFromEarningsResult | PiaFromEarningsError {
   const { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection } = input
   const eligibilityYear = eligibilityYearFromDobParts(dobYear, dobMonth, dobDay)
 
@@ -214,6 +233,7 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     } else {
       raw = 0
     }
+    if (replaced !== null && year === replaced.year) raw = replaced.amount
     const capped = capEarnings(year, raw)
     const wageIndexed = year <= eligibilityYear - 2
     let indexedAnnual = capped
@@ -262,6 +282,7 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     indexedYears: indexedDetails,
     yearsUsedInAime: top,
     computationYearCount,
+    zeroYearsInAime: top.filter((value) => value === 0).length,
     projectedYearCount,
     aime,
     piaMonthly: pia,
@@ -334,7 +355,7 @@ export function piaInputFromEarnings(
   dobYear: number,
   dobMonth: number,
   dobDay: number,
-  earnings: YearEarning[],
+  earnings: readonly YearEarning[],
   projection?: EarningsProjection | null,
 ): PiaFromEarningsInput {
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
@@ -358,6 +379,179 @@ export function resolveEarningsProjection(
   const throughAge = stored.throughAge ?? retirementAge
   if (throughAge === null) return null
   return { assumedAnnualEarnings: stored.assumedAnnualEarnings, throughAge }
+}
+
+/** A Social Security stream's PIA fields: an entered PIA, or an earnings history and its projection. */
+export interface StreamPiaInput {
+  readonly piaMonthly: number | null
+  readonly earnings: readonly YearEarning[] | null
+  readonly earningsProjection?: {
+    readonly assumedAnnualEarnings: number | null
+    readonly throughAge: number | null
+  } | null
+}
+
+/** The stream owner's date of birth (ISO) and retirement age, which the earnings projection defaults to. */
+export interface StreamPiaPerson {
+  readonly dob: string
+  readonly retirementAge: number | null
+}
+
+/**
+ * The projection's first year and the yearly increase the plan assumes for a
+ * cost-of-living increase SSA has not announced (#socialSecurityColaAssumptionPct).
+ */
+export interface PiaAsOf {
+  readonly startYear: number
+  readonly colaAssumptionPct: number
+}
+
+export type ResolvedStreamPia =
+  | { readonly status: 'entered'; readonly piaMonthly: number }
+  | {
+      readonly status: 'fromEarnings'
+      /** The PIA in the projection's first year: the eligibility-year PIA with the increases since (or that PIA itself when `asOf` is null). */
+      readonly piaMonthly: number
+      /** The computation from the earnings history; its `piaMonthly` is the eligibility-year PIA. */
+      readonly detail: PiaFromEarningsResult
+      /** Years whose cost-of-living increase SSA has not announced, priced at the plan's assumption. */
+      readonly standInColaYears: readonly number[]
+    }
+  | { readonly status: 'noPiaNoEarnings' }
+  | { readonly status: 'earningsError'; readonly error: PiaFromEarningsError }
+
+/**
+ * The earnings computation's input for a stream: its earnings history with its
+ * projection (defaulting to the person's retirement age) and the person's date
+ * of birth; null when the stream has no earnings history.
+ */
+export function streamPiaFromEarningsInput(stream: StreamPiaInput, person: StreamPiaPerson): PiaFromEarningsInput | null {
+  if (!stream.earnings || stream.earnings.length === 0) return null
+  const { y, m, d } = socialSecurityDobParts(person)
+  const projection = resolveEarningsProjection(stream.earningsProjection, person.retirementAge)
+  return piaInputFromEarnings(y, m, d, stream.earnings, projection)
+}
+
+/**
+ * A Social Security stream's monthly PIA, resolved once for the ledger, the
+ * claim-milestone insight and the Social Security pages: the entered PIA as
+ * entered, or the PIA the earnings history gives (#computePiaFromEarnings, with
+ * the stream's projection defaulting to the person's retirement age) raised by
+ * every cost-of-living increase from the eligibility year through the year
+ * before the projection starts (42 U.S.C. 415(i)(2)(A)(iii),
+ * #piaWithCostOfLivingIncreases). With `asOf` null the eligibility-year PIA is
+ * returned, for a caller that only asks whether a PIA resolves. Warnings about
+ * stand-in tables are the caller's to raise, from the fields returned.
+ */
+export function resolveStreamPiaMonthly(
+  stream: StreamPiaInput,
+  person: StreamPiaPerson,
+  asOf: PiaAsOf | null,
+): ResolvedStreamPia {
+  if (stream.piaMonthly !== null) return { status: 'entered', piaMonthly: stream.piaMonthly }
+  const input = streamPiaFromEarningsInput(stream, person)
+  if (input === null) return { status: 'noPiaNoEarnings' }
+  const result = computePiaFromEarnings(input)
+  if (isPiaFromEarningsError(result)) return { status: 'earningsError', error: result }
+  if (asOf === null) return { status: 'fromEarnings', piaMonthly: result.piaMonthly, detail: result, standInColaYears: [] }
+  const atStart = piaWithCostOfLivingIncreases(result.piaMonthly, result.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct)
+  return { status: 'fromEarnings', piaMonthly: atStart.piaMonthly, detail: result, standInColaYears: atStart.standInYears }
+}
+
+/** The bend-point tier the next dollar of AIME is credited at, and the eligibility year's two bend points. */
+export interface BendTier {
+  readonly label: '90%' | '32%' | '15%'
+  readonly marginalRate: number
+  readonly first: number
+  readonly second: number
+}
+
+/**
+ * Which bend-point tier the next dollar of AIME falls into for this
+ * eligibility year: 90% below the first bend point, 32% from it to the second,
+ * 15% from the second (the eligibility year's bend points, or the latest
+ * published ones for a later year, as #piaMonthlyFromAime reads them).
+ */
+export function bendTierForAime(aime: number, eligibilityYear: number): BendTier {
+  const bp = bendPointsForEligibilityYearOrLatest(eligibilityYear)
+  if (aime < bp.first) return { label: '90%', marginalRate: 0.9, first: bp.first, second: bp.second }
+  if (aime < bp.second) return { label: '32%', marginalRate: 0.32, first: bp.first, second: bp.second }
+  return { label: '15%', marginalRate: 0.15, first: bp.first, second: bp.second }
+}
+
+/** What replacing one $0 year with a year of earnings adds to the PIA, recomputed exactly. */
+export interface ZeroYearReplacement {
+  /** The replaced year: the latest base year whose earnings, reported or projected, are $0. */
+  readonly year: number
+  /** The earnings put in that year, as raw covered earnings (the computation caps and indexes them). */
+  readonly amount: number
+  /** The eligibility-year PIA before and after, each floored to the dime. */
+  readonly piaBefore: number
+  readonly piaAfter: number
+  /** piaAfter − piaBefore, a multiple of $0.10 (rounded to the dime against float error). */
+  readonly gainMonthly: number
+  /**
+   * The gain in the projection's first year's dollars: each PIA raised by the
+   * cost-of-living increases from the eligibility year through the year before
+   * `asOf.startYear` (#piaWithCostOfLivingIncreases, as the resolved PIA is),
+   * and the difference rounded to the dime. Equal to `gainMonthly` without
+   * `asOf`, or when the eligibility year is the start year or later.
+   */
+  readonly startYearGainMonthly: number
+}
+
+/**
+ * The PIA gain from replacing one $0 year: #computePiaFromEarnings re-run on
+ * the same input with the latest base year whose earnings are $0 given
+ * `amount` of covered earnings, the window, projection and indexing year
+ * unchanged, so the amount is capped at that year's base, indexed only if the
+ * year is at or before the indexing year, and the AIME and PIA floored as
+ * always. The latest $0 year is chosen because an earlier one would be wage
+ * indexed, describing earnings the worker cannot now go back and earn; for a
+ * worker 62 or older in `asOf.startYear` every base year has passed, so the
+ * replaced year is a past one too. With `asOf`, the gain is also given in the
+ * start year's dollars (`startYearGainMonthly`). Null when the history does
+ * not compute, when no averaged year is $0, or when `amount` is not a
+ * positive number.
+ */
+export function zeroYearReplacementGain(
+  input: PiaFromEarningsInput,
+  amount: number,
+  asOf: PiaAsOf | null = null,
+): ZeroYearReplacement | null {
+  if (!Number.isFinite(amount) || amount <= 0) return null
+  const before = computePiaFromEarnings(input)
+  if (isPiaFromEarningsError(before) || before.zeroYearsInAime === 0) return null
+  let year: number | null = null
+  for (const row of before.indexedYears) if (row.rawEarnings === 0) year = row.year
+  if (year === null) return null
+  const after = computeWithReplacedYear(input, { year, amount })
+  if (isPiaFromEarningsError(after)) return null
+  const atStart = (pia: number): number =>
+    asOf === null ? pia : piaWithCostOfLivingIncreases(pia, before.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct).piaMonthly
+  return {
+    year,
+    amount,
+    piaBefore: before.piaMonthly,
+    piaAfter: after.piaMonthly,
+    gainMonthly: Math.round((after.piaMonthly - before.piaMonthly) * 10) / 10,
+    startYearGainMonthly: Math.round((atStart(after.piaMonthly) - atStart(before.piaMonthly)) * 10) / 10,
+  }
+}
+
+/**
+ * The sample the explainer puts in a $0 year: the projection's assumed
+ * earnings for its first projected year, or else the amount of the latest
+ * reported year (the last row for that year). Null with no earnings.
+ */
+export function zeroYearSampleEarnings(input: PiaFromEarningsInput): number | null {
+  const result = computePiaFromEarnings(input)
+  if (!isPiaFromEarningsError(result)) {
+    const projected = result.indexedYears.find((row) => row.projected)
+    if (projected !== undefined) return projected.rawEarnings
+  }
+  if (input.earnings.length === 0) return null
+  return input.earnings.reduce((latest, row) => (row.year >= latest.year ? row : latest)).amount
 }
 
 /** Parse "YYYY amount" lines (whitespace-separated). */

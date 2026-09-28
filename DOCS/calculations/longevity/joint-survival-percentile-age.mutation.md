@@ -1,11 +1,11 @@
 # Mutation receipt: joint-survival-percentile-age
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -95,7 +95,7 @@ export function jointSurvivalPercentileAge(
+@@ -174,7 +174,7 @@ export function jointSurvivalPercentileAge(
    // Walk both survival curves on the primary's clock; the partner's own clock
    // is offset by the age difference.
    for (let t = 0; from + t <= MAX_AGE + 1; t++) {
@@ -26,18 +26,18 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (12 tests | 2 failed) 8ms
+ ❯ src/montecarlo/survival.evidence.test.ts (15 tests | 2 failed) 63ms
    ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (4)
-     × two 65-year-old men at 99%: the last-survivor percentile age is 70 4ms
+     × two 65-year-old men at 99%: the last-survivor percentile age is 70 3ms
      × exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 10 passed (12)
+      Tests  2 failed | 13 passed (15)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -51,25 +51,25 @@ AssertionError: expected 65 to be 70 // Object.is equality
 - 70
 + 65
 
- ❯ src/montecarlo/survival.evidence.test.ts:111:65
-    109|
-    110|     it('two 65-year-old men at 99%: the last-survivor percentile age i…
-    111|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBe(e…
+ ❯ src/montecarlo/survival.evidence.test.ts:166:65
+    164|
+    165|     it('two 65-year-old men at 99%: the last-survivor percentile age i…
+    166|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBe(e…
        |                                                                 ^
-    112|     })
-    113|
+    167|     })
+    168|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  src/montecarlo/survival.evidence.test.ts > joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock > exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return
 AssertionError: expected 65 to be greater than 65
- ❯ src/montecarlo/survival.evidence.test.ts:143:65
-    141|       // The worksheet's second wrong reading: one person's answer.
-    142|       expect(survivalPercentileAge(primary.age, primary.sex, pct, prim…
-    143|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGr…
+ ❯ src/montecarlo/survival.evidence.test.ts:198:65
+    196|       // The worksheet's second wrong reading: one person's answer.
+    197|       expect(survivalPercentileAge(primary.age, primary.sex, pct, prim…
+    198|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGr…
        |                                                                 ^
-    144|     })
-    145|   },
+    199|     })
+    200|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

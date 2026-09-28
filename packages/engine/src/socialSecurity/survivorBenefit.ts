@@ -1,6 +1,7 @@
 /**
  * Survivor (widow(er)) benefit — the shared, SSA-cited computation used by
- * **both** the actuarial PV view (`survivorSwitching.ts`) and the projection
+ * **both** the actuarial PV views (`analysis/survivorSwitching.ts`,
+ * `analysis/expectedValue.ts`) and the projection
  * ledger (`simulate.ts` survivor step-up + `maritalBenefits.ts` former-spouse
  * path), so the two can't drift (the gap-analysis row this closes was exactly
  * that drift: the PV view had a reduction, the ledger didn't).

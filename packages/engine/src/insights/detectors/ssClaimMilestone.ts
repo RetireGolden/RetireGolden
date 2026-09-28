@@ -14,12 +14,9 @@ import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
-  computePiaFromEarnings,
-  isPiaFromEarningsError,
-  piaInputFromEarnings,
-  piaWithCostOfLivingIncreases,
-  resolveEarningsProjection,
+  resolveStreamPiaMonthly,
   socialSecurityColaAssumptionPct,
+  type PiaAsOf,
 } from '../../socialSecurity/piaFromEarnings.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
@@ -44,15 +41,6 @@ function isVisiblePositiveAmount(amount: number): boolean {
   return amount >= MIN_VISIBLE_CENT
 }
 
-/**
- * The projection's first year and the plan's COLA assumption: what the sim
- * needs to bring an earnings-derived PIA to the first year's dollars.
- */
-interface PiaAsOf {
-  readonly startYear: number
-  readonly colaAssumptionPct: number
-}
-
 function piaAsOf(plan: Plan, startYear: number): PiaAsOf {
   return { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
 }
@@ -71,24 +59,8 @@ function resolveOwnPiaMonthly(
   claimant: HouseholdPerson,
   asOf: PiaAsOf | null,
 ): number | null {
-  if (streamIncome.piaMonthly !== null) return streamIncome.piaMonthly
-  if (!streamIncome.earnings || streamIncome.earnings.length === 0) return null
-  const { y, m, d } = socialSecurityDobParts(claimant)
-  const projection = resolveEarningsProjection(
-    streamIncome.earningsProjection,
-    claimant.retirementAge,
-  )
-  const result = computePiaFromEarnings(
-    piaInputFromEarnings(y, m, d, streamIncome.earnings, projection),
-  )
-  if (isPiaFromEarningsError(result)) return null
-  if (asOf === null) return result.piaMonthly
-  return piaWithCostOfLivingIncreases(
-    result.piaMonthly,
-    result.eligibilityYear,
-    asOf.startYear - 1,
-    asOf.colaAssumptionPct,
-  ).piaMonthly
+  const resolved = resolveStreamPiaMonthly(streamIncome, claimant, asOf)
+  return resolved.status === 'entered' || resolved.status === 'fromEarnings' ? resolved.piaMonthly : null
 }
 
 /**

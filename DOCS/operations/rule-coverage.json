@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 442,
+    "totalFiles": 454,
     "byStatus": {
-      "partial": 90,
-      "registered": 118,
-      "rule-free": 234,
+      "partial": 91,
+      "registered": 121,
+      "rule-free": 242,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -452,6 +452,11 @@
       "note": "Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (adding deriveRbdComparison only; applicableAgeAttainYears sibling listings on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year"
     },
     {
+      "path": "socialSecurity/analysis/credits.ts",
+      "sweptOn": "2026-09-27",
+      "note": "the covered-work credit estimate (covered-work-credit-estimate). Residual: the quarter-of-coverage counting of 42 U.S.C. 413(a)(2)(A) and 20 CFR 404.143(a), the annual amount from 1978 and $50 a quarter before, has no rule record; the calculation record states and cites it"
+    },
+    {
       "path": "socialSecurity/maritalBenefits.ts",
       "sweptOn": "2026-09-27",
       "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
@@ -675,11 +680,11 @@
     },
     {
       "directory": "socialSecurity",
-      "files": 11,
+      "files": 22,
       "byStatus": {
-        "partial": 2,
-        "registered": 8,
-        "rule-free": 1
+        "partial": 3,
+        "registered": 11,
+        "rule-free": 8
       }
     },
     {
@@ -709,10 +714,10 @@
     },
     {
       "directory": "testing",
-      "files": 5,
+      "files": 6,
       "byStatus": {
         "partial": 1,
-        "rule-free": 4
+        "rule-free": 5
       }
     }
   ],

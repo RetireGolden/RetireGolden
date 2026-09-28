@@ -155,15 +155,9 @@ import {
   REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
   type AnnualConversionLinkedWithdrawalRelease,
 } from './internal/annualConversionLinkedWithdrawalFunding.js'
-import {
-  computePiaFromEarnings,
-  isPiaFromEarningsError,
-  piaInputFromEarnings,
-  piaWithCostOfLivingIncreases,
-  resolveEarningsProjection,
-  socialSecurityColaAssumptionPct,
-} from '../socialSecurity/piaFromEarnings.js'
+import { resolveStreamPiaMonthly, socialSecurityColaAssumptionPct } from '../socialSecurity/piaFromEarnings.js'
 import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
+import { socialSecurityColaFactor, socialSecurityHaircutFactor } from '../socialSecurity/colaFactor.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
 import { jointSurvivalPercentileAge, survivalPercentileAge } from '../montecarlo/survival.js'
 import {
@@ -926,40 +920,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // Resolve each SS stream's PIA once: entered directly, or derived from the
   // earnings history via the AIME → bend-point engine.
   const resolvedPiaByStreamId = new Map<string, number>()
+  const piaAsOf = { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity') continue
-    if (stream.piaMonthly !== null) {
-      resolvedPiaByStreamId.set(stream.id, stream.piaMonthly)
-      continue
-    }
-    if (!stream.earnings || stream.earnings.length === 0) {
+    // The one resolver the ledger, the claim-milestone insight and the Social
+    // Security pages share: the entered PIA, or the earnings history's PIA of
+    // the eligibility year raised by every cost-of-living increase since, to
+    // the projection's first year (42 U.S.C. 415(i)(2)(A)(iii)), before the
+    // ledger's own COLA.
+    const resolved = resolveStreamPiaMonthly(stream, personById.get(stream.personId)!, piaAsOf)
+    if (resolved.status === 'noPiaNoEarnings') {
       warnings.add('A Social Security stream has no PIA amount and no earnings history; it was skipped.')
       continue
     }
-    const person = personById.get(stream.personId)!
-    const { y, m, d } = socialSecurityDobParts(person)
-    const projection = resolveEarningsProjection(stream.earningsProjection, person.retirementAge)
-    const result = computePiaFromEarnings(piaInputFromEarnings(y, m, d, stream.earnings, projection))
-    if (isPiaFromEarningsError(result)) {
-      warnings.add(`A Social Security earnings history could not be used (${result.code}); the stream was skipped.`)
+    if (resolved.status === 'earningsError') {
+      warnings.add(`A Social Security earnings history could not be used (${resolved.error.code}); the stream was skipped.`)
       continue
     }
-    if (result.usesStandInForFutureTables) {
-      warnings.add('PIA from earnings uses stand-in SSA tables for years beyond the published data.')
+    if (resolved.status === 'fromEarnings') {
+      if (resolved.detail.usesStandInForFutureTables) {
+        warnings.add('PIA from earnings uses stand-in SSA tables for years beyond the published data.')
+      }
+      if (resolved.standInColaYears.length > 0) {
+        warnings.add('PIA from earnings uses the plan\'s COLA assumption for cost-of-living increases SSA has not yet announced.')
+      }
     }
-    // The earnings history gives the PIA of the eligibility year; 42 U.S.C.
-    // 415(i)(2)(A)(iii) raises it by every cost-of-living increase since, so
-    // bring it to the projection's first year before the ledger's own COLA.
-    const atStart = piaWithCostOfLivingIncreases(
-      result.piaMonthly,
-      result.eligibilityYear,
-      startYear - 1,
-      socialSecurityColaAssumptionPct(plan.assumptions),
-    )
-    if (atStart.standInYears.length > 0) {
-      warnings.add('PIA from earnings uses the plan\'s COLA assumption for cost-of-living increases SSA has not yet announced.')
-    }
-    resolvedPiaByStreamId.set(stream.id, atStart.piaMonthly)
+    resolvedPiaByStreamId.set(stream.id, resolved.piaMonthly)
   }
 
   const years: YearResult[] = []
@@ -1701,14 +1687,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // survivorBenefit.ts), and then the earnings test withholds from living
     // workers' resulting benefit, counting withheld widow(er) and spouse months
     // apart for their own reductions.
-    const ssColaFactor =
-      plan.assumptions.ssCola.mode === 'matchInflation'
-        ? inflFactorFrom(startYear, year)
-        : Math.pow(1 + plan.assumptions.ssCola.annualPct / 100, year - startYear)
-    const ssHaircutFactor =
-      plan.assumptions.ssHaircut && year >= plan.assumptions.ssHaircut.fromYear
-        ? 1 - plan.assumptions.ssHaircut.cutPct / 100
-        : 1
+    const ssColaFactor = socialSecurityColaFactor(plan.assumptions.ssCola, inflFactorFrom, startYear, year)
+    const ssHaircutFactor = socialSecurityHaircutFactor(plan.assumptions.ssHaircut, year)
     const socialSecurity = annualSocialSecurity({
       incomes: plan.incomes,
       people,

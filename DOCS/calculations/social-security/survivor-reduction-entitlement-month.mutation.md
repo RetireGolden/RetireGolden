@@ -1,15 +1,15 @@
 # Mutation receipt: survivor-reduction-entitlement-month
 
-Executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/survivorBenefit.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/survivorBenefit.ts b/packages/engine/src/socialSecurity/survivorBenefit.ts
-index da89ad89..9a31049e 100644
+index 5c18cee8..6401100a 100644
 --- a/packages/engine/src/socialSecurity/survivorBenefit.ts
 +++ b/packages/engine/src/socialSecurity/survivorBenefit.ts
-@@ -163,7 +163,7 @@ export function widowEntitlementAgeMonths(
+@@ -164,7 +164,7 @@ export function widowEntitlementAgeMonths(
    deathYear: number,
    survivorOwnClaimMonths: number,
  ): number {
@@ -30,17 +30,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Executed for the new record (decision D-SS-LAW-2): the mutation reverts the fix, reducing the widow(er) benefit at the survivor's own claim age. Re-executed after the independent review moved the first month of widow(er) entitlement from December of the year of death to the January after it, the first month the ledger pays, which changed the removed line and the test's titles; the mutation still reduces at the own claim age. The baseline is green (annualSocialSecurity.survivorEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for B2-P1 slice 4 because a comment above its hunk or in its test file changed (the planner-ui copy of the survival curve is deleted, and the survivor helper names its two analysis callers); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.survivorEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
 
  ❯ src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts (6 tests | 5 failed) 80ms
    ❯ survivor-reduction-entitlement-month — Widow(er) reduction from the first month of widow(er) entitlement (6)
      × entitlement ages: the later of the own claim and the January after the year of death (775, 772, 792) 4ms
-     × case A: the survivor is reduced at her age in January 2029, then held to the limit (19,800, not 15,769.29) 40ms
+     × case A: the survivor is reduced at her age in January 2029, then held to the limit (19,800, not 15,769.29) 39ms
      × case B: first paid as a widow at 772 months, the survivor is paid the 2,145 limit (25,740, not 20,500.07) 9ms
-     × case D: months withheld from her own benefit before the death are not credited to the widow(er) benefit 9ms
+     × case D: months withheld from her own benefit before the death are not credited to the widow(er) benefit 10ms
      × case E: months withheld from the widow(er) benefit are credited at the survivor full retirement age 9ms
 
  Test Files  1 failed (1)

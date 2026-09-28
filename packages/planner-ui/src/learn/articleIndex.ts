@@ -443,11 +443,12 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     tags: ['social security', 'fica', 'oasdi', 'payroll tax', 'self-employment', 'taxable wage base', 'return'],
     audience: 'intermediate',
     status: 'ready',
-    lastReviewed: '2026-06-29',
+    lastReviewed: '2026-09-28',
     reviewCadence: 'annual',
     sourceUrls: [
       'https://www.ssa.gov/news/en/cola/factsheets/2026.html',
-      'https://www.ssa.gov/oact/ProgData/taxRates.html',
+      'https://www.ssa.gov/oact/progdata/oasdiRates.html',
+      'https://data.bls.gov/timeseries/CUUR0000SA0',
       'https://www.ssa.gov/benefits/retirement/planner/applying7.html',
     ],
     relatedArticles: [

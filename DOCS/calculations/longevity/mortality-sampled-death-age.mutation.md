@@ -1,6 +1,6 @@
 # Mutation receipt: mortality-sampled-death-age
 
-Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity) in `packages/engine`, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied (the planner-ui comparison moved to the planner-ui suite, so the file carries 11 tests). This run replaces the same-day run against base `2dc2011c`.
+Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied: the planner-ui comparison moved to the planner-ui suite, and B2-P1 slice 4 deleted it with the planner-ui copy of the identity; that run replaced the same-day run against base `2dc2011c`), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/mortality.ts`
 
@@ -26,32 +26,41 @@ npx vitest run src/montecarlo/mortality.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed.
+Re-executed for B2-P1 slice 4 because a comment above its hunk or in its test file changed (the planner-ui copy of the survival curve is deleted, and the survivor helper names its two analysis callers); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (mortality.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4long/packages/engine
+RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+
  ❯ src/montecarlo/mortality.evidence.test.ts (11 tests | 1 failed) 6ms
    ❯ mortality-sampled-death-age — Sampled death age: inverse-Bernoulli walk over annual death probabilities (3)
      × survives 65 on a 0.5 draw, dies in the age-66 interval on a 0.01 draw: returns 66 3ms
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
- FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-sampled-death-age — Sampled death age: inverse-Bernoulli walk over annual death probabilities > survives 65 on a 0.5 draw, dies in the age-66 interval on a 0.01 draw: returns 66
-AssertionError: expected 67 to be 66 // Object.is equality
-- Expected
-+ Received
-- 66
-+ 67
- ❯ src/montecarlo/mortality.evidence.test.ts:121:52
-    119|     it('survives 65 on a 0.5 draw, dies in the age-66 interval on a 0.…
-    120|       const rng = drawsRng(draws)
-    121|       expect(sampleDeathAge(rng, currentAge, sex)).toBe(example.expect…
-       |                                                    ^
-    122|       // One draw per year walked: exactly the two the worksheet suppl…
-    123|       expect(rng.consumed()).toBe(draws.length)
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
  Test Files  1 failed (1)
       Tests  1 failed | 10 passed (11)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-sampled-death-age — Sampled death age: inverse-Bernoulli walk over annual death probabilities > survives 65 on a 0.5 draw, dies in the age-66 interval on a 0.01 draw: returns 66
+AssertionError: expected 67 to be 66 // Object.is equality
+
+- Expected
++ Received
+
+- 66
++ 67
+
+ ❯ src/montecarlo/mortality.evidence.test.ts:120:52
+    118|     it('survives 65 on a 0.5 draw, dies in the age-66 interval on a 0.…
+    119|       const rng = drawsRng(draws)
+    120|       expect(sampleDeathAge(rng, currentAge, sex)).toBe(example.expect…
+       |                                                    ^
+    121|       // One draw per year walked: exactly the two the worksheet suppl…
+    122|       expect(rng.consumed()).toBe(draws.length)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/montecarlo/mortality.ts`, then `git diff --quiet -- packages/engine/src/montecarlo/mortality.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/montecarlo/mortality.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/mortality.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
