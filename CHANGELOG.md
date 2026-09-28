@@ -95,18 +95,19 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     questionnaire result saved in this browser for that person when that result gives the
     plan's age, and otherwise reads "(life-expectancy questionnaire estimate, table
     edition not recorded)" and cites no table; an unrecognized edition cites none either.
-    The Social Security form's default end age reuses a saved result's age as it was saved
-    and carries its table's label (`savedEndAge`). Plan storage: the plan schema's
-    `longevity.percentile` gains the optional `tableEdition` (`{ periodYear,
-    trusteesReportYear }`); saved plans stay valid, `CURRENT_PLAN_SCHEMA_VERSION` stays 5,
-    and `schema/plan.v5.json` is regenerated (`DOCS/features/plan-file-format.md` lists
-    the field). The questionnaire's localStorage result gains the same optional field. A
-    plan that makes a round trip through an engine that predates the field (0.3.0, which
-    RetireGolden-Pro and RetireGolden-MCP pin) loses `tableEdition`, because that engine
-    drops keys it does not know; the pick keeps its age, and back in this planner a 2023
-    pick then reads as a 2022 pick. The effect is on the label only, and in the older
-    direction: the pick is shown as made on an earlier table than it was, with the note
-    that the planner now uses the 2023 table, and no figure changes.
+    The Social Security form helpers (`socialSecurity/ssFormUtils`) reuse a saved result's
+    age as it was saved, with no label; they have no caller in the planner's pages today.
+    Plan storage: the plan schema's `longevity.percentile` gains the optional
+    `tableEdition` (`{ periodYear, trusteesReportYear }`); saved plans stay valid,
+    `CURRENT_PLAN_SCHEMA_VERSION` stays 5, and `schema/plan.v5.json` is regenerated
+    (`DOCS/features/plan-file-format.md` lists the field). The questionnaire's
+    localStorage result gains the same optional field. A plan that makes a round trip
+    through an engine that predates the field (0.3.0, which RetireGolden-Pro and
+    RetireGolden-MCP pin) loses `tableEdition`, because that engine drops keys it does not
+    know; the pick keeps its age, and back in this planner a 2023 pick then reads as a
+    2022 pick. The effect is on the label only, and in the older direction: the pick is
+    shown as made on an earlier table than it was, with the note that the planner now uses
+    the 2023 table, and no figure changes.
   - **Sources.** `params/provenance.ts#PARAMETER_PROVENANCE` gains `ssa-life-table` (SSA's
     Table 4C6, the 2023 period table of the 2026 Trustees Report) and
     `ssa-life-table-2022` (SSA's page for the 2022 period table of the 2025 Trustees
@@ -1722,8 +1723,7 @@ has — rather than the runtime contract a consumer needs on the landing page.
   `hazardForExpectancyMultiplier` with a NaN age returns 8 (it returned 0.2). No caller
   passes such an age: ages come from whole birth years. The source record's `archive`
   loses `sha256`, and `PARAMETER_PROVENANCE` gains the ids `ssa-life-table` and
-  `ssa-life-table-2022`. planner-ui: `socialSecurity/ssFormUtils` gains `savedEndAge` and
-  `SavedEndAge`.
+  `ssa-life-table-2022`.
 
 - **Claim-age searches and the survivor analysis (B2-P1 slice 5):** new modules
   `decisions/claimAgeSweep` (`sweepClaimAges`, `refineClaimAgeMonthly`, `refineClaimMonths`,

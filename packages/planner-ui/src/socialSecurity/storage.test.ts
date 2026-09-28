@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { combinedMultiplier } from '../longevity/factors'
 import { loadLongevity } from '../longevity/storage'
 import { loadSs, saveSs, SS_STORAGE_KEY, type SsFormSnapshot } from './storage'
-import { CLAIM_OPTIONS, defaultEndAge, initialSsForm, parseDob, savedEndAge, SS_CHART_LINE_COLORS } from './ssFormUtils'
+import { CLAIM_OPTIONS, defaultEndAge, initialSsForm, parseDob, SS_CHART_LINE_COLORS } from './ssFormUtils'
 
 vi.mock('../longevity/storage', () => ({ loadLongevity: vi.fn(() => null) }))
 
@@ -61,10 +61,12 @@ describe('ssFormUtils', () => {
     expect(defaultEndAge()).toBe(94)
   })
 
-  it('keeps a result saved on the 2022 table as it was saved, and names that table beside it', () => {
+  it('reuses a result saved on the 2022 table as it was saved', () => {
     // A man of 55 whose result was saved before the edition field existed: its
     // age was computed on the 2022 table (e(55) = 24.94), and it is reused as
-    // saved rather than recomputed on the 2023 table (25.73).
+    // saved rather than recomputed on the 2023 table (25.73). These form
+    // helpers have no caller in the planner's pages today (PR #759 review 2),
+    // so no label is shown beside the age.
     const answers = {
       age: 55, sex: 'male', bmiCategory: 'normal', smoking: 'never', alcohol: 'moderate', activity: 'moderate',
       diabetes: 'no', selfRatedHealth: 'good', parentalLongevity: 'unknown',
@@ -74,14 +76,6 @@ describe('ssFormUtils', () => {
     expect(55 + Math.round(25.73 * applied)).not.toBe(saved2022)
     vi.mocked(loadLongevity).mockReturnValue({ answers, result: { illustrativePlanningAge: saved2022 } } as ReturnType<typeof loadLongevity>)
     expect(defaultEndAge()).toBe(saved2022)
-    expect(savedEndAge()).toEqual({ age: saved2022, tableLabel: 'SSA period life table, 2022 (2025 Trustees Report)' })
-    vi.mocked(loadLongevity).mockReturnValue({
-      answers,
-      result: { illustrativePlanningAge: 81, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } },
-    } as ReturnType<typeof loadLongevity>)
-    expect(savedEndAge()).toEqual({ age: 81, tableLabel: 'SSA period life table, 2023 (2026 Trustees Report)' })
-    vi.mocked(loadLongevity).mockReturnValue(null)
-    expect(savedEndAge()).toBeNull()
   })
 
   it('starts from the saved form when there is one, else from the defaults', () => {

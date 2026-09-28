@@ -1,5 +1,3 @@
-import { storedLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
-import { lifeTableCitation } from '../longevity/constants'
 import { loadLongevity } from '../longevity/storage'
 import { loadSs, type SsFormSnapshot } from './storage'
 
@@ -27,30 +25,10 @@ export const SS_CHART_LINE_COLORS = [
   '#db2777',
 ]
 
-/** A default end age taken from the saved questionnaire, with the SSA table it was computed on. */
-export interface SavedEndAge {
-  readonly age: number
-  /** The table's citation label, e.g. "SSA period life table, 2022 (2025 Trustees Report)". */
-  readonly tableLabel: string
-}
-
-/**
- * The saved questionnaire's planning age as it was saved, with the edition of
- * the table it was computed on (a result saved without one was made on the
- * 2022 table), or null when nothing usable is saved. A stored figure keeps
- * what it was computed on: it is not re-derived on a later table, and a
- * surface that prefills it shows `tableLabel` beside it.
- */
-export function savedEndAge(): SavedEndAge | null {
-  const L = loadLongevity()
-  const age = L?.result?.illustrativePlanningAge
-  if (!L || !age) return null
-  return { age, tableLabel: lifeTableCitation(storedLifeTableEdition(L.result.tableEdition)).label }
-}
-
-/** The saved questionnaire's planning age (`savedEndAge`), else 90. */
 export function defaultEndAge(): number {
-  return savedEndAge()?.age ?? 90
+  const L = loadLongevity()
+  if (L?.result?.illustrativePlanningAge) return L.result.illustrativePlanningAge
+  return 90
 }
 
 export function initialSsForm(): SsFormSnapshot {
