@@ -97,7 +97,32 @@ export interface ReportDecisionCandidateRow {
   moneyLastsYearsDelta: number
 }
 
+/** A Marketplace year whose premium tax credit could not be priced, with its blocking support codes. */
+export interface ReportUnpricedCreditYear {
+  year: number
+  reasons: string[]
+}
+
+/** A claim made before the plan starts, held by the search, with the person's name. */
+export interface ReportAlreadyClaimed {
+  personId: string
+  name: string
+  claimAge: { years: number; months: number }
+  claimYear: number
+}
+
 export interface ReportClaimAgeEvidence {
+  /**
+   * What the co-optimization did (the engine's ClaimAgeCoOptimization.outcome):
+   * 'searched', or a refusal that priced no candidate ('aca-unpriced',
+   * 'already-claimed', 'no-age-left'). Optional, with the two lists below, so a
+   * version-3 model saved before B2-P1 slice 5 still renders, as a search that ran.
+   */
+  outcome?: 'searched' | 'already-claimed' | 'aca-unpriced' | 'no-age-left' | 'no-claims'
+  /** The unpriced credit years, each with its reasons; non-empty only with outcome 'aca-unpriced'. */
+  unpricedAca?: ReportUnpricedCreditYear[]
+  /** The claims the search held because they were made before the plan starts. */
+  alreadyClaimed?: ReportAlreadyClaimed[]
   combinationsEvaluated: number
   /** Null when the current claim ages won the joint grid. */
   winningClaimLabel: string | null
@@ -652,7 +677,17 @@ function snapshotFindings(findings: ReportRecommendationEvidence | null | undefi
     ...findings,
     validation: findings.validation ? { ...findings.validation } : null,
     candidates: findings.candidates.map((candidate) => ({ ...candidate })),
-    claimAge: findings.claimAge ? { ...findings.claimAge } : null,
+    claimAge: findings.claimAge
+      ? {
+          ...findings.claimAge,
+          ...(findings.claimAge.unpricedAca
+            ? { unpricedAca: findings.claimAge.unpricedAca.map((year) => ({ ...year, reasons: [...year.reasons] })) }
+            : {}),
+          ...(findings.claimAge.alreadyClaimed
+            ? { alreadyClaimed: findings.claimAge.alreadyClaimed.map((claim) => ({ ...claim, claimAge: { ...claim.claimAge } })) }
+            : {}),
+        }
+      : null,
   }
 }
 

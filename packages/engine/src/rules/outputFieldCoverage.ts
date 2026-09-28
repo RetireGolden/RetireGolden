@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit cc527f14ea70a773f718a960b0b2c492a7895335.
+ * Output field coverage imported from the output-family census at commit e50dbbac0bda5aadee5fc0254f5069af2f87bbb0.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -10437,6 +10437,36 @@ const coverageCensus = [
   {
     "source": "planner-ui/src/report/reportModel.ts",
     "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.months",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The months of a claim the search held, printed as \"66y 6m\".",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.years",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The whole years of a claim the search held, printed as its claim age.",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The year a claim the search held was made, printed in the report (\"claimed at 67 in 2020\").",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
     "field": "claimChangeEstateGain",
     "disposition": "family",
     "familyId": "claim-age-co-optimization-estate-gain",
@@ -10474,6 +10504,16 @@ const coverageCensus = [
     "field": "jointExactEstate",
     "disposition": "family",
     "familyId": "claim-age-co-optimization-joint-exact-estate",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "unpricedAca[].year",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "A Marketplace year whose premium tax credit the co-optimization could not price, printed with its reason in the report's claim-age refusal.",
     "tsType": "number"
   },
   {
@@ -14664,12 +14704,44 @@ const exclusionCensus = [
     "reason": "The ReportChartDataRow.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimage-months",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.months",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The months of a claim the search held, printed as \"66y 6m\"."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimage-years",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The whole years of a claim the search held, printed as its claim age."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The year a claim the search held was made, printed in the report (\"claimed at 67 in 2020\")."
+  },
+  {
     "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-estateyear",
     "path": "planner-ui/src/report/reportModel.ts",
     "symbol": "ReportClaimAgeEvidence",
     "field": "estateYear",
     "reasonKind": "dimension-coordinate",
     "reason": "The year whose nominal dollars the report's claim estates are in, printed in the \"Claim-change estate gain (YEAR dollars)\" label."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-unpricedaca-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "unpricedAca[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A Marketplace year whose premium tax credit the co-optimization could not price, printed with its reason in the report's claim-age refusal."
   },
   {
     "id": "field-planner-ui-src-report-reportmodel-ts-reportinheritedscheduleyearrow-year",

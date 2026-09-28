@@ -19,6 +19,9 @@ import type {
 } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizeResult } from '../optimize/messages'
 import { acaVetoYears, formatYearList } from '../planner/acaVetoCopy'
+import { claimAgeHeldText, claimAgeSearchRefusal } from '../planner/claimAgeCopy'
+import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
+import type { Person } from '@retiregolden/engine/model/plan'
 import { fmtMoney } from '../planner/format'
 import {
   buildReportModel,
@@ -288,7 +291,7 @@ function provenanceSection(model: ReportModel): string {
   )}</section>`
 }
 
-function recommendationSection(evidence: ReportRecommendationEvidence | null): string {
+function recommendationSection(evidence: ReportRecommendationEvidence | null, startYear: number): string {
   if (!evidence) return ''
   const validation = evidence.validation
   const summaryRows = [
@@ -313,14 +316,36 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null): s
   }
   if (evidence.claimAge) {
     const claim = evidence.claimAge
-    summaryRows.push(
-      ['SS claim combinations optimized', `${claim.combinationsEvaluated}`],
-      [
-        'Recommended Social Security claim change',
-        escapeHtml(claim.winningClaimLabel ?? 'None (current claim ages held)'),
-      ],
-    )
-    if (claim.winningClaimLabel !== null) {
+    const names = new Map((claim.alreadyClaimed ?? []).map((held) => [held.personId, held.name]))
+    const personName = (id: string) => names.get(id) ?? id
+    const alreadyClaimed = claim.alreadyClaimed ?? []
+    // The Optimize card's own sentence when the search priced no candidate
+    // (planner/claimAgeCopy.ts#claimAgeSearchRefusal), not a count of one.
+    const refusal =
+      claim.outcome === undefined
+        ? null
+        : claimAgeSearchRefusal(
+            {
+              outcome: claim.outcome,
+              unpricedAca: (claim.unpricedAca ?? []).map((year) => ({ year: year.year, reasons: year.reasons as AcaSupportCode[] })),
+              alreadyClaimed,
+            },
+            personName,
+            startYear,
+          )
+    if (refusal !== null) {
+      summaryRows.push(['Social Security claim age', escapeHtml(refusal)])
+    } else {
+      summaryRows.push(
+        ['SS claim combinations optimized', `${claim.combinationsEvaluated}`],
+        [
+          'Recommended Social Security claim change',
+          escapeHtml(claim.winningClaimLabel ?? 'None (current claim ages held)'),
+        ],
+      )
+      if (alreadyClaimed.length > 0) summaryRows.push(['Social Security claim held', escapeHtml(claimAgeHeldText(alreadyClaimed, personName))])
+    }
+    if (refusal === null && claim.winningClaimLabel !== null) {
       summaryRows.push(
         ['Joint (claim + conversions) after-tax estate', fmtMoney(claim.jointExactEstate)],
         ['Best current-claim after-tax estate', fmtMoney(claim.currentClaimExactEstate)],
@@ -468,7 +493,7 @@ ${logoHtml}<h1>${escapeHtml(model.planName)}</h1>
 </header>
 ${disclosures}${incompleteNote}
 ${headlineSection(model)}
-${recommendationSection(model.blocks['modeled-findings'])}${advisorSection(model.blocks['advisor-recommendations'])}
+${recommendationSection(model.blocks['modeled-findings'], model.startYear)}${advisorSection(model.blocks['advisor-recommendations'])}
 ${householdSection(model)}
 ${accountsSection(model)}
 ${incomeSection(model)}
@@ -555,7 +580,10 @@ function validationEvidence(validation: ExactLedgerValidation | null): ReportVal
   }
 }
 
-export function reportEvidenceFromOptimizeResult(result: OptimizeResult): ReportRecommendationEvidence {
+export function reportEvidenceFromOptimizeResult(
+  result: OptimizeResult,
+  people: readonly Pick<Person, 'id' | 'name'>[] = [],
+): ReportRecommendationEvidence {
   const tournament = result.tournament
   // Report the selected actionable winner or the exact calculated winner that
   // was explicitly withheld. Never substitute the solver's cleaned validation
@@ -627,6 +655,16 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     candidates: candidateRows,
     claimAge: result.claimAge?.enabled
       ? {
+          // The search's outcome and its facts, each claim held with its
+          // person's name, so the report prints the Optimize card's refusal.
+          outcome: result.claimAge.outcome,
+          unpricedAca: result.claimAge.unpricedAca.map((year) => ({ year: year.year, reasons: [...year.reasons] })),
+          alreadyClaimed: result.claimAge.alreadyClaimed.map((held) => ({
+            personId: held.personId,
+            name: people.find((person) => person.id === held.personId)?.name ?? held.personId,
+            claimAge: { years: held.claimAge.years, months: held.claimAge.months },
+            claimYear: held.claimYear,
+          })),
           combinationsEvaluated: result.claimAge.combinationsEvaluated,
           winningClaimLabel: result.claimAge.winningClaimLabel,
           jointExactEstate: result.claimAge.jointExactEstate,

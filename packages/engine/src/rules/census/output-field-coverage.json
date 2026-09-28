@@ -10902,5 +10902,45 @@
     "familyId": null,
     "reason": "The last year of the lever's window, the death year.",
     "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "unpricedAca[].year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A Marketplace year whose premium tax credit the co-optimization could not price, printed with its reason in the report's claim-age refusal.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The year a claim the search held was made, printed in the report (\"claimed at 67 in 2020\").",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.years",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The whole years of a claim the search held, printed as its claim age.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.months",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The months of a claim the search held, printed as \"66y 6m\".",
+    "reasonKind": "dimension-coordinate"
   }
 ]

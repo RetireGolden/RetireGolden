@@ -93,7 +93,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     canonical ages are no longer tried (5 to 3, and 3 to 2). An open claim with no
     canonical age left to try (a claim at 70 in the start year, the earlier ages past)
     has the new outcome `no-age-left`, and the card says no claim age was left to try
-    instead of "1 claim combinations were each fully re-optimized".
+    instead of "1 claim combinations were each fully re-optimized". The downloadable
+    report prints the card's own refusal, each unpriced year with its reason and each
+    held claim by name, instead of "SS claim combinations optimized: 1" and "None
+    (current claim ages held)"; its example-couple golden now shows that refusal.
   - A diagnostic evaluation's loss reason names the diagnostic raised ("diagnostic-only
     evaluation: ACA evidence … is non-actionable in the baseline for 2028, …") instead of
     "invalid patch or materially unexecuted schedule", on the Optimize report's tournament
@@ -1598,7 +1601,13 @@ has — rather than the runtime contract a consumer needs on the landing page.
   `planWithClaimAgesMonthly`, `objectiveIsFlat`, `sweepVerdict`, `SweepVerdict`,
   `SweepRow`, `SweepResult`, `MonthlyClaim` and `MonthlyRefinement`; `planner/acaVetoCopy` gains
   `unpricedCreditYearsText`, `claimAgeUnpricedCreditReason` and `UnpricedCreditYear`, and
-  the new `planner/claimAgeCopy` holds the already-claimed sentences.
+  the new `planner/claimAgeCopy` holds the already-claimed sentences and the Optimize
+  card's claim-age refusal (`claimAgeSearchRefusal`, `claimAgeHeldText`). The report
+  model's `ReportClaimAgeEvidence` gains the optional `outcome`, `unpricedAca`
+  (`ReportUnpricedCreditYear`) and `alreadyClaimed` (`ReportAlreadyClaimed`, with the
+  person's name), optional so a version-3 model saved before them still renders as a
+  search that ran, and `reportEvidenceFromOptimizeResult` takes the plan's people to name
+  the held claims.
 
 - **Social Security analysis (B2-P1 slice 4):** the parameter field
   `socialSecurity.oasdiEmployeeRatePct` is removed from `ParameterPack` and the 2026

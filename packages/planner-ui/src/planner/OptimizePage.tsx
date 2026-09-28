@@ -25,8 +25,8 @@ import { runOptimize } from '../optimize/runner'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
-import { acaVetoExplanation, claimAgeUnpricedCreditReason } from './acaVetoCopy'
-import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText } from './claimAgeCopy'
+import { acaVetoExplanation } from './acaVetoCopy'
+import { claimAgeHeldText, claimAgeSearchRefusal } from './claimAgeCopy'
 import { isClaimAlreadyMade } from '@retiregolden/engine/socialSecurity/openClaims'
 import { StateTaxIncompleteGuidancePanel } from './stateTaxIncompleteGuidance'
 import {
@@ -534,7 +534,7 @@ export function OptimizePage() {
       result: view.result,
       summary: view.summary,
       startYear,
-      recommendationEvidence: reportEvidenceFromOptimizeResult(heldResult),
+      recommendationEvidence: reportEvidenceFromOptimizeResult(heldResult, plan.household.people),
       branding: reportBranding,
     })
   }
@@ -681,29 +681,11 @@ export function OptimizePage() {
               </div>
             ) : null}
           </div>
-        ) : claimAge.outcome === 'aca-unpriced' ? (
+        ) : claimAge.outcome === 'aca-unpriced' || claimAge.outcome === 'no-age-left' || claimAge.outcome === 'already-claimed' ? (
+          // The same sentence the downloadable report prints (claimAgeCopy.ts#claimAgeSearchRefusal).
           <div className="card">
-            <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome="aca-unpriced">
-              Social Security claim age not searched. {claimAgeUnpricedCreditReason(claimAge.unpricedAca)} The
-              recommendation below keeps your current claim ages.
-            </p>
-          </div>
-        ) : claimAge.outcome === 'no-age-left' ? (
-          <div className="card">
-            <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome="no-age-left">
-              Social Security claim age not searched: none of the ages it tries (62, full retirement age and 70) is
-              both different from your current claim and still ahead in {startYear}, so there is no claim age left to
-              try. The recommendation below keeps your current claim ages.
-              {claimAge.alreadyClaimed.length > 0
-                ? ` ${alreadyClaimedText(claimAge.alreadyClaimed, personName)}, before the plan starts, so that claim was held as it is.`
-                : ''}
-            </p>
-          </div>
-        ) : claimAge.outcome === 'already-claimed' ? (
-          <div className="card">
-            <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome="already-claimed">
-              Social Security claim age not searched: {alreadyClaimedText(claimAge.alreadyClaimed, personName)}, before
-              the plan starts in {startYear}, so there is no claim age left to move. {ALREADY_CLAIMED_LIMITS}
+            <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome={claimAge.outcome}>
+              {claimAgeSearchRefusal(claimAge, personName, startYear)}
             </p>
           </div>
         ) : (
@@ -712,9 +694,7 @@ export function OptimizePage() {
               Social Security claim age co-optimized: {claimAge.combinationsEvaluated} claim combinations were each
               fully re-optimized; none beat your current claim ages by a meaningful margin, so the recommendation
               below keeps them.
-              {claimAge.alreadyClaimed.length > 0
-                ? ` ${alreadyClaimedText(claimAge.alreadyClaimed, personName)}, before the plan starts, so that claim was held as it is.`
-                : ''}
+              {claimAge.alreadyClaimed.length > 0 ? ` ${claimAgeHeldText(claimAge.alreadyClaimed, personName)}` : ''}
             </p>
           </div>
         )
