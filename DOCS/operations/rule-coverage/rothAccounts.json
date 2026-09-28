@@ -95,10 +95,20 @@
       "verifiedOn": "2026-09-27",
       "dueOn": "2027-09-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualRothBasisPoolKey.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/rothBasis.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualRothBasisPoolKey.ts",
+          "functions": [
+            {
+              "name": "isRothIraPoolKey",
+              "line": 19
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [

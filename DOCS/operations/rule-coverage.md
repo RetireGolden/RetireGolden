@@ -88,8 +88,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 90 |
-| registered | 117 |
-| rule-free | 235 |
+| registered | 118 |
+| rule-free | 234 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -107,7 +107,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 9 | 6 | 0 | 3 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 10 | 2 | 6 | 2 | 0 |
-| projection | 126 | 42 | 20 | 64 | 0 |
+| projection | 126 | 42 | 21 | 63 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 68 | 0 | 22 | 46 | 0 |
 | scenarios | 11 | 0 | 0 | 11 | 0 |

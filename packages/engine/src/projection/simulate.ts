@@ -78,7 +78,7 @@ import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualForcedDistributionQcdAndRetirementActionsPhase } from
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
-import { annualRothBasisPoolKey } from './internal/annualRothBasisPoolKey.js'
+import { annualRothBasisPoolKey, isRothIraPoolKey } from './internal/annualRothBasisPoolKey.js'
 import {
   annualFundingApplicationAndClosePhase,
   type AnnualFundingApplicationAndClosePhaseScalars,
@@ -813,7 +813,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const existing = rothBasis.get(key)
     if (existing) existing.contributionBasis += startBasis
     else rothBasis.set(key, { contributionBasis: startBasis, conversionLayers: [] })
-    if (key.startsWith('rothira:')) {
+    if (isRothIraPoolKey(key)) {
       ownedRothIraStartBalanceByPool.set(key, (ownedRothIraStartBalanceByPool.get(key) ?? 0) + account.balance)
     }
     if (assumedSeed > 0) {
@@ -2232,11 +2232,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // Treas. Reg. 1.408A-6 A-7(b): once the survivor treats the Roth IRA
             // as her own, her period for all her Roth IRAs ends at the earlier of
             // the decedent's and her own, so the decedent's first year carries
-            // over instead of being dropped with the inherited pool.
-            const fiveYearPeriodStartYear = rothFiveYearPeriodAfterTreatAsOwn(
-              prior === undefined ? null : prior.fiveYearPeriodStartYear,
-              pool.firstRothContributionTaxYear,
-            )
+            // over instead of being dropped with the inherited pool. Only a Roth
+            // IRA pool carries that period, as in the seeding above; a
+            // designated Roth pool gets none (irc-402A-d-2-designated-roth-five-year-period).
+            const fiveYearPeriodStartYear = isRothIraPoolKey(ownerKey)
+              ? rothFiveYearPeriodAfterTreatAsOwn(
+                prior === undefined ? null : prior.fiveYearPeriodStartYear,
+                pool.firstRothContributionTaxYear,
+              )
+              : undefined
             rothBasis.set(ownerKey, {
               contributionBasis: (prior?.contributionBasis ?? 0) + handoff.contributionBasis,
               conversionLayers: [...(prior?.conversionLayers ?? []), ...handoff.conversionLayers]

@@ -172,7 +172,7 @@ export const rothAccountRecords = {
   'irc-402A-d-2-designated-roth-five-year-period': {
     title: 'The five-taxable-year period of a designated Roth account is not modeled',
     statement:
-      'A distribution from a designated Roth account in an employer plan is qualified, and so not included in gross income, only if it is made on or after one of the events in 408A(d)(2)(A) other than a qualified special purpose distribution, which are attaining age 59.5, death and disability, and after the 5-taxable-year period beginning with the first taxable year for which the individual made a designated Roth contribution under the same plan, or under an earlier plan whose designated Roth account was rolled into it (26 U.S.C. 402A(d)(1), (d)(2); Treas. Reg. 1.402A-1 A-4(a)). The engine gives a designated Roth account no five-year period: simulatePlan seeds the period only on the Roth IRA pool of each person, so a designated Roth pool carries no fiveYearPeriodStartYear and splitRothWithdrawal treats a distribution from it at attained age 60 or later as qualified, whether the account holds money when the plan starts or starts empty and is funded by the plan.',
+      'A distribution from a designated Roth account in an employer plan is qualified, and so not included in gross income, only if it is made on or after one of the events in 408A(d)(2)(A) other than a qualified special purpose distribution, which are attaining age 59.5, death and disability, and after the 5-taxable-year period beginning with the first taxable year for which the individual made a designated Roth contribution under the same plan, or under an earlier plan whose designated Roth account was rolled into it (26 U.S.C. 402A(d)(1), (d)(2); Treas. Reg. 1.402A-1 A-4(a)). The engine gives a designated Roth account no five-year period: simulatePlan seeds the period only on the Roth IRA pool of each person, and the treat-as-own handoff of a surviving spouse carries the first year of the late spouse only onto a Roth IRA pool (isRothIraPoolKey), so a designated Roth pool carries no fiveYearPeriodStartYear and splitRothWithdrawal treats a distribution from it at attained age 60 or later as qualified, whether the account holds money when the plan starts or starts empty and is funded by the plan.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -210,10 +210,12 @@ export const rothAccountRecords = {
     implementedBy: [
       'packages/engine/src/strategies/rothBasis.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualRothBasisPoolKey.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualRothBasisPoolKey.ts#isRothIraPoolKey',
     ],
   },
 

@@ -1018,7 +1018,7 @@
   "attestationsDerived": {
     "catalogued": 70,
     "excludedWithReason": 0,
-    "notYetReviewed": 165
+    "notYetReviewed": 164
   },
   "shards": [
     {

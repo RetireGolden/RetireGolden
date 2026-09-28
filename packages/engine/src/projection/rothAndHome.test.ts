@@ -363,6 +363,38 @@ describe('spousal treat-as-own carries the decedent\'s first Roth year', () => {
     expect(run(survivorPlan(2029, 2024)).years.find((r) => r.year === 2029)!.magi).toBe(0)
     expect(run(survivorPlan(2028, 2019)).years.find((r) => r.year === 2028)!.magi).toBe(0)
   })
+
+  it('gives an inherited designated Roth account she treats as her own no five-year period (2028): its earnings are not taxed', () => {
+    // The same account in an employer plan (kind 'employer'), which the plan
+    // schema admits with the same inherited facts, and with her election made
+    // in 2025 so it is in force at the start (the projection models no
+    // inherited distribution history for an employer account, so a 2026
+    // election would never be honored). From 2026 she owns it, and its basis
+    // pool is a designated Roth pool, which carries no five-year period in the
+    // engine (irc-402A-d-2-designated-roth-five-year-period): the A-7(b) Roth
+    // IRA period is not carried onto it. At 81 the 2028 distribution is
+    // qualified, contributions and earnings alike, so nothing is taxed. The
+    // same plan with a Roth IRA taxes the earnings inside his 2024-2028 period.
+    const plan = survivorPlan(2028, 2024)
+    const account = plan.accounts.find((a) => a.id === 'inherited')!
+    const beneficiary = account.type === 'roth' ? account.inherited?.beneficiary : undefined
+    const facts = beneficiary?.spousalElectionFacts
+    if (account.type !== 'roth' || beneficiary === undefined || facts === undefined || facts.section402c2j4Inputs === undefined) {
+      throw new Error('fixture drift: expected the inherited Roth account and its election facts')
+    }
+    beneficiary.treatAsOwnElectionYear = 2025
+    facts.affirmativeElectionDate = '2025-01-15'
+    facts.affirmativeElectionYear = 2025
+    facts.section402c2j4Inputs.distributionYear = 2025
+    const asRothIra = run(structuredClone(plan)).years.find((r) => r.year === 2028)!
+    expect(asRothIra.magi).toBeGreaterThan(50_000)
+
+    account.kind = 'employer'
+    const y = run(plan).years.find((r) => r.year === 2028)!
+    expect(y.withdrawals.roth).toBeGreaterThan(150_000)
+    expect(y.magi).toBe(0)
+    expect(y.penalties).toBe(0)
+  })
 })
 
 describe('Debt lump-sum payoff', () => {
