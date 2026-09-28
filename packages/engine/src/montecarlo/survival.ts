@@ -260,9 +260,11 @@ function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
  * power whose adjusted expectancy at this age is m × the curve's own
  * expectancy at power 1, solved by bisection. m = 1 returns exactly 1, the
  * root (the bisection cannot land on it). Results are clamped to a sane hazard
- * range so extreme questionnaire answers cannot degenerate the curve.
+ * range so extreme questionnaire answers cannot degenerate the curve. A
+ * non-finite age (NaN or ±Infinity) throws a RangeError, at m = 1 too.
  */
 export function hazardForExpectancyMultiplier(age: number, sex: Sex, m: number): number {
+  if (!Number.isFinite(age)) throw new RangeError(`A hazard power is solved at a finite age; got ${age}`)
   if (m === 1) return 1
   const target = Math.max(0.1, m) * expectancyUnderHazard(age, sex, 1)
   let lo = 0.2 // far healthier than the table

@@ -1716,14 +1716,16 @@ has — rather than the runtime contract a consumer needs on the landing page.
   RetireGolden-MCP import none of the renamed or narrowed exports. The one-year death
   probability lives in the new leaf module `montecarlo/deathProbability`
   (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`), which `montecarlo/mortality`
-  re-exports, so the mortality and survival modules no longer import each other. Bad input
-  now throws where it returned a value: `sampleDeathAge` with a NaN age throws a
-  `RangeError` (it returned 119), and `jointLastSurvivorExpectancy` with a NaN or infinite
-  age throws one (it returned NaN, or for an infinite age the other life's expectancy);
-  `hazardForExpectancyMultiplier` with a NaN age returns 8 (it returned 0.2). No caller
-  passes such an age: ages come from whole birth years. The source record's `archive`
-  loses `sha256`, and `PARAMETER_PROVENANCE` gains the ids `ssa-life-table` and
-  `ssa-life-table-2022`.
+  re-exports, so the mortality and survival modules no longer import each other. A
+  non-finite age (NaN, +Infinity or -Infinity) now throws a `RangeError` in
+  `sampleDeathAge`, `jointLastSurvivorExpectancy` (for either life) and
+  `hazardForExpectancyMultiplier` (for every multiplier, 1 included), where each returned
+  a number: `sampleDeathAge` 119 for NaN or +Infinity and a draw from age 0 for -Infinity;
+  `jointLastSurvivorExpectancy` NaN, the other life's expectancy for +Infinity and 120.5
+  for -Infinity; `hazardForExpectancyMultiplier` about 0.2 for NaN, 0.2 or 8 for +Infinity
+  and the power at age 0 for -Infinity. No caller passes such an age (ages come from whole
+  birth years), so no figure moves. The source record's `archive` loses `sha256`, and
+  `PARAMETER_PROVENANCE` gains the ids `ssa-life-table` and `ssa-life-table-2022`.
 
 - **Claim-age searches and the survivor analysis (B2-P1 slice 5):** new modules
   `decisions/claimAgeSweep` (`sweepClaimAges`, `refineClaimAgeMonthly`, `refineClaimMonths`,

@@ -27,9 +27,10 @@ export { annualMortality, MAX_AGE, type Sex, type TableSex } from './deathProbab
  * for 'average' it is the mixture's, so the drawn age has the mixture's
  * distribution. Returns an age that plays the same role as `planningAge` (alive
  * through it, dead the next year). Deterministic given the RNG stream, so paths
- * stay reproducible.
+ * stay reproducible. A non-finite age (NaN or ±Infinity) throws a RangeError.
  */
 export function sampleDeathAge(rng: Rng, currentAge: number, sex: Sex): number {
+  if (!Number.isFinite(currentAge)) throw new RangeError(`A death age is drawn from a finite age; got ${currentAge}`)
   const from = Math.floor(Math.max(currentAge, 0))
   if (from >= MAX_AGE) return MAX_AGE
   const curve = survivalCurve(from, sex)
@@ -43,9 +44,13 @@ export function sampleDeathAge(rng: Rng, currentAge: number, sex: Sex): number {
  * Joint last-survivor life expectancy at the two ages — the years until *both*
  * are dead, assuming independent lifetimes: e = 0.5 + Σ_t [1 − (1−tp_a)(1−tp_b)],
  * each tp read from that life's survival curve. Used for the joint-and-survivor
- * annuity exclusion multiple; IRS RMD Table II lives in the RMD module.
+ * annuity exclusion multiple; IRS RMD Table II lives in the RMD module. A
+ * non-finite age (NaN or ±Infinity) for either life throws a RangeError.
  */
 export function jointLastSurvivorExpectancy(ageA: number, sexA: Sex, ageB: number, sexB: Sex): number {
+  for (const age of [ageA, ageB]) {
+    if (!Number.isFinite(age)) throw new RangeError(`A joint life expectancy is read at finite ages; got ${age}`)
+  }
   const survivalA = lifeSurvival(ageA, sexA)
   const survivalB = lifeSurvival(ageB, sexB)
   let expectancy = 0.5
