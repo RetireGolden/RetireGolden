@@ -39,10 +39,19 @@ is surfaced inside the planner via the Longevity modal rather than a standalone 
   curves from the current age; record `survival-probability-product`).
 - **Stored figures keep their edition.** A saved questionnaire result and a percentile pick record the table
   edition they were computed on; one saved before 2026-09-27 has none and was made on the 2022 period table
-  (2025 Trustees Report), and is labelled so.
+  (2025 Trustees Report), and is labelled so. The editions a stored figure can name are a closed set, each with
+  SSA's own page (`ssaPeriodLifeTable.ts#KNOWN_LIFE_TABLE_EDITIONS`: the 2022 table at
+  https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html and the 2023 table at the live page); any other
+  edition reads "table edition not recognized" and links the live page. The Assumptions card and its exports
+  cite each planning age to the parameter-provenance entry for the edition it was computed on
+  (`ssa-life-table`, `ssa-life-table-2022`); a questionnaire age, whose edition the plan does not store, takes
+  the edition of the result saved in this browser for that person when that result gives the plan's age, and
+  otherwise says "table edition not recorded" and cites no table.
 
 Refresh the embedded table when SSA publishes a new edition: replace the columns and the source record in
-`ssaPeriodLifeTable.ts` (the file name carries no edition) as a reviewed data change. The vintage record
+`ssaPeriodLifeTable.ts` (the file name carries no edition) as a reviewed data change, add the outgoing edition
+to `KNOWN_LIFE_TABLE_EDITIONS` with SSA's page for it, and give it a `PARAMETER_PROVENANCE` entry at that page,
+so figures stored on it keep a citation. The vintage record
 `ssa-table-4c6-period-life-table-vintage` comes due yearly (`rules:due`) and its quoted text stops matching
 the page the day SSA posts the next edition (`verify:quotes`) — tracked in
 [maintenance-schedule.md](../maintenance-schedule.md).

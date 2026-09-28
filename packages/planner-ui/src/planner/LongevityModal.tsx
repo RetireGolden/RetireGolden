@@ -7,7 +7,7 @@
 import { useCallback } from 'react'
 
 import { LongevityWizard } from '../longevity/LongevityWizard'
-import { loadLongevity, loadLongevityPartner } from '../longevity/storage'
+import { loadLongevity, loadLongevityPartner, questionnairePlanningAge } from '../longevity/storage'
 import type { Person } from '@retiregolden/engine/model/plan'
 import { Modal } from './Modal'
 
@@ -34,7 +34,7 @@ export function LongevityModal({ person, personIndex, onApply, onClose }: Longev
   const handleComplete = useCallback(() => {
     const saved = personIndex === 0 ? loadLongevity() : loadLongevityPartner()
     if (saved) {
-      onApply(Math.min(120, Math.max(60, Math.round(saved.result.illustrativePlanningAge))))
+      onApply(questionnairePlanningAge(saved.result))
     }
     onClose()
   }, [personIndex, onApply, onClose])

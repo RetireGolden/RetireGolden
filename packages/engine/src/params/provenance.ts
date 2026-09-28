@@ -148,6 +148,16 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     publisher: 'SSA Office of the Chief Actuary',
     url: 'https://www.ssa.gov/oact/STATS/table4c6.html',
   },
+  // The edition before it, which a planning age stored before 2026-09-27 was
+  // computed on, so the Assumptions card cites the table a figure came from.
+  {
+    id: 'ssa-life-table-2022',
+    label: 'SSA period life table, earlier edition',
+    figures:
+      'Table 4C6, the 2022 period table (2025 Trustees Report), which the planner used until September 2026. A survival-percentile or questionnaire planning age made before then was computed on it and is cited here; the planner now uses the 2023 table.',
+    publisher: 'SSA Office of the Chief Actuary',
+    url: 'https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html',
+  },
   {
     id: 'federal-poverty-line',
     label: 'Federal poverty guideline (ACA)',

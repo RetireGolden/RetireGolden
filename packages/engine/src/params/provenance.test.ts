@@ -3,7 +3,7 @@ import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
 import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
-import { LAST_TABLE_AGE, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
+import { KNOWN_LIFE_TABLE_EDITIONS, LAST_TABLE_AGE, LIFE_TABLE_EDITION_BEFORE_THE_FIELD, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
 import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
 import { FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR, QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { stateParamsFor } from './state/index.js'
@@ -414,6 +414,12 @@ function ssaLifeTableClauses(): FigureClause[] {
   ]
 }
 
+// The edition before it, named from the engine's closed set of known editions.
+function ssaLifeTable2022Clauses(): FigureClause[] {
+  const { periodYear, trusteesReportYear } = LIFE_TABLE_EDITION_BEFORE_THE_FIELD
+  return [{ label: 'table edition', clause: `the ${periodYear} period table (${trusteesReportYear} Trustees Report)` }]
+}
+
 function federalPovertyLineClauses(): FigureClause[] {
   const block2027 = acaParametersForCoverageYear(2027).params
   return [
@@ -614,6 +620,7 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'social-security-credits': socialSecurityCreditClauses,
   'cpi-u': cpiUClauses,
   'ssa-life-table': ssaLifeTableClauses,
+  'ssa-life-table-2022': ssaLifeTable2022Clauses,
   'federal-poverty-line': federalPovertyLineClauses,
   'aca-ptc': acaPtcClauses,
   'aca-ptc-2027': acaPtc2027Clauses,
@@ -764,6 +771,15 @@ describe('parameter provenance', () => {
   it('links the life table to the page the engine read it from', () => {
     expect(byId('ssa-life-table').url).toBe(SSA_PERIOD_LIFE_TABLE.source.url)
     expect(byId('ssa-life-table').publisher).toBe('SSA Office of the Chief Actuary')
+  })
+
+  it('cites each known life table edition with one entry at SSA’s page for it (PR #759 review 1)', () => {
+    for (const known of KNOWN_LIFE_TABLE_EDITIONS) {
+      const entries = PARAMETER_PROVENANCE.filter((s) => s.url === known.url)
+      expect(entries.map((s) => s.id), JSON.stringify(known.edition)).toHaveLength(1)
+      expect(entries[0]!.figures).toContain(`the ${known.edition.periodYear} period table (${known.edition.trusteesReportYear} Trustees Report)`)
+    }
+    expect(byId('ssa-life-table-2022').url).toBe('https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html')
   })
 
   it('has unique ids', () => {

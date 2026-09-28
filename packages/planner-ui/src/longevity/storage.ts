@@ -1,7 +1,17 @@
 import { readLocal, removeLocal, writeLocal } from '../data/localStore'
 import { LONGEVITY_PARTNER_STORAGE_KEY, LONGEVITY_STORAGE_KEY } from './constants'
 import { parseLongevityPersistedLoose } from './persistedGuard'
-import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
+import type { LongevityPersisted, LongevityResult } from '@retiregolden/engine/longevity/types'
+
+/**
+ * The planning age a questionnaire result gives the plan: its illustrative
+ * age, whole and within the plan's 60 to 120. Household's Calculate applies
+ * it (planner/LongevityModal.tsx), and the Assumptions card matches a
+ * questionnaire planning age to the saved result that gave it.
+ */
+export function questionnairePlanningAge(result: LongevityResult): number {
+  return Math.min(120, Math.max(60, Math.round(result.illustrativePlanningAge)))
+}
 
 export function loadLongevity(): LongevityPersisted | null {
   try {

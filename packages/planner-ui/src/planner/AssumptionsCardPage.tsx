@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router'
 
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
+import { loadLongevity, loadLongevityPartner, questionnairePlanningAge } from '../longevity/storage'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
 import { currentStartYear } from './useProjection'
@@ -19,6 +20,7 @@ import {
   assumptionsExportText,
   buildAssumptionsSnapshot,
   type AssumptionProvenance,
+  type SavedQuestionnaireAge,
 } from './assumptionsExport'
 
 const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: string }> = {
@@ -30,7 +32,21 @@ const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: stri
 export function AssumptionsCardPage() {
   const { plan } = usePlan()
   const startYear = currentStartYear()
-  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear), [plan, startYear])
+  // The questionnaire results saved in this browser date a questionnaire
+  // planning age's table (the plan does not store it).
+  const savedQuestionnaire = useMemo(
+    () =>
+      [loadLongevity(), loadLongevityPartner()].map((saved): SavedQuestionnaireAge | null =>
+        saved
+          ? {
+              planningAge: questionnairePlanningAge(saved.result),
+              ...(saved.result.tableEdition ? { tableEdition: saved.result.tableEdition } : {}),
+            }
+          : null,
+      ),
+    [],
+  )
+  const snapshot = useMemo(() => buildAssumptionsSnapshot(plan, startYear, savedQuestionnaire), [plan, startYear, savedQuestionnaire])
   const sourceById = useMemo(() => new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s])), [])
 
   return (

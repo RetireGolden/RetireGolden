@@ -78,6 +78,11 @@
  * appendix and each model's parameter-sources block gain the "SSA period life
  * table" row (Table 4C6, the 2023 period table of the 2026 Trustees Report),
  * after the CPI-U row; nothing else in any golden changed.
+ * 2026-09-28 (PR #759 review 1): the appendix and each model's
+ * parameter-sources block gain the "SSA period life table, earlier edition"
+ * row (the 2022 period table of the 2025 Trustees Report, at SSA's
+ * table4c6_2022_TR2025.html), after the 2023 row, which the Assumptions card
+ * cites for a planning age made on that table; nothing else changed.
  */
 import { describe, expect, it } from 'vitest'
 

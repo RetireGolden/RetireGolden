@@ -19,7 +19,8 @@ import {
   resolveAssetClassParams,
   DEFAULT_ASSET_CLASS_PARAMS,
 } from '@retiregolden/engine/allocation/assetClasses'
-import { storedLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+import { knownLifeTableEdition, type KnownLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+import type { LifeTableEdition } from '@retiregolden/engine/longevity/types'
 import { createEmptyPlan, ASSET_CLASS_IDS, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import {
   LATEST_PACK_YEAR,
@@ -54,6 +55,18 @@ export interface AssumptionGroup {
    * provenance chip, and an engine fact is neither.
    */
   note?: string
+}
+
+/**
+ * A questionnaire result saved in this browser for a person slot (index 0 is
+ * the primary person, 1 the partner): the planning age it gives the plan
+ * (longevity/storage.ts#questionnairePlanningAge) and the table edition it was
+ * computed on (absent on a result saved before the field existed, which was
+ * made on the 2022 table).
+ */
+export interface SavedQuestionnaireAge {
+  readonly planningAge: number
+  readonly tableEdition?: LifeTableEdition
 }
 
 export interface AssumptionsSnapshot {
@@ -192,7 +205,7 @@ function assetClassGroup(plan: Plan): AssumptionGroup | null {
   }
 }
 
-function longevityGroup(plan: Plan): AssumptionGroup {
+function longevityGroup(plan: Plan, savedQuestionnaire: readonly (SavedQuestionnaireAge | null)[]): AssumptionGroup {
   return {
     id: 'longevity',
     label: 'Household & longevity',
@@ -210,14 +223,17 @@ function longevityGroup(plan: Plan): AssumptionGroup {
         value: `${plan.household.filingStatus === 'marriedFilingJointly' ? 'Married filing jointly' : 'Single'} · ${plan.household.state}${plan.household.stateMoves.length > 0 ? ` (moves: ${plan.household.stateMoves.map((m) => `${m.state} in ${m.fromYear}`).join(', ')})` : ''}`,
         provenance: 'user-set',
       },
-      ...plan.household.people.map((p, i): AssumptionRow => ({
-        id: `person-${i}`,
-        label: `${p.name}: retirement & planning age`,
-        value: `${p.retirementAge !== null ? `retires at ${p.retirementAge}, ` : ''}plan runs to age ${p.longevity.planningAge}${longevityOrigin(p.longevity)}`,
-        // 'model' and 'percentile' both derive from SSA's period life table.
-        provenance: p.longevity.source === 'manual' ? 'user-set' : 'published-source',
-        sourceId: p.longevity.source === 'manual' ? undefined : 'ssa-life-table',
-      })),
+      ...plan.household.people.map((p, i): AssumptionRow => {
+        const origin = longevityOrigin(p.longevity, savedQuestionnaire[i] ?? null)
+        return {
+          id: `person-${i}`,
+          label: `${p.name}: retirement & planning age`,
+          value: `${p.retirementAge !== null ? `retires at ${p.retirementAge}, ` : ''}plan runs to age ${p.longevity.planningAge}${origin.text}`,
+          // 'model' and 'percentile' both derive from SSA's period life table.
+          provenance: p.longevity.source === 'manual' ? 'user-set' : 'published-source',
+          ...(origin.sourceId ? { sourceId: origin.sourceId } : {}),
+        }
+      }),
     ],
   }
 }
@@ -299,20 +315,50 @@ function strategyGroup(plan: Plan): AssumptionGroup {
   }
 }
 
+/** The catalog entry citing a known edition: the one at SSA's page for it. */
+function lifeTableSourceId(known: KnownLifeTableEdition): string | undefined {
+  return PARAMETER_PROVENANCE.find((s) => s.url === known.url)?.id
+}
+
+/** The table a planning age was computed on, in the row text, and the catalog entry citing it. */
+function editionOrigin(stored: LifeTableEdition | undefined): { text: string; sourceId?: string } {
+  const known = knownLifeTableEdition(stored)
+  if (!known) return { text: 'SSA period life table, table edition not recognized' }
+  const sourceId = lifeTableSourceId(known)
+  return {
+    text: `SSA ${known.edition.periodYear} period life table, ${known.edition.trusteesReportYear} Trustees Report`,
+    ...(sourceId ? { sourceId } : {}),
+  }
+}
+
 /**
- * How a planning age that is not typed in was set. A percentile pick names the
- * SSA table edition it was computed on (a pick stored before the edition was
- * recorded was made on the 2022 table); the questionnaire's estimate is not
- * stored with an edition on the plan, so it names none.
+ * How a planning age that is not typed in was set, and the life table entry
+ * it cites: the edition the age was computed on, never the current table by
+ * default (PR #759 review 1). A percentile pick names its own edition (a pick
+ * stored before the edition was recorded was made on the 2022 table). The
+ * plan does not store the questionnaire's edition, so a questionnaire age
+ * takes the edition of the result saved in this browser for that person when
+ * that result gives the plan's age; otherwise the row says the edition is not
+ * recorded and cites no table. An edition outside the known set is named as
+ * not recognized and cites no table.
  */
-function longevityOrigin(longevity: Plan['household']['people'][number]['longevity']): string {
+function longevityOrigin(
+  longevity: Plan['household']['people'][number]['longevity'],
+  saved: SavedQuestionnaireAge | null,
+): { text: string; sourceId?: string } {
   if (longevity.source === 'percentile' && longevity.percentile) {
     const { pct, joint, tableEdition } = longevity.percentile
-    const edition = storedLifeTableEdition(tableEdition)
-    return ` (${pct}% survival percentile${joint ? ', joint' : ''}, SSA ${edition.periodYear} period life table, ${edition.trusteesReportYear} Trustees Report)`
+    const edition = editionOrigin(tableEdition)
+    return { ...edition, text: ` (${pct}% survival percentile${joint ? ', joint' : ''}, ${edition.text})` }
   }
-  if (longevity.source === 'model') return ' (life-expectancy questionnaire estimate)'
-  return ''
+  if (longevity.source === 'model') {
+    if (!saved || saved.planningAge !== longevity.planningAge) {
+      return { text: ' (life-expectancy questionnaire estimate, table edition not recorded)' }
+    }
+    const edition = editionOrigin(saved.tableEdition)
+    return { ...edition, text: ` (life-expectancy questionnaire estimate, ${edition.text})` }
+  }
+  return { text: '' }
 }
 
 function taxParametersGroup(): AssumptionGroup {
@@ -329,13 +375,23 @@ function taxParametersGroup(): AssumptionGroup {
   }
 }
 
-export function buildAssumptionsSnapshot(plan: Plan, startYear: number): AssumptionsSnapshot {
+/**
+ * The snapshot of a plan's assumptions. `savedQuestionnaire` holds the
+ * questionnaire results saved in this browser, by person slot, which date a
+ * questionnaire planning age's table (none: those rows say the edition is not
+ * recorded).
+ */
+export function buildAssumptionsSnapshot(
+  plan: Plan,
+  startYear: number,
+  savedQuestionnaire: readonly (SavedQuestionnaireAge | null)[] = [],
+): AssumptionsSnapshot {
   const defaults = defaultAssumptions()
   const groups = [
     economyGroup(plan, defaults),
     accountsGroup(plan, startYear),
     assetClassGroup(plan),
-    longevityGroup(plan),
+    longevityGroup(plan, savedQuestionnaire),
     lawTogglesGroup(plan, defaults),
     strategyGroup(plan),
     taxParametersGroup(),
