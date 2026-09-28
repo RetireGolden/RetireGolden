@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runHistoricalStressSuiteViews, runMonteCarlo, runRiskBasedGuardrailSolve, runStochasticFrontiers } from '../mc/pool'
 import { runOptimize } from '../optimize/runner'
 import { runSpendingSolve } from '../optimize/spendingRunner'
-import { optimizeErrorSentence, relocationErrorSentence } from '../planner/engineRefusalCopy'
+import {
+  canRunAgain,
+  insightPreviewErrorSentence,
+  optimizeErrorSentence,
+  relocationErrorSentence,
+} from '../planner/engineRefusalCopy'
 import { buildModel } from '../planner/marketModelPicker'
 import { runRelocationCompare } from '../relocation/runner'
 import { createSamplePlan } from '../testSupport/samplePlan'
@@ -61,10 +66,19 @@ describe('a production build where Worker is unavailable', () => {
     await expect(outcome).rejects.toThrow(WORKER_UNAVAILABLE_MESSAGE)
   })
 
-  it('shows the reason alone in the optimizer and relocation failure wells', () => {
+  it('shows the reason alone, with no "again" advice, from every copy helper that takes a worker rejection', () => {
     const error = new WorkerUnavailableError()
-    expect(optimizeErrorSentence(error)).toBe(WORKER_UNAVAILABLE_MESSAGE)
-    expect(relocationErrorSentence(error)).toBe(WORKER_UNAVAILABLE_MESSAGE)
+    for (const sentence of [optimizeErrorSentence, relocationErrorSentence, insightPreviewErrorSentence]) {
+      expect(sentence(error), sentence.name).toBe(WORKER_UNAVAILABLE_MESSAGE)
+      expect(sentence(error), sentence.name).not.toMatch(/again/i)
+    }
+    // Any other failure keeps its retry advice.
+    expect(insightPreviewErrorSentence(new Error('Monte Carlo worker failed'))).toMatch(/Preview it again/)
+  })
+
+  it('offers "Run again" for any failure but this one', () => {
+    expect(canRunAgain(WORKER_UNAVAILABLE_MESSAGE)).toBe(false)
+    expect(canRunAgain('Monte Carlo worker failed')).toBe(true)
   })
 
   it('still computes in-process in a development build (tests, the dev server)', async () => {

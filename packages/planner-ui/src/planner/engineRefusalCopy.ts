@@ -10,15 +10,26 @@
  */
 
 import { engineRefusalOf, type ComparandRole } from '../workers/refusal'
-import { WorkerUnavailableError } from '../workers/spawn'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 
 function unknownDetail(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error)
   return text.trim() === '' ? '' : ` If it fails again, this detail helps us fix it: ${text}`
 }
 
+/**
+ * Whether a failure well may offer "Run again", from the detail text it shows
+ * (the pages keep a failure as the string they print). Not when this runtime
+ * has no Web Worker: running again cannot help there, so the well shows the
+ * reason alone.
+ */
+export function canRunAgain(detail: string): boolean {
+  return detail !== WORKER_UNAVAILABLE_MESSAGE
+}
+
 /** The Insights card's preview: what to show when the preview could not be worked out. */
 export function insightPreviewErrorSentence(error: unknown): string {
+  if (error instanceof WorkerUnavailableError) return error.message
   const refusal = engineRefusalOf(error)
   if (refusal?.kind === 'insight-preview-unavailable') return refusal.message
   if (refusal?.kind === 'monte-carlo-runs') {

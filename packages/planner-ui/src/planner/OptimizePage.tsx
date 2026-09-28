@@ -40,7 +40,7 @@ import { WhyRecommendationPanel } from './explainPanels'
 import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { optimizeErrorSentence } from './engineRefusalCopy'
+import { canRunAgain, optimizeErrorSentence } from './engineRefusalCopy'
 import { LEARN } from './learnLinks'
 import { LiveStatus } from './LiveStatus'
 import {
@@ -611,7 +611,11 @@ export function OptimizePage() {
             does not exist. */}
         {optimizerUnavailable ? null : (
           <div className="mt-ms gap-ms" style={{ display: 'flex', flexWrap: 'wrap' }}>
-            {!schedule && !running ? rerunButton(error ? 'Try again' : 'Run optimizer') : null}
+            {/* No "Try again" when this runtime has no Web Worker: the well
+                says so, and running again cannot help. */}
+            {!schedule && !running && (error === null || canRunAgain(error))
+              ? rerunButton(error ? 'Try again' : 'Run optimizer')
+              : null}
             {/* Also disabled while re-running: the held result (and any claim
                 patch in it) describes the pre-edit plan, so a report downloaded
                 mid-run would mix live plan fields with stale recommendations.

@@ -28,7 +28,7 @@ import * as pool from '../mc/pool'
 import { MonteCarloPage } from './MonteCarloPage'
 import { SsAnalysisPage } from './SsAnalysisPage'
 import { advanceBy } from '../testSupport/settle'
-import { WORKER_UNAVAILABLE_MESSAGE } from '../workers/spawn'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 
 const actualPool = await vi.importActual<typeof import('../mc/pool')>('../mc/pool')
 const mockedRunMc = vi.mocked(pool.runMonteCarlo)
@@ -114,13 +114,53 @@ describe('MonteCarloPage in a production build without Worker', () => {
       await advanceBy(400)
       expect(container.textContent).toContain(`Simulation error: ${WORKER_UNAVAILABLE_MESSAGE}`)
       expect(container.querySelector('[role="progressbar"]')).toBeNull()
-      expect(container.querySelector('.error-recovery[role="alert"]')).not.toBeNull()
+      const alert = container.querySelector('.error-recovery[role="alert"]')
+      expect(alert).not.toBeNull()
+      // Running again cannot help without a Worker, so the well offers no retry.
+      expect(runAgainButtons(alert!)).toHaveLength(0)
       await act(async () => root.unmount())
     } finally {
       vi.unstubAllEnvs()
     }
   })
+
+  it('shows the reason with no "Run again" in the frontier and stress-suite wells', async () => {
+    mockedRunMc.mockImplementation((plan, opts) => actualPool.runMonteCarlo(plan, { ...opts, pathCount: 8 }))
+    mockedFrontiers.mockImplementation(() => Promise.reject(new WorkerUnavailableError()))
+    mockedHistorical.mockImplementation(() => Promise.reject(new WorkerUnavailableError()))
+    await mount(<MonteCarloPage />, createSamplePlan())
+    await advanceBy(400)
+    const buttons = () => [...container.querySelectorAll('button')]
+    await act(async () => buttons().find((b) => b.textContent?.includes('frontiers'))!.click())
+    await advanceBy(20)
+    await act(async () => buttons().find((b) => b.textContent?.includes('rolling/reversed'))!.click())
+    await advanceBy(20)
+    expect(container.textContent).toContain(`Frontier run error: ${WORKER_UNAVAILABLE_MESSAGE}`)
+    expect(container.textContent).toContain(`Stress suite error: ${WORKER_UNAVAILABLE_MESSAGE}`)
+    const alerts = [...container.querySelectorAll('.error-recovery[role="alert"]')]
+    expect(alerts).toHaveLength(2)
+    for (const alert of alerts) expect(runAgainButtons(alert)).toHaveLength(0)
+    await act(async () => root.unmount())
+  })
 })
+
+describe('SsAnalysisPage bridge comparison without Worker', () => {
+  it('shows the no-Worker reason', async () => {
+    mockedRunMc.mockImplementation(() => Promise.reject(new WorkerUnavailableError()))
+    await mount(<SsAnalysisPage />, createSamplePlan())
+    await advanceBy(400)
+    const compare = [...container.querySelectorAll('button')].find((b) => b.textContent?.startsWith('Compare vs claiming'))
+    expect(compare, 'the bridge comparison button').toBeDefined()
+    await act(async () => compare!.click())
+    await advanceBy(20)
+    expect(container.querySelector('p.card-hint[role="alert"]')?.textContent).toBe(WORKER_UNAVAILABLE_MESSAGE)
+    await act(async () => root.unmount())
+  })
+})
+
+function runAgainButtons(scope: Element): HTMLButtonElement[] {
+  return [...scope.querySelectorAll('button')].filter((b) => b.textContent === 'Run again')
+}
 
 describe('SsAnalysisPage robustness check failure', () => {
   it('renders an error and re-enables the button when Monte Carlo rejects', async () => {
@@ -142,6 +182,22 @@ describe('SsAnalysisPage robustness check failure', () => {
     await advanceBy(20)
     expect(container.textContent).toContain('Robustness check error: worker exploded')
     expect(button!.disabled).toBe(false)
+    await act(async () => root.unmount())
+  })
+
+  it('shows the no-Worker reason with no "Run again"', async () => {
+    mockedRunMc.mockImplementation(() => Promise.reject(new WorkerUnavailableError()))
+    const plan = createSamplePlan()
+    plan.expenses.healthcare = { ...plan.expenses.healthcare, applyAcaCredit: false }
+    await mount(<SsAnalysisPage />, plan)
+    await advanceBy(400)
+    const button = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Check robustness'))
+    await act(async () => button!.click())
+    await advanceBy(20)
+    expect(container.textContent).toContain(`Robustness check error: ${WORKER_UNAVAILABLE_MESSAGE}`)
+    const alert = container.querySelector('.error-recovery[role="alert"]')
+    expect(alert).not.toBeNull()
+    expect(runAgainButtons(alert!)).toHaveLength(0)
     await act(async () => root.unmount())
   })
 })

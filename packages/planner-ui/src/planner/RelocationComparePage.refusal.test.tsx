@@ -14,6 +14,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { appExamplePlanById } from '../testSupport/appExamples'
 import { settle, waitFor } from '../testSupport/settle'
 import { WorkerRefusalError } from '../workers/refusal'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 import { EXAMPLE_FIXED_YEAR } from './examples/buildContext'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 
@@ -92,5 +93,24 @@ describe('relocation compare errors in plain words (PR #754)', () => {
       "The states couldn't be compared. Compare again. If it fails again, this detail helps us fix it: Relocation compare worker failed",
     )
     expect(container.textContent).not.toContain('Compare error:')
+  })
+
+  it('states the no-Worker reason alone, with no "compare again"', async () => {
+    vi.mocked(runRelocationCompare).mockRejectedValueOnce(new WorkerUnavailableError())
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(appExamplePlanById('example-couple'))}>
+            <RelocationComparePage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    const run = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Run compare')!
+    await act(async () => run.click())
+    await settle()
+    const line = () => [...container.querySelectorAll('p')].find((p) => p.textContent === WORKER_UNAVAILABLE_MESSAGE)
+    await waitFor(() => line() !== undefined, { what: 'the no-Worker line' })
+    expect(container.textContent).not.toMatch(/compare again/i)
   })
 })

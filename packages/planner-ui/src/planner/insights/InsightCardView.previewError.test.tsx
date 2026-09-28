@@ -24,6 +24,7 @@ import type { MonteCarloRunOptions } from '../../mc/pool'
 import { projectPlan } from '../../projection'
 import { appExamplePlanById } from '../../testSupport/appExamples'
 import { settle, waitFor } from '../../testSupport/settle'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../../workers/spawn'
 import { EXAMPLE_FIXED_YEAR } from '../examples/buildContext'
 import { PlanCtx, type PlanContextValue } from '../planContextCore'
 
@@ -115,6 +116,13 @@ describe('the Insights card preview states refusals in plain words (PR #754)', (
       'two Monte Carlo runs from different start years',
       () => new MonteCarloComparisonRefusal('start-years-differ', 'Success rates are compared only from one start year; the baseline starts in 2026 and the proposal in 2027'),
       "The Monte Carlo line isn't shown: your plan's success rate and the preview's came from simulations that start in different years. Preview again to run both on the same markets.",
+    ],
+    [
+      // A production build without Worker: running the preview again cannot
+      // help, so the card says why and nothing else.
+      'a runtime that cannot start the planner worker',
+      () => new WorkerUnavailableError(),
+      WORKER_UNAVAILABLE_MESSAGE,
     ],
     [
       'any other failure',

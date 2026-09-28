@@ -74,6 +74,7 @@ import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
+import { canRunAgain } from './engineRefusalCopy'
 
 /** Off the keystroke path, the same interval the survivor-transition sweep uses. */
 const SWEEP_DEBOUNCE_MS = 200
@@ -813,9 +814,11 @@ function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'
       {mcError ? (
         <div className="error-recovery" role="alert">
           <p className="error-text">Robustness check error: {mcError}</p>
-          <button type="button" className="btn btn-secondary btn-small" disabled={mcRunning} onClick={() => void runRobustness()}>
-            Run again
-          </button>
+          {canRunAgain(mcError) ? (
+            <button type="button" className="btn btn-secondary btn-small" disabled={mcRunning} onClick={() => void runRobustness()}>
+              Run again
+            </button>
+          ) : null}
         </div>
       ) : null}
 

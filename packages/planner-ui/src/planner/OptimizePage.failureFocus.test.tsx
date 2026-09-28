@@ -14,6 +14,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { WorkerRefusalError } from '../workers/refusal'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 
 vi.mock('../optimize/runner', () => ({ runOptimize: vi.fn() }))
 
@@ -117,6 +118,16 @@ describe('Optimize failure well (#525)', () => {
     const rerendered = container.querySelector<HTMLElement>('.optimizer-failure')!
     expect(document.activeElement).toBe(rerendered)
     expect(rerendered.tabIndex).toBe(-1)
+  })
+
+  it('states the no-Worker reason alone and offers no Try again', async () => {
+    mockedRunOptimize.mockRejectedValue(new WorkerUnavailableError())
+    await mount(createSamplePlan())
+    const well = container.querySelector<HTMLElement>('.optimizer-failure')!
+    expect(well, 'the failure well rendered').not.toBeNull()
+    expect(well.textContent).toBe(WORKER_UNAVAILABLE_MESSAGE)
+    expect(findButton('Try again')).toBeUndefined()
+    expect(container.textContent).not.toMatch(/run it again/i)
   })
 
   it("announces a run that found no schedule, and Re-run focuses the Couldn't-optimize well", async () => {
