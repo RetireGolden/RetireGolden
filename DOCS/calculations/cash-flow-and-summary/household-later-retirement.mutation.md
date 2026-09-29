@@ -6,17 +6,16 @@ Executed 2026-09-29 on branch `claude/people-order-and-scenarios` at base `69051
 
 ```diff
 diff --git a/packages/engine/src/projection/householdRetirement.ts b/packages/engine/src/projection/householdRetirement.ts
-index b0a4a4f0..23cea26f 100644
+index 00000000..00000000 100644
 --- a/packages/engine/src/projection/householdRetirement.ts
 +++ b/packages/engine/src/projection/householdRetirement.ts
-@@ -86,3 +86,3 @@
-   // working year, never the retirement priced (the independent review's N3).
--  if (lastWageYear !== null && lastWageYear >= startYear) return result(lastWageYear + 1, 'wagesEnd')
-+  if (lastWageYear !== null && lastWageYear >= startYear) return result(lastWageYear, 'wagesEnd')
-   return result(startYear, 'startYear')
+@@ -1 +1 @@
+     const retirementYear = birthYear + person.retirementAge
+-    if (lastWageYear !== null && lastWageYear + 1 > retirementYear) return result(lastWageYear + 1, 'wagesPastRetirementAge')
+     return result(retirementYear, 'retirementAge')
 ```
 
-Take the last wage year as the retirement year, the rule after the review's M4 and the worksheet's third wrong reading. Case 3 then names Sam in 2059, Sam's death year, a year still paid wages, instead of Alex in 2028, and the evidence fails there (case 4 would give 2029 instead of 2030). Re-derived for the independent review's N3: the mutation restores, on the rewritten line, the rule N3 replaced.
+Read a retirement age alone, whatever the wages, the worksheet's wrong reading until the round-one review of #765. Case 11 then names Hal in 2032, a year Gus is still paid wages, instead of Gus in 2041. Case 13 still names Kay's 2028 but has Jay retiring in 2027, though his wages run until his death, instead of working through the plan. The evidence fails on those cases and on the surfaces check, where the FI figures and the funded ratio start in 2032 on Hal's retirement instead of 2041 on Gus's. Re-derived for issues 1 and 3 of that review: the receipt's earlier mutation, the last wage year kept for a person with no retirement age (the independent review's N3), is still pinned by cases 3, 4 and 8.
 
 ## Command
 

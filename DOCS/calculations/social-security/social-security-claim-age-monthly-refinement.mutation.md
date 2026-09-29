@@ -6,17 +6,17 @@ Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-sl
 
 ```diff
 diff --git a/packages/engine/src/decisions/claimAgeSweep.ts b/packages/engine/src/decisions/claimAgeSweep.ts
-index b88691cd..07b71b8b 100644
+index 00000000..00000000 100644
 --- a/packages/engine/src/decisions/claimAgeSweep.ts
 +++ b/packages/engine/src/decisions/claimAgeSweep.ts
-@@ -371,4 +371,3 @@
-           if (!row.eligible) {
-             rejected.add(key)
--            continue
-           }
+@@ -1 +1 @@
+         if (!row.eligible) {
+           rejected.add(key)
+-          continue
+         }
 ```
 
-This takes a month that ranks higher even when it breaks the objective's constraints, the worksheet's second wrong reading: case R-A's ineligible 68y5m (primary 130) replaces the whole-year pick, and the eligible 68y9m is never taken. Re-derived when the branch carried rule R7 (canonical order, passes to a fixed point, distinct months counted) into this search: the same reading on the rewritten line.
+This takes a month that ranks higher even when it breaks the objective's constraints, the worksheet's second wrong reading: case R-A's ineligible 68y5m (primary 130) replaces the whole-year pick, and the eligible 68y9m is never taken. Re-derived when round one of #765 (issue 4) removed the five-pass cap and moved each claim's window into claimMonthWindow, which re-indented this line: the same reading on the rewritten line.
 
 ## Command
 
