@@ -104,14 +104,14 @@ function whyThisYear(facts: FiTargetBasisFacts, spendingYear: number): string {
 }
 
 /**
- * The year Coast-FIRE grows into the FI target by: the household's later
- * retirement, or the start year once everyone has retired (then Coast-FIRE is
- * the FI target itself). Null for an empty projection, or when nobody retires
- * in the plan and no FI target is priced.
+ * The year Coast-FIRE grows into the FI target by: the year the FI target
+ * prices, `spendingYear`, which is already max(start year, the household's
+ * later retirement), the year the engine discounts Coast-FIRE from
+ * (projection/compare.ts). Null when the FI target is not priced from a ledger
+ * year: nobody retires in the plan, or the projection is empty.
  */
 export function coastFireHorizonYear(facts: FiTargetBasisFacts): number | null {
-  if (facts.spendingYear === null) return null
-  return Math.max(facts.spendingYear, facts.retirementYear ?? facts.spendingYear)
+  return facts.spendingYear
 }
 
 export function fiTargetBasisSentence(facts: FiTargetBasisFacts): string {
