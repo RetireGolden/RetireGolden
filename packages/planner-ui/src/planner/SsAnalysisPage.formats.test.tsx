@@ -105,6 +105,7 @@ describe('In your plan: formatting edges', () => {
       primaryChangeVsWinner: 0,
       evaluations: 25,
       rejectedIneligibleBetter: 0,
+      passes: 2,
     }))
     await render(single())
     const select = [...container.querySelectorAll<HTMLSelectElement>('select')].find((s) => [...s.options].some((o) => o.value === 'max-spending-durability'))!
