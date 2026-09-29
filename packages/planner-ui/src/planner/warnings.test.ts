@@ -173,8 +173,8 @@ describe("a year before the plan's start year warns (D4)", () => {
   it('reads no clock: with no plan in context there is no first year, so nothing is before it', () => {
     // D-2027-ROLLOVER: the note used to fall back to the clock's year, which is
     // not an example's first year. The fields read the plan's start year
-    // (`usePlanStartYear`); outside a plan (the import wizard, the lever
-    // editors) there is none.
+    // (`fields.tsx#usePlanWarningContext`); outside a plan (the import wizard,
+    // the lever editors) there is none.
     expect(warningFor('expenses.oneTimeGoals.0.year', 1999, NO_PLAN)).toBeNull()
     expect(warningFor('accounts.0.purchase.year', 1999, NO_PLAN)).toBeNull()
   })

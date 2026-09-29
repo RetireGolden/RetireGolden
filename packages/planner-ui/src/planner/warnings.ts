@@ -223,7 +223,8 @@ export interface WarningContext {
    * The plan's first projected year, `projectionStartYear(plan)`: the clock's
    * year for a user plan and EXAMPLE_FIXED_YEAR for a library example. There is
    * no clock fallback: the field components read it from the plan in context
-   * (`usePlanStartYear`), so the note and the projection read one year. Null
+   * (`fields.tsx#usePlanWarningContext`), so the note and the projection read
+   * one year. Null
    * where no plan is in context (the import wizard, the lever editors): with
    * no first year there is nothing for a year to be before.
    */
