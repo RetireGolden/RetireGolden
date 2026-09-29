@@ -49,7 +49,7 @@ import { inheritedRothFactsToOwnerRothBasis } from './internal/inheritedRothTaxC
  *   at the assumed inflation rate (statutory limits are inflation-indexed).
  */
 import type { Account, AssetAllocationPolicy, Person, Plan } from '../model/plan.js'
-import { ASSET_CLASS_IDS } from '../model/plan.js'
+import { ASSET_CLASS_IDS, guaranteedIncomeOwnerId } from '../model/plan.js'
 import {
   accountAllocation,
   resolveAssetClassParams,
@@ -647,8 +647,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // The PAYMENT owner, not the pool owner: `startAge` is measured against
       // whoever the income block below measures it against, so the pre-start
       // payments this seeds with are the same payments a projection that had
-      // started earlier would have made.
-      const owner = personById.get(contract.ownerPersonId ?? primary.id)
+      // started earlier would have made. Every annuity names its annuitant
+      // (schema v7); this is never the first-listed person by default.
+      const owner = personById.get(guaranteedIncomeOwnerId(contract))
       if (owner === undefined) return false
       // THE CAP BINDS THE SEED TOO. A purchase inside the projection is held to
       // the QLAC premium ceiling at the purchase pass, and a purchase before it
@@ -1491,7 +1492,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       accounts: plan.accounts,
       balances,
       peopleById: personById,
-      primaryPerson: primary,
       year,
       qlacPremiumCap: pack.annuities.qlacPremiumCap,
       limitGrowth,
@@ -1768,7 +1768,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       people,
       personById,
       peopleStates, anyAlive,
-      primaryPersonId: primary.id,
       lifeAgeOf,
       runtimeOccurrenceKey,
       pack,
@@ -1919,7 +1918,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       aliveCount,
       anyAlive,
       peopleStates,
-      primaryPersonId: primary.id,
+      // The person whose age the spending phases follow: the plan names one
+      // (schema v7, decision D-PEOPLE-ORDER); a one-person plan need not, and
+      // then its only person is the one.
+      phasesPersonId: plan.expenses.phasesAgeOf ?? primary.id,
       resolvePerson: stateOf,
       hasModeledPerson: (personId) => personById.has(personId),
       birthMonthByPerson,

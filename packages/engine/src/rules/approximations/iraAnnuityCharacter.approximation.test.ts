@@ -50,6 +50,7 @@
 import { expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../../model/plan.js'
+import { migratePlanToCurrent } from '../../model/migrations.js'
 import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
 import { describeRule } from '../describeRule.js'
@@ -399,7 +400,7 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
     )
   })
 
-  it('prices a payment the same whoever the contract is named for', () => {
+  it('prices a payment the same whoever the contract is named for, and v7 names the funding owner', () => {
     // THE OWNER KEY, INVERTED FROM A DEFECT PIN. This assertion existed as a
     // standalone probe that pinned the OPPOSITE figure, because the projection
     // looked the settled character up under the contract's own owner while the
@@ -461,6 +462,28 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
       ]
       return plan
     }
+    // Schema v7 (decision D-PEOPLE-ORDER) refuses both other shapes at
+    // parse: an IRA is "for the exclusive benefit of an individual" (IRC
+    // 408(a)) and an IRA annuity "is not transferable by the owner" (IRC
+    // 408(b)(1)), so the model names the funding IRA's owner, and an annuity
+    // naming nobody names no one whose age and life it pays on
+    // (irc-72-c-3-A-annuity-measured-on-named-lives). A stored plan carrying either is repaired at load to p2, the
+    // funding owner, and says so. (A caller-built cross-owner plan no longer
+    // reaches the settlement replay at all: the replay re-validates the plan
+    // and refuses the shape.)
+    expect(parsePlan(crossOwnerHousehold('p1')).ok).toBe(false)
+    expect(parsePlan(crossOwnerHousehold(null)).ok).toBe(false)
+    const loaded = (contractOwner: string | null) => {
+      const migrated = migratePlanToCurrent(JSON.parse(JSON.stringify(crossOwnerHousehold(contractOwner))))
+      if (!migrated.ok) throw new Error(JSON.stringify(migrated))
+      return migrated
+    }
+    expect(loaded('p1').repairs).toContainEqual(expect.objectContaining({
+      kind: 'annuityOwnerMatchedToFundingAccount', fromOwnerPersonId: 'p1', toOwnerPersonId: 'p2',
+    }))
+    expect(loaded(null).repairs).toContainEqual(expect.objectContaining({
+      kind: 'guaranteedIncomeOwnerBackFilled', ownerPersonId: 'p2', basis: 'fundingAccountOwner', movesFigures: true,
+    }))
     const settlementOf = (plan: Plan) => {
       const year = yearOf(plan, 2026)
       const owner = year.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays
@@ -469,11 +492,10 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
     }
 
     const sameOwner = settlementOf(crossOwnerHousehold('p2'))
-    const crossOwner = settlementOf(crossOwnerHousehold('p1'))
-    // A contract naming NOBODY takes the same route the cross-owner one does:
-    // the payment owner falls back to the household's first person, who is not
-    // the funding owner here.
-    const unnamed = settlementOf(crossOwnerHousehold(null))
+    // A contract that was named for p1, as loaded: its annuitant is the funding owner.
+    const crossOwner = settlementOf(loaded('p1').plan)
+    // A contract that named NOBODY, as loaded: its annuitant is the funding owner.
+    const unnamed = settlementOf(loaded(null).plan)
 
     // The settlements were never in question. Same pool, same denominator.
     for (const result of [sameOwner, crossOwner, unnamed]) {
@@ -557,9 +579,12 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
           },
         },
       ]
-      const parsed = parsePlan(plan)
-      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
-      return simulatePlan(parsed.plan, {
+      // Schema v7 refuses the cross-owner and unnamed shapes at parse and
+      // repairs them at load to the funding owner (see the test above), so
+      // each arm is loaded the way a stored plan is.
+      const migrated = migratePlanToCurrent(JSON.parse(JSON.stringify(plan)))
+      if (!migrated.ok) throw new Error(JSON.stringify(migrated))
+      return simulatePlan(migrated.plan, {
         startYear: 2026, horizonEndYear: 2032, taxCalculator: noTax,
       }).years.map((year) => year.magi)
     }

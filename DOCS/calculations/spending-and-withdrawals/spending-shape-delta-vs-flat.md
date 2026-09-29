@@ -29,8 +29,8 @@ The amount column floors each exact probe to $100; the delta column subtracts th
 // engine/src/decisions/spendingShapes.ts
 export const SPENDING_SHAPE_COMPARISON: readonly SpendingShapeId[] = ['flat', 'smile', 'smirk']
 
-/** The plan solved for one shape: the plan's own phases replaced by the shape's rows (on the first person's
- *  retirement age, 65 when unset); amortized spending (ABW) removed, since the solver has no fixed base to move
+/** The plan solved for one shape: the plan's own phases replaced by the shape's rows (on the retirement age of the
+ *  person the phases follow, expenses.phasesAgeOf or the only person, 65 when unset); amortized spending (ABW) removed, since the solver has no fixed base to move
  *  under it; every other field, including a guardrail policy, unchanged. */
 export function planWithSpendingShape(plan: Plan, shape: SpendingShapeId): Plan
 
@@ -69,7 +69,7 @@ The column is labelled "vs constant-real" next to two displayed amounts; a reade
 | F | none feasible | 55,000 |
 | G | 48,000 | 48,000 |
 
-Variant construction (case H): a plan whose first person retires at 65, with its own phases `[{fromAge: 70, multiplier: 1.2}]` and `spendingPolicy: {mode: 'abw'}`.
+Variant construction (case H): a one-person plan whose person retires at 65 (for a couple, the person `expenses.phasesAgeOf` names; schema v7), with its own phases `[{fromAge: 70, multiplier: 1.2}]` and `spendingPolicy: {mode: 'abw'}`.
 
 ## Arithmetic
 
@@ -123,7 +123,7 @@ The amount column does not change (it was already floored). The other 22 example
 
 ## Proposed calculation record
 
-- id `spending-shape-comparison`, group `spending-and-withdrawals`, kind `composition`, outputs `['spending-shape-delta-vs-flat']`. Statement: "decisions/spendingShapes.ts#spendingShapeRows publishes, for each shape solved on planWithSpendingShape(plan, shape), the solver's published maxBaseAnnual (rounded down to $100) and deltaVsFlatDollars = that amount minus the flat shape's; null on the flat row and when either amount is null. Units: today's dollars per year. Rounding: none beyond the inputs' $100 floor, so the delta is the difference of the displayed amounts (R5)." Justification: derivation, `DOCS/calculations/spending-and-withdrawals/spending-shape-delta-vs-flat.md`. Limits: "Each shape is a separate bisection to about $500, so a delta smaller than the solver's resolution is not meaningful; shapes use the first person's retirement age (65 when unset); an ABW plan is compared as fixed-target variants." implementedByFunctions `packages/engine/src/decisions/spendingShapes.ts#spendingShapeRows`, `#planWithSpendingShape`.
+- id `spending-shape-comparison`, group `spending-and-withdrawals`, kind `composition`, outputs `['spending-shape-delta-vs-flat']`. Statement: "decisions/spendingShapes.ts#spendingShapeRows publishes, for each shape solved on planWithSpendingShape(plan, shape), the solver's published maxBaseAnnual (rounded down to $100) and deltaVsFlatDollars = that amount minus the flat shape's; null on the flat row and when either amount is null. Units: today's dollars per year. Rounding: none beyond the inputs' $100 floor, so the delta is the difference of the displayed amounts (R5)." Justification: derivation, `DOCS/calculations/spending-and-withdrawals/spending-shape-delta-vs-flat.md`. Limits: "Each shape is a separate bisection to about $500, so a delta smaller than the solver's resolution is not meaningful; shapes use the retirement age of the person the phases follow (expenses.phasesAgeOf, schema v7; 65 when unset); an ABW plan is compared as fixed-target variants." implementedByFunctions `packages/engine/src/decisions/spendingShapes.ts#spendingShapeRows`, `#planWithSpendingShape`.
 - The shape-preset records (`spendingAndWithdrawals.ts:194-196, 216, 235, 253` at `a7f62f1e`) already feed this family; unchanged.
 
 ## Census bookkeeping

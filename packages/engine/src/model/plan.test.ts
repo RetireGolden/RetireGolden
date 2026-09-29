@@ -3282,7 +3282,7 @@ describe('benefit provenance schema vocabulary', () => {
       const parsed = parsePlan(plan)
       expect(parsed.ok).toBe(true)
       if (!parsed.ok) return
-      expect(parsed.plan.schemaVersion).toBe(6)
+      expect(parsed.plan.schemaVersion).toBe(7)
       const pension = parsed.plan.accounts.find((a) => a.id === 'mil1')
       expect(pension).toMatchObject({
         type: 'pension',

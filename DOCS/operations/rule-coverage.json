@@ -2,11 +2,11 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 574,
+    "total": 575,
     "byClassification": {
       "approximated": 123,
       "outOfScope": 88,
-      "settled": 356,
+      "settled": 357,
       "unsettled": 7
     },
     "approximatedByKind": {
@@ -17,11 +17,11 @@
     "byVolatility": {
       "annuallyIndexed": 96,
       "awaitingGuidance": 13,
-      "staticStatute": 456,
+      "staticStatute": 457,
       "sunsetting": 9
     },
     "byJurisdiction": {
-      "federal": 353,
+      "federal": 354,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 472,
+    "totalFiles": 475,
     "byStatus": {
       "partial": 94,
       "registered": 130,
-      "rule-free": 248,
+      "rule-free": 251,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -631,10 +631,10 @@
     },
     {
       "directory": "model",
-      "files": 10,
+      "files": 11,
       "byStatus": {
         "partial": 6,
-        "rule-free": 4
+        "rule-free": 5
       }
     },
     {
@@ -656,11 +656,11 @@
     },
     {
       "directory": "projection",
-      "files": 128,
+      "files": 129,
       "byStatus": {
         "partial": 43,
         "registered": 21,
-        "rule-free": 64
+        "rule-free": 65
       }
     },
     {
@@ -689,9 +689,9 @@
     },
     {
       "directory": "schema",
-      "files": 10,
+      "files": 11,
       "byStatus": {
-        "rule-free": 10
+        "rule-free": 11
       }
     },
     {
@@ -741,7 +741,7 @@
     {
       "module": "annuities",
       "path": "rule-coverage/annuities.json",
-      "ruleCount": 6
+      "ruleCount": 7
     },
     {
       "module": "charitableDeductions",
@@ -846,13 +846,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1734,
+    "entryCount": 1740,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 141,
+      "ELISION-EXACT": 142,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1171,
+      "EXACT": 1176,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 406,
       "PUNCTUATION": 4,

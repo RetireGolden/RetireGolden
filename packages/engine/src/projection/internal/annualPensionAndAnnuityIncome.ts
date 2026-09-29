@@ -6,7 +6,7 @@
  * exclusion-state writes, contract-value debits, runtime journal rows and
  * cash-flow records at the phase's original orchestration point.
  */
-import type { Account, PensionSourceKind, Person } from '../../model/plan.js'
+import { guaranteedIncomeOwnerId, type Account, type PensionSourceKind, type Person } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
@@ -91,7 +91,6 @@ export interface AnnualPensionAndAnnuityIncomeInput {
   /** First duplicate person ID wins, matching simulatePlan's stateOf lookup. */
   readonly peopleStates: readonly Readonly<PersonYearState>[]
   readonly anyAlive: boolean
-  readonly primaryPersonId: string
   readonly lifeAgeOf: (person: Readonly<Person>) => number
   readonly runtimeOccurrenceKey: (
     kind: SimulatorAnnualRetirementRuntimeOccurrence['kind'],
@@ -236,7 +235,11 @@ export function annualPensionAndAnnuityIncome(
       continue
     }
 
-    const ownerId = account.ownerPersonId ?? input.primaryPersonId
+    // The participant or (first) annuitant: every pension and annuity names
+    // one (schema v7, decision D-PEOPLE-ORDER). A joint-and-survivor annuity
+    // pays its full amount while this person lives and reduces on this
+    // person's death; the other household member is the second annuitant.
+    const ownerId = guaranteedIncomeOwnerId(account)
     const owner = input.personById.get(ownerId)!
     const ownerState = stateOf(ownerId)
     const startCalendarYear = dobYear(owner) + account.startAge

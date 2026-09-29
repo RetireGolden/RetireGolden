@@ -23,6 +23,7 @@ import { claimAgeHeldText, claimAgeSearchRefusal } from '../planner/claimAgeCopy
 import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 import type { Person } from '@retiregolden/engine/model/plan'
 import { fmtMoney } from '../planner/format'
+import { fiTargetBasisSentence } from '../planner/fiTargetCopy'
 import {
   buildReportModel,
   chartDataCsv,
@@ -184,7 +185,7 @@ function headlineSection(model: ReportModel): string {
     ['Money lasts', escapeHtml(lasts), 'deterministic year-by-year run'],
     ['Lifetime tax + penalties', fmtMoney(headline.lifetimeTaxesAndPenalties), 'federal + state + penalties'],
     ['Lifetime Roth conversions', fmtMoney(headline.lifetimeRothConversions), 'executed by the ledger'],
-    ['FI target', fmtMoney(headline.fiNumber), 'today-dollar portfolio target'],
+    ['FI target', headline.fiNumber === null ? 'Not priced' : fmtMoney(headline.fiNumber), escapeHtml(fiTargetBasisSentence(headline.fiBasis))],
   ]
   return `<section><h2>Headline results</h2>${table(['Metric', 'Value', 'Notes'], rows)}</section>`
 }

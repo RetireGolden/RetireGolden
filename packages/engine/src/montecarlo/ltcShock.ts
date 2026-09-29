@@ -58,6 +58,8 @@ function pickDuration(rng: Rng, durations: LtcShockParams['durations']): number 
 /**
  * Sample zero or one care episode per person for one path. Onset is clamped to
  * be no earlier than the person's current age so the spike lands in the future.
+ * People draw in the order given, each taking a variable number of draws, so
+ * the caller passes the canonical order (model/peopleOrder.ts), never list order.
  */
 export function sampleCareEvents(rng: Rng, people: ReadonlyArray<{ id: string; dob: string }>, startYear: number, params: LtcShockParams): CareEvent[] {
   const events: CareEvent[] = []

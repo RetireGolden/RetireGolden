@@ -348,7 +348,7 @@ describe('example plan golden KPIs', () => {
     it(`${example.title} pins headline results`, () => {
       const plan = example.build()
       const result = simulatePlan(plan, { startYear: EXAMPLE_FIXED_YEAR, taxCalculator: taxCalculatorFor(plan) })
-      const summary = summarizeProjection(plan, result)
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
       const expected = EXPECTED[example.id]
       expect(expected, `missing golden fixture for ${example.id}`).toBeDefined()
 

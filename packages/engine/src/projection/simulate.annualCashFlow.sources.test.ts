@@ -480,6 +480,10 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     //   p2 owns the annuity (recipient while alive). Pre-start purchase so
     //   the 2026 year is a payment year, not a purchase year.
     //   monthlyAmount 1,000 × 12, cola 0, startAge 60, attained 60 → paid 12,000.
+    // Schema v7 refuses this shape at parse (an annuity bought from one
+    // person's IRA belongs to that person, IRC 408(b)); the simulator is run on
+    // the caller-built plan to show it still carries both references rather
+    // than silently re-owning the contract.
     const plan = couplePlan({
       p1Dob: '1966-01-01',
       p2Dob: '1966-01-01',
@@ -507,7 +511,13 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
         },
       },
     ]
-    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join('; ')).toContain("belongs to that account's owner")
+    const y2026 = yearOf(
+      simulatePlan(plan, { startYear: START_YEAR, taxCalculator: noTax, captureAnnualCashFlow: true, horizonEndYear: 2026 }).years,
+      START_YEAR,
+    )
     const payment = sourceById(y2026, 'source:annuityPayment:ann-1')
     expect(payment.kind).toBe('annuityPayment')
     expectMoney(payment.amountPlanDollars, 12_000)

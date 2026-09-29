@@ -4,7 +4,7 @@ Kind: composition. `projection/compare.ts#summarizeProjection` publishes the cal
 
 ## Justification
 
-Walk ledger rows in their given order and compute `realInvestable_y=investableTotal_y/(1+inflationPct/100)^(y-startYear)`. The first inclusive crossing of the start-year-dollar `fiNumber` sets `fiYear=y` and `fiAge=y-birthYear`, where `birthYear` is the first person's ISO birth year or 1980 when absent. The published `investableTotal` must be used directly: it already comprises the stated physical balance rows and unassigned cash while excluding property, insurance cash value and TIPS-ladder principal. The valid domain requires a positive inflation base.
+Walk ledger rows in their given order and compute `realInvestable_y=investableTotal_y/(1+inflationPct/100)^(y-startYear)`. The first inclusive crossing of the start-year-dollar `fiNumber` sets `fiYear=y` and `fiAge=y-birthYear`, where `birthYear` is the ISO birth year of the person whose retirement is the household's later one (`fiBasis.personId`; `projection-summary-fi-spending-base`), the only person here, or 1980 when absent. The published `investableTotal` must be used directly: it already comprises the stated physical balance rows and unassigned cash while excluding property, insurance cash value and TIPS-ladder principal. The valid domain requires a positive inflation base.
 
 ## Inputs
 
@@ -14,7 +14,7 @@ Walk ledger rows in their given order and compute `realInvestable_y=investableTo
 | 2027 | 1,030,000 | 1,000,000 | dollars |
 | 2028 | 1,166,990 | 1,100,000 | dollars |
 
-Projection start year is 2026; the first person's date of birth is `1980-12-31`, so `birthYear=1980`; general inflation is 3%; and upstream `fiNumber=$1,000,000` in 2026 dollars. The final row is a later above-threshold sentinel (`$1,166,990/1.03^2=$1,100,000`) and does not replace the first crossing.
+Projection start year is 2026; the only person's date of birth is `1980-12-31`, so `birthYear=1980`; general inflation is 3%; and upstream `fiNumber=$1,000,000` in 2026 dollars. The final row is a later above-threshold sentinel (`$1,166,990/1.03^2=$1,100,000`) and does not replace the first crossing.
 
 ## Arithmetic
 

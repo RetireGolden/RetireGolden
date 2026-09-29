@@ -42,7 +42,7 @@ function retiredTiming(plan: Plan, row: SurvivorTimingRow) {
   const without = simulatePlan(withSurvivorSsa44(plan, false), simOpts)
   const withRelief = simulatePlan(withSurvivorSsa44(plan, true), simOpts)
   const base = planUsesSsa44 ? withRelief : without
-  const baseSummary = summarizeProjection(plan, base)
+  const baseSummary = summarizeProjection(plan, base, { conversionFreeRun: null })
   let ssa44PremiumSavings = 0
   for (const y of without.years) {
     const on = withRelief.years.find((x) => x.year === y.year)
@@ -50,7 +50,7 @@ function retiredTiming(plan: Plan, row: SurvivorTimingRow) {
   }
   const patched = applyScenarioPatch(plan, conversionLeverPatch(START, row.deathYear))
   if (!patched.ok) throw new Error(patched.issues.join('; '))
-  const lever = summarizeProjection(patched.plan, simulatePlan(patched.plan, simOpts))
+  const lever = summarizeProjection(patched.plan, simulatePlan(patched.plan, simOpts), { conversionFreeRun: null })
   return {
     estateDelta: lever.endingAfterTaxEstate - baseSummary.endingAfterTaxEstate,
     lifetimeTaxDelta: lever.lifetimeTaxesAndPenalties - baseSummary.lifetimeTaxesAndPenalties,

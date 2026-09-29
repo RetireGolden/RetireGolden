@@ -178,6 +178,29 @@ describeRule('treas-reg-1-408-8-projection-sub-cent-distribution-discharge', {
   })
 })
 
+describe('the RMD share splits across owners in the canonical order (review L3)', () => {
+  it('splits in the order it is given, the last owner taking the residual, whatever the ids are called', () => {
+    // Two donors aged 72 with RMDs of 1,000 and 2,000 and a 1,000 gift. The
+    // first owner in the order takes its proportional share and the last the
+    // residual, so the split depends on the order; the projection passes the
+    // canonical people order, which renaming the ids does not change.
+    const split = (ownerOrder: string[], older: string, younger: string) => annualLegacyQcdGiftPlan(baseInput({
+      qcdAnnual: 1_000,
+      people: [older, younger].map((personId) => ({ personId, alive: true, ageAttained: 72, birthMonth: 1 })),
+      ownedIraRmdTotal: 3_000,
+      ownedIraRmdGrossByOwner: new Map([[younger, 1_000], [older, 2_000]]),
+      ownerOrder,
+    })).qcdFromRmdByOwner
+    const share = 1_000 * (2_000 / 3_000)
+    // Canonical order puts the older donor first, whichever id sorts first.
+    for (const [older, younger] of [['zz', 'aa'], ['aa', 'zz']]) {
+      const byOwner = split([older!, younger!], older!, younger!)
+      expect(byOwner.get(older!)).toBe(share)
+      expect(byOwner.get(younger!)).toBe(Math.max(0, 1_000 - share))
+    }
+  })
+})
+
 describe('annualLegacyQcdGiftPlan', () => {
   it('fails closed for an absent scalar, a named request, and no eligible donor', () => {
     const absent = annualLegacyQcdGiftPlan(baseInput({ qcdAnnual: 0 }))

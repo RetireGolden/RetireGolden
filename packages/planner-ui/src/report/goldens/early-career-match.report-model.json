@@ -1112,6 +1112,18 @@
       "endingInvestable": 17036797,
       "endingNetWorth": 17036797,
       "fiAge": 52,
+      "fiBasis": {
+        "conversionExecuted": false,
+        "householdSize": 1,
+        "notRetiring": [],
+        "personLastYearAlive": 2091,
+        "personName": "Alex",
+        "retirementRule": "retirementAge",
+        "retirementYear": 2061,
+        "spendingSource": "projection",
+        "spendingYear": 2061,
+        "withdrawalRatePct": 4
+      },
       "fiNumber": 1331502,
       "fiYear": 2053,
       "lifetimeRothConversions": 0,

@@ -1114,7 +1114,7 @@ describe('basis at death approximation', () => {
       // Death-year ending balances still hold the taxable account — compare.ts
       // charges heirs nothing on its embedded gain (implicit full step-up).
       const throughDeath = simulatePlan(plan, { ...opts, horizonEndYear: 2026 })
-      const deathSummary = summarizeProjection(plan, throughDeath)
+      const deathSummary = summarizeProjection(plan, throughDeath, { conversionFreeRun: null })
       const taxableRow = deathSummary.estateBreakdown.find((row) => row.accountId === 'brokerage')
       expect(taxableRow!.grossBalance).toBe(TAXABLE_BALANCE)
       expect(taxableRow!.heirTax).toBe(0)

@@ -80,7 +80,6 @@ function call(
     accounts,
     balances,
     peopleById: new Map([[PRIMARY.id, PRIMARY]]),
-    primaryPerson: PRIMARY,
     year: YEAR,
     qlacPremiumCap: 210_000,
     limitGrowth: 1,
@@ -214,7 +213,10 @@ describe('annualAnnuityPurchaseFunding — exact arithmetic and warnings', () =>
   })
 
   // Treas. Reg. 1.401(a)(9)-6(a)(3)(i) is the non-QLAC start boundary.
-  it('uses the primary fallback for the non-QLAC qualified start warning', () => {
+  // An annuitant outside the household has no birth date to measure the
+  // start against, so it is never measured on the first-listed person's
+  // (decision D-PEOPLE-ORDER): no late-start warning, and no fallback.
+  it('measures the non-QLAC start on the annuitant alone, never on a fallback person', () => {
     const account = annuity('qualified', 10, 'fund', {
       ownerPersonId: 'missing-owner',
       startAge: 100,
@@ -227,7 +229,18 @@ describe('annualAnnuityPurchaseFunding — exact arithmetic and warnings', () =>
     })
     const row = call([account], [funding('traditional', 10)])[0]!
     if (row.kind !== 'purchase') throw new Error('expected purchase')
-    expect(row.warnings).toEqual([LATE_NON_QLAC_QUALIFIED_START_WARNING])
+    expect(row.warnings).toEqual([])
+    const named = call([{ ...account, ownerPersonId: PRIMARY.id }], [funding('traditional', 10)])[0]!
+    if (named.kind !== 'purchase') throw new Error('expected purchase')
+    expect(named.warnings).toEqual([LATE_NON_QLAC_QUALIFIED_START_WARNING])
+  })
+
+  it('refuses an annuity that names no annuitant (a parsed plan names one on every annuity)', () => {
+    const account = annuity('qualified', 10, 'fund', {
+      ownerPersonId: null,
+      purchase: { year: YEAR, premium: 10, fundingAccountId: 'fund', taxQualification: 'qualified' },
+    })
+    expect(() => call([account], [funding('traditional', 10)])).toThrow(/names no owner/)
   })
 
   it('gates late-start warnings by qualification and QLAC shape', () => {

@@ -1132,6 +1132,39 @@ export const monteCarloRecords = {
     verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
+  'monte-carlo-people-draw-order': {
+    title: 'The order a Monte Carlo path draws each person\'s death and care from',
+    purpose: 'Each path gives the people its random numbers in a canonical order, so listing the same household the other way round draws the same path.',
+    kind: 'data',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'montecarlo/run.ts#runMonteCarloPaths draws each path\'s death ages (stochastic longevity), then its care events (care shocks, a variable number of draws each), person by person in model/peopleOrder.ts#canonicalPeopleOrder: date of birth ascending (older first; ISO dates compare as strings), then sex in the written order female, male, average (CANONICAL_SEX_ORDER, never a locale comparison), then id by ordinal comparison; the sampled care events join the plan\'s in that order (decision D-PEOPLE-ORDER, rule R5). Before the decision the draws followed list order, so reversing a couple\'s people moved up to 1.5 points of success with longevity and 346 to 984 of 1,000 paths. Renaming ids moves a path only when two people share a birth date and a sex. Units: an order. Rounding: none.',
+    formula: {
+      expression: 'order = sort(people) by (dob ascending, index of sex in [female, male, average], id ordinal); draws: deaths in order, then care events in order',
+      variables: [
+        { symbol: 'people', meaning: 'The household\'s people', unit: 'records', domain: 'one or two' },
+      ],
+      timing: 'once per path, after the market path is drawn',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/monte-carlo-people-draw-order.md',
+    },
+    limits: [
+      'Any order is an equally valid sample; the canonical one is fixed so the published rate does not depend on which person takes the first random number, not because it is better',
+      'Keying each person to a separate stream by id would also be order-free, but renaming ids would then move every path',
+    ],
+    implementedBy: ['packages/engine/src/model/peopleOrder.ts', 'packages/engine/src/montecarlo/run.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/peopleOrder.ts#canonicalPeopleOrder',
+      'packages/engine/src/model/peopleOrder.ts#CANONICAL_SEX_ORDER',
+      'packages/engine/src/montecarlo/run.ts#runMonteCarloPaths',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
   'rng-derived-path-seed': {
     title: 'SplitMix32-style per-path seed',
     purpose: 'A 32-bit path seed from (base seed, zero-based path index) so a path\'s stream does not depend on how preceding paths consume draws.',
@@ -1288,7 +1321,7 @@ export const monteCarloRecords = {
       'annuitization-sweep-effective-allocation-pct',
     ],
     statement:
-      'For each non-zero grid percent, decisions/annuitization.ts#buildAnnuitizationSweep sets premium = min(gridPct / 100 x the plan\'s total investable balance, 0.95 x the largest cash-or-taxable account\'s balance) and SKIPS the point when that premium is under $5,000. A retained point publishes annualIncome = premium x the payout rate (the user\'s quoted rate / 100 when given, else decisions/spiaQuotes.ts#spiaPayoutRate interpolated at startAge = min(95, max(current age, 65))) and effectiveAllocationPct = premium / total investable x 100, which is below the requested grid percent exactly when the funding cap bound the purchase. Units: nominal dollars; percent of investable. Rounding: none.',
+      'For each non-zero grid percent, decisions/annuitization.ts#buildAnnuitizationSweep sets premium = min(gridPct / 100 x the plan\'s total investable balance, 0.95 x the largest cash-or-taxable account\'s balance) and SKIPS the point when that premium is under $5,000. A retained point publishes annualIncome = premium x the payout rate (the user\'s quoted rate / 100 when given, else decisions/spiaQuotes.ts#spiaPayoutRate interpolated at startAge = min(95, max(current age, 65)), the current age being that of the person model/peopleOrder.ts#canonicalFirstPerson puts first, the older (between two people born the same day, the sex order female, male, average and then the smaller id by ordinal comparison decide, so for two people with the same birth date and sex renaming the ids can move the annuitant and every figure on that life), whoever is listed first; every sweep annuity is on that person\'s life and the notes name them, decision D-PEOPLE-ORDER) and effectiveAllocationPct = premium / total investable x 100, which is below the requested grid percent exactly when the funding cap bound the purchase. Units: nominal dollars; percent of investable. Rounding: none.',
     formula: {
       expression: 'premium = min(g/100 x V, 0.95 x F); income = premium x rate(startAge); effectivePct = premium / V x 100; skip when premium < 5000',
       variables: [
@@ -1313,13 +1346,15 @@ export const monteCarloRecords = {
     implementedBy: [
       'packages/engine/src/decisions/annuitization.ts',
       'packages/engine/src/decisions/spiaQuotes.ts',
+      'packages/engine/src/model/peopleOrder.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/decisions/annuitization.ts#buildAnnuitizationSweep',
       'packages/engine/src/decisions/annuitization.ts#AnnuitizationSweepPoint',
       'packages/engine/src/decisions/spiaQuotes.ts#spiaPayoutRate',
+      'packages/engine/src/model/peopleOrder.ts#canonicalFirstPerson',
     ],
-    verifiedOn: '2026-09-18',
+    verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'monte-carlo-histogram-bin-centres': {

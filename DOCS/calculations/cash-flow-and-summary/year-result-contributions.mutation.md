@@ -1,11 +1,11 @@
 # Mutation receipt: year-result-contributions
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts`
 
 ```diff
-@@ -514,7 +514,7 @@
+@@ -525,7 +525,7 @@
      }
      if (groupKey !== null && !isEmployerAccount) {
        const used = groupUsed.get(groupKey) ?? 0
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because the 2027 published figures (the HSA limits by published year and the state rates enacted for 2027) added lines above this receipt's hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because merging main (#762, #763) moved the production lines this receipt quotes; the mutation is unchanged. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/simulate.evidence.test.ts (9 tests | 1 failed) 69ms
+ ❯ src/projection/simulate.evidence.test.ts (9 tests | 1 failed) 118ms
    ❯ year-result-contributions — Annual contributions credited after limit trimming (1)
-     × trims Owner B to the 7500 IRA limit and leaves Owner A at 6000 6ms
+     × trims Owner B to the 7500 IRA limit and leaves Owner A at 6000 13ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 8 passed (9)

@@ -39,7 +39,13 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
   and as `bridgeLadderGenerator` decision candidates.
 - **Funded ratio.** PV(guaranteed real income: SS + pensions + annuities + ladder flows) ÷ PV(required-floor
   spending), both read from the same deterministic ledger years, deflated to today's dollars, and discounted
-  on the TIPS curve (Pfau's household funded-ratio lens). Shown on Results and the Income floor page;
+  on the TIPS curve (Pfau's household funded-ratio lens). Counted from the household's later retirement
+  (`ladder/fundedRatio.ts#fundedRatioStart`, the rule the FI figures share: each person's birth year plus
+  retirement age, a person with no retirement age retiring in the first year without their wages, else in the
+  start year, a person who works through the plan left out, a tie to the older person), whoever is listed first;
+  with nobody retiring in the plan no ratio is counted and the card says so; the card says which rule applied, and for a couple
+  the card and the insight name that person and call the ratio the household's (decision D-PEOPLE-ORDER,
+  record `funded-ratio-household-start`). Shown on Results and the Income floor page;
   `income-floor-funded` fires below ~90%, `ss-bridge-gap` previews a sized bridge as a scenario.
 - **FedInvest (opt-in only).** `planner-ui/src/data/fedInvestClient.ts` owns the explicit-click fetch and
   per-day cache for end-of-day TIPS prices (`securityPriceDetail`, CSV); `engine/ladder/fedInvest.ts` is pure

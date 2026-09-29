@@ -159,7 +159,7 @@ export function runHistoricalStressSuites(plan: Plan, opts: HistoricalStressSuit
         classShocks: opts.classShocks ?? false,
       })
       const projection = simulatePlan(plan, { startYear: opts.startYear, taxCalculator: opts.taxCalculator, market })
-      const summary = summarizeProjection(plan, projection)
+      const summary = summarizeProjection(plan, projection, { conversionFreeRun: null })
       windows.push({
         suite: kind,
         label: reversed ? `${first.year}-${last.year} reversed` : `${first.year}-${last.year}`,

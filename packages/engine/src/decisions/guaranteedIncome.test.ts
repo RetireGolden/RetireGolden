@@ -83,6 +83,31 @@ describe('annuity purchase candidate generator', () => {
     }
   })
 
+  it('buys the SPIA candidates on the older person, whoever is listed first, and names them (D-PEOPLE-ORDER)', () => {
+    // survivorPlan lists Pat (1960) before Sam (1958): the canonical order puts
+    // Sam first, so both SPIA candidates are on Sam's life from Sam's age.
+    const spias = (reversed: boolean) => {
+      const plan = survivorPlan()
+      if (reversed) plan.household.people.reverse()
+      return annuityPurchaseGenerator.generate(createDecisionContext(plan, simOptions()))
+        .filter((c) => c.id === 'annuity-spia' || c.id === 'annuity-spia-ladder')
+        .map((c) => ({
+          id: c.id,
+          explanation: c.explanation,
+          annuities: (c.planPatch as { accounts: Account[] }).accounts
+            .filter((a) => a.type === 'annuity')
+            .map((a) => [a.ownerPersonId, a.type === 'annuity' ? a.startAge : null]),
+        }))
+    }
+    const listed = spias(false)
+    expect(listed.map((c) => c.id)).toEqual(['annuity-spia', 'annuity-spia-ladder'])
+    for (const candidate of listed) {
+      expect(candidate.explanation).toContain("on Sam's life")
+      expect(candidate.annuities.every(([owner]) => owner === 'p2')).toBe(true)
+    }
+    expect(spias(true)).toEqual(listed)
+  })
+
   it('emits bounded SPIA and QLAC candidates that evaluate on the exact ledger', () => {
     const ctx = createDecisionContext(survivorPlan(), simOptions())
     const candidates = annuityPurchaseGenerator.generate(ctx)

@@ -1,15 +1,15 @@
 # Mutation receipt: survival-hazard-from-expectancy-multiplier
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/survival.ts b/packages/engine/src/montecarlo/survival.ts
-index 268d6b3c..8df9e9e6 100644
+index 598b8cfa..e50d2494 100644
 --- a/packages/engine/src/montecarlo/survival.ts
 +++ b/packages/engine/src/montecarlo/survival.ts
-@@ -265,7 +265,7 @@ function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
+@@ -275,7 +275,7 @@ function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
   */
  export function hazardForExpectancyMultiplier(age: number, sex: Sex, m: number): number {
    if (!Number.isFinite(age)) throw new RangeError(`A hazard power is solved at a finite age; got ${age}`)
@@ -30,20 +30,17 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because merging main moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine15/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 1 failed) 223ms
+ ❯ src/montecarlo/survival.evidence.test.ts (23 tests | 1 failed) 157ms
    ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection (5)
-     × the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110 77ms
+     × the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110 52ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 21 passed (22)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+      Tests  1 failed | 22 passed (23)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -67,13 +64,13 @@ AssertionError: expected { count: 279, first: [ …(5) ] } to deeply equal { cou
 +   ],
   }
 
- ❯ src/montecarlo/survival.evidence.test.ts:304:67
-    302|         }
-    303|       }
-    304|       expect({ count: misses.length, first: misses.slice(0, 5) }).toEq…
+ ❯ src/montecarlo/survival.evidence.test.ts:316:67
+    314|         }
+    315|       }
+    316|       expect({ count: misses.length, first: misses.slice(0, 5) }).toEq…
        |                                                                   ^
-    305|     })
-    306|
+    317|     })
+    318|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

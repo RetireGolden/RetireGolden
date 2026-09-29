@@ -54,6 +54,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { runSpendingSolveRequest } from '../../optimize/runSpendingSolve'
 import { taxCalculatorFor } from '../../planTaxCalculator'
@@ -124,7 +125,7 @@ const NO_ANSWER: Record<string, string> = {
 /** As `loadExample.ts#stampDemo` stamps a library demo before the planner opens it. */
 function stampDemo(example: ExamplePlan): Plan {
   const built = example.build()
-  return {
+  return rebindScenarioPatchesToPlan({
     ...built,
     id: `example--${example.id}`,
     name: example.title,
@@ -132,7 +133,7 @@ function stampDemo(example: ExamplePlan): Plan {
     exampleSourceId: example.id,
     createdAtIso: exampleFixedNow().toISOString(),
     updatedAtIso: exampleFixedNow().toISOString(),
-  }
+  })
 }
 
 describe('sustainable spending on every example', () => {

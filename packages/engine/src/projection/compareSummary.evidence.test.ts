@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { summarizeProjection } from './compare.js'
 import type { ProjectionResult, YearResult } from './types.js'
@@ -163,7 +163,7 @@ describeCalculation(
         ],
         endingInvestable: endpoint,
       })
-      const summary = summarizeProjection(plan, result)
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
       const expected = example.expected.endingInvestable as number
       expect(
         withinTolerance(summary.endingInvestable, expected, example.tolerance),
@@ -198,7 +198,7 @@ describeCalculation(
         endingInvestable: investable,
         endingNetWorth: netWorth,
       })
-      const summary = summarizeProjection(plan, result)
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
       const expected = example.expected.endingNetWorth as number
       expect(
         withinTolerance(summary.endingNetWorth, expected, example.tolerance),
@@ -252,20 +252,20 @@ describeCalculation(
       })
       const summary = summarizeProjection(
         fiPlan(),
-        projection({ endYear: inputs.spendingYear as number, years: [year] }),
+        projection({ endYear: inputs.spendingYear as number, years: [year] }), { conversionFreeRun: null },
       )
       const expected = example.expected.fiNumber as number
       expect(
-        withinTolerance(summary.fiNumber, expected, example.tolerance),
+        withinTolerance(summary.fiNumber!, expected, example.tolerance),
         `fiNumber: actual ${summary.fiNumber}, worksheet ${expected}`,
       ).toBe(true)
     })
 
     it('prices an empty ledger from base lifestyle alone', () => {
-      const summary = summarizeProjection(fiPlan(), projection({ years: [] }))
+      const summary = summarizeProjection(fiPlan(), projection({ years: [] }), { conversionFreeRun: null })
       const expected = example.expected.emptyLedgerFiNumber as number
       expect(
-        withinTolerance(summary.fiNumber, expected, example.tolerance),
+        withinTolerance(summary.fiNumber!, expected, example.tolerance),
         `empty-ledger fiNumber: actual ${summary.fiNumber}, worksheet ${expected}`,
       ).toBe(true)
     })
@@ -322,9 +322,9 @@ describeCalculation(
               : ledgerYear(row.year).expenses,
         }),
       )
-      const summary = summarizeProjection(fiAgePlan(), projection({ endYear: 2028, years }))
+      const summary = summarizeProjection(fiAgePlan(), projection({ endYear: 2028, years }), { conversionFreeRun: null })
       expect(
-        withinTolerance(summary.fiNumber, inputs.fiNumber as number, { abs: 0.000001 }),
+        withinTolerance(summary.fiNumber!, inputs.fiNumber as number, { abs: 0.000001 }),
         `upstream fiNumber: actual ${summary.fiNumber}, worksheet ${String(inputs.fiNumber)}`,
       ).toBe(true)
       expect(summary.fiYear).toBe(example.expected.fiYear)
@@ -332,7 +332,7 @@ describeCalculation(
     })
 
     it('publishes null for both on an empty ledger', () => {
-      const summary = summarizeProjection(fiAgePlan(), projection({ years: [] }))
+      const summary = summarizeProjection(fiAgePlan(), projection({ years: [] }), { conversionFreeRun: null })
       expect(summary.fiYear).toBe(example.expected.emptyLedgerFiYear)
       expect(summary.fiAge).toBe(example.expected.emptyLedgerFiAge)
     })
@@ -380,30 +380,59 @@ describeCalculation(
     it('discounts the FI number four years at the simple real 4 percent', () => {
       const summary = summarizeProjection(
         coastPlan(inputs.retirementAge as number),
-        projection({ endYear: 2030, years: [spendingYear] }),
+        projection({ endYear: 2030, years: [spendingYear] }), { conversionFreeRun: null },
       )
       expect(
-        withinTolerance(summary.fiNumber, inputs.fiNumber as number, example.tolerance),
+        withinTolerance(summary.fiNumber!, inputs.fiNumber as number, example.tolerance),
         `upstream fiNumber: actual ${summary.fiNumber}, worksheet ${String(inputs.fiNumber)}`,
       ).toBe(true)
       const expected = example.expected.coastFireNumber as number
       expect(
-        withinTolerance(summary.coastFireNumber, expected, example.tolerance),
+        withinTolerance(summary.coastFireNumber!, expected, example.tolerance),
         `coastFireNumber: actual ${summary.coastFireNumber}, worksheet ${expected}`,
       ).toBe(true)
+    })
+
+    it("discounts a couple over the household's later retirement, 6 years to Robin's 2032, whoever is listed first", () => {
+      // The worksheet's couple case (the household of
+      // projection-summary-fi-spending-base): Pat, listed first, retires in
+      // 2030, Robin in 2032. The horizon is Robin's, never the first-listed
+      // person's 4 years.
+      const couplePlan = (order: 'listed' | 'reversed'): Plan =>
+        evidencePlan((plan) => {
+          const pat = { id: 'p1', name: 'Pat', dob: '1980-12-31', sex: 'average' as const, retirementAge: 50, longevity: { planningAge: 95, source: 'manual' as const } }
+          const robin = { id: 'p2', name: 'Robin', dob: '1983-05-01', sex: 'average' as const, retirementAge: 49, longevity: { planningAge: 95, source: 'manual' as const } }
+          plan.household.people = order === 'listed' ? [pat, robin] : [robin, pat]
+          plan.household.filingStatus = 'marriedFilingJointly'
+          plan.assumptions.inflationPct = inputs.inflationPct as number
+          plan.assumptions.healthcareExtraInflationPct = 0
+          plan.assumptions.defaultReturnPct = inputs.defaultReturnPct as number
+          plan.assumptions.safeWithdrawalRatePct = 4
+        })
+      const ledger = projection({
+        endYear: 2032,
+        years: [ledgerYear(2032, { expenses: { ...ledgerYear(2032).expenses, total: 80_000 }, tax: 8_000 })],
+      })
+      for (const order of ['listed', 'reversed'] as const) {
+        const summary = summarizeProjection(couplePlan(order), ledger, { conversionFreeRun: null })
+        expect(
+          withinTolerance(summary.coastFireNumber!, 1_456_127.140880293, example.tolerance),
+          `${order} coastFireNumber: actual ${summary.coastFireNumber}, worksheet 1,456,127.140880293`,
+        ).toBe(true)
+      }
     })
 
     it('equals the FI number when retirement age is already attained', () => {
       const summary = summarizeProjection(
         coastPlan(46),
-        projection({ endYear: 2030, years: [spendingYear] }),
+        projection({ endYear: 2030, years: [spendingYear] }), { conversionFreeRun: null },
       )
       expect(
-        withinTolerance(summary.coastFireNumber, summary.fiNumber, example.tolerance),
+        withinTolerance(summary.coastFireNumber!, summary.fiNumber!, example.tolerance),
         `zero-horizon coastFireNumber: actual ${summary.coastFireNumber}, fiNumber ${summary.fiNumber}`,
       ).toBe(true)
       expect(
-        withinTolerance(summary.coastFireNumber, inputs.fiNumber as number, example.tolerance),
+        withinTolerance(summary.coastFireNumber!, inputs.fiNumber as number, example.tolerance),
         `zero-horizon coastFireNumber: actual ${summary.coastFireNumber}, worksheet ${String(inputs.fiNumber)}`,
       ).toBe(true)
     })
@@ -463,7 +492,7 @@ describeCalculation(
 
     it('averages 10, 20 and 35 over three working years, unweighted', () => {
       const years = ratesLedger(inputs.qualifyingRates as { year: number; ratePct: number }[])
-      const summary = summarizeProjection(savingsPlan(), projection({ endYear: 2028, years }))
+      const summary = summarizeProjection(savingsPlan(), projection({ endYear: 2028, years }), { conversionFreeRun: null })
       expect(summary.savingsRates.map((row) => row.year)).toEqual([2026, 2027, 2028])
       const expected = example.expected.averagePct as number
       const dollarWeightedPct =
@@ -480,7 +509,7 @@ describeCalculation(
       const years = ratesLedger(inputs.nonQualifyingRates as { year: number; ratePct: number }[])
       const summary = summarizeProjection(
         savingsPlan(),
-        projection({ startYear: 2029, endYear: 2031, years }),
+        projection({ startYear: 2029, endYear: 2031, years }), { conversionFreeRun: null },
       )
       expect(summary.averagePreRetirementSavingsRatePct).toBe(example.expected.emptyAveragePct)
     })
@@ -552,7 +581,7 @@ describeCalculation(
 
     it('nets 812345.67 of net worth of both the 25000.00 charity carve-out and the 73210.11 heir tax', () => {
       const { plan, result } = estateRun(true)
-      const summary = summarizeProjection(plan, result)
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
       expect(
         withinTolerance(summary.endingEstateHeirTax, inputs.endingEstateHeirTax, example.tolerance),
         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, worksheet ${inputs.endingEstateHeirTax}`,
@@ -570,7 +599,7 @@ describeCalculation(
 
     it('collapses to net worth minus heir tax with no charity destination', () => {
       const { plan, result } = estateRun(false)
-      const summary = summarizeProjection(plan, result)
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
       expect(summary.endingEstateToCharity).toBe(0)
       const expected = example.expected.withoutCharity as number
       expect(
@@ -691,7 +720,7 @@ describeCalculation(
         ],
         endingNondeductibleIraBasis: traditionalRow.grossBalance - traditionalRow.taxablePretaxBase,
       })
-      return summarizeProjection(plan, result)
+      return summarizeProjection(plan, result, { conversionFreeRun: null })
     }
 
     it('taxes the non-charity slice of each pre-tax base: 47520 + 8800 + 0 = 56320.00 with a 10% bequest to charity', () => {
@@ -753,7 +782,7 @@ describeCalculation(
       const years = rows.map((row) => ledgerYear(row.year, { tax: row.tax, penalties: row.penalties }))
       const summary = summarizeProjection(
         evidencePlan(() => {}),
-        projection({ endYear: 2028, years }),
+        projection({ endYear: 2028, years }), { conversionFreeRun: null },
       )
       const expected = example.expected.lifetimeTaxesAndPenalties as number
       expect(
@@ -834,11 +863,11 @@ describeCalculation(
       const rows = inputs.crossingRows as { year: number; investableTotal: number }[]
       const summary = summarizeProjection(
         fiYearPlan(),
-        projection({ endYear: 2028, years: ledger(rows) }),
+        projection({ endYear: 2028, years: ledger(rows) }), { conversionFreeRun: null },
       )
       // The constructed ledger really is priced against the worksheet's FI number.
       expect(
-        withinTolerance(summary.fiNumber, inputs.fiNumber as number, { abs: 0.005 }),
+        withinTolerance(summary.fiNumber!, inputs.fiNumber as number, { abs: 0.005 }),
         `fiNumber: actual ${summary.fiNumber}, worksheet ${inputs.fiNumber as number}`,
       ).toBe(true)
       expect(summary.fiYear).toBe(expected.crossingFiYear)
@@ -850,12 +879,12 @@ describeCalculation(
       const rows = inputs.nullRows as { year: number; investableTotal: number }[]
       const summary = summarizeProjection(
         fiYearPlan(),
-        projection({ endYear: 2028, years: ledger(rows) }),
+        projection({ endYear: 2028, years: ledger(rows) }), { conversionFreeRun: null },
       )
       expect(summary.fiYear).toBe(expected.nullFiYear)
       expect(summary.fiYear).not.toBe(expected.horizonFallbackWrongReading)
 
-      const empty = summarizeProjection(fiYearPlan(), projection({ years: [] }))
+      const empty = summarizeProjection(fiYearPlan(), projection({ years: [] }), { conversionFreeRun: null })
       expect(empty.fiYear).toBe(expected.emptyLedgerFiYear)
     })
   },
@@ -920,7 +949,7 @@ describeCalculation(
             ledgerYear(2026, { balances: penultimate }),
             ledgerYear(2027, { balances: last }),
           ],
-        }),
+        }), { conversionFreeRun: null },
       )
       for (const category of ['cash', 'taxable', 'traditional', 'roth', 'hsa'] as const) {
         expect(
@@ -996,7 +1025,7 @@ describeCalculation(
       const balances = Object.fromEntries(rows.map((row) => [row.id, row.grossEndingBalance]))
       const summary = summarizeProjection(
         charityPlan(),
-        projection({ years: [ledgerYear(2026, { balances })] }),
+        projection({ years: [ledgerYear(2026, { balances })] }), { conversionFreeRun: null },
       )
       expect(
         withinTolerance(summary.endingEstateToCharity, expected.endingEstateToCharity!, example.tolerance),
@@ -1023,6 +1052,95 @@ describeCalculation(
       expect(
         withinTolerance(summary.endingEstateToCharity, expected.includingSpouseWrongReading!, example.tolerance),
       ).toBe(false)
+    })
+  },
+)
+
+const FI_BASE_WORKSHEET = 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-spending-base.md'
+const fiBaseRows = worksheetExpectedRows(FI_BASE_WORKSHEET)
+const fiBaseExpected = (label: string): number => worksheetNumber(fiBaseRows.get(label)![0]!)
+const fiBaseCell = (label: string): string => fiBaseRows.get(label)![0]!
+
+describeCalculation(
+  'projection-summary-fi-spending-base',
+  {
+    example: {
+      inputs: {
+        startYear: 2026,
+        pat: { dob: '1980-12-31', retirementAge: 50 },
+        robin: { dob: '1983-05-01', retirementAge: 49 },
+        ledger2032: { expensesTotal: 80_000, tax: 30_000, penalties: 0, rothConversion: 100_000 },
+        conversionFree2032: { expensesTotal: 80_000, tax: 8_000, penalties: 0 },
+        inflationPct: 3,
+        safeWithdrawalRatePct: 4,
+        defaultReturnPct: 7,
+      },
+      expected: Object.fromEntries([...fiBaseRows].map(([label, cells]) => [label, cells[0]])),
+      tolerance: { abs: 0.000001 },
+    },
+    worksheet: FI_BASE_WORKSHEET,
+    mutation: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-spending-base.mutation.md',
+  },
+  ({ example }) => {
+    function couple(order: 'listed' | 'reversed'): Plan {
+      return evidencePlan((plan) => {
+        const pat = { id: 'p1', name: 'Pat', dob: '1980-12-31', sex: 'average' as const, retirementAge: 50, longevity: { planningAge: 95, source: 'manual' as const } }
+        const robin = { id: 'p2', name: 'Robin', dob: '1983-05-01', sex: 'average' as const, retirementAge: 49, longevity: { planningAge: 95, source: 'manual' as const } }
+        plan.household.people = order === 'listed' ? [pat, robin] : [robin, pat]
+        plan.household.filingStatus = 'marriedFilingJointly'
+        plan.assumptions.inflationPct = 3
+        plan.assumptions.healthcareExtraInflationPct = 0
+        plan.assumptions.defaultReturnPct = 7
+        plan.assumptions.safeWithdrawalRatePct = 4
+      })
+    }
+    const converting = projection({
+      endYear: 2032,
+      years: [ledgerYear(2032, {
+        expenses: { ...ledgerYear(2032).expenses, total: 80_000 },
+        tax: 30_000,
+        rothConversion: 100_000,
+      })],
+    })
+    const conversionFree = (): ProjectionResult => projection({
+      endYear: 2032,
+      years: [ledgerYear(2032, { expenses: { ...ledgerYear(2032).expenses, total: 80_000 }, tax: 8_000 })],
+    })
+
+    it('prices 2032, Robin\u2019s later retirement, from the conversion-free run: 1,842,465.36', () => {
+      const summary = summarizeProjection(couple('listed'), converting, { conversionFreeRun: conversionFree })
+      expect(summary.fiBasis).toEqual({
+        spendingYear: fiBaseExpected('Priced year'),
+        spendingSource: fiBaseCell('Spending source'),
+        personId: fiBaseCell('Person (whose age FI is reported at)'),
+        retirementYear: fiBaseExpected('Retirement year'),
+        retirementRule: fiBaseCell('Retirement rule'),
+        personLastYearAlive: fiBaseExpected("That person's last year alive"),
+        notRetiring: [],
+      })
+      expect(
+        withinTolerance(summary.fiNumber!, fiBaseExpected('FI number'), example.tolerance),
+        `fiNumber: actual ${summary.fiNumber}, worksheet ${fiBaseExpected('FI number')}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(summary.coastFireNumber!, fiBaseExpected('Coast-FIRE number'), example.tolerance),
+        `coastFireNumber: actual ${summary.coastFireNumber}, worksheet ${fiBaseExpected('Coast-FIRE number')}`,
+      ).toBe(true)
+    })
+
+    it('gives the same figures with the people listed the other way round', () => {
+      const listed = summarizeProjection(couple('listed'), converting, { conversionFreeRun: conversionFree })
+      const reversed = summarizeProjection(couple('reversed'), converting, { conversionFreeRun: conversionFree })
+      expect(reversed.fiNumber).toBe(listed.fiNumber)
+      expect(reversed.coastFireNumber).toBe(listed.coastFireNumber)
+      expect(reversed.fiBasis).toEqual(listed.fiBasis)
+    })
+
+    it('keeps the conversion tax only when no conversion-free run is supplied, and says so', () => {
+      // The worksheet's first wrong reading: (80,000 + 30,000) / 1.03^6 / 0.04.
+      const summary = summarizeProjection(couple('listed'), converting, { conversionFreeRun: null })
+      expect(summary.fiBasis.spendingSource).toBe('conversionTaxIncluded')
+      expect(withinTolerance(summary.fiNumber!, 2_303_081.705880049, example.tolerance)).toBe(true)
     })
   },
 )

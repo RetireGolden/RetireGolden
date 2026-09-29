@@ -1,15 +1,15 @@
 # Mutation receipt: monte-carlo-guardrail-adjustments
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-ten` at base `f12eba6d`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-ten` at base `f12eba6d`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/run.ts b/packages/engine/src/montecarlo/run.ts
-index 67701ffe..9f53c39d 100644
+index c12606f1..26ee953b 100644
 --- a/packages/engine/src/montecarlo/run.ts
 +++ b/packages/engine/src/montecarlo/run.ts
-@@ -540,7 +540,7 @@ export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins
+@@ -545,7 +545,7 @@ export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins
      pathsWithRaise: share(pathsWithRaise),
      medianMaxCutDepth: percentile(cutDepths, 50),
      p90MaxCutDepth: percentile(cutDepths, 90),
@@ -32,14 +32,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after merging RetireGolden #751 into B2-P1 slice 2: the drift check #751 adds flagged this receipt against the slice's code (a hunk header naming a line the code has moved from, a context line the slice changed, a header naming no line, or a stated test count the slice's evidence file no longer has), so the diff header, capture, blob hash and revert note are refreshed against this head. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
  ❯ src/montecarlo/run.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ monte-carlo-guardrail-adjustments — Guardrail adjustment shares, depths, durations and ending surplus (2)
-     × conditions the cut statistics on the three cut paths and shares the rest over all five 4ms
+     × conditions the cut statistics on the three cut paths and shares the rest over all five 3ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 15 passed (16)

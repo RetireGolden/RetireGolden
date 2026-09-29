@@ -9,8 +9,9 @@
  *   tax-exempt interest and the foreign-exclusion addback. This run fills the
  *   rest for the year: the poverty-guideline region from the state the
  *   household lives in (Alaska and Hawaii have their own tables, every other
- *   state the contiguous one); the tax family from the people alive this year
- *   in household order, the first as primary and the next as spouse, each
+ *   state the contiguous one); the tax family from the people alive this year,
+ *   the older as primary and the other as spouse (the canonical people order
+ *   of model/peopleOrder.ts, never list order; the labels only count), each
  *   required to file with no separate MAGI; the covered members, those alive
  *   with Marketplace months before Medicare; and, in each of a covered member's
  *   Marketplace months, an enrollment premium and an SLCSP benchmark both equal
@@ -37,6 +38,7 @@
  */
 import type { AcaStatedYearContract, AcaYearContract, Plan } from '../../model/plan.js'
 import { stateForYear } from '../../model/plan.js'
+import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
 import type { PersonYearState } from '../types.js'
 
 /**
@@ -66,6 +68,28 @@ function monthRow(value: number, months: number): number[] {
   return Array.from({ length: 12 }, (_, month) => (month < months ? value : 0))
 }
 
+/**
+ * The living people in the canonical order: date of birth, then sex, then id.
+ * A state whose person the plan does not list (a mismatched input; the
+ * ledger builds its states from the plan's people) goes after every listed
+ * person, then by id, as annualLegacyQcdGiftPlan's ownerOrder does, so list
+ * order never decides who is labelled primary (round-one review of #765,
+ * issue 14).
+ */
+function canonicalLiving<T extends { state: { personId: string } }>(
+  living: readonly T[],
+  people: EffectiveAcaYearContractInput['plan']['household']['people'],
+): T[] {
+  const rank = new Map(canonicalPeopleOrder(people).map((person, index) => [person.id, index]))
+  return [...living].sort((left, right) => {
+    const a = left.state.personId
+    const b = right.state.personId
+    const ra = rank.get(a) ?? Number.MAX_SAFE_INTEGER
+    const rb = rank.get(b) ?? Number.MAX_SAFE_INTEGER
+    return ra !== rb ? ra - rb : a < b ? -1 : a > b ? 1 : 0
+  })
+}
+
 export function effectiveAcaYearContract(
   contract: AcaYearContract,
   input: EffectiveAcaYearContractInput,
@@ -79,7 +103,10 @@ export function effectiveAcaYearContract(
       year: contract.year,
       premiumBasis: 'premiumField',
       fplRegion: fplRegionForState(stateForYear(input.plan.household, input.year)),
-      taxFamilyMembers: living.map(({ state }, index) => ({
+      // The labels only count (one primary, one spouse on a joint return), and
+      // the older living person is the primary, in the canonical people order
+      // (model/peopleOrder.ts), so list order never shows in the result.
+      taxFamilyMembers: canonicalLiving(living, input.plan.household.people).map(({ state }, index) => ({
         personId: state.personId,
         relationship: index === 0 ? 'primary' : 'spouse',
         requiredToFile: 'required',

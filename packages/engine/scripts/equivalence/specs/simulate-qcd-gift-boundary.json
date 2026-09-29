@@ -8,20 +8,20 @@
       "label": "fresh empty result factory",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        65,
-        74
+        74,
+        83
       ],
       "anchors": [
         {
-          "line": 65,
+          "line": 74,
           "text": "function emptyResult(): AnnualLegacyQcdGiftPlanResult {"
         },
         {
-          "line": 69,
+          "line": 78,
           "text": "qcdGrossByOwner: new Map(),"
         },
         {
-          "line": 74,
+          "line": 83,
           "text": "}"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "insertion-ordered owner gross addition",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        76,
-        80
+        85,
+        89
       ],
       "anchors": [
         {
-          "line": 76,
+          "line": 85,
           "text": "function addGiftGross("
         },
         {
-          "line": 79,
+          "line": 88,
           "text": "target.set(ownerId, (target.get(ownerId) ?? 0) + amount)"
         },
         {
-          "line": 80,
+          "line": 89,
           "text": "}"
         }
       ]
@@ -54,40 +54,40 @@
       "label": "named suppression, annual donor eligibility and per-donor request cap",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        83,
-        110
+        92,
+        119
       ],
       "anchors": [
         {
-          "line": 83,
+          "line": 92,
           "text": "input: Readonly<AnnualLegacyQcdGiftPlanInput>,"
         },
         {
-          "line": 85,
+          "line": 94,
           "text": "if (input.qcdAnnual <= 0 || input.hasNamedQcdRequest) return emptyResult()"
         },
         {
-          "line": 90,
+          "line": 99,
           "text": "const donorIds = new Set(input.people"
         },
         {
-          "line": 93,
+          "line": 102,
           "text": "(person.ageAttained === 70 && person.birthMonth <= 6)"
         },
         {
-          "line": 96,
+          "line": 105,
           "text": "if (donorIds.size === 0) return emptyResult()"
         },
         {
-          "line": 101,
+          "line": 110,
           "text": "const donorCapacity = new Map<string, number>("
         },
         {
-          "line": 104,
+          "line": 113,
           "text": "const requested = Math.min("
         },
         {
-          "line": 108,
+          "line": 117,
           "text": "let qcdFromRmd = Math.min(requested, input.ownedIraRmdTotal)"
         }
       ]
@@ -97,44 +97,44 @@
       "label": "sorted proportional owner attribution, personal-cap clamp and residual reallocation",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        112,
-        158
+        121,
+        175
       ],
       "anchors": [
         {
-          "line": 112,
+          "line": 121,
           "text": "if (qcdFromRmd > 0 && input.ownedIraRmdTotal > 0) {"
         },
         {
-          "line": 116,
-          "text": "const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort()"
+          "line": 129,
+          "text": "const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort((a, b) => {"
         },
         {
-          "line": 123,
+          "line": 140,
           "text": "owners.forEach((ownerId, index) => {"
         },
         {
-          "line": 129,
+          "line": 146,
           "text": "qcdFromRmd * ("
         },
         {
-          "line": 138,
+          "line": 155,
           "text": "let unassigned = Math.max(0, qcdFromRmd - assigned)"
         },
         {
-          "line": 139,
+          "line": 156,
           "text": "for (const ownerId of owners) {"
         },
         {
-          "line": 148,
+          "line": 165,
           "text": "qcdFromRmd = assigned"
         },
         {
-          "line": 149,
+          "line": 166,
           "text": "for (const [ownerId, share] of shares) {"
         },
         {
-          "line": 155,
+          "line": 172,
           "text": "Math.max(0, (donorCapacity.get(ownerId) ?? 0) - share),"
         }
       ]
@@ -144,40 +144,40 @@
       "label": "first-ID logical source selection, cent-floor drain and one debit intent per ID",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        160,
-        198
+        177,
+        215
       ],
       "anchors": [
         {
-          "line": 160,
+          "line": 177,
           "text": "const beyondRmd = requested - qcdFromRmd"
         },
         {
-          "line": 166,
+          "line": 183,
           "text": "const sources = input.balances.filter((state) =>"
         },
         {
-          "line": 168,
+          "line": 185,
           "text": "const available = sources.reduce((sum, state) => sum + state.balance, 0)"
         },
         {
-          "line": 170,
+          "line": 187,
           "text": "for (const state of sources) {"
         },
         {
-          "line": 177,
+          "line": 194,
           "text": "const take = allowance >= state.balance"
         },
         {
-          "line": 182,
+          "line": 199,
           "text": "if (planDollarsMoveNoLedgerCent(take)) continue"
         },
         {
-          "line": 189,
+          "line": 206,
           "text": "addGiftGross(qcdGrossByOwner, state.ownerId, take)"
         },
         {
-          "line": 190,
+          "line": 207,
           "text": "debitIntents.push({"
         }
       ]
@@ -187,24 +187,24 @@
       "label": "left-associated gift total and fresh ordered output",
       "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
       "lines": [
-        200,
-        209
+        217,
+        226
       ],
       "anchors": [
         {
-          "line": 200,
+          "line": 217,
           "text": "const qcd = qcdBeyondRmd + qcdFromRmd"
         },
         {
-          "line": 201,
+          "line": 218,
           "text": "return {"
         },
         {
-          "line": 207,
+          "line": 224,
           "text": "offsetHistoryUnprovableDonorIds: qcd > 0 ? [...donorIds] : [],"
         },
         {
-          "line": 209,
+          "line": 226,
           "text": "}"
         }
       ]
@@ -214,36 +214,36 @@
       "label": "logical live-state snapshot and exact map handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1024,
-        1055
+        1250,
+        1282
       ],
       "anchors": [
         {
-          "line": 1024,
+          "line": 1250,
           "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({"
         },
         {
-          "line": 1029,
+          "line": 1255,
           "text": "people: peopleStates.map((state) => ({"
         },
         {
-          "line": 1036,
+          "line": 1262,
           "text": "ownedIraRmdGrossByOwner,"
         },
         {
-          "line": 1037,
+          "line": 1263,
           "text": "balances: rmdBalances.map((state, balanceIndex) => ({"
         },
         {
-          "line": 1045,
+          "line": 1272,
           "text": "qcd = qcdGiftPlan.qcd"
         },
         {
-          "line": 1053,
+          "line": 1280,
           "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner"
         },
         {
-          "line": 1055,
+          "line": 1282,
           "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner"
         }
       ]
@@ -253,60 +253,60 @@
       "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1060,
-        1093
+        1287,
+        1320
       ],
       "anchors": [
         {
-          "line": 1060,
+          "line": 1287,
           "text": "const validatedQcdGiftDebitIntents: Array<{"
         },
         {
-          "line": 1069,
+          "line": 1296,
           "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()"
         },
         {
-          "line": 1070,
+          "line": 1297,
           "text": "for (const intent of qcdGiftPlan.debitIntents) {"
         },
         {
-          "line": 1074,
+          "line": 1301,
           "text": "const balanceIndex = intent.balanceIndex"
         },
         {
-          "line": 1075,
+          "line": 1302,
           "text": "const sourceAccountId = intent.sourceAccountId"
         },
         {
-          "line": 1076,
+          "line": 1303,
           "text": "const ownerId = intent.ownerId"
         },
         {
-          "line": 1077,
+          "line": 1304,
           "text": "const sourceBalanceBefore = intent.sourceBalanceBefore"
         },
         {
-          "line": 1078,
+          "line": 1305,
           "text": "const amount = intent.amount"
         },
         {
-          "line": 1079,
+          "line": 1306,
           "text": "const state = rmdBalances[balanceIndex]"
         },
         {
-          "line": 1083,
+          "line": 1310,
           "text": "if ("
         },
         {
-          "line": 1085,
+          "line": 1312,
           "text": "!isAggregatedIra(state.account) ||"
         },
         {
-          "line": 1091,
+          "line": 1318,
           "text": "planDollarsMoveNoLedgerCent(amount) ||"
         },
         {
-          "line": 1093,
+          "line": 1320,
           "text": "amount > remainingBalance"
         }
       ],
@@ -317,28 +317,28 @@
       "label": "sequential shadow-balance advance and immutable scalar record cache",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1099,
-        1113
+        1326,
+        1340
       ],
       "anchors": [
         {
-          "line": 1099,
+          "line": 1326,
           "text": "const sourceBalanceAfter = remainingBalance - amount"
         },
         {
-          "line": 1100,
+          "line": 1327,
           "text": "remainingQcdGiftBalanceByIndex.set("
         },
         {
-          "line": 1104,
+          "line": 1331,
           "text": "validatedQcdGiftDebitIntents.push({"
         },
         {
-          "line": 1112,
+          "line": 1339,
           "text": "})"
         },
         {
-          "line": 1113,
+          "line": 1340,
           "text": "}"
         }
       ]
@@ -348,28 +348,28 @@
       "label": "caller-owned history snapshot and donor identity validation",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1114,
-        1121
+        1341,
+        1348
       ],
       "anchors": [
         {
-          "line": 1114,
+          "line": 1341,
           "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = ["
         },
         {
-          "line": 1115,
+          "line": 1342,
           "text": "...qcdGiftPlan.offsetHistoryUnprovableDonorIds,"
         },
         {
-          "line": 1117,
+          "line": 1344,
           "text": "const qcdGiftPersonIds = new Set("
         },
         {
-          "line": 1120,
+          "line": 1347,
           "text": "if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>"
         },
         {
-          "line": 1121,
+          "line": 1348,
           "text": "!qcdGiftPersonIds.has(donorId))) {"
         }
       ],
@@ -380,44 +380,44 @@
       "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1127,
-        1169
+        1354,
+        1396
       ],
       "anchors": [
         {
-          "line": 1127,
+          "line": 1354,
           "text": "for (const debit of validatedQcdGiftDebitIntents) {"
         },
         {
-          "line": 1128,
+          "line": 1355,
           "text": "const state = rmdBalances[debit.balanceIndex]!"
         },
         {
-          "line": 1131,
+          "line": 1358,
           "text": "state.balance = debit.sourceBalanceAfter"
         },
         {
-          "line": 1137,
+          "line": 1364,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1147,
+          "line": 1374,
           "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1157,
+          "line": 1384,
           "text": "if (giftApplication.applicationKind === 'debit') {"
         },
         {
-          "line": 1158,
+          "line": 1385,
           "text": "deferredLegacyQcdDistributions.push({"
         },
         {
-          "line": 1167,
+          "line": 1394,
           "text": "for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {"
         },
         {
-          "line": 1168,
+          "line": 1395,
           "text": "namedQcdOffsetHistoryUnprovable.add(donorId)"
         }
       ]

@@ -55,10 +55,12 @@ import {
   planV3JsonSchema,
   planV4JsonSchema,
   planV5JsonSchema,
+  planV6JsonSchema,
 } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
-import shippedPlanJsonSchema from '../../schema/plan.v6.json' with { type: 'json' }
+import shippedPlanJsonSchema from '../../schema/plan.v7.json' with { type: 'json' }
+import shippedPlanV6JsonSchema from '../../schema/plan.v6.json' with { type: 'json' }
 import shippedPlanV5JsonSchema from '../../schema/plan.v5.json' with { type: 'json' }
 import shippedPlanV4JsonSchema from '../../schema/plan.v4.json' with { type: 'json' }
 import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
@@ -357,6 +359,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
       idealAnnual: 10000,
       excessAnnual: 5000,
       phases: [{ fromAge: 75, multiplier: 0.9 }],
+      phasesAgeOf: 'p1',
       oneTimeGoals: [
         {
           id: 'goal-1',
@@ -565,7 +568,7 @@ describe('planJsonSchema — version', () => {
     // version from CURRENT_PLAN_SCHEMA_VERSION, so without this line a bump
     // would go through with nothing asserting what the number actually is.
     // Named in the bump checklist in scripts/generate-schema.mjs.
-    expect(PLAN_SCHEMA_VERSION).toBe(6)
+    expect(PLAN_SCHEMA_VERSION).toBe(7)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
@@ -594,6 +597,11 @@ describe('planJsonSchema — version', () => {
   it('keeps the historical v5 schema available under an explicit export', () => {
     expect(planV5JsonSchema.properties.schemaVersion).toMatchObject({ const: 5 })
     expect(planV5JsonSchema).toEqual(shippedPlanV5JsonSchema)
+  })
+
+  it('keeps the historical v6 schema available under an explicit export', () => {
+    expect(planV6JsonSchema.properties.schemaVersion).toMatchObject({ const: 6 })
+    expect(planV6JsonSchema).toEqual(shippedPlanV6JsonSchema)
   })
 
   // The one field v5 added, asserted on both sides of the boundary: a v4
@@ -633,7 +641,7 @@ describe('planJsonSchema — version', () => {
     }
     const v5 = acaItems(planV5JsonSchema)
     expect(Object.keys(v5['properties'] as object)).not.toContain('premiumBasis')
-    const shapes = acaItems(planJsonSchema)['oneOf'] as Node[]
+    const shapes = acaItems(planV6JsonSchema)['oneOf'] as Node[]
     expect(shapes).toHaveLength(2)
     const [stated, premiumField] = shapes as [Node, Node]
     expect((stated['properties'] as Record<string, Node>)['premiumBasis']).toMatchObject({ const: 'stated' })
@@ -661,6 +669,41 @@ describe('planJsonSchema — version', () => {
     expect(undescribed.filter((path) => !/\.(state|amount)$/u.test(path))).toEqual([])
   })
 
+  // v7 (decision D-PEOPLE-ORDER, 2026-09-25) names the person whose age the
+  // spending phases follow, and on a joint account the person whose age a
+  // contribution schedule follows. Both are optional in the schema; parsePlan
+  // requires them where a two-person plan needs them (listed among the
+  // unrepresentable constraints, as is the owner every pension and annuity now
+  // needs).
+  it('adds phasesAgeOf and contributionScheduleAgeOf in v7 and not before, described', () => {
+    type Node = Record<string, unknown>
+    const expensesOf = (schema: typeof planJsonSchema): Record<string, Node> =>
+      ((schema.properties as Record<string, Node>)['expenses']!['properties'] as Record<string, Node>)
+    expect(Object.keys(expensesOf(planV6JsonSchema))).not.toContain('phasesAgeOf')
+    expect(expensesOf(planJsonSchema)['phasesAgeOf']).toMatchObject({ type: 'string' })
+    expect(typeof expensesOf(planJsonSchema)['phasesAgeOf']!['description']).toBe('string')
+    const accountVariants = (schema: typeof planJsonSchema): Node[] =>
+      (((schema.properties as Record<string, Node>)['accounts']!['items'] as Node)['oneOf'] as Node[])
+    const variant = (schema: typeof planJsonSchema, type: string): Node => {
+      const found = accountVariants(schema).find(
+        (v) => ((v['properties'] as Record<string, Node>)['type']?.['const']) === type,
+      )
+      if (found === undefined) throw new Error(`no ${type} account variant`)
+      return found
+    }
+    for (const type of ['taxable', 'cash', 'equityComp']) {
+      expect(Object.keys(variant(planV6JsonSchema, type)['properties'] as object)).not.toContain('contributionScheduleAgeOf')
+      const field = (variant(planJsonSchema, type)['properties'] as Record<string, Node>)['contributionScheduleAgeOf']
+      expect(field).toMatchObject({ type: 'string' })
+      expect(typeof field!['description']).toBe('string')
+      expect(variant(planJsonSchema, type)['required']).not.toContain('contributionScheduleAgeOf')
+    }
+    for (const type of ['traditional', 'roth', 'hsa', 'pension', 'annuity']) {
+      expect(Object.keys(variant(planJsonSchema, type)['properties'] as object)).not.toContain('contributionScheduleAgeOf')
+    }
+    expect(PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS.some((c) => c.includes('pensions and annuities must have an individual owner'))).toBe(true)
+  })
+
   it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
     expect(PLAN_SCHEMA_VERSION).toBe(CURRENT_PLAN_SCHEMA_VERSION)
   })
@@ -682,6 +725,7 @@ describe('schema barrel — zero-dependency data surface', () => {
         'planV3JsonSchema',
         'planV4JsonSchema',
         'planV5JsonSchema',
+        'planV6JsonSchema',
       ].sort(),
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
@@ -709,10 +753,10 @@ describe('current schema entry — common-case data surface', () => {
     const footprint = currentSchemaSourceGraph()
     expect([...footprint.externalSpecifiers]).toEqual([])
     expect([...footprint.dynamicSpecifiers]).toEqual([])
-    expect([...footprint.modulePaths]).toContain('./plan.v6.generated.ts')
+    expect([...footprint.modulePaths]).toContain('./plan.v7.generated.ts')
     expect([...footprint.modulePaths]).toContain('./planSchemaMeta.ts')
     expect([...footprint.modulePaths]).not.toContain('./index.ts')
-    expect([...footprint.modulePaths].filter((path) => /plan\.v[1-5]\.generated\.ts$/u.test(path))).toEqual([])
+    expect([...footprint.modulePaths].filter((path) => /plan\.v[1-6]\.generated\.ts$/u.test(path))).toEqual([])
   })
 })
 

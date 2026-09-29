@@ -265,7 +265,7 @@ describe('after-tax estate depth', () => {
 
   it('feature-off: a traditional balance is taxed at the flat heir rate, others pass free', () => {
     const plan = estatePlan([traditional(100_000), cash(50_000)])
-    const summary = summarizeProjection(validate(plan), run(plan))
+    const summary = summarizeProjection(validate(plan), run(plan), { conversionFreeRun: null })
     expect(summary.endingEstateHeirTax).toBeCloseTo(25_000, 0)
     expect(summary.endingEstateToCharity).toBe(0)
     expect(summary.endingAfterTaxEstate).toBeCloseTo(150_000 - 25_000, 0)
@@ -277,7 +277,7 @@ describe('after-tax estate depth', () => {
       estateBeneficiary: { destination: 'charity' as const, charityPct: 100 },
     }
     const plan = estatePlan([trad])
-    const summary = summarizeProjection(validate(plan), run(plan))
+    const summary = summarizeProjection(validate(plan), run(plan), { conversionFreeRun: null })
     // No heir tax (100% to charity); the $100k leaves the heirs' estate.
     expect(summary.endingEstateHeirTax).toBeCloseTo(0, 0)
     expect(summary.endingEstateToCharity).toBeCloseTo(100_000, 0)
@@ -289,7 +289,7 @@ describe('after-tax estate depth', () => {
   it('heir tax by account class overrides the flat rate for that class', () => {
     const plan = estatePlan([traditional(100_000)])
     plan.assumptions.heirTaxByClass = { traditional: 10 }
-    const summary = summarizeProjection(validate(plan), run(plan))
+    const summary = summarizeProjection(validate(plan), run(plan), { conversionFreeRun: null })
     expect(summary.endingEstateHeirTax).toBeCloseTo(10_000, 0)
   })
 
@@ -299,7 +299,7 @@ describe('after-tax estate depth', () => {
       estateBeneficiary: { destination: 'spouse' as const },
     }
     const plan = estatePlan([trad])
-    const summary = summarizeProjection(validate(plan), run(plan))
+    const summary = summarizeProjection(validate(plan), run(plan), { conversionFreeRun: null })
     expect(summary.endingEstateHeirTax).toBeCloseTo(0, 0)
   })
 })

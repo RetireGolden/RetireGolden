@@ -408,6 +408,18 @@
       "endingInvestable": 0,
       "endingNetWorth": 0,
       "fiAge": null,
+      "fiBasis": {
+        "conversionExecuted": false,
+        "householdSize": 2,
+        "notRetiring": [],
+        "personLastYearAlive": 2057,
+        "personName": "Lee",
+        "retirementRule": "retirementAge",
+        "retirementYear": 2027,
+        "spendingSource": "projection",
+        "spendingYear": 2027,
+        "withdrawalRatePct": 4
+      },
       "fiNumber": 2057211,
       "fiYear": null,
       "lifetimeRothConversions": 0,

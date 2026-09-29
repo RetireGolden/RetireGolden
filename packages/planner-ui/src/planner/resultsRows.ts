@@ -79,7 +79,8 @@ export function buildResultsRows(view: ProjectionView, plan: Plan, mode: DollarM
       investable: adj(y.year, y.investableTotal),
       // `fiNumber` is published in start-year dollars: shown unchanged in
       // today's mode, grown by the year's own factor in nominal mode.
-      fiTarget: todayForDisplay(view.basis, mode, y.year, view.summary.fiNumber),
+      // Null when nobody retires in the plan and no FI target is priced.
+      fiTarget: view.summary.fiNumber === null ? null : todayForDisplay(view.basis, mode, y.year, view.summary.fiNumber),
     }
   })
 }

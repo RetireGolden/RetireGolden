@@ -81,7 +81,7 @@ describe('Results chart rows display the engine figures (every example, both mod
         }
         if (!Object.is(row.unassigned, nominalForDisplay(basis, mode, y.year, unassignedCash(y) ?? 0))) mismatches.push(`${at} unassigned`)
         if (!Object.is(row.spending, nominalForDisplay(basis, mode, y.year, spendingWithTaxAndPenalties(y)))) mismatches.push(`${at} spending`)
-        if (!Object.is(row.fiTarget, todayForDisplay(basis, mode, y.year, summary.fiNumber))) mismatches.push(`${at} fiTarget`)
+        if (!Object.is(row.fiTarget, todayForDisplay(basis, mode, y.year, summary.fiNumber!))) mismatches.push(`${at} fiTarget`)
         if (mode === 'today' && !Object.is(row.fiTarget, summary.fiNumber)) mismatches.push(`${at} fiTarget is not fiNumber`)
         if (!Object.is(expenseRow.taxes, nominalForDisplay(basis, mode, y.year, taxAndPenalties(y)))) mismatches.push(`${at} taxes`)
         if (!Object.is(expenseRow.care, nominalForDisplay(basis, mode, y.year, netCareCost(y)))) mismatches.push(`${at} care`)
@@ -107,9 +107,9 @@ describe('Results chart rows display the engine figures (every example, both mod
         const engine = balancesByCategory(plan, y)
         for (const c of BALANCE_CATEGORIES) if (!Object.is(retired[c], engine[c])) mismatches.push(`${y.year} ${c}`)
         // The FI line moves only in the last binary digit (R19).
-        const retiredNominalFi = view.summary.fiNumber * Math.pow(1 + plan.assumptions.inflationPct / 100, y.year - START_YEAR)
+        const retiredNominalFi = view.summary.fiNumber! * Math.pow(1 + plan.assumptions.inflationPct / 100, y.year - START_YEAR)
         const nominalFi = nominalRows[y.year - START_YEAR]!.fiTarget
-        if (relativeGap(retiredNominalFi, nominalFi) > 1e-12) mismatches.push(`${y.year} fiTarget`)
+        if (relativeGap(retiredNominalFi, nominalFi!) > 1e-12) mismatches.push(`${y.year} fiTarget`)
       }
       expect(mismatches).toEqual([])
     },

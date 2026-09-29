@@ -769,7 +769,7 @@
     "source": "engine/src/projection/compare.ts",
     "owner": "ProjectionSummary",
     "field": "fiNumber",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "projection-summary-fi-number"
   },
@@ -793,7 +793,7 @@
     "source": "engine/src/projection/compare.ts",
     "owner": "ProjectionSummary",
     "field": "coastFireNumber",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "projection-summary-coast-fire-number"
   },
@@ -3513,7 +3513,7 @@
     "source": "planner-ui/src/report/reportModel.ts",
     "owner": "ReportHeadlineResultsBlock",
     "field": "fiNumber",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "projection-summary-fi-number"
   },
@@ -3537,7 +3537,7 @@
     "source": "planner-ui/src/report/reportModel.ts",
     "owner": "ReportHeadlineResultsBlock",
     "field": "coastFireNumber",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "projection-summary-coast-fire-number"
   },
@@ -4408,7 +4408,7 @@
     "source": "planner-ui/src/planner/ResultsPage.tsx",
     "owner": "module",
     "field": "fiTarget",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "excluded",
     "familyId": null,
     "reason": "The module.fiTarget field is an internal diagnostic used to trace or validate calculation behavior.",
@@ -6399,7 +6399,7 @@
     "source": "planner-ui/src/planner/resultsRows.ts",
     "owner": "buildResultsRows",
     "field": "fiTarget",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "display-fi-target-annual"
   },
@@ -9696,7 +9696,7 @@
   {
     "source": "engine/src/scenarios/planHeadlines.ts",
     "owner": "PlanHeadlineComparison",
-    "field": "depletionAgePrimary",
+    "field": "depletionAge",
     "tsType": "NullableScalarComparison",
     "disposition": "family",
     "familyId": "compare-plan-deltas"

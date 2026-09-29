@@ -703,7 +703,7 @@
     }
   ],
   "plan": {
-    "schemaVersion": 6,
+    "schemaVersion": 7,
     "id": "rmd-irmaa--seq-1",
     "name": "High balances: RMDs & IRMAA",
     "origin": "user",

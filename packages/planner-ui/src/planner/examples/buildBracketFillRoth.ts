@@ -55,6 +55,9 @@ export function buildBracketFillRoth(): Plan {
   plan.expenses = {
     baseAnnual: 90_000,
     phases: [{ fromAge: 80, multiplier: 0.85 }],
+    // The phases follow this person's age (schema v7, decision D-PEOPLE-ORDER): the plan names
+    // them rather than reading whoever is listed first.
+    phasesAgeOf: p1,
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 250 },
   }

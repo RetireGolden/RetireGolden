@@ -511,13 +511,25 @@
     },
     "headline-results": {
       "averagePreRetirementSavingsRatePct": 20.5,
-      "coastFireNumber": 4153964,
+      "coastFireNumber": 3348741,
       "depletionYear": null,
       "endingAfterTaxEstate": 3701888,
       "endingInvestable": 2729453,
       "endingNetWorth": 3701888,
       "fiAge": null,
-      "fiNumber": 4406941,
+      "fiBasis": {
+        "conversionExecuted": true,
+        "householdSize": 2,
+        "notRetiring": [],
+        "personLastYearAlive": 2054,
+        "personName": "Alex",
+        "retirementRule": "retirementAge",
+        "retirementYear": 2028,
+        "spendingSource": "conversionFreeProjection",
+        "spendingYear": 2028,
+        "withdrawalRatePct": 4
+      },
+      "fiNumber": 3552680,
       "fiYear": null,
       "lifetimeRothConversions": 1017094,
       "lifetimeTaxesAndPenalties": 433212

@@ -100,6 +100,9 @@ export function buildBrokerageBridge401k(): Plan {
   plan.expenses = {
     baseAnnual: 76_000,
     phases: [],
+    // No phases; named anyway, as every two-person plan is (schema v7), so a
+    // scenario that adds phases follows a named person's age.
+    phasesAgeOf: samId,
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 850, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 170 },
   }

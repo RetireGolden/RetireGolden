@@ -462,7 +462,7 @@ function runRow(
 
   const { taxCalculator, lines } = recordingTaxStack(plan)
   const result = simulatePlan(plan, { startYear, taxCalculator })
-  const summary = summarizeProjection(plan, result)
+  const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
 
   // Commit only the funding fixed-point's accepted tax input/state computation.
   // Funding probes call the calculator many times per year; last-call-wins can

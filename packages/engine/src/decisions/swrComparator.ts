@@ -122,7 +122,7 @@ export function compareSwrRules(
       },
     }
     const result = simulatePlan(variant, opts)
-    const summary = summarizeProjection(variant, result)
+    const summary = summarizeProjection(variant, result, { conversionFreeRun: null })
     return {
       id: rule.id,
       label: rule.label,

@@ -44,7 +44,7 @@ function context(plan: Plan): DetectorContext {
     projection: {
       startYear: START_YEAR,
       result,
-      summary: summarizeProjection(plan, result),
+      summary: summarizeProjection(plan, result, { conversionFreeRun: null }),
       deflate: (year: number, amount: number) => amount / Math.pow(inflationRate, year - START_YEAR),
     },
   } as unknown as DetectorContext

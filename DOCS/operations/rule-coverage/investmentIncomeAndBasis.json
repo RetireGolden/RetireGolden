@@ -80,7 +80,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         }
@@ -491,7 +491,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         },
@@ -500,7 +500,7 @@
           "functions": [
             {
               "name": "summarizeProjection",
-              "line": 232
+              "line": 386
             }
           ]
         },
@@ -651,7 +651,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         },
@@ -1129,7 +1129,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         },
@@ -1193,7 +1193,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         }
@@ -1600,7 +1600,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1799
+              "line": 1850
             }
           ]
         },
@@ -1666,7 +1666,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         },
@@ -1734,7 +1734,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 463
+              "line": 491
             }
           ]
         }
@@ -1978,7 +1978,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1799
+              "line": 1850
             }
           ]
         },
@@ -2062,7 +2062,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1799
+              "line": 1850
             }
           ]
         },
@@ -2131,7 +2131,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1799
+              "line": 1850
             }
           ]
         },

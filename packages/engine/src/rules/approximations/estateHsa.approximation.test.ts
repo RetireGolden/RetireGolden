@@ -86,7 +86,7 @@ describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
   it('taxes ending HSA gross at the heir rate and omits the predeath-expense reduction', () => {
     const plan = nonSpouseHsaPlan()
     const result = simulatePlan(plan, { startYear: 2026, taxCalculator: noTax })
-    const summary = summarizeProjection(plan, result)
+    const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
     const last = result.years[result.years.length - 1]
     const hsaRow = summary.estateBreakdown.find((row) => row.accountId === 'hsa')
 
@@ -113,7 +113,7 @@ describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
 
     const spousePlan = hsaEstatePlan('spouse')
     const spouseResult = simulatePlan(spousePlan, { startYear: 2026, taxCalculator: noTax })
-    const spouseSummary = summarizeProjection(spousePlan, spouseResult)
+    const spouseSummary = summarizeProjection(spousePlan, spouseResult, { conversionFreeRun: null })
     const spouseHsaRow = spouseSummary.estateBreakdown.find((row) => row.accountId === 'hsa')
 
     expect(spouseResult.years).toHaveLength(1)
@@ -130,7 +130,7 @@ describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
 
     const charityPlan = hsaEstatePlan('charity')
     const charityResult = simulatePlan(charityPlan, { startYear: 2026, taxCalculator: noTax })
-    const charitySummary = summarizeProjection(charityPlan, charityResult)
+    const charitySummary = summarizeProjection(charityPlan, charityResult, { conversionFreeRun: null })
     const charityHsaRow = charitySummary.estateBreakdown.find((row) => row.accountId === 'hsa')
 
     expect(charityResult.years[charityResult.years.length - 1]?.balances.hsa).toBe(HSA_BALANCE)

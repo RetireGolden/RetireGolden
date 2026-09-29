@@ -1,25 +1,22 @@
 # Mutation receipt: social-security-claim-age-monthly-refinement
 
-Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765), and re-executed 2026-09-29 against RetireGolden base `07d0c328` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/claimAgeSweep.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/claimAgeSweep.ts b/packages/engine/src/decisions/claimAgeSweep.ts
-index a43bc8ae..4042b31b 100644
+index 86d314b3..f4585567 100644
 --- a/packages/engine/src/decisions/claimAgeSweep.ts
 +++ b/packages/engine/src/decisions/claimAgeSweep.ts
-@@ -348,7 +348,6 @@ export function refineClaimMonths(
-         if (!(row.primaryValue > bestRow.primaryValue)) continue
+@@ -391,4 +391,3 @@
          if (!row.eligible) {
-           rejectedIneligibleBetter++
+           rejected.add(key)
 -          continue
          }
-         bestRow = row
-         localBest = { years, months }
 ```
 
-This takes a month that ranks higher even when it breaks the objective's constraints, the worksheet's second wrong reading: case R-A's ineligible 68y5m (primary 130) replaces the whole-year pick, and the eligible 68y9m is never taken.
+This takes a month that ranks higher even when it breaks the objective's constraints, the worksheet's second wrong reading: case R-A's ineligible 68y5m (primary 130) replaces the whole-year pick, and the eligible 68y9m is never taken. Re-derived when round one of #765 (issue 4) removed the five-pass cap and moved each claim's window into claimMonthWindow, which re-indented this line: the same reading on the rewritten line.
 
 ## Command
 
@@ -29,17 +26,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/c
 
 ## Captured failing output
 
-the slice 5 review fixes moved the production lines and test titles these receipts quote The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the pass count moved out of the published refinement, which moved this receipt's hunk; the mutation is unchanged. The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/decisions/claimAgeSweep.refine.evidence.test.ts (1 test | 1 failed) 5ms
-   ❯ social-security-claim-age-monthly-refinement — Claim-age refinement to the month (1)
-     × R-A: takes the best eligible month on the objective, not the highest estate, and counts the rejected one 5ms
+ ❯ src/decisions/claimAgeSweep.refine.evidence.test.ts (3 tests | 1 failed) 20ms
+   ❯ social-security-claim-age-monthly-refinement — Claim-age refinement to the month (3)
+     × R-A: takes the best eligible month on the objective, not the highest estate, and counts the rejected one 6ms
 
  Test Files  1 failed (1)
-      Tests  1 failed (1)
+      Tests  1 failed | 2 passed (3)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

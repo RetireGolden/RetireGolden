@@ -90,7 +90,7 @@ describe('survivorTransitionAnalysis', () => {
     const overrides = { ...opts, deathAgeByPersonId: { p1: 75 } }
 
     const manualBase = simulatePlan(plan, overrides)
-    const manualSummary = summarizeProjection(plan, manualBase)
+    const manualSummary = summarizeProjection(plan, manualBase, { conversionFreeRun: null })
     expect(row.baseEndingAfterTaxEstate).toBe(manualSummary.endingAfterTaxEstate)
     expect(row.baseLifetimeTax).toBe(manualSummary.lifetimeTaxesAndPenalties)
     expect(row.endYear).toBe(manualBase.endYear)
@@ -127,7 +127,7 @@ describe('survivorTransitionAnalysis', () => {
     // The lever is the same timing with a 12% fill ADDED to the plan's
     // conversions through the death year.
     const lever = simulatePlan(plan, { ...overrides, additionalBracketFill: { bracketPct: SURVIVOR_LEVER_BRACKET_PCT, startYear: 2026, endYear: 2033 } })
-    const leverSummary = summarizeProjection(plan, lever)
+    const leverSummary = summarizeProjection(plan, lever, { conversionFreeRun: null })
     expect(row.conversionLever.endingAfterTaxEstate).toBe(leverSummary.endingAfterTaxEstate)
     expect(row.conversionLever.estateDelta).toBe(leverSummary.endingAfterTaxEstate - manualSummary.endingAfterTaxEstate)
     expect(row.conversionLever.lifetimeTaxDelta).toBe(leverSummary.lifetimeTaxesAndPenalties - manualSummary.lifetimeTaxesAndPenalties)
@@ -141,7 +141,7 @@ describe('survivorTransitionAnalysis', () => {
     const patched = applyScenarioPatch(plan, conversionLeverPatch(2026, 2033))
     expect(patched.ok).toBe(true)
     if (!patched.ok) return
-    const replaced = summarizeProjection(patched.plan, simulatePlan(patched.plan, { ...opts, deathAgeByPersonId: { p1: 75 } }))
+    const replaced = summarizeProjection(patched.plan, simulatePlan(patched.plan, { ...opts, deathAgeByPersonId: { p1: 75 } }), { conversionFreeRun: null })
     expect(row.conversionLever.endingAfterTaxEstate).toBe(replaced.endingAfterTaxEstate)
     expect(row.conversionLever.lifetimeTax).toBe(replaced.lifetimeTaxesAndPenalties)
     expect(row.conversionLever.raisedYears.length).toBeGreaterThan(0)

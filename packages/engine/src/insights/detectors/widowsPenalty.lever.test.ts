@@ -63,8 +63,8 @@ describe('the widows-penalty preview and the survivor lever', () => {
     // Every figure agrees; only the replacement's over-capacity warning is gone,
     // because the lever caps its fill at the convertible balance (independent
     // check C1), so the year never requests more than there is.
-    const { warnings: addedWarnings, ...addedSummary } = summarizeProjection(clean, added)
-    const { warnings: replacedWarnings, ...replacedSummary } = summarizeProjection(patched.plan, replaced)
+    const { warnings: addedWarnings, ...addedSummary } = summarizeProjection(clean, added, { conversionFreeRun: null })
+    const { warnings: replacedWarnings, ...replacedSummary } = summarizeProjection(patched.plan, replaced, { conversionFreeRun: null })
     expect(addedSummary).toEqual(replacedSummary)
     expect(replacedWarnings).toContain('A requested Roth conversion exceeded the available traditional balance and was reduced.')
     expect(addedWarnings).toEqual(replacedWarnings.filter((w) => w !== 'A requested Roth conversion exceeded the available traditional balance and was reduced.'))

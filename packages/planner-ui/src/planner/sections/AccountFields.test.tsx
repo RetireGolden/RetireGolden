@@ -1421,7 +1421,9 @@ describe('AccountFields extracted editor commit wiring', () => {
     plan.accounts[0]!.ownerPersonId = olderOwner!.id
     plan.accounts.push(retirementAccount({ id: 'funding', name: 'Funding IRA', ownerPersonId: olderOwner!.id }))
     const mounted = mountEditable(plan)
-    const owner = controlByLabel<HTMLSelectElement>(mounted.container(), 'Owner')
+    const owner = controlByLabel<HTMLSelectElement>(mounted.container(), 'Annuitant')
+    // An annuity names one annuitant (schema v7): no "Joint" to choose.
+    expect([...owner.options].map((option) => option.value)).toEqual([olderOwner!.id, youngerOwner.id])
 
     act(() => {
       owner.value = youngerOwner.id

@@ -2370,7 +2370,7 @@ describe('optimizePlan end-to-end', () => {
   it('improves the after-tax estate vs the no-conversion baseline', async () => {
     const plan = validate(tradHeavyPlan())
 
-    const baseline = summarizeProjection(plan, simulatePlan(plan, opts))
+    const baseline = summarizeProjection(plan, simulatePlan(plan, opts), { conversionFreeRun: null })
 
     const { schedule } = await optimizePlan(plan, opts)
     expect(schedule.status).toBe('optimal')
@@ -2384,7 +2384,7 @@ describe('optimizePlan end-to-end', () => {
 
     const optimizedPlan = validate(withOptimizedConversions(plan, schedule.conversions, '2026-06-17T00:00:00.000Z'))
     const exactLedger = simulatePlan(optimizedPlan, opts)
-    const optimized = summarizeProjection(optimizedPlan, exactLedger)
+    const optimized = summarizeProjection(optimizedPlan, exactLedger, { conversionFreeRun: null })
     const validation = evaluateExactLedgerSchedule(plan, schedule.conversions, simulatePlan(plan, opts), exactLedger)
 
     // The optimizer's own objective is the after-tax estate; on the exact ledger
@@ -2417,9 +2417,9 @@ describe('optimizePlan end-to-end', () => {
     expect(schedule.status).toBe('optimal')
     expect(schedule.conversions.reduce((a, c) => a + c.amount, 0)).toBeCloseTo(0, 0)
 
-    const baseline = summarizeProjection(valid, simulatePlan(valid, opts))
+    const baseline = summarizeProjection(valid, simulatePlan(valid, opts), { conversionFreeRun: null })
     const optimizedPlan = validate(withOptimizedConversions(valid, schedule.conversions, '2026-06-17T00:00:00.000Z'))
-    const exact = summarizeProjection(optimizedPlan, simulatePlan(optimizedPlan, opts))
+    const exact = summarizeProjection(optimizedPlan, simulatePlan(optimizedPlan, opts), { conversionFreeRun: null })
     expect(exact).toEqual(baseline)
   })
 
@@ -2704,7 +2704,7 @@ describe('optimizePlan end-to-end', () => {
 describe('exact-ledger convergence loop (Step 1)', () => {
   const exactEstate = (plan: Plan, conversions: { year: number; amount: number }[]): number => {
     const withConv = validate(withOptimizedConversions(plan, conversions))
-    return summarizeProjection(withConv, simulatePlan(withConv, opts)).endingAfterTaxEstate
+    return summarizeProjection(withConv, simulatePlan(withConv, opts), { conversionFreeRun: null }).endingAfterTaxEstate
   }
 
   const postProcessedForConvergence = (options: {

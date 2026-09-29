@@ -67,7 +67,8 @@ QLAC-at-cap / no-purchase) on the same exact ledger. Rules + sources:
 with non-qualified exclusion-ratio taxation extended per form
 ([engine/projection/annuityForms.ts](../../packages/engine/src/projection/annuityForms.ts), planning-grade
 Pub 939 approximations); **annuity ladders** (multiple dated purchases) are first-class, and the candidate
-generator adds a laddered SPIA option. An **annuitization sweep** ("how much to annuitize?") runs a 0–30%
+generator adds a laddered SPIA option (the SPIA candidates, the sweep and the annuitization insight illustrate on
+the older person's life, whoever is listed first, and name them). An **annuitization sweep** ("how much to annuitize?") runs a 0–30%
 allocation grid through shared-path Monte Carlo against a sourced SPIA payout-rate table
 ([engine/decisions/spiaQuotes.ts](../../packages/engine/src/decisions/spiaQuotes.ts); user quotes override) and
 reports the success-vs-legacy frontier with allocation-matched glidepath controls (Kitces attribution).
@@ -87,8 +88,8 @@ published HUD PLF pack, line and loan balance compounding, **coordinated** (draw
 | Roth IRA / Roth 401(k) | Tax-free growth; no RMDs (Roth 401(k) RMD-free since 2024); 5-year/ordering rules surfaced as warnings |
 | HSA | Pre-65 qualified-expense withdrawals tax-free; post-65 non-medical taxed as ordinary (no penalty). HSA coverage and Medicare Part A entitlement/backdating are not plan inputs, and the §4973 excess-contribution excise is not modeled (domain rules §5). |
 | Cash / savings | Interest taxed as ordinary; spending buffer |
-| Pension (DB) | Start age, monthly amount, COLA yes/no/fixed %, survivor %; optional **lump-sum offer + election** (under the engine's eligible-direct-rollover assumption, commutes to a tax-free traditional rollover — §19) |
-| Annuity (SPIA-style) | Payout, start, COLA, taxable %; **payout forms** (life-only / period certain / joint & survivor — §19); optional mid-plan **purchase** (SPIA/QLAC) funded from another account, taxed by exclusion ratio (non-qualified) or fully (qualified) — §17; ladders of dated purchases |
+| Pension (DB) | The participant (named, never "Joint", since plan schema v7), start age on that person's age, monthly amount, COLA yes/no/fixed %, survivor % to the other household member; optional **lump-sum offer + election** (under the engine's eligible-direct-rollover assumption, commutes to a tax-free traditional rollover — §19) |
+| Annuity (SPIA-style) | The annuitant (named since plan schema v7; one bought from an IRA or 401(k) names that account's owner, and the other household member is the second annuitant), payout, start, COLA, taxable %; **payout forms** (life-only / period certain / joint & survivor — §19); optional mid-plan **purchase** (SPIA/QLAC) funded from another account, taxed by exclusion ratio (non-qualified) or fully (qualified) — §17; ladders of dated purchases |
 | Home / real estate | Net-worth line; optional planned sale year (§121 exclusion); rental as income stream; optional **HECM line of credit** buffer on a primary residence (§19, non-recourse) |
 | Debts / mortgage | Amortizing payment to payoff year; affects expenses, not investable assets |
 | Equity comp (RSU/ESPP) | Brokerage-like holding (value + basis) with a vesting/availability date so locked funds aren't counted until vested. Named execution's full-ordinary-income character is a disclosed §83 timing approximation, not grant-tax treatment (see [Roth and withdrawals](roth-and-withdrawals.md#identity-bearing-ordinary-withdrawals)). |
@@ -161,7 +162,7 @@ run through the ledger with real TIPS taxation — coupons + inflation accretion
 income (NIIT included) but **state-exempt** (`TaxYearInput.usGovernmentInterest`, 31 U.S.C. §3124);
 maturing principal is a tax-free return; unmatured face rides in net worth. A **funded-ratio card**
 (Results + Income floor) discounts required-floor spending and guaranteed income from the same ledger
-years on the TIPS curve — Pfau's pension-accounting lens; `ss-bridge-gap` / `income-floor-funded`
+years on the TIPS curve, counted from the household's later retirement, whose it is named for a couple — Pfau's pension-accounting lens; `ss-bridge-gap` / `income-floor-funded`
 Insights detectors surface the levers. Opt-in FedInvest CUSIP prices (the app's only cross-origin request;
 cache-first; zero-network CSV import fallback) sanity-check quotes. Simplifications documented in
 `engine/ladder/ladderMath.ts` (annual coupons, synthetic rungs (coupon floor can price above face), planning-grade OID).
@@ -178,7 +179,9 @@ and also prices the published **SWR rules** (Bengen 4.7% / Morningstar 3.9% / ER
 ledger ([engine/decisions/swrComparator.ts](../../packages/engine/src/decisions/swrComparator.ts)). An
 opt-in **amortized spending policy** (`expenses.spendingPolicy.mode = 'abw'`; the ABW/VPW/TPAW family)
 replaces the fixed baseline: each year's lifestyle target is the actual start-of-year portfolio amortized
-over the remaining horizon at an expected real return (fixed / CAPE earnings yield / TIPS real yield) with
+over the remaining horizon (the plan's end, or the age at which at least one member of the household is still alive
+with 25 or 10 percent probability, walked on both people's survival curves to the end of the table so a much
+younger partner is not cut short and the order of the people does not matter) at an expected real return (fixed / CAPE earnings yield / TIPS real yield) with
 an optional spending tilt, funded through the normal tax cascade
 ([engine/spending/abw.ts](../../packages/engine/src/spending/abw.ts)). **Spending guardrails** ration the
 discretionary spending layer year by year — classic **Guyton-Klinger** withdrawal-rate bands, or
@@ -215,7 +218,11 @@ Per-year contributions by account with annual-limit enforcement (401(k), IRA, HS
 age-50 catch-ups, the age 60–63 super catch-up, and the Roth catch-up mandate for prior-year Box 3
 FICA wages that **exceed** $150k (2026+; user-entered on the employer account). Employer match (simple % formulas). Contributions support **time-aware phases**
 (`contributionPhaseSchema`: per-phase amount with optional `fromAge`/`toAge` window and annual `escalationPct`
-for salary-growth ramps), so an early-career accumulator's rising savings are modeled honestly.
+for salary-growth ramps), so an early-career accumulator's rising savings are modeled honestly. A phase's ages
+are its owner's; a jointly owned cash, taxable or equity-compensation account in a couple names the person whose
+age its schedule follows (`contributionScheduleAgeOf`), and it takes contributions while anyone in the household
+is alive: its schedule on that person's age, its plain annual amount while the household has wages, whoever is
+listed first (decision D-PEOPLE-ORDER).
 
 The annual ceilings are not a plan-document compliance engine: SIMPLE 401(k) status, vesting, the 403(b) 15-year
 catch-up, and the 457(b) final-three-year catch-up are absent rather than inferred. Qualified-plan compensation
@@ -227,9 +234,13 @@ registered boundaries and authorities.
 For accumulators and the FIRE movement the projection also derives **financial-independence metrics** on the
 Results and Report pages (`ProjectionSummary` in
 [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts)): per-year and average
-pre-retirement **savings rate**, the **FI number** (today's-dollars spending ÷ the assumed safe withdrawal
-rate, `assumptions.safeWithdrawalRatePct`, default 4%), the **FI year/age** the deflated investable balance
-first crosses it, and the **Coast-FIRE number** (the FI number discounted by real growth to today). See the
+pre-retirement **savings rate**, the **FI number** (the spending of the household's later retirement year, the
+year the last person to retire stops working, in today's dollars, ÷ the assumed safe withdrawal rate,
+`assumptions.safeWithdrawalRatePct`, default 4%; a Roth conversion's one-off tax in that year is left out, read
+from the same year of the plan run without its conversions, and `fiBasis` says which year, whose retirement and
+which run were priced), the **FI year/age** the deflated investable balance first crosses it, and the
+**Coast-FIRE number** (the FI number discounted by real growth to today over the years to that retirement). Which
+person is listed first changes none of them (decision D-PEOPLE-ORDER). See the
 `buildCoastFire` / `buildBaristaFire` examples and the FIRE Learning Center category.
 
 ## 6. Tax engine (federal + state)
@@ -327,7 +338,8 @@ A plan holds named **scenarios** (base + clones with overrides: retire at 62 vs 
 SS cut, LTC shock). Side-by-side compare of success %, lifetime taxes, ending estate, key-year table, and
 a diff of changed assumptions ([engine/scenarios/](../../packages/engine/src/scenarios/),
 [planner/ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx)). Whole separate **plans** can also be
-duplicated and compared ([planner/ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx)).
+duplicated and compared ([planner/ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx)); its depletion-age row gives the
+older person's age on each side, named in the row, whoever is listed first.
 Alongside the preserved legacy deep-override format, the engine exposes a versioned operation document
 with baseline preconditions, stable diffs, conflict detection, atomic apply/revert, composition, and
 legacy migration when a base snapshot is available.

@@ -2,6 +2,7 @@ import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
+import { canonicalFirstPerson } from '../../model/peopleOrder.js'
 
 /**
  * "You plan for a long life but hold no guaranteed income — annuitization
@@ -27,8 +28,11 @@ export const annuitizationHeadroom: Detector = {
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     const startYear = ctx.projection.startYear
-    const primary = plan.household.people[0]
-    if (!primary) return null
+    // The illustration is on one person's life. Nothing in the plan names
+    // whose, so it is the person the canonical order puts first (the older;
+    // model/peopleOrder.ts), whoever is listed first, and the card names them.
+    const annuitant = canonicalFirstPerson(plan.household.people)
+    if (!annuitant) return null
     // Longevity-anxious: someone plans to 95+.
     const maxPlanningAge = Math.max(...plan.household.people.map((p) => p.longevity.planningAge))
     if (maxPlanningAge < 95) return null
@@ -41,7 +45,7 @@ export const annuitizationHeadroom: Detector = {
       .sort((a, b) => ('balance' in b ? b.balance : 0) - ('balance' in a ? a.balance : 0))[0]
     if (!liquid || !('balance' in liquid) || liquid.balance < MIN_LIQUID_BALANCE_DOLLARS) return null
 
-    const currentAge = startYear - Number(primary.dob.slice(0, 4))
+    const currentAge = startYear - Number(annuitant.dob.slice(0, 4))
     const startAge = Math.min(95, Math.max(currentAge, 65))
     const paymentStartYear = startYear + Math.max(0, startAge - currentAge)
     const premium = Math.min(
@@ -53,7 +57,7 @@ export const annuitizationHeadroom: Detector = {
       id: `annuitization-headroom-preview-${startYear}-${liquid.id}`,
       type: 'annuity',
       name: 'SPIA (preview)',
-      ownerPersonId: primary.id,
+      ownerPersonId: annuitant.id,
       annualReturnPct: null,
       startAge,
       monthlyAmount: monthly,
@@ -68,7 +72,7 @@ export const annuitizationHeadroom: Detector = {
       title: 'Planning to 95+ with no lifetime income beyond Social Security',
       rationale:
         `Your plan runs to ${maxPlanningAge} with no pension or annuity income. ` +
-        `Trading ${formatWholeUsd(premium)} of liquid savings for a life annuity (~${formatWholeUsd(monthly)}/mo) ` +
+        `Trading ${formatWholeUsd(premium)} of liquid savings for a life annuity on ${annuitant.name}'s life from age ${startAge} (~${formatWholeUsd(monthly)}/mo) ` +
         'insures the years past life expectancy, the exact risk a long planning age worries about, at the cost of liquidity and estate. ' +
         'The Monte Carlo page\'s annuitization sweep shows the full success-vs-legacy frontier.',
       impact: {

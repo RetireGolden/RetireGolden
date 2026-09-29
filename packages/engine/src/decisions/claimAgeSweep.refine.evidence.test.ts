@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeCalculation, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
-import { refineClaimMonths, type ClaimMonthRow } from './claimAgeSweep.js'
+import { refineClaimMonths, type ClaimAgeValue, type ClaimMonthRow } from './claimAgeSweep.js'
 
 const WORKSHEET = 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.md'
 const MUTATION = 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.mutation.md'
@@ -57,6 +57,54 @@ describeCalculation(
       // 70 is tried only at 70y0m.
       expect(seen.filter((key) => key.startsWith('70-'))).toEqual(['70-0'])
       expect(search.moved).toBe(true)
+    })
+
+    // A claim's month index is its months since 65y0m; the objective is
+    // coupled, so each pass moves each claim along the ridge by twice the
+    // coupling: six months on R-B (coupling 3), four on R-C (coupling 2).
+    const index = (claim: ClaimAgeValue) => (claim.years - 65) * 12 + claim.months
+    const coupled = (coupling: number) => (i1: number, i2: number) => Math.min(i1, i2 + coupling) + Math.min(i2, i1 + coupling)
+    const ridge = (primary: (i1: number, i2: number) => number, order: readonly string[]) => {
+      const seen = new Set<string>()
+      return refineClaimMonths(
+        { claimByPersonId: { p1: 66, p2: 66 }, row: { primaryValue: primary(12, 12), eligible: true, endingAfterTaxEstate: 0 } },
+        order.map((personId) => ({ personId, currentAge: 60 })),
+        (claim) => {
+          const key = `${claim['p1']!.years}-${claim['p1']!.months} ${claim['p2']!.years}-${claim['p2']!.months}`
+          expect(seen.has(key), key).toBe(false)
+          seen.add(key)
+          // The windows stay on the starting whole year: 65y0m to 67y11m.
+          expect([claim['p1']!.years, claim['p2']!.years].every((years) => years >= 65 && years <= 67), key).toBe(true)
+          return { primaryValue: primary(index(claim['p1']!), index(claim['p2']!)), eligible: true, endingAfterTaxEstate: 0 }
+        },
+      )
+    }
+
+    it('R-C: runs past five passes to the fixed point, with no cap (review of #765, issue 4)', () => {
+      const primary = coupled(2)
+      const pick = { years: expectedOf('R-C pick years'), months: expectedOf('R-C pick months') }
+      for (const order of [['p1', 'p2'], ['p2', 'p1']]) {
+        const search = ridge(primary, order)
+        expect(search.claimByPersonId, order.join()).toEqual({ p1: pick, p2: pick })
+        expect(search.row.primaryValue - primary(12, 12)).toBe(expectedOf('R-C primary change'))
+        expect(search.evaluations).toBe(expectedOf('R-C months priced'))
+        expect(search.passes).toBe(expectedOf('R-C passes'))
+      }
+    })
+
+    it('R-B: repeats whole passes, windows on the starting year, to the fixed point, in either visiting order', () => {
+      const primary = coupled(3)
+      const run = (order: readonly string[]) => {
+        return ridge(primary, order)
+      }
+      const pick = { years: expectedOf('R-B pick years'), months: expectedOf('R-B pick months') }
+      for (const order of [['p1', 'p2'], ['p2', 'p1']]) {
+        const search = run(order)
+        expect(search.claimByPersonId, order.join()).toEqual({ p1: pick, p2: pick })
+        expect(search.row.primaryValue - primary(12, 12)).toBe(expectedOf('R-B primary change'))
+        expect(search.evaluations).toBe(expectedOf('R-B months priced'))
+        expect(search.passes).toBe(expectedOf('R-B passes'))
+      }
     })
   },
 )

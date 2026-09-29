@@ -609,7 +609,7 @@ export function createDecisionContext(
   return {
     plan,
     baselineResult,
-    baselineSummary: baseline?.summary ?? summarizeProjection(plan, baselineResult),
+    baselineSummary: baseline?.summary ?? summarizeProjection(plan, baselineResult, { conversionFreeRun: null }),
     simulateOptions,
     taxCalculatorForPlan,
   }
@@ -773,7 +773,7 @@ export function evaluateCandidate(
     ? { ...ctx.simulateOptions, taxCalculator: ctx.taxCalculatorForPlan(built.plan) }
     : ctx.simulateOptions
   const candidateResult = options.candidateResult ?? simulatePlan(built.plan, candidateSimulateOptions)
-  const candidateSummary = summarizeProjection(built.plan, candidateResult)
+  const candidateSummary = summarizeProjection(built.plan, candidateResult, { conversionFreeRun: null })
 
   const conversionExecution = candidate.conversions
     ? buildConversionExecution(candidate.conversions, candidateResult, {

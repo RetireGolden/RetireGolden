@@ -30,6 +30,7 @@
     "schema/plan.v4.json",
     "schema/plan.v5.json",
     "schema/plan.v6.json",
+    "schema/plan.v7.json",
     "LICENSE",
     "README.md"
   ],
@@ -92,12 +93,17 @@
       "types": "./dist/schema/plan.v6.generated.d.ts",
       "default": "./dist/schema/plan.v6.generated.js"
     },
+    "./schema/v7": {
+      "types": "./dist/schema/plan.v7.generated.d.ts",
+      "default": "./dist/schema/plan.v7.generated.js"
+    },
     "./schema/plan.v1.json": "./schema/plan.v1.json",
     "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./schema/plan.v3.json": "./schema/plan.v3.json",
     "./schema/plan.v4.json": "./schema/plan.v4.json",
     "./schema/plan.v5.json": "./schema/plan.v5.json",
     "./schema/plan.v6.json": "./schema/plan.v6.json",
+    "./schema/plan.v7.json": "./schema/plan.v7.json",
     "./actions/*": null,
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",

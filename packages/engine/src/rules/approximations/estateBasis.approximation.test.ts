@@ -112,7 +112,7 @@ function mixedDestinationCoupleEstatePlan(basisOwner: BasisOwner): ReturnType<ty
 function observeEstateSummary(plan: ReturnType<typeof couplePlan>) {
   const parsed = validatePlan(plan)
   const result = simulatePlan(parsed, { startYear: 2026, taxCalculator: noTax })
-  const summary = summarizeProjection(parsed, result)
+  const summary = summarizeProjection(parsed, result, { conversionFreeRun: null })
   const last = result.years[result.years.length - 1]!
   return { parsed, result, summary, last }
 }

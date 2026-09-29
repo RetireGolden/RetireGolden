@@ -856,7 +856,7 @@
     }
   ],
   "plan": {
-    "schemaVersion": 6,
+    "schemaVersion": 7,
     "id": "bracket-fill-roth--seq-1",
     "name": "Bracket-fill Roth conversions",
     "origin": "user",
@@ -978,6 +978,7 @@
           "multiplier": 0.85
         }
       ],
+      "phasesAgeOf": "bracket-fill-roth--p1",
       "oneTimeGoals": [],
       "healthcare": {
         "pre65MonthlyPremiumPerPerson": 0,

@@ -13,7 +13,7 @@ describe('detectorProjection', () => {
   plan.assumptions.inflationPct = 3.1
   const validated = validatePlan(plan)
   const result = simulatePlan(validated, { startYear: 2026, taxCalculator: productionTaxCalculator() })
-  const summary = summarizeProjection(validated, result)
+  const summary = summarizeProjection(validated, result, { conversionFreeRun: null })
 
   it("deflates by the run's own inflationScale, bit for bit with the dollar basis", () => {
     const projection = detectorProjection(result, summary)

@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2288
+              "line": 2343
             }
           ]
         },
@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },
@@ -360,7 +360,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2282
+              "line": 2337
             }
           ]
         },
@@ -436,7 +436,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2539
+              "line": 2610
             }
           ]
         },
@@ -551,7 +551,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2539
+              "line": 2610
             }
           ]
         },
@@ -832,7 +832,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2282
+              "line": 2337
             }
           ]
         },
@@ -841,7 +841,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },
@@ -1066,7 +1066,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2288
+              "line": 2343
             }
           ]
         },
@@ -1075,7 +1075,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },
@@ -1217,7 +1217,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2288
+              "line": 2343
             }
           ]
         },
@@ -1235,7 +1235,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },
@@ -1509,7 +1509,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2288
+              "line": 2343
             }
           ]
         },
@@ -1894,7 +1894,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 78
+              "line": 79
             }
           ]
         },

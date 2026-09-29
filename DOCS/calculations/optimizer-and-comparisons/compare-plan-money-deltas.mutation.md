@@ -1,15 +1,15 @@
 # Mutation receipt: plan-headline-money-comparison
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `1c7341f5` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/planHeadlines.ts`
 
 ```diff
 diff --git a/packages/engine/src/scenarios/planHeadlines.ts b/packages/engine/src/scenarios/planHeadlines.ts
-index a378737d..2383a53a 100644
+index 5433e923..55dc00ba 100644
 --- a/packages/engine/src/scenarios/planHeadlines.ts
 +++ b/packages/engine/src/scenarios/planHeadlines.ts
-@@ -143,7 +143,7 @@ export function comparePlanHeadlines(
+@@ -185,7 +185,7 @@ export function comparePlanHeadlines(
        `Two plans are compared only from one start year; the baseline starts in ${startYear} and the proposal in ${proposal.result.startYear}`,
      )
    }
@@ -30,18 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/scenarios/p
 
 ## Captured failing output
 
-The PR #754 review fixes changed these production files (the dollar basis built once, typed comparison refusals, the start-year refusal, the engine's material-shortfall flag, the per-candidate stochastic refusal) and one evidence file, so the hunk headers, quoted lines and test counts are re-pointed. The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/scenarios/planHeadlines.evidence.test.ts (9 tests | 2 failed) 8ms
+ ❯ src/scenarios/planHeadlines.evidence.test.ts (10 tests | 2 failed) 8ms
    ❯ plan-headline-money-comparison — Compare plans: money rows in one stated basis (5)
      × case I: plans ending in 2050 and 2060 compare in 2026 dollars, each by its own factor, and the sign flips 3ms
      × case J: lifetime tax plus penalties is re-summed year by year in 2026 dollars 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 7 passed (9)
+      Tests  2 failed | 8 passed (10)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯

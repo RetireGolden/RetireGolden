@@ -48,6 +48,7 @@ import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
+import { coastFireHorizonYear, fiTargetBasisFacts, fiTargetBasisSentence } from './fiTargetCopy'
 import { useProjection } from './useProjection'
 import { US_STATES } from './usStates'
 import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
@@ -95,6 +96,7 @@ function ReportBody() {
   const reportBranding = useReportBranding()
   const view = useProjection(plan)
   const { result, summary } = view
+  const fiFacts = fiTargetBasisFacts(summary, plan)
   // The report route sits outside the workspace shell, so it names its own
   // tab: plan + report context, like the rail screens (#430).
   useEffect(() => {
@@ -195,11 +197,12 @@ function ReportBody() {
           <ReportKpi label="Lifetime tax" value={fmtMoneyCompact(summary.lifetimeTaxesAndPenalties)} sub="federal + state + penalties" />
         </div>
         <div className="report-kpis mt-md">
-          <ReportKpi label="FI Target" value={fmtMoneyCompact(summary.fiNumber)} sub={`SWR: ${plan.assumptions.safeWithdrawalRatePct ?? 4}%`} />
-          <ReportKpi label="FI Reached" value={summary.fiYear !== null ? `${summary.fiYear} (Age ${summary.fiAge})` : 'Never'} sub="based on target SWR" />
+          <ReportKpi label="FI Target" value={summary.fiNumber === null ? 'Not priced' : fmtMoneyCompact(summary.fiNumber)} sub={summary.fiNumber === null ? 'no retirement in the plan' : `SWR: ${plan.assumptions.safeWithdrawalRatePct ?? 4}%`} />
+          <ReportKpi label="FI Reached" value={summary.fiNumber === null ? 'Not priced' : summary.fiYear !== null ? `${summary.fiYear} (Age ${summary.fiAge})` : 'Never'} sub={fiFacts.householdSize > 1 && fiFacts.personName !== null ? `${fiFacts.personName}'s age, target SWR` : 'based on target SWR'} />
           <ReportKpi label="Avg Savings Rate" value={`${summary.averagePreRetirementSavingsRatePct.toFixed(1)}%`} sub="pre-retirement average" />
-          <ReportKpi label="Coast-FIRE Target" value={fmtMoneyCompact(summary.coastFireNumber)} sub="needed today" />
+          <ReportKpi label="Coast-FIRE Target" value={summary.coastFireNumber === null ? 'Not priced' : fmtMoneyCompact(summary.coastFireNumber)} sub={summary.coastFireNumber === null ? 'no retirement in the plan' : coastFireHorizonYear(fiFacts) === null ? 'needed today' : `needed today to reach FI by ${coastFireHorizonYear(fiFacts)}`} />
         </div>
+        <p className="muted">{fiTargetBasisSentence(fiFacts)}</p>
         {/* Each chart is a named image (#430): the year table below is the
             accessible data alternative, so the print charts drop Recharts'
             keyboard tooltip layer rather than nest a focusable application

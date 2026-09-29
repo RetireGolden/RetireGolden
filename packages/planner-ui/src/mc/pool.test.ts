@@ -95,7 +95,10 @@ describe('runMonteCarlo (pool entry; sync fallback in this environment)', () => 
     })
     expect(result.spending.length).toBeGreaterThan(0)
     expect(result.retirement.length).toBeGreaterThan(0)
-  })
+    // Every frontier point is a full Monte Carlo run on the single-threaded
+    // fallback: under coverage on a hosted runner this took 4,983 ms on main
+    // (2026-09-29), against vitest's 5 s default, and failed at 5,026 ms.
+  }, 30_000)
 
   it('returns summarized historical stress rows through the async pool facade', async () => {
     const plan = basePlan()

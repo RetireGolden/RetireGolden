@@ -42,6 +42,15 @@ export interface AnnualLegacyQcdGiftPlanInput {
   readonly ownedIraRmdGrossByOwner: ReadonlyMap<string, number>
   /** Unique logical balances; first-ID source order is load-bearing. */
   readonly balances: readonly LegacyQcdGiftBalanceView[]
+  /**
+   * The household's person ids in the canonical order (model/peopleOrder.ts):
+   * the order the RMD share is split across owners, the last taking the
+   * residual. Neither list order nor the ids' spelling may decide it (the
+   * independent review's L3); an owner not in the list goes after, by id.
+   * The projection always passes it; the unit fixtures that omit it split by
+   * id, as before.
+   */
+  readonly ownerOrder?: readonly string[]
 }
 
 export interface LegacyQcdGiftDebitIntent {
@@ -110,10 +119,18 @@ export function annualLegacyQcdGiftPlan(
   const qcdFromRmdByOwner = new Map<string, number>()
 
   if (qcdFromRmd > 0 && input.ownedIraRmdTotal > 0) {
-    // Sorted owners and the original left-associated folds are observable at
-    // IEEE-754 precision. The last owner takes the residual; a second sorted
-    // pass reallocates a capped owner's stranded share without plan-order bias.
-    const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort()
+    // The owner order and the left-associated folds are observable at
+    // IEEE-754 precision. Owners go in the canonical people order, so the
+    // split depends on neither list order nor what the ids are called (a
+    // plain id sort moved it by a last-place unit when ids were renamed). The
+    // last owner takes the residual; a second pass in the same order
+    // reallocates a capped owner's stranded share without plan-order bias.
+    const rank = new Map((input.ownerOrder ?? []).map((id, index) => [id, index]))
+    const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort((a, b) => {
+      const ra = rank.get(a) ?? Number.MAX_SAFE_INTEGER
+      const rb = rank.get(b) ?? Number.MAX_SAFE_INTEGER
+      return ra !== rb ? ra - rb : a < b ? -1 : a > b ? 1 : 0
+    })
     const routable = (ownerId: string): number => Math.min(
       input.ownedIraRmdGrossByOwner.get(ownerId) ?? 0,
       donorCapacity.get(ownerId) ?? 0,

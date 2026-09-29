@@ -105,7 +105,7 @@ describe('buildResultsRows', () => {
     expect(v.summary.fiNumber).toBeGreaterThan(0)
     v.result.years.forEach((y, i) => {
       expect(today[i]!.fiTarget, `year ${y.year}`).toBe(v.summary.fiNumber)
-      expect(Object.is(nominal[i]!.fiTarget, toNominalDollars(v.basis, y.year, v.summary.fiNumber)), `year ${y.year}`).toBe(true)
+      expect(Object.is(nominal[i]!.fiTarget, toNominalDollars(v.basis, y.year, v.summary.fiNumber!)), `year ${y.year}`).toBe(true)
     })
   })
 })

@@ -213,6 +213,15 @@ export interface SurvivalPerson {
  * would be A) ≥ pct/100, assuming independent lifetimes —
  * P = 1 − (1 − S_primary)(1 − S_partner), each S read off that person's
  * survival curve. Always ≥ the single-life answer.
+ *
+ * Both curves are walked to the end of the table (decision D-PEOPLE-ORDER,
+ * rule R6): the walk continues while EITHER person is at most one past the
+ * table's last age, so a partner 25 or more years younger than `primary` is
+ * not cut off when `primary` reaches it. The result is on `primary`'s clock,
+ * so it can exceed the table's last age; the calendar year it names,
+ * `primary`'s birth year plus the result, is the same whichever of the two is
+ * passed as `primary` (the last year in which at least one of you is alive
+ * with that probability).
  */
 export function jointSurvivalPercentileAge(
   primary: SurvivalPerson,
@@ -226,8 +235,9 @@ export function jointSurvivalPercentileAge(
   const partnerCurve = runningSurvival(partnerFrom, partner.sex, partner.hazard ?? 1)
   let best = from
   // Walk both survival curves on the primary's clock; the partner's own clock
-  // is offset by the age difference.
-  for (let t = 0; from + t <= MAX_AGE + 1; t++) {
+  // is offset by the age difference. Continue while either person is still
+  // inside the table (one past its last age), not only the primary.
+  for (let t = 0; from + t <= MAX_AGE + 1 || partnerFrom + t <= MAX_AGE + 1; t++) {
     const sPrimary = primaryCurve.survivalTo(t)
     const sPartner = partnerCurve.survivalTo(t)
     if (t > 0 && sPrimary <= 0 && sPartner <= 0) break

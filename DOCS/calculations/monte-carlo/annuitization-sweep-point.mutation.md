@@ -1,15 +1,15 @@
 # Mutation receipt: annuitization-sweep-point
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1c7341f5` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/annuitization.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/annuitization.ts b/packages/engine/src/decisions/annuitization.ts
-index 8e4a006d..f5815d7f 100644
+index 87687de9..bca4623e 100644
 --- a/packages/engine/src/decisions/annuitization.ts
 +++ b/packages/engine/src/decisions/annuitization.ts
-@@ -179,7 +179,7 @@ export function buildAnnuitizationSweep(
+@@ -187,7 +187,7 @@ export function buildAnnuitizationSweep(
    const pointMeta: Array<{ pct: number; premium: number; annualIncome: number; controlId?: string }> = []
  
    for (const pct of pcts) {
@@ -30,24 +30,24 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/a
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annuitization.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed because decision D-PEOPLE-ORDER's canonical-person changes moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annuitization.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/decisions/annuitization.evidence.test.ts (2 tests | 1 failed) 42ms
-   ❯ annuitization-sweep-point — Annuitization sweep point: premium, annual income and effective allocation (2)
+ ❯ src/decisions/annuitization.evidence.test.ts (3 tests | 2 failed) 57ms
+   ❯ annuitization-sweep-point — Annuitization sweep point: premium, annual income and effective allocation (3)
      × caps the 60% point at the funding account and prices it at the interpolated rate 37ms
+     × for a couple, prices every point on the older person, whoever is listed first, and names them 14ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 1 passed (2)
+      Tests  2 failed | 1 passed (3)
 
-  Transform  transforming modules took 2.44s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/decisions/annuitization.evidence.test.ts > annuitization-sweep-point — Annuitization sweep point: premium, annual income and effective allocation > caps the 60% point at the funding account and prices it at the interpolated rate
 AssertionError: premium 120000 is not within {"abs":0.005} of 95000: expected false to be true // Object.is equality
@@ -67,7 +67,27 @@ AssertionError: premium 120000 is not within {"abs":0.005} of 95000: expected fa
      60|
  ❯ src/decisions/annuitization.evidence.test.ts:96:7
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/decisions/annuitization.evidence.test.ts > annuitization-sweep-point — Annuitization sweep point: premium, annual income and effective allocation > for a couple, prices every point on the older person, whoever is listed first, and names them
+AssertionError: annualIncome 10992 is not within {"abs":0.005} of 8702: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectWithin src/decisions/annuitization.evidence.test.ts:58:9
+     56|         withinTolerance(actual, target, example.tolerance),
+     57|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
+     58|       ).toBe(true)
+       |         ^
+     59|     }
+     60|
+ ❯ src/decisions/annuitization.evidence.test.ts:151:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
 ## Revert

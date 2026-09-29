@@ -187,30 +187,103 @@ function exampleEditedContractsMessage(
   return `This plan came from a library example, and some of its premium tax credit details, for ${years}, were changed by hand. They are kept as entered. The year-by-year figures stay the same. ${monteCarlo}`
 }
 
+/** The other person in a two-person plan, by name, for "choose the other person instead". */
+function otherName(plan: Plan, personId: string): string {
+  const other = plan.household.people.find((p) => p.id !== personId)
+  return other ? other.name : 'the other person'
+}
+
+/**
+ * The schema-v7 namings (decision D-PEOPLE-ORDER): a plan used to leave some
+ * choices to the order its people were listed in, and now names the person.
+ * Each message says who was named, whether any figure moved, and where to
+ * name the other person.
+ */
+function namedPersonMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'spendingPhasesPersonNamed' }>,
+  plan: Plan,
+): string {
+  const name = ownerName(plan, repair.personId)
+  return `Your spending phases start by one person's age, and the plan now names whose: ${name}'s. They already followed ${name}'s age, because ${name} is listed first, so no figure changed. Open Spending to have them follow ${otherName(plan, repair.personId)}'s age instead.`
+}
+
 /** One repair, as a paragraph for the household. */
 export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
   if (repair.kind === 'exampleContractsFollowPremiumField') return exampleContractsMessage(repair, plan)
   if (repair.kind === 'exampleContractsLeftOut') return exampleContractsLeftOutMessage(repair, plan)
   if (repair.kind === 'exampleEnteredContractsNowPriced') return exampleEnteredContractsMessage(repair, plan)
   if (repair.kind === 'exampleEditedContractsKept') return exampleEditedContractsMessage(repair, plan)
+  if (repair.kind === 'spendingPhasesPersonNamed') return namedPersonMessage(repair, plan)
+  if (repair.kind === 'legacyScenarioConverted') {
+    return `The scenario "${named(repair.scenarioName, 'Unnamed scenario')}" was stored in a form a saved file could not keep: exporting it would have lost what it changes. It was rewritten so it survives a backup or a copy of the plan. It changes the same things it did before.`
+  }
   const account = named(repair.accountName, 'An account')
   switch (repair.kind) {
+    case 'contributionSchedulePersonNamed': {
+      const name = ownerName(plan, repair.personId)
+      return `${account} is a joint account whose contribution schedule starts and stops by age, and the plan now names whose: ${name}'s. It already followed ${name}'s age, because ${name} is listed first, so no figure changed. Open Accounts to have it follow ${otherName(plan, repair.personId)}'s age instead.`
+    }
+    case 'guaranteedIncomeOwnerBackFilled': {
+      const name = ownerName(plan, repair.ownerPersonId)
+      const moved = repair.movesFigures
+        ? `It now starts at and pays on ${name}'s age and life, so your figures may change.`
+        : `It was already paid on ${name}'s age and life, so no figure changed.`
+      if (repair.accountType === 'pension') {
+        return `${account} was stored as a joint pension. A pension belongs to the person who earned it, so it now belongs to ${name}, the person listed first. ${moved} Open Accounts if ${otherName(plan, repair.ownerPersonId)} earned it.`
+      }
+      if (repair.basis === 'fundingAccountOwner') {
+        return `${account} was stored as a joint annuity. It was bought from ${name}'s IRA or 401(k), and an annuity bought that way belongs to the account's owner, so ${name} is now its annuitant. ${moved} Open Accounts to check it.`
+      }
+      if (repair.basis === 'livingPerson') {
+        const other = otherName(plan, repair.ownerPersonId)
+        return `${account} was stored as a joint annuity bought in ${repair.purchaseYear ?? 'a year'} after ${other}'s planning age had ended, so on ${other}'s life it would never have paid. ${name} was the only one alive to buy it, so ${name} is now its annuitant. It now pays on ${name}'s age and life, so your figures change. Open Accounts to check it.`
+      }
+      if (repair.basis === 'survivingSpouse') {
+        return `${account} was stored as a joint annuity, bought from ${otherName(plan, repair.ownerPersonId)}'s IRA or 401(k) after ${otherName(plan, repair.ownerPersonId)}'s planning age had ended. A surviving spouse may take over that account and buy from it, so ${name}, the spouse who was alive to buy it, is now its annuitant. ${moved} Open Accounts to check it.`
+      }
+      return `${account} was stored as a joint annuity. An annuity starts at and pays on one person's age and life, so ${name}, the person listed first, is now its annuitant. ${moved} Open Accounts to make ${otherName(plan, repair.ownerPersonId)} the annuitant instead.`
+    }
+    case 'annuityOwnerMatchedToFundingAccount': {
+      const from = ownerName(plan, repair.fromOwnerPersonId)
+      const to = ownerName(plan, repair.toOwnerPersonId)
+      return `${account} was named for ${from} but bought from ${named(repair.fundingAccountName, 'an account')}, which belongs to ${to}. An annuity bought from an IRA or 401(k) belongs to that account's owner, so ${to} is now its annuitant. It now starts at and pays on ${to}'s age and life, so your figures may change. Open Accounts to buy it from one of ${from}'s own accounts instead.`
+    }
+    case 'annuityOwnerNamedSurvivingSpouse': {
+      const from = ownerName(plan, repair.fromOwnerPersonId)
+      const to = ownerName(plan, repair.toOwnerPersonId)
+      return `${account} was bought in ${repair.purchaseYear} from ${named(repair.fundingAccountName, 'an account')} and named for ${from}, whose planning age had ended by then, so it would never have paid. A surviving spouse may take over the account and buy from it, so ${to}, who was alive to buy it, is now its annuitant. It now pays on ${to}'s age and life, so your figures change. Open Accounts to check it.`
+    }
+    case 'annuityOwnerNamedLivingPerson': {
+      const from = ownerName(plan, repair.fromOwnerPersonId)
+      const to = ownerName(plan, repair.toOwnerPersonId)
+      return `${account} was bought in ${repair.purchaseYear} and named for ${from}, whose planning age ends in ${repair.fromOwnerLastYearAlive}, so it would never have paid. ${to} was the only one alive to buy it, so ${to} is now its annuitant. It now pays on ${to}'s age and life, so your figures change. Open Accounts to check it.`
+    }
+    case 'annuityPurchaseDropped': {
+      const who = ownerName(plan, repair.annuitantPersonId)
+      const nobody = plan.household.people.length > 1 ? `, and no one in your household is alive in ${repair.purchaseYear} to buy it` : ''
+      const funding = repair.fundingAccountName !== null && repair.fundingAccountName.trim().length > 0 ? repair.fundingAccountName : 'the account it was to come from'
+      return `${account} was to be bought in ${repair.purchaseYear} on ${who}'s life, but ${who}'s planning age ends in ${repair.annuitantLastYearAlive}${nobody}, so it would never have paid. It has been removed, and its premium stays in ${funding}, so your figures change. Open Accounts to add it again in a year when its annuitant is alive.`
+    }
+    case 'lumpSumElectionDroppedSpouseTarget': {
+      const owner = ownerName(plan, repair.ownerPersonId)
+      return `${account} was set to roll its lump sum into ${named(repair.targetAccountName, 'an account')}, which belongs to ${ownerName(plan, repair.targetOwnerPersonId)}. A pension rolls over only into an IRA or 401(k) of the person who earned it, ${owner}. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into one of ${owner}'s own accounts.`
+    }
     case 'accountOwnerBackFilled':
       return `${account} was stored without an owner, and it is now owned by ${ownerName(plan, repair.ownerPersonId)}. Open Accounts to assign it to someone else.`
     case 'lumpSumElectionDroppedElectionYearPassed':
-      return `${account} was set to take its lump sum in ${repair.electionYear}, and that year has already passed. The election was cleared and the lump-sum offer is still on record. Open Accounts to take the lump sum in a year that has not passed, or leave the pension paying its annuity.`
+      return `${account} was set to take its lump sum in ${repair.electionYear}, and that year has already passed. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to take the lump sum in a year that has not passed, or leave the pension paying its annuity.`
     case 'lumpSumElectionDroppedUnreadableSaveDate':
-      return `${account} was set to take its lump sum. The date this plan was last saved could not be read, so the app could not tell whether the election year had already passed. The election was cleared and the lump-sum offer is still on record. Saving this plan writes a fresh date, and you can set the election again from Accounts.`
+      return `${account} was set to take its lump sum. The date this plan was last saved could not be read, so the app could not tell whether the election year had already passed. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Saving this plan writes a fresh date, and you can set the election again from Accounts.`
     case 'lumpSumElectionDroppedInheritedTarget':
-      return `${account} was set to roll its lump sum into ${named(repair.targetAccountName, 'an inherited account')}, which is inherited. An inherited account cannot receive a pension rollover. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
+      return `${account} was set to roll its lump sum into ${named(repair.targetAccountName, 'an inherited account')}, which is inherited. An inherited account cannot receive a pension rollover. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
     case 'lumpSumElectionDroppedTargetUnavailable':
       return repair.targetAccountName !== null && repair.targetAccountName.trim().length > 0
-        ? `${account} was set to roll its lump sum into ${repair.targetAccountName}, and that is not an account this plan can pay a rollover into. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
-        : `${account} was set to roll its lump sum into an account this plan no longer holds. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
+        ? `${account} was set to roll its lump sum into ${repair.targetAccountName}, and that is not an account this plan can pay a rollover into. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
+        : `${account} was set to roll its lump sum into an account this plan no longer holds. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.`
     case 'annuityPremiumRetargeted':
-      return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from ${named(repair.toAccountName, 'a traditional account you own')}. The purchase year, the premium, and its pre-tax treatment are unchanged. Open Accounts to fund it from a different account you own.`
+      return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from ${named(repair.toAccountName, 'a traditional account you own')}. The purchase year, the premium, and its pre-tax treatment are unchanged, but the account it comes from is not, so your figures may change. Open Accounts to fund it from a different account you own.`
     case 'annuityPurchaseStoodDown':
-      return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and ${account} pays nothing. Open Accounts to add the account the premium came from, then set the purchase up again.`
+      return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and ${account} pays nothing, so your figures change. Open Accounts to add the account the premium came from, then set the purchase up again.`
     // The two start-age stand-downs, and the one sentence they share: whether
     // the OTHER purchase shape would have kept the start age the household
     // stored. It is a real question rather than a rhetorical one, because the
@@ -222,12 +295,12 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
     // repair carries rather than asserting which box is the generous one.
     case 'deferredAnnuityPurchaseStoodDown':
       return repair.startAge <= repair.latestPermittedStartAgeIfToggled
-        ? `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. Only a QLAC can start that late; a purchase like this one has to start by age ${repair.latestPermittedStartAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.`
-        : `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. A purchase like this one has to start by age ${repair.latestPermittedStartAge}, and buying it as a QLAC would not keep the later start either: a QLAC has to start by age ${repair.latestPermittedStartAgeIfToggled}. No pre-tax purchase can wait until ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
+        ? `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. Only a QLAC can start that late; a purchase like this one has to start by age ${repair.latestPermittedStartAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.`
+        : `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. A purchase like this one has to start by age ${repair.latestPermittedStartAge}, and buying it as a QLAC would not keep the later start either: a QLAC has to start by age ${repair.latestPermittedStartAgeIfToggled}. No pre-tax purchase can wait until ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age.`
     case 'qlacPurchaseStoodDown':
       return repair.startAge <= repair.latestPermittedStartAgeIfToggled
-        ? `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC has to start by age ${repair.latestPermittedStartAge}; the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.`
-        : `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge}; the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
+        ? `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC has to start by age ${repair.latestPermittedStartAge}; the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.`
+        : `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge}; the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age.`
     // The account and insurance lists never show ids, so the copy speaks of an
     // internal reference. What the collision did depends on the pair: a cash
     // account and a property (the pair plans accepted) reported the property's
@@ -240,7 +313,7 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
         const cash = repair.keptName.trim().length > 0
           ? `the cash account ${repair.keptName}`
           : 'a cash account'
-        return `${named(repair.accountName, 'A property')} and ${cash} were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.`
+        return `${named(repair.accountName, 'A property')} and ${cash} were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property, so your figures change. Open Accounts to check both.`
       }
       const renamedIsPolicy = repair.renamedType === 'permanentLife' || repair.renamedType === 'ltc'
       const keptIsPolicy = repair.keptType === 'permanentLife' || repair.keptType === 'ltc'
@@ -253,7 +326,7 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
         : repair.renamedType === repair.keptType
           ? 'so the plan kept one value for the two and left the other out of your totals'
           : 'so the plan showed one in place of the other in your year-by-year balances'
-      return `${renamed} and ${kept} were stored under one internal reference, ${effect}. The ${noun} now has a reference of its own, and both are as you entered them. Open ${page} to check both.`
+      return `${renamed} and ${kept} were stored under one internal reference, ${effect}. The ${noun} now has a reference of its own, and both are as you entered them, so your figures change. Open ${page} to check both.`
     }
   }
 }

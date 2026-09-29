@@ -316,10 +316,11 @@ export const cashFlowAndSummaryRecords = {
     kind: 'composition',
     outputs: ['projection-summary-average-pre-retirement-savings-rate-pct'],
     feeds: [],
-    statement: 'projection/compare.ts#summarizeProjection computes the unweighted arithmetic mean, in percentage points, of the published savingsRates[].ratePct values over the years strictly before the primary person\'s target retirement year (birth year plus retirement age, 65 when unset), with every qualifying year counted once regardless of income and 0 when no year qualifies.',
+    statement: 'projection/compare.ts#summarizeProjection computes the unweighted arithmetic mean, in percentage points, of the published savingsRates[].ratePct values over the years strictly before the household\'s later target retirement year (the household\'s later retirement, household-later-retirement: a retirement age gives birth year plus that age, or the first year without the person\'s wages when a wage stream\'s end age keeps paying past it, a person with none retires in the first year without their wages, else in the start year, and a person who never retires in the plan is left out; projection-summary-fi-spending-base), or over every year when nobody retires in the plan (the independent review\'s N3), with every qualifying year counted once regardless of income and 0 when no year qualifies.',
     formula: {
-      expression: 'r_bar = (sum of r_i over years y < birthYear + retirementAge) / n, and 0 when n = 0',
+      expression: 'r_bar = (sum of r_i over years y < retirementYear) / n, over every year when retirementYear is null, and 0 when n = 0; retirementYear = householdRetirement(plan, startYear).retirement?.year ?? null',
       variables: [
+        { symbol: 'retirementYear', meaning: 'The household\'s later retirement year (household-later-retirement), null when nobody retires in the plan', unit: 'calendar year', domain: 'integer or null' },
         { symbol: 'r_i', meaning: 'One qualifying year\'s published savings rate', unit: 'percentage points', domain: '0..100' },
         { symbol: 'n', meaning: 'Count of qualifying working years', unit: '1', domain: 'integer >= 0' },
       ],
@@ -335,7 +336,7 @@ export const cashFlowAndSummaryRecords = {
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts'],
     implementedByFunctions: ['packages/engine/src/projection/compare.ts#summarizeProjection'],
-    verifiedOn: '2026-09-18',
+    verifiedOn: '2026-09-29',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'projection-summary-coast-fire-number': {
@@ -344,9 +345,9 @@ export const cashFlowAndSummaryRecords = {
     kind: 'composition',
     outputs: ['projection-summary-coast-fire-number'],
     feeds: [],
-    statement: 'projection/compare.ts#summarizeProjection publishes the start-year amount that reaches the upstream FI number at retirement with no further contributions by discounting it for a whole-age horizon at the simple real return defaultReturnPct/100 - inflationPct/100.',
+    statement: 'projection/compare.ts#summarizeProjection publishes the start-year amount that reaches the upstream FI number at retirement with no further contributions by discounting it over the whole years to the household\'s later retirement, max(0, retirementYear - startYear) (projection-summary-fi-spending-base), at the simple real return defaultReturnPct/100 - inflationPct/100; for one person that is retirementAge - (startYear - birthYear).',
     formula: {
-      expression: 'coastFireNumber = fiNumber / (1 + defaultReturnPct/100 - inflationPct/100)^max(0, retirementAge - (startYear - birthYear))',
+      expression: 'coastFireNumber = fiNumber / (1 + defaultReturnPct/100 - inflationPct/100)^max(0, retirementYear - startYear)',
       variables: [
         { symbol: 'fiNumber', meaning: 'Upstream FI number', unit: 'start-year USD', domain: 'finite' },
         { symbol: 'n', meaning: 'Whole-age horizon to retirement', unit: 'years', domain: 'integer >= 0' },
@@ -433,7 +434,7 @@ export const cashFlowAndSummaryRecords = {
       variables: [
         { symbol: 'investableTotal', meaning: 'Published end-of-year investable total', unit: 'nominal USD', domain: 'finite' },
         { symbol: 'fiNumber', meaning: 'Upstream FI number', unit: 'start-year USD', domain: 'finite' },
-        { symbol: 'birthYear', meaning: 'ISO birth year of the first person, else 1980', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'birthYear', meaning: 'ISO birth year of the person whose retirement is the household\'s later one (fiBasis.personId), else 1980', unit: 'calendar year', domain: 'integer' },
       ],
       timing: 'ledger order, first crossing wins',
       rounding: 'none',
@@ -450,17 +451,108 @@ export const cashFlowAndSummaryRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'household-later-retirement': {
+    title: 'The household\'s later retirement, one rule for FI and the funded ratio',
+    purpose: 'The year the household stops earning, whose it is and which rule gave it, never whoever is listed first.',
+    kind: 'model',
+    outputs: [],
+    feeds: [
+      'projection-summary-fi-number',
+      'projection-summary-fi-age',
+      'projection-summary-coast-fire-number',
+      'projection-summary-fi-year',
+      'projection-summary-average-pre-retirement-savings-rate-pct',
+      'funded-ratio-result-essential-spending-pv',
+      'funded-ratio-result-guaranteed-income-pv',
+      'funded-ratio-result-funded-ratio-pct',
+      'funded-ratio-result-unfunded-pv',
+    ],
+    statement:
+      'projection/householdRetirement.ts#personRetirement gives each person\'s retirement year, the first year without their work, and its rule. A wage stream of theirs with gross pay above 0 pays through birthYear + stopAge - 1, stopAge being its end age, else the retirement age (stopAge = endAge ?? retirementAge, as projection/internal/wageIncomeStreams.ts pays), and with neither through their last year alive at the planning age, never after it. With a retirement age the person retires in the later of the ISO birth year plus that age (retirementAge) and the year after their last wage year, when a stream\'s end age keeps paying past the retirement age (wagesPastRetirementAge); with none, in the year after their last wage year when that year is the start year or later (wagesEnd), otherwise in the start year (startYear). A person retires in the plan only when alive in max(year, startYear): one whose wages run through their last year alive works through the plan, a retirement age past the planning age is never reached, and a planning age ended before the start retires no one. projection/householdRetirement.ts#householdRetirement leaves those people out (notRetiring) and takes the latest of the rest, a tie going to the older person and then the smaller id by ordinal comparison, so list order never decides it; with nobody retiring in the plan there is no household retirement, and no FI figure, Coast-FIRE figure or funded ratio is priced (decision D-PEOPLE-ORDER; the independent review\'s M4 and N3). The FI figures (projection/compare.ts#summarizeProjection) and the funded ratio (ladder/fundedRatio.ts#fundedRatioStart) both read it, and projection/householdRetirement.ts#householdRetirementClause and #notRetiringClause word it for every page: they name the person, say which rule applied, and name anyone who works through the plan. Sam, born 1964 with no retirement age, planning age 95 and wages with no end age, works through the plan, so with Alex, born 1962 retiring at 66, the household retires in Alex\'s 2028; Gus, born 1966 with a retirement age of 65 and wages to age 75, is paid through 2040 and retires in 2041 (round-one review of #765). Units: calendar year. Rounding: none.',
+    formula: {
+      expression: 'year(p) = retirementAge !== null ? max(birthYear + retirementAge, lastWage(p) + 1) : lastWage(p) >= startYear ? lastWage(p) + 1 : startYear, lastWage(p) = max over p\'s paying wage streams of min(stopAge !== null ? birthYear + stopAge - 1 : birthYear + planningAge, birthYear + planningAge) with stopAge = endAge ?? retirementAge, the max(...) taking the retirement age\'s year when p has no paying wage stream; in(p) = max(year(p), startYear) <= birthYear + planningAge; household = argmax year over the people with in(p), ties to the earlier dob then the smaller id, none when nobody has in(p)',
+      variables: [
+        { symbol: 'year(p)', meaning: 'A person\'s retirement year, the first year without their work', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'lastWage(p)', meaning: 'The last year one of their wage streams pays', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'in(p)', meaning: 'Whether the person is alive in the year their retirement would be priced', unit: 'boolean', domain: 'true or false' },
+      ],
+      timing: 'once per reading, from the plan (not a Monte Carlo path\'s sampled deaths)',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/household-later-retirement.md',
+    },
+    limits: [
+      'A convention, not a statute: a retirement age is the first year without wages unless a wage stream\'s end age runs past it, and then the wages decide; a person who never stops earning is said to work through the plan, not given a year',
+      'A person who retires after the other person\'s planning age has ended still sets the household\'s retirement: the priced year is one they are alive in, whether or not their partner is',
+      'Wages are the plan\'s only earned income; the rule reads the plan\'s wage streams and planning ages, not a Monte Carlo path\'s sampled death',
+    ],
+    implementedBy: ['packages/engine/src/projection/householdRetirement.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/householdRetirement.ts#personRetirement',
+      'packages/engine/src/projection/householdRetirement.ts#householdRetirement',
+      'packages/engine/src/projection/householdRetirement.ts#householdRetirementClause',
+      'packages/engine/src/projection/householdRetirement.ts#notRetiringClause',
+    ],
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'projection-summary-fi-spending-base': {
+    title: 'Which year and which outflows the FI figures price',
+    purpose: 'The household\'s later retirement year, and that year\'s outflows without a Roth conversion\'s one-off tax.',
+    kind: 'composition',
+    outputs: [],
+    feeds: [
+      'projection-summary-fi-number',
+      'projection-summary-fi-age',
+      'projection-summary-coast-fire-number',
+      'projection-summary-fi-year',
+      'projection-summary-average-pre-retirement-savings-rate-pct',
+    ],
+    statement:
+      'projection/compare.ts#summarizeProjection prices the FI figures on the calendar year max(startYear, retirementYear), where retirementYear is the household\'s later retirement (household-later-retirement: a retirement age gives birth year plus that age, or the first year without the person\'s wages when a wage stream\'s end age keeps paying past it; a person with none retires in the first year without their wages, else in the start year; a person who never retires in the plan is left out and named in fiBasis.notRetiring; a tie goes to the older person, then the smaller id; decision D-PEOPLE-ORDER, rule R4), so list order never decides it; fiBasis.personId names that person, fiAge is their age, and fiBasis.retirementRule says which rule gave the year. When nobody retires in the plan, no FI figure is priced: fiNumber, fiYear, fiAge and coastFireNumber are null and fiBasis.spendingSource is noRetirementInPlan (the independent review\'s N3). The priced outflows are that year\'s published expenses.total + tax + penalties, except when the plan converts to Roth in any year (rothConversion > 0 or a named conversion request in some year): then they are the same year\'s figures from the plan run with its Roth conversions removed, so neither a conversion\'s one-off tax nor the costs it causes later (the IRMAA lookback, a drained taxable account) is priced as spending and converting more can never lower the figure (withoutRothConversions: the strategy set to none, named and legacy-aggregate conversion requests and the withdrawals they name as tax funding dropped), which the caller supplies as SummarizeProjectionOptions.conversionFreeRun and which runs at most once (decision D-FI-CONVERSION-TAX). fiBasis.spendingSource publishes projection, conversionFreeProjection, conversionTaxIncluded (the plan converts and no conversion-free run was supplied), baseAnnual (an empty ledger) or noRetirementInPlan. Pat (1980, retiring at 50) and Robin (1983, retiring at 49) price 2032, Robin\'s; with 80,000 of 2032 expenses, 30,000 of tax on a 100,000 conversion and 8,000 of tax without it, the FI number at 3 percent inflation and a 4 percent rate is 88,000 / 1.03^6 / 0.04 = 1,842,465.36, not 2,303,081.71. Units: calendar year; start-year USD. Rounding: none.',
+    formula: {
+      expression: 'retirementYear = householdRetirement(plan, startYear).retirement.year (no FI figure when null); y = max(startYear, retirementYear); base = (the conversion-free run\'s row y if any row converts, else row y): expenses.total + tax + penalties',
+      variables: [
+        { symbol: 'retirementYear', meaning: 'The household\'s later retirement year', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'y', meaning: 'The priced year, else the first ledger row when absent', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'base', meaning: 'That year\'s outflows without a conversion\'s tax', unit: 'nominal USD', domain: 'nonnegative' },
+      ],
+      timing: 'once per summary; the conversion-free run only when the plan converts',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-spending-base.md',
+    },
+    limits: [
+      'The conversion-free run is a whole projection without conversions, so the priced year also differs by what earlier years\' conversions did to the balances and withdrawals, not only by that year\'s conversion tax; it is the year the household would have had had it never converted',
+      'The conversion-free choice is a required argument (the independent review\'s M3): the planner\'s projection, compareRothConversion and compareScenarios pass the run; Monte Carlo paths, the optimizer and decision candidates, the SWR, relocation, care, survivor and Social Security comparisons, the scenario plan comparison and the app\'s case runners pass null and show no FI figure, and a converting plan then publishes conversionTaxIncluded. RetireGolden-MCP must choose when it adopts this engine',
+
+      'The later retirement is a household convention, the year the last earner stops; the program states it and the page names the person',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts', 'packages/engine/src/projection/householdRetirement.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/householdRetirement.ts#householdRetirement',
+      'packages/engine/src/projection/compare.ts#withoutRothConversions',
+      'packages/engine/src/projection/compare.ts#conversionFreeRun',
+    ],
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
   'projection-summary-fi-number': {
     title: 'Projection summary fi number',
     purpose: 'Price one selected year of gross outflows against the safe-withdrawal-rate lens.',
     kind: 'composition',
     outputs: ['projection-summary-fi-number'],
     feeds: ['projection-summary-fi-age', 'projection-summary-coast-fire-number', 'display-fi-target-annual'],
-    statement: 'projection/compare.ts#summarizeProjection publishes the FI number in projection-start-year dollars as one selected year\'s nominal funded expenses plus tax and penalties, discretely deflated by general inflation, divided by the safe-withdrawal-rate decimal; an empty ledger instead divides base annual lifestyle spending alone by that rate.',
+    statement: 'projection/compare.ts#summarizeProjection publishes the FI number in projection-start-year dollars as one selected year\'s nominal funded expenses plus tax and penalties, discretely deflated by general inflation, divided by the safe-withdrawal-rate decimal; an empty ledger instead divides base annual lifestyle spending alone by that rate. The year is the household\'s later retirement, and when the plan converts to Roth in any year that year\'s figures come from the plan run without its conversions (projection-summary-fi-spending-base).',
     formula: {
       expression: 'fiNumber = ((expenses.total + tax + penalties) / (1 + inflationPct/100)^(spendingYear - startYear)) / (safeWithdrawalRatePct / 100); empty ledger: baseAnnual / (safeWithdrawalRatePct / 100)',
       variables: [
-        { symbol: 'spendingYear', meaning: 'max(startYear, birthYear + retirementAge), else the first ledger year', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'spendingYear', meaning: 'max(startYear, the household\'s later retirement year), else the first ledger year', unit: 'calendar year', domain: 'integer' },
         { symbol: 'expenses.total', meaning: 'Published funded spending after guardrails', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'safeWithdrawalRatePct', meaning: 'Safe-withdrawal-rate lens, default 4', unit: 'percent/year', domain: 'positive' },
       ],
@@ -566,7 +658,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['income-pension-annual'],
     feeds: ['income-total-annual'],
     statement:
-      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome pays a pension from the owner\'s startAge onward as monthlyAmount x 12 compounded by its annual COLA over the years since the start age, and publishes it as projection/internal/types/result.ts#YearResult.incomes.pension. While the owner is alive the full amount pays; after the owner dies it continues to a surviving household member at survivorPct/100 of that full amount, and stops when no survivor is alive. A pension commuted by a lump-sum election pays nothing. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome pays a pension from the owner\'s startAge onward (the owner the plan names, required on every pension since schema v7; guaranteed-income-owner) as monthlyAmount x 12 compounded by its annual COLA over the years since the start age, and publishes it as projection/internal/types/result.ts#YearResult.incomes.pension. While the owner is alive the full amount pays; after the owner dies it continues to a surviving household member at survivorPct/100 of that full amount, and stops when no survivor is alive. A pension commuted by a lump-sum election pays nothing. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'full = monthlyAmount * 12 * (1 + colaPct/100)^(age - startAge); paid = full while the owner lives, full * survivorPct/100 to a survivor after the owner dies',
       variables: [
@@ -605,7 +697,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['income-annuity-annual'],
     feeds: ['income-total-annual'],
     statement:
-      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome starts an annuity at its startAge, compounds monthlyAmount x 12 by its annual COLA over the years since that start age, applies the selected payout form, and publishes the result as projection/internal/types/result.ts#YearResult.incomes.annuity. Under payoutForm.kind "jointSurvivor" the payment continues after the owner\'s death to the other household member at survivorPct/100 of the full amount; "lifeOnly" stops at the owner\'s death and "periodCertain" continues only inside its guarantee window. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome starts an annuity at its owner\'s startAge (the first annuitant the plan names, required since schema v7; guaranteed-income-owner), compounds monthlyAmount x 12 by its annual COLA over the years since that start age, applies the selected payout form, and publishes the result as projection/internal/types/result.ts#YearResult.incomes.annuity. Under payoutForm.kind "jointSurvivor" the payment continues after the owner\'s death to the other household member at survivorPct/100 of the full amount; "lifeOnly" stops at the owner\'s death and "periodCertain" continues only inside its guarantee window. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'full = monthlyAmount * 12 * (1 + colaPct/100)^(age - startAge); jointSurvivor pays full * survivorPct/100 after the owner dies',
       variables: [
@@ -635,6 +727,45 @@ export const cashFlowAndSummaryRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'guaranteed-income-owner': {
+    title: 'Whose age and life a pension or annuity is paid on',
+    purpose: 'Every pension and annuity names its owner, and the income is timed and ended on that person, never on whoever is listed first.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['income-pension-annual', 'income-annuity-annual'],
+    statement:
+      'Every pension and annuity names its owner (schema v7, decision D-PEOPLE-ORDER, rule R2): a pension\'s participant, an annuity\'s (first) annuitant. model/planCrossFieldChecks.ts refuses one with none, a qualified annuity purchase named for anyone but the owner of the traditional account that paid for it (except the surviving spouse once that owner\'s planning age has ended by the purchase year, IRC 402(c)(9) and 408(d)(3)(C)(ii)(II)), an annuity bought for a person whose planning age has ended by its purchase year (it would never pay), and a pension lump sum rolled into another person\'s account. projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome reads that owner through model/plan.ts#guaranteedIncomeOwnerId (which refuses an owner-less account rather than reading the first person): payments start in the owner\'s birth year plus startAge (not before a purchase year), a pension pays in full while the owner lives and survivorPct/100 to the other household member after, and an annuity pays by its payout form on the owner\'s life and the other member\'s (the second annuitant). The pre-start contract value (simulate.ts), the runtime source-series check (internal/ownedNonRothIraRuntimeSourceSeries.ts), the late-start warning, the pension election and the Scenarios levers read the same owner. Plans saved before v7 are given the funding account\'s owner for a qualified purchase (the surviving spouse after that owner\'s death), else the person then listed first, never a person dead at the purchase, and the load says so. Every stored plan still opens (the independent review\'s N1): a purchase of any kind whose annuitant has died by its purchase year is given the other person when that person is alive then, the only one who could have bought it, and is removed, its premium kept where it was, when nobody is; the load says the figures change. Units: calendar years; nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'owner = account.ownerPersonId (required); firstYear = max(birthYear(owner) + startAge, purchase.year); pension: full while owner alive, full * survivorPct/100 to the other after; annuity: full * payoutFraction(form, ownerAlive, otherAlive)',
+      variables: [
+        { symbol: 'owner', meaning: 'The participant or first annuitant the plan names', unit: 'person id', domain: 'a household person' },
+        { symbol: 'startAge', meaning: 'The owner\'s age at the first payment', unit: 'years', domain: 'integer' },
+      ],
+      timing: 'income pass 2, once per projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/guaranteed-income-owner.md',
+    },
+    limits: [
+      'The joint-and-survivor form reduces on the owner\'s death only (the contingent form); a form that reduces on the first death of either would be a new payout form, not an owner value',
+      'Statute and regulation name the lives (irc-72-c-3-A-annuity-measured-on-named-lives); the rule that a qualified contract belongs to the funding account\'s owner is the IRA\'s exclusive benefit (IRC 408(a), 408(b)) and the QLAC\'s employer-or-IRA-owner purchase (Treas. Reg. 1.401(a)(9)-6(q)(1), 1.408-8(a)(3))',
+      'The annuitization insight, the Monte Carlo annuity sweep and the SPIA candidates name no owner in the plan, so they are written on the person model/peopleOrder.ts#canonicalFirstPerson puts first (the older; between two people born the same day, the sex order female, male, average and then the smaller id by ordinal comparison decide, so for two people with the same birth date and sex renaming the ids can move the annuitant and every figure on that life), whoever is listed first, and each names that person',
+    ],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#guaranteedIncomeOwnerId',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'income-recurring-annual': {
     title: 'Annual recurring household income',
@@ -1388,7 +1519,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['year-result-contributions'],
     feeds: ['surplus-invested-annual', 'cash-flow-reconciliation-totals'],
     statement:
-      'projection/internal/types/result.ts#YearResult.contributions, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, sums the contributions actually credited after each desired amount is trimmed to its applicable group limit and to compensation. The IRA limit in params/data/year2026.ts#year2026 is 7,500 for 2026, shared per owner across that owner\'s traditional and Roth IRAs, with a separate age-50 catch-up only when applicable. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/types/result.ts#YearResult.contributions, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, sums the contributions actually credited after each desired amount is trimmed to its applicable group limit and to compensation. A jointly owned account\'s desired amount follows joint-account-contributions. The IRA limit in params/data/year2026.ts#year2026 is 7,500 for 2026, shared per owner across that owner\'s traditional and Roth IRAs, with a separate age-50 catch-up only when applicable. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'contributions = sum over owners and accounts of min(desired, group limit, compensation)',
       variables: [
@@ -1613,6 +1744,37 @@ export const cashFlowAndSummaryRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'joint-account-contributions': {
+    title: 'When a jointly owned account takes contributions',
+    purpose: 'A joint cash, brokerage or equity-compensation account belongs to the household, so its contributions follow the household, never the first-listed person.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['year-result-contributions'],
+    statement:
+      'projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch gives a jointly owned (ownerPersonId null) cash, taxable or equity-compensation account its desired contribution while anyone in the household is alive (decision D-PEOPLE-ORDER, rule R3): its plain annualContribution x the year\'s inflation factor while the household has wages (the sum of the living people\'s wages is above 0), and its contributionSchedule by the attained age of the person contributionScheduleAgeOf names (the only person in a one-person plan), with no wage test, as for any schedule outside an employer plan; the schedule keeps that person\'s age after that person dies. An owned account follows its owner\'s life, wages and age as before. Schema v7 requires contributionScheduleAgeOf on a joint account with a schedule in a two-person plan and refuses it on an owned one; plans saved earlier are given the person then listed first. Pat (1966, no wages from 2026, alive through 2028) and Robin (1970, wages through 2033) put 6,000 a year into a joint account from 2026 through 2033, 48,000, where the first-person rule stopped at Pat\'s wages. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'joint and anyone alive: desired = schedule(age of contributionScheduleAgeOf) if scheduled, else annualContribution * inflFactor if sum(living wages) > 0, else 0',
+      variables: [
+        { symbol: 'sum(living wages)', meaning: 'The household\'s wages this year', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'age', meaning: 'Attained age of the named person', unit: 'years', domain: 'integer' },
+      ],
+      timing: 'once per projection year, after wages land',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/joint-account-contributions.md',
+    },
+    limits: [
+      'No statute governs contributions to a taxable or cash account; this is the program\'s rule, and it reads the facts (anyone alive, household wages) rather than list order',
+      'In a year the household runs a deficit the ledger funds a contribution by withdrawing, so a contribution can move tax and net worth, not only the account it lands in',
+      'The Scenarios levers mirror the rule (planner-ui scenarioLevers.ts receivesContributionDuringProjection)',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch'],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'projection-summary-fi-year': {
     title: 'First financial-independence crossing year',

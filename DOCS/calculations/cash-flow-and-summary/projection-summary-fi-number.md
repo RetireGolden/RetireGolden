@@ -4,15 +4,15 @@ Kind: composition. `projection/compare.ts#summarizeProjection` publishes the FI 
 
 ## Justification
 
-Let `s=max(startYear,birthYear+retirementAge)`, using the ISO year of the first person's date of birth (month and day ignored), or birth year 1980 and retirement age 65 when absent. The spending row is year `s` when present and otherwise the first ledger row. On a nonempty ledger, `fiNumber=((expenses.total+tax+penalties)/(1+inflationPct/100)^(s_used-startYear))/(safeWithdrawalRatePct/100)`. `expenses.total` is published funded spending after guardrails, including the contract's listed funded lifestyle, goals, debt, property, healthcare, premiums and net LTC components; it is neither intended spending nor reduced by income. The empty-ledger identity is `baseAnnual/(safeWithdrawalRatePct/100)`. The valid domain requires a positive withdrawal rate and a positive inflation base.
+Let `s=max(startYear,retirementYear)`, where `retirementYear` is the household's later retirement, the latest of each person's retirement year (a retirement age gives ISO birth year, month and day ignored, plus that age; a person with none retires in the first year without their wages, else in the start year, and a person who never retires in the plan is left out), a tie to the older person and then the smaller id (`household-later-retirement`); for one person that is `birthYear+retirementAge`, as before. When nobody retires in the plan `fiNumber` is null: there is no retirement year to price (the independent review's N3). The spending row is year `s` when present and otherwise the first ledger row. On a nonempty ledger, `fiNumber=((expenses.total+tax+penalties)/(1+inflationPct/100)^(s_used-startYear))/(safeWithdrawalRatePct/100)`. `expenses.total` is published funded spending after guardrails, including the contract's listed funded lifestyle, goals, debt, property, healthcare, premiums and net LTC components; it is neither intended spending nor reduced by income. When row `s` carries a Roth conversion its three figures are read from the same year of the plan run with its conversions removed, and `fiBasis` says so (`projection-summary-fi-spending-base`); the row here carries none. The empty-ledger identity is `baseAnnual/(safeWithdrawalRatePct/100)`. The valid domain requires a positive withdrawal rate and a positive inflation base.
 
 ## Inputs
 
 | Input | Value | Unit |
 |---|---:|---|
 | Projection start year | 2026 | calendar year |
-| First person's date of birth | 1980-12-31 | ISO date |
-| First person's retirement age | 50 | years |
+| The only person's date of birth | 1980-12-31 | ISO date |
+| The only person's retirement age | 50 | years |
 | Selected ledger year (`max(2026,1980+50)`) | 2030 | calendar year |
 | Published funded `expenses.total` in 2030 | 80,000 | nominal dollars |
 | Published tax in 2030 | 10,000 | nominal dollars |
@@ -38,6 +38,7 @@ For the nonempty ledger, FI number is `$2,043,520.21020608`, absolute tolerance 
 - Applying healthcare extra inflation, continuous inflation, or rounding intermediate values changes `$2,043,520.21020608`.
 - Treating an empty ledger like the normal path invents tax, penalties or deflation; its contract is base lifestyle only.
 - When the retirement spending year is absent, interpolating it or returning no value is wrong: the first ledger row is used.
+- Pricing a converting year's own tax, or the first-listed person's retirement year, is wrong: see `projection-summary-fi-spending-base`.
 
 ## Family
 

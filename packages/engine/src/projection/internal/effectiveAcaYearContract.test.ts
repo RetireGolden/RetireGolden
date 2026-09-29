@@ -74,9 +74,11 @@ describe('effectiveAcaYearContract, premiumField basis', () => {
     })
     expect(out.premiumBasis).toBe('premiumField')
     expect(out.fplRegion).toBe('contiguous')
+    // The older person (p2, 66) is the primary, whoever is listed first
+    // (the canonical people order; the labels only count).
     expect(out.taxFamilyMembers).toStrictEqual([
-      { personId: 'p1', relationship: 'primary', requiredToFile: 'required', magi: 0 },
-      { personId: 'p2', relationship: 'spouse', requiredToFile: 'required', magi: 0 },
+      { personId: 'p2', relationship: 'primary', requiredToFile: 'required', magi: 0 },
+      { personId: 'p1', relationship: 'spouse', requiredToFile: 'required', magi: 0 },
     ])
     expect(out.coveredMembers.map((member) => member.personId)).toStrictEqual(['p1'])
     const premium = out.coveredMembers[0]!.enrollmentPremiumByMonth
@@ -100,6 +102,28 @@ describe('effectiveAcaYearContract, premiumField basis', () => {
     })
     expect(out.coveredMembers[1]!.enrollmentPremiumByMonth).toStrictEqual([800, 800, 800, 800, 800, 800, 0, 0, 0, 0, 0, 0])
     expect(out.coveredMembers[0]!.enrollmentPremiumByMonth).toStrictEqual(new Array<number>(12).fill(800))
+  })
+
+  it('puts a person the plan does not list after the listed ones, then by id, whatever the input order (review of #765, issue 14)', () => {
+    // A mismatched input: states for p1, p2 and an unlisted 'x9' and 'x3'.
+    // The listed people keep the canonical order (p2 the older, primary);
+    // the unlisted ones follow by id, in either input order.
+    const states: PersonYearState[] = [
+      { personId: 'x9', ageAttained: 70, alive: true },
+      { personId: 'p1', ageAttained: 59, alive: true },
+      { personId: 'x3', ageAttained: 40, alive: true },
+      { personId: 'p2', ageAttained: 66, alive: true },
+    ]
+    const family = (peopleStates: PersonYearState[]) => effectiveAcaYearContract(derived(2027), {
+      plan: plan(),
+      year: 2027,
+      peopleStates,
+      marketplaceMonthsByPersonPosition: peopleStates.map(() => 0),
+      healthInflFactor: 1,
+    }).taxFamilyMembers.map((member) => [member.personId, member.relationship])
+    const expected = [['p2', 'primary'], ['p1', 'spouse'], ['x3', 'spouse'], ['x9', 'spouse']]
+    expect(family(states)).toStrictEqual(expected)
+    expect(family([...states].reverse())).toStrictEqual(expected)
   })
 
   it('derives the family from the people alive this run, so a survivor is the primary', () => {

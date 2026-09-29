@@ -299,6 +299,9 @@ export function annualContributionsAndEmployerMatch(
   // Contribution rows stay positional when public ids collide; never key a request by id.
   const desiredByBalanceIndex = new Map<number, number>()
   const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
+  // The household's wages this year (a joint account's wage test).
+  let householdWages = 0
+  for (const wages of input.wagesByPerson.values()) householdWages += Math.max(0, wages)
   for (const [balanceIndex, state] of input.balances.entries()) {
     const account = state.account
     const hasSchedule = 'contributionSchedule' in account &&
@@ -309,9 +312,17 @@ export function annualContributionsAndEmployerMatch(
       !isEmployerPlanAccount(account)
     ) continue
     if (!acceptsContributions(account)) continue
-    const ownerId = account.ownerPersonId ?? input.primaryPersonId
+    // A jointly owned account (no owner) belongs to the household, not to
+    // whoever is listed first (decision D-PEOPLE-ORDER, rule R3): it takes
+    // contributions while anyone is alive, its plain annual contribution while
+    // the household has wages, and its schedule by the age of the person it
+    // names (`contributionScheduleAgeOf`; in a one-person plan, that person).
+    const joint = account.ownerPersonId === null
+    const ownerId = account.ownerPersonId ??
+      ('contributionScheduleAgeOf' in account ? account.contributionScheduleAgeOf : undefined) ??
+      input.primaryPersonId
     const ownerState = input.resolveOwnerState(ownerId)
-    if (!ownerState.alive) continue
+    if (joint ? input.aliveCount <= 0 : !ownerState.alive) continue
 
     let desired = 0
     if (hasSchedule) {
@@ -337,7 +348,7 @@ export function annualContributionsAndEmployerMatch(
       ) {
         desired = 0
       }
-    } else if ((input.wagesByPerson.get(ownerId) ?? 0) <= 0) {
+    } else if (joint ? householdWages <= 0 : (input.wagesByPerson.get(ownerId) ?? 0) <= 0) {
       desired = 0
     } else {
       desired = account.annualContribution * input.inflFactor

@@ -122,7 +122,6 @@ function annualInput(
     personById: new Map(people.map((person) => [person.id, person])),
     peopleStates,
     anyAlive: peopleStates.some((state) => state.alive),
-    primaryPersonId: pat.id,
     lifeAgeOf: (person) => person.longevity.planningAge,
     runtimeOccurrenceKey: (kind, ...binding) =>
       JSON.stringify([kind, ...binding]),

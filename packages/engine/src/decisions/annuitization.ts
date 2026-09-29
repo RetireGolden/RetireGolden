@@ -24,6 +24,7 @@ import type { Account, Plan } from '../model/plan.js'
 import { comparePlansOnSharedMarketPaths, type SharedPathComparisonOptions, type SharedPathPlan } from '../montecarlo/sharedPaths.js'
 import { MAX_FRONTIER_POINTS } from '../montecarlo/frontiers.js'
 import { spiaPayoutRate } from './spiaQuotes.js'
+import { canonicalFirstPerson } from '../model/peopleOrder.js'
 
 export interface AnnuitizationPointMetrics {
   successRate: number
@@ -130,12 +131,15 @@ export function buildAnnuitizationSweep(
 ): AnnuitizationSweep {
   const notes: string[] = []
   const grid = [...(config.allocationPcts ?? DEFAULT_GRID)].sort((a, b) => a - b)
-  const primary = plan.household.people[0]
+  // Every annuity in the sweep is on one person's life: the person the
+  // canonical order puts first (the older; model/peopleOrder.ts), whoever is
+  // listed first. The notes name them.
+  const annuitant = canonicalFirstPerson(plan.household.people)
   const funding = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable')
     .sort((a, b) => accountBalance(b) - accountBalance(a))[0]
   const total = investableTotal(plan)
-  if (!primary || !funding || total <= 0) {
+  if (!annuitant || !funding || total <= 0) {
     return {
       points: [],
       startAge: 65,
@@ -146,10 +150,14 @@ export function buildAnnuitizationSweep(
     }
   }
 
-  const currentAge = opts.startYear - dobYear(primary.dob)
+  const currentAge = opts.startYear - dobYear(annuitant.dob)
   const startAge = Math.min(95, Math.max(currentAge, 65))
   const rateSource: AnnuitizationSweep['rateSource'] = config.quotedPayoutRatePct !== undefined ? 'user-quote' : 'default-table'
   const payoutRate = config.quotedPayoutRatePct !== undefined ? config.quotedPayoutRatePct / 100 : spiaPayoutRate(startAge)
+
+  // Every annuity in the sweep is bought for the same person, named here so
+  // the page can say whose life it pays on.
+  notes.push(`Each annuity in the sweep pays on ${annuitant.name}'s life from age ${startAge}.`)
 
   // Premiums cap at what the funding account can actually pay (leaving 5% so
   // the purchase never zeroes the household's most liquid account).
@@ -186,7 +194,7 @@ export function buildAnnuitizationSweep(
       id: `annuitize-sweep-${opts.startYear}-${funding.id}-${pct}`,
       type: 'annuity',
       name: `SPIA sweep ${pct}%`,
-      ownerPersonId: primary.id,
+      ownerPersonId: annuitant.id,
       annualReturnPct: null,
       startAge,
       monthlyAmount: annualIncome / 12,

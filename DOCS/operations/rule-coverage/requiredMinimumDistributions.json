@@ -209,7 +209,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 537
+              "line": 567
             }
           ]
         },
@@ -1081,7 +1081,7 @@
           "functions": [
             {
               "name": "pensionSchema",
-              "line": 1238
+              "line": 1269
             }
           ]
         },
@@ -1983,16 +1983,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 905,
+          "line": 930,
           "note": "the QLAC carve-out",
           "tests": [
             {
               "title": "computes the requirement on what the account kept",
-              "line": 917
+              "line": 942
             },
             {
               "title": "reaches the regulation’s base by a mechanism that is not the regulation",
-              "line": 924
+              "line": 949
             }
           ]
         }
@@ -2051,7 +2051,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 846
+              "line": 876
             }
           ]
         },
@@ -2330,7 +2330,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 2458
+              "line": 2963
             }
           ]
         },
@@ -2348,7 +2348,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 895
+              "line": 914
             }
           ]
         },
@@ -2377,24 +2377,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 760,
+          "line": 785,
           "note": "a deferred contract that is not a QLAC",
           "tests": [
             {
               "title": "refuses a deferred contract that is not a QLAC",
-              "line": 775
+              "line": 800
             },
             {
               "title": "admits the same contract the moment it is declared a QLAC",
-              "line": 791
+              "line": 816
             },
             {
               "title": "admits an immediate contract bought after the required beginning date",
-              "line": 798
+              "line": 823
             },
             {
               "title": "leaves the requirement on the household that bought no contract untouched",
-              "line": 813
+              "line": 838
             }
           ]
         }
@@ -2452,7 +2452,7 @@
           "functions": [
             {
               "name": "annuityPurchaseGenerator",
-              "line": 625
+              "line": 626
             }
           ]
         },
@@ -2461,7 +2461,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 2458
+              "line": 2963
             }
           ]
         },
@@ -2479,7 +2479,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 895
+              "line": 914
             }
           ]
         },
@@ -2508,28 +2508,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 842,
+          "line": 867,
           "note": "a QLAC deferred past 85",
           "tests": [
             {
               "title": "refuses a QLAC that commences after the owner’s 85th birthday",
-              "line": 855
+              "line": 880
             },
             {
               "title": "admits the same contract one year earlier",
-              "line": 866
+              "line": 891
             },
             {
               "title": "gives a December-born owner the extra year the deadline actually gives them",
-              "line": 872
+              "line": 897
             },
             {
               "title": "does not send the household to a refusal the other box would give them",
-              "line": 884
+              "line": 909
             },
             {
               "title": "warns rather than staying silent for a caller that skips the parse",
-              "line": 896
+              "line": 921
             }
           ]
         }
@@ -2610,16 +2610,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 976,
+          "line": 1001,
           "note": "two contracts against one cap",
           "tests": [
             {
               "title": "lets a second QLAC spend the whole cap again",
-              "line": 991
+              "line": 1016
             },
             {
               "title": "says nothing while the pair passes the cap",
-              "line": 1003
+              "line": 1028
             }
           ]
         }
@@ -2665,7 +2665,7 @@
           "functions": [
             {
               "name": "annuityPurchaseGenerator",
-              "line": 625
+              "line": 626
             }
           ]
         },
@@ -2754,7 +2754,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 846
+              "line": 876
             }
           ]
         },
@@ -3379,7 +3379,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 348
+              "line": 349
             }
           ]
         },
@@ -3575,7 +3575,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 348
+              "line": 349
             }
           ]
         },
@@ -3891,7 +3891,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 348
+              "line": 349
             }
           ]
         },
@@ -3900,7 +3900,7 @@
           "functions": [
             {
               "name": "annualLegacyQcdGiftPlan",
-              "line": 82
+              "line": 91
             }
           ]
         },
@@ -4140,7 +4140,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 348
+              "line": 349
             }
           ]
         },
@@ -4301,7 +4301,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 537
+              "line": 567
             }
           ]
         },
@@ -4409,7 +4409,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 348
+              "line": 349
             }
           ]
         },

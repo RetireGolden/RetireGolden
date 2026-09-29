@@ -23,6 +23,7 @@ import {
   checkRecurringIncomeWindows,
   checkRequiredSpendingFloor,
   checkRothConversionFillToTarget,
+  checkSpendingPhasesPerson,
   type PlanCrossFieldContext,
 } from './planCrossFieldChecks.js'
 import type { PlanDocument } from './plan.js'
@@ -225,6 +226,220 @@ describe('checkAccountCrossFieldRules', () => {
         message: 'unknown person id "ghost"',
       },
     ])
+  })
+})
+
+/**
+ * Schema v7 (decision D-PEOPLE-ORDER): the rules that name a person where the
+ * plan used to read list position. These are oracle tests of the new rules:
+ * the owner rules follow IRC 408(a) and (b), IRC 72(c)(3)(A) and Treas. Reg.
+ * 1.72-5(b)(1) and 1.401(a)(9)-6(q)(1) (see
+ * DOCS/calculations/accounts-and-growth/guaranteed-income-owner.md).
+ */
+describe('v7: people named, never read by position', () => {
+  it('requires an owner on every pension and annuity, in plain words', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.accounts = [
+      { type: 'pension', id: 'pen', name: 'Pension', ownerPersonId: null, annualReturnPct: 0, startAge: 65, monthlyAmount: 1_000, colaPct: 0, survivorPct: 50 },
+      { type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: null, annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 100 },
+    ]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      { code: 'custom', path: ['accounts', 0, 'ownerPersonId'], message: 'a pension must name its owner, the person who earned it' },
+      { code: 'custom', path: ['accounts', 1, 'ownerPersonId'], message: 'an annuity must name its annuitant, the person whose age starts it and whose life it pays for' },
+    ])
+  })
+
+  it('refuses a qualified annuity bought from one person\u2019s IRA but named for the other, and accepts the owner\u2019s own', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    const contract = (owner: string) => ({
+      type: 'annuity' as const, id: 'ann', name: 'Contract', ownerPersonId: owner, annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+      purchase: { year: 2027, premium: 50_000, fundingAccountId: 'ira-p2', taxQualification: 'qualified' as const },
+    })
+    plan.accounts = [traditionalAccount('ira-p2', 300_000, 'p2'), contract('p1')]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      {
+        code: 'custom',
+        path: ['accounts', 1, 'ownerPersonId'],
+        message: "an annuity bought from an IRA or 401(k) belongs to that account's owner: make Robin its annuitant, or buy it from one of Pat's own accounts",
+      },
+    ])
+    plan.accounts = [traditionalAccount('ira-p2', 300_000, 'p2'), contract('p2')]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([])
+  })
+
+  it('refuses a qualified annuity bought from the other person\u2019s 401(k) while its owner lives, as from an IRA (review L4, E10)', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.accounts = [
+      traditionalAccount('k-p2', 300_000, 'p2', 'employer'),
+      {
+        type: 'annuity', id: 'ann', name: 'Contract', ownerPersonId: 'p1', annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2027, premium: 50_000, fundingAccountId: 'k-p2', taxQualification: 'qualified' },
+      },
+    ]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      {
+        code: 'custom',
+        path: ['accounts', 1, 'ownerPersonId'],
+        message: "an annuity bought from an IRA or 401(k) belongs to that account's owner: make Robin its annuitant, or buy it from one of Pat's own accounts",
+      },
+    ])
+  })
+
+  it('accepts a surviving spouse\u2019s qualified purchase from the dead owner\u2019s 401(k) or IRA, and refuses one named for the dead (review M2)', () => {
+    // Robin's planning age 60 ends in 2026 (born 1966); the purchase is in
+    // 2032. A distribution paid to the spouse after the employee's death is
+    // treated as if the spouse were the employee (IRC 402(c)(9)), and a
+    // spouse's IRA is not inherited (IRC 408(d)(3)(C)(ii)(II)), so Pat, alive,
+    // may buy from what was Robin's account.
+    for (const kind of ['employer', 'ira'] as const) {
+      const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 60 })
+      const contract = (owner: string) => ({
+        type: 'annuity' as const, id: 'ann', name: 'Contract', ownerPersonId: owner, annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2032, premium: 50_000, fundingAccountId: 'acct-p2', taxQualification: 'qualified' as const },
+      })
+      plan.accounts = [traditionalAccount('acct-p2', 300_000, 'p2', kind), contract('p1')]
+      expect(issuesFrom(checkAccountCrossFieldRules, plan), kind).toEqual([])
+      plan.accounts = [traditionalAccount('acct-p2', 300_000, 'p2', kind), contract('p2')]
+      expect(issuesFrom(checkAccountCrossFieldRules, plan), kind).toEqual([
+        {
+          code: 'custom',
+          path: ['accounts', 1, 'ownerPersonId'],
+          message: "Robin's planning age ends in 2026, so an annuity bought in 2032 on Robin's life would never pay: name a person who is alive in 2032, or buy it in 2026 or earlier",
+        },
+      ])
+    }
+  })
+
+  it('keeps the spouse exception to the years after the owner’s death: a purchase in the owner’s last year alive is still the owner’s (review N4, V05)', () => {
+    // Robin (born 1966, planning age 70) is alive through 2036. Bought in 2036
+    // from Robin's IRA, the contract is Robin's, and naming Pat is refused; in
+    // 2037, after Robin's planning age, Pat may buy it as the surviving spouse.
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 70 })
+    const contract = (year: number) => ({
+      type: 'annuity' as const, id: 'ann', name: 'Contract', ownerPersonId: 'p1', annualReturnPct: null, startAge: 72, monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+      purchase: { year, premium: 50_000, fundingAccountId: 'ira-p2', taxQualification: 'qualified' as const },
+    })
+    plan.accounts = [traditionalAccount('ira-p2', 300_000, 'p2'), contract(2036)]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      {
+        code: 'custom',
+        path: ['accounts', 1, 'ownerPersonId'],
+        message: "an annuity bought from an IRA or 401(k) belongs to that account's owner: make Robin its annuitant, or buy it from one of Pat's own accounts",
+      },
+    ])
+    plan.accounts = [traditionalAccount('ira-p2', 300_000, 'p2'), contract(2037)]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([])
+  })
+
+  it('refuses any annuity bought for a person whose planning age has ended by the purchase year, in plain words (review M2)', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 60 })
+    plan.accounts = [
+      { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 200_000, annualContribution: 0 },
+      {
+        type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: 'p2', annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 40,
+        purchase: { year: 2027, premium: 50_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' },
+      },
+    ]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      {
+        code: 'custom',
+        path: ['accounts', 1, 'ownerPersonId'],
+        message: "Robin's planning age ends in 2026, so an annuity bought in 2027 on Robin's life would never pay: name a person who is alive in 2027, or buy it in 2026 or earlier",
+      },
+    ])
+    plan.accounts[1] = { ...plan.accounts[1]!, purchase: { year: 2026, premium: 50_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' } } as never
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([])
+  })
+
+  it('accepts a non-qualified annuity bought from a joint account for either person', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.accounts = [
+      { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 200_000, annualContribution: 0 },
+      {
+        type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: 'p2', annualReturnPct: null, startAge: 70, monthlyAmount: 500, colaPct: 0, taxablePct: 40,
+        purchase: { year: 2027, premium: 50_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' },
+      },
+    ]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([])
+  })
+
+  it('refuses a pension lump sum rolled into the other person\u2019s IRA', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.updatedAtIso = '2026-06-01T00:00:00.000Z'
+    plan.accounts = [
+      traditionalAccount('ira-p1', 100_000, 'p1'),
+      traditionalAccount('ira-p2', 100_000, 'p2'),
+      {
+        type: 'pension', id: 'pen', name: 'Pension', ownerPersonId: 'p1', annualReturnPct: 0, startAge: 65, monthlyAmount: 1_000, colaPct: 0, survivorPct: 50,
+        lumpSumOffer: { amount: 200_000, electionYear: 2027 }, lumpSumElection: { rolloverAccountId: 'ira-p2' },
+      },
+    ]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      {
+        code: 'custom',
+        path: ['accounts', 2, 'lumpSumElection', 'rolloverAccountId'],
+        message: "a pension lump sum rolls over only into an IRA or 401(k) of the person who earned it: choose one of Pat's own traditional accounts",
+      },
+    ])
+  })
+
+  it('decides a QLAC\u2019s latest start on its annuitant\u2019s own birth month, whoever is listed first', () => {
+    // A December birth gets one more start age (the first of the month after
+    // the 85th birthday falls in the next calendar year).
+    const plan = couplePlan({ p1Dob: '1960-12-10', p2Dob: '1962-03-10', p1PlanningAge: 95, p2PlanningAge: 95 })
+    const qlac = (owner: string, funding: string) => ({
+      type: 'annuity' as const, id: 'qlac', name: 'QLAC', ownerPersonId: owner, annualReturnPct: null, startAge: 86, monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+      purchase: { year: 2027, premium: 50_000, fundingAccountId: funding, taxQualification: 'qualified' as const, qlac: true as const },
+    })
+    for (const people of [plan.household.people, [...plan.household.people].reverse()]) {
+      const december = { ...plan, household: { ...plan.household, people }, accounts: [traditionalAccount('ira-p1', 300_000, 'p1'), qlac('p1', 'ira-p1')] }
+      expect(issuesFrom(checkAccountCrossFieldRules, december)).toEqual([])
+      const march = { ...plan, household: { ...plan.household, people }, accounts: [traditionalAccount('ira-p2', 300_000, 'p2'), qlac('p2', 'ira-p2')] }
+      expect(issuesFrom(checkAccountCrossFieldRules, march).map((issue) => issue.path)).toEqual([['accounts', 1, 'startAge']])
+    }
+  })
+
+  it('names the person a joint schedule follows in a couple, and no one on an owned account', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    const brokerage = (owner: string | null, ageOf?: string) => ({
+      type: 'taxable' as const, id: 'brk', name: 'Brokerage', ownerPersonId: owner, annualReturnPct: null, balance: 1_000, costBasis: 1_000, annualContribution: 0,
+      contributionSchedule: [{ annualAmount: 5_000, fromAge: 55, toAge: 65, escalationPct: 0 }],
+      ...(ageOf !== undefined ? { contributionScheduleAgeOf: ageOf } : {}),
+    })
+    plan.accounts = [brokerage(null)]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      { code: 'custom', path: ['accounts', 0, 'contributionScheduleAgeOf'], message: "a joint account's contribution schedule must name the person whose age it follows" },
+    ])
+    plan.accounts = [brokerage(null, 'p2')]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([])
+    plan.accounts = [brokerage(null, 'ghost')]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      { code: 'custom', path: ['accounts', 0, 'contributionScheduleAgeOf'], message: 'unknown person id "ghost"' },
+    ])
+    plan.accounts = [brokerage('p1', 'p2')]
+    expect(issuesFrom(checkAccountCrossFieldRules, plan)).toEqual([
+      { code: 'custom', path: ['accounts', 0, 'contributionScheduleAgeOf'], message: "an account with an owner follows its owner's age: clear contributionScheduleAgeOf" },
+    ])
+    const single = singlePersonPlan()
+    single.accounts = [brokerage(null)]
+    expect(issuesFrom(checkAccountCrossFieldRules, single)).toEqual([])
+  })
+
+  it('requires a couple\u2019s spending phases to name a household person', () => {
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.expenses.phases = [{ fromAge: 75, multiplier: 0.9 }]
+    expect(issuesFrom(checkSpendingPhasesPerson, plan)).toEqual([
+      { code: 'custom', path: ['expenses', 'phasesAgeOf'], message: 'spending phases must name the person whose age they follow' },
+    ])
+    plan.expenses.phasesAgeOf = 'ghost'
+    expect(issuesFrom(checkSpendingPhasesPerson, plan)).toEqual([
+      { code: 'custom', path: ['expenses', 'phasesAgeOf'], message: 'unknown person id "ghost"' },
+    ])
+    plan.expenses.phasesAgeOf = 'p2'
+    expect(issuesFrom(checkSpendingPhasesPerson, plan)).toEqual([])
+    const single = singlePersonPlan()
+    single.expenses.phases = [{ fromAge: 75, multiplier: 0.9 }]
+    expect(issuesFrom(checkSpendingPhasesPerson, single)).toEqual([])
   })
 })
 

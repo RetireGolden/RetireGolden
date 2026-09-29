@@ -52,6 +52,7 @@ import {
   type ReportInheritedScheduleAccount,
 } from '../report/reportModel'
 import { fmtMoney, fmtMoneyCompact } from './format'
+import { coastFireHorizonYear, fiReachedPhrase, fiTargetBasisFacts, fiTargetBasisSentence } from './fiTargetCopy'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
 import { FundedRatioCard } from './sections/IncomeFloorSection'
@@ -444,25 +445,36 @@ function FireLens({
 }: {
   view: ReturnType<typeof useProjection>
   plan: Plan
-  rows: ReadonlyArray<{ year: number; investable: number; fiTarget: number }>
+  rows: ReadonlyArray<{ year: number; investable: number; fiTarget: number | null }>
   dollarLabel: string
 }) {
+  const fiFacts = fiTargetBasisFacts(view.summary, plan)
   return (
     <>
       <p className="card-hint">
-        {view.summary.fiYear !== null
-          ? `Based on your safe withdrawal rate assumption (${plan.assumptions.safeWithdrawalRatePct ?? 4}%), you reach FI in ${view.summary.fiYear} (age ${view.summary.fiAge}).`
-          : 'Your investable balance stays below the FI target through the plan horizon.'}{' '}
-        Chart shown in {dollarLabel}.
+        {/* With nobody retiring in the plan there is no target to reach, and
+            the basis sentence says so on its own (the independent review's N3). */}
+        {view.summary.fiNumber === null
+          ? ''
+          : view.summary.fiYear !== null
+            ? `Based on your safe withdrawal rate assumption (${plan.assumptions.safeWithdrawalRatePct ?? 4}%), you reach FI in ${fiReachedPhrase(view.summary.fiYear, view.summary.fiAge, fiFacts)}. `
+            : 'Your investable balance stays below the FI target through the plan horizon. '}
+        {fiTargetBasisSentence(fiFacts)} Chart shown in {dollarLabel}.
       </p>
       <div className="metric-panel stat-grid">
         <div>
-          <div className="stat-value stat-value--sm">{fmtMoney(view.summary.fiNumber)}</div>
+          <div className="stat-value stat-value--sm">{view.summary.fiNumber === null ? 'Not priced' : fmtMoney(view.summary.fiNumber)}</div>
           <div className="muted">FI target portfolio</div>
         </div>
         <div>
-          <div className="stat-value stat-value--sm">{fmtMoney(view.summary.coastFireNumber)}</div>
-          <div className="muted">Coast-FIRE target (now)</div>
+          <div className="stat-value stat-value--sm">{view.summary.coastFireNumber === null ? 'Not priced' : fmtMoney(view.summary.coastFireNumber)}</div>
+          <div className="muted">
+            {view.summary.coastFireNumber === null
+              ? 'Coast-FIRE target (no retirement in the plan to grow into)'
+              : coastFireHorizonYear(fiFacts) === null
+                ? 'Coast-FIRE target (now)'
+                : `Coast-FIRE target (now, growing into the FI target by ${coastFireHorizonYear(fiFacts)} with no further saving)`}
+          </div>
         </div>
         <div>
           <div className="stat-value stat-value--sm">{view.summary.averagePreRetirementSavingsRatePct.toFixed(1)}%</div>
@@ -473,7 +485,7 @@ function FireLens({
             <div className="stat-value stat-value--sm">
               {view.summary.fiYear} (Age {view.summary.fiAge})
             </div>
-            <div className="muted">FI date / age</div>
+            <div className="muted">{fiFacts.householdSize > 1 && fiFacts.personName !== null ? `FI date / ${fiFacts.personName}'s age` : 'FI date / age'}</div>
           </div>
         ) : null}
       </div>

@@ -86,7 +86,7 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
-  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **6**.
+  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **7**.
 - **Migrations** are a pure `migratePlanToCurrent` step chain (`engine/model/migrations.ts`); the harness
   exists and is tested. The v1 -> v2 step adds the retirement-action schedule and deterministic IDs to
   already-present typed legacy actions. The v2 -> v3 step advances to the optional durable IRA
@@ -107,7 +107,9 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
   contracts a stored scenario writes are sorted by the same rule in the plan the scenario makes. The
   migration reports each as a load repair (`exampleContractsFollowPremiumField`,
   `exampleContractsLeftOut`, `exampleEnteredContractsNowPriced`, `exampleEditedContractsKept`, naming
-  the scenario where it is a scenario's), and the engine never reads `exampleSourceId` at run time. Earlier additive fields (`stateMoves`,
+  the scenario where it is a scenario's), and the engine never reads `exampleSourceId` at run time.
+  v6 -> v7 changes nothing itself, and the every-load repair in `normalizeCurrentPlan` names the
+  person the engine had read by list position (spending phases, a scheduled joint account, an owner-less pension or annuity). Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults
   rather than migrations. The plan backup JSON is a documented contract

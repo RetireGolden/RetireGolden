@@ -354,6 +354,71 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   return parsed.ok ? parsed : { ok: false, issues: markScenarioSharedIds(plan, merged, parsed.issues) }
 }
 
+/**
+ * True when a legacy (loose object) patch carries a JavaScript `undefined`
+ * on a key the merge reaches through plain objects (decision
+ * D-SCENARIO-JSON-LOSS). `applyLegacyScenarioPatch` copies `undefined` over the
+ * base value, which `parsePlan` then reads as the field removed, but JSON has
+ * no `undefined`: every JSON route drops the key, and the patch silently stops
+ * removing anything. Inside an array the value is harmless, because an array
+ * replaces the base's whole, and a dropped key reads the same as `undefined`.
+ */
+export function legacyPatchReliesOnUndefined(patch: unknown): boolean {
+  if (!isPlainObject(patch) || isScenarioPatchEnvelope(patch)) return false
+  const walk = (value: Record<string, unknown>): boolean =>
+    Object.keys(value).some((key) => {
+      const item = value[key]
+      return item === undefined || (isPlainObject(item) && walk(item))
+    })
+  return walk(patch)
+}
+
+/** A stored scenario whose legacy patch was converted to a canonical one. */
+export interface ConvertedLegacyScenario {
+  scenarioId: string
+  scenarioName: string
+}
+
+/**
+ * Convert every stored scenario whose legacy patch relies on `undefined`
+ * (`legacyPatchReliesOnUndefined`) into a canonical patch against `plan`,
+ * whose "remove" operations survive JSON. Run at load and before any JSON
+ * export, so a scenario saved in the browser's store before the fix keeps its
+ * meaning through a backup, a single-plan copy or a JSON library. A patch that
+ * does not apply, or that yields no operation, is left as it is; the
+ * Scenarios page then says it changes nothing (`scenarioChangesNothing`).
+ */
+export function convertUndefinedLegacyScenarioPatches(plan: Plan): { plan: Plan; converted: ConvertedLegacyScenario[] } {
+  const converted: ConvertedLegacyScenario[] = []
+  const scenarios = plan.scenarios.map((scenario) => {
+    if (!legacyPatchReliesOnUndefined(scenario.patch)) return scenario
+    const migrated = migrateLegacyScenarioPatch(plan, scenario.patch as LegacyScenarioPatch, {
+      title: scenario.name,
+      createdAtIso: plan.updatedAtIso,
+      actor: { kind: 'legacy' },
+    })
+    if (!migrated.ok || migrated.patch.operations.length === 0) return scenario
+    converted.push({ scenarioId: scenario.id, scenarioName: scenario.name })
+    return { ...scenario, patch: migrated.patch }
+  })
+  return converted.length === 0 ? { plan, converted } : { plan: { ...plan, scenarios }, converted }
+}
+
+/**
+ * Whether a scenario's applied plan is its base plan: every field a scenario
+ * may change (all but the protected identity, provenance, fact and scenario
+ * fields) is equal as canonical JSON (decision D-SCENARIO-JSON-LOSS). Such a
+ * scenario is shown as changing nothing, never as a copy of the baseline.
+ */
+export function scenarioChangesNothing(base: Plan, applied: Plan): boolean {
+  const editable = (plan: Plan): string => {
+    const record: Record<string, unknown> = { ...asRecord(plan) }
+    for (const field of protectedFields) Reflect.deleteProperty(record, field)
+    return canonicalScenarioJson(record)
+  }
+  return editable(base) === editable(applied)
+}
+
 /** Convert a legacy patch when a concrete base snapshot is available. */
 export function migrateLegacyScenarioPatch(
   basePlan: Plan,

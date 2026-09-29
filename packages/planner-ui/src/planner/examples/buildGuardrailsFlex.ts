@@ -3,8 +3,9 @@
  * Exercises spending guardrails enhancement + MC/Insights surfaces.
  */
 
-import type { Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
+import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
+import { EXAMPLE_FIXED_NOW_ISO, EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'guardrails-flex-goals'
 
@@ -97,16 +98,38 @@ export function buildGuardrailsFlex(): Plan {
   ]
 
 
-  // Scenario to compare guardrails off (for side-by-side)
-  plan.scenarios = [
-    {
-      id: exampleEntityId(EXAMPLE_ID, 'no-guard'),
-      name: 'No guardrails (full target always)',
-      patch: { expenses: { spendingPolicy: undefined, requiredAnnual: undefined } },
-    },
-  ]
-
+  plan.scenarios = []
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`guardrails-flex-goals invalid: ${parsed.issues.join('; ')}`)
-  return parsed.plan
+
+  // Scenario to compare guardrails off (for side-by-side), written as a
+  // canonical patch whose two "remove" operations survive JSON (decision
+  // D-SCENARIO-JSON-LOSS). It used to be the legacy patch
+  // `{ expenses: { spendingPolicy: undefined, requiredAnnual: undefined } }`,
+  // whose meaning lived in JavaScript `undefined`: every JSON route (backup,
+  // single-plan copy, a JSON library) stored `{ "expenses": {} }` and the
+  // scenario silently became a copy of the base plan. The patch is bound to
+  // this builder's plan id; loading the example as a demo rebinds it to the
+  // stamped id (loadExample.ts#stampDemo).
+  const withoutGuardrails = structuredClone(parsed.plan)
+  delete withoutGuardrails.expenses.spendingPolicy
+  delete withoutGuardrails.expenses.requiredAnnual
+  const noGuardrails = createScenarioPatch(parsed.plan, withoutGuardrails, {
+    title: 'No guardrails (full target always)',
+    createdAtIso: EXAMPLE_FIXED_NOW_ISO,
+    actor: { kind: 'system' },
+  })
+  if (!noGuardrails.ok) throw new Error(`guardrails-flex-goals scenario invalid: ${noGuardrails.issues.join('; ')}`)
+  const withScenario = parsePlan({
+    ...parsed.plan,
+    scenarios: [
+      {
+        id: exampleEntityId(EXAMPLE_ID, 'no-guard'),
+        name: 'No guardrails (full target always)',
+        patch: noGuardrails.patch,
+      },
+    ],
+  })
+  if (!withScenario.ok) throw new Error(`guardrails-flex-goals invalid: ${withScenario.issues.join('; ')}`)
+  return withScenario.plan
 }

@@ -8,20 +8,20 @@
       "label": "ordered account selection and annual opening-state folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        190,
-        257
+        189,
+        260
       ],
       "anchors": [
         {
-          "line": 195,
+          "line": 194,
           "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
         },
         {
-          "line": 226,
+          "line": 225,
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 242,
+          "line": 245,
           "text": "const startCalendarYear = dobYear(owner) + account.startAge"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "living/survivor pension selection and ordered state-tax folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        258,
-        305
+        261,
+        308
       ],
       "anchors": [
         {
-          "line": 258,
+          "line": 261,
           "text": "if (account.type === 'pension') {"
         },
         {
-          "line": 274,
+          "line": 277,
           "text": "pensionIncome += amount"
         },
         {
-          "line": 292,
+          "line": 295,
           "text": "rows.push({"
         }
       ]
@@ -54,24 +54,24 @@
       "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        307,
-        455
+        310,
+        458
       ],
       "anchors": [
         {
-          "line": 310,
+          "line": 313,
           "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
         },
         {
-          "line": 328,
+          "line": 331,
           "text": "if (account.purchase?.taxQualification === 'qualified') {"
         },
         {
-          "line": 381,
+          "line": 384,
           "text": "} else if (account.purchase) {"
         },
         {
-          "line": 455,
+          "line": 458,
           "text": "rows.push({"
         }
       ]
@@ -81,20 +81,20 @@
       "label": "annuity cash-flow record and ordered commit-row publication",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        455,
-        471
+        458,
+        474
       ],
       "anchors": [
         {
-          "line": 460,
+          "line": 463,
           "text": ": {"
         },
         {
-          "line": 465,
+          "line": 468,
           "text": "qualifiedIraFunded,"
         },
         {
-          "line": 471,
+          "line": 474,
           "text": "})"
         }
       ]
@@ -104,16 +104,16 @@
       "label": "explicit final folds, publications and ordered commit rows",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        474,
-        486
+        477,
+        489
       ],
       "anchors": [
         {
-          "line": 474,
+          "line": 477,
           "text": "return {"
         },
         {
-          "line": 481,
+          "line": 484,
           "text": "rows,"
         }
       ]
@@ -124,7 +124,7 @@
       "file": "projection/simulate.ts",
       "lines": [
         1766,
-        1862
+        1861
       ],
       "anchors": [
         {
@@ -132,19 +132,19 @@
           "text": "const pensionAndAnnuity = annualPensionAndAnnuityIncome({"
         },
         {
-          "line": 1790,
+          "line": 1789,
           "text": "incomes.annuity = pensionAndAnnuity.annuityIncome"
         },
         {
-          "line": 1832,
+          "line": 1831,
           "text": "for (const row of pensionAndAnnuity.rows) {"
         },
         {
-          "line": 1845,
+          "line": 1844,
           "text": "recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)"
         },
         {
-          "line": 1862,
+          "line": 1861,
           "text": "if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)"
         }
       ]

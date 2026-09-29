@@ -1,5 +1,12 @@
 # Walkthrough reference: "Bracket-fill Roth conversions", year 2026 by hand
 
+**Read this first (2026-09-28, decision D-PEOPLE-ORDER, plan schema v7).** The spending phases now name the person
+whose age they follow: the example writes `expenses.phasesAgeOf: Morgan` (`buildBracketFillRoth.ts` line 60), and the
+engine reads that field, not `people[0]`. Wherever a row below says the age-80 phase keys on "the primary (first)
+person" (part I rows 7 and 90 and the input table's `expenses.phases` line; part II row 9; the wrong readings), read "Morgan, whom
+`phasesAgeOf` names": Morgan is still the person, so no figure in any part changes. Listing Riley first would now give
+the same figures, where before it would have moved the phase to Riley's age.
+
 **Read this first (2026-09-27).** Owner decision D-BRACKET-FILL-ROTH-EXAMPLE gave Riley a Roth IRA of her own, so both
 spouses' shares of the household conversion now convert and the example fills the bracket it is named for. Parts I and
 II below derive the household before that decision, in which Riley held no Roth account and her share was dropped;
@@ -672,7 +679,7 @@ shows; and the one-cent wording matches row 34. No figure changed.
 The inputs are those of `bracket-fill-roth.md` section 1 (Morgan born 1953-01-01, Riley born 1955-01-01, MFJ,
 Florida; cash 80,000 at 2%; Morgan's IRA 700,000, Riley's IRA 400,000 and Morgan's Roth IRA 50,000, all at 5%; PIAs
 of 2,500 and 1,800 claimed at 67; fill to the top of the 22% bracket from 2026 to 2034; QCD 10,000 in today's dollars;
-spending 90,000 with the 0.85 phase from Morgan's 80; Medicare extras 250 a month each; inflation 2.5%, health extra 3%).
+spending 90,000 with the 0.85 phase from Morgan's 80 (Morgan named by `expenses.phasesAgeOf` since schema v7); Medicare extras 250 a month each; inflation 2.5%, health extra 3%).
 
 ### 1a. Factors and the stand-in pack
 
@@ -1194,7 +1201,7 @@ with one addition.
 | Item | Value | Source |
 |---|---|---|
 | New account | `{ type: 'roth', id: 'bracket-fill-roth--roth-r', name: 'Riley Roth IRA', ownerPersonId: p2 (Riley), annualReturnPct: null (so 5), kind: 'ira', balance: 0, annualContribution: 0 }`, appended after Morgan's Roth IRA, so Plan order is cash, `--ira-m`, `--ira-r`, `--roth`, `--roth-r` | `buildBracketFillRoth.ts` lines 45–49 (the decision's line; comment lines 45–48) |
-| Everything else | unchanged: Morgan 1953-01-01, Riley 1955-01-01, MFJ, Florida; cash 80,000 at 2%; IRAs 700,000 / 400,000 and Morgan's Roth 50,000 at 5%; PIAs 2,500 / 1,800 claimed at 67; fill to the top of 22% from 2026 to 2034; QCD 10,000 (today's dollars); spending 90,000 with the 0.85 phase from Morgan's 80; extras 250 a month each; inflation 2.5%, health extra 3%; `recentAnnualMagi` 0 | part I §1b–1d; `buildBracketFillRoth.ts` lines 8–64; `buildContext.ts` lines 26–44 |
+| Everything else | unchanged: Morgan 1953-01-01, Riley 1955-01-01, MFJ, Florida; cash 80,000 at 2%; IRAs 700,000 / 400,000 and Morgan's Roth 50,000 at 5%; PIAs 2,500 / 1,800 claimed at 67; fill to the top of 22% from 2026 to 2034; QCD 10,000 (today's dollars); spending 90,000 with the 0.85 phase from Morgan's 80 (Morgan named by `expenses.phasesAgeOf` since schema v7); extras 250 a month each; inflation 2.5%, health extra 3%; `recentAnnualMagi` 0 | part I §1b–1d; `buildBracketFillRoth.ts` lines 8–64; `buildContext.ts` lines 26–44 |
 | End year | 2049, unchanged | `simulate.ts` line 490 |
 | Projection call and tax stack | unchanged: `projectPlan(plan, { startYear: 2026 })` → `simulatePlan` with federal + state (override 0, local 0) | `walkthrough.ts` line 127; `planTaxCalculator.ts` lines 12–20; `projection.ts` (the #752 change there is the dollar-basis view only) |
 
@@ -1565,7 +1572,7 @@ ledger's 2028 closes. "Chain" is the value with every year's fixed point exact f
 | 4 | Pack, factor | the 2026 pack standing in; general 1.076890625 (float 1.0768906249999999), health 1.174241375 | | `params/index.ts#packForYear` (line 59); `simulate.ts` lines 516–543 | — |
 | 5 | Indexed federal figures | ceiling **227,654.678125**; deduction 38,229.6171875; 22% start 108,550.575; 12% start 26,706.8875; AMT exemption 150,980.065625; 15% LTCG start 106,504.4828125 | table 1b of part II | `indexFederalTaxPack` | — |
 | 6 | Senior deduction | **none** | 2029 > `lastApplicableYear` 2028 (it would be 0 anyway: MAGI > 250,000) | `federalTax.ts` line 403 | — |
-| 7 | Spending phase | inactive (Morgan 76 < 80) | | `annualLifestyleLayers.ts` lines 62–65 (body) | — |
+| 7 | Spending phase | inactive (Morgan 76 < 80) | Morgan is the person `expenses.phasesAgeOf` names | `annualLifestyleLayers.ts` lines 62–65 (body) | — |
 
 ### 4b. Social Security (unchanged)
 

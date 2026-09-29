@@ -375,7 +375,7 @@ function buildTimingRow(
   const without = simulatePlan(withSurvivorSsa44(plan, false), simOpts)
   const withRelief = simulatePlan(withSurvivorSsa44(plan, true), simOpts)
   const base = planUsesSsa44 ? withRelief : without
-  const baseSummary = summarizeProjection(plan, base)
+  const baseSummary = summarizeProjection(plan, base, { conversionFreeRun: null })
 
   const lastJoint = base.years.find((y) => y.year === deathYear)
   const firstSurvivor = base.years.find((y) => y.year === deathYear + 1)
@@ -409,7 +409,7 @@ function buildTimingRow(
     ...simOpts,
     additionalBracketFill: { bracketPct: SURVIVOR_LEVER_BRACKET_PCT, startYear: opts.startYear, endYear: deathYear },
   })
-  const leverSummary = summarizeProjection(plan, leverRun)
+  const leverSummary = summarizeProjection(plan, leverRun, { conversionFreeRun: null })
 
   return {
     deceasedPersonId: personId,

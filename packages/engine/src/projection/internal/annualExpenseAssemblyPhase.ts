@@ -99,7 +99,8 @@ export interface AnnualExpenseAssemblyPhaseInput {
   readonly aliveCount: number
   readonly anyAlive: boolean
   readonly peopleStates: readonly PersonYearState[]
-  readonly primaryPersonId: string
+  /** The person whose age the spending phases follow (`expenses.phasesAgeOf`, else the only person). */
+  readonly phasesPersonId: string
   readonly resolvePerson: (personId: string) => PersonYearState
   readonly hasModeledPerson: (personId: string) => boolean
   /** Last-wins by public person id, matching simulatePlan's Map construction. */
@@ -213,7 +214,7 @@ export function annualExpenseAssemblyPhase(
     aliveCount,
     anyAlive,
     peopleStates,
-    primaryPersonId,
+    phasesPersonId,
     resolvePerson,
     hasModeledPerson,
     birthMonthByPerson,
@@ -253,7 +254,7 @@ export function annualExpenseAssemblyPhase(
     excessLifestyle,
   } = annualLifestyleLayers({
     expenses: plan.expenses,
-    primaryAge: stateOf(primaryPersonId).ageAttained,
+    phasesPersonAge: stateOf(phasesPersonId).ageAttained,
     peopleStateCount: peopleStates.length,
     aliveCount,
     anyAlive,

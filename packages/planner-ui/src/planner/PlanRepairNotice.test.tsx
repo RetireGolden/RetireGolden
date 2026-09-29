@@ -127,6 +127,40 @@ describe('PlanRepairNotice', () => {
     )
   })
 
+  it('leads a saved example couple that needs both kinds of repair with the combined sentence, and lists each (schema v6 with v7)', async () => {
+    // A couple saved from a library example before both steps: its credit
+    // details move to the premium field (v5 -> v6) and its spending phases and
+    // a late annuity name their person (v7's load repairs).
+    const lead = () => container.querySelectorAll('.plan-repair-notice p')[1]!.textContent
+    const items = () => Array.from(container.querySelectorAll('.plan-repair-notice li')).map((item) => item.textContent)
+    const plan = createSamplePlan()
+    const [alex, sam] = plan.household.people
+    const naming: PlanLoadRepair[] = [
+      { kind: 'spendingPhasesPersonNamed', personId: alex!.id },
+      {
+        kind: 'annuityOwnerNamedLivingPerson', accountId: 'late-spia', accountName: 'SPIA',
+        fromOwnerPersonId: alex!.id, toOwnerPersonId: sam!.id, purchaseYear: 2032, fromOwnerLastYearAlive: 2030,
+      },
+    ]
+    await mount(
+      [{ kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'example-couple', contractCount: 2, firstYear: 2026, lastYear: 2027 }, ...naming],
+      () => undefined,
+      plan,
+    )
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts, and it came from a library example, whose premium tax credit details the app now handles differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+    expect(items()).toHaveLength(3)
+    expect(items()[1]).toContain('the plan now names whose: Alex\'s')
+    expect(items()[2]).toContain('Sam was the only one alive to buy it, so Sam is now its annuitant')
+    expect(items()[2]).toContain('your figures change')
+    // The naming repairs alone take the stored-details lead.
+    await mount(naming, () => undefined, plan)
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+  })
+
   it('says entered credit details are now priced as entered and the figures change, for the plan and for a scenario (PR #761 follow-up)', async () => {
     const scenario = { id: 's1', name: 'Own figures' }
     await mount([
@@ -249,11 +283,11 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Pension was set to take its lump sum in 2025, and that year has already passed. The election was cleared and the lump-sum offer is still on record. Open Accounts to take the lump sum in a year that has not passed, or leave the pension paying its annuity.',
-      'Second pension was set to take its lump sum. The date this plan was last saved could not be read, so the app could not tell whether the election year had already passed. The election was cleared and the lump-sum offer is still on record. Saving this plan writes a fresh date, and you can set the election again from Accounts.',
-      'Third pension was set to roll its lump sum into Inherited IRA, which is inherited. An inherited account cannot receive a pension rollover. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
-      'Fourth pension was set to roll its lump sum into Rollover IRA, and that is not an account this plan can pay a rollover into. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
-      'Fifth pension was set to roll its lump sum into an account this plan no longer holds. The election was cleared and the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
+      'Pension was set to take its lump sum in 2025, and that year has already passed. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to take the lump sum in a year that has not passed, or leave the pension paying its annuity.',
+      'Second pension was set to take its lump sum. The date this plan was last saved could not be read, so the app could not tell whether the election year had already passed. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Saving this plan writes a fresh date, and you can set the election again from Accounts.',
+      'Third pension was set to roll its lump sum into Inherited IRA, which is inherited. An inherited account cannot receive a pension rollover. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
+      'Fourth pension was set to roll its lump sum into Rollover IRA, and that is not an account this plan can pay a rollover into. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
+      'Fifth pension was set to roll its lump sum into an account this plan no longer holds. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into a traditional account you own.',
     ])
   })
 
@@ -274,7 +308,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought with pre-tax money and set to start paying at age 85. Only a QLAC can start that late; a purchase like this one has to start by age 76. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.',
+      'Longevity annuity was bought with pre-tax money and set to start paying at age 85. Only a QLAC can start that late; a purchase like this one has to start by age 76. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.',
     ])
   })
 
@@ -295,7 +329,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought with pre-tax money and set to start paying at age 90. A purchase like this one has to start by age 76, and buying it as a QLAC would not keep the later start either: a QLAC has to start by age 85. No pre-tax purchase can wait until 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
+      'Longevity annuity was bought with pre-tax money and set to start paying at age 90. A purchase like this one has to start by age 76, and buying it as a QLAC would not keep the later start either: a QLAC has to start by age 85. No pre-tax purchase can wait until 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age.',
     ])
     expect(items()[0]).not.toContain('Only a QLAC can start that late')
     expect(items()[0]).not.toContain('or to buy it as a QLAC')
@@ -317,7 +351,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
+      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age.',
     ])
   })
 
@@ -337,7 +371,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.',
+      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from and your figures change. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.',
     ])
   })
 
@@ -361,8 +395,8 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'SPIA was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from Rollover IRA. The purchase year, the premium, and its pre-tax treatment are unchanged. Open Accounts to fund it from a different account you own.',
-      'Deferred annuity was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and Deferred annuity pays nothing. Open Accounts to add the account the premium came from, then set the purchase up again.',
+      'SPIA was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from Rollover IRA. The purchase year, the premium, and its pre-tax treatment are unchanged, but the account it comes from is not, so your figures may change. Open Accounts to fund it from a different account you own.',
+      'Deferred annuity was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and Deferred annuity pays nothing, so your figures change. Open Accounts to add the account the premium came from, then set the purchase up again.',
     ])
   })
 
@@ -388,8 +422,8 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      "Home and the cash account Checking were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
-      "A property and a cash account were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
+      "Home and the cash account Checking were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property, so your figures change. Open Accounts to check both.",
+      "A property and a cash account were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property, so your figures change. Open Accounts to check both.",
     ])
   })
 
@@ -433,10 +467,50 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Mortgage and Home were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The debt now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
-      'Whole life and Savings were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The policy now has a reference of its own, and both are as you entered them. Open Accounts and Insurance to check both.',
-      'An insurance policy and another policy were stored under one internal reference, so the plan counted their benefit years together, and a year one policy paid used up a year of the other. The policy now has a reference of its own, and both are as you entered them. Open Insurance to check both.',
-      'Cabin and Home were stored under one internal reference, so the plan kept one value for the two and left the other out of your totals. The property now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
+      'Mortgage and Home were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The debt now has a reference of its own, and both are as you entered them, so your figures change. Open Accounts to check both.',
+      'Whole life and Savings were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The policy now has a reference of its own, and both are as you entered them, so your figures change. Open Accounts and Insurance to check both.',
+      'An insurance policy and another policy were stored under one internal reference, so the plan counted their benefit years together, and a year one policy paid used up a year of the other. The policy now has a reference of its own, and both are as you entered them, so your figures change. Open Insurance to check both.',
+      'Cabin and Home were stored under one internal reference, so the plan kept one value for the two and left the other out of your totals. The property now has a reference of its own, and both are as you entered them, so your figures change. Open Accounts to check both.',
+    ])
+  })
+
+  it('says whose age and life a plan now names, and whether figures moved (schema v7)', async () => {
+    const plan = createSamplePlan()
+    const [alex, sam] = plan.household.people
+    await mount(
+      [
+        { kind: 'spendingPhasesPersonNamed', personId: alex!.id },
+        { kind: 'contributionSchedulePersonNamed', accountId: 'brk', accountName: 'Joint brokerage', personId: alex!.id },
+        { kind: 'guaranteedIncomeOwnerBackFilled', accountId: 'pen', accountName: 'Pension', accountType: 'pension', ownerPersonId: alex!.id, basis: 'firstPerson', movesFigures: false },
+        { kind: 'guaranteedIncomeOwnerBackFilled', accountId: 'spia', accountName: 'SPIA', accountType: 'annuity', ownerPersonId: alex!.id, basis: 'firstPerson', movesFigures: false },
+        { kind: 'guaranteedIncomeOwnerBackFilled', accountId: 'qlac', accountName: 'QLAC', accountType: 'annuity', ownerPersonId: sam!.id, basis: 'fundingAccountOwner', movesFigures: true },
+        {
+          kind: 'annuityOwnerMatchedToFundingAccount', accountId: 'cross', accountName: 'Cross annuity',
+          fromOwnerPersonId: alex!.id, toOwnerPersonId: sam!.id, fundingAccountId: 'sam-ira', fundingAccountName: 'Sam IRA',
+        },
+        {
+          kind: 'lumpSumElectionDroppedSpouseTarget', accountId: 'pen2', accountName: 'Second pension',
+          targetAccountId: 'sam-ira', targetAccountName: 'Sam IRA', ownerPersonId: alex!.id, targetOwnerPersonId: sam!.id,
+        },
+      ],
+      () => undefined,
+      plan,
+    )
+    expect(items()).toEqual([
+      "Your spending phases start by one person's age, and the plan now names whose: Alex's. They already followed Alex's age, because Alex is listed first, so no figure changed. Open Spending to have them follow Sam's age instead.",
+      "Joint brokerage is a joint account whose contribution schedule starts and stops by age, and the plan now names whose: Alex's. It already followed Alex's age, because Alex is listed first, so no figure changed. Open Accounts to have it follow Sam's age instead.",
+      "Pension was stored as a joint pension. A pension belongs to the person who earned it, so it now belongs to Alex, the person listed first. It was already paid on Alex's age and life, so no figure changed. Open Accounts if Sam earned it.",
+      "SPIA was stored as a joint annuity. An annuity starts at and pays on one person's age and life, so Alex, the person listed first, is now its annuitant. It was already paid on Alex's age and life, so no figure changed. Open Accounts to make Sam the annuitant instead.",
+      "QLAC was stored as a joint annuity. It was bought from Sam's IRA or 401(k), and an annuity bought that way belongs to the account's owner, so Sam is now its annuitant. It now starts at and pays on Sam's age and life, so your figures may change. Open Accounts to check it.",
+      "Cross annuity was named for Alex but bought from Sam IRA, which belongs to Sam. An annuity bought from an IRA or 401(k) belongs to that account's owner, so Sam is now its annuitant. It now starts at and pays on Sam's age and life, so your figures may change. Open Accounts to buy it from one of Alex's own accounts instead.",
+      "Second pension was set to roll its lump sum into Sam IRA, which belongs to Sam. A pension rolls over only into an IRA or 401(k) of the person who earned it, Alex. The election was cleared, so the pension pays its monthly benefit instead and your figures change; the lump-sum offer is still on record. Open Accounts to roll it into one of Alex's own accounts.",
+    ])
+  })
+
+  it('says a scenario that relied on an empty value was rewritten to survive export', async () => {
+    await mount([{ kind: 'legacyScenarioConverted', scenarioId: 's1', scenarioName: 'No guardrails' }])
+    expect(items()).toEqual([
+      'The scenario "No guardrails" was stored in a form a saved file could not keep: exporting it would have lost what it changes. It was rewritten so it survives a backup or a copy of the plan. It changes the same things it did before.',
     ])
   })
 
@@ -558,7 +632,7 @@ describe('the workspace load path', () => {
     await mountWorkspace(storedWithInheritedFundedAnnuity())
     expect(container.querySelectorAll('.plan-repair-notice')).toHaveLength(1)
     expect(items()).toEqual([
-      'SPIA was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from Rollover IRA. The purchase year, the premium, and its pre-tax treatment are unchanged. Open Accounts to fund it from a different account you own.',
+      'SPIA was bought with a premium from Inherited IRA, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from Rollover IRA. The purchase year, the premium, and its pre-tax treatment are unchanged, but the account it comes from is not, so your figures may change. Open Accounts to fund it from a different account you own.',
     ])
   })
 
@@ -567,6 +641,30 @@ describe('the workspace load path', () => {
     plan.id = 'p1'
     await mountWorkspace(JSON.parse(JSON.stringify(plan)))
     expect(container.querySelector('.plan-repair-notice')).toBeNull()
+  })
+
+  /** The sample couple as stored before schema v7: no person named for the spending phases. */
+  function coupleSavedBeforeV7(phases: unknown[]): Record<string, unknown> {
+    const doc = JSON.parse(JSON.stringify(createSamplePlan())) as Record<string, unknown>
+    doc['id'] = 'p1'
+    doc['schemaVersion'] = 6
+    const expenses = doc['expenses'] as Record<string, unknown>
+    delete expenses['phasesAgeOf']
+    expenses['phases'] = phases
+    return doc
+  }
+
+  it('stays silent for a couple saved before v7 with no spending phases (review of #765, issue 9)', async () => {
+    // The load still names the person, so a scenario that adds phases has
+    // one, but there are no phases whose age it could change, so no notice.
+    await mountWorkspace(coupleSavedBeforeV7([]))
+    expect(container.querySelector('.plan-repair-notice')).toBeNull()
+  })
+
+  it('names whose age the spending phases follow for a couple saved before v7 with phases (review of #765, issue 9)', async () => {
+    await mountWorkspace(coupleSavedBeforeV7([{ fromAge: 75, multiplier: 0.9 }]))
+    expect(items()).toHaveLength(1)
+    expect(items()[0]).toContain("the plan now names whose: Alex's")
   })
 
   it('closes for the rest of the visit when dismissed', async () => {

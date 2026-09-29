@@ -3,7 +3,7 @@ import { asAccountId, type AccountId, type PersonId } from '../actions/identity.
 import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
-import { planSchema, type Account, type Plan } from '../model/plan.js'
+import { planSchema, type Account, type Plan, guaranteedIncomeOwnerId } from '../model/plan.js'
 import { isAggregatedIra, isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import { ownedIraFundedAnnuityContracts } from './iraAnnuityContractValue.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../projection/annualRetirementRuntimeJournal.js'
@@ -1740,15 +1740,15 @@ function indexOccurrences(
     }
     const account = accountById.get(occurrence.sourceAccountId)
     // The owner an annuity payment reports is the PAYMENT owner the income
-    // block used -- `ownerPersonId ?? primary` -- while the aggregate it
-    // belongs to is the funding IRA's. On a contract naming its owner the two
-    // are the same by Plan validation; on one naming nobody the equality
-    // below would compare against `null` and refuse a well-formed year, so
-    // the contract's own owner field is resolved the same way the simulator
-    // resolved it. Which aggregate the payment lands in is decided by the
+    // block used, the contract's own owner, while the aggregate it belongs to
+    // is the funding IRA's. Plan validation makes the two the same person for
+    // a qualified purchase (schema v7 refuses an annuity bought from one
+    // person's IRA but named for the other, and requires an owner on every
+    // annuity), and this reads the same field the simulator reads, so the two
+    // cannot disagree. Which aggregate the payment lands in is decided by the
     // funding owner, in the contract chain further down, not here.
     const expectedOwnerPersonId = account?.type === 'annuity'
-      ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
+      ? guaranteedIncomeOwnerId(account)
       : account?.ownerPersonId
     if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
         !sourceCompatible(occurrence, account, plan, taxYear, ownerTreatmentRouting)) {

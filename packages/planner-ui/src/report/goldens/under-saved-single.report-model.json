@@ -371,6 +371,18 @@
       "endingInvestable": 0,
       "endingNetWorth": 0,
       "fiAge": null,
+      "fiBasis": {
+        "conversionExecuted": false,
+        "householdSize": 1,
+        "notRetiring": [],
+        "personLastYearAlive": 2052,
+        "personName": "Jordan",
+        "retirementRule": "retirementAge",
+        "retirementYear": 2024,
+        "spendingSource": "projection",
+        "spendingYear": 2026,
+        "withdrawalRatePct": 4
+      },
       "fiNumber": 1820250,
       "fiYear": null,
       "lifetimeRothConversions": 0,

@@ -15,7 +15,7 @@
  */
 
 import { formatWholeUsd } from '../internal/evidenceFormat.js'
-import type { Account, Plan } from '../model/plan.js'
+import { guaranteedIncomeOwnerId, type Account, type Plan } from '../model/plan.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext } from './types.js'
 
@@ -161,7 +161,7 @@ export function pensionTakeLumpSumPatch(
   startYear: number,
 ): { accounts: Account[] } | null {
   if (!pension.lumpSumOffer) return null
-  const ownerId = pension.ownerPersonId ?? plan.household.people[0]?.id ?? null
+  const ownerId = guaranteedIncomeOwnerId(pension)
   const existing = plan.accounts
     .filter(
       (a): a is Extract<Account, { type: 'traditional' }> =>
@@ -266,8 +266,8 @@ export function analyzePensionElections(plan: Plan, startYear: number): PensionD
   const analyses: PensionDecisionAnalysis[] = []
   for (const account of plan.accounts) {
     if (account.type !== 'pension' || !account.lumpSumOffer) continue
-    const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
-    const owner = plan.household.people.find((p) => p.id === ownerId) ?? plan.household.people[0]
+    const ownerId = guaranteedIncomeOwnerId(account)
+    const owner = plan.household.people.find((p) => p.id === ownerId)
     if (!owner) continue
     const other = plan.household.people.find((p) => p.id !== owner.id)
     const ownerCurrentAge = startYear - dobYear(owner.dob)

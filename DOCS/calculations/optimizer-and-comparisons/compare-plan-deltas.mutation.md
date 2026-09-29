@@ -1,6 +1,6 @@
 # Mutation receipt: plan-headline-longevity-comparison
 
-Executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1c7341f5` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/moneyLasts.ts`
 
@@ -30,18 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/scenarios/p
 
 ## Captured failing output
 
-The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/scenarios/planHeadlines.evidence.test.ts (9 tests | 2 failed) 7ms
-   ❯ plan-headline-longevity-comparison — Compare plans: how long the money lasts, deterministic success and depletion age (4)
+ ❯ src/scenarios/planHeadlines.evidence.test.ts (10 tests | 2 failed) 9ms
+   ❯ plan-headline-longevity-comparison — Compare plans: how long the money lasts, deterministic success and depletion age (5)
      × cases A to F and H: last funded years, their difference and bound, success points and depletion ages 3ms
      × case D: two full plans on different horizons publish no difference, not the gap between their end years 1ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 7 passed (9)
+      Tests  2 failed | 8 passed (10)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -55,25 +55,25 @@ null
 + Received:
 0
 
- ❯ src/scenarios/planHeadlines.evidence.test.ts:233:48
-    231|         const headline = comparePlanHeadlines(build(c.baseline), build…
-    232|         expect([headline.moneyLasts.baseline.lastFundedYear, headline.…
-    233|         expect(headline.moneyLasts.delta, key).toBe(e.delta)
+ ❯ src/scenarios/planHeadlines.evidence.test.ts:238:48
+    236|         const headline = comparePlanHeadlines(build(c.baseline), build…
+    237|         expect([headline.moneyLasts.baseline.lastFundedYear, headline.…
+    238|         expect(headline.moneyLasts.delta, key).toBe(e.delta)
        |                                                ^
-    234|         expect(headline.moneyLasts.bound, key).toBe(e.bound)
-    235|         expect(headline.deterministicSuccessPct.delta, key).toBe(e.suc…
+    239|         expect(headline.moneyLasts.bound, key).toBe(e.bound)
+    240|         expect(headline.deterministicSuccessPct.delta, key).toBe(e.suc…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  src/scenarios/planHeadlines.evidence.test.ts > plan-headline-longevity-comparison — Compare plans: how long the money lasts, deterministic success and depletion age > case D: two full plans on different horizons publish no difference, not the gap between their end years
 AssertionError: expected 3 not to be 3 // Object.is equality
- ❯ src/scenarios/planHeadlines.evidence.test.ts:250:45
-    248|       // the difference of last funded years, which is only the horizo…
-    249|       expect(headline.moneyLasts.delta).not.toBe(0)
-    250|       expect(headline.moneyLasts.delta).not.toBe(c.proposal.E - c.base…
+ ❯ src/scenarios/planHeadlines.evidence.test.ts:258:45
+    256|       // the difference of last funded years, which is only the horizo…
+    257|       expect(headline.moneyLasts.delta).not.toBe(0)
+    258|       expect(headline.moneyLasts.delta).not.toBe(c.proposal.E - c.base…
        |                                             ^
-    251|       expect(headline.moneyLasts.delta).toBeNull()
-    252|     })
+    259|       expect(headline.moneyLasts.delta).toBeNull()
+    260|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

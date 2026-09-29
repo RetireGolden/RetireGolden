@@ -3376,7 +3376,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Depletion age (primary) row: the first person's age in that year (PlanHeadlineComparison.depletionAgePrimary)"
+        "selector": "Depletion age (NAME) row: the older person's age in that year, named in the label (PlanHeadlineComparison.depletionAge, whose person PlanHeadlineComparison.depletionAgePersonId gives)"
       },
       {
         "surface": "scenarios-page",
@@ -4612,7 +4612,7 @@
       }
     ],
     "transformations": [
-      "scenarios/planHeadlines.ts#comparePlanHeadlines: moneyLasts through projection/moneyLasts.ts#compareMoneyLasts (delta = lastFundedYear(proposal) − lastFundedYear(baseline), bound atLeast or atMost when only one plan runs its full horizon, delta null with bound bothFull when both do); deterministicSuccessPct = compareScalars(100 or 0 by depletion); depletionAgePrimary = compareNullableScalars(depletionYear − birth year of household.people[0]), refused when a depleting side has no birth date."
+      "scenarios/planHeadlines.ts#comparePlanHeadlines: moneyLasts through projection/moneyLasts.ts#compareMoneyLasts (delta = lastFundedYear(proposal) − lastFundedYear(baseline), bound atLeast or atMost when only one plan runs its full horizon, delta null with bound bothFull when both do); deterministicSuccessPct = compareScalars(100 or 0 by depletion); depletionAge = compareNullableScalars(depletionYear − birth year of each side's model/peopleOrder.ts#canonicalFirstPerson, the older, whoever is listed first), with depletionAgePersonId naming that person, refused when a depleting side's person has no birth date."
     ],
     "candidateRuleIds": [],
     "status": "identified",

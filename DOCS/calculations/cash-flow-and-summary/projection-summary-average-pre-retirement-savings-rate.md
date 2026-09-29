@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: composition. The `averagePreRetirementSavingsRatePct` field's doc comment states that `projection/compare.ts#summarizeProjection` computes the unweighted arithmetic mean, in percentage points, of the published `savingsRates[].ratePct` values over the years strictly before the primary person's target retirement year (birth year plus retirement age, 65 when unset), with every qualifying year counted once regardless of income and 0 when no year qualifies; no rounding is stated.
+Kind: composition. The `averagePreRetirementSavingsRatePct` field's doc comment states that `projection/compare.ts#summarizeProjection` computes the unweighted arithmetic mean, in percentage points, of the published `savingsRates[].ratePct` values over the years strictly before the household's later target retirement year (the latest of each person's retirement year: a retirement age gives birth year plus that age, a person with none retires in the first year without their wages, else in the start year, and a person who never retires in the plan is left out; `household-later-retirement`), or over every year when nobody retires in the plan (the independent review's N3), with every qualifying year counted once regardless of income and 0 when no year qualifies; no rounding is stated.
 
 ## Justification
 
@@ -8,7 +8,7 @@ For `n>0` qualifying working-year rates `r_i`, an average giving every represent
 
 ## Inputs
 
-Assume the primary person was born in 1964 and has retirement age 65, so the target retirement year is `1964 + 65 = 2029`.
+Assume the only person was born in 1964 and has retirement age 65, so the target retirement year is `1964 + 65 = 2029`.
 
 Case 1 — qualifying years (every listed working year is strictly before 2029):
 

@@ -26,7 +26,7 @@ import {
   isScenarioPatchEnvelope,
   parseScenarioPatch,
 } from '../scenarios/contract.js'
-import { rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
+import { convertUndefinedLegacyScenarioPatches, rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
 import {
   accountChannel,
   policyChannel,
@@ -1428,6 +1428,23 @@ function exampleMigration(raw: Record<string, unknown>): { doc: Record<string, u
  */
 export const migratePlanV5ToV6: MigrationStep = (raw) => exampleMigration(raw).doc
 
+/**
+ * v6 -> v7 (decision D-PEOPLE-ORDER, 2026-09-25): no figure may depend on the
+ * order a plan lists its people in. v7 adds `expenses.phasesAgeOf` (whose age
+ * the spending phases follow) and `contributionScheduleAgeOf` on jointly owned
+ * cash, taxable and equity-compensation accounts (whose age a contribution
+ * schedule follows), and requires an owner on every pension and annuity.
+ *
+ * The step itself changes nothing but the version. The fields are filled by
+ * the load repairs every document passes, `normalizeCurrentPlan`, so a v7
+ * document another host wrote without them is repaired the same way and says
+ * so: the person a plan listed first is named, which is whose age its phases
+ * and schedules followed and whose life its owner-less pensions and annuities
+ * were paid on; a qualified annuity takes the owner of the account that paid
+ * for it. See `nameAccountPeople`.
+ */
+export const migratePlanV6ToV7: MigrationStep = (raw) => raw
+
 /** Keyed by the version the step migrates FROM. */
 const defaultRegistry: Record<number, MigrationStep> = {
   1: migratePlanV1ToV2,
@@ -1435,6 +1452,7 @@ const defaultRegistry: Record<number, MigrationStep> = {
   3: migratePlanV3ToV4,
   4: migratePlanV4ToV5,
   5: migratePlanV5ToV6,
+  6: migratePlanV6ToV7,
 }
 
 /**
@@ -1619,6 +1637,133 @@ export type PlanLoadRepair =
       lastYear: number
       /** Present when the contracts are the ones a stored scenario writes. */
       scenario?: { id: string; name: string }
+    }
+  /**
+   * A two-person plan's spending phases named no person (schema v7): they now
+   * follow the age of `personId`, the person the plan lists first, whose age
+   * they already followed. Reported only when the plan has phases (the field is
+   * written for every two-person plan, so a scenario that adds phases has one).
+   */
+  | { kind: 'spendingPhasesPersonNamed'; personId: string }
+  /**
+   * A jointly owned account's contribution schedule named no person (schema
+   * v7): it now follows the age of `personId`, the person the plan lists
+   * first, whose age it already followed.
+   */
+  | { kind: 'contributionSchedulePersonNamed'; accountId: string; accountName: string; personId: string }
+  /**
+   * A pension or annuity stored with no owner ("Joint"), which v7 refuses: it
+   * now belongs to `ownerPersonId`. `basis` says why: `fundingAccountOwner`
+   * for a qualified annuity purchase, which belongs to whoever owns the IRA or
+   * plan that paid for it; `survivingSpouse` for one bought from that
+   * account after its owner's death, which belongs to the living spouse who
+   * bought it (IRC 402(c)(9), 408(d)(3)(C)(ii)(II)); `firstPerson` otherwise,
+   * the person the plan lists first, on whose age and life the engine already
+   * paid it.
+   */
+  | {
+      kind: 'guaranteedIncomeOwnerBackFilled'
+      accountId: string
+      accountName: string
+      accountType: 'pension' | 'annuity'
+      ownerPersonId: string
+      /**
+       * `livingPerson`: an annuity bought in a year the person listed first
+       * was no longer alive, which only the other person could have bought
+       * (the independent review's N1); `purchaseYear` is that year.
+       */
+      basis: 'fundingAccountOwner' | 'survivingSpouse' | 'firstPerson' | 'livingPerson'
+      /** The purchase year, for `basis: 'livingPerson'`. */
+      purchaseYear?: number
+      /**
+       * True when the owner is not the person listed first: the contract now
+       * starts at and pays on a different person's age and life than the
+       * engine used, so the plan's figures move.
+       */
+      movesFigures: boolean
+    }
+  /**
+   * A qualified annuity purchase named for one person but bought from the
+   * other person's IRA or plan, which v7 refuses: its annuitant is now the
+   * funding account's owner. This moves the plan's figures (the contract now
+   * starts at and pays on that person's age and life).
+   */
+  | {
+      kind: 'annuityOwnerMatchedToFundingAccount'
+      accountId: string
+      accountName: string
+      fromOwnerPersonId: string
+      toOwnerPersonId: string
+      fundingAccountId: string
+      fundingAccountName: string
+    }
+  /**
+   * A qualified annuity bought from an IRA or plan after its owner's death and
+   * named for that owner, which v7 refuses (it would never pay): its annuitant
+   * is now the surviving spouse, the living person who bought it from the
+   * account (IRC 402(c)(9), 408(d)(3)(C)(ii)(II)). This moves the plan's
+   * figures: the contract now pays.
+   */
+  | {
+      kind: 'annuityOwnerNamedSurvivingSpouse'
+      accountId: string
+      accountName: string
+      fromOwnerPersonId: string
+      toOwnerPersonId: string
+      fundingAccountId: string
+      fundingAccountName: string
+      purchaseYear: number
+    }
+  /**
+   * An annuity bought in a year its named annuitant was no longer alive (past
+   * their planning age), which v7 refuses because it would never pay, while
+   * the other person in the household was alive to buy it: its annuitant is
+   * now that person, the only one who could have bought it (the independent
+   * review's N1). This moves the plan's figures: the contract now pays.
+   */
+  | {
+      kind: 'annuityOwnerNamedLivingPerson'
+      accountId: string
+      accountName: string
+      fromOwnerPersonId: string
+      toOwnerPersonId: string
+      purchaseYear: number
+      /** The stored annuitant's last year alive (birth year plus planning age). */
+      fromOwnerLastYearAlive: number
+    }
+  /**
+   * An annuity bought in a year when nobody in the household was alive to buy
+   * it (its annuitant's planning age, and any other person's, had ended),
+   * which v7 refuses because it would never pay: the contract is removed, so
+   * its premium stays in the funding account (the independent review's N1).
+   * This moves the plan's figures.
+   */
+  | {
+      kind: 'annuityPurchaseDropped'
+      accountId: string
+      accountName: string
+      annuitantPersonId: string
+      annuitantLastYearAlive: number
+      purchaseYear: number
+      fundingAccountId: string
+      fundingAccountName: string | null
+    }
+  /**
+   * A stored scenario whose loose patch removed fields by giving them
+   * JavaScript `undefined`, which no JSON route keeps: it was converted to a
+   * canonical patch whose "remove" operations survive export (decision
+   * D-SCENARIO-JSON-LOSS). It applies the same plan it did before.
+   */
+  | { kind: 'legacyScenarioConverted'; scenarioId: string; scenarioName: string }
+  /** A pension lump-sum election rolling into the other person's IRA or plan, which v7 refuses (an IRA is an individual account). */
+  | {
+      kind: 'lumpSumElectionDroppedSpouseTarget'
+      accountId: string
+      accountName: string
+      targetAccountId: string
+      targetAccountName: string
+      ownerPersonId: string
+      targetOwnerPersonId: string
     }
 
 /** The document as repaired, plus what the repairs were. */
@@ -2006,6 +2151,298 @@ function repairSharedIdsInScenarios(
   return changed ? repaired : scenarios
 }
 
+/** The owner a stored account is read under: its own, or the first person for a back-filled traditional, Roth or HSA account. */
+function effectiveOwnerId(record: Record<string, unknown>, firstPersonId: string): string | null {
+  const owner = record['ownerPersonId']
+  if (typeof owner === 'string') return owner
+  if (owner === null && (record['type'] === 'traditional' || record['type'] === 'roth' || record['type'] === 'hsa')) return firstPersonId
+  return null
+}
+
+interface NamedAccountPeople {
+  accounts: unknown[]
+  repairs: PlanLoadRepair[]
+  changed: boolean
+}
+
+/**
+ * The schema-v7 naming pass (decision D-PEOPLE-ORDER) over one account list:
+ * the plan's own, or a scenario's copy of it.
+ *
+ * - A pension or annuity with no owner takes one. A qualified annuity purchase
+ *   takes the owner of the traditional account that paid for it (an IRA is
+ *   "for the exclusive benefit of an individual", IRC 408(a), and an IRA
+ *   annuity "is not transferable by the owner", IRC 408(b)(1); see
+ *   irc-72-c-3-A-annuity-measured-on-named-lives); anything else takes
+ *   `firstPersonId`, on whose age and life the
+ *   engine already paid it, so its figures do not move.
+ * - A qualified purchase named for someone other than its funding account's
+ *   owner is re-named to that owner. Its figures move.
+ * - In a two-person household, a jointly owned cash, taxable or
+ *   equity-compensation account with a contribution schedule and no
+ *   `contributionScheduleAgeOf` names `firstPersonId`, whose age it followed.
+ *
+ * Funding owners are read from the same list (`effectiveOwnerId`), so a
+ * scenario's copy is named from its own rows.
+ */
+function nameAccountPeople(
+  accounts: readonly unknown[],
+  personIds: ReadonlySet<string>,
+  firstPersonId: string,
+  twoPeople: boolean,
+  lastYearAliveById: ReadonlyMap<string, number>,
+): NamedAccountPeople {
+  const repairs: PlanLoadRepair[] = []
+  let changed = false
+  // Alive in `year` at the plan's planning age; a person without a readable
+  // birth date or planning age is taken as alive (the parse judges them).
+  const aliveIn = (personId: string, year: number | null): boolean =>
+    year === null || (lastYearAliveById.get(personId) ?? Number.POSITIVE_INFINITY) >= year
+  // The living person who bought from an account whose owner has died by the
+  // purchase year: the other household member, when alive (independent
+  // review M2). Null when there is none, and the parse then refuses the
+  // contract in plain words rather than a repair naming someone dead.
+  const survivingSpouse = (deceasedId: string, year: number | null): string | null => {
+    if (!twoPeople) return null
+    for (const id of personIds) if (id !== deceasedId && aliveIn(id, year)) return id
+    return null
+  }
+  const fundingOwner = (fundingAccountId: unknown): { id: string; name: string; ownerId: string } | null => {
+    if (typeof fundingAccountId !== 'string') return null
+    for (const candidate of accounts) {
+      if (!isPlainRecord(candidate) || candidate['id'] !== fundingAccountId) continue
+      if (candidate['type'] !== 'traditional') return null
+      const ownerId = effectiveOwnerId(candidate, firstPersonId)
+      if (ownerId === null || !personIds.has(ownerId)) return null
+      return { id: fundingAccountId, name: stringField(candidate, 'name'), ownerId }
+    }
+    return null
+  }
+  const accountName = (id: unknown): string | null => {
+    for (const candidate of accounts) {
+      if (isPlainRecord(candidate) && candidate['id'] === id) return stringField(candidate, 'name')
+    }
+    return null
+  }
+  // The other household member when alive in `year`: the only person who
+  // could have bought an annuity its named annuitant did not live to buy
+  // (the independent review's N1). Null in a one-person plan or when both
+  // have died by then.
+  const livingOther = (personId: string, year: number): string | null => {
+    if (!twoPeople) return null
+    for (const id of personIds) if (id !== personId && aliveIn(id, year)) return id
+    return null
+  }
+  const named = accounts.flatMap((account): unknown[] => {
+    if (!isPlainRecord(account)) return [account]
+    const type = account['type']
+    if (type === 'annuity') {
+      const resolved = nameGuaranteedIncomeOwner(account, type)
+      const purchase = account['purchase']
+      const purchaseYear = isPlainRecord(purchase) && typeof purchase['year'] === 'number' ? purchase['year'] : null
+      const owner = isPlainRecord(resolved.account) ? resolved.account['ownerPersonId'] : undefined
+      // An annuity bought for a person who has died by its purchase year would
+      // never pay, and the parse refuses it. Every stored plan must still open:
+      // the other person, when alive, is the only one who could have bought it,
+      // so it is theirs; with nobody alive to buy it, it is removed and its
+      // premium stays where it was. Either way the figures change, and the
+      // household is told (the independent review's N1).
+      if (purchaseYear !== null && typeof owner === 'string' && personIds.has(owner) && !aliveIn(owner, purchaseYear)) {
+        changed = true
+        const living = livingOther(owner, purchaseYear)
+        const ownerLastYearAlive = lastYearAliveById.get(owner)!
+        if (living !== null) {
+          const stored = account['ownerPersonId']
+          if (stored === null || stored === undefined) {
+            repairs.push({
+              kind: 'guaranteedIncomeOwnerBackFilled',
+              accountId: stringField(account, 'id'),
+              accountName: stringField(account, 'name'),
+              accountType: 'annuity',
+              ownerPersonId: living,
+              basis: 'livingPerson',
+              purchaseYear,
+              movesFigures: true,
+            })
+          } else {
+            repairs.push({
+              kind: 'annuityOwnerNamedLivingPerson',
+              accountId: stringField(account, 'id'),
+              accountName: stringField(account, 'name'),
+              fromOwnerPersonId: owner,
+              toOwnerPersonId: living,
+              purchaseYear,
+              fromOwnerLastYearAlive: ownerLastYearAlive,
+            })
+          }
+          return [{ ...account, ownerPersonId: living }]
+        }
+        const fundingAccountId = isPlainRecord(purchase) && typeof purchase['fundingAccountId'] === 'string' ? purchase['fundingAccountId'] : ''
+        repairs.push({
+          kind: 'annuityPurchaseDropped',
+          accountId: stringField(account, 'id'),
+          accountName: stringField(account, 'name'),
+          annuitantPersonId: owner,
+          annuitantLastYearAlive: ownerLastYearAlive,
+          purchaseYear,
+          fundingAccountId,
+          fundingAccountName: accountName(fundingAccountId),
+        })
+        return []
+      }
+      repairs.push(...resolved.repairs)
+      if (resolved.changed) changed = true
+      return [resolved.account]
+    }
+    if (type === 'pension') {
+      const resolved = nameGuaranteedIncomeOwner(account, type)
+      repairs.push(...resolved.repairs)
+      if (resolved.changed) changed = true
+      return [resolved.account]
+    }
+    return [nameJointSchedulePerson(account, type)]
+  })
+  return { accounts: changed ? named : [...accounts], repairs, changed }
+
+  /** A pension's or annuity's owner, named where v7 requires one (the existing rules). */
+  function nameGuaranteedIncomeOwner(
+    account: Record<string, unknown>,
+    type: 'pension' | 'annuity',
+  ): { account: Record<string, unknown>; repairs: PlanLoadRepair[]; changed: boolean } {
+    const purchase = account['purchase']
+    const qualifiedFunding =
+      type === 'annuity' && isPlainRecord(purchase) && purchase['taxQualification'] === 'qualified'
+        ? fundingOwner(purchase['fundingAccountId'])
+        : null
+    const owner = account['ownerPersonId']
+    const purchaseYear = isPlainRecord(purchase) && typeof purchase['year'] === 'number' ? purchase['year'] : null
+    // Whom a qualified purchase belongs to: the funding account's owner, or,
+    // when that owner has died by the purchase year, the surviving spouse
+    // who bought it. Never a person dead in the purchase year.
+    const purchaser =
+      qualifiedFunding === null
+        ? null
+        : aliveIn(qualifiedFunding.ownerId, purchaseYear)
+          ? qualifiedFunding.ownerId
+          : survivingSpouse(qualifiedFunding.ownerId, purchaseYear)
+    const own: PlanLoadRepair[] = []
+    if (owner === null || owner === undefined) {
+      const ownerPersonId = qualifiedFunding !== null ? (purchaser ?? qualifiedFunding.ownerId) : firstPersonId
+      own.push({
+        kind: 'guaranteedIncomeOwnerBackFilled',
+        accountId: stringField(account, 'id'),
+        accountName: stringField(account, 'name'),
+        accountType: type,
+        ownerPersonId,
+        basis: qualifiedFunding === null
+          ? 'firstPerson'
+          : ownerPersonId === qualifiedFunding.ownerId ? 'fundingAccountOwner' : 'survivingSpouse',
+        movesFigures: ownerPersonId !== firstPersonId,
+      })
+      return { account: { ...account, ownerPersonId }, repairs: own, changed: true }
+    }
+    if (qualifiedFunding !== null && purchaser !== null && typeof owner === 'string' && owner !== purchaser) {
+      if (purchaser === qualifiedFunding.ownerId) {
+        own.push({
+          kind: 'annuityOwnerMatchedToFundingAccount',
+          accountId: stringField(account, 'id'),
+          accountName: stringField(account, 'name'),
+          fromOwnerPersonId: owner,
+          toOwnerPersonId: purchaser,
+          fundingAccountId: qualifiedFunding.id,
+          fundingAccountName: qualifiedFunding.name,
+        })
+      } else {
+        own.push({
+          kind: 'annuityOwnerNamedSurvivingSpouse',
+          accountId: stringField(account, 'id'),
+          accountName: stringField(account, 'name'),
+          fromOwnerPersonId: owner,
+          toOwnerPersonId: purchaser,
+          fundingAccountId: qualifiedFunding.id,
+          fundingAccountName: qualifiedFunding.name,
+          purchaseYear: purchaseYear!,
+        })
+      }
+      return { account: { ...account, ownerPersonId: purchaser }, repairs: own, changed: true }
+    }
+    return { account, repairs: own, changed: false }
+  }
+
+  /** A couple's scheduled joint account names whose age its schedule follows. */
+  function nameJointSchedulePerson(account: Record<string, unknown>, type: unknown): Record<string, unknown> {
+    if (
+      twoPeople &&
+      (type === 'cash' || type === 'taxable' || type === 'equityComp') &&
+      account['ownerPersonId'] === null &&
+      Array.isArray(account['contributionSchedule']) &&
+      account['contributionSchedule'].length > 0 &&
+      account['contributionScheduleAgeOf'] === undefined
+    ) {
+      changed = true
+      repairs.push({
+        kind: 'contributionSchedulePersonNamed',
+        accountId: stringField(account, 'id'),
+        accountName: stringField(account, 'name'),
+        personId: firstPersonId,
+      })
+      return { ...account, contributionScheduleAgeOf: firstPersonId }
+    }
+    return account
+  }
+}
+
+/**
+ * The same naming pass over every account list a stored scenario carries: a
+ * legacy patch's `accounts`, and an envelope's `/accounts` operation (its
+ * value and the `before` it checks the plan against, so a scenario written
+ * before the plan was named still applies). A scenario's lists follow the
+ * plan's rule; what they changed is not reported again.
+ */
+function nameAccountPeopleInScenarios(
+  scenarios: unknown,
+  personIds: ReadonlySet<string>,
+  firstPersonId: string,
+  twoPeople: boolean,
+  lastYearAliveById: ReadonlyMap<string, number>,
+): unknown {
+  if (!Array.isArray(scenarios)) return scenarios
+  const nameList = (list: unknown): unknown => {
+    if (!Array.isArray(list)) return list
+    const result = nameAccountPeople(list, personIds, firstPersonId, twoPeople, lastYearAliveById)
+    return result.changed ? result.accounts : list
+  }
+  let changed = false
+  const next = scenarios.map((scenario) => {
+    if (!isPlainRecord(scenario) || !isPlainRecord(scenario['patch'])) return scenario
+    const patch = scenario['patch']
+    let nextPatch = patch
+    if (Array.isArray(patch['operations'])) {
+      const operations = patch['operations'] as unknown[]
+      const rewritten = operations.map((operation) => {
+        if (!isPlainRecord(operation) || operation['path'] !== '/accounts') return operation
+        let result = operation
+        const value = nameList(operation['value'])
+        if (value !== operation['value']) result = { ...result, value }
+        const before = operation['before']
+        if (isPlainRecord(before) && before['present'] === true) {
+          const beforeValue = nameList(before['value'])
+          if (beforeValue !== before['value']) result = { ...result, before: { ...before, value: beforeValue } }
+        }
+        return result
+      })
+      if (rewritten.some((operation, index) => operation !== operations[index])) nextPatch = { ...patch, operations: rewritten }
+    } else if (Array.isArray(patch['accounts'])) {
+      const accounts = nameList(patch['accounts'])
+      if (accounts !== patch['accounts']) nextPatch = { ...patch, accounts }
+    }
+    if (nextPatch === patch) return scenario
+    changed = true
+    return { ...scenario, patch: nextPatch }
+  })
+  return changed ? next : scenarios
+}
+
 /**
  * Load-time repairs for shapes a stored document could hold but current
  * validation refuses.
@@ -2030,8 +2467,8 @@ function repairSharedIdsInScenarios(
  */
 function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   const household = raw['household']
-  const accounts = raw['accounts']
-  if (typeof household !== 'object' || household === null || Array.isArray(household) || !Array.isArray(accounts)) {
+  const storedAccounts = raw['accounts']
+  if (typeof household !== 'object' || household === null || Array.isArray(household) || !Array.isArray(storedAccounts)) {
     return { raw, repairs: [] }
   }
 
@@ -2041,6 +2478,27 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   if (typeof primary !== 'object' || primary === null || Array.isArray(primary)) return { raw, repairs: [] }
   const primaryId = (primary as Record<string, unknown>)['id']
   if (typeof primaryId !== 'string' || primaryId.length === 0) return { raw, repairs: [] }
+
+  // Schema v7 (decision D-PEOPLE-ORDER): name the people the stored plan left
+  // to list position, before anything below reads an owner. `primaryId` is
+  // read here, and only here, as "the person listed first", because that is
+  // whose age and life the stored figures followed; after this pass no figure
+  // depends on the order again.
+  const personIds = new Set(
+    people.flatMap((person) => (isPlainRecord(person) && typeof person['id'] === 'string' ? [person['id']] : [])),
+  )
+  const twoPeople = people.length > 1
+  const lastYearAliveById = new Map(
+    people.flatMap((person) => {
+      if (!isPlainRecord(person) || typeof person['id'] !== 'string' || typeof person['dob'] !== 'string') return []
+      const longevity = person['longevity']
+      const planningAge = isPlainRecord(longevity) ? longevity['planningAge'] : undefined
+      const birthYear = Number(person['dob'].slice(0, 4))
+      return typeof planningAge === 'number' && Number.isFinite(birthYear) ? [[person['id'], birthYear + planningAge] as const] : []
+    }),
+  )
+  const namedPeople = nameAccountPeople(storedAccounts, personIds, primaryId, twoPeople, lastYearAliveById)
+  const accounts = namedPeople.accounts
 
   const stamped = typeof raw['updatedAtIso'] === 'string' ? /^(\d{4})-/.exec(raw['updatedAtIso']) : null
   const planAsOfYear = stamped === null ? null : Number(stamped[1])
@@ -2074,10 +2532,9 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   }
 
   /**
-   * Birth year and birth month of the person a stored account belongs to, by
-   * the same owner resolution `parsePlan` and the projection take: the named
-   * owner, or the first person in the household when the account carries none.
-   * Null when the document holds no readable birth date, in which case the
+   * Birth year and birth month of the person a stored account belongs to: its
+   * named owner, which the naming pass above has given every pension and
+   * annuity. Null when the document holds no readable birth date, in which case the
    * deferred-annuity repairs below stand aside — the parse rules stand aside on
    * the same fact, so there is nothing to repair and nothing to lock the
    * household out of.
@@ -2087,14 +2544,13 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
    * next calendar year for a December birth and so admits one more start age.
    */
   const ownerBirthParts = (ownerPersonId: unknown): { year: number; month: number } | null => {
-    const owner =
-      people.find(
-        (candidate) =>
-          typeof candidate === 'object' &&
-          candidate !== null &&
-          !Array.isArray(candidate) &&
-          (candidate as Record<string, unknown>)['id'] === ownerPersonId,
-      ) ?? primary
+    const owner = people.find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        candidate !== null &&
+        !Array.isArray(candidate) &&
+        (candidate as Record<string, unknown>)['id'] === ownerPersonId,
+    )
     if (typeof owner !== 'object' || owner === null || Array.isArray(owner)) return null
     const dob = (owner as Record<string, unknown>)['dob']
     if (typeof dob !== 'string') return null
@@ -2141,8 +2597,8 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     .filter((rename) => rename.member.collection === 'accounts')
     .map((rename) => [rename.member.index, rename] as const))
 
-  const repairs: PlanLoadRepair[] = []
-  let changed = false
+  const repairs: PlanLoadRepair[] = [...namedPeople.repairs]
+  let changed = namedPeople.changed
   const normalizedAccounts = accounts.map((account, accountIndex) => {
     if (typeof account !== 'object' || account === null || Array.isArray(account)) return account
     const accountRecord = account as Record<string, unknown>
@@ -2202,7 +2658,19 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       const stampUnreadable = planAsOfYear === null
       const targetNotOwnedTraditional =
         typeof target !== 'string' || !ownedTraditionalIds.includes(target)
-      if (yearAlreadyGone || stampUnreadable || targetNotOwnedTraditional) {
+      // An IRA is an individual account (IRC 408(a)): a lump sum rolls into
+      // the participant's own IRA or plan, never the spouse's (schema v7).
+      const pensionOwnerId = accountRecord['ownerPersonId']
+      const targetRecord = typeof target === 'string'
+        ? accounts.find((candidate) => isPlainRecord(candidate) && candidate['id'] === target)
+        : undefined
+      const targetOwnerId = isPlainRecord(targetRecord) ? effectiveOwnerId(targetRecord, primaryId) : null
+      const targetOwnedBySpouse =
+        !targetNotOwnedTraditional &&
+        typeof pensionOwnerId === 'string' &&
+        targetOwnerId !== null &&
+        targetOwnerId !== pensionOwnerId
+      if (yearAlreadyGone || stampUnreadable || targetNotOwnedTraditional || targetOwnedBySpouse) {
         changed = true
         // One record per repaired account, and the causes are reported in the
         // order they are tested. An unreadable stamp and a refused target can
@@ -2220,6 +2688,16 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
           })
         } else if (stampUnreadable) {
           repairs.push({ kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId, accountName })
+        } else if (targetOwnedBySpouse && typeof target === 'string') {
+          repairs.push({
+            kind: 'lumpSumElectionDroppedSpouseTarget',
+            accountId,
+            accountName,
+            targetAccountId: target,
+            targetAccountName: accountNameById(target) ?? '',
+            ownerPersonId: pensionOwnerId as string,
+            targetOwnerPersonId: targetOwnerId as string,
+          })
         } else if (typeof target === 'string' && inheritedAccountIds.has(target)) {
           repairs.push({
             kind: 'lumpSumElectionDroppedInheritedTarget',
@@ -2390,7 +2868,15 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
         const accountId = stringField(accountRecord, 'id')
         const accountName = stringField(accountRecord, 'name')
         const fromAccountName = accountNameById(fundingAccountId) ?? ''
-        const replacement = ownedTraditionalIds.find((id) => id !== accountRecord['id'])
+        // The annuitant's own traditional account: an IRA annuity belongs to
+        // the owner of the account that paid for it (IRC 408(b)), so a premium
+        // moved to the other person's IRA would buy a contract the model
+        // refuses. With none of their own, the purchase is stood down.
+        const replacement = ownedTraditionalIds.find((id) => {
+          if (id === accountRecord['id']) return false
+          const candidate = accounts.find((row) => isPlainRecord(row) && row['id'] === id)
+          return isPlainRecord(candidate) && effectiveOwnerId(candidate, primaryId) === accountRecord['ownerPersonId']
+        })
         if (replacement !== undefined) {
           repairs.push({
             kind: 'annuityPremiumRetargeted',
@@ -2426,21 +2912,40 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   // Scenarios are repaired whether or not the plan itself was: their copies
   // of the rows the plan renamed follow the plan, and a collision that only a
   // scenario's own lists carry would otherwise refuse the scenario when it is
-  // applied.
+  // applied. Their account lists are named first, the same way the plan's
+  // were, so the shared-id pass compares like with like.
   const scenarios = repairSharedIdsInScenarios(
-    raw['scenarios'],
+    nameAccountPeopleInScenarios(raw['scenarios'], personIds, primaryId, twoPeople, lastYearAliveById),
     normalizedAccounts,
     planSharedIdRenames(accounts, insurance, sharedIdRenames),
     allocateSharedId,
   )
 
-  if (!changed && normalizedInsurance === raw['insurance'] && scenarios === raw['scenarios']) {
+  // The spending phases follow a named person (schema v7). Written for every
+  // two-person plan that names none, so a scenario that adds phases has one;
+  // reported when the plan has phases, whose figures follow that person.
+  const expenses = raw['expenses']
+  let normalizedExpenses = expenses
+  if (twoPeople && isPlainRecord(expenses) && expenses['phasesAgeOf'] === undefined) {
+    normalizedExpenses = { ...expenses, phasesAgeOf: primaryId }
+    if (Array.isArray(expenses['phases']) && expenses['phases'].length > 0) {
+      repairs.push({ kind: 'spendingPhasesPersonNamed', personId: primaryId })
+    }
+  }
+
+  if (
+    !changed &&
+    normalizedInsurance === raw['insurance'] &&
+    scenarios === raw['scenarios'] &&
+    normalizedExpenses === expenses
+  ) {
     return { raw, repairs }
   }
   const repaired: Record<string, unknown> = { ...raw }
   if (changed) repaired['accounts'] = normalizedAccounts
   if (normalizedInsurance !== raw['insurance']) repaired['insurance'] = normalizedInsurance
   if (scenarios !== raw['scenarios']) repaired['scenarios'] = scenarios
+  if (normalizedExpenses !== expenses) repaired['expenses'] = normalizedExpenses
   return { raw: repaired, repairs }
 }
 
@@ -2486,15 +2991,28 @@ export function migratePlanToCurrent(
   if (!parsed.ok) {
     return { ok: false, reason: 'invalid_after_migration', issues: parsed.issues }
   }
+  const rebound =
+    v < currentVersion
+      ? rebindScenarioPatchesToPlan(parsed.plan, {
+          matchingPlanIdOnly: true,
+          matchingPlanSchemaVersion: v,
+        })
+      : parsed.plan
+  // A loose scenario patch that removes fields with `undefined` only survives
+  // a structured clone (the browser's store); it is made canonical here, on
+  // every load, so no JSON route can later lose it.
+  const converted = convertUndefinedLegacyScenarioPatches(rebound)
   return {
     ok: true,
-    repairs: [...migrationRepairs, ...normalized.repairs],
-    plan:
-      v < currentVersion
-        ? rebindScenarioPatchesToPlan(parsed.plan, {
-            matchingPlanIdOnly: true,
-            matchingPlanSchemaVersion: v,
-          })
-        : parsed.plan,
+    repairs: [
+      ...migrationRepairs,
+      ...normalized.repairs,
+      ...converted.converted.map(({ scenarioId, scenarioName }): PlanLoadRepair => ({
+        kind: 'legacyScenarioConverted',
+        scenarioId,
+        scenarioName,
+      })),
+    ],
+    plan: converted.plan,
   }
 }

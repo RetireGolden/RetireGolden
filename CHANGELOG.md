@@ -4,6 +4,234 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: what the people-order, FI and scenario fixes move on screen, measured
+  against main at 068a5968 (its figures are #762's, 4fa0c842) on all 29 examples at a
+  2026 start (1,000 Monte Carlo paths, the default seed): the FI number and Coast-FIRE
+  on 5, the Monte Carlo longevity mode on 3 couples (its rate on 1), the funded-ratio
+  card on 2, and on survivor-years the Compare depletion age, the annuity sweep and the SPIA
+  candidate; no ledger figure, headline success rate or "How much can I spend?" answer on
+  any** (decisions
+  D-PEOPLE-ORDER, D-FI-CONVERSION-TAX and D-SCENARIO-JSON-LOSS, 2026-09-28). FI number:
+  example-couple $4,406,941 to $3,552,680, bracket-fill-roth $3,420,040 to $2,521,740 and
+  early-retiree-aca $1,071,826 to $1,014,200 (the priced year's Roth-conversion tax is no
+  longer capitalised); annuity-purchases-estate $2,698,543 to $2,749,157 and
+  no-annuity-brokerage $2,698,543 to $2,684,851 (Taylor's later retirement, 2027, priced
+  without its conversion). Coast-FIRE moves with them (example-couple $4,153,964 to
+  $3,348,741; the Jordan and Taylor pair to $2,671,678 and $2,609,184). FI year and FI age
+  move on none. The same FI numbers move on six Scenarios rows. With stochastic
+  longevity, survivor-years goes from 33.2% to 33.8% (the canonical draw order; Chris,
+  listed second, is older); brokerage-bridge-401k keeps 34.3% with 17 paths changed
+  (joint contributions) and example-couple 83.9% with 10; and survivor-years' care mode
+  changes 111 paths at 0%. The Results and Report FI paragraph adds a sentence
+  naming the year it prices, why that year, whose retirement it is for a couple, and when
+  a conversion's tax was left out (all 29); the annuitization insight names the annuitant
+  and age (4 examples). A copy of a couple example saved before v7 opens with a notice
+  naming whose age its spending phases follow (5 examples) and, on
+  annuity-purchases-estate, who is the SPIA's and the QLAC's annuitant (Jordan, the
+  person the engine already used; no figure moves). Listing a couple's two people the
+  other way round used to move Monte Carlo paths on all 7 couples (365 to 1,000 of them in
+  the mode it moved most) and, on 5, the solver's answer and three to seven summary figures;
+  it now moves none of them. The surfaces that illustrate for one person now use the older
+  person, whoever is listed first: the funded-ratio card on annuity-purchases-estate goes
+  from 86% to 90% and on no-annuity-brokerage from 70% to 73% (counted from Taylor's 2027
+  retirement, the later one, instead of Jordan's 2026); on survivor-years the Compare Plans
+  depletion age goes from 81 (Lee) to 83 (Chris), the Monte Carlo annuity sweep starts at
+  66 on Chris's life instead of 65 on Lee's (payout rate 7.00% to 7.28%, each point's
+  income up 4%; success rates unchanged at 0%), and the Optimize SPIA candidate pays
+  $151.67 a month from 66 on Chris's life instead of $145.83 from 65 (evaluated lifetime
+  tax $84,621 to $80,419). The other couples' figures are unchanged on those surfaces; the
+  rows and cards now name the person, the funded-ratio card calls a couple's floor the
+  household's and always says which year it counts from, and the Compare row reads
+  "Depletion age (Alex)" instead of "Depletion age (primary)". The independent review's
+  fixes, re-measured the same way, move no figure on any example: the Coast-FIRE row names
+  the year it grows into the FI target (all 29); the FI sentence no longer says the priced
+  year converts (5 examples) and gains the conversion sentence on glidepath-allocation,
+  hsa-property-depth and static-allocation-control, which convert only after the priced
+  year (their `fiBasis.spendingSource` reads `conversionFreeProjection`, the figure
+  unchanged); the funded-ratio insight on guardrails-flex-goals says where its count
+  starts; and Compare Plans shows both ages and "different people" instead of a
+  depletion-age difference between two people (9 examples against under-saved-single).
+  The verification's fixes (a stored annuity bought for a person already dead, a refused
+  conversion request, the first year without wages, a person who works through the
+  plan) move no figure or sentence on any example, and neither do the fixes from the
+  round-one review of #765 (wages paid past a retirement age, "Refine to the month"
+  without a pass cap, a failed scenario row's FI figures), re-measured against main at
+  81812497.
+
+- **Fixed: the FI number no longer prices a Roth conversion's one-off tax as yearly
+  spending, and it prices the household's later retirement, not the first-listed
+  person's** (D-FI-CONVERSION-TAX; D-PEOPLE-ORDER rule R4). The FI number divides one
+  year's spending, tax and penalties by the withdrawal rate, so a conversion in that year
+  was capitalised 25 times at 4%. When the plan converts in any year, the priced year is
+  read from the same year of the plan run without its Roth conversions
+  (`withoutRothConversions`, `conversionFreeRun`): a conversion's costs reach later years
+  too (its income sets the Medicare IRMAA surcharge two years on, and the tax it prepays
+  drains an account a later year draws on), so converting more can never lower the
+  figure. `ProjectionSummary.fiBasis` publishes the year, its source (`projection`,
+  `conversionFreeProjection`, `conversionTaxIncluded` when the caller passes
+  `conversionFreeRun: null`, or `baseAnnual`), whose retirement it is, when, and by which
+  rule. The year is the household's later retirement, by the one rule the FI figures,
+  Coast-FIRE and the funded ratio share (`projection/householdRetirement.ts`): each person
+  retires in the first year without their work, their birth year plus retirement age, or
+  the year after their last wage year when a wage stream's end age keeps paying past the
+  retirement age (the engine pays a stream until its own end age); with no retirement
+  age, the year after their last wage year, or the start year when they have no wages in
+  the plan; a person who works through the plan (wages through
+  their last year alive, or a retirement age past the planning age) is left out, and the
+  latest of the rest wins, a tie going to the older person, then the smaller id. When
+  nobody retires in the plan no FI number, Coast-FIRE figure or funded ratio is priced
+  (`fiNumber` and `coastFireNumber` are null), and the pages say so instead of pricing a
+  working year or a year after a death. FI age, Coast-FIRE's horizon and the average
+  pre-retirement savings rate follow it; the Results and Report pages say whose year it
+  is, by which rule and who works through the plan, and the Coast-FIRE row names the year
+  it grows into the FI target. A plan that asks to convert to Roth but whose every request
+  was refused is no longer said to convert. New records `projection-summary-fi-spending-base` and
+  `household-later-retirement`; restated `projection-summary-fi-number`, `-fi-age`,
+  `-coast-fire-number` (receipt re-derived) and `-average-pre-retirement-savings-rate`.
+
+- **Fixed: a pension or annuity is paid on its named owner's age and life, never on
+  whoever is listed first** (D-PEOPLE-ORDER rule R2). A "Joint" pension or annuity
+  started at the first-listed person's age and ended or reduced at that person's death,
+  so reordering the people moved its first and last payments. A pension now names its
+  participant and an annuity its annuitant, and the other person is the survivor or
+  second annuitant. An annuity bought from an IRA or 401(k) must name that account's
+  owner, and a pension lump sum rolls over only into its earner's own traditional
+  account. The one exception is a surviving spouse: once the owner's planning age has
+  ended, the living spouse may buy an annuity on their own life from what was the owner's
+  401(k) or IRA, since a spouse's distribution is treated as if the spouse were the
+  employee and a spouse's IRA is not inherited (new tax rule
+  `irc-72-c-3-A-annuity-measured-on-named-lives`, quoting IRC 72(c)(3)(A), Treas. Reg.
+  1.72-5(b)(1), IRC 408(a) and 408(b)(1), (4), and IRC 402(c)(9) and
+  408(d)(3)(C)(ii)(II), each verified against uscode.house.gov or the eCFR). An annuity
+  bought for a person whose planning age has ended by its purchase year is refused in
+  plain words ("... would never pay: name a person who is alive in ..."); a stored plan
+  of that shape still opens, the contract given to the other person when alive in the
+  purchase year, the only one who could have bought it, and otherwise removed with its
+  premium left where it was, with a notice that the figures change. The pre-start
+  contract value, the runtime source-series check, the late-start warning, the pension
+  election and the Scenarios levers read the same owner. New record
+  `guaranteed-income-owner`.
+
+- **Fixed: a joint account keeps taking contributions while anyone in the household is
+  alive** (rule R3). A cash, taxable or equity-compensation account with no owner took
+  contributions only while the person listed first was alive and earning. Its plain
+  annual contribution now continues while the household has wages, and a contribution
+  schedule follows the age of the person it names (`contributionScheduleAgeOf`). New
+  record `joint-account-contributions`.
+
+- **Fixed: which person is listed first no longer changes the spending phases, the Monte
+  Carlo draws, the amortized-spending horizon or "Refine to the month"** (rules R1, R5
+  to R7). Spending phases follow the person `expenses.phasesAgeOf` names, shown on the
+  Spending page (new record `spending-phase-person`). Monte Carlo draws each path's deaths
+  and care events person by person in a canonical order (earlier birth date, then female,
+  male, average, then id; new record `monte-carlo-people-draw-order`). The ABW survival
+  horizon walks both people's survival curves to the end of the table: it used to stop
+  when the first-listed person passed it, cutting a much younger partner's horizon short
+  by up to 55 years, and 21,596 of 52,488 age pairs gave a different year by order (the
+  independent check's grid, on SSA's 2022 table; restated
+  `joint-survival-percentile-age`, receipt re-derived; on the 2023 life table a man of 70
+  with a woman of 35 at 25 percent now reaches 2082 either way round, where the old walk
+  stopped at 2076). "Refine to the month", now the engine's
+  `decisions/claimAgeSweep.ts#refineClaimMonths`, steps the claimants in the canonical
+  order and repeats whole passes until one changes nothing, a combination priced once not
+  priced again. There is no pass cap: a changing pass takes a strictly better month, so
+  no combination is picked twice and the search always ends at a fixed point (restated
+  `social-security-claim-age-monthly-refinement`, new cases R-B, and R-C, which needs
+  eight passes); no example's page answer moves. The premium-credit roster's "primary" label follows the canonical order.
+
+- **Fixed: the annuity illustrations, the funded ratio and the Compare depletion age no
+  longer read whoever is listed first** (D-PEOPLE-ORDER, on review). The annuitization
+  insight, the Monte Carlo annuity sweep and the SPIA and laddered-SPIA candidates name no
+  owner in the plan; they are now written on the life of the person
+  `model/peopleOrder.ts#canonicalFirstPerson` puts first (the older) and name them. The
+  funded-ratio card and the `income-floor-funded` insight count from the household's later
+  retirement (`ladder/fundedRatio.ts#fundedRatioStart`, on the shared rule above), say
+  whose it is and by which rule, and call a couple's floor the household's (new record
+  `funded-ratio-household-start`). The Compare page's depletion age is the older person's
+  on each side, labelled with their names; when the two sides' people differ (a different
+  name or date of birth) the page shows both ages and no difference
+  (`depletionAgeDeltaWithheld: 'differentPeople'`), since two people's ages have none. The
+  depletion year stays the household's. The illustrations' records state the tie-break
+  past the birth date (the sex order, then the id), as the Monte Carlo record does.
+
+- **Fixed: a scenario survives every save route, and one that changes nothing says so**
+  (D-SCENARIO-JSON-LOSS). A loose scenario patch could remove a field with JavaScript
+  `undefined`, which the browser's store keeps and every JSON route drops:
+  guardrails-flex-goals' "No guardrails" scenario, exported or copied to a JSON library, came back as
+  `{"expenses": {}}` and showed the base plan's figures under its own name. The example
+  now carries a canonical patch; every load converts such a patch to canonical remove
+  operations and reports `legacyScenarioConverted`; both JSON exports make it canonical
+  before writing; and the Scenarios page shows "This scenario changes nothing in your
+  plan." in place of a row's figures when its applied plan equals the base
+  (`ScenarioComparisonRow.changesNothing`). A copy an earlier build already exported
+  cannot be recovered, and now says that it changes nothing. A scenario row that fails
+  to apply publishes a null FI number and Coast-FIRE figure, not $0.
+
+- **Fixed: reversing or renaming a couple's people now leaves every Monte Carlo path
+  identical to the last bit, and the load notices and account help say what the model
+  does** (D-PEOPLE-ORDER, on independent review). The year's healthcare adds each person's
+  premiums, and the legacy QCD split takes each owner's share, in the canonical people
+  order instead of list order or id order: floating-point addition is not associative, and
+  at 1,000 paths the last bit differed on 4 no-annuity-brokerage paths in every mode and on
+  1 annuity-purchases-estate care path. A test pins both couples in the headline,
+  longevity and care modes. Every load repair that moves a figure now says "your figures
+  change" (six do). The owner help on a joint cash, taxable or equity-compensation account
+  says that a flat contribution needs wages while a schedule does not, and speaks to one
+  person as "you".
+
+- **Breaking (engine and planner-ui).** Plan schema v7 (`schema/plan.v7.json`,
+  `@retiregolden/engine/schema/v7`; v1 to v6 unchanged): an older engine refuses a v7
+  document with `newer_than_app`. New optional `expenses.phasesAgeOf` and
+  `contributionScheduleAgeOf` (taxable, cash and equity-compensation accounts). A pension
+  or annuity's `ownerPersonId` may no longer be null, so the "Joint" choice is gone for
+  both. New validations refuse a couple's spending phases or scheduled joint account that
+  names no one, an owner-less pension or annuity, a qualified annuity purchase named for
+  anyone but its funding account's owner, and a lump sum rolled into another person's
+  account. Migration 6 to 7 is the identity; the every-load repair names the person the
+  engine already used and reports the new `spendingPhasesPersonNamed`,
+  `contributionSchedulePersonNamed`, `guaranteedIncomeOwnerBackFilled`,
+  `annuityOwnerMatchedToFundingAccount`, `annuityOwnerNamedSurvivingSpouse`,
+  `annuityOwnerNamedLivingPerson`, `annuityPurchaseDropped` and
+  `lumpSumElectionDroppedSpouseTarget` repairs (and the `livingPerson` basis), and
+  `legacyScenarioConverted` for a scenario; a validation refuses an annuity bought for a
+  person whose planning age has ended. Engine API: `summarizeProjection(plan, result, options)` now requires its third
+  argument, `{ conversionFreeRun }`, either a function returning the plan's run without
+  Roth conversions (`conversionFreeRun(plan, opts)`) or `null` to price conversion tax in
+  and say so (`conversionTaxIncluded`); every caller must pass one or the other.
+  `ProjectionSummary.fiNumber` and `coastFireNumber` are `number | null` (null when nobody
+  retires in the plan), and `FiSpendingSource` gains `noRetirementInPlan`.
+  `ProjectionSummary.fiBasis` (with `retirementRule`, `personLastYearAlive` and
+  `notRetiring`) and `ScenarioComparisonRow.changesNothing` are new, as are
+  `guaranteedIncomeOwnerId`, `canonicalPeopleOrder`, `withoutRothConversions`,
+  `conversionFreeRun`, `convertUndefinedLegacyScenarioPatches` and
+  `scenarioChangesNothing`, `canonicalFirstPerson`, `fundedRatioStart(plan, startYear)`
+  (whose `fromYear` is null when nobody retires) and, in `projection/householdRetirement`,
+  `personRetirement`, `householdRetirement`, `householdRetirementClause`,
+  `notRetiringClause` and `RetirementYearRule` (`retirementAge`, `wagesPastRetirementAge`,
+  `wagesEnd`, `startYear`).
+  `PlanHeadlineComparison.depletionAgePrimary` is renamed `depletionAge` (the older
+  person's age on each side, no longer the first-listed person's), beside the new
+  `depletionAgePersonId` and `depletionAgeDeltaWithheld`. planner-ui adds
+  `planner/fiTargetCopy` (with `coastFireHorizonYear`), `addPartner`,
+  `spendingPhasesPerson`, `namePhasesPerson` and `nameContributionSchedulePerson`, and
+  `removePartner` clears a schedule person on an account with an owner instead of
+  re-pointing it. `decisions/claimAgeSweep.ts#refineClaimMonths` returns `passes`.
+
+- **Follow-ups outside this repository.** RetireGolden-Pro: its library JSON route should
+  make legacy scenario patches canonical before writing, as `serializeV2Backup` and
+  `serializeSinglePlan` now do, and it needs the planner-ui bump for schema v7 (the FI
+  paragraph, the load notices, the named-person editors). RetireGolden-MCP:
+  `describe_plan_schema` and its protocol baseline move to v7 (`phasesAgeOf`,
+  `contributionScheduleAgeOf`, required pension and annuity owners); its calls to
+  `summarizeProjection` no longer compile until each passes a conversion-free run
+  (`conversionFreeRun(plan, opts)`, so its FI figures match the app's) or `null` (and then
+  publishes `fiBasis.spendingSource: 'conversionTaxIncluded'`); its summaries may now
+  carry a null `fiNumber` and `coastFireNumber`, when nobody retires in the plan; and its pension and
+  annuity documentation should drop "Joint". The output census's edited compare-page entries
+  (the depletion-age selector, its transformation and the field name `depletionAge`) and the
+  Results page's nullable FI target are on RetireGolden-Docs main (5d156cf), and the
+  engine's copy is re-imported from there.
+
 - **Fixed: 2026 state income tax figures that a survey of every state found wrong
   (displayed numbers change from 2026 for plans in Arkansas, Arizona, Colorado, Idaho,
   Maryland, Virginia, Rhode Island, California and the District of Columbia that meet each

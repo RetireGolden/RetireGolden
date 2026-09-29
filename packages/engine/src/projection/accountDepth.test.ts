@@ -165,12 +165,12 @@ describe('HSA medical-expense subledger', () => {
     plan.assumptions.heirTaxRatePct = 25
     plan.accounts = [hsa(100_000, { beneficiary: 'nonSpouse' })]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    const summary = summarizeProjection(validate(plan), result)
+    const summary = summarizeProjection(validate(plan), result, { conversionFreeRun: null })
     // 100k HSA taxed at 25% → estate is 25k below net worth.
     expect(summary.endingNetWorth - summary.endingAfterTaxEstate).toBeCloseTo(25_000, 0)
 
     const spousePlan = validate({ ...plan, accounts: [hsa(100_000, { beneficiary: 'spouse' })] })
-    const spouseSummary = summarizeProjection(spousePlan, simulatePlan(spousePlan, { startYear: 2026, taxCalculator: noTax }))
+    const spouseSummary = summarizeProjection(spousePlan, simulatePlan(spousePlan, { startYear: 2026, taxCalculator: noTax }), { conversionFreeRun: null })
     expect(spouseSummary.endingAfterTaxEstate).toBeCloseTo(spouseSummary.endingNetWorth, 0)
   })
 })
@@ -308,13 +308,13 @@ describe('nondeductible IRA basis (pro-rata)', () => {
     plan.expenses.baseAnnual = 0
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
     expect(result.endingNondeductibleIraBasis).toBeCloseTo(100_000, 0)
-    const summary = summarizeProjection(validate(plan), result)
+    const summary = summarizeProjection(validate(plan), result, { conversionFreeRun: null })
     // All basis → the heir owes no income tax → estate equals net worth.
     expect(summary.endingAfterTaxEstate).toBeCloseTo(summary.endingNetWorth, 0)
 
     // Contrast: the same IRA with no basis is fully taxable to the heir at 25%.
     const noBasis = validate({ ...plan, accounts: [{ ...(plan.accounts[0] as Account), nondeductibleBasis: undefined } as Account] })
-    const noBasisSummary = summarizeProjection(noBasis, simulatePlan(noBasis, { startYear: 2026, taxCalculator: noTax }))
+    const noBasisSummary = summarizeProjection(noBasis, simulatePlan(noBasis, { startYear: 2026, taxCalculator: noTax }), { conversionFreeRun: null })
     expect(noBasisSummary.endingNetWorth - noBasisSummary.endingAfterTaxEstate).toBeCloseTo(25_000, 0)
   })
 })

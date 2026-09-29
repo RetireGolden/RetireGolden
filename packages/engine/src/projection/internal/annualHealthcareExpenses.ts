@@ -1,5 +1,6 @@
 /** Pure annual marketplace/Medicare expense and ACA-support planning. */
 import type { Plan } from '../../model/plan.js'
+import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
 import { irmaaTierThreshold } from '../../params/index.js'
 import type { FilingStatus, ParameterPack } from '../../params/types.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
@@ -151,7 +152,19 @@ export function annualHealthcareExpenses(
   const acaContract =
     acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
 
-  for (const [position, state] of input.peopleStates.entries()) {
+  // Each living person's premiums are added in the canonical order of the
+  // household's people (model/peopleOrder.ts), not list order: floating-point
+  // addition is not associative, and the order the people are listed in must
+  // not reach even the last bit of the year's healthcare (the independent
+  // review's L3). Rows stay keyed by position.
+  const people = input.plan.household.people
+  const sumOrder =
+    people.length === input.peopleStates.length
+      ? canonicalPeopleOrder(people.map((person, position) => ({ id: person.id, dob: person.dob, sex: person.sex, position })))
+        .map((person) => person.position)
+      : input.peopleStates.map((_, position) => position)
+  for (const position of sumOrder) {
+    const state = input.peopleStates[position]!
     if (!state.alive) continue
     const acaMonths = marketplaceMonthsByPersonPosition[position]!
     const medicareMonths = 12 - acaMonths

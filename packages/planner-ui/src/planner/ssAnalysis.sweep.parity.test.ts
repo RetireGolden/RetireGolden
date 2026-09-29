@@ -122,7 +122,7 @@ function retiredRefine(plan: Plan, base: Record<string, number>, personIds: stri
   const evaluate = (claim: Record<string, ClaimAgeValue>): ProjectionSummary => {
     const next = structuredClone(plan)
     for (const s of next.incomes) if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) s.claimAge = { ...claim[s.personId]! }
-    return summarizeProjection(next, simulatePlan(next, { startYear: START, taxCalculator }))
+    return summarizeProjection(next, simulatePlan(next, { startYear: START, taxCalculator }), { conversionFreeRun: null })
   }
   let best: Record<string, ClaimAgeValue> = Object.fromEntries(personIds.map((id) => [id, { years: base[id]!, months: 0 }]))
   let bestSummary = evaluate(best)

@@ -1149,6 +1149,7 @@ describe('scenario lever contract', () => {
     const primary = inactive.household.people[0]!
     const primaryAgeAtStart = context.startYear - Number(primary.dob.slice(0, 4))
     const expired = inactive.accounts.find((account) => account.type === 'taxable')!
+    if (expired.type === 'taxable') expired.contributionScheduleAgeOf = primary.id
     expired.contributionSchedule = [
       {
         annualAmount: 12_000,
@@ -1183,6 +1184,54 @@ describe('scenario lever contract', () => {
     expect(stopped).toMatchObject({ annualContribution: 0 })
     expect(stopped && 'contributionSchedule' in stopped ? stopped.contributionSchedule : undefined).toBeUndefined()
     expect(clearedWithCoastScenario).toMatchObject({ annualContribution: 0 })
+  })
+
+  // The lever's mirror of the engine's joint-account rule (decision
+  // D-PEOPLE-ORDER, R3): a joint account contributes while either person is
+  // alive, its plain contribution while anyone in the household has wages,
+  // and its schedule by the age of the person it names (review L4, F07, F08).
+  function onlyTheJointBrokerageContributes(): { plan: Plan; brokerage: Extract<Plan['accounts'][number], { type: 'taxable' }> } {
+    const plan = buildExampleCouple()
+    for (const account of plan.accounts) {
+      if (!('annualContribution' in account)) continue
+      account.annualContribution = 0
+      delete account.contributionSchedule
+    }
+    const brokerage = plan.accounts.find((account) => account.type === 'taxable' && account.ownerPersonId === null)
+    if (brokerage?.type !== 'taxable') throw new Error('the example couple has a joint brokerage')
+    return { plan, brokerage }
+  }
+
+  it('counts a joint schedule that runs on after the person it is timed by has died, while the other lives (F07)', () => {
+    const { plan, brokerage } = onlyTheJointBrokerageContributes()
+    plan.incomes = plan.incomes.filter((income) => income.type !== 'wages')
+    // Alex (born 1962, planning age 92) has died by 2055; Sam (born 1964,
+    // planning age 95) lives to 2059. The schedule is timed by Alex's age,
+    // 93 to 95, that is 2055 to 2057, so it pays only while Sam alone lives.
+    const [alex] = plan.household.people
+    brokerage.contributionScheduleAgeOf = alex!.id
+    brokerage.contributionSchedule = [{ annualAmount: 12_000, fromAge: 93, toAge: 95, escalationPct: 0 }]
+    const lever = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(lever.ok ? 'available' : lever.issues).toBe('available')
+    // Timed by Alex's age 98 to 99, 2060 to 2061, after both have died, the
+    // schedule never pays, and the lever says so.
+    brokerage.contributionSchedule = [{ annualAmount: 12_000, fromAge: 98, toAge: 99, escalationPct: 0 }]
+    const none = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(none.ok ? 'available' : none.issues.join(' ')).toContain('active during the projection')
+  })
+
+  it('counts a joint plain contribution while anyone has wages, not only the first-listed person (F08)', () => {
+    const { plan, brokerage } = onlyTheJointBrokerageContributes()
+    // Alex, listed first, has no wages; Sam earns until she retires at 64.
+    const [alex] = plan.household.people
+    plan.incomes = plan.incomes.filter((income) => income.type !== 'wages' || income.personId !== alex!.id)
+    brokerage.annualContribution = 12_000
+    const lever = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(lever.ok ? 'available' : lever.issues).toBe('available')
+    // With no wages at all, a plain contribution never pays.
+    plan.incomes = plan.incomes.filter((income) => income.type !== 'wages')
+    const none = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(none.ok ? 'available' : none.issues.join(' ')).toContain('active during the projection')
   })
 
   it('allocates only eligible accounts that can hold projected assets', () => {
@@ -2229,6 +2278,8 @@ describe('scenario lever contract', () => {
     expect(unavailable.ok).toBe(false)
 
     const taxable = plan.accounts.find((account) => account.type === 'taxable')!
+    // A joint schedule names whose age it follows (schema v7).
+    if (taxable.type === 'taxable') taxable.contributionScheduleAgeOf = owner.id
     taxable.contributionSchedule = [
       {
         annualAmount: 10_000,
@@ -2599,6 +2650,7 @@ describe('scenario lever contract', () => {
       (account) => account.type === 'taxable',
     )!
     const owner = contributionPlan.household.people[0]!
+    if (contributionTarget.type === 'taxable') contributionTarget.contributionScheduleAgeOf = owner.id
     contributionTarget.balance = 0
     contributionTarget.annualContribution = 0
     contributionTarget.annualReturnPct = null

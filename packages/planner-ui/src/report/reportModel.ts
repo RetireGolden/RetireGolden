@@ -52,6 +52,7 @@ import { csvCell } from '../csvCell'
 import { hasUnassignedCash } from '../planner/accountCategories'
 import { acaLedgerSummary, acaProjectedIncomeTaxNote } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
+import { fiTargetBasisFacts, type FiTargetBasisFacts } from '../planner/fiTargetCopy'
 import { isPlanIncomplete } from '../planner/planCompleteness'
 import {
   needsProfessionalConfirmation,
@@ -204,12 +205,15 @@ export interface ReportHeadlineResultsBlock {
   depletionYear: number | null
   lifetimeTaxesAndPenalties: number
   lifetimeRothConversions: number
-  /** Today-dollar portfolio target at the plan's safe withdrawal rate. */
-  fiNumber: number
+  /** Today-dollar portfolio target at the plan's safe withdrawal rate; null when nobody retires in the plan. */
+  fiNumber: number | null
   fiYear: number | null
   fiAge: number | null
-  coastFireNumber: number
+  /** Null when `fiNumber` is. */
+  coastFireNumber: number | null
   averagePreRetirementSavingsRatePct: number
+  /** Which year and which outflows the FI target prices (the engine's `ProjectionSummary.fiBasis`). */
+  fiBasis: FiTargetBasisFacts
 }
 
 export interface ReportPersonRow {
@@ -1182,13 +1186,14 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         depletionYear: summary.depletionYear,
         lifetimeTaxesAndPenalties: roundDollar(summary.lifetimeTaxesAndPenalties),
         lifetimeRothConversions: roundDollar(summary.lifetimeRothConversions),
-        fiNumber: roundDollar(summary.fiNumber),
+        fiNumber: summary.fiNumber === null ? null : roundDollar(summary.fiNumber),
         fiYear: summary.fiYear,
         fiAge: summary.fiAge,
-        coastFireNumber: roundDollar(summary.coastFireNumber),
+        coastFireNumber: summary.coastFireNumber === null ? null : roundDollar(summary.coastFireNumber),
         // Presentation precision (the UI shows one decimal), which also keeps
         // this derived percent platform-stable in serialized output.
         averagePreRetirementSavingsRatePct: Math.round(summary.averagePreRetirementSavingsRatePct * 10) / 10,
+        fiBasis: fiTargetBasisFacts(summary, plan),
       },
       'modeled-findings': snapshotFindings(input.modeledFindings, plan.expenses.healthcare),
       'household': {

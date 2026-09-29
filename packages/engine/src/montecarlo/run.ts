@@ -10,6 +10,7 @@
  */
 
 import type { Plan } from '../model/plan.js'
+import { canonicalPeopleOrder } from '../model/peopleOrder.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { TaxCalculator } from '../projection/types.js'
@@ -123,14 +124,18 @@ export function runMonteCarloPaths(plan: Plan, opts: MonteCarloPathOptions): Mon
     const market = opts.model.generatePath(rng, 120)
     let pathPlan = plan
     let deathAgeByPersonId: Record<string, number> | undefined
+    // Deaths, then care events, are drawn in the canonical people order
+    // (model/peopleOrder.ts: older first, then sex, then id), never in list
+    // order, so listing the people the other way round draws the same path.
+    const drawOrder = canonicalPeopleOrder(plan.household.people)
     if (opts.stochasticLongevity) {
       deathAgeByPersonId = {}
-      for (const p of plan.household.people) {
+      for (const p of drawOrder) {
         deathAgeByPersonId[p.id] = sampleDeathAge(rng, opts.startYear - Number(p.dob.slice(0, 4)), p.sex)
       }
     }
     if (opts.ltcShock) {
-      const sampled = sampleCareEvents(rng, plan.household.people, opts.startYear, opts.ltcShock)
+      const sampled = sampleCareEvents(rng, drawOrder, opts.startYear, opts.ltcShock)
       if (sampled.length > 0) pathPlan = { ...plan, careEvents: [...plan.careEvents, ...sampled] }
     }
     const result = simulatePlan(pathPlan, {
@@ -140,7 +145,7 @@ export function runMonteCarloPaths(plan: Plan, opts: MonteCarloPathOptions): Mon
       deathAgeByPersonId,
       horizonEndYear,
     })
-    const projectionSummary = summarizeProjection(pathPlan, result)
+    const projectionSummary = summarizeProjection(pathPlan, result, { conversionFreeRun: null })
     startYear = result.startYear
     endYear = result.endYear
     const investableByYear = new Float64Array(result.years.length)

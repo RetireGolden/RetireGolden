@@ -47,7 +47,7 @@
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
         300,
-        325
+        336
       ],
       "anchors": [
         {
@@ -55,7 +55,7 @@
           "text": "const desiredByBalanceIndex = new Map<number, number>()"
         },
         {
-          "line": 325,
+          "line": 336,
           "text": "const phaseStartYear = phase.fromAge !== null"
         }
       ]
@@ -65,16 +65,16 @@
       "label": "scheduled phase amount, escalation, and inflation",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        327,
-        331
+        338,
+        342
       ],
       "anchors": [
         {
-          "line": 327,
+          "line": 338,
           "text": ": input.startYear"
         },
         {
-          "line": 331,
+          "line": 342,
           "text": "input.inflFactor"
         }
       ]
@@ -84,16 +84,16 @@
       "label": "annual request and positional desired publication",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        342,
-        346
+        353,
+        357
       ],
       "anchors": [
         {
-          "line": 343,
+          "line": 354,
           "text": "desired = account.annualContribution * input.inflFactor"
         },
         {
-          "line": 345,
+          "line": 356,
           "text": "desiredByBalanceIndex.set(balanceIndex, desired)"
         }
       ]
@@ -103,17 +103,17 @@
       "label": "pre-allocation physical contribution eligibility witness",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        347,
-        352
+        358,
+        363
       ],
       "note": "The zero-wage non-employer exclusion on line 291 is outside the blocks-only measured range; a direct helper characterization pins its empty expectation/operation result, and the regenerated full corpus also reaches the arm.",
       "anchors": [
         {
-          "line": 347,
+          "line": 358,
           "text": "const expectedContributionBalanceIndices = input.balances.flatMap("
         },
         {
-          "line": 352,
+          "line": 363,
           "text": "? [balanceIndex]"
         }
       ]
@@ -123,16 +123,16 @@
       "label": "positional employer requests and per-plan allocation within one owner annual budget",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        361,
-        455
+        372,
+        466
       ],
       "anchors": [
         {
-          "line": 361,
+          "line": 372,
           "text": "const employerRequestsByGroup ="
         },
         {
-          "line": 455,
+          "line": 466,
           "text": "}"
         }
       ]
@@ -142,16 +142,16 @@
       "label": "positional iteration and employer, IRA, and family-HSA limit selection",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        457,
-        508
+        468,
+        519
       ],
       "anchors": [
         {
-          "line": 457,
+          "line": 468,
           "text": "for ("
         },
         {
-          "line": 508,
+          "line": 519,
           "text": "(dividesFamilyLimit ? 2 : 1)"
         }
       ]
@@ -161,16 +161,16 @@
       "label": "whole per-spouse HSA catch-up",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        510,
-        511
+        521,
+        522
       ],
       "anchors": [
         {
-          "line": 510,
+          "line": 521,
           "text": "const catchUp = age >= 55"
         },
         {
-          "line": 511,
+          "line": 522,
           "text": "? input.pack.contributionLimits.hsaCatchUp55"
         }
       ]
@@ -180,16 +180,16 @@
       "label": "HSA result, shared IRA compensation, 415(c), ordered group warnings, and catch-up routing",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        513,
-        570
+        524,
+        581
       ],
       "anchors": [
         {
-          "line": 513,
+          "line": 524,
           "text": "limit = base * input.hsaLimits.growth + catchUp"
         },
         {
-          "line": 570,
+          "line": 581,
           "text": "? account.ownerPersonId ?? null"
         }
       ],
@@ -200,16 +200,16 @@
       "label": "requested/credited record and explicit zero-credit operation",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        572,
-        599
+        583,
+        610
       ],
       "anchors": [
         {
-          "line": 572,
+          "line": 583,
           "text": "const record: RecordedContribution = {"
         },
         {
-          "line": 599,
+          "line": 610,
           "text": "continue"
         }
       ]
@@ -219,17 +219,17 @@
       "label": "credited balance and retirement occurrence/application evidence",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        602,
-        626
+        613,
+        637
       ],
       "note": "The nontraditional nullable-owner operand on line 502 is unreachable because only traditional accounts create a retirement occurrence; this measured range ends at the reachable traditional-owner operand.",
       "anchors": [
         {
-          "line": 602,
+          "line": 613,
           "text": "if (isEmployerAccount) {"
         },
         {
-          "line": 626,
+          "line": 637,
           "text": "? account.ownerPersonId"
         }
       ]
@@ -239,16 +239,16 @@
       "label": "retirement occurrence source and execution evidence",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        628,
-        632
+        639,
+        643
       ],
       "anchors": [
         {
-          "line": 628,
+          "line": 639,
           "text": "sourceAccountId: account.id,"
         },
         {
-          "line": 632,
+          "line": 643,
           "text": "} satisfies SimulatorAnnualRetirementRuntimeOccurrence"
         }
       ]
@@ -258,17 +258,17 @@
       "label": "runtime application, taxable basis, Roth pool, and owner-DOB resolution",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        633,
-        661
+        644,
+        672
       ],
       "note": "The null-DOB operands on lines 537 and 540 are excluded because validated simulation owners come from Plan people; the direct helper suite separately pins a null resolver result.",
       "anchors": [
         {
-          "line": 633,
+          "line": 644,
           "text": "const retirementApplication ="
         },
         {
-          "line": 661,
+          "line": 672,
           "text": "const thresholdDate = ownerDob === null"
         }
       ]
@@ -278,16 +278,16 @@
       "label": "non-null owner-DOB threshold computation",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        663,
-        664
+        674,
+        675
       ],
       "anchors": [
         {
-          "line": 663,
+          "line": 674,
           "text": ": addCalendarMonths(ownerDob, 846)"
         },
         {
-          "line": 664,
+          "line": 675,
           "text": "const thresholdYear = thresholdDate === null"
         }
       ]
@@ -297,12 +297,12 @@
       "label": "non-null owner-DOB threshold year",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        666,
-        666
+        677,
+        677
       ],
       "anchors": [
         {
-          "line": 666,
+          "line": 677,
           "text": ": Number(thresholdDate.slice(0, 4))"
         }
       ]
@@ -312,16 +312,16 @@
       "label": "QCD section-219 offset, exact totals, and ordered contribution operation",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        667,
-        699
+        678,
+        710
       ],
       "anchors": [
         {
-          "line": 667,
+          "line": 678,
           "text": "if (thresholdYear !== null && input.year >= thresholdYear) {"
         },
         {
-          "line": 699,
+          "line": 710,
           "text": "})"
         }
       ]
@@ -331,16 +331,16 @@
       "label": "ordered employer-request warning fold",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        702,
-        716
+        713,
+        727
       ],
       "anchors": [
         {
-          "line": 702,
+          "line": 713,
           "text": "for (const [, group] of employerRequestsByGroup) {"
         },
         {
-          "line": 716,
+          "line": 727,
           "text": "}"
         }
       ]
@@ -350,17 +350,17 @@
       "label": "employer-match row selection and allocated elective base",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        718,
-        739
+        729,
+        750
       ],
       "note": "The allocation-undefined fallback on line 612 is structurally unreachable within this helper: every desired employer row is collected and allocated before match processing. The measured allocation range ends before that defensive operand; the production arm begins on line 613.",
       "anchors": [
         {
-          "line": 718,
+          "line": 729,
           "text": "for ("
         },
         {
-          "line": 739,
+          "line": 750,
           "text": "const electiveForMatch = allocation === undefined"
         }
       ]
@@ -370,16 +370,16 @@
       "label": "allocated positional elective match base",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        741,
-        747
+        752,
+        758
       ],
       "anchors": [
         {
-          "line": 741,
+          "line": 752,
           "text": ": employerMatchElectiveBase({"
         },
         {
-          "line": 747,
+          "line": 758,
           "text": "})"
         }
       ]
@@ -389,16 +389,16 @@
       "label": "match base, pay and 415(c) cap, traditional/Roth runtime effects, and exact totals",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        748,
-        802
+        759,
+        813
       ],
       "anchors": [
         {
-          "line": 748,
+          "line": 759,
           "text": "const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages"
         },
         {
-          "line": 802,
+          "line": 813,
           "text": "}"
         }
       ]
@@ -408,16 +408,16 @@
       "label": "complete ordered contribution boundary result",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
-        804,
-        820
+        815,
+        831
       ],
       "anchors": [
         {
-          "line": 804,
+          "line": 815,
           "text": "return {"
         },
         {
-          "line": 820,
+          "line": 831,
           "text": "}"
         }
       ]

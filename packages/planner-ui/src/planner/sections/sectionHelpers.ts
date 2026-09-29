@@ -235,8 +235,35 @@ export function fallbackPersonName(index: number): string {
   return index === 0 ? 'Unnamed primary' : 'Unnamed partner'
 }
 
+/**
+ * Account types that must name one owner: an IRA is an individual account, a
+ * pension belongs to the participant who earned it, and an annuity to its
+ * (first) annuitant (schema v7, decision D-PEOPLE-ORDER). The editor offers
+ * no "Joint" for these.
+ */
 export function isIndividuallyOwnedAccount(type: Account['type']): boolean {
-  return type === 'traditional' || type === 'roth' || type === 'hsa'
+  return type === 'traditional' || type === 'roth' || type === 'hsa' || type === 'pension' || type === 'annuity'
+}
+
+/**
+ * The person whose age the spending phases follow: the one the plan names
+ * (`expenses.phasesAgeOf`), or the only person in a one-person plan.
+ */
+export function spendingPhasesPerson(plan: Plan): Plan['household']['people'][number] | undefined {
+  const named = plan.expenses.phasesAgeOf
+  if (named !== undefined) return plan.household.people.find((person) => person.id === named)
+  return plan.household.people.length === 1 ? plan.household.people[0] : undefined
+}
+
+/**
+ * When a two-person plan gains phases and names no one yet, name the person
+ * listed first. It is a visible default: the Spending page shows the name and
+ * offers the other person.
+ */
+export function namePhasesPerson(d: Plan): void {
+  if (d.household.people.length > 1 && d.expenses.phasesAgeOf === undefined) {
+    d.expenses.phasesAgeOf = d.household.people[0]!.id
+  }
 }
 
 export const ACCOUNT_LABEL: Record<Account['type'], string> = {
@@ -319,10 +346,8 @@ export function annuityStartAgeBounds(plan: Plan, account: Account): AnnuityStar
   if (account.type !== 'annuity') return null
   const purchase = account.purchase
   if (purchase === undefined || purchase.taxQualification !== 'qualified') return null
-  // Same owner resolution the engine takes: an annuity may carry no individual
-  // owner, and the projection reads it as the first person's.
-  const owner =
-    plan.household.people.find((p) => p.id === account.ownerPersonId) ?? plan.household.people[0]
+  // The annuitant's own birth date: every annuity names one (schema v7).
+  const owner = plan.household.people.find((p) => p.id === account.ownerPersonId)
   if (owner === undefined) return null
   const birthYear = Number(owner.dob.slice(0, 4))
   const birthMonth = Number(owner.dob.slice(5, 7))

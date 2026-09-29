@@ -13,7 +13,7 @@ import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { SpendingPolicyCard } from './SpendingPolicyCard'
 import { Issues } from './shared'
-import { newId } from './sectionHelpers'
+import { namePhasesPerson, newId, spendingPhasesPerson } from './sectionHelpers'
 
 // Named spending shapes compile to ordinary `expenses.phases` rows (visible
 // and editable afterwards) — never a parallel model. Calibrations and sources
@@ -23,14 +23,20 @@ type SpendingProfileId = SpendingShapeId
 export function SpendingSection() {
   const { plan, update } = usePlan()
   const e = plan.expenses
+  // The person whose age the phases follow: named by the plan (schema v7), or
+  // the only person. The presets start at that person's retirement age.
+  const phasesPerson = spendingPhasesPerson(plan)
+  const phasesPersonAgeText = plan.household.people.length > 1 ? `${phasesPerson?.name ?? 'the named person'}'s age` : 'your age'
   const applyProfile = (profile: SpendingProfileId) =>
     update((d) => {
-      d.expenses.phases = spendingShapePhases(profile, plan.household.people[0]?.retirementAge ?? 65)
+      d.expenses.phases = spendingShapePhases(profile, phasesPerson?.retirementAge ?? 65)
+      namePhasesPerson(d)
     })
   const [customDeltaPct, setCustomDeltaPct] = useState(-1.5)
   const applyCustomDelta = () =>
     update((d) => {
-      d.expenses.phases = annualDeltaPhases(customDeltaPct, plan.household.people[0]?.retirementAge ?? 65)
+      d.expenses.phases = annualDeltaPhases(customDeltaPct, phasesPerson?.retirementAge ?? 65)
+      namePhasesPerson(d)
     })
   return (
     <section>
@@ -135,9 +141,22 @@ export function SpendingSection() {
 
         <h3>Retirement phases</h3>
         <p className="card-hint">
-          Spending multipliers by the primary person's age (go-go / slow-go / no-go).{' '}
+          Spending multipliers by {phasesPersonAgeText} (go-go / slow-go / no-go).{' '}
           <LearnLink {...LEARN.spendingProfiles} />
         </p>
+        {plan.household.people.length > 1 && phasesPerson !== undefined ? (
+          <div className="form-grid">
+            <SelectField
+              label="Phases follow"
+              help="Whose age starts each phase. The phases keep following this person's age after they die. Changing it moves the years each phase begins, and with them the plan's figures."
+              learn={LEARN.spendingProfiles}
+              path="expenses.phasesAgeOf"
+              value={phasesPerson.id}
+              options={plan.household.people.map((person) => ({ value: person.id, label: `${person.name}'s age` }))}
+              onCommit={(v) => update((d) => void (d.expenses.phasesAgeOf = v))}
+            />
+          </div>
+        ) : null}
         {e.phases.map((p, i) => (
           <div className="item-row" key={i}>
             <div className="item-row-head">
@@ -147,7 +166,7 @@ export function SpendingSection() {
             <div className="form-grid">
               <NumberField
                 label="From age"
-                help="The first age when this phase applies, using the primary person's age as the clock."
+                help={`The first age when this phase applies, by ${phasesPersonAgeText}.`}
                 learn={LEARN.spendingProfiles}
                 path={`expenses.phases.${i}.fromAge`}
                 value={p.fromAge}
@@ -169,7 +188,18 @@ export function SpendingSection() {
           </div>
         ))}
         <div className="add-row">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.expenses.phases.push({ fromAge: 75, multiplier: 0.9 }))}>+ Phase</button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={() =>
+              update((d) => {
+                d.expenses.phases.push({ fromAge: 75, multiplier: 0.9 })
+                namePhasesPerson(d)
+              })
+            }
+          >
+            + Phase
+          </button>
         </div>
         <p className="field-hint" style={{ margin: '0.6rem 0 0.25rem' }}>
           {/* The section blurb above already carries the spending-profiles
