@@ -1,10 +1,15 @@
 /**
  * Plan schema v5 -> v6 (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28): a plan
  * saved from a library example carries the example recipe's premium-credit
- * contracts as fixed dollars; v6 rewrites the ones with the recipe's shape to
+ * contracts as fixed dollars; v6 rewrites the ones the recipe wrote to
  * 'premiumField' and reports it. Only a v5 document with `exampleSourceId` is
- * touched, dollars are not compared, and an unedited converted plan projects
- * to the same figures to the cent.
+ * touched. The dollars are compared to half a cent: a contract is the
+ * recipe's only when its amount is the premium field times one growth factor
+ * per plan to the power of the years since 2026, the factor fitting at least
+ * two contracts (review finding M1; PR #761 review 9). A contract from the
+ * recipe that no longer matched the plan's premium is removed, as the v5
+ * engine left it out, and the figures do not change (PR #761 review 2). An
+ * unedited converted plan projects to the same figures to the cent.
  */
 import { describe, expect, it } from 'vitest'
 

@@ -93,7 +93,17 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
   classification, per-year SEP/SIMPLE activity, and per-donor/year deductible-contribution facts;
   it never infers or promotes them, and explicitly discards a same-named root smuggled into a v1/v2
   input. The v3 -> v4 migration strips any same-named root rather than inventing protected annual tax facts;
-  v4 -> v5 writes `inflationAdjusted: false` for legacy one-time income (their historical behavior). Earlier additive fields (`stateMoves`,
+  v4 -> v5 writes `inflationAdjusted: false` for legacy one-time income (their historical behavior).
+  v5 -> v6 (`migratePlanV5ToV6`) gives every premium-credit contract a `premiumBasis` and touches only a
+  plan saved from a library example (`exampleSourceId`): the recipe matcher (`exampleRecipeMatcher`: the
+  recipe's shape, and its dollars as the premium field times one growth factor per plan, to half a cent,
+  the factor fitting at least two contracts) picks the contracts the example wrote and rewrites them to
+  `premiumBasis: 'premiumField'`, which the engine prices from the premium field on every run; a contract
+  from the recipe that no longer matched the plan's premium, which the v5 engine was already leaving out,
+  is removed and recorded in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`; every other
+  contract stays `'stated'`. The migration reports both as load repairs
+  (`exampleContractsFollowPremiumField`, `exampleContractsLeftOut`), and the engine never reads
+  `exampleSourceId` at run time. Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults
   rather than migrations. The plan backup JSON is a documented contract
