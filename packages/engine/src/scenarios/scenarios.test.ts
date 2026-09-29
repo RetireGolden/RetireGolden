@@ -273,6 +273,10 @@ describe('compareScenarios', () => {
     expect(cmp.rows).toHaveLength(2)
     expect(cmp.rows[1]!.error).toContain('invalid')
     expect(cmp.rows[0]!.error).toBeNull()
+    // The failed row publishes no FI figure, never a $0 target (review of #765, issues 7 and 12).
+    const failed = cmp.rows[1]!.summary
+    expect([failed.fiNumber, failed.coastFireNumber, failed.fiYear, failed.fiAge]).toEqual([null, null, null, null])
+    expect(cmp.rows[0]!.summary.fiNumber).not.toBeNull()
   })
 
   it('attaches Monte Carlo success rates when requested, same seed for every row', () => {

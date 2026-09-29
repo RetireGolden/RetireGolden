@@ -224,10 +224,12 @@ const EMPTY_SUMMARY: ProjectionSummary = {
   warnings: [],
   savingsRates: [],
   averagePreRetirementSavingsRatePct: 0,
-  fiNumber: 0,
+  // A failed row prices nothing: null, as a plan in which nobody retires
+  // publishes, never a $0 target (round-one review of #765, issues 7 and 12).
+  fiNumber: null,
   fiYear: null,
   fiAge: null,
-  coastFireNumber: 0,
+  coastFireNumber: null,
   fiBasis: { spendingYear: null, spendingSource: 'baseAnnual', personId: null, retirementYear: null, retirementRule: null, personLastYearAlive: null, notRetiring: [] },
 }
 
