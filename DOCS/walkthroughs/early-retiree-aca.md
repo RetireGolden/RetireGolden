@@ -416,8 +416,12 @@ fill the top of the **10% bracket** (`topOfBracket`), not the cliff (`acaCliff`)
 and the builder chose that target because it keeps the baseline under the cliff where filling the 12% bracket would
 cross it; the 2026 conversion lands 34,100 below the cliff because of it. Since decision D-ACA-EXAMPLE-COPY (2026-09-27)
 the example's `lookFor` and learn article say exactly this (credits in 2026 and 2027, the full premium from 2028, the
-benchmark assumed equal to the $1,000 premium so that editing the premium turns the credit off, and conversions sized to
-the bracket), and `exampleCopyFigures.test.ts` holds the copy's years and figures to the engine.
+benchmark assumed equal to the premium, and conversions sized to the bracket), and `exampleCopyFigures.test.ts` holds
+the copy's years and figures to the engine. Since decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) the contracts are
+`premiumField` ones, so editing the premium re-prices the credit rather than turning it off: the enrollment premium
+and the benchmark both follow the new premium, the credit moves with it, and what Casey pays stays her expected
+contribution. The copy says so, and `exampleCopyFigures.test.ts` checks that the credit moves by the premium's change to
+the cent (PR #761 review 4).
 
 *As derived on 2026-09-22 (history).* Only 2026 was actionable then: 2027 and 2028 had contracts but no published
 figures, a stand-in year "reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable
