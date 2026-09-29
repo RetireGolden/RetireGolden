@@ -7,7 +7,6 @@ import {
 } from './coverageAttestations.js'
 import { TAX_RULE_REGISTRY } from './taxRuleRegistry.js'
 import { STATE_ENACTED_YEARS } from '../params/state/index.js'
-import type { StateEnactedYear } from '../params/state/types.js'
 
 // Vite requires the options to be an inline object literal.
 const engineSources = import.meta.glob('../**/*.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -183,22 +182,19 @@ describe('coverage attestations', () => {
 })
 
 /**
- * The enacted-year state modules, loaded from disk rather than from a hand
- * list, so a module added later is checked the day it lands. Each module's
- * note must name every state code the module carries and every field each
- * entry replaces: a later sweep reads the note to learn what the file holds,
- * and a figure the note leaves out would not be re-verified (review round one
- * of #762 found Washington's 2028 tax, among others, missing from its note).
+ * The enacted-year state modules. The tables are the ones stateParamsFor
+ * applies (STATE_ENACTED_YEARS, each the object its module exports), and the
+ * files on disk are listed from the source scan, so a module added later is
+ * checked the day it lands, and one written but never wired fails here. Each
+ * module's note must name every state code the module carries and every field
+ * each entry replaces: a later sweep reads the note to learn what the file
+ * holds, and a figure the note leaves out would not be re-verified (review
+ * round one of #762 found Washington's 2028 tax, among others, missing from
+ * its note).
  */
 const ENACTED_MODULE_FILE = /\/params\/state\/data\/enacted(\d{4})\.ts$/u
 // Vite requires the options to be an inline object literal.
-const enactedModules = import.meta.glob('../params/state/data/enacted*.ts', { eager: true })
-
-function isEnactedYear(value: unknown): value is StateEnactedYear {
-  if (typeof value !== 'object' || value === null) return false
-  const candidate = value as { year?: unknown; states?: unknown }
-  return typeof candidate.year === 'number' && typeof candidate.states === 'object' && candidate.states !== null
-}
+const enactedSources = import.meta.glob('../params/state/data/enacted*.ts', { query: '?raw', import: 'default', eager: true })
 
 /** A code or field name standing as its own word in the note, not inside a longer name. */
 function namesToken(note: string, token: string): boolean {
@@ -207,28 +203,27 @@ function namesToken(note: string, token: string): boolean {
 }
 
 describe('enacted-year state module attestations', () => {
-  const modules = Object.entries(enactedModules)
-    .flatMap(([path, exports]) => {
+  const filesOnDisk = Object.entries(enactedSources)
+    .flatMap(([path, source]) => {
       const year = ENACTED_MODULE_FILE.exec(path)?.[1]
-      if (year === undefined) return []
-      const tables = Object.values(exports as Record<string, unknown>).filter(isEnactedYear)
-      return [{ path, year: Number(year), tables }]
+      return year === undefined ? [] : [{ path, year: Number(year), source }]
     })
     .sort((a, b) => a.year - b.year)
 
-  it('finds on disk exactly the enacted years stateParamsFor applies, one table each', () => {
-    expect(modules.map((module) => module.year)).toEqual(STATE_ENACTED_YEARS.map((entry) => entry.year))
-    for (const module of modules) {
-      expect(module.tables.map((table) => table.year), module.path).toEqual([module.year])
+  it('finds on disk exactly the enacted years stateParamsFor applies, each file holding its own year', () => {
+    expect(filesOnDisk.length).toBeGreaterThan(0)
+    expect(filesOnDisk.map((file) => file.year)).toEqual(STATE_ENACTED_YEARS.map((table) => table.year))
+    for (const file of filesOnDisk) {
+      expect(file.source, file.path).toMatch(new RegExp(`\\byear: ${file.year},`, 'u'))
     }
   })
 
   it('names in each module note every state code the module carries and every field its entries replace', () => {
     const omissions: string[] = []
-    for (const { year, tables } of modules) {
-      const attestationPath = `params/state/data/enacted${year}.ts`
+    for (const table of STATE_ENACTED_YEARS) {
+      const attestationPath = `params/state/data/enacted${table.year}.ts`
       const note = COVERAGE_ATTESTATIONS[attestationPath]?.note ?? ''
-      for (const [code, figures] of Object.entries(tables[0]!.states)) {
+      for (const [code, figures] of Object.entries(table.states)) {
         if (!namesToken(note, code)) omissions.push(`${attestationPath}: state ${code}`)
         for (const field of Object.keys(figures)) {
           if (!namesToken(note, field)) omissions.push(`${attestationPath}: ${code} field ${field}`)
