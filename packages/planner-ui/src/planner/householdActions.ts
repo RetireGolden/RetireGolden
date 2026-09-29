@@ -77,12 +77,16 @@ export function removePartner(d: Plan, removedId: string) {
   d.household.filingStatus = 'single'
   const primaryId = d.household.people[0]!.id
   d.accounts = d.accounts.map((a) => (a.ownerPersonId === removedId ? { ...a, ownerPersonId: primaryId } : a))
-  // Whose age the phases and joint schedules follow: the one person left.
+  // Whose age the phases and joint schedules follow: the one person left. An
+  // account with an owner follows its owner's age and names no one (the
+  // schema refuses the field there, as nameContributionSchedulePerson clears
+  // it), so a stray name is cleared rather than re-pointed (round-one review
+  // of #765, issue 15).
   if (d.expenses.phasesAgeOf !== undefined) d.expenses.phasesAgeOf = primaryId
   for (const account of d.accounts) {
-    if ('contributionScheduleAgeOf' in account && account.contributionScheduleAgeOf !== undefined) {
-      account.contributionScheduleAgeOf = primaryId
-    }
+    if (!('contributionScheduleAgeOf' in account) || account.contributionScheduleAgeOf === undefined) continue
+    if (account.ownerPersonId !== null) Reflect.deleteProperty(account, 'contributionScheduleAgeOf')
+    else account.contributionScheduleAgeOf = primaryId
   }
   d.incomes = d.incomes.filter((s) => !('personId' in s) || s.personId !== removedId)
   d.insurance = d.insurance

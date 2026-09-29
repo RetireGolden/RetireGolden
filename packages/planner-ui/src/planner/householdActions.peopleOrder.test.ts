@@ -68,6 +68,32 @@ describe('partners and named people (D-PEOPLE-ORDER)', () => {
     expect(parsed.ok ? [] : parsed.issues).toEqual([])
   })
 
+  it('removing a partner clears a schedule person on an account with an owner, and re-points a joint one (review of #765, issue 15)', () => {
+    // A hand-edited plan: Sam's own brokerage also names Sam for its
+    // schedule, which the schema refuses on an owned account. The removal
+    // moves the account to Alex and clears the name; the joint cash
+    // account's schedule is re-pointed to Alex.
+    const plan = createSamplePlan()
+    const [alex, sam] = plan.household.people
+    const brokerage = plan.accounts.find((a) => a.type === 'taxable')!
+    const cash = plan.accounts.find((a) => a.type === 'cash')!
+    if (brokerage.type !== 'taxable' || cash.type !== 'cash') throw new Error('expected a brokerage and a cash account')
+    const schedule = [{ annualAmount: 5_000, fromAge: 60, toAge: 65, escalationPct: 0 }]
+    brokerage.ownerPersonId = sam!.id
+    brokerage.contributionSchedule = schedule
+    brokerage.contributionScheduleAgeOf = sam!.id
+    cash.ownerPersonId = null
+    cash.contributionSchedule = schedule
+    cash.contributionScheduleAgeOf = sam!.id
+    removePartner(plan, sam!.id)
+    const [owned, joint] = [plan.accounts.find((a) => a.id === brokerage.id)!, plan.accounts.find((a) => a.id === cash.id)!]
+    expect(owned.ownerPersonId).toBe(alex!.id)
+    expect('contributionScheduleAgeOf' in owned).toBe(false)
+    expect(joint.type === 'cash' && joint.contributionScheduleAgeOf).toBe(alex!.id)
+    const parsed = parsePlan(plan)
+    expect(parsed.ok ? [] : parsed.issues).toEqual([])
+  })
+
   it('keeps a schedule person in step with the owner field', () => {
     const plan = createSamplePlan()
     const brokerage = plan.accounts.find((a) => a.type === 'taxable')!
