@@ -159,4 +159,26 @@ describe('landing one agency’s year', () => {
       /irsRetirementPlanLimits 2027 is missing contributionLimits\.employee401k/,
     )
   })
+
+  it('reads and writes only a pack’s own fields, never a prototype', () => {
+    // The field-path readers take no segment that would reach an object's
+    // prototype (the code scanner's prototype-pollution-loop finding on PR
+    // #768): a read returns undefined, and a landing that names one is refused.
+    expect(packFieldValue(year2026, '__proto__')).toBeUndefined()
+    expect(packFieldValue(year2026, 'federalTax.constructor')).toBeUndefined()
+    expect(packFieldValue(year2026, 'federalTax.toString')).toBeUndefined()
+    expect(packFieldValue(year2026, 'federalTax.saltCap')).toBe(year2026.federalTax.saltCap)
+    const hostile: Record<ParameterComponentKey, ParameterComponent> = {
+      ...PARAMETER_COMPONENTS,
+      hudHecm: {
+        ...PARAMETER_COMPONENTS.hudHecm,
+        fields: ['hecm.__proto__.polluted'],
+        years: [...PARAMETER_COMPONENTS.hudHecm.years, { year: 2027, source: 'illustrative', values: { 'hecm.__proto__.polluted': true } }],
+      },
+    }
+    expect(() => composeParameterPack(year2026, parameterComponentsForYear(2027, hostile), hostile)).toThrow(
+      /hecm\.__proto__\.polluted names __proto__/,
+    )
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined()
+  })
 })

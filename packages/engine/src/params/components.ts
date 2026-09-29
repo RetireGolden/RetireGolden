@@ -384,22 +384,33 @@ export function projectedParameterComponents(
   })
 }
 
+/**
+ * Path segments no field path may name: reading or writing one would reach an
+ * object's prototype rather than a field of the pack. The component field
+ * lists name none (a test holds every path to a real field), and the readers
+ * below refuse them rather than trust that.
+ */
+const PROTOTYPE_SEGMENTS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype'])
+
+/** One own data field of `node`, or undefined; never a prototype's. */
+function ownField(node: unknown, segment: string): unknown {
+  if (typeof node !== 'object' || node === null || PROTOTYPE_SEGMENTS.has(segment)) return undefined
+  return Object.hasOwn(node, segment) ? (node as Record<string, unknown>)[segment] : undefined
+}
+
 /** Read the value at a dotted path of a pack. */
 export function packFieldValue(pack: ParameterPack, path: string): unknown {
-  let node: unknown = pack
-  for (const segment of path.split('.')) {
-    if (typeof node !== 'object' || node === null) return undefined
-    node = (node as Record<string, unknown>)[segment]
-  }
-  return node
+  return path.split('.').reduce<unknown>(ownField, pack)
 }
 
 function withFieldValue(pack: ParameterPack, path: string, value: unknown): ParameterPack {
   const segments = path.split('.')
+  const unsafe = segments.find((segment) => PROTOTYPE_SEGMENTS.has(segment))
+  if (unsafe !== undefined) throw new RangeError(`parameter field path ${path} names ${unsafe}`)
   const write = (node: Record<string, unknown>, depth: number): Record<string, unknown> => {
     const key = segments[depth]!
     if (depth === segments.length - 1) return { ...node, [key]: value }
-    return { ...node, [key]: write(node[key] as Record<string, unknown>, depth + 1) }
+    return { ...node, [key]: write(ownField(node, key) as Record<string, unknown>, depth + 1) }
   }
   return write(pack as unknown as Record<string, unknown>, 0) as unknown as ParameterPack
 }
