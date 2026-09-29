@@ -1,10 +1,19 @@
 import { formatGroupedNumber, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, DetectorContext } from '../types.js'
-import { irmaaTierForMagi, irmaaTierThreshold } from '../../params/index.js'
+import { componentPackView, irmaaTierForMagi, irmaaTierThreshold, packForYear } from '../../params/index.js'
+import type { ParameterPack } from '../../params/types.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
 
-function inflationScaleFromPack(ctx: DetectorContext, toYear: number): number {
-  return inflationScaleBetween(ctx, ctx.params.year, toYear)
+/**
+ * The Medicare figures a premium year is priced on, as the ledger's expense
+ * assembly reads them (`projection/simulate.ts`): the CMS component's view,
+ * whose `year` is the latest year CMS's figures are loaded for. The
+ * thresholds and the Part B premium grow from that year, not from the base
+ * pack's (decision D-2027-ROLLOVER, PR #768 review issue 1): once CMS's
+ * figures for a year are loaded they are used as they are.
+ */
+function medicareFiguresFor(premiumYear: number): ParameterPack {
+  return componentPackView(packForYear(premiumYear), 'cmsMedicare')
 }
 
 /** The plan's general inflation from one year to a later one; 1 when `toYear` is not later. */
@@ -13,11 +22,11 @@ function inflationScaleBetween(ctx: DetectorContext, fromYear: number, toYear: n
   return Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, toYear - fromYear)
 }
 
-function healthcarePremiumScaleFromPack(ctx: DetectorContext, toYear: number): number {
-  if (toYear <= ctx.params.year) return 1
+function healthcarePremiumScaleFrom(ctx: DetectorContext, fromYear: number, toYear: number): number {
+  if (toYear <= fromYear) return 1
   const annualRate =
     1 + (ctx.plan.assumptions.inflationPct + ctx.plan.assumptions.healthcareExtraInflationPct) / 100
-  return Math.pow(annualRate, toYear - ctx.params.year)
+  return Math.pow(annualRate, toYear - fromYear)
 }
 
 function trimmedConversionPatch(ctx: DetectorContext, year: number, trimAmount: number) {
@@ -48,6 +57,7 @@ export const irmaaTierEdge: Detector = {
     // Scan years for an IRMAA cliff proximity
     for (const y of ctx.projection.result.years) {
       const premiumYearNumber = y.year + 2
+      const medicare = medicareFiguresFor(premiumYearNumber)
       // The premium year travels with the inflation path rather than as a
       // pre-multiplied factor, because the top IRMAA row indexes from a
       // different base year than the rows beneath it. Multiplying magiOver by
@@ -55,13 +65,13 @@ export const irmaaTierEdge: Detector = {
       // boundary that 42 USC 1395r(i)(5)(C) holds still through 2027.
       const thresholdYear = {
         premiumYear: premiumYearNumber,
-        inflationFactorToYear: (year: number): number => inflationScaleFromPack(ctx, year),
+        inflationFactorToYear: (year: number): number => inflationScaleBetween(ctx, medicare.year, year),
         inflationFactorBetween: (fromYear: number, toYear: number): number =>
           inflationScaleBetween(ctx, fromYear, toYear),
       }
-      const tier = irmaaTierForMagi(ctx.params, y.magi, filingStatus, thresholdYear)
-      if (tier > 0 && tier <= ctx.params.medicare.irmaaTiers.length) {
-        const threshold = irmaaTierThreshold(ctx.params, tier - 1, filingStatus, thresholdYear)
+      const tier = irmaaTierForMagi(medicare, y.magi, filingStatus, thresholdYear)
+      if (tier > 0 && tier <= medicare.medicare.irmaaTiers.length) {
+        const threshold = irmaaTierThreshold(medicare, tier - 1, filingStatus, thresholdYear)
         const diff = y.magi - threshold
         if (diff > 0 && diff <= 5000) {
           const magiStr = formatWholeUsd(y.magi)
@@ -70,16 +80,16 @@ export const irmaaTierEdge: Detector = {
           if (!premiumYear) continue
           const medicarePeople = premiumYear.people.filter((p) => p.alive && p.ageAttained >= 65).length
           if (medicarePeople === 0) continue
-          const premiumScale = healthcarePremiumScaleFromPack(ctx, premiumYearNumber)
+          const premiumScale = healthcarePremiumScaleFrom(ctx, medicare.year, premiumYearNumber)
           const premiumAbove = medicareAnnualPremiumPerPerson(
-            ctx.params,
+            medicare,
             y.magi,
             filingStatus,
             thresholdYear,
             premiumScale,
           )
           const premiumBelow = medicareAnnualPremiumPerPerson(
-            ctx.params,
+            medicare,
             Math.max(0, threshold - 1),
             filingStatus,
             thresholdYear,

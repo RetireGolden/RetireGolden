@@ -40,9 +40,9 @@ const REAL_PACK_YEARS = [LATEST_PACK_YEAR]
 describe('statutory indexing scale', () => {
   it('is exactly 1 at and below the latest published pack year', () => {
     const path = flatInflationPath(RATE)
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR, path)).toBe(1)
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR - 1, path)).toBe(1)
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR - 40, path)).toBe(1)
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR, path, LATEST_PACK_YEAR)).toBe(1)
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR - 1, path, LATEST_PACK_YEAR)).toBe(1)
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR - 40, path, LATEST_PACK_YEAR)).toBe(1)
   })
 
   it('never deflates a year earlier than every published pack', () => {
@@ -51,28 +51,29 @@ describe('statutory indexing scale', () => {
     // year is what keeps that year priced at face value.
     const early = packForYear(LATEST_PACK_YEAR - 50)
     expect(early.isStandIn).toBe(true)
-    expect(indexingScaleFor(early.pack.year, LATEST_PACK_YEAR - 50, flatInflationPath(RATE)))
+    expect(indexingScaleFor(early.pack.year, LATEST_PACK_YEAR - 50, flatInflationPath(RATE), LATEST_PACK_YEAR))
       .toBe(1)
   })
 
   it('compounds the supplied path above the latest pack year, with no floor at 1', () => {
     const path = flatInflationPath(RATE)
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 3, path))
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 3, path, LATEST_PACK_YEAR))
       .toBe(Math.pow(1 + RATE, 3))
 
     // A deflation assumption must produce a scale below 1 rather than a frozen
     // one: the optimizer scales IRMAA thresholds by this same factor.
     const deflating = flatInflationPath(-0.01)
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 2, deflating))
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 2, deflating, LATEST_PACK_YEAR))
       .toBe(Math.pow(0.99, 2))
-    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 2, deflating))
+    expect(indexingScaleFor(LATEST_PACK_YEAR, LATEST_PACK_YEAR + 2, deflating, LATEST_PACK_YEAR))
       .toBeLessThan(1)
   })
 
   it('resolves every stand-in year to the latest pack, so the three base years agree', () => {
-    // The ledger and the LP pass `packForYear(year).pack.year`; the detector has
-    // no pack in hand and passes LATEST_PACK_YEAR. This is why those are the
-    // same number for every year the rule actually computes for.
+    // Before the per-publisher split the ledger and the LP passed
+    // `packForYear(year).pack.year` and the detector LATEST_PACK_YEAR; every
+    // reader now passes its publisher's own year (`componentScale`). The base
+    // pack still resolves every stand-in year to the latest pack.
     for (const year of [LATEST_PACK_YEAR + 1, LATEST_PACK_YEAR + 5, LATEST_PACK_YEAR + 60]) {
       const lookup = packForYear(year)
       expect(lookup.isStandIn).toBe(true)

@@ -1,5 +1,3 @@
-import { LATEST_PACK_YEAR } from './index.js'
-
 /**
  * The statutory-indexing projection rule, in one place.
  *
@@ -36,21 +34,21 @@ export function flatInflationPath(annualRate: number): InflationPath {
 }
 
 /**
- * How far to project a pack's indexed figures for a projection year.
+ * How far to project a publication's indexed figures for a projection year.
  *
- * `packYear` is the year of the pack pricing `year`. Callers get it from
- * `packForYear(year)`, and above the latest pack that lookup always returns the
- * newest pack -- which is why a caller with no pack in hand may pass
- * `LATEST_PACK_YEAR` directly and still agree with the other two.
- *
- * `latestPackYear` exists so a second published pack, the case the three copies
- * disagreed about, is testable before it happens. Production callers omit it.
+ * `packYear` is the year of the figures pricing `year`, and `latestPackYear`
+ * the latest year that publication is loaded for. Every caller names both
+ * from the publication it reads (decision D-2027-ROLLOVER): `componentScale`
+ * passes a component's own year for both, the HSA and state readers their
+ * own tables' latest years. There is no default: a default of the base pack's
+ * year (LATEST_PACK_YEAR) was how a reader could scale a publisher's figures
+ * from a year that publisher had moved past (PR #768 review issue 1).
  */
 export function indexingScaleFor(
   packYear: number,
   year: number,
   inflationPath: InflationPath,
-  latestPackYear: number = LATEST_PACK_YEAR,
+  latestPackYear: number,
 ): number {
   // Below the newest pack the factor must be exactly 1, not a computed one: a
   // year earlier than every published pack resolves to the EARLIEST pack, so a

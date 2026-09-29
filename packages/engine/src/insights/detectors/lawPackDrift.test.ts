@@ -86,9 +86,10 @@ describe('law pack drift detector', () => {
 describe('law pack drift on the start year calendar (D-2027-ROLLOVER)', () => {
   it('reads the host calendar year when given', () => {
     // A New Year's Eve evening save in New York is 2027 in UTC but 2026 locally:
-    // against a 2027 parameter set it is a 2026 plan.
+    // run from 2027, whose HSA limits and premium tax credit figures are
+    // loaded (the base pack's year stays 2026), it is a 2026 plan.
     const ctx = context('2027-01-01T03:00:00.000Z')
-    ctx.params.year = 2027
+    ctx.projection.startYear = 2027
     expect(lawPackDrift.screen(ctx)).toBeNull()
     expect(lawPackDrift.screen({ ...ctx, planSavedOn: { year: 2026, month: '12' } })?.title).toBe('2027 rules need a plan review')
   })

@@ -588,6 +588,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     // approximation, which the ledger replay does not share.
     const inflationScale =
       componentScale(yearParameters, 'irsIncomeTax', p.year, flatInflationPath(infl))
+    // The IRMAA thresholds are CMS's figures, projected from CMS's own latest
+    // year as the ledger reads them (`componentPackView(..., 'cmsMedicare')`),
+    // not by the income-tax factor, which is 1 once the IRS's year is loaded
+    // while CMS's may still be projected (PR #768 review issues 1 and 7).
+    const medicareScale =
+      componentScale(yearParameters, 'cmsMedicare', p.year, flatInflationPath(infl))
     // The LP has to price a conversion the way the exact ledger will, so it gets
     // the same indexed figures `computeFederalTax` uses for a stand-in year.
     // Feeding it the raw pack-year brackets and deduction would over-tax late
@@ -653,7 +659,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
           ? p.startInheritedTraditional / p.inheritedDistribution
           : null,
       peopleAged65Plus: p.peopleAged65Plus,
-      inflationScale,
+      inflationScale: medicareScale,
       growth,
       stateRate,
       tradInflow: p.traditionalInflow,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { irmaaTierThreshold, packForYear } from '../../params/index.js'
+import { irmaaTierThreshold, packForYear, withParameterComponents } from '../../params/index.js'
+import { landedComponents } from '../../testing/parameterLanding.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
 import { irmaaTierEdge } from './irmaaTierEdge.js'
@@ -130,8 +131,9 @@ describe('irmaaTierEdge', () => {
   })
 
   it('reads a 2027 pack\'s resumed top row from the August 2026 base', () => {
-    // A synthetic 2027 pack (the 2026 figures under a 2027 year) and the
-    // plan's 2.5% inflation. A 2027 MAGI prices 2029 premiums, whose top row
+    // CMS's 2027 figures landed (the 2026 figures as 2027's, through the test
+    // seam; the detector reads Medicare through the CMS component, not the
+    // host's pack) and the plan's 2.5% inflation. A 2027 MAGI prices 2029 premiums, whose top row
     // 42 U.S.C. 1395r(i)(5)(C)(ii) measures from August 2026 to August 2028:
     // 500,000 x 1.025 x 1.025 = 525,312.50, rounded to 525,000. A factor
     // anchored at the pack year reads 2027 to 2028 (512,500) and puts this
@@ -144,14 +146,14 @@ describe('irmaaTierEdge', () => {
     plan.assumptions.inflationPct = 2.5
     const ctx = {
       plan,
-      params: { ...pack, year: 2027 },
+      params: packForYear(2027).pack,
       projection: {
         startYear: 2027,
         result: { years: [year(2027, { magi: 527_000 }), year(2028), year(2029, { ages: [73] })] },
       },
     } as unknown as DetectorContext
 
-    const card = irmaaTierEdge.screen(ctx)
+    const card = withParameterComponents(landedComponents(['cmsMedicare'], 2027), () => irmaaTierEdge.screen(ctx))
     expect(card?.evidence).toContainEqual({ label: 'IRMAA tier threshold (2029 premiums)', value: '$525,000', year: 2029 })
     expect(card?.evidence).toContainEqual({ label: 'Amount over threshold', value: '$2,000', year: 2027 })
   })

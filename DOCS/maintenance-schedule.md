@@ -20,31 +20,39 @@ The annual refresh is a **data change, not a code change** (that's the point of 
    `packages/engine/src/params/state/`. Until a component has the year, the year's view projects it from
    the component's latest year and the planner marks it (decision D-2027-ROLLOVER).
 
-   **Before the first publisher's 2027 figures land**, every reader that takes its year or its growth
-   from the base pack (`packForYear(year).pack.year`, which stays the latest base pack's year, 2026,
-   however many components land 2027) or from the income-tax figures' projection factor (which becomes
-   1 in a year the IRS is loaded for), for a figure another publisher or a statute sets, must read its
-   own. Five were found (paths under `packages/engine/src/`). Two have moved (review V1, 2026-09-29):
+   **Nothing has to move before the first publisher's 2027 figures land.** Every reader takes its year
+   and its growth from the publisher whose figures it reads, never from the base pack
+   (`packForYear(year).pack.year`, which stays the latest base pack's year, 2026, however many
+   components land 2027) or from the income-tax figures' projection factor (which becomes 1 in a year
+   the IRS is loaded for). Nine readers that did not were found and have moved (paths under
+   `packages/engine/src/`; review V1 and PR #768 review issues 1 and 7, 2026-09-29):
    - The state calculator (`tax/stateTax.ts`) conformed a federal-following deduction (Colorado's) by
      scaling its copy of the 2026 federal basic by the income-tax factor, so it would fall back to
      2026's once the IRS landed. It now conforms to the year's federal basic, loaded or projected.
    - The statutory indexing of the District's deduction (from 2027) and Washington's (from 2029) ran at
      the same factor, so it would stop once the IRS landed. The state calculator and the optimizer LP
      now index it at the plan's own inflation from the state figures' year.
+   - The widow's-penalty detector (`insights/detectors/widowsPenalty.ts`) grew the survivor's tax
+     tables from `LATEST_PACK_YEAR`, so it would grow the IRS's loaded figures a second time. It now reads
+     the income-tax component's factor, as the ledger does.
+   - The law-pack detector (`insights/detectors/lawPackDrift.ts`, "rules need a plan review") compared the
+     plan's save year with `ctx.params.year`, so it would never say that a year's figures had landed. It
+     now compares it with the latest year a yearly publisher's figures for the plan's first year are
+     loaded for, and names those figures.
+   - The IRMAA tier-edge detector (`insights/detectors/irmaaTierEdge.ts`) scaled the IRMAA thresholds from
+     `ctx.params.year`. It now reads them through `componentPackView(lookup, 'cmsMedicare')`, as the
+     ledger's expense assembly does (`projection/simulate.ts`).
+   - The optimizer LP (`projection/optimizePlan.ts`) scaled the IRMAA thresholds by the `irsIncomeTax`
+     component's factor. It now scales them by the `cmsMedicare` component's factor.
+   - `params/indexingScale.ts#indexingScaleFor` defaulted its latest year to `LATEST_PACK_YEAR`; every
+     caller now names its publication's.
+   - The HSA limits read their own year table, `params/hsaLimitYears.ts`.
 
-   Three have not, and whoever loads those first figures must move them in the same change:
-   - `insights/detectors/lawPackDrift.ts` ("rules need a plan review") compares the plan's save year with
-     `ctx.params.year`, so it would never say that a year's figures have landed. It should read the
-     latest year any component has published for the plan's years.
-   - `insights/detectors/irmaaTierEdge.ts` scales the IRMAA thresholds from `ctx.params.year`. It should
-     read them from the `cmsMedicare` component's own year, through `componentPackView(lookup,
-     'cmsMedicare')` as the ledger's expense assembly does (`projection/simulate.ts`).
-   - The optimizer LP (`projection/optimizePlan.ts`) scales the IRMAA thresholds by the `irsIncomeTax`
-     component's factor. It should scale them by the `cmsMedicare` component's factor (`componentScale`).
-
-   While every component's latest year is 2026 the three agree with the per-component year, so nothing
-   is wrong today; the first component to land a year makes them disagree. `tax/stateDeductionLanding.test.ts`
-   lands the IRS's income-tax figures alone and holds the two that moved.
+   `params/landing.readers.test.ts` and `tax/stateDeductionLanding.test.ts` land the IRS's income-tax
+   figures alone and CMS's alone and hold each reader to its own publisher, and
+   `params/baseYearReaders.contract.test.ts` fails on any new read of the base pack's year in engine
+   source that is not listed with its reason. A reader added later that scales a publisher's figures
+   either reads that publisher (`componentScale`, `componentPackView`) or is listed there.
 2. Update the affected sections under [domain/domain-rules-reference/](domain/domain-rules-reference/)
    with the new numbers and refresh the source links — edit the section files, not the
    [index](domain/domain-rules-reference.md); bump the provenance dates

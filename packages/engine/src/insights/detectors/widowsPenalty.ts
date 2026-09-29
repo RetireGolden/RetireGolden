@@ -1,8 +1,8 @@
 import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
-import { LATEST_PACK_YEAR } from '../../params/index.js'
-import { flatInflationPath, indexingScaleFor } from '../../params/indexingScale.js'
+import { componentScale, packForYear } from '../../params/index.js'
+import { flatInflationPath } from '../../params/indexingScale.js'
 import { selectedLogicalBalanceAccounts } from '../../model/plan.js'
 
 /**
@@ -75,21 +75,18 @@ export const widowsPenalty: Detector = {
       // is priced against have to be the projected ones the ledger itself used.
       // Pricing nominal survivor income on pack-year brackets inflates the jump.
       //
-      // The reference year is LATEST_PACK_YEAR, not `ctx.params.year`. They are
-      // the same today only because one pack is published: `ctx.params` is
-      // `packForYear(startYear).pack` (see InsightsPage/InsightCardView), so the
-      // moment a second pack year exists a projection started in the earlier one
-      // would measure the scale from ITS year while `computeFederalTax` prices
-      // `jumpYear` off the latest pack -- over-indexing the survivor's thresholds
-      // by the gap and understating the jump. Passing LATEST_PACK_YEAR is what
-      // the ledger's own `packForYear(jumpYear)` resolves to for any stand-in
-      // year, so this detector and the ledger measure from the same origin.
-      //
-      // The rule itself is `indexingScaleFor`, shared with simulate.ts and the
-      // optimizer rather than reimplemented here. The path is flat: a detector
-      // reads a settled projection and has no Monte Carlo inflation series.
-      const inflationScale = indexingScaleFor(
-        LATEST_PACK_YEAR,
+      // The scale is the ledger's own: the IRS income-tax figures' projection
+      // factor for `jumpYear` (`componentScale`, as simulate.ts reads it), from
+      // the latest year those figures are loaded for. Once the IRS's figures for
+      // `jumpYear` are loaded the factor is 1 and `computeFederalTax` prices the
+      // loaded tables as they are; measuring from the base pack's year instead
+      // (LATEST_PACK_YEAR, which stays 2026 whatever lands) grew them a second
+      // time (decision D-2027-ROLLOVER, PR #768 review issue 1). The path is
+      // flat: a detector reads a settled projection and has no Monte Carlo
+      // inflation series.
+      const inflationScale = componentScale(
+        packForYear(jumpYear),
+        'irsIncomeTax',
         jumpYear,
         flatInflationPath(ctx.plan.assumptions.inflationPct / 100),
       )

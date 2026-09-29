@@ -33,21 +33,22 @@
  * own and already list 2027: the HSA limits (hsaLimitYears.ts, Rev. Proc.
  * 2026-24) and the premium tax credit's coverage years. What changes is that a
  * year's view says which of its figures are projected, and that landing one
- * agency's 2027 figures is one record here, once the three readers listed
- * below as not yet moved have moved.
+ * agency's 2027 figures is one record here: every reader already reads its
+ * own publisher's year (below).
  *
  * How to land a component's year: add a record to its `years` list, in year
  * order, whose `values` give every one of the component's field paths (a
  * test holds it), with the publication named in `source`.
  *
- * Before the FIRST component lands 2027, every reader that takes its year or
- * its growth from the base pack or from the income-tax figures, for a figure
- * that another publisher or a statute sets, must read its own. The base
+ * Every reader takes its year and its growth from the publisher whose figures
+ * it reads, never from the base pack or from the income-tax figures. The base
  * pack's year (`packForYear(year).pack.year`) stays the latest base pack's,
  * 2026, however many components land 2027, and the income-tax figures'
  * projection factor becomes 1 in a year the IRS is loaded for, so either
- * agrees with every component only while all of them are at 2026. Five
- * readers were found. Two have moved (review V1, 2026-09-29):
+ * agrees with every component only while all of them are at 2026. Nine
+ * readers that did not were found and have moved, so nothing is left to move
+ * at the first landing (decision D-2027-ROLLOVER; review V1 and PR #768
+ * review issues 1 and 7, 2026-09-29):
  * - The state calculator (`tax/stateTax.ts`, both the year total and the
  *   detailed result) conformed a federal-following deduction (Colorado's)
  *   by scaling the state pack's copy of the 2026 federal basic by the
@@ -59,21 +60,32 @@
  *   IRS landed. The state calculator and the optimizer LP now index it at
  *   the plan's own inflation from `LATEST_STATE_PACK_YEAR`
  *   (`TaxYearInput.stateIndexingScale`).
- * Three must still move to the per-component year in the same change as the
- * first landing:
- * - `insights/detectors/lawPackDrift.ts` ("rules need a plan review")
- *   compares the plan's save year with `ctx.params.year`, so it would never
- *   say a year's figures had landed; it should read the latest year any
- *   component has published for the plan's years.
- * - `insights/detectors/irmaaTierEdge.ts` scales the IRMAA thresholds from
- *   `ctx.params.year`; it should read them through
+ * - The widow's-penalty detector (`insights/detectors/widowsPenalty.ts`)
+ *   grew the survivor's tax tables from LATEST_PACK_YEAR, so once the IRS's
+ *   figures for the year landed it grew them a second time. It now reads the
+ *   income-tax component's factor (`componentScale`), as the ledger does.
+ * - The law-pack detector (`insights/detectors/lawPackDrift.ts`, "rules need
+ *   a plan review") compared the plan's save year with `ctx.params.year`, so
+ *   it would never say a year's figures had landed. It now compares it with
+ *   the latest year a yearly publisher's figures for the plan's first year
+ *   are loaded for, and names those figures.
+ * - The IRMAA tier-edge detector (`insights/detectors/irmaaTierEdge.ts`)
+ *   scaled the IRMAA thresholds and the Part B premium from
+ *   `ctx.params.year`. It now reads them through
  *   `componentPackView(lookup, 'cmsMedicare')`, as the ledger's expense
  *   assembly does (`projection/simulate.ts`).
- * - The optimizer LP (`projection/optimizePlan.ts`) scales the IRMAA
- *   thresholds by the `irsIncomeTax` component's factor; it should use the
+ * - The optimizer LP (`projection/optimizePlan.ts`) scaled its IRMAA
+ *   thresholds by the `irsIncomeTax` component's factor. It now uses the
  *   `cmsMedicare` component's (`componentScale`).
- * `DOCS/maintenance-schedule.md` ("How a refresh lands", step 1) says the
- * same.
+ * - `params/indexingScale.ts#indexingScaleFor` defaulted its latest year to
+ *   LATEST_PACK_YEAR. Every caller now names its publication's.
+ * - The HSA limits read `hsaLimitYears.ts` (review M1).
+ * `params/landing.readers.test.ts` and `tax/stateDeductionLanding.test.ts`
+ * land the IRS's income-tax figures alone and CMS's alone and hold each
+ * reader to its own publisher; `params/baseYearReaders.contract.test.ts`
+ * fails on any new read of the base pack's year in engine source that is not
+ * listed with a reason. `DOCS/maintenance-schedule.md` ("How a refresh
+ * lands", step 1) says the same.
  */
 
 import { ACA_COVERAGE_YEARS } from './acaCoverageYears.js'
