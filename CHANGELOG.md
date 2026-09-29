@@ -69,9 +69,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `conversionFreeRun: null`, or `baseAnnual`), whose retirement it is, when, and by which
   rule. The year is the household's later retirement, by the one rule the FI figures,
   Coast-FIRE and the funded ratio share (`projection/householdRetirement.ts`): each person
-  retires in the first year without their work, their birth year plus retirement age or,
-  with no retirement age, the year after their last wage year, or the start year when
-  they have no wages in the plan; a person who works through the plan (wages through
+  retires in the first year without their work, their birth year plus retirement age, or
+  the year after their last wage year when a wage stream's end age keeps paying past the
+  retirement age (the engine pays a stream until its own end age); with no retirement
+  age, the year after their last wage year, or the start year when they have no wages in
+  the plan; a person who works through the plan (wages through
   their last year alive, or a retirement age past the planning age) is left out, and the
   latest of the rest wins, a tie going to the older person, then the smaller id. When
   nobody retires in the plan no FI number, Coast-FIRE figure or funded ratio is priced
@@ -128,10 +130,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   with a woman of 35 at 25 percent now reaches 2082 either way round, where the old walk
   stopped at 2076). "Refine to the month", now the engine's
   `decisions/claimAgeSweep.ts#refineClaimMonths`, steps the claimants in the canonical
-  order and repeats to a fixed point (at most `CLAIM_MONTH_REFINEMENT_MAX_PASSES`, 5,
-  passes), a combination priced once not priced again (restated
-  `social-security-claim-age-monthly-refinement`, new case R-B); no example's page answer
-  moves. The premium-credit roster's "primary" label follows the canonical order.
+  order and repeats whole passes until one changes nothing, a combination priced once not
+  priced again. There is no pass cap: a changing pass takes a strictly better month, so
+  no combination is picked twice and the search always ends at a fixed point (restated
+  `social-security-claim-age-monthly-refinement`, new cases R-B, and R-C, which needs
+  eight passes); no example's page answer moves. The premium-credit roster's "primary" label follows the canonical order.
 
 - **Fixed: the annuity illustrations, the funded ratio and the Compare depletion age no
   longer read whoever is listed first** (D-PEOPLE-ORDER, on review). The annuitization
@@ -158,7 +161,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   before writing; and the Scenarios page shows "This scenario changes nothing in your
   plan." in place of a row's figures when its applied plan equals the base
   (`ScenarioComparisonRow.changesNothing`). A copy an earlier build already exported
-  cannot be recovered, and now says that it changes nothing.
+  cannot be recovered, and now says that it changes nothing. A scenario row that fails
+  to apply publishes a null FI number and Coast-FIRE figure, not $0.
 
 - **Fixed: reversing or renaming a couple's people now leaves every Monte Carlo path
   identical to the last bit, and the load notices and account help say what the model
@@ -200,13 +204,15 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `scenarioChangesNothing`, `canonicalFirstPerson`, `fundedRatioStart(plan, startYear)`
   (whose `fromYear` is null when nobody retires) and, in `projection/householdRetirement`,
   `personRetirement`, `householdRetirement`, `householdRetirementClause`,
-  `notRetiringClause` and `RetirementYearRule` (`retirementAge`, `wagesEnd`, `startYear`).
+  `notRetiringClause` and `RetirementYearRule` (`retirementAge`, `wagesPastRetirementAge`,
+  `wagesEnd`, `startYear`).
   `PlanHeadlineComparison.depletionAgePrimary` is renamed `depletionAge` (the older
   person's age on each side, no longer the first-listed person's), beside the new
   `depletionAgePersonId` and `depletionAgeDeltaWithheld`. planner-ui adds
   `planner/fiTargetCopy` (with `coastFireHorizonYear`), `addPartner`,
-  `spendingPhasesPerson`, `namePhasesPerson` and `nameContributionSchedulePerson`; the
-  engine adds `CLAIM_MONTH_REFINEMENT_MAX_PASSES`.
+  `spendingPhasesPerson`, `namePhasesPerson` and `nameContributionSchedulePerson`, and
+  `removePartner` clears a schedule person on an account with an owner instead of
+  re-pointing it. `decisions/claimAgeSweep.ts#refineClaimMonths` returns `passes`.
 
 - **Follow-ups outside this repository.** RetireGolden-Pro: its library JSON route should
   make legacy scenario patches canonical before writing, as `serializeV2Backup` and
