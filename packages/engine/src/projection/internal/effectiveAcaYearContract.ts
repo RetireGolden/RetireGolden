@@ -68,13 +68,26 @@ function monthRow(value: number, months: number): number[] {
   return Array.from({ length: 12 }, (_, month) => (month < months ? value : 0))
 }
 
-/** The living people in the canonical order: date of birth, then sex, then id. */
+/**
+ * The living people in the canonical order: date of birth, then sex, then id.
+ * A state whose person the plan does not list (a mismatched input; the
+ * ledger builds its states from the plan's people) goes after every listed
+ * person, then by id, as annualLegacyQcdGiftPlan's ownerOrder does, so list
+ * order never decides who is labelled primary (round-one review of #765,
+ * issue 14).
+ */
 function canonicalLiving<T extends { state: { personId: string } }>(
   living: readonly T[],
   people: EffectiveAcaYearContractInput['plan']['household']['people'],
 ): T[] {
   const rank = new Map(canonicalPeopleOrder(people).map((person, index) => [person.id, index]))
-  return [...living].sort((left, right) => (rank.get(left.state.personId) ?? 0) - (rank.get(right.state.personId) ?? 0))
+  return [...living].sort((left, right) => {
+    const a = left.state.personId
+    const b = right.state.personId
+    const ra = rank.get(a) ?? Number.MAX_SAFE_INTEGER
+    const rb = rank.get(b) ?? Number.MAX_SAFE_INTEGER
+    return ra !== rb ? ra - rb : a < b ? -1 : a > b ? 1 : 0
+  })
 }
 
 export function effectiveAcaYearContract(
