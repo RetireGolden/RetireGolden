@@ -273,6 +273,18 @@ describeCalculation(
       expect(survivalPercentileAge(primary.age, primary.sex, pct, primary.hazard)).toBe(65)
       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGreaterThan(65)
     })
+
+    it('case 2: a partner 35 years younger is walked past his table end, 126 (2082) either way round', () => {
+      // D-PEOPLE-ORDER rule R6: the walk continues while either person is
+      // inside the table. Stopped at his table end it returned 120 (2076).
+      // On SSA's 2023 table (it was 125, 2081, on 2022's).
+      const older = { age: 70, sex: 'male' as const }
+      const younger = { age: 35, sex: 'female' as const }
+      const joint = jointSurvivalPercentileAge(older, younger, 25)
+      expect(joint).toBe(126)
+      expect(2026 - older.age + joint).toBe(2082)
+      expect(2026 - younger.age + jointSurvivalPercentileAge(younger, older, 25)).toBe(2082)
+    })
   },
 )
 

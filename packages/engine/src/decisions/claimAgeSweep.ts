@@ -30,6 +30,7 @@
  * @see DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.md
  */
 import type { Plan } from '../model/plan.js'
+import { canonicalPeopleOrder } from '../model/peopleOrder.js'
 import type { AcaSupportCode } from '../projection/internal/types/aca.js'
 import { isBlockingAcaSupportCode } from '../projection/internal/types/aca.js'
 import type { ProjectionResult, TaxCalculator } from '../projection/types.js'
@@ -316,14 +317,25 @@ export interface ClaimMonthSearch {
   readonly rejectedIneligibleBetter: number
 }
 
+/** At most this many full passes over the claims; the example couples settle within two or three. */
+export const CLAIM_MONTH_REFINEMENT_MAX_PASSES = 5
+
 /**
  * The refinement's search, apart from the ledger: starting from the whole-year
- * pick and its ranked row, for each person in order, every claim from a year
- * below that person's pick to a year above it (62 to 70, none below the age
- * reached in the start year; 70 only at 70y0m, months 0 to 11 otherwise), with
- * the other people at the running best. A month replaces the incumbent only
- * when its row is eligible and its primary metric is strictly greater; a
- * greater but ineligible month is counted and rejected.
+ * pick and its ranked row, for each person in the order given, every claim
+ * from a year below that person's pick to a year above it (62 to 70, none
+ * below the age reached in the start year; 70 only at 70y0m, months 0 to 11
+ * otherwise), with the other people at the running best. A month replaces the
+ * incumbent only when its row is eligible and its primary metric is strictly
+ * greater; a greater but ineligible month is counted and rejected.
+ *
+ * Whole passes repeat until one changes no claim (at most
+ * CLAIM_MONTH_REFINEMENT_MAX_PASSES), with each window staying around the
+ * starting whole year, so the answer is a fixed point of the search rather
+ * than wherever one pass in one order stopped (decision D-PEOPLE-ORDER, rule
+ * R7; the caller gives the people in the canonical order). A combination
+ * already priced is not priced again: `evaluations` counts distinct ledger
+ * runs, and `rejectedIneligibleBetter` distinct months.
  */
 export function refineClaimMonths(
   start: { readonly claimByPersonId: Readonly<Record<string, number>>; readonly row: ClaimMonthRow },
@@ -334,36 +346,53 @@ export function refineClaimMonths(
     people.map(({ personId }) => [personId, { years: start.claimByPersonId[personId]!, months: 0 }]),
   )
   let bestRow = start.row
-  let evaluations = 0
-  let rejectedIneligibleBetter = 0
-  for (const { personId, currentAge } of people) {
-    const baseYears = best[personId]!.years
-    let localBest = best[personId]!
-    for (let years = baseYears - 1; years <= baseYears + 1; years++) {
-      if (years < 62 || years > 70 || years < currentAge) continue
-      const lastMonth = years === 70 ? 0 : 11
-      for (let months = 0; months <= lastMonth; months++) {
-        const row = rank({ ...best, [personId]: { years, months } })
-        evaluations++
-        if (!(row.primaryValue > bestRow.primaryValue)) continue
-        if (!row.eligible) {
-          rejectedIneligibleBetter++
-          continue
+  const priced = new Map<string, ClaimMonthRow>()
+  const rejected = new Set<string>()
+  const keyOf = (claim: Readonly<Record<string, ClaimAgeValue>>) =>
+    people.map(({ personId }) => `${claim[personId]!.years}y${claim[personId]!.months}m`).join(' ')
+  for (let pass = 0; pass < CLAIM_MONTH_REFINEMENT_MAX_PASSES; pass++) {
+    let changed = false
+    for (const { personId, currentAge } of people) {
+      // The window stays around the starting whole year on every pass.
+      const baseYears = start.claimByPersonId[personId]!
+      let localBest = best[personId]!
+      for (let years = baseYears - 1; years <= baseYears + 1; years++) {
+        if (years < 62 || years > 70 || years < currentAge) continue
+        const lastMonth = years === 70 ? 0 : 11
+        for (let months = 0; months <= lastMonth; months++) {
+          const claim = { ...best, [personId]: { years, months } }
+          const key = keyOf(claim)
+          let row = priced.get(key)
+          if (row === undefined) {
+            row = rank(claim)
+            priced.set(key, row)
+          }
+          if (!(row.primaryValue > bestRow.primaryValue)) continue
+          if (!row.eligible) {
+            rejected.add(key)
+            continue
+          }
+          bestRow = row
+          localBest = { years, months }
         }
-        bestRow = row
-        localBest = { years, months }
+      }
+      if (localBest !== best[personId]) {
+        best = { ...best, [personId]: localBest }
+        changed = true
       }
     }
-    best = { ...best, [personId]: localBest }
+    if (!changed) break
   }
   const moved = people.some(({ personId }) => best[personId]!.years !== start.claimByPersonId[personId] || best[personId]!.months !== 0)
-  return { claimByPersonId: best, row: bestRow, moved, evaluations, rejectedIneligibleBetter }
+  return { claimByPersonId: best, row: bestRow, moved, evaluations: priced.size, rejectedIneligibleBetter: rejected.size }
 }
 
 /**
  * Refine the sweep's winner to the month on the sweep's own objective
  * (#refineClaimMonths, each month priced through the same ledger, policy and
- * baseline as the sweep). Null when the sweep has no winner.
+ * baseline as the sweep), the claims visited in the canonical people order
+ * (model/peopleOrder.ts: older first, then sex, then id), never in list order
+ * (decision D-PEOPLE-ORDER, rule R7). Null when the sweep has no winner.
  */
 export function refineClaimAgeMonthly(
   plan: Plan,
@@ -380,7 +409,8 @@ export function refineClaimAgeMonthly(
   const ctx = createDecisionContext(plan, { startYear, taxCalculator })
   const search = refineClaimMonths(
     { claimByPersonId: winner.claimByPersonId, row: winner },
-    sweep.personIds.map((personId) => ({ personId, currentAge: startYear - socialSecurityDobParts(people.get(personId)!).y })),
+    canonicalPeopleOrder(sweep.personIds.map((personId) => people.get(personId)!))
+      .map((person) => ({ personId: person.id, currentAge: startYear - socialSecurityDobParts(person).y })),
     (claim) => {
       const row = rankEvaluations([evaluateCandidate(ctx, monthCandidate(plan, streamIdByPerson, claim))], ctx, policy, 0).ranked[0]!
       return { primaryValue: row.primaryValue, eligible: row.eligible, endingAfterTaxEstate: row.evaluation.candidateSummary.endingAfterTaxEstate }

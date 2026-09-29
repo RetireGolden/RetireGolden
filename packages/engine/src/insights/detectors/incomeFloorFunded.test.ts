@@ -29,7 +29,9 @@ interface FloorYears {
 function context(
   opts: { requiredAnnual?: number | undefined; retirementAge?: number | null } & Partial<FloorYears> = {},
 ): DetectorContext {
-  const plan = singlePersonPlan({ dob: '1961-01-01', retirementAge: opts.retirementAge ?? null })
+  // Alive through 2051: a person whose planning age ended before the plan
+  // starts retires in no year of it, and the ratio counts from none.
+  const plan = singlePersonPlan({ dob: '1961-01-01', retirementAge: opts.retirementAge ?? null, planningAge: 90 })
   if (opts.requiredAnnual !== undefined) plan.expenses.requiredAnnual = opts.requiredAnnual
   const count = opts.years ?? 5
   const years = Array.from({ length: count }, (_, i) => ({
@@ -115,5 +117,29 @@ describe('incomeFloorFunded', () => {
       incomes: index < 3 ? { socialSecurity: 0, pension: 0, annuity: 0, tipsLadder: 0 } : year.incomes,
     })) as never
     expect(incomeFloorFunded.screen(ctx)?.title).toBe('Your essential-spending floor is 89% funded')
+  })
+
+  it('counts a couple from the later retirement, names that person, and calls the floor the household one', () => {
+    // Pat (born 1961) retires at 66 in 2027 and is listed first; Robin (born
+    // 1963) retires at 66 in 2029. The count starts in 2029 on Robin's
+    // retirement, in either order; the first-listed reading would start in 2027.
+    const couple = (reversed: boolean) => {
+      const ctx = context({ requiredAnnual: 100_000, retirementAge: 66 })
+      ctx.plan.household.filingStatus = 'marriedFilingJointly'
+      ctx.plan.household.people[0]!.longevity.planningAge = 90
+      ctx.plan.household.people.push({ ...ctx.plan.household.people[0]!, id: 'p2', name: 'Robin', dob: '1963-01-01', longevity: { planningAge: 90, source: 'manual' } })
+      if (reversed) ctx.plan.household.people.reverse()
+      ctx.projection.result.years = ctx.projection.result.years.map((year, index) => ({
+        ...year,
+        incomes: index < 3 ? { socialSecurity: 0, pension: 0, annuity: 0, tipsLadder: 0 } : year.incomes,
+      })) as never
+      return incomeFloorFunded.screen(ctx)!
+    }
+    for (const reversed of [false, true]) {
+      const card = couple(reversed)
+      expect(card.title).toBe('Your essential-spending floor is 89% funded')
+      expect(card.rationale).toContain("Counted from 2029: the year Robin retires, the later of your two retirements.")
+      expect(card.rationale).toContain("your household's essential retirement spending")
+    }
   })
 })

@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeCalculation, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
-import { refineClaimMonths, type ClaimMonthRow } from './claimAgeSweep.js'
+import { CLAIM_MONTH_REFINEMENT_MAX_PASSES, refineClaimMonths, type ClaimAgeValue, type ClaimMonthRow } from './claimAgeSweep.js'
 
 const WORKSHEET = 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.md'
 const MUTATION = 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.mutation.md'
@@ -57,6 +57,37 @@ describeCalculation(
       // 70 is tried only at 70y0m.
       expect(seen.filter((key) => key.startsWith('70-'))).toEqual(['70-0'])
       expect(search.moved).toBe(true)
+    })
+
+    it('R-B: repeats whole passes, windows on the starting year, to the fixed point, in either visiting order', () => {
+      // A claim's month index is its months since 65y0m; the objective is
+      // coupled, so each pass moves each claim six months along the ridge.
+      const index = (claim: ClaimAgeValue) => (claim.years - 65) * 12 + claim.months
+      const primary = (i1: number, i2: number) => Math.min(i1, i2 + 3) + Math.min(i2, i1 + 3)
+      const run = (order: readonly string[]) => {
+        const seen = new Set<string>()
+        const search = refineClaimMonths(
+          { claimByPersonId: { p1: 66, p2: 66 }, row: { primaryValue: primary(12, 12), eligible: true, endingAfterTaxEstate: 0 } },
+          order.map((personId) => ({ personId, currentAge: 60 })),
+          (claim) => {
+            const key = `${claim['p1']!.years}-${claim['p1']!.months} ${claim['p2']!.years}-${claim['p2']!.months}`
+            expect(seen.has(key), key).toBe(false)
+            seen.add(key)
+            // The windows stay on the starting whole year: 65y0m to 67y11m.
+            expect([claim['p1']!.years, claim['p2']!.years].every((years) => years >= 65 && years <= 67), key).toBe(true)
+            return { primaryValue: primary(index(claim['p1']!), index(claim['p2']!)), eligible: true, endingAfterTaxEstate: 0 }
+          },
+        )
+        return search
+      }
+      const pick = { years: expectedOf('R-B pick years'), months: expectedOf('R-B pick months') }
+      for (const order of [['p1', 'p2'], ['p2', 'p1']]) {
+        const search = run(order)
+        expect(search.claimByPersonId, order.join()).toEqual({ p1: pick, p2: pick })
+        expect(search.row.primaryValue - primary(12, 12)).toBe(expectedOf('R-B primary change'))
+        expect(search.evaluations).toBe(expectedOf('R-B months priced'))
+      }
+      expect(CLAIM_MONTH_REFINEMENT_MAX_PASSES).toBe(5)
     })
   },
 )

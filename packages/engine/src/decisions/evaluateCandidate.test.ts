@@ -124,7 +124,7 @@ describe('evaluateCandidate', () => {
     // The deltas must equal an independent exact simulate of the same patch.
     const built = planForCandidate(plan, { planPatch: patch })
     if (!built.ok) throw new Error(built.error)
-    const expected = summarizeProjection(built.plan, simulatePlan(built.plan, opts))
+    const expected = summarizeProjection(built.plan, simulatePlan(built.plan, opts), { conversionFreeRun: null })
     expect(evaluation.candidateSummary.endingAfterTaxEstate).toBeCloseTo(expected.endingAfterTaxEstate, 6)
     expect(evaluation.deltas.endingAfterTaxEstate).toBeCloseTo(
       expected.endingAfterTaxEstate - ctx.baselineSummary.endingAfterTaxEstate,

@@ -11,19 +11,19 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 574 |
+| Total rules | 575 |
 | Classification: approximated | 123 |
 | Classification: outOfScope | 88 |
-| Classification: settled | 356 |
+| Classification: settled | 357 |
 | Classification: unsettled | 7 |
 | Approximated kind: convention | 23 |
 | Approximated kind: fix | 76 |
 | Approximated kind: needs-fact | 24 |
 | Volatility: annuallyIndexed | 96 |
 | Volatility: awaitingGuidance | 13 |
-| Volatility: staticStatute | 456 |
+| Volatility: staticStatute | 457 |
 | Volatility: sunsetting | 9 |
-| Federal jurisdiction | 353 |
+| Federal jurisdiction | 354 |
 | State jurisdiction total | 221 |
 
 | State jurisdiction | Count |
@@ -84,12 +84,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 472 |
+| Engine source files | 475 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 94 |
 | registered | 130 |
-| rule-free | 248 |
+| rule-free | 251 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -104,14 +104,14 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
-| model | 10 | 6 | 0 | 4 | 0 |
+| model | 11 | 6 | 0 | 5 | 0 |
 | montecarlo | 13 | 2 | 0 | 11 | 0 |
 | params | 18 | 2 | 14 | 2 | 0 |
-| projection | 128 | 43 | 21 | 64 | 0 |
+| projection | 129 | 43 | 21 | 65 | 0 |
 | rmd | 6 | 1 | 4 | 1 | 0 |
 | rules | 68 | 0 | 22 | 46 | 0 |
 | scenarios | 11 | 0 | 0 | 11 | 0 |
-| schema | 10 | 0 | 0 | 10 | 0 |
+| schema | 11 | 0 | 0 | 11 | 0 |
 | socialSecurity | 23 | 4 | 11 | 8 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 9 | 3 | 5 | 1 | 0 |
@@ -227,7 +227,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 | Shard | Rules |
 | --- | ---: |
-| rule-coverage/annuities.json | 6 |
+| rule-coverage/annuities.json | 7 |
 | rule-coverage/charitableDeductions.json | 14 |
 | rule-coverage/charitableDistributions.json | 22 |
 | rule-coverage/contributionAndDeferralLimits.json | 39 |
@@ -251,7 +251,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (574 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (575 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -293,7 +293,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1734 authority entries.
+Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1740 authority entries.
 Amended on 2026-09-26: 2 entries verified individually after that run (cfr-20-404-313-delayed-retirement-credit, 20 CFR 404.313(a), (b)(2); usc-42-402-e-survivor-of-worker-who-died-before-claiming, 42 U.S.C. 402(w)(2)(A)). Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.
 Amended on 2026-09-26: 16 entries verified individually after that run (rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.01; rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.02; irc-36B-d-3-B-poverty-line-for-coverage-year, IRC 36B(d)(3)(B); irc-36B-d-3-B-poverty-line-for-coverage-year, 26 CFR 1.36B-1(h); irc-36B-d-3-B-poverty-line-for-coverage-year, 45 CFR 155.410(e)(5)(i); hhs-2026-poverty-guidelines-2027-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Alaska; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Hawaii; hhs-2025-poverty-guidelines-2026-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Alaska; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Hawaii; irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e); irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e); irc-36B-c-1-A-applicable-taxpayer-range, IRC 36B(c)(1)(E)). Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.
 Amended on 2026-09-26: 3 entries verified individually after that run (cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(1); cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(3), Example 1; cfr-26-1-36B-3-g-1-applicable-percentage-rounding, Instructions for Form 8962 (2025), Worksheet 2, line 4). Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.
@@ -338,14 +338,14 @@ Amended on 2026-09-28: 6 entries verified individually after that run (wa-essb-6
 Amended on 2026-09-28: 5 entries verified individually after that run (ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, R.I. Gen. Laws §44-30-12(c)(8)(i); ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2). D-2027-PUBLISHED-FIGURES, round-three review F8 (2026-09-28): ri-gen-laws-44-30-12-c-8-c-9-2026-modifications quotes the Division of Taxation's 2025 Modification Worksheet for taxable Social Security (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the link was found by reading the forms page in the in-app browser), whose Step 2 prorates the modification when only one spouse has reached full retirement age. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.
 Amended on 2026-09-28: 6 entries verified individually after that run (dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I); dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi); dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 9003; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Code 47-1801.04(44)(A)(iv), permanent version; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Code 47-1801.04, code site note on D.C. Law 26-89). D-2027-PUBLISHED-FIGURES, verification pass L3 (2026-09-28): the District of Columbia record, settled since the round-three review, is renamed to dc-code-47-1801-04-3a-standard-deduction-2026-2029, so its id no longer ends in "pending"; its six rows are unchanged apart from the id.
 
-10 serious, 6 advisory, 1718 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+10 serious, 6 advisory, 1724 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 141 |
+| ELISION-EXACT | ok | 142 |
 | ELISION-PUNCTUATION | advisory | 1 |
-| EXACT | ok | 1171 |
+| EXACT | ok | 1176 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |
 | PDF-WORD-LEVEL | ok | 406 |
 | PUNCTUATION | advisory | 4 |

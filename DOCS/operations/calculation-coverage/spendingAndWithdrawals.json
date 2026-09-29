@@ -959,6 +959,60 @@
       }
     },
     {
+      "id": "spending-phase-person",
+      "title": "Whose age the spending phases follow",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "spending-base-annual"
+      ],
+      "purpose": "The phase multiplier follows the person the plan names, never whoever is listed first.",
+      "statement": "projection/internal/annualLifestyleLayers.ts#annualLifestyleLayers multiplies the base lifestyle by the multiplier of the last phase, phases stably sorted by fromAge, whose fromAge is at or below the attained age of the person expenses.phasesAgeOf names (annualExpenseAssemblyPhase passes phasesPersonId = phasesAgeOf, else the only person); the phases keep that person's age after that person dies (decision D-PEOPLE-ORDER, rule R1). No law says whose age a household's spending shape follows, so the household names the person and the Spending page shows the name; schema v7 requires it in a two-person plan with phases, and plans saved earlier are given the person then listed first, whose age their phases already followed, so no stored figure moves. Units: a factor on baseAnnual. Rounding: none.",
+      "formula": {
+        "expression": "multiplier = phases sorted by fromAge; last p with age(phasesAgeOf) >= p.fromAge; else 1",
+        "variables": [
+          {
+            "symbol": "age(phasesAgeOf)",
+            "meaning": "Attained age of the named person this year",
+            "unit": "years",
+            "domain": "integer"
+          }
+        ],
+        "timing": "once per projection year, in the expense assembly",
+        "rounding": "none"
+      },
+      "limits": [
+        "A convention the household chooses, stated on the Spending page; the presets (spending-shape-preset-compilation, spending-shape-comparison) start at the named person's retirement age",
+        "A JSON file whose people were reordered by another tool before it was ever loaded at v7 is read by position that one time: its intent was never stored"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/spending-phase-person.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/spending-phase-person.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualLifestyleLayers.ts",
+        "packages/engine/src/projection/internal/annualExpenseAssemblyPhase.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/peopleNamed.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "spending-shape-annual-delta-phases",
       "title": "Annual real spending drift compiled to five-year phase rows",
       "kind": "model",
@@ -970,7 +1024,7 @@
         "sustainable-spending-result-spending-slack-dollars"
       ],
       "purpose": "Turns a steady %/yr real spending change into the editable phase multipliers a plan stores.",
-      "statement": "deltaPct = 0 returns no phases. startAge = min(max(round(retirementAge), 40), 105). For age = startAge + 5, startAge + 10, ... while age <= 100: multiplier = (1 + deltaPct/100)^(age - startAge), rounded to two decimals as Math.round(x x 100)/100 and clamped into [0, 3]; each row is { fromAge: age, multiplier }. Units: fromAge in years of the primary person; multiplier a factor on baseAnnual. Rounding: two decimals per row, as stated.",
+      "statement": "deltaPct = 0 returns no phases. startAge = min(max(round(retirementAge), 40), 105). For age = startAge + 5, startAge + 10, ... while age <= 100: multiplier = (1 + deltaPct/100)^(age - startAge), rounded to two decimals as Math.round(x x 100)/100 and clamped into [0, 3]; each row is { fromAge: age, multiplier }. Units: fromAge in years of the person the phases follow (expenses.phasesAgeOf; spending-phase-person); multiplier a factor on baseAnnual. Rounding: two decimals per row, as stated.",
       "formula": {
         "expression": "m(age) = clamp(round2((1 + d/100)^(age - a0)), 0, 3) for age = a0 + 5k <= 100, k >= 1, a0 = clamp(round(retirementAge), 40, 105)",
         "variables": [
@@ -1044,7 +1098,7 @@
       ],
       "feeds": [],
       "purpose": "Each spending shape's sustainable amount and its difference from the constant-real shape, as the spending page's shape table shows them.",
-      "statement": "decisions/spendingShapes.ts#planWithSpendingShape builds the plan solved for each shape in SPENDING_SHAPE_COMPARISON (flat, smile, smirk): the plan's own phases replaced by the shape's rows on the first person's retirement age (65 when unset), and amortized (ABW) spending removed; every other field, a guardrail policy included, is unchanged. spendingShapeRows publishes, for each shape, the solver's published maxBaseAnnual and deltaVsFlatDollars, that amount minus the flat shape's, null on the flat row and when either amount is null (owner decision R5), so the difference is always the gap between the two amounts shown. It refuses an input without exactly one flat row, a shape listed twice, and any amount that is not a published answer (a rounded amount that is not a whole multiple of $100, or an amount without its rounding). With passing levels of $50,050 (flat) and $50,149 (smile) the published amounts are $50,000 and $50,100 and the difference is +$100, where subtracting the passing levels printed +$99. Units: today's dollars per year. Rounding: none beyond the published amounts.",
+      "statement": "decisions/spendingShapes.ts#planWithSpendingShape builds the plan solved for each shape in SPENDING_SHAPE_COMPARISON (flat, smile, smirk): the plan's own phases replaced by the shape's rows on the retirement age of the person the phases follow (expenses.phasesAgeOf, the person listed first when a two-person plan names none, which the plan then names; 65 when unset), and amortized (ABW) spending removed; every other field, a guardrail policy included, is unchanged. spendingShapeRows publishes, for each shape, the solver's published maxBaseAnnual and deltaVsFlatDollars, that amount minus the flat shape's, null on the flat row and when either amount is null (owner decision R5), so the difference is always the gap between the two amounts shown. It refuses an input without exactly one flat row, a shape listed twice, and any amount that is not a published answer (a rounded amount that is not a whole multiple of $100, or an amount without its rounding). With passing levels of $50,050 (flat) and $50,149 (smile) the published amounts are $50,000 and $50,100 and the difference is +$100, where subtracting the passing levels printed +$99. Units: today's dollars per year. Rounding: none beyond the published amounts.",
       "formula": {
         "expression": "delta_s = M_s − M_flat",
         "variables": [
@@ -1066,7 +1120,7 @@
       },
       "limits": [
         "Each shape is a separate solve that resolves to about $500, so a difference smaller than that is not meaningful.",
-        "Shapes use the first person's retirement age (65 when unset); a plan with amortized spending is compared as fixed-target versions of itself.",
+        "Shapes use the retirement age of the person the phases follow (65 when unset); a plan with amortized spending is compared as fixed-target versions of itself.",
         "Under guardrail spending a row can publish the exact amount that passed rather than the rounded one (see solved-spending-rounding); its difference is still taken between the amounts shown."
       ],
       "worksheet": "DOCS/calculations/spending-and-withdrawals/spending-shape-delta-vs-flat.md",
@@ -1117,7 +1171,7 @@
           },
           {
             "symbol": "retirementAge",
-            "meaning": "The primary person's retirement age",
+            "meaning": "The retirement age of the person the phases follow (expenses.phasesAgeOf)",
             "unit": "years",
             "domain": "finite"
           },

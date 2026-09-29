@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
-import { cashAccount, singlePersonPlan } from '../../testing/planFixtures.js'
+import { cashAccount, couplePlan, singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
 import { annuitizationHeadroom } from './annuitizationHeadroom.js'
 
@@ -69,6 +69,27 @@ describeCalculation(
         withinTolerance(monthly, expectedMonthly, example.tolerance),
         `monthlyPayout ${monthly} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedMonthly}`,
       ).toBe(true)
+    })
+
+    it('for a couple, illustrates on the older person, whoever is listed first, and names them', () => {
+      // The worksheet's couple case: Pat (1968, 58 in 2026) listed first and
+      // Robin (1958, 68) second. The canonical order puts Robin first, so the
+      // annuity starts at 68 on Robin's life, not at 65 on Pat's.
+      const couple = (reversed: boolean): DetectorContext => {
+        const plan = couplePlan({ p1Dob: '1968-03-01', p2Dob: '1958-03-01', p1PlanningAge: 97, p2PlanningAge: 92 })
+        plan.accounts = [cashAccount('cash', 800_000)]
+        if (reversed) plan.household.people.reverse()
+        return { plan, params: { year: 2026 }, projection: { startYear: 2026, result: { years: [] } } } as unknown as DetectorContext
+      }
+      for (const reversed of [false, true]) {
+        const card = annuitizationHeadroom.screen(couple(reversed))!
+        expect(card.rationale).toContain("on Robin's life from age 68")
+        expect(card.evidence.map((row) => row.label)).toContain('Illustrative monthly income (from age 68)')
+        const patch = (card.action as unknown as { patch: { accounts: { type: string; ownerPersonId: string | null; startAge?: number }[] } }).patch
+        const spia = patch.accounts.find((account) => account.type === 'annuity')!
+        expect([spia.ownerPersonId, spia.startAge]).toEqual(['p2', 68])
+        expect(evidenceUsd(card, 'Illustrative SPIA premium')).toBe(example.expected.premium)
+      }
     })
   },
 )

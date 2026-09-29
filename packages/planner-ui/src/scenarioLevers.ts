@@ -486,20 +486,41 @@ function isProjectedBalanceAccount(account: Plan['accounts'][number]): account i
   )
 }
 
+/**
+ * Mirrors the engine's contribution rule (annualContributionsAndEmployerMatch):
+ * an owned account contributes while its owner lives (with wages, unless on a
+ * schedule outside an employer plan); a joint account while either person is
+ * alive, its plain contribution while the household has wages, and its
+ * schedule by the age of the person it names (decision D-PEOPLE-ORDER, R3).
+ */
 function receivesContributionDuringProjection(
   plan: Plan,
   account: ProjectedBalanceAccount,
   startYear: number,
 ): boolean {
   if (!acceptsContributions(account)) return false
-  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
-  const owner = plan.household.people.find((person) => person.id === ownerId)
-  if (!owner) return false
+  const joint = account.ownerPersonId === null
+  // The engine's resolution, fallback included: the first person only where
+  // the plan names no one, which a parsed two-person plan with a joint
+  // schedule never does.
+  const agePersonId = account.ownerPersonId ??
+    ('contributionScheduleAgeOf' in account ? account.contributionScheduleAgeOf : undefined) ??
+    plan.household.people[0]?.id
+  const agePerson = plan.household.people.find((person) => person.id === agePersonId)
+  const alive = (person: Plan['household']['people'][number], year: number): boolean =>
+    year - Number(person.dob.slice(0, 4)) <= person.longevity.planningAge
   const endYear = householdPlanningHorizonYear(plan)
   for (let year = startYear; year <= endYear; year++) {
-    const age = year - Number(owner.dob.slice(0, 4))
-    if (age > owner.longevity.planningAge) continue
+    const living = joint
+      ? plan.household.people.some((person) => alive(person, year))
+      : agePerson !== undefined && alive(agePerson, year)
+    if (!living) continue
+    const hasWages = joint
+      ? plan.household.people.some((person) => hasWagesInYear(plan, person.id, year))
+      : agePerson !== undefined && hasWagesInYear(plan, agePerson.id, year)
     if (account.contributionSchedule && account.contributionSchedule.length > 0) {
+      if (agePerson === undefined) continue
+      const age = year - Number(agePerson.dob.slice(0, 4))
       const activePhase = account.contributionSchedule.some(
         (phase) =>
           phase.annualAmount > 0 &&
@@ -509,8 +530,8 @@ function receivesContributionDuringProjection(
       const isEmployer =
         (account.type === 'traditional' || account.type === 'roth') &&
         account.kind === 'employer'
-      if (activePhase && (!isEmployer || hasWagesInYear(plan, owner.id, year))) return true
-    } else if (account.annualContribution > 0 && hasWagesInYear(plan, owner.id, year)) {
+      if (activePhase && (!isEmployer || hasWages)) return true
+    } else if (account.annualContribution > 0 && hasWages) {
       return true
     }
   }
@@ -525,8 +546,9 @@ function guaranteedIncomeAnnualPayout(
   year: number,
 ): number {
   if (account.monthlyAmount <= 0) return 0
-  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
-  const owner = plan.household.people.find((person) => person.id === ownerId)
+  // The participant or (first) annuitant the engine pays on: every pension
+  // and annuity names one (schema v7), never the first-listed person.
+  const owner = plan.household.people.find((person) => person.id === account.ownerPersonId)
   if (!owner) return 0
   const startCalendarYear = Number(owner.dob.slice(0, 4)) + account.startAge
   if (year < startCalendarYear) return 0

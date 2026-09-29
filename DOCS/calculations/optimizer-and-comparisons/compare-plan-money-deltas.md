@@ -44,7 +44,8 @@ export interface PlanHeadlineComparison {
   lifetimeTaxesAndPenalties: ScalarComparison
   moneyLasts: MoneyLastsComparison              // compare-plan-deltas
   deterministicSuccessPct: ScalarComparison     // compare-plan-deltas
-  depletionAgePrimary: NullableScalarComparison // compare-plan-deltas
+  depletionAge: NullableScalarComparison // compare-plan-deltas (depletionAgePrimary until 2026-09-28)
+  depletionAgePersonId: { baseline: string | null; proposal: string | null } // whose age, on each side
 }
 /** Refuses two results with different start years (a RangeError naming both). */
 export function comparePlanHeadlines(baseline: ComparedProjection, proposal: ComparedProjection): PlanHeadlineComparison

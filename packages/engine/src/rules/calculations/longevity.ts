@@ -278,12 +278,12 @@ export const longevityRecords = {
     // The amortization-based spending horizon reads it on every projection.
     feeds: ['spending-base-annual'],
     statement:
-      'With from = floor(max(primary.age, 0)), partnerFrom = floor(max(partner.age, 0)) and threshold = min(max(p, 0.1), 100)/100: for t = 0, 1, ... while from + t <= 120, let P(t) = 1 - (1 - S_primary(t))(1 - S_partner(t)), where each S(t) is that person\'s survival curve from their own floored age under their hazard (default 1), read t years on (survival-probability-product; for \'average\' the mixture). Record best = from + t while P(t) >= threshold; stop at the first t below the threshold, or once both survivals are 0. Returns best; P(0) = 1, so the result is always >= from and never below the primary\'s single-life answer. Units: integer primary age. Rounding: none.',
+      'With from = floor(max(primary.age, 0)), partnerFrom = floor(max(partner.age, 0)) and threshold = min(max(p, 0.1), 100)/100: for t = 0, 1, ... while from + t <= 120 or partnerFrom + t <= 120 (either person still inside the table; decision D-PEOPLE-ORDER, rule R6), let P(t) = 1 - (1 - S_primary(t))(1 - S_partner(t)), where each S(t) is that person\'s survival curve from their own floored age under their hazard (default 1), read t years on (survival-probability-product; for \'average\' the mixture). Record best = from + t while P(t) >= threshold; stop at the first t below the threshold, or once both survivals are 0. Returns best; P(0) = 1, so the result is always >= from and never below the primary\'s single-life answer. The result is on the primary\'s clock and can exceed 120 when the partner is much younger; the calendar year it names, primary\'s birth year + best, is the same whichever person is passed as primary (a male 70 with a female 35 at 25 percent: 126 on his clock, 2082; stopped at his table end the walk returned 120, 2076). Units: integer primary age. Rounding: none.',
     formula: {
       expression: 'age* = max{ from + t : 1 - (1 - S_primary(t))(1 - S_partner(t)) >= p/100 }',
       variables: [
         { symbol: 'from, partnerFrom', meaning: 'Floored current ages of primary and partner', unit: 'years', domain: 'integer >= 0' },
-        { symbol: 't', meaning: 'Years elapsed on the primary\'s clock', unit: 'years', domain: 'integer >= 0, from + t <= 120' },
+        { symbol: 't', meaning: 'Years elapsed on the primary\'s clock', unit: 'years', domain: 'integer >= 0, from + t <= 120 or partnerFrom + t <= 120' },
         { symbol: 'S_primary(t), S_partner(t)', meaning: 'Each life\'s survival over t more years (survival-probability-product)', unit: '1', domain: '[0, 1]' },
         { symbol: 'p', meaning: 'Percent chance that at least one is alive, clamped to [0.1, 100]', unit: 'percent', domain: '0.1 <= p <= 100' },
       ],
@@ -304,7 +304,7 @@ export const longevityRecords = {
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#jointSurvivalPercentileAge'],
-    verifiedOn: '2026-09-27',
+    verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survival-hazard-from-expectancy-multiplier': {

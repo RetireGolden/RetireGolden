@@ -1,3 +1,4 @@
+import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
 import { qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
@@ -1266,6 +1267,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       isAggregatedIra: isAggregatedIra(state.account),
       balance: state.balance,
     })),
+    ownerOrder: canonicalPeopleOrder(plan.household.people).map((person) => person.id),
   })
   qcd = qcdGiftPlan.qcd
   // Gross dollars routed out of the owned-IRA RMD. That RMD already counted

@@ -398,26 +398,35 @@
         "flexible-goal-scheduling"
       ],
       "funded-ratio-result-essential-spending-pv": [
+        "funded-ratio-household-start",
+        "household-later-retirement",
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
       "funded-ratio-result-funded-ratio-pct": [
+        "funded-ratio-household-start",
+        "household-later-retirement",
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
       "funded-ratio-result-guaranteed-income-pv": [
+        "funded-ratio-household-start",
+        "household-later-retirement",
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
       "funded-ratio-result-unfunded-pv": [
+        "funded-ratio-household-start",
+        "household-later-retirement",
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
       "income-annuity-annual": [
+        "guaranteed-income-owner",
         "mortality-joint-last-survivor-expectancy",
         "mortality-published-death-probability",
         "ssa-period-life-table",
@@ -429,6 +438,9 @@
       ],
       "income-ordinary-dividends-annual": [
         "allocation-blended-taxable-yield"
+      ],
+      "income-pension-annual": [
+        "guaranteed-income-owner"
       ],
       "income-qualified-dividends-annual": [
         "allocation-blended-taxable-yield"
@@ -539,6 +551,7 @@
         "market-model-student-t-draw",
         "market-model-user-shock",
         "monte-carlo-default-seed",
+        "monte-carlo-people-draw-order",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -561,6 +574,7 @@
         "market-model-student-t-draw",
         "market-model-user-shock",
         "monte-carlo-default-seed",
+        "monte-carlo-people-draw-order",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -584,6 +598,7 @@
         "market-model-student-t-draw",
         "market-model-user-shock",
         "monte-carlo-default-seed",
+        "monte-carlo-people-draw-order",
         "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "rng-derived-path-seed",
@@ -614,6 +629,7 @@
         "market-model-student-t-draw",
         "market-model-user-shock",
         "monte-carlo-default-seed",
+        "monte-carlo-people-draw-order",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -641,6 +657,7 @@
         "market-model-student-t-draw",
         "market-model-user-shock",
         "monte-carlo-default-seed",
+        "monte-carlo-people-draw-order",
         "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "risk-based-starting-investable",
@@ -671,15 +688,31 @@
       "projection-result-ending-net-worth": [
         "accounts-net-worth-annual"
       ],
+      "projection-summary-average-pre-retirement-savings-rate-pct": [
+        "household-later-retirement",
+        "projection-summary-fi-spending-base"
+      ],
       "projection-summary-coast-fire-number": [
-        "projection-summary-fi-number"
+        "household-later-retirement",
+        "projection-summary-fi-number",
+        "projection-summary-fi-spending-base"
       ],
       "projection-summary-ending-after-tax-estate": [
         "projection-summary-ending-net-worth",
         "projection-summary-estate-heir-tax"
       ],
       "projection-summary-fi-age": [
-        "projection-summary-fi-number"
+        "household-later-retirement",
+        "projection-summary-fi-number",
+        "projection-summary-fi-spending-base"
+      ],
+      "projection-summary-fi-number": [
+        "household-later-retirement",
+        "projection-summary-fi-spending-base"
+      ],
+      "projection-summary-fi-year": [
+        "household-later-retirement",
+        "projection-summary-fi-spending-base"
       ],
       "relocation-lifetime-state-local-tax": [
         "state-enacted-tax-year-figures"
@@ -769,6 +802,7 @@
         "abw-expected-real-return",
         "joint-survival-percentile-age",
         "mortality-published-death-probability",
+        "spending-phase-person",
         "spending-shape-annual-delta-phases",
         "spending-shape-preset-compilation",
         "ssa-period-life-table",
@@ -900,21 +934,22 @@
         "withdrawals-by-category-annual"
       ],
       "year-result-contributions": [
-        "hsa-contribution-limit-years"
+        "hsa-contribution-limit-years",
+        "joint-account-contributions"
       ]
     }
   },
   "records": {
-    "total": 266,
+    "total": 273,
     "byKind": {
-      "composition": 85,
-      "data": 23,
+      "composition": 86,
+      "data": 24,
       "formula": 93,
-      "model": 65
+      "model": 70
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 261
+      "derivation": 268
     }
   },
   "oracleExamples": [
@@ -1077,9 +1112,9 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 79,
+    "catalogued": 83,
     "excludedWithReason": 0,
-    "notYetReviewed": 169
+    "notYetReviewed": 168
   },
   "shards": [
     {
@@ -1090,7 +1125,7 @@
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 57
+      "recordCount": 61
     },
     {
       "group": "insights",
@@ -1100,7 +1135,7 @@
     {
       "group": "laddersAndValuation",
       "path": "calculation-coverage/laddersAndValuation.json",
-      "recordCount": 12
+      "recordCount": 13
     },
     {
       "group": "longevity",
@@ -1115,7 +1150,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 39
+      "recordCount": 40
     },
     {
       "group": "optimizerAndComparisons",
@@ -1140,7 +1175,7 @@
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 22
+      "recordCount": 23
     },
     {
       "group": "taxes",

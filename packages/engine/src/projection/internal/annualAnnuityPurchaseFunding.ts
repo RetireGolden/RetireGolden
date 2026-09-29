@@ -11,6 +11,7 @@ import type { Account, Person } from '../../model/plan.js'
 import {
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
+  guaranteedIncomeOwnerId,
 } from '../../model/plan.js'
 import { isSpendableInYear } from '../../strategies/accountEligibility.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
@@ -42,7 +43,6 @@ export interface AnnualAnnuityPurchaseFundingInput {
   /** Unsorted balance order; a funding id resolves to its first position. */
   readonly balances: readonly AnnuityPurchaseFundingBalanceView[]
   readonly peopleById: ReadonlyMap<string, Person>
-  readonly primaryPerson: Readonly<Person>
   readonly year: number
   readonly qlacPremiumCap: number
   readonly limitGrowth: number
@@ -113,10 +113,13 @@ export function annualAnnuityPurchaseFunding(
     // distribution exclusion 1.401(a)(9)-5(b)(4) reserves for a QLAC. Say so
     // rather than let it pass silently, the same way the statutory premium cap
     // is enforced here and not only at parse.
-    if (account.purchase.taxQualification === 'qualified') {
-      const owner = input.peopleById.get(
-        account.ownerPersonId ?? input.primaryPerson.id,
-      ) ?? input.primaryPerson
+    // The annuitant's own birth date (every annuity names one, schema v7); a
+    // caller-built plan naming someone outside the household gets no warning,
+    // since there is no birth date to measure against.
+    const owner = account.purchase.taxQualification === 'qualified'
+      ? input.peopleById.get(guaranteedIncomeOwnerId(account))
+      : undefined
+    if (owner !== undefined && account.purchase?.taxQualification === 'qualified') {
       if (account.purchase.qlac === true) {
         if (
           account.startAge >

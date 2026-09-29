@@ -477,6 +477,18 @@
       "endingInvestable": 0,
       "endingNetWorth": 0,
       "fiAge": null,
+      "fiBasis": {
+        "conversionExecuted": false,
+        "householdSize": 1,
+        "notRetiring": [],
+        "personLastYearAlive": 2065,
+        "personName": "Me",
+        "retirementRule": "retirementAge",
+        "retirementYear": 2035,
+        "spendingSource": "projection",
+        "spendingYear": 2035,
+        "withdrawalRatePct": 4
+      },
       "fiNumber": 78915,
       "fiYear": null,
       "lifetimeRothConversions": 0,

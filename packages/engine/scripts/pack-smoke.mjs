@@ -370,6 +370,7 @@ const schemaV3Api = await import('@retiregolden/engine/schema/v3')
 const schemaV4Api = await import('@retiregolden/engine/schema/v4')
 const schemaV5Api = await import('@retiregolden/engine/schema/v5')
 const schemaV6Api = await import('@retiregolden/engine/schema/v6')
+const schemaV7Api = await import('@retiregolden/engine/schema/v7')
 const legacySchemaApi = await import('@retiregolden/engine/schema')
 const requireFromSmoke = createRequire(import.meta.url)
 const shippedPath = requireFromSmoke.resolve(
@@ -457,24 +458,26 @@ assert.equal(
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
-assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 6)
+assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 7)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 
-assert.equal(PLAN_SCHEMA_VERSION, 6)
-assert.equal(planJsonSchema.properties.schemaVersion.const, 6)
+assert.equal(PLAN_SCHEMA_VERSION, 7)
+assert.equal(planJsonSchema.properties.schemaVersion.const, 7)
 assert.ok(String(planJsonSchema.$id).includes('/v' + PLAN_SCHEMA_VERSION + '.json'), 'schema carries a versioned $id')
 assert.equal(schemaV1Api.planJsonSchema.properties.schemaVersion.const, 1)
 assert.equal(schemaV2Api.planJsonSchema.properties.schemaVersion.const, 2)
 assert.equal(schemaV3Api.planJsonSchema.properties.schemaVersion.const, 3)
 assert.equal(schemaV4Api.planJsonSchema.properties.schemaVersion.const, 4)
 assert.equal(schemaV5Api.planJsonSchema.properties.schemaVersion.const, 5)
-assert.equal(schemaV6Api.planJsonSchema, planJsonSchema)
+assert.equal(schemaV6Api.planJsonSchema.properties.schemaVersion.const, 6)
+assert.equal(schemaV7Api.planJsonSchema, planJsonSchema)
 assert.equal(legacySchemaApi.planJsonSchema, planJsonSchema)
 assert.equal(legacySchemaApi.planV1JsonSchema, schemaV1Api.planJsonSchema)
 assert.equal(legacySchemaApi.planV2JsonSchema, schemaV2Api.planJsonSchema)
 assert.equal(legacySchemaApi.planV3JsonSchema, schemaV3Api.planJsonSchema)
 assert.equal(legacySchemaApi.planV4JsonSchema, schemaV4Api.planJsonSchema)
 assert.equal(legacySchemaApi.planV5JsonSchema, schemaV5Api.planJsonSchema)
+assert.equal(legacySchemaApi.planV6JsonSchema, schemaV6Api.planJsonSchema)
 assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
 assert.ok(
   Array.isArray(planJsonSchema['x-retiregolden-unrepresentableConstraints']) &&
@@ -1510,6 +1513,7 @@ import { planJsonSchema as planV3JsonSchema } from '@retiregolden/engine/schema/
 import { planJsonSchema as planV4JsonSchema } from '@retiregolden/engine/schema/v4'
 import { planJsonSchema as planV5JsonSchema } from '@retiregolden/engine/schema/v5'
 import { planJsonSchema as planV6JsonSchema } from '@retiregolden/engine/schema/v6'
+import { planJsonSchema as planV7JsonSchema } from '@retiregolden/engine/schema/v7'
 
 // The deprecated projection/flatTax subpath has to stay NAMEABLE, not merely
 // resolvable at runtime. If stripInternal ever deletes its declaration, the
@@ -1526,6 +1530,7 @@ export const schemaDocuments: readonly JsonSchemaDocument[] = [
   planV4JsonSchema,
   planV5JsonSchema,
   planV6JsonSchema,
+  planV7JsonSchema,
 ]
 
 // The option, spelled out the way a consumer would have to spell it.
@@ -1604,7 +1609,7 @@ try {
         [...currentSchemaFootprint.dynamicSpecifiers].sort().join(', '),
     )
   }
-  const historicalGeneratedPattern = /plan\.v[1-5]\.generated\.js$/u
+  const historicalGeneratedPattern = /plan\.v[1-6]\.generated\.js$/u
   const currentHistoricalModules = [...currentSchemaGraph].filter((modulePath) =>
     historicalGeneratedPattern.test(modulePath),
   )
@@ -1616,15 +1621,15 @@ try {
           .join(', '),
     )
   }
-  if (![...currentSchemaGraph].some((modulePath) => /plan\.v6\.generated\.js$/u.test(modulePath))) {
+  if (![...currentSchemaGraph].some((modulePath) => /plan\.v7\.generated\.js$/u.test(modulePath))) {
     throw new Error('schema/current no longer statically reaches the current generated schema module')
   }
   const legacyHistoricalModules = [...legacySchemaGraph].filter((modulePath) =>
     historicalGeneratedPattern.test(modulePath),
   )
-  if (legacyHistoricalModules.length !== 5) {
+  if (legacyHistoricalModules.length !== 6) {
     throw new Error(
-      'the legacy schema compatibility barrel must retain all five historical generated modules',
+      'the legacy schema compatibility barrel must retain all six historical generated modules',
     )
   }
   const graphBytes = (graph) => [...graph].reduce(

@@ -264,7 +264,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 895
+              "line": 914
             }
           ]
         },
@@ -284,31 +284,31 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 1037,
+          "line": 1062,
           "note": "the character of the premium",
           "tests": [
             {
               "title": "reports no income for a 200,000 dollar premium paid out of the IRA",
-              "line": 1058
+              "line": 1083
             },
             {
               "title": "reports the same income as the household that bought nothing",
-              "line": 1065
+              "line": 1090
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 1072,
+          "line": 1097,
           "note": "the funding arms",
           "tests": [
             {
               "title": "refuses to draw a non-qualified premium from a traditional account",
-              "line": 1102
+              "line": 1127
             },
             {
               "title": "admits the qualified arm from the same account",
-              "line": 1113
+              "line": 1138
             }
           ]
         }
@@ -403,7 +403,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },
@@ -432,20 +432,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 213,
+          "line": 214,
           "note": "the line 6 denominator",
           "tests": [
             {
               "title": "recovers basis at the fraction the whole aggregate produces",
-              "line": 247
+              "line": 248
             },
             {
               "title": "makes a purchase the form cannot see invisible to the engine too",
-              "line": 270
+              "line": 271
             },
             {
               "title": "carries the contract at the value the aggregate lost, and no more",
-              "line": 294
+              "line": 295
             }
           ]
         }
@@ -622,7 +622,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "THE TEST NO LONGER HOLDS THE DENOMINATOR FIXED, and that change is the measure of what closed. While the contract sat outside line 6 this test had to price both of its readings over the ENGINE’S pool, or it would have become a second measurement of the companion defect rather than a measurement of this one. Both defects are closed, so the figures below are the statute’s throughout. An 80-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis pays a 200,000 dollar qualified premium in 2026 and receives 12,000 from the contract in the same year, at a 0 percent return. Line 7 is the 49,504.95 required distribution plus the 12,000 payment, 61,504.95. Line 6 is the 750,495.05 the account kept plus the 188,000 the contract still holds, 938,495.05; line 9 is 1,000,000 exactly, the fraction is 0.2, and the year’s ordinary income is 49,203.96. Turning the contract’s payments on moves that figure by 9,600, which is 12,000 at the year’s own 0.8: the payment taking its share, which is what this record exists to say. WHAT THE OLD ENTRY CLAIMED AND WHERE IT LANDED. It pinned 49,128.71 produced against 46,128.71 accepted and called the 3,000 between them the basis the payment was refused, while saying in terms that \"the true statutory figure is larger than 3,000 and is deliberately not claimed\" because the correct denominator was unavailable. It is available now, and the true figure is 49,203.96 (75.25 ABOVE the old produced figure rather than 3,000 below it). That is not a contradiction: this record’s overstatement and its companion’s understatement ran in opposite directions on the same household, and the companion’s was the larger of the two here. A reader who expected the fix to lower this household’s tax should read that as the reason a pair of opposed approximations must never be netted in prose. WHAT WOULD CLOSE IT, said the old entry, “is a single change with a wide blast radius: routing an IRA-funded annuity payment through the owned-non-Roth-IRA withdrawal character path instead of the fully-ordinary branch.” That is what was done. WHERE THE FULLY-ORDINARY BRANCH SURVIVES, enumerated rather than gestured at, because the first version of this paragraph said “one shape” and was wrong. It survives in two places and both are correct. First, a contract outside the section 408(d)(2) aggregate altogether: Plan validation requires a qualified purchase to be funded from an owned traditional ACCOUNT and does not require an IRA, so an employer plan can pay a premium, and a contract its pre-tax dollars bought is not in this aggregation and its payments carry no Form 8606 basis to share. Second, a year the settlement does not commit, where the payment keeps the legacy treatment rather than being split against a pro-rata state opened on a pool the contract is not in (a second approximation invented to paper over the first). A THIRD SHAPE WAS FOUND AND CLOSED while verifying this sentence: a qualified purchase quoting a ZERO premium was excluded from staging, so a contract that paid without having been paid for had no occurrence and charged its payments in full while the year’s other distributions shared the basis (2,400 a year on the test household). Nothing in 408(d)(2)(B) turns on how a contract was acquired, so it is staged like any other, contributing nothing to line 6 because it holds nothing. A CROSS-OWNER PURCHASE IS NOT ON THE LIST EITHER, and for one revision it silently was: the character was looked up under the contract’s own owner while the settlement published it under the pool owner, so a Plan naming one spouse’s contract against the other’s IRA charged the payment in full AND spent the basis the settlement had already allocated: tax charged, basis gone, every paying year, and nothing recording that it had happened. The lookup asks under the pool owner now, and the two households report the same figure to the cent.",
+      "conventionRationale": "THE TEST NO LONGER HOLDS THE DENOMINATOR FIXED, and that change is the measure of what closed. While the contract sat outside line 6 this test had to price both of its readings over the ENGINE’S pool, or it would have become a second measurement of the companion defect rather than a measurement of this one. Both defects are closed, so the figures below are the statute’s throughout. An 80-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis pays a 200,000 dollar qualified premium in 2026 and receives 12,000 from the contract in the same year, at a 0 percent return. Line 7 is the 49,504.95 required distribution plus the 12,000 payment, 61,504.95. Line 6 is the 750,495.05 the account kept plus the 188,000 the contract still holds, 938,495.05; line 9 is 1,000,000 exactly, the fraction is 0.2, and the year’s ordinary income is 49,203.96. Turning the contract’s payments on moves that figure by 9,600, which is 12,000 at the year’s own 0.8: the payment taking its share, which is what this record exists to say. WHAT THE OLD ENTRY CLAIMED AND WHERE IT LANDED. It pinned 49,128.71 produced against 46,128.71 accepted and called the 3,000 between them the basis the payment was refused, while saying in terms that \"the true statutory figure is larger than 3,000 and is deliberately not claimed\" because the correct denominator was unavailable. It is available now, and the true figure is 49,203.96 (75.25 ABOVE the old produced figure rather than 3,000 below it). That is not a contradiction: this record’s overstatement and its companion’s understatement ran in opposite directions on the same household, and the companion’s was the larger of the two here. A reader who expected the fix to lower this household’s tax should read that as the reason a pair of opposed approximations must never be netted in prose. WHAT WOULD CLOSE IT, said the old entry, “is a single change with a wide blast radius: routing an IRA-funded annuity payment through the owned-non-Roth-IRA withdrawal character path instead of the fully-ordinary branch.” That is what was done. WHERE THE FULLY-ORDINARY BRANCH SURVIVES, enumerated rather than gestured at, because the first version of this paragraph said “one shape” and was wrong. It survives in two places and both are correct. First, a contract outside the section 408(d)(2) aggregate altogether: Plan validation requires a qualified purchase to be funded from an owned traditional ACCOUNT and does not require an IRA, so an employer plan can pay a premium, and a contract its pre-tax dollars bought is not in this aggregation and its payments carry no Form 8606 basis to share. Second, a year the settlement does not commit, where the payment keeps the legacy treatment rather than being split against a pro-rata state opened on a pool the contract is not in (a second approximation invented to paper over the first). A THIRD SHAPE WAS FOUND AND CLOSED while verifying this sentence: a qualified purchase quoting a ZERO premium was excluded from staging, so a contract that paid without having been paid for had no occurrence and charged its payments in full while the year’s other distributions shared the basis (2,400 a year on the test household). Nothing in 408(d)(2)(B) turns on how a contract was acquired, so it is staged like any other, contributing nothing to line 6 because it holds nothing. A CROSS-OWNER PURCHASE IS NOT ON THE LIST EITHER, and for one revision it silently was: the character was looked up under the contract’s own owner while the settlement published it under the pool owner, so a Plan naming one spouse’s contract against the other’s IRA charged the payment in full AND spent the basis the settlement had already allocated: tax charged, basis gone, every paying year, and nothing recording that it had happened. The lookup asks under the pool owner now, and the two households report the same figure to the cent. SINCE PLAN SCHEMA V7 THE SHAPE CANNOT BE AUTHORED: validation refuses a qualified purchase named for anyone but its funding account’s owner (irc-72-c-3-A-annuity-measured-on-named-lives), and a stored plan carrying one loads with that owner named and a repair notice. The approximation test keeps the equal-figure assertion, run through the load seam, so the lookup stays pinned for the plans that were saved that way.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -660,7 +660,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },
@@ -680,24 +680,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 336,
+          "line": 337,
           "note": "the payment’s share of basis",
           "tests": [
             {
               "title": "prices the annuity payment at the fraction the aggregate produced",
-              "line": 362
+              "line": 363
             },
             {
               "title": "adds the payment at its taxable share and not at its face",
-              "line": 377
+              "line": 378
             },
             {
-              "title": "prices a payment the same whoever the contract is named for",
-              "line": 402
+              "title": "prices a payment the same whoever the contract is named for, and v7 names the funding owner",
+              "line": 403
             },
             {
               "title": "keeps a cross-owner contract whole across every paying year",
-              "line": 509
+              "line": 531
             }
           ]
         }
@@ -789,7 +789,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },
@@ -810,16 +810,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
-          "line": 637,
+          "line": 662,
           "note": "the pre-projection seed",
           "tests": [
             {
               "title": "opens a pre-projection contract at a premium it may never have received",
-              "line": 654
+              "line": 679
             },
             {
               "title": "overstates the line 6 denominator and never understates it",
-              "line": 682
+              "line": 707
             }
           ]
         },

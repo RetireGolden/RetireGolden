@@ -127,6 +127,29 @@ export function updateAccountField(
   ) {
     clearAccountEligibilityFacts(plan, account.id)
   }
+  if (updated !== undefined) nameContributionSchedulePerson(plan, updated)
+}
+
+/**
+ * Keep a contribution schedule's person in step with the account's owner
+ * (schema v7, decision D-PEOPLE-ORDER): an owned account's schedule follows
+ * its owner, so it names no one else; a joint cash, taxable or equity-comp
+ * account with a schedule in a two-person plan names someone, the person
+ * listed first until the household picks the other (the editor shows the
+ * name). Pure mutator.
+ */
+export function nameContributionSchedulePerson(plan: Plan, account: Plan['accounts'][number]): void {
+  if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') return
+  if (account.ownerPersonId !== null) {
+    Reflect.deleteProperty(account, 'contributionScheduleAgeOf')
+    return
+  }
+  const hasSchedule = (account.contributionSchedule?.length ?? 0) > 0
+  if (!hasSchedule || plan.household.people.length < 2) return
+  const named = account.contributionScheduleAgeOf
+  if (named === undefined || !plan.household.people.some((person) => person.id === named)) {
+    account.contributionScheduleAgeOf = plan.household.people[0]!.id
+  }
 }
 
 /** Remove evidence bound to a person who no longer exists. */

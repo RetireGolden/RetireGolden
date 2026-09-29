@@ -120,6 +120,8 @@ function retiredLastsLabel(plan: Plan): string {
   const value = moneyLastsValue(lasts, view.result.startYear)
   return lasts.depletionYear === null ? `${value} through ${lasts.endYear}` : value
 }
+// The retired page read whoever is listed first; on the three pairs below that
+// is also the person the canonical order puts first, so the cells are unchanged.
 function retiredPrimaryAgeIn(plan: Plan, year: number | null): number | null {
   if (year === null) return null
   const dobYear = Number(plan.household.people[0]?.dob.slice(0, 4))
@@ -164,7 +166,7 @@ function retiredNonMoneyRows(a: Plan, b: Plan) {
       delta: formatDelta(successB - successA, 'pp'),
       deltaClass: retiredDeltaClass(successB - successA),
     },
-    'Depletion age (primary)': {
+    'Depletion age': {
       a: ageA === null ? '—' : String(ageA),
       b: ageB === null ? '—' : String(ageB),
       delta: age === null ? '—' : formatDelta(age, 'years'),
@@ -230,22 +232,40 @@ describe('Compare page on library examples (B2-P1 slice 3)', () => {
   // PR #754 finding 3: the rendered Money lasts, Success % and Depletion age
   // rows against the retired page's own expressions, cell for cell.
   for (const [a, b, what, expected] of [
-    ['example-couple', 'under-saved-single', 'only Plan B depletes', { lasts: '≤ −14 yrs', success: '−100 pp', age: '—' }],
-    ['under-saved-single', 'ltc-shock', 'both deplete, in different years', { lasts: '−13 yrs', success: '0 pp', age: '−15 yrs' }],
-    ['hsa-property-depth', 'brokerage-no-hsa', 'both deplete in the same year', { lasts: 'same', success: '0 pp', age: 'same' }],
+    ['example-couple', 'under-saved-single', 'only Plan B depletes', { lasts: '≤ −14 yrs', success: '−100 pp', age: '—', ageLabel: 'Depletion age (Alex in A, Jordan in B)' }],
+    ['under-saved-single', 'ltc-shock', 'both deplete, in different years', { lasts: '−13 yrs', success: '0 pp', age: 'different people', ageLabel: 'Depletion age (Jordan in A, Quinn in B)' }],
+    ['hsa-property-depth', 'brokerage-no-hsa', 'both deplete in the same year', { lasts: 'same', success: '0 pp', age: 'same', ageLabel: 'Depletion age (Harper)' }],
   ] as const) {
     it(`prints the retired non-money rows when ${what} (${a} against ${b})`, async () => {
       const planA = appExamplePlanById(a)
       const planB = appExamplePlanById(b)
       await mountPair(planA, planB)
       const retired = retiredNonMoneyRows(planA, planB)
-      for (const label of ['Money lasts', 'Success % (deterministic)', 'Depletion age (primary)'] as const) {
+      for (const label of ['Money lasts', 'Success % (deterministic)', 'Depletion age'] as const) {
         const rendered = row(label)
-        expect({ a: rendered.a, b: rendered.b, delta: rendered.delta, deltaClass: rendered.deltaClass }, label).toEqual(retired[label])
+        // Two different people's ages keep their cells but lose the difference
+        // the retired page subtracted (review L1).
+        const want = label === 'Depletion age' && expected.age === 'different people'
+          ? { ...retired[label], delta: 'different people', deltaClass: '' }
+          : retired[label]
+        expect({ a: rendered.a, b: rendered.b, delta: rendered.delta, deltaClass: rendered.deltaClass }, label).toEqual(want)
       }
       expect(row('Money lasts').delta).toBe(expected.lasts)
       expect(row('Success % (deterministic)').delta).toBe(expected.success)
-      expect(row('Depletion age (primary)').delta).toBe(expected.age)
+      expect(row('Depletion age').delta).toBe(expected.age)
+      expect(row('Depletion age').label).toBe(expected.ageLabel)
     })
   }
+
+  it('names the older person of a couple, whoever is listed first: survivor-years shows Chris (1960), listed second', async () => {
+    const couple = appExamplePlanById('survivor-years')
+    const single = appExamplePlanById('under-saved-single')
+    for (const plan of [couple, { ...structuredClone(couple), household: { ...couple.household, people: [...couple.household.people].reverse() } }]) {
+      await mountPair(plan, single)
+      const age = row('Depletion age')
+      expect(age.label).toBe('Depletion age (Chris in A, Jordan in B)')
+      const depletionYear = projectPlan(plan, EXAMPLE_FIXED_YEAR).summary.depletionYear
+      expect(age.a).toBe(depletionYear === null ? '—' : String(depletionYear - 1960))
+    }
+  })
 })

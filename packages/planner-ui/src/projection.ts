@@ -5,7 +5,7 @@
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { conversionFreeRun, summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import {
   projectionDollarBasis,
   toNominalDollars,
@@ -69,12 +69,17 @@ export function projectPlan(
   const opts: ProjectPlanOptions =
     typeof startYearOrOpts === 'object' ? startYearOrOpts : { startYear: startYearOrOpts }
   const startYear = opts.startYear ?? currentStartYear()
+  const simulateOptions = { startYear, taxCalculator: taxCalculatorFor(plan) }
   const result = simulatePlan(plan, {
-    startYear,
-    taxCalculator: taxCalculatorFor(plan),
+    ...simulateOptions,
     ...(opts.captureAnnualCashFlow === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const summary = summarizeProjection(plan, result)
+  // The FI number's spending year is priced without a Roth conversion's
+  // one-off tax: when that year converts, the engine reads it from this same
+  // plan run with its conversions removed (decision D-FI-CONVERSION-TAX).
+  const summary = summarizeProjection(plan, result, {
+    conversionFreeRun: conversionFreeRun(plan, simulateOptions),
+  })
   const basis = projectionDollarBasis(result)
   return {
     result,

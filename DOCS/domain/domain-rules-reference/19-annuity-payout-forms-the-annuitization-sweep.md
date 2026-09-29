@@ -28,7 +28,10 @@ byte-identical projection.
   with the annual packs.
 - **Annuitization sweep.** `buildAnnuitizationSweep` (engine/decisions/annuitization.ts) sweeps a bounded
   grid of allocation percentages (default 0–30%) through the shared-path Monte Carlo primitive: each point
-  adds a life-only SPIA purchase funded from the largest liquid account and reports success-rate/estate
+  adds a life-only SPIA purchase funded from the largest liquid account, on the life of the person the canonical
+  order puts first (the older; `model/peopleOrder.ts#canonicalFirstPerson`), whoever is listed first, and named
+  in the sweep's notes (decision D-PEOPLE-ORDER; the annuitization insight and the SPIA candidates choose the same
+  person), and reports success-rate/estate
   metrics on identical market paths — the success-vs-legacy frontier on the Monte Carlo page. **Kitces
   attribution:** when the funding account carries a static allocation, each point also evaluates an
   allocation-matched control that shifts the premium from bonds to US stocks *without* buying the annuity;

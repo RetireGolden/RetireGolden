@@ -1,11 +1,11 @@
 # Mutation receipt: irmaa-lookback-selection
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualHealthcareExpenses.ts`
 
 ```diff
-@@ -94,7 +94,7 @@ export function annualHealthcareExpenses(
+@@ -95,7 +95,7 @@ export function annualHealthcareExpenses(
    const lookbackSelected = input.ssa44ActiveInYear(input.year)
      ? (() => {
          const alternate = input.resolveMagiFor(input.year - 1)
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualHealthcareExpenses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annualHealthcareExpenses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/internal/annualHealthcareExpenses.evidence.test.ts (4 tests | 1 failed) 40ms
+ ❯ src/projection/internal/annualHealthcareExpenses.evidence.test.ts (4 tests | 1 failed) 29ms
    ❯ irmaa-lookback-selection — IRMAA lookback MAGI selection (4)
-     × keeps year minus two on a tie, because the comparison is strictly lower 5ms
+     × keeps year minus two on a tie, because the comparison is strictly lower 3ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)

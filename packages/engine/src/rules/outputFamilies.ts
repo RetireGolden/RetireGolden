@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 9adc55e64bff205822a6bd330ad81658693cd5c7.
+ * Output families imported from the output-family census at commit 5d156cf4b2f65ca52d3afbbde380838dc3a72f42.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -2534,7 +2534,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "Depletion age (primary) row: the first person's age in that year (PlanHeadlineComparison.depletionAgePrimary)"
+        "selector": "Depletion age (NAME) row: the older person's age in that year, named in the label (PlanHeadlineComparison.depletionAge, whose person PlanHeadlineComparison.depletionAgePersonId gives)"
       },
       {
         "surface": "scenarios-page",

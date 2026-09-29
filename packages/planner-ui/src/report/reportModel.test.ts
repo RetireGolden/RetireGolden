@@ -90,7 +90,7 @@ describe('buildReportModel', () => {
     expect(headline.endingAfterTaxEstate).toBe(Math.round(summary.endingAfterTaxEstate))
     expect(headline.depletionYear).toBe(summary.depletionYear)
     expect(headline.lifetimeTaxesAndPenalties).toBe(Math.round(summary.lifetimeTaxesAndPenalties))
-    expect(headline.fiNumber).toBe(Math.round(summary.fiNumber))
+    expect(headline.fiNumber).toBe(Math.round(summary.fiNumber!))
     expect(model.blocks['year-ledger'].rows).toHaveLength(result.years.length)
     const firstYear = result.years[0]
     expect(model.blocks['year-ledger'].rows[0]).toMatchObject({

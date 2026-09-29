@@ -26,7 +26,7 @@ function expenses(overrides: Partial<ExpensePlan> = {}): ExpensePlan {
 function call(overrides: Partial<AnnualLifestyleLayersInput> = {}) {
   return annualLifestyleLayers({
     expenses: expenses(),
-    primaryAge: 65,
+    phasesPersonAge: 65,
     peopleStateCount: 1,
     aliveCount: 1,
     anyAlive: true,

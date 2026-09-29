@@ -949,7 +949,7 @@ describeCalculation(
       return socialSecurityClaimGenerator.generate({
         plan,
         baselineResult,
-        baselineSummary: summarizeProjection(plan, baselineResult),
+        baselineSummary: summarizeProjection(plan, baselineResult, { conversionFreeRun: null }),
         simulateOptions: options,
       })
     }

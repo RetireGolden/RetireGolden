@@ -290,6 +290,26 @@ describe('example plan isolation', () => {
     }
   })
 
+  it('a fresh demo stored under its own id still applies every scenario it ships with (review L4, I08)', async () => {
+    // The builder writes each canonical scenario patch against its own plan
+    // id; the demo is stored as example:<id>, so without the stamp's rebind
+    // the guardrails example's scenario was refused in the app with
+    // "patch targets plan ...". Tests that stamp through testSupport never
+    // reached this route.
+    const withScenarios = EXAMPLE_PLANS.filter((example) => example.build().scenarios.length > 0)
+    expect(withScenarios.map((example) => example.id)).toContain('guardrails-flex-goals')
+    for (const example of withScenarios) {
+      const saved = await saveFreshDemo(example)
+      expect(saved.ok, example.id).toBe(true)
+      if (!saved.ok) continue
+      expect(saved.plan.id, example.id).toBe(exampleStorageId(example.id))
+      for (const scenario of saved.plan.scenarios) {
+        const applied = applyScenarioPatch(saved.plan, scenario.patch)
+        expect(applied.ok ? 'applies' : applied.issues, `${example.id} ${scenario.id}`).toBe('applies')
+      }
+    }
+  })
+
   it('duplicate always yields a user plan', async () => {
     const saved = await saveFreshDemo(EXAMPLE_PLANS[1]!)
     expect(saved.ok).toBe(true)

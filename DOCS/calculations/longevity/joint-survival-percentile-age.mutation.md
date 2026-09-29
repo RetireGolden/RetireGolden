@@ -1,22 +1,22 @@
 # Mutation receipt: joint-survival-percentile-age
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -231,7 +231,7 @@
+diff --git a/packages/engine/src/montecarlo/survival.ts b/packages/engine/src/montecarlo/survival.ts
+index 598b8cfa..e58e971d 100644
+--- a/packages/engine/src/montecarlo/survival.ts
++++ b/packages/engine/src/montecarlo/survival.ts
+@@ -239,3 +239,3 @@
+   // inside the table (one past its last age), not only the primary.
+-  for (let t = 0; from + t <= MAX_AGE + 1 || partnerFrom + t <= MAX_AGE + 1; t++) {
++  for (let t = 0; from + t <= MAX_AGE + 1; t++) {
      const sPrimary = primaryCurve.survivalTo(t)
-     const sPartner = partnerCurve.survivalTo(t)
-     if (t > 0 && sPrimary <= 0 && sPartner <= 0) break
--    const eitherAlive = 1 - (1 - sPrimary) * (1 - sPartner)
-+    const eitherAlive = sPrimary * sPartner
-     if (eitherAlive >= threshold) best = from + t
-     else break
-   }
 ```
 
-This tests the both-alive probability S_a S_b instead of either-alive 1 - (1 - S_a)(1 - S_b), the worksheet's first wrong reading: S(66)^2 = 0.983545^2 = 0.9674 is already below 0.99, so the walk stops at t = 1 and returns the current age 65 instead of 70. The contrast with the single-life answer fails with it, because the joint age no longer exceeds 65.
+Re-derived for decision D-PEOPLE-ORDER (rule R6): stop the walk when the primary passes the table's end, the rule before the decision, which cut a much younger partner's horizon short and depended on which person was passed first. The worksheet's case 2 (a man of 70 with a woman of 35, 25 percent) then returns 120 on his clock (2076) instead of 126 (2082), while the other way round still gives 2082, and the evidence fails there. The earlier mutation (both-alive instead of either-alive) tested case 1; this one tests the rule the record now adds, which case 1 does not reach. Carried onto main's walk over the 2023 life table when the branch merged main.
 
 ## Command
 
@@ -26,78 +26,39 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-derived when the branch merged main: this branch's R6 mutation, re-applied to main's walk over the 2023 life table. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine15/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 3 failed) 122ms
-   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (5)
-     × two 65-year-old men at 99%: the last-survivor percentile age is 70 3ms
-     × applies the partner's hazard to the partner's curve: a man of 65 with a woman of 63 at hazard 1.5 is 89/93/96, not 91/95/99 1ms
-     × exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return 0ms
+ ❯ src/montecarlo/survival.evidence.test.ts (23 tests | 1 failed) 115ms
+   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (6)
+     × case 2: a partner 35 years younger is walked past his table end, 126 (2082) either way round 4ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 19 passed (22)
+      Tests  1 failed | 22 passed (23)
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/montecarlo/survival.evidence.test.ts > joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock > two 65-year-old men at 99%: the last-survivor percentile age is 70
-AssertionError: expected 65 to be 70 // Object.is equality
-
-- Expected
-+ Received
-
-- 70
-+ 65
-
- ❯ src/montecarlo/survival.evidence.test.ts:231:65
-    229|
-    230|     it('two 65-year-old men at 99%: the last-survivor percentile age i…
-    231|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBe(e…
-       |                                                                 ^
-    232|     })
-    233|
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
-
- FAIL  src/montecarlo/survival.evidence.test.ts > joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock > applies the partner's hazard to the partner's curve: a man of 65 with a woman of 63 at hazard 1.5 is 89/93/96, not 91/95/99
-AssertionError: expected [ 78, 84, 88 ] to deeply equal [ 89, 93, 96 ]
+ FAIL  src/montecarlo/survival.evidence.test.ts > joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock > case 2: a partner 35 years younger is walked past his table end, 126 (2082) either way round
+AssertionError: expected 120 to be 126 // Object.is equality
 
 - Expected
 + Received
 
-  [
--   89,
--   93,
--   96,
-+   78,
-+   84,
-+   88,
-  ]
+- 126
++ 120
 
- ❯ src/montecarlo/survival.evidence.test.ts:267:80
-    265|       const him = { age: 65, sex: 'male' as const, hazard: 1 }
-    266|       const her = { age: 63, sex: 'female' as const, hazard: 1.5 }
-    267|       expect([50, 25, 10].map((p) => jointSurvivalPercentileAge(him, h…
-       |                                                                                ^
-    268|       expect([50, 25, 10].map((p) => jointSurvivalPercentileAge(him, {…
-    269|     })
+ ❯ src/montecarlo/survival.evidence.test.ts:284:21
+    282|       const younger = { age: 35, sex: 'female' as const }
+    283|       const joint = jointSurvivalPercentileAge(older, younger, 25)
+    284|       expect(joint).toBe(126)
+       |                     ^
+    285|       expect(2026 - older.age + joint).toBe(2082)
+    286|       expect(2026 - younger.age + jointSurvivalPercentileAge(younger, …
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
-
- FAIL  src/montecarlo/survival.evidence.test.ts > joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock > exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return
-AssertionError: expected 65 to be greater than 65
- ❯ src/montecarlo/survival.evidence.test.ts:274:65
-    272|       // The worksheet's second wrong reading: one person's answer.
-    273|       expect(survivalPercentileAge(primary.age, primary.sex, pct, prim…
-    274|       expect(jointSurvivalPercentileAge(primary, partner, pct)).toBeGr…
-       |                                                                 ^
-    275|     })
-    276|   },
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ## Revert

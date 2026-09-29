@@ -1,11 +1,11 @@
 # Mutation receipt: funded-ratio-hand-present-value
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/fundedRatio.ts`
 
 ```diff
-@@ -54,7 +54,7 @@ export function computeFundedRatio(input: FundedRatioInput): FundedRatioResult |
+@@ -56,7 +56,7 @@ export function computeFundedRatio(input: FundedRatioInput): FundedRatioResult |
    for (const y of years) {
      if (y.year < fromYear) continue
      toYear = y.year
@@ -26,14 +26,14 @@ npx vitest run src/ladder/fundedRatio.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (fundedRatio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (fundedRatio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/ladder/fundedRatio.evidence.test.ts (4 tests | 3 failed) 7ms
+ ❯ src/ladder/fundedRatio.evidence.test.ts (4 tests | 3 failed) 5ms
    ❯ funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income (4)
-     × discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted 5ms
+     × discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted 4ms
      × discounts the deflated guaranteed flows to G = 69,350/441 0ms
      × reports the funded ratio 100·G/E = 50% and the unfunded PV E - G 0ms
 

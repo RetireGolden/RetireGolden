@@ -89,7 +89,9 @@ describe('buildMapViewModel', () => {
 
   it('focused output is independent of plan entry order (attachment fixpoint)', () => {
     const fundedAnnuityPlan = (annuityFirst: boolean): Plan => {
-      const plan = couplePlan()
+      // Planning ages that outlive the 2030 purchase: an annuity bought for
+      // a person who has died by then is refused.
+      const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
       const brokerage = { ...taxableAccount('brok', 300_000, 200_000), ownerPersonId: 'p1' }
       const annuity: Account = {
         type: 'annuity',

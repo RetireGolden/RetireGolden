@@ -15,7 +15,7 @@
  */
 
 /** The Plan document's schema version. Kept in lockstep with `CURRENT_PLAN_SCHEMA_VERSION`. */
-export const PLAN_SCHEMA_VERSION = 6
+export const PLAN_SCHEMA_VERSION = 7
 
 /** Stable, versioned identifier for the emitted schema (embeds the version). */
 export const PLAN_SCHEMA_ID = `https://retiregolden.org/schemas/plan/v${PLAN_SCHEMA_VERSION}.json`
@@ -50,7 +50,9 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'retirement-action annual filing sources require canonical real dates, January 1 opening basis, the exact calendar-adjusted ordinary deadline (April 15 through 18) and completed window, finalization on/after that deadline, boundary-wide source identifiers unique across records and the Plan identity namespace, unique reviewed accounts, designated-year reviewed-pool post-year contributions within the allowed window, and an exact safe-integer contribution sum.',
   'SIMPLE participation start dates must be real canonical civil dates when present.',
   'SEP/SIMPLE activity planYearEndDate must be a real date in actionTaxYear; deductible IRA contribution donors must resolve uniquely and contribution years cannot precede the donor’s age-70½ threshold year.',
-  'traditional/roth/hsa accounts must have an individual owner (ownerPersonId not null).',
+  'traditional/roth/hsa accounts, pensions and annuities must have an individual owner (ownerPersonId not null); an annuity’s owner is its (first) annuitant.',
+  'expenses.phasesAgeOf must reference an existing person, and is required when a two-person plan has spending phases.',
+  'contributionScheduleAgeOf must reference an existing person, is refused on an account with an owner, and is required on a jointly owned cash/taxable/equity-comp account with a contributionSchedule in a two-person plan.',
   'annuity.purchase.fundingAccountId, pension.lumpSumElection.rolloverAccountId, and incomeFloor ladder purchase fundingAccountId must reference another existing account.',
   // Account-level discriminated rules
   'employerMatch may be set only on employer-kind traditional/roth accounts.',
@@ -78,9 +80,9 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Allocation
   'account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.',
   // Annuity funding / form
-  'a qualified annuity purchase must be funded from an owned (non-inherited) traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.',
+  'a qualified annuity purchase must be funded from an owned (non-inherited) traditional account owned by the annuity’s own owner; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.',
   // Pension election
-  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.',
+  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account of the pension’s own owner; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.',
   // Insurance
   "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
   // TIPS ladder

@@ -45,7 +45,8 @@ export function compareMoneyLasts(baseline, proposal): MoneyLastsComparison
 // engine/src/scenarios/planHeadlines.ts
 PlanHeadlineComparison.moneyLasts: MoneyLastsComparison
 PlanHeadlineComparison.deterministicSuccessPct: ScalarComparison      // compareScalars(baseline ? 100 : 0, proposal ? 100 : 0), 100 when depletionYear is null
-PlanHeadlineComparison.depletionAgePrimary: NullableScalarComparison  // compareNullableScalars(age_b, age_p); age = depletionYear − birth year of household.people[0], null when the side never depletes
+PlanHeadlineComparison.depletionAge: NullableScalarComparison  // compareNullableScalars(age_b, age_p); age = depletionYear − birth year of the side's canonicalFirstPerson (the older), null when the side never depletes
+PlanHeadlineComparison.depletionAgePersonId: { baseline: string | null; proposal: string | null }  // whose age, on each side (decision D-PEOPLE-ORDER, 2026-09-28; the field was depletionAgePrimary, read from household.people[0])
 PlanHeadlineComparison.endYear: ScalarComparison
 ```
 
@@ -69,6 +70,7 @@ R15 (owner decision, 2026-09-25) fixes one money-lasts convention: `L = depletio
 | F | D 2030, E 2050, 1960-01-01 | D 2026 (the start year), E 2050, 1960-01-01 |
 | G | D 2040, E 2050, 1960-01-01 | D 2045, E 2050, no birth date |
 | H | D 2050, E 2060, 1960-01-01 | never, E 2049 |
+| I | D 2046, E 2052; Sam 1964-09-02 listed first, Alex 1962-04-15 | D 2043, E 2057; Alex 1962-04-15 listed first, Sam 1964-09-02 |
 
 All start in 2026.
 
@@ -81,20 +83,24 @@ All start in 2026.
 | Case | lastFunded (b, p) | delta | bound | printed | success delta | age (b, p, delta) |
 |---|---|---:|---|---|---:|---|
 | A | 2045, 2049 | 4 | atLeast | "≥ +4 yrs" | 100 | 84, null, null |
-| B | 2045, 2042 | −3 | null | "−3 yrs" | 0 | 84, 81, −3 |
+| B | 2045, 2042 | −3 | null | "−3 yrs" | 0 | 84, 81, null (different people, since 2026-09-28) |
 | C | 2056, 2056 | null | bothFull | "same" | 0 | null, null, null |
 | D | 2056, 2059 | null | bothFull | "both full plan" | 0 | null, null, null |
 | E | 2050, 2055 | 5 | atMost | "≤ +5 yrs" | −100 | null, 96, null |
 | F | 2029, 2025 | −4 | null | "−4 yrs" | 0 | 70, 66, −4 |
 | G | refused (`RangeError`) | | | | | |
 | H | 2049, 2049 | 0 | atLeast | "≥ same" | 100 | 90, null, null |
+| I | (as B) | | | | | 84, 81, −3 (Alex both sides) |
 
 Tolerance `exact` (integers). The page's cells for every case except G equal the retired ones; the published delta differs from the retired `MoneyLastsDelta.value` only in C and D (null where the retired value was 0, which the page never printed).
 
 Example library (scratch run at `4a80669e`, staging `b2p1-s3/measure/compare-pairs.json`): on all 812 ordered pairs of the 29 examples the three rows' A, B and delta cells and colours are identical before and after, and the published deltas agree with the retired functions wherever a difference is published; `summary.depletionYear` equals `result.depletionYear` on all 29 examples.
 
+Case I (revision 2026-09-28, decision D-PEOPLE-ORDER): the age is Alex's on both sides, the person the canonical order puts first (born 1962, the older), whichever the plan lists first: `2046 − 1962 = 84` and `2043 − 1962 = 81`, delta `−3`, and `depletionAgePersonId` is `alex` on both sides. The page labels the row "Depletion age (Alex)". Listed the other way round on both sides, the row is the same.
+
 ## Wrong readings
 
+- The first-listed person's age, the rule before the decision: case I's baseline would read Sam's `2046 − 1964 = 82` against Alex's `81`, a difference of `−1` between two people, and reversing either plan's list would change the row.
 - The engine headline's depletion-year difference (`headline.depletionYear.delta`, what RetireGolden-Pro's meeting view prints): null for A, C, D, E and H, where the page states a bound or "same"; equal to this delta only when both plans deplete (B, F).
 - Mixing conventions: the "lasts through" reading R15 retired (`lastsThroughYear`: `D` for a depleting plan, `endYear + 1` for a full one) on the full side against the last funded year `D − 1` on the depleting side gives A "≥ +5 yrs". Either convention used on both sides gives +4.
 - Publishing 0 for two full plans on different horizons (the retired value): D's field would say the plans last equally long; it is unknown. Publishing the difference of last funded years (3) would present the horizon gap as a longevity difference.
@@ -102,7 +108,7 @@ Example library (scratch run at `4a80669e`, staging `b2p1-s3/measure/compare-pai
 
 ## Limits
 
-- "Primary" is `household.people[0]` of each plan; when the two plans list different people first, the age row compares two people.
+- The age is the older person's on each side (the canonical order's first), named in the row's label; when the two plans' older people are different people, the label names both ("Depletion age (Alex in A, Jordan in B)") and the row compares two people's ages. Until 2026-09-28 it was `household.people[0]`, labelled "(primary)".
 - The age is the calendar age in the first short year, not at the moment money runs out.
 - "≥ same" (case H) is a correct bound with a zero difference.
 - The deterministic success reading is 100 or 0 on the one deterministic path; it is not a probability.
@@ -121,7 +127,7 @@ Example library (scratch run at `4a80669e`, staging `b2p1-s3/measure/compare-pai
 - `uiSources`: `[ComparePlansPage.tsx#ComparePlansPage]` (the reader). The retired entries go to `notes`: "Computed in planner-ui/src/planner/compareDeltas.ts#moneyLastsDelta, #deterministicSuccessPct and #ageDelta and planner-ui/src/planner/ComparePlansPage.tsx#primaryAgeIn until B2-P1 slice 3; now engine engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines, which ComparePlansPage reads. The census named compareDeltas.ts#compareDeltas, a symbol that never existed."
 - Docs `validate-census.mjs` `REQUIRED_UI`: the `compareDeltas.ts#compareDeltas` pin becomes `ComparePlansPage.tsx#ComparePlansPage` with the "(was …, until B2-P1 slice 3)" wording.
 - `transformations` restated to the engine formula; `longevity-depletion-year`'s composite `uiSources` entry `compareDeltas.ts#moneyLastsDelta / ageDelta` is removed.
-- Field coverage: rows for `MoneyLastsComparison.delta` (family), `.bound` (excluded, label), `PlanHeadlineComparison.deterministicSuccessPct.*` and `.depletionAgePrimary.*` (family); the planner-ui rows `MoneyLastsDelta.value`, `ageDelta.a/.b`, `moneyLastsDelta.depletionYear/.endYear` and their exclusions go with the code.
+- Field coverage: rows for `MoneyLastsComparison.delta` (family), `.bound` (excluded, label), `PlanHeadlineComparison.deterministicSuccessPct.*` and `.depletionAge.*` (family; `.depletionAgePrimary.*` until 2026-09-28); the planner-ui rows `MoneyLastsDelta.value`, `ageDelta.a/.b`, `moneyLastsDelta.depletionYear/.endYear` and their exclusions go with the code.
 
 ## Family
 
@@ -143,3 +149,10 @@ Derived by: claude (opus 5.5), 2026-09-27; cases A to H by hand and `scripts/ind
 
 - `compareMoneyLasts`, `MoneyLastsComparison` and `MoneyLastsBound` moved from `scenarios/planHeadlines.ts` to `projection/moneyLasts.ts`, the R15 module, and `planHeadlines.ts` re-exports them (F2). The arithmetic is unchanged. The move keeps the engine simulation core chunk's name (`useProjection-*.js`), so the bundle budget's row needs no second name; the record pins `moneyLasts.ts#compareMoneyLasts`, and the receipt mutates it there.
 - `scenarios/comparison.test.ts` pins `compareScenarioPlans`' `headline.moneyLasts` (F6): a plan that runs out of money against one that runs its full horizon reads bound `atLeast` and a positive difference, and reversed, `atMost` and the negative of it, each equal to `compareMoneyLasts(baselineResult, proposalResult)`; swapping the two sides fails it.
+
+## Revision 2026-09-28 (decision D-PEOPLE-ORDER)
+
+- The age row read `household.people[0]` and the page labelled it "(primary)". It now reads the person `model/peopleOrder.ts#canonicalFirstPerson` puts first on each side (the older; a tie to the sex order, then the id), publishes whose it is (`depletionAgePersonId`), and the page names them in the label. The field is renamed `depletionAge`.
+- On the example library it moves one example: survivor-years lists Lee (1962) before Chris (1960) and runs out of money, so every pair it is in now shows Chris's age. The other six couples list the older person first, and every single-person example is unchanged (`planner-ui/src/planner/comparePlanHeadlines.parity.test.ts` pins both).
+- Case I added by claude (Opus 5.5). Reviewed by: unreviewed.
+- Later the same day (the independent review's L1): when both sides publish an age and the two people differ (a different name or date of birth; ids are not compared, since a duplicated plan may re-key them), the delta is null and `depletionAgeDeltaWithheld` is `differentPeople`; the page shows both ages and "different people" in the delta cell. Case B's two people are born 1962-01-01 and 1962-06-15, so its age delta, `−3` before, is now withheld; case I's is one person's and stays `−3`.

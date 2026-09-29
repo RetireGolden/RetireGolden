@@ -42,7 +42,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 895
+              "line": 914
             }
           ]
         },
@@ -51,7 +51,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },
@@ -247,6 +247,138 @@
           "kind": "regulation",
           "citation": "Treas. Reg. 1.72-9",
           "url": "https://www.law.cornell.edu/cfr/text/26/1.72-9"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-c-3-A-annuity-measured-on-named-lives",
+      "title": "An annuity is paid and measured on the lives it names, not on whoever a household lists first",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The lives are a fact of the contract, so the Plan records them rather than the engine choosing them: ownerPersonId on a pension or annuity is the participant or first annuitant, and a two-person household supplies the second annuitant. Scope: a contract whose second annuitant is not a household member, and a joint form that reduces on the first death of either rather than the named owner's, are other payout forms, not other owners, and are not modelled. Plans saved before v7 are given the funding account's owner for a qualified purchase (the surviving spouse when that owner's planning age had ended by the purchase year), and otherwise the person then listed first, and the load says which. The plan keeps an account under its dead owner's id, so a surviving spouse's purchase from what was the decedent's 401(k) or IRA is expressed as a purchase funded from that account and named for the spouse; the engine models the spouse's taking over the account (the spousal rollover or treat-as-own election) no further than that. Death is the plan's planning age, not a Monte Carlo path's sampled death.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/model/migrations.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/model/planCrossFieldChecks.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/migrations.ts",
+          "functions": [
+            {
+              "name": "nameAccountPeople",
+              "line": 2188
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "guaranteedIncomeOwnerId",
+              "line": 1735
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/planCrossFieldChecks.ts",
+          "functions": [
+            {
+              "name": "checkAccountCrossFieldRules",
+              "line": 914
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 186
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/annuityNamedLives.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/annuityNamedLives.test.ts",
+          "line": 47,
+          "note": "whose age and life the payments follow",
+          "tests": [
+            {
+              "title": "pays Sam’s annuity from 2030 through 2034, on Sam’s age and life",
+              "line": 57
+            },
+            {
+              "title": "pays the same years with the people listed the other way round",
+              "line": 63
+            },
+            {
+              "title": "moves with the name on the contract, not with the list",
+              "line": 67
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/annuityNamedLives.test.ts",
+          "line": 100,
+          "note": "a surviving spouse buys from the decedent's account",
+          "tests": [
+            {
+              "title": "accepts Sam's purchase from Alex's 401(k) after Alex's death, and pays Sam from 2034",
+              "line": 110
+            },
+            {
+              "title": "refuses the same purchase named for Alex, who has died by 2032, in plain words",
+              "line": 118
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(c)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-5(b)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.72-5"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(b)(1), (4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(9)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(C)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
         }
       ]
     },
@@ -429,7 +561,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         }
@@ -509,7 +641,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 187
+              "line": 186
             }
           ]
         },

@@ -333,7 +333,9 @@ describe('buildHouseholdGraph', () => {
     // (funding "a", annuity "b->acct:c") vs (funding "a->acct:b", annuity "c")
     // collided as `funds:acct:a->acct:b->acct:c` before encoding.
     const withFundedAnnuity = (fundingId: string, annuityId: string): Plan => {
-      const plan = couplePlan()
+      // Planning ages that outlive the 2030 purchase: an annuity bought for
+      // a person who has died by then is refused.
+      const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
       const funding = taxableAccount(fundingId, 300_000, 200_000)
       const annuity: Account = {
         type: 'annuity',

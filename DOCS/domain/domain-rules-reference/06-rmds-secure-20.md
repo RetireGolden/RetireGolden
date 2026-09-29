@@ -84,8 +84,10 @@
   may therefore exclude up to two indexed limits, and a household with one eligible donor is held to one however
   large an ineligible spouse's IRA is. Conventions the statute does not supply survive that correction. Each
   donor's limit is applied after attribution rather than to the ask. What one donor's limit refuses is offered to
-  the other donors in sorted owner id order, because the scalar carries no donor intent to honour and plan account
-  ordering would make which donor gives depend on how the accounts happen to be listed. And dollars no donor can
+  the other donors in the canonical people order (earlier birth date, then sex, then id; `model/peopleOrder.ts`),
+  because the scalar carries no donor intent to honour and plan account ordering would make which donor gives depend
+  on how the accounts happen to be listed; until 2026-09-28 it was sorted owner id order, which let renaming the ids
+  move the split by a last-place unit (the independent review's L3). And dollars no donor can
   route or drain are dropped rather than given, because giving them would exclude dollars past a taxpayer's limit.
   The carve itself runs in plan account order and each entry's line-7 gross rounds on its own, so the published
   line-9 denominator can differ by one cent across account permutations; the record states that bound and why

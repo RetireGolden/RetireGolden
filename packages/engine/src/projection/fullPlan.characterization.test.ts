@@ -405,10 +405,10 @@ describe('full-plan characterization fixtures', () => {
     plan.assumptions.defaultReturnPct = 4
     plan.assumptions.heirTaxRatePct = 25
 
-    const baseline = summarizeProjection(plan, runPlan(plan, federal))
+    const baseline = summarizeProjection(plan, runPlan(plan, federal), { conversionFreeRun: null })
     const { schedule } = await optimizePlan(plan, { startYear: 2026, taxCalculator: federal })
     const optimizedPlan = withOptimizedConversions(plan, schedule.conversions, '2026-06-17T00:00:00.000Z')
-    const exact = summarizeProjection(optimizedPlan, runPlan(optimizedPlan, federal))
+    const exact = summarizeProjection(optimizedPlan, runPlan(optimizedPlan, federal), { conversionFreeRun: null })
     const summary = {
       status: schedule.status,
       requestedConversions: dollars(schedule.conversions.reduce((sum, c) => sum + c.amount, 0)),

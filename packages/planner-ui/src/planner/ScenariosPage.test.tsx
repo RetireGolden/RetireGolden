@@ -1181,9 +1181,9 @@ describe('ScenariosPage comparison lifecycle', () => {
     } as ScenarioComparison['rows'][number]['summary']
     mockedCompareScenarios.mockReturnValue({
       rows: [
-        { scenarioId: null, name: 'Base plan', summary, error: null, diff: [], successRate: null },
-        { scenarioId: 'equivalent-a', name: 'Equivalent A', summary, error: null, diff: [], successRate: null },
-        { scenarioId: 'equivalent-b', name: 'Equivalent B', summary, error: null, diff: [], successRate: null },
+        { scenarioId: null, name: 'Base plan', summary, error: null, diff: [], successRate: null, changesNothing: false },
+        { scenarioId: 'equivalent-a', name: 'Equivalent A', summary, error: null, diff: [], successRate: null, changesNothing: false },
+        { scenarioId: 'equivalent-b', name: 'Equivalent B', summary, error: null, diff: [], successRate: null, changesNothing: false },
       ],
     })
     const baselineSolve = deferred<SpendingSolveResult>()
@@ -1216,6 +1216,41 @@ describe('ScenariosPage comparison lifecycle', () => {
     })
     expect(mockedCompareCapacity).not.toHaveBeenCalled()
     expect(currentCalculate!.disabled).toBe(false)
+  })
+
+  it('says a scenario changes nothing, with dashes for its figures, in the table and in the detail panel (review L4, H04, H05)', async () => {
+    // Decision D-SCENARIO-JSON-LOSS: a scenario whose plan is the base plan
+    // is never shown as a copy of the baseline's figures.
+    const plan = createSamplePlan()
+    plan.scenarios = [{ id: 'same', name: 'Same spending', patch: { expenses: { baseAnnual: plan.expenses.baseAnnual } } }]
+    const summary = {
+      endingNetWorth: 1_234_000,
+      endingAfterTaxEstate: 987_000,
+      lifetimeTaxesAndPenalties: 345_000,
+      depletionYear: null,
+    } as ScenarioComparison['rows'][number]['summary']
+    mockedCompareScenarios.mockReturnValue({
+      rows: [
+        { scenarioId: null, name: 'Base plan', summary, error: null, diff: [], successRate: null, changesNothing: false },
+        { scenarioId: 'same', name: 'Same spending', summary, error: null, diff: [], successRate: null, changesNothing: true },
+      ],
+    })
+    await mount(plan)
+    await advanceComparison()
+
+    const radio = container.querySelector<HTMLInputElement>('input[aria-label="Compare Same spending"]')
+    const cells = Array.from(radio!.closest('tr')!.querySelectorAll('td')).map((cell) => cell.textContent)
+    expect(cells[1]).toBe('Same spendingThis scenario changes nothing in your plan.')
+    expect(cells.slice(2, 6)).toEqual(['—', '—', '—', '—'])
+    // The baseline row keeps its figures.
+    const baseCells = Array.from(container.querySelectorAll('tbody tr')[0]!.querySelectorAll('td')).map((cell) => cell.textContent)
+    expect(baseCells.slice(2, 6)).toEqual(['$1.23M', '$987k', '$345k', 'never'])
+    // The detail panel says it too, in place of a comparison.
+    const notices = Array.from(container.querySelectorAll('p')).filter(
+      (paragraph) => paragraph.textContent === 'This scenario changes nothing in your plan.',
+    )
+    expect(notices).toHaveLength(1)
+    expect(container.querySelector('[aria-label="Comparing selected scenario"]')).toBeNull()
   })
 
   it('pairs baseline and scenario on the engine default seed (D-MC-DEFAULT-SEED)', async () => {

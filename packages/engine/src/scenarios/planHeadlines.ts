@@ -26,6 +26,7 @@
  */
 
 import type { Plan } from '../model/plan.js'
+import { canonicalFirstPerson } from '../model/peopleOrder.js'
 import type { ProjectionSummary } from '../projection/compare.js'
 import { projectionDollarBasis, toTodayDollars, type DollarBasis } from '../projection/dollarBasis.js'
 import { compareMoneyLasts, type MoneyLastsComparison } from '../projection/moneyLasts.js'
@@ -70,17 +71,32 @@ export interface PlanHeadlineComparison {
   /** 100 when the projection never depletes, else 0: the single-path reading, not a probability. */
   deterministicSuccessPct: ScalarComparison
   /**
-   * The first listed person's calendar age (year − birth year) in the depletion
-   * year; null on a side that never depletes.
+   * The calendar age (year − birth year) in the depletion year of each side's
+   * person the canonical order puts first (the older; model/peopleOrder.ts),
+   * whoever that plan lists first; null on a side that never depletes. The
+   * depletion year is the household's; the age is this one person's, and
+   * `depletionAgePersonId` says whose (decision D-PEOPLE-ORDER).
    */
-  depletionAgePrimary: NullableScalarComparison
+  depletionAge: NullableScalarComparison
+  /** Whose age `depletionAge` is, on each side; null only for a side with no people. */
+  depletionAgePersonId: { baseline: string | null; proposal: string | null }
+  /**
+   * 'differentPeople' when both sides publish an age but the two ages are
+   * different people's (a different name or date of birth; ids are not
+   * compared, since a duplicated plan may re-key them): `depletionAge.delta`
+   * is then null, because the difference of two people's ages is not a
+   * quantity, and a page shows both ages without one (the independent
+   * review's L1). Null otherwise.
+   */
+  depletionAgeDeltaWithheld: 'differentPeople' | null
 }
 
 /**
  * Why comparePlanHeadlines refused a pair, with the side it is about, so a
  * page can say it in plain words: 'start-years-differ' (the two projections
- * start in different years; `side` is null) or 'birth-date-missing' (a side
- * that runs out of money has no first person with a YYYY-MM-DD date of birth).
+ * start in different years; `side` is null) or 'birth-date-missing' (on a side
+ * that runs out of money, the person whose age is published has no
+ * YYYY-MM-DD date of birth).
  * A figure that is not finite is refused by compareScalars instead
  * (NonFiniteComparisonError).
  */
@@ -96,13 +112,18 @@ export class PlanHeadlineRefusal extends RangeError {
   }
 }
 
+/** The person whose age the depletion-age row publishes: the canonical order's first, never the list's. */
+function agePerson(side: ComparedProjection) {
+  return canonicalFirstPerson(side.plan.household.people)
+}
+
 function birthYearOf(side: ComparedProjection, role: 'baseline' | 'proposal'): number {
-  const dob = side.plan.household.people[0]?.dob
+  const dob = agePerson(side)?.dob
   if (dob === undefined || !/^\d{4}-\d{2}-\d{2}$/u.test(dob)) {
     throw new PlanHeadlineRefusal(
       'birth-date-missing',
       role,
-      `The ${role} plan's first person has no birth date in YYYY-MM-DD form, so no depletion age can be published`,
+      `On the ${role} plan, the person whose age is published has no birth date in YYYY-MM-DD form, so no depletion age can be published`,
     )
   }
   return Number(dob.slice(0, 4))
@@ -111,6 +132,26 @@ function birthYearOf(side: ComparedProjection, role: 'baseline' | 'proposal'): n
 function depletionAge(side: ComparedProjection, role: 'baseline' | 'proposal'): number | null {
   const year = side.result.depletionYear
   return year === null ? null : year - birthYearOf(side, role)
+}
+
+/**
+ * The depletion-age row: each side's age, whose it is, and no difference when
+ * the two ages are different people's (by name and date of birth).
+ */
+function depletionAgeRow(
+  baseline: ComparedProjection,
+  proposal: ComparedProjection,
+): Pick<PlanHeadlineComparison, 'depletionAge' | 'depletionAgePersonId' | 'depletionAgeDeltaWithheld'> {
+  const ages = compareNullableScalars(depletionAge(baseline, 'baseline'), depletionAge(proposal, 'proposal'))
+  const a = agePerson(baseline)
+  const b = agePerson(proposal)
+  const differentPeople =
+    ages.baseline !== null && ages.proposal !== null && (a?.name !== b?.name || a?.dob !== b?.dob)
+  return {
+    depletionAge: differentPeople ? { ...ages, delta: null } : ages,
+    depletionAgePersonId: { baseline: a?.id ?? null, proposal: b?.id ?? null },
+    depletionAgeDeltaWithheld: differentPeople ? 'differentPeople' : null,
+  }
 }
 
 /** Σ over the ledger's years, in order and from 0, of (tax + penalties) divided by that year's published factor. */
@@ -122,8 +163,9 @@ function lifetimeTaxesAndPenaltiesToday(side: ComparedProjection, basis: DollarB
 
 /**
  * Compare two projections that share a start year. Refuses with a RangeError
- * two results with different start years and a depleting side whose first
- * person has no birth date (PlanHeadlineRefusal, naming the reason and side),
+ * two results with different start years and a depleting side whose
+ * published person has no birth date (PlanHeadlineRefusal, naming the reason
+ * and side),
  * and a non-finite figure (NonFiniteComparisonError, through compareScalars).
  * When today's dollars are needed, a projection whose rows give no dollar
  * basis is refused by projection/dollarBasis.ts#projectionDollarBasis: with a
@@ -176,6 +218,6 @@ export function comparePlanHeadlines(
       lasts.baseline.depletionYear === null ? 100 : 0,
       lasts.proposal.depletionYear === null ? 100 : 0,
     ),
-    depletionAgePrimary: compareNullableScalars(depletionAge(baseline, 'baseline'), depletionAge(proposal, 'proposal')),
+    ...depletionAgeRow(baseline, proposal),
   }
 }

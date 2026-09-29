@@ -20,7 +20,8 @@ export interface AnnualLifestyleBalance {
 
 export interface AnnualLifestyleLayersInput {
   readonly expenses: Readonly<ExpensePlan>
-  readonly primaryAge: number
+  /** Attained age of the person the spending phases follow (`expenses.phasesAgeOf`). */
+  readonly phasesPersonAge: number
   readonly peopleStateCount: number
   readonly aliveCount: number
   readonly anyAlive: boolean
@@ -41,7 +42,7 @@ export function annualLifestyleLayers(
 ): AnnualSpendingLayers {
   const {
     expenses,
-    primaryAge,
+    phasesPersonAge,
     peopleStateCount,
     aliveCount,
     anyAlive,
@@ -61,7 +62,7 @@ export function annualLifestyleLayers(
 
   let phaseMultiplier = 1
   for (const phase of [...expenses.phases].sort((a, b) => a.fromAge - b.fromAge)) {
-    if (primaryAge >= phase.fromAge) phaseMultiplier = phase.multiplier
+    if (phasesPersonAge >= phase.fromAge) phaseMultiplier = phase.multiplier
   }
   const survivorSpendingFactor =
     peopleStateCount > 1 && aliveCount === 1

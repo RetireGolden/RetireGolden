@@ -1166,7 +1166,7 @@ function decisionContext(plan: Plan, baselineResult: ProjectionResult, simulateO
   return {
     plan,
     baselineResult,
-    baselineSummary: summarizeProjection(plan, baselineResult),
+    baselineSummary: summarizeProjection(plan, baselineResult, { conversionFreeRun: null }),
     simulateOptions,
   }
 }
@@ -1990,7 +1990,7 @@ function runPolicyRankedTournament(
         conversions: milpRecommended.cleanedSchedule.conversions,
       },
       baselineSummary: ctx.baselineSummary,
-      candidateSummary: summarizeProjection(plan, milpRecommended.cleanedResult),
+      candidateSummary: summarizeProjection(plan, milpRecommended.cleanedResult, { conversionFreeRun: null }),
       candidateResult: milpRecommended.cleanedResult,
       deltas: {
         endingAfterTaxEstate: milpRecommended.cleanedValidation.afterTaxEstateDelta,
@@ -2302,7 +2302,7 @@ function evaluateExactLedgerScheduleCalculation(
   const ctx: DecisionContext = {
     plan,
     baselineResult,
-    baselineSummary: summarizeProjection(plan, baselineResult),
+    baselineSummary: summarizeProjection(plan, baselineResult, { conversionFreeRun: null }),
     simulateOptions: {
       startYear: baselineResult.startYear,
       taxCalculator: () => {
@@ -2685,7 +2685,7 @@ function priceExecutedSchedule(
   const withConversions = withOptimizedConversions(plan, requestedConversions)
   const result = simulatePlan(withConversions, simulateOptions)
   return {
-    estate: summarizeProjection(withConversions, result).endingAfterTaxEstate,
+    estate: summarizeProjection(withConversions, result, { conversionFreeRun: null }).endingAfterTaxEstate,
     incompleteComputationYears: incompleteComputationYears(result),
     executed: result.years
       .filter((year) => year.rothConversion > 1)

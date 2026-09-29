@@ -1,15 +1,15 @@
 # Mutation receipt: aca-contract-premium-basis
 
-Executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `22d33849` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `22d33849` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/effectiveAcaYearContract.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/effectiveAcaYearContract.ts b/packages/engine/src/projection/internal/effectiveAcaYearContract.ts
-index 87f6079e..fca92e05 100644
+index 0b5dc5f1..99b2e236 100644
 --- a/packages/engine/src/projection/internal/effectiveAcaYearContract.ts
 +++ b/packages/engine/src/projection/internal/effectiveAcaYearContract.ts
-@@ -72,5 +72,5 @@ export function effectiveAcaYearContract(
+@@ -83,5 +83,5 @@ export function effectiveAcaYearContract(
  ): EffectiveAcaYearContract {
    if (contract.premiumBasis === 'premiumField') {
 -    const monthlyPremium = input.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson * input.healthInflFactor
@@ -28,15 +28,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed after the review fixes lengthened effectiveAcaYearContract.ts's header comment (45 CFR 155.430(d)(7) and the limit's size, review finding L2), which moved the hunk. The baseline is green (effectiveAcaYearContract.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (effectiveAcaYearContract.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/internal/effectiveAcaYearContract.evidence.test.ts (3 tests | 2 failed) 139ms
+ ❯ src/projection/internal/effectiveAcaYearContract.evidence.test.ts (3 tests | 2 failed) 109ms
    ❯ aca-contract-premium-basis — Premium-credit contract as a run prices it: premium basis and deaths (3)
-     × fills a premium-field contract for each run and year from the premium field, the state and the people alive 72ms
-     × holds a stated contract as written and stops charging a member after the death year 38ms
+     × fills a premium-field contract for each run and year from the premium field, the state and the people alive 63ms
+     × holds a stated contract as written and stops charging a member after the death year 29ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 1 passed (3)

@@ -7,6 +7,7 @@
  * seed), and the example's fixed clock sets the timestamps.
  */
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 
 import { exampleStorageId } from '../data/planOrigin'
 import { exampleFixedNow } from '../planner/examples/buildContext'
@@ -14,7 +15,8 @@ import { EXAMPLE_PLANS, getExampleById, type ExamplePlan } from '../planner/exam
 
 export function appExamplePlan(example: ExamplePlan): Plan {
   const built = example.build()
-  return {
+  // As loadExample.ts#stampDemo: canonical scenario patches follow the stamped id.
+  return rebindScenarioPatchesToPlan({
     ...built,
     id: exampleStorageId(example.id),
     name: example.title,
@@ -22,7 +24,7 @@ export function appExamplePlan(example: ExamplePlan): Plan {
     exampleSourceId: example.id,
     createdAtIso: exampleFixedNow().toISOString(),
     updatedAtIso: exampleFixedNow().toISOString(),
-  }
+  })
 }
 
 export function appExamplePlanById(id: string): Plan {

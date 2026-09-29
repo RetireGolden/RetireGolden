@@ -1,6 +1,6 @@
 # Mutation receipt: survival-probability-product
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) with the mutation restated on the curve's view, since survivalProbabilityTo became a view of survivalCurve in B2-P1 slice 4, and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) with the mutation restated on the curve's view, since survivalProbabilityTo became a view of survivalCurve in B2-P1 slice 4, and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
@@ -26,24 +26,24 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because merging main moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine15/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 6 failed) 126ms
+ ❯ src/montecarlo/survival.evidence.test.ts (23 tests | 6 failed) 120ms
    ❯ survival-probability-product — The survival curve: product of hazard-adjusted one-year survivals, and the 50/50 mixture for 'average' (7)
      × multiplies p65 and p66 from SSA's published male q: S(67) = 0.983545 x 0.982426 = 0.96626018017 5ms
-     × floors a fractional target, reads the curve at whole years only, and gives 1 for dying once nobody is alive 1ms
-     × survivalProbabilityTo is the curve, bit for bit the product for a man or a woman and the mean of the two for 'average', at every integer pair 114ms
+     × floors a fractional target, reads the curve at whole years only, and gives 1 for dying once nobody is alive 0ms
+     × survivalProbabilityTo is the curve, bit for bit the product for a man or a woman and the mean of the two for 'average', at every integer pair 109ms
    ❯ survival-percentile-age — Survival-percentile planning age: oldest age reached with probability at least pct/100 (5)
      × brackets the threshold: S(66) >= 0.97 and S(67) < 0.97 0ms
-   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (5)
+   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (6)
      × single-life survival to 69, 70, 71 matches the worksheet within 1e-9 0ms
      × either-alive survival 1 - (1 - S)^2 qualifies at 70 (0.9918 >= 0.99) and fails at 71 (0.9876) 0ms
 
  Test Files  1 failed (1)
-      Tests  6 failed | 16 passed (22)
+      Tests  6 failed | 17 passed (23)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯

@@ -1,15 +1,15 @@
 # Mutation receipt: claim-age-co-optimization
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/generators.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/generators.ts b/packages/engine/src/decisions/generators.ts
-index 49862611..3deb4753 100644
+index c347e9d1..f3b145bb 100644
 --- a/packages/engine/src/decisions/generators.ts
 +++ b/packages/engine/src/decisions/generators.ts
-@@ -358,7 +358,7 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
+@@ -359,7 +359,7 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
        if (person !== undefined && isClaimAlreadyMade(person, stream.claimAge, startYear)) continue
        const personLabel = person?.name ?? 'household member'
        for (const claim of canonicalClaimAges(person)) {
@@ -30,17 +30,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-the merge of slice 4's final head (slice 3 #754, #755, #756, the claimants split) moved the production lines and test titles these receipts quote The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because merging main moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (23 tests | 4 failed) 772ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (23 tests | 4 failed) 701ms
    ❯ claim-age-co-optimization — Claim age co-optimization (9)
      × generates 2 candidates for an open claim at 70y0m, so 3 combinations are evaluated 13ms
-     × offers no canonical age already passed: a 70-year-old claiming at 70 has none to try, and says so 6ms
+     × offers no canonical age already passed: a 70-year-old claiming at 70 has none to try, and says so 7ms
      × searches the open claim of a couple whose other claim is already made, and holds that one 10ms
-     × holds the current claim, so the joint estate IS the current-claim estate 233ms
+     × holds the current claim, so the joint estate IS the current-claim estate 213ms
 
  Test Files  1 failed (1)
       Tests  4 failed | 19 passed (23)

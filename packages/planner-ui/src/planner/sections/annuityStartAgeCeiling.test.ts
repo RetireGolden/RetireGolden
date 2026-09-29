@@ -124,11 +124,12 @@ describe('annuityStartAgeCeiling', () => {
     expect(annuityStartAgeCeiling(planWithOwner(), annuity({ purchase: undefined }))).toBeNull()
   })
 
-  it('reads an unowned contract as the first person’s', () => {
-    // The projection resolves a null owner to the first person in the
-    // household, so the editor has to bound it against the same birth date or
-    // it would offer an age the engine then refuses.
-    expect(annuityStartAgeCeiling(planWithOwner(), annuity({ ownerPersonId: null }))).toBe(76)
+  it('bounds no contract that names no annuitant, and never reads the first person for it', () => {
+    // Schema v7 (decision D-PEOPLE-ORDER): every annuity names its
+    // annuitant, and the engine measures the start age on that person alone.
+    // A contract with none is refused by the parse, so the editor has no
+    // birth date to bound it against.
+    expect(annuityStartAgeCeiling(planWithOwner(), annuity({ ownerPersonId: null }))).toBeNull()
   })
 
   it('caps the ceiling at the schema maximum instead of standing down', () => {

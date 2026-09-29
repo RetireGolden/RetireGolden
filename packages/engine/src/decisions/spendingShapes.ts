@@ -24,17 +24,29 @@ export type ComparedSpendingShape = (typeof SPENDING_SHAPE_COMPARISON)[number]
 
 /**
  * The plan solved for one shape: the plan's own spending phases replaced by
- * the shape's rows (`spendingShapePhases`, on the first person's retirement
- * age, 65 when it is unset), and an amortized (ABW) spending policy removed,
+ * the shape's rows (`spendingShapePhases`, on the retirement age of the person
+ * the phases follow, `expenses.phasesAgeOf` or the only person, 65 when it is
+ * unset), and an amortized (ABW) spending policy removed,
  * since ABW ignores the base amount the solver moves. Every other field,
  * including a guardrail policy, is unchanged. The removed policy is left out
  * of the returned expenses, not set to undefined.
  */
 export function planWithSpendingShape(plan: Plan, shape: SpendingShapeId): Plan {
-  const retirementAge = plan.household.people[0]?.retirementAge ?? 65
+  // A two-person plan that names no one yet (one built without loading)
+  // names the person listed first, and says so by writing the field.
+  const phasesAgeOf = plan.expenses.phasesAgeOf ?? (plan.household.people.length > 1 ? plan.household.people[0]?.id : undefined)
+  const person = plan.household.people.find((p) => p.id === phasesAgeOf) ?? (plan.household.people.length === 1 ? plan.household.people[0] : undefined)
+  const retirementAge = person?.retirementAge ?? 65
   const { spendingPolicy, ...withoutPolicy } = plan.expenses
   const expenses = spendingPolicy?.mode === 'abw' ? withoutPolicy : plan.expenses
-  return { ...plan, expenses: { ...expenses, phases: spendingShapePhases(shape, retirementAge) } }
+  return {
+    ...plan,
+    expenses: {
+      ...expenses,
+      phases: spendingShapePhases(shape, retirementAge),
+      ...(phasesAgeOf !== undefined ? { phasesAgeOf } : {}),
+    },
+  }
 }
 
 /** One shape's solve, as the comparison reads it. */

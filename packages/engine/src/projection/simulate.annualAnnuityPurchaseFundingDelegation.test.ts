@@ -297,9 +297,6 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
     const phase = expectSeamRan(seam, 1)[0]!
     expect(counterfactualReads).toHaveLength(1)
     expect(phase.input.accounts).toBe(originalPlan.accounts)
-    expect(phase.input.primaryPerson).toBe(
-      originalPlan.household.people[0],
-    )
     expect([...phase.input.peopleById.entries()]).toEqual([
       ['p1', originalPlan.household.people[0]],
     ])

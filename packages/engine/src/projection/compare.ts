@@ -8,6 +8,7 @@ import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
 import { estateHsaIncomeBase } from './estateHsaIncome.js'
 import { moneyLasts, type MoneyLasts } from './moneyLasts.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
+import { householdRetirement, type PersonRetirement, type RetirementYearRule } from './householdRetirement.js'
 import type { ProjectionResult } from './types.js'
 import { balancesByCategory, spendingWithTaxAndPenalties } from './yearFigures.js'
 
@@ -131,9 +132,13 @@ export interface ProjectionSummary {
   savingsRates: Array<{ year: number; ratePct: number }>
   /**
    * Arithmetic mean of savingsRates[].ratePct over the years strictly before
-   * the primary person's target retirement year (birth year + retirement age,
-   * 65 when unset); 0 when no year qualifies. Unweighted: every qualifying
-   * year counts once regardless of income.
+   * the household's later retirement year (`fiBasis.retirementYear`,
+   * projection/householdRetirement.ts: a retirement age gives birth year +
+   * that age; a person with none retires in the first year without their
+   * wages, else in the start year; a person who never retires in the plan is
+   * left out), or over every year when nobody retires in the plan;
+   * 0 when no year qualifies. Unweighted: every qualifying year counts once
+   * regardless of income.
    */
   averagePreRetirementSavingsRatePct: number
   /**
@@ -143,11 +148,23 @@ export interface ProjectionSummary {
    * `assumptions.safeWithdrawalRatePct` percent per year (default 4) used as a
    * lens only — the ledger does not spend at this rate.
    *
-   * Spending year: the calendar year `max(startYear, birthYear + retirementAge)`,
-   * looked up on `result.years`. `birthYear` is the ISO year of
-   * `household.people[0].dob` (first four characters; month and day ignored),
-   * else 1980; `retirementAge` is that person's `retirementAge`, else 65. If
-   * that year is absent, the first ledger year (`result.years[0]`) is used.
+   * Spending year: the calendar year `max(startYear, retirementYear)`, looked
+   * up on `result.years`, where `retirementYear` is the household's later
+   * retirement (projection/householdRetirement.ts): each person's first year
+   * without work (birth year plus retirement age; else the year after their
+   * last wage year; else the start year), the latest among the people alive
+   * in the year it would be priced. A tie goes to the older person, then the
+   * smaller id, so list order never decides it (decision D-PEOPLE-ORDER);
+   * `fiBasis.personId` names that person. If that year is absent, the first
+   * ledger year (`result.years[0]`) is used.
+   *
+   * Null when nobody in the household retires in the plan (everyone works
+   * through it, reaches a retirement age only after the planning age, or
+   * died before it starts): there is no retirement year to price, and FI is
+   * never priced in a year after the person's death (the independent
+   * review's N3). `fiBasis.spendingSource` is then `noRetirementInPlan` and
+   * `fiBasis.notRetiring` says who and why; `fiYear`, `fiAge` and
+   * `coastFireNumber` are null too.
    *
    * Spending base: that year's published `expenses.total + tax + penalties`
    * (nominal dollars for that calendar year). `expenses.total` is funded
@@ -155,12 +172,26 @@ export interface ProjectionSummary {
    * goals, debt service, property costs, healthcare, insurance premiums, and
    * net LTC (`careCost − ltcBenefit`) — not `intendedSpending` and not net of
    * incomes. `tax` and `penalties` are that year's published liabilities.
+   *
+   * A Roth conversion is a one-off prepayment of tax, not spending the
+   * portfolio must fund every year, so it never enters the base (decision
+   * D-FI-CONVERSION-TAX). When the spending year carries a Roth conversion
+   * (`rothConversion > 0`, or a named conversion request that year), its
+   * `expenses.total + tax + penalties` are read from the same calendar year of
+   * the plan run with its Roth conversions removed (`withoutRothConversions`,
+   * run on the projection's own options): the year's outflows had the
+   * household not converted. That run is supplied by the caller
+   * (`SummarizeProjectionOptions.conversionFreeRun`); a caller that supplies
+   * none keeps that year's conversion tax in the base, and `fiBasis` says so.
+   * `fiBasis` names the year and the source of every published FI number.
+   *
    * Deflation is discrete annual with the plan's general inflation rate
    * `plan.assumptions.inflationPct` (never `healthcareExtraInflationPct`):
    * `nominal / (1 + inflationPct/100)^(spendingYear − startYear)`. No rounding
    * or floor.
    *
-   * Formula: fiNumber = ((expenses.total + tax + penalties) / (1 + inflationPct/100)^(spendingYear − startYear)) / (safeWithdrawalRatePct / 100)
+   * Formula: fiNumber = ((expenses.total + tax + penalties) / (1 + inflationPct/100)^(spendingYear − startYear)) / (safeWithdrawalRatePct / 100),
+   * with the three figures from the conversion-free run when the spending year converts
    *
    * Empty ledger (`result.years` empty): `plan.expenses.baseAnnual / (safeWithdrawalRatePct / 100)`
    * with no tax, no penalties, and no deflation.
@@ -170,14 +201,15 @@ export interface ProjectionSummary {
    * the first ledger year rather than interpolating a retirement-year spend;
    * guaranteed income is not subtracted (gross outflows, not `netPortfolioNeed`).
    */
-  fiNumber: number
+  fiNumber: number | null
   fiYear: number | null
   /**
    * Attained age in the first ledger year whose end-of-year investable, deflated
    * to `result.startYear`, meets or exceeds `fiNumber`; `null` if none does.
    * Age-from-date-of-birth: `fiAge = fiYear − birthYear`, where `birthYear` is
-   * the ISO year of `household.people[0].dob` (first four characters of the ISO
-   * date; month and day are ignored), else 1980. That is calendar-year attained
+   * the ISO year of the `dob` of the person named by `fiBasis.personId` (the
+   * household's later retirement; first four characters of the ISO date; month
+   * and day are ignored), else 1980. That is calendar-year attained
    * age (`year − birth year`), the same convention as
    * `PersonYearState.ageAttained`, not age-on-birthday.
    *
@@ -209,27 +241,145 @@ export interface ProjectionSummary {
    * retirement age reaches `fiNumber`. Growth rate is the simple real return
    * `defaultReturnPct/100 − inflationPct/100` (`plan.assumptions.defaultReturnPct`
    * and `plan.assumptions.inflationPct`, the general rate, not the healthcare
-   * extra). Horizon is whole years of age:
-   * `max(0, retirementAge − (startYear − birthYear))`, using the same
-   * `birthYear` / `retirementAge` conventions as `fiNumber` (ISO year of
-   * `people[0].dob` else 1980; `retirementAge` else 65). Already at or past
-   * retirement age ⇒ 0-year horizon ⇒ this equals `fiNumber`. Compounding is
+   * extra). Horizon is whole years to the household's later retirement:
+   * `max(0, retirementYear − startYear)`, with `retirementYear` as for
+   * `fiNumber` (for one person this is `retirementAge − (startYear −
+   * birthYear)`). Already at or past that year ⇒ 0-year horizon ⇒ this equals
+   * `fiNumber`. Compounding is
    * discrete annual (`Math.pow`), not continuous. No rounding or floor.
    *
-   * Formula: coastFireNumber = fiNumber / (1 + defaultReturnPct/100 − inflationPct/100)^max(0, retirementAge − (startYear − birthYear))
+   * Formula: coastFireNumber = fiNumber / (1 + defaultReturnPct/100 − inflationPct/100)^max(0, retirementYear − startYear)
    *
-   * Reads upstream `fiNumber`. An empty ledger has no extra fallback here
-   * beyond whatever `fiNumber` already published.
+   * Reads upstream `fiNumber`; null when `fiNumber` is. An empty ledger has
+   * no extra fallback here beyond whatever `fiNumber` already published.
    *
    * Note: real return is a subtraction of the two rates, not the Fisher
    * `(1+r)/(1+i)−1`; the horizon is retirement age, not the FI-number spending
    * year, so a ledger that ends before retirement still discounts to retirement
    * while `fiNumber` may have fallen back to the first ledger year's spending.
    */
-  coastFireNumber: number
+  coastFireNumber: number | null
+  /** Which year and which outflows `fiNumber` (and so `fiYear`, `fiAge` and `coastFireNumber`) prices. */
+  fiBasis: FiBasis
 }
 
-export function summarizeProjection(plan: Plan, result: ProjectionResult): ProjectionSummary {
+/**
+ * Where the FI number's spending base came from.
+ * - `projection`: the plan converts to Roth in no year; the spending year's
+ *   own `expenses.total + tax + penalties`.
+ * - `conversionFreeProjection`: the plan converts to Roth in some year; the
+ *   spending year's outflows from the plan run with its Roth conversions
+ *   removed, so neither a conversion's one-off tax nor what it costs in later
+ *   years (the two-year IRMAA lookback, a taxable account drained to pay the
+ *   tax) is priced as spending, whichever year the conversion fell in.
+ * - `conversionTaxIncluded`: the plan converts and the caller supplied no
+ *   conversion-free run, so the spending year may carry conversion costs. No
+ *   planner page shows a figure on this basis; a caller that shows one should
+ *   pass `conversionFreeRun`.
+ * - `baseAnnual`: the ledger is empty; `plan.expenses.baseAnnual` alone.
+ * - `noRetirementInPlan`: nobody in the household retires in the plan, so no
+ *   FI number is priced (`fiBasis.notRetiring` says who and why).
+ */
+export type FiSpendingSource = 'projection' | 'conversionFreeProjection' | 'conversionTaxIncluded' | 'baseAnnual' | 'noRetirementInPlan'
+
+export interface FiBasis {
+  /** The calendar year priced; null for an empty ledger or when nobody retires in the plan. */
+  spendingYear: number | null
+  spendingSource: FiSpendingSource
+  /**
+   * The person whose retirement is the household's later one
+   * (projection/householdRetirement.ts): `fiAge` is this person's age, and
+   * `retirementYear` is theirs. Null when nobody retires in the plan (or the
+   * household has no people, which a parsed plan never has).
+   */
+  personId: string | null
+  /** That person's retirement year under `retirementRule`. */
+  retirementYear: number | null
+  /** Which rule gave the retirement year: a retirement age, the first year without wages, or the start year. */
+  retirementRule: RetirementYearRule | null
+  /** That person's last year alive at the planning age. */
+  personLastYearAlive: number | null
+  /**
+   * The people who never retire in the plan, left out of the household's
+   * later retirement (projection/householdRetirement.ts), in the canonical
+   * people order: a page says who works through the plan and whose
+   * retirement is priced instead, or, when nobody retires, why no FI number
+   * is priced.
+   */
+  notRetiring: readonly PersonRetirement[]
+}
+
+export interface SummarizeProjectionOptions {
+  /**
+   * Runs the same plan with its Roth conversions removed
+   * (`withoutRothConversions(plan)`) on the options the projection itself ran
+   * on; `conversionFreeRun(plan, opts)` builds it. Called at most once, and
+   * only when the plan converts to Roth in some year.
+   *
+   * Required, and null only by the caller's own choice (the independent
+   * review's M3): a caller that passes null gets, for a converting plan, an FI
+   * base that may carry conversion costs, published as
+   * `fiBasis.spendingSource: 'conversionTaxIncluded'`, and must not show that
+   * FI figure without saying so. Every caller in this repository decides here.
+   */
+  readonly conversionFreeRun: (() => ProjectionResult) | null
+}
+
+/**
+ * The plan with its voluntary Roth conversions removed: the conversion
+ * strategy set to `none`, every named or legacy-aggregate Roth-conversion
+ * request dropped, and every withdrawal request a dropped conversion names as
+ * its tax funding (`linkedWithdrawal`) dropped with it, since it exists only
+ * to pay that conversion's tax. Nothing else changes.
+ */
+export function withoutRothConversions(plan: Plan): Plan {
+  const actions = plan.strategies.retirementActions
+  const taxFundingIds = new Set(
+    actions.flatMap((action) =>
+      action.kind === 'rothConversion' && action.taxFunding.kind === 'linkedWithdrawal'
+        ? [action.taxFunding.withdrawalActionId]
+        : [],
+    ),
+  )
+  return {
+    ...plan,
+    strategies: {
+      ...plan.strategies,
+      rothConversion: { mode: 'none' },
+      retirementActions: actions.filter(
+        (action) =>
+          action.kind !== 'rothConversion' &&
+          action.kind !== 'legacyAggregateRothConversion' &&
+          !taxFundingIds.has(action.actionId),
+      ),
+    },
+  }
+}
+
+/**
+ * The conversion-free run for `summarizeProjection`: `withoutRothConversions(plan)`
+ * simulated on `opts`, without the capture sinks (they observe the real run only).
+ */
+export function conversionFreeRun(plan: Plan, opts: SimulateOptions): () => ProjectionResult {
+  return () => {
+    const counterfactual: SimulateOptions = { ...opts }
+    delete counterfactual.captureOptimizerInputs
+    delete counterfactual.annualCounterfactual
+    delete counterfactual.captureAnnualCashFlow
+    return simulatePlan(withoutRothConversions(plan), counterfactual)
+  }
+}
+
+/** A year carries a Roth conversion when it converts, or when a named conversion request was executed or refused in it. */
+function yearConverts(year: ProjectionResult['years'][number]): boolean {
+  return year.rothConversion > 0 || year.rothConversionActionExecution !== undefined
+}
+
+export function summarizeProjection(
+  plan: Plan,
+  result: ProjectionResult,
+  options: SummarizeProjectionOptions,
+): ProjectionSummary {
   let taxes = 0
   let conversions = 0
   for (const y of result.years) {
@@ -327,10 +477,18 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   const defaultReturn = plan.assumptions.defaultReturnPct / 100
   const realReturn = defaultReturn - inflationRate
 
-  const primary = plan.household.people[0]
-  const birthYear = primary ? isoYear(primary.dob) : 1980
-  const retirementAge = primary?.retirementAge ?? 65
-  const targetYear = birthYear + retirementAge
+  // The household's later retirement (decision D-PEOPLE-ORDER, rule R4; one
+  // rule with the funded ratio, projection/householdRetirement.ts): the FI
+  // figures are household figures, so they price the year the last person
+  // retires, never whoever is listed first. A person with no retirement age
+  // retires in the first year without their wages, else in the start year;
+  // a person who works through the plan is left out, and when nobody retires
+  // in the plan no FI figure is priced (the independent review's N3).
+  const household = householdRetirement(plan, startYear)
+  const retirement = household.retirement
+  const fiPerson = retirement === null ? undefined : plan.household.people.find((p) => p.id === retirement.personId)
+  const birthYear = fiPerson ? isoYear(fiPerson.dob) : 1980
+  const targetYear: number | null = retirement ? retirement.year : null
 
   // 1. Savings rates
   const savingsRates = result.years.map((y) => {
@@ -341,28 +499,54 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   })
 
   // 2. Average pre-retirement savings rate
-  const preRetirementRates = savingsRates.filter((r) => r.year < targetYear)
+  const preRetirementRates = savingsRates.filter((r) => targetYear === null || r.year < targetYear)
   const averagePreRetirementSavingsRatePct =
     preRetirementRates.length > 0
       ? preRetirementRates.reduce((acc, r) => acc + r.ratePct, 0) / preRetirementRates.length
       : 0
 
-  // 3. FI Number
-  const targetResult = result.years.find((y) => y.year === Math.max(startYear, targetYear)) ?? result.years[0]
-  const nominalSpendingAtFI = targetResult
-    ? spendingWithTaxAndPenalties(targetResult)
+  // 3. FI Number. The spending year's outflows, or, when the plan converts to
+  // Roth in any year, the same year's outflows from the conversion-free run
+  // (decision D-FI-CONVERSION-TAX): a conversion's tax is paid once, and so are
+  // the costs it causes later, such as the IRMAA surcharge its MAGI sets two
+  // years on or a taxable account it drained. Dividing any of them by the
+  // withdrawal rate would price them as spending every year, so a plan that
+  // converts earlier than the spending year is read the same way; a
+  // conversion after it cannot reach it, and reading the free run then
+  // changes nothing. Converting more can therefore never lower the figure.
+  const targetResult = targetYear === null
+    ? undefined
+    : result.years.find((y) => y.year === Math.max(startYear, targetYear)) ?? result.years[0]
+  let fiSpendingSource: FiSpendingSource = targetYear === null
+    ? 'noRetirementInPlan'
+    : targetResult === undefined ? 'baseAnnual' : 'projection'
+  let pricedYear: ProjectionResult['years'][number] | undefined = targetResult
+  if (targetResult !== undefined && result.years.some(yearConverts)) {
+    if (options.conversionFreeRun === null) {
+      fiSpendingSource = 'conversionTaxIncluded'
+    } else {
+      const counterfactualYear = options.conversionFreeRun().years.find((y) => y.year === targetResult.year)
+      if (counterfactualYear === undefined) {
+        throw new Error(`The conversion-free run has no year ${targetResult.year}, the FI number's spending year`)
+      }
+      pricedYear = counterfactualYear
+      fiSpendingSource = 'conversionFreeProjection'
+    }
+  }
+  const nominalSpendingAtFI = pricedYear
+    ? spendingWithTaxAndPenalties(pricedYear)
     : plan.expenses.baseAnnual
   const yearsToFIYear = targetResult ? targetResult.year - startYear : 0
   const annualSpendingAtFIToday = nominalSpendingAtFI / Math.pow(1 + inflationRate, yearsToFIYear)
   const swr = (plan.assumptions.safeWithdrawalRatePct ?? 4) / 100
-  const fiNumber = annualSpendingAtFIToday / swr
+  const fiNumber = targetYear === null ? null : annualSpendingAtFIToday / swr
 
   // 4. FI Year and Age
   let fiYear: number | null = null
   let fiAge: number | null = null
-  for (const y of result.years) {
+  for (const y of fiNumber === null ? [] : result.years) {
     const deflatedInvestable = y.investableTotal / Math.pow(1 + inflationRate, y.year - startYear)
-    if (deflatedInvestable >= fiNumber) {
+    if (deflatedInvestable >= fiNumber!) {
       fiYear = y.year
       fiAge = y.year - birthYear
       break
@@ -370,9 +554,9 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   }
 
   // 5. Coast FIRE Number
-  const currentAge = startYear - birthYear
-  const yearsToRetire = Math.max(0, retirementAge - currentAge)
-  const coastFireNumber = fiNumber / Math.pow(1 + realReturn, yearsToRetire)
+  const coastFireNumber = fiNumber === null || targetYear === null
+    ? null
+    : fiNumber / Math.pow(1 + realReturn, Math.max(0, targetYear - startYear))
 
   return {
     lifetimeTaxesAndPenalties: taxes,
@@ -395,6 +579,15 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
     fiYear,
     fiAge,
     coastFireNumber,
+    fiBasis: {
+      spendingYear: targetResult?.year ?? null,
+      spendingSource: fiSpendingSource,
+      personId: retirement?.personId ?? null,
+      retirementYear: retirement?.year ?? null,
+      retirementRule: retirement?.rule ?? null,
+      personLastYearAlive: retirement?.lastYearAlive ?? null,
+      notRetiring: household.notRetiring,
+    },
   }
 }
 
@@ -410,8 +603,12 @@ export function compareRothConversion(plan: Plan, opts: SimulateOptions): RothCo
     strategies: { ...plan.strategies, rothConversion: { mode: 'none' } },
   }
   return {
-    withConversions: summarizeProjection(plan, simulatePlan(plan, opts)),
-    withoutConversions: summarizeProjection(disabled, simulatePlan(disabled, opts)),
+    withConversions: summarizeProjection(plan, simulatePlan(plan, opts), {
+      conversionFreeRun: conversionFreeRun(plan, opts),
+    }),
+    withoutConversions: summarizeProjection(disabled, simulatePlan(disabled, opts), {
+      conversionFreeRun: conversionFreeRun(disabled, opts),
+    }),
   }
 }
 
@@ -445,7 +642,7 @@ export interface LtcStressComparison {
 export function compareLtcStress(plan: Plan, opts: SimulateOptions): LtcStressComparison {
   const run = (p: Plan) => {
     const result = simulatePlan(p, opts)
-    return { summary: summarizeProjection(p, result), lasts: moneyLasts(result) }
+    return { summary: summarizeProjection(p, result, { conversionFreeRun: null }), lasts: moneyLasts(result) }
   }
   const withoutLtc = plan.insurance.filter((i) => i.kind !== 'ltc')
   const noCare = run({ ...plan, careEvents: [], insurance: withoutLtc })

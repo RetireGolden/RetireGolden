@@ -55,7 +55,6 @@ export interface AnnualAnnuityPurchaseApplicationPhaseInput {
   /** Live physical rows; the funding account's balance and basis move here. */
   readonly balances: readonly PhysicalBalanceState[]
   readonly peopleById: ReadonlyMap<string, Person>
-  readonly primaryPerson: Person
   readonly year: number
   readonly qlacPremiumCap: number
   readonly limitGrowth: number
@@ -97,7 +96,6 @@ export function annualAnnuityPurchaseApplicationPhase(
     accounts,
     balances,
     peopleById,
-    primaryPerson,
     year,
     qlacPremiumCap,
     limitGrowth,
@@ -138,7 +136,6 @@ export function annualAnnuityPurchaseApplicationPhase(
     accounts,
     balances,
     peopleById,
-    primaryPerson,
     year,
     qlacPremiumCap,
     limitGrowth,

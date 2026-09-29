@@ -558,17 +558,17 @@ export const optimizerAndComparisonsRecords = {
   },
   'plan-headline-longevity-comparison': {
     title: 'Compare plans: how long the money lasts, deterministic success and depletion age',
-    purpose: 'Compare two plans on the last fully funded year, the single-path success reading and the first person\'s age in the depletion year.',
+    purpose: 'Compare two plans on the last fully funded year, the single-path success reading and the older person\'s age in the depletion year, named.',
     kind: 'composition',
     outputs: ['compare-plan-deltas'],
     feeds: [],
-    statement: 'scenarios/planHeadlines.ts#comparePlanHeadlines publishes moneyLasts through projection/moneyLasts.ts#compareMoneyLasts: each side\'s projection/moneyLasts.ts#moneyLasts (owner decision R15: the last funded year L = D − 1, or E when the projection never depletes) and delta = L_p − L_b, with bound atLeast when only the proposal runs its full horizon (a lower bound), atMost when only the baseline does (an upper bound) and null when both deplete (exact); when both run their full horizons the bound is bothFull and the delta is null, because neither exhaustion year is known. It publishes deterministicSuccessPct as compareScalars of 100 for a side that never depletes and 0 otherwise, and depletionAgePrimary as compareNullableScalars of D minus the birth year of the side\'s first listed person, null on a side that never depletes. A depleting side whose first person has no birth date in YYYY-MM-DD form is refused with a RangeError. A plan depleting in 2046 (first person born 1962) against one that never depletes and ends in 2049 reads 2045 against 2049: a difference of 4 years, bound atLeast, and ages 84 and none. Units: calendar years; percentage points; years of age. Rounding: none.',
+    statement: 'scenarios/planHeadlines.ts#comparePlanHeadlines publishes moneyLasts through projection/moneyLasts.ts#compareMoneyLasts: each side\'s projection/moneyLasts.ts#moneyLasts (owner decision R15: the last funded year L = D − 1, or E when the projection never depletes) and delta = L_p − L_b, with bound atLeast when only the proposal runs its full horizon (a lower bound), atMost when only the baseline does (an upper bound) and null when both deplete (exact); when both run their full horizons the bound is bothFull and the delta is null, because neither exhaustion year is known. It publishes deterministicSuccessPct as compareScalars of 100 for a side that never depletes and 0 otherwise, and depletionAge as compareNullableScalars of D minus the birth year of the side\'s person that model/peopleOrder.ts#canonicalFirstPerson puts first (the older; a tie to the sex order, then the id), whoever that plan lists first, null on a side that never depletes, with depletionAgePersonId naming that person on each side (decision D-PEOPLE-ORDER); the Compare page labels the row with their names. When both sides publish an age and the two people differ by name or date of birth, the delta is null and depletionAgeDeltaWithheld is differentPeople, since two people\'s ages have no difference to publish (the independent review\'s L1); the page shows both ages. The depletion year is the household\'s; the age is that one person\'s. A depleting side whose published person has no birth date in YYYY-MM-DD form is refused with a RangeError. A plan depleting in 2046 (its older person born 1962) against one that never depletes and ends in 2049 reads 2045 against 2049: a difference of 4 years, bound atLeast, and ages 84 and none. Units: calendar years; percentage points; years of age. Rounding: none.',
     formula: {
       expression: 'L_s = D_s − 1 when D_s is not null, else E_s; delta = L_p − L_b unless both D are null; success_s = 100 when D_s is null, else 0; age_s = D_s − birthYear_s',
       variables: [
         { symbol: 'D_s', meaning: 'The side\'s first year short of money', unit: 'calendar year', domain: 'integer in [start year, E_s], or null' },
         { symbol: 'E_s', meaning: 'The side\'s last projection year', unit: 'calendar year', domain: 'integer' },
-        { symbol: 'birthYear_s', meaning: 'Birth year of the side\'s first listed person', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'birthYear_s', meaning: 'Birth year of the side\'s person the canonical order puts first (the older)', unit: 'calendar year', domain: 'integer' },
       ],
       timing: 'once per pair of projections that share a start year',
       rounding: 'none',
@@ -578,7 +578,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/compare-plan-deltas.md',
     },
     limits: [
-      'Primary is each plan\'s first listed person; when the two plans list different people first, the age row compares two people.',
+      'The age is one person\'s, the older on each side, named on the page; when the two plans\' older people are different people, the row names both, shows both ages and publishes no difference.',
       'The age is the calendar age in the first short year (the year minus the birth year), not the exact age when the money runs out.',
       'A bound with a zero difference (at least the same) is a correct bound.',
       'The deterministic success reading is 100 or 0 on the one deterministic path; it is not a probability.',
@@ -587,14 +587,16 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/scenarios/planHeadlines.ts',
       'packages/engine/src/projection/moneyLasts.ts',
       'packages/engine/src/scenarios/scalarComparison.ts',
+      'packages/engine/src/model/peopleOrder.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines',
       'packages/engine/src/projection/moneyLasts.ts#compareMoneyLasts',
       'packages/engine/src/projection/moneyLasts.ts#moneyLasts',
       'packages/engine/src/scenarios/scalarComparison.ts#compareNullableScalars',
+      'packages/engine/src/model/peopleOrder.ts#canonicalFirstPerson',
     ],
-    verifiedOn: '2026-09-27',
+    verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'relocation-row-comparison': {

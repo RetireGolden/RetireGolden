@@ -82,7 +82,7 @@ describe('compareRelocationCandidates', () => {
       household: { ...plan.household, state: 'FL', stateMoves: [] },
     })
     const manualResult = simulatePlan(manual, { startYear: START_YEAR, taxCalculator: productionStack(manual) })
-    const manualSummary = summarizeProjection(manual, manualResult)
+    const manualSummary = summarizeProjection(manual, manualResult, { conversionFreeRun: null })
 
     expect(fl.error).toBeNull()
     expect(fl.lifetimeTaxesAndPenalties).toBe(manualSummary.lifetimeTaxesAndPenalties)
@@ -103,7 +103,7 @@ describe('compareRelocationCandidates', () => {
       household: { ...plan.household, stateMoves: [{ fromYear: moveYear, fromMonth: 7, state: 'FL' }] },
     })
     const manualResult = simulatePlan(manual, { startYear: START_YEAR, taxCalculator: productionStack(manual) })
-    const manualSummary = summarizeProjection(manual, manualResult)
+    const manualSummary = summarizeProjection(manual, manualResult, { conversionFreeRun: null })
 
     expect(fl.lifetimeTaxesAndPenalties).toBe(manualSummary.lifetimeTaxesAndPenalties)
     expect(fl.endingAfterTaxEstate).toBe(manualSummary.endingAfterTaxEstate)
@@ -180,7 +180,7 @@ describe('compareRelocationCandidates', () => {
       household: { ...plan.household, state: 'CO', stateMoves: [] },
     })
     const manualResult = simulatePlan(manual, { startYear: START_YEAR, taxCalculator: productionStack(manual) })
-    const manualSummary = summarizeProjection(manual, manualResult)
+    const manualSummary = summarizeProjection(manual, manualResult, { conversionFreeRun: null })
     expect(co.lifetimeTaxesAndPenalties).toBe(manualSummary.lifetimeTaxesAndPenalties)
     expect(co.endingAfterTaxEstate).toBe(manualSummary.endingAfterTaxEstate)
   })
@@ -206,7 +206,7 @@ describe('compareRelocationCandidates', () => {
     expect(applied.plan.household.stateMoves).toEqual([{ fromYear: START_YEAR + 2, fromMonth: 7, state: 'PA' }])
     expect(applied.plan.expenses.baseAnnual).toBe(63_000)
     const result = simulatePlan(applied.plan, { startYear: START_YEAR, taxCalculator: productionStack(applied.plan) })
-    const summary = summarizeProjection(applied.plan, result)
+    const summary = summarizeProjection(applied.plan, result, { conversionFreeRun: null })
     expect(pa.lifetimeTaxesAndPenalties).toBe(summary.lifetimeTaxesAndPenalties)
     expect(pa.endingAfterTaxEstate).toBe(summary.endingAfterTaxEstate)
   })

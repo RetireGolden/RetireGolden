@@ -106,6 +106,25 @@
  * 2026-09-28 (merge of main into the D-2027-PUBLISHED-FIGURES branch): the
  * goldens carry both sets of rows, main's Social Security and life table
  * rows and the branch's HSA and state rows, regenerated together.
+ * 2026-09-28 (decision D-FI-CONVERSION-TAX): the FI number no longer prices a
+ * Roth conversion's one-off tax as spending. example-couple's priced year,
+ * 2028, converts $189,820, so its outflows are read from the same year with
+ * the plan's conversions removed: FI target $4,406,941 -> $3,552,680 and
+ * Coast-FIRE $4,153,964 -> $3,348,741. Every headline block gains fiBasis
+ * (the priced year, its source and the withdrawal rate), and the FI target
+ * row's note says what is priced. Nothing else in any golden changed.
+ * 2026-09-28 (decision D-PEOPLE-ORDER, rule R4): the FI figures price the
+ * household's later retirement, not the first-listed person's. No figure in
+ * these goldens moves (each couple's later retirement is the first person's,
+ * or the priced year is the same); fiBasis gains the person's name, their
+ * retirement year and the household size, and the note names the person.
+ * 2026-09-28 (independent review M1, M4): the FI note for a converting plan
+ * says a conversion's tax and its later costs are left out (the base is read
+ * without conversions whenever the plan converts), and fiBasis gains the
+ * retirement rule and the person's last year alive. No figure moved.
+ * 2026-09-29 (merge of main, after #762, into the people-order branch): the
+ * goldens are regenerated with both changes, main's state rows and figures
+ * and this branch's FI figures and notes; neither moves the other's figures.
  */
 import { describe, expect, it } from 'vitest'
 

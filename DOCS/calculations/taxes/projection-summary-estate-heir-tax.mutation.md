@@ -1,15 +1,15 @@
 # Mutation receipt: projection-summary-estate-heir-tax
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index 06828f33..c50ffea0 100644
+index 6b4a9cfc..7830d001 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
-@@ -318,7 +318,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
+@@ -468,7 +468,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
        })
      }
    }
@@ -32,19 +32,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 on B2-P1 slice 3, which moved the lines this receipt quotes (new comparison fields, basis doc comments and helper calls in the production file, or new cases and fixture fields in the evidence file) without changing the mutation, so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the verification's fixes (N1 to N4) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (19 tests | 2 failed) 23ms
+ ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 2 failed) 27ms
    ❯ projection-summary-ending-after-tax-estate — Projection summary ending after tax estate (2)
-     × nets 812345.67 of net worth of both the 25000.00 charity carve-out and the 73210.11 heir tax 6ms
+     × nets 812345.67 of net worth of both the 25000.00 charity carve-out and the 73210.11 heir tax 7ms
    ❯ projection-summary-estate-heir-tax — Projection summary estate heir tax (2)
      × taxes the non-charity slice of each pre-tax base: 47520 + 8800 + 0 = 56320.00 with a 10% bequest to charity 2ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 17 passed (19)
+      Tests  2 failed | 21 passed (23)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -61,13 +61,13 @@ AssertionError: endingEstateHeirTax: actual 48210.11, worksheet 73210.11: expect
 - true
 + false
 
- ❯ src/projection/compareSummary.evidence.test.ts:559:9
-    557|         withinTolerance(summary.endingEstateHeirTax, inputs.endingEsta…
-    558|         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, w…
-    559|       ).toBe(true)
+ ❯ src/projection/compareSummary.evidence.test.ts:588:9
+    586|         withinTolerance(summary.endingEstateHeirTax, inputs.endingEsta…
+    587|         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, w…
+    588|       ).toBe(true)
        |         ^
-    560|       expect(
-    561|         withinTolerance(summary.endingEstateToCharity, inputs.endingEs…
+    589|       expect(
+    590|         withinTolerance(summary.endingEstateToCharity, inputs.endingEs…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -80,13 +80,13 @@ AssertionError: endingEstateHeirTax: actual 26320, worksheet 56320 (per-account 
 - true
 + false
 
- ❯ src/projection/compareSummary.evidence.test.ts:714:9
-    712|         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, w…
-    713|           `(per-account actual ${summary.estateBreakdown.map((row) => …
-    714|       ).toBe(true)
+ ❯ src/projection/compareSummary.evidence.test.ts:743:9
+    741|         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, w…
+    742|           `(per-account actual ${summary.estateBreakdown.map((row) => …
+    743|       ).toBe(true)
        |         ^
-    715|     })
-    716|
+    744|     })
+    745|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

@@ -39,6 +39,33 @@ export function updatePersonLongevity(
 }
 
 /**
+ * Add a partner to a one-person plan. The choices the plan used to leave to
+ * list order stay with the person already there (schema v7, decision
+ * D-PEOPLE-ORDER): the spending phases and every joint account's
+ * contribution schedule keep following that person's age, so adding a
+ * partner moves neither. Pure mutator.
+ */
+export function addPartner(d: Plan, partner: Plan['household']['people'][number]) {
+  const existing = d.household.people[0]
+  d.household.people.push(partner)
+  d.household.filingStatus = 'marriedFilingJointly'
+  if (existing !== undefined) {
+    if (d.expenses.phasesAgeOf === undefined) d.expenses.phasesAgeOf = existing.id
+    for (const account of d.accounts) {
+      if (
+        (account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp') &&
+        account.ownerPersonId === null &&
+        (account.contributionSchedule?.length ?? 0) > 0 &&
+        account.contributionScheduleAgeOf === undefined
+      ) {
+        account.contributionScheduleAgeOf = existing.id
+      }
+    }
+  }
+  invalidateAcaEvidence(d, 'partnerAdded')
+}
+
+/**
  * Remove a partner and re-home everything that referenced them so the plan stays
  * valid: accounts move to the primary, the removed person's incomes, policies,
  * and donor-bound eligibility facts drop, and any permanent-life beneficiary
@@ -50,6 +77,13 @@ export function removePartner(d: Plan, removedId: string) {
   d.household.filingStatus = 'single'
   const primaryId = d.household.people[0]!.id
   d.accounts = d.accounts.map((a) => (a.ownerPersonId === removedId ? { ...a, ownerPersonId: primaryId } : a))
+  // Whose age the phases and joint schedules follow: the one person left.
+  if (d.expenses.phasesAgeOf !== undefined) d.expenses.phasesAgeOf = primaryId
+  for (const account of d.accounts) {
+    if ('contributionScheduleAgeOf' in account && account.contributionScheduleAgeOf !== undefined) {
+      account.contributionScheduleAgeOf = primaryId
+    }
+  }
   d.incomes = d.incomes.filter((s) => !('personId' in s) || s.personId !== removedId)
   d.insurance = d.insurance
     .filter((p) => (p.kind === 'ltc' ? p.owner : p.insured) !== removedId)

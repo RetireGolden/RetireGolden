@@ -819,7 +819,7 @@ export function priceOwlScheduleOnRetireGoldenLedger(
   return {
     conversions,
     result: candidateResult,
-    summary: summarizeProjection(plan, candidateResult),
+    summary: summarizeProjection(plan, candidateResult, { conversionFreeRun: null }),
     validation:
       conversions.length > 0
         ? evaluateExactLedgerSchedule(plan, conversions, baselineResult, candidateResult)
@@ -861,7 +861,7 @@ async function runRetireGoldenSchedule(fixture: OwlParityFixture, startYear: num
   return {
     conversions,
     result: candidateResult,
-    summary: summarizeProjection(plan, candidateResult),
+    summary: summarizeProjection(plan, candidateResult, { conversionFreeRun: null }),
     validation,
     recommendationState: validation?.recommendationState ?? optimized.tournament.winnerSource,
   }

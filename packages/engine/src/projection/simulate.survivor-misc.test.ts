@@ -166,6 +166,7 @@ describe('survivor spending percentage', () => {
     const plan = couplePlan()
     plan.expenses.survivorSpendingPct = 70
     plan.expenses.phases = [{ fromAge: 75, multiplier: 0.9 }]
+    plan.expenses.phasesAgeOf = plan.household.people[0]!.id // Pat
     const result = run(plan)
 
     // Both alive, before the phase: unscaled.

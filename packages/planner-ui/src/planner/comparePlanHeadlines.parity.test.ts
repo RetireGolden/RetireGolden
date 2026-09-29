@@ -5,9 +5,12 @@
  * (kept here, nowhere else).
  *
  * - Money lasts, Success % and Depletion age: the engine reproduces the
- *   retired moneyLastsDelta, deterministicSuccessPct and ageDelta/primaryAgeIn
- *   on every pair, reading two full plans as the page reads them (no number,
- *   "same" or "both full plan", no colour).
+ *   retired moneyLastsDelta, deterministicSuccessPct and ageDelta on every
+ *   pair, reading two full plans as the page reads them (no number, "same" or
+ *   "both full plan", no colour). The age is now the person the canonical
+ *   order puts first (the older), where the retired primaryAgeIn read whoever
+ *   is listed first (decision D-PEOPLE-ORDER): the two agree on every example
+ *   but survivor-years, which lists Lee (1962) before Chris (1960).
  * - The four money rows: on a pair that ends in one year the engine's figures
  *   are the retired nominal subtraction bit for bit; on a pair that ends in
  *   different years they are in the start year's dollars (R13), each side
@@ -19,6 +22,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { canonicalFirstPerson } from '@retiregolden/engine/model/peopleOrder'
 import { lastFundedYear } from '@retiregolden/engine/projection/moneyLasts'
 import { comparePlanHeadlines } from '@retiregolden/engine/scenarios/planHeadlines'
 import { projectPlan, type ProjectionView } from '../projection'
@@ -46,6 +50,12 @@ function retiredPrimaryAgeIn(plan: Plan, year: number | null): number | null {
   const dobYear = Number(plan.household.people[0]?.dob.slice(0, 4))
   return Number.isFinite(dobYear) ? year - dobYear : null
 }
+/** The person the age row publishes since D-PEOPLE-ORDER: the canonical order's first, the older. */
+function canonicalAgeIn(plan: Plan, year: number | null): number | null {
+  if (year === null) return null
+  const dobYear = Number(canonicalFirstPerson(plan.household.people)?.dob.slice(0, 4))
+  return Number.isFinite(dobYear) ? year - dobYear : null
+}
 function retiredAgeDelta(a: number | null, b: number | null): number | null {
   if (a === null || b === null) return null
   return b - a
@@ -63,6 +73,7 @@ describe('comparePlanHeadlines on every ordered pair of the example library', ()
 
   it('reproduces the retired Money lasts, Success % and Depletion age readings on every pair', () => {
     let checked = 0
+    let movedBySurvivorYears = 0
     for (const [a, b] of pairs) {
       const label = `${a.id} vs ${b.id}`
       const headline = compared(a, b)
@@ -85,12 +96,29 @@ describe('comparePlanHeadlines on every ordered pair of the example library', ()
       expect(headline.deterministicSuccessPct.delta, label).toBe(
         retiredDeterministicSuccessPct(r.depletionYear) - retiredDeterministicSuccessPct(l.depletionYear),
       )
-      const ageA = retiredPrimaryAgeIn(a.plan, l.depletionYear)
-      const ageB = retiredPrimaryAgeIn(b.plan, r.depletionYear)
-      expect(headline.depletionAgePrimary, label).toEqual({ baseline: ageA, proposal: ageB, delta: retiredAgeDelta(ageA, ageB) })
+      const ageA = canonicalAgeIn(a.plan, l.depletionYear)
+      const ageB = canonicalAgeIn(b.plan, r.depletionYear)
+      // Two different people's ages publish no difference (review L1).
+      const pa = canonicalFirstPerson(a.plan.household.people)!
+      const pb = canonicalFirstPerson(b.plan.household.people)!
+      const different = ageA !== null && ageB !== null && (pa.name !== pb.name || pa.dob !== pb.dob)
+      expect(headline.depletionAge, label).toEqual({ baseline: ageA, proposal: ageB, delta: different ? null : retiredAgeDelta(ageA, ageB) })
+      expect(headline.depletionAgeDeltaWithheld, label).toBe(different ? 'differentPeople' : null)
+      expect(headline.depletionAgePersonId, label).toEqual({
+        baseline: canonicalFirstPerson(a.plan.household.people)!.id,
+        proposal: canonicalFirstPerson(b.plan.household.people)!.id,
+      })
+      // Where the retired reading differs, it is only because survivor-years lists the younger first.
+      const retired = [retiredPrimaryAgeIn(a.plan, l.depletionYear), retiredPrimaryAgeIn(b.plan, r.depletionYear)]
+      if (retired[0] !== ageA || retired[1] !== ageB) {
+        expect([a.id, b.id], label).toContain('survivor-years')
+        movedBySurvivorYears += 1
+      }
       checked += 1
     }
     expect(checked).toBe(pairs.length)
+    // survivor-years depletes, so its age moves from Lee's to Chris's on every pair it is in.
+    expect(movedBySurvivorYears).toBeGreaterThan(0)
   })
 
   it('keeps the retired nominal money rows on a pair ending in one year, and states start-year dollars otherwise', () => {

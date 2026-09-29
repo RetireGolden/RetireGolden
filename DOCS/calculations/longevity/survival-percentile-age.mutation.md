@@ -1,6 +1,6 @@
 # Mutation receipt: survival-percentile-age
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
@@ -30,23 +30,23 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because merging main moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine15/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 5 failed) 122ms
+ ❯ src/montecarlo/survival.evidence.test.ts (23 tests | 5 failed) 117ms
    ❯ survival-percentile-age — Survival-percentile planning age: oldest age reached with probability at least pct/100 (5)
      × the oldest age with conditional survival >= 97% from 65 is 66 4ms
      × is bounded below by the current age: a 100% threshold returns 65 0ms
      × reads 'average' off the mixture: 85/91/95 at 65, not the means of a man's 83/89/94 and a woman's 86/92/96 1ms
-   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (5)
+   ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (6)
      × exceeds the single-life 99th-percentile age of 65, which the last-survivor construction must not return 0ms
    ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection (5)
      × a pick at m = 1 does not move: a woman of 25 at 10 percent gets 95, the unadjusted pick 0ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 17 passed (22)
+      Tests  5 failed | 18 passed (23)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
@@ -142,13 +142,13 @@ AssertionError: expected 96 to be 95 // Object.is equality
 - 95
 + 96
 
- ❯ src/montecarlo/survival.evidence.test.ts:334:58
-    332|     it('a pick at m = 1 does not move: a woman of 25 at 10 percent get…
-    333|       const h = hazardForExpectancyMultiplier(25, 'female', 1)
-    334|       expect(survivalPercentileAge(25, 'female', 10, h)).toBe(sheet('F…
+ ❯ src/montecarlo/survival.evidence.test.ts:346:58
+    344|     it('a pick at m = 1 does not move: a woman of 25 at 10 percent get…
+    345|       const h = hazardForExpectancyMultiplier(25, 'female', 1)
+    346|       expect(survivalPercentileAge(25, 'female', 10, h)).toBe(sheet('F…
        |                                                          ^
-    335|       expect(survivalPercentileAge(25, 'female', 10, h)).toBe(survival…
-    336|     })
+    347|       expect(survivalPercentileAge(25, 'female', 10, h)).toBe(survival…
+    348|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
 ```

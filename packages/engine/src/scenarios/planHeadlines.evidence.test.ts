@@ -200,15 +200,20 @@ describeCalculation(
         caseF: { baseline: { D: 2030, E: 2050, dob: '1960-01-01' }, proposal: { D: 2026, E: 2050, dob: '1960-01-01' } },
         caseG: { baseline: { D: 2040, E: 2050, dob: '1960-01-01' }, proposal: { D: 2045, E: 2050, dob: null } },
         caseH: { baseline: { D: 2050, E: 2060, dob: '1960-01-01' }, proposal: { D: null, E: 2049 } },
+        caseI: {
+          baseline: { D: 2046, E: 2052, people: ['Sam 1964-09-02 female (listed first)', 'Alex 1962-04-15 male'] },
+          proposal: { D: 2043, E: 2057, people: ['Alex 1962-04-15 male (listed first)', 'Sam 1964-09-02 female'] },
+        },
       },
       expected: {
         caseA: { lastFunded: [2045, 2049], delta: 4, bound: 'atLeast', success: 100, age: [84, null, null] },
-        caseB: { lastFunded: [2045, 2042], delta: -3, bound: null, success: 0, age: [84, 81, -3] },
+        caseB: { lastFunded: [2045, 2042], delta: -3, bound: null, success: 0, age: [84, 81, null] },
         caseC: { lastFunded: [2056, 2056], delta: null, bound: 'bothFull', success: 0, age: [null, null, null], endYearDelta: 0 },
         caseD: { lastFunded: [2056, 2059], delta: null, bound: 'bothFull', success: 0, age: [null, null, null], endYearDelta: 3 },
         caseE: { lastFunded: [2050, 2055], delta: 5, bound: 'atMost', success: -100, age: [null, 96, null] },
         caseF: { lastFunded: [2029, 2025], delta: -4, bound: null, success: 0, age: [70, 66, -4] },
         caseH: { lastFunded: [2049, 2049], delta: 0, bound: 'atLeast', success: 100, age: [90, null, null] },
+        caseI: { age: [84, 81, -3], person: ['alex', 'alex'] },
       },
       tolerance: 'exact',
     },
@@ -234,10 +239,13 @@ describeCalculation(
         expect(headline.moneyLasts.bound, key).toBe(e.bound)
         expect(headline.deterministicSuccessPct.delta, key).toBe(e.success)
         expect(
-          [headline.depletionAgePrimary.baseline, headline.depletionAgePrimary.proposal, headline.depletionAgePrimary.delta],
+          [headline.depletionAge.baseline, headline.depletionAge.proposal, headline.depletionAge.delta],
           key,
         ).toEqual(e.age)
         if (e.endYearDelta !== undefined) expect(headline.endYear.delta, key).toBe(e.endYearDelta)
+        // Case B's two ages are different people's (born 1962-01-01 and
+        // 1962-06-15), so no difference is published (review L1).
+        expect(headline.depletionAgeDeltaWithheld, key).toBe(key === 'caseB' ? 'differentPeople' : null)
       }
     })
 
@@ -257,6 +265,26 @@ describeCalculation(
       const mixed = c.proposal.E + 1 - (c.baseline.D! - 1)
       expect(mixed).toBe(5)
       expect(headline.moneyLasts.delta).toBe(expected.caseA!.delta)
+    })
+
+    it('case I: a couple publishes the older person\'s age, named, whoever each plan lists first', () => {
+      const couple = (depletionYear: number, endYear: number, samFirst: boolean): ComparedProjection => {
+        const built = side({ endYear, depletionYear })
+        const sam = { id: 'sam', name: 'Sam', dob: '1964-09-02', sex: 'female' }
+        const alex = { id: 'alex', name: 'Alex', dob: '1962-04-15', sex: 'male' }
+        return { ...built, plan: { household: { people: samFirst ? [sam, alex] : [alex, sam] } } as unknown as ComparedProjection['plan'] }
+      }
+      const e = expected.caseI as unknown as { age: [number, number, number]; person: [string, string] }
+      const headline = comparePlanHeadlines(couple(2046, 2052, true), couple(2043, 2057, false))
+      expect([headline.depletionAge.baseline, headline.depletionAge.proposal, headline.depletionAge.delta]).toEqual(e.age)
+      expect([headline.depletionAgePersonId.baseline, headline.depletionAgePersonId.proposal]).toEqual(e.person)
+      // The first-listed reading, the rule before the decision: Sam's 82 on the
+      // baseline against Alex's 81, a difference of -1 between two people.
+      expect(headline.depletionAge.baseline).not.toBe(2046 - 1964)
+      // Listed the other way round on both sides: the same row.
+      const flipped = comparePlanHeadlines(couple(2046, 2052, false), couple(2043, 2057, true))
+      expect(flipped.depletionAge).toEqual(headline.depletionAge)
+      expect(flipped.depletionAgePersonId).toEqual(headline.depletionAgePersonId)
     })
 
     it('case G: a depleting side whose first person has no birth date is refused, not given an age', () => {

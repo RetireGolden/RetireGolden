@@ -443,7 +443,7 @@ export function projectCase(definition: CaseDefinition, startYear = EXAMPLE_FIXE
   const result = simulatePlan(definition.plan, { startYear, taxCalculator: taxCalculatorFor(definition.plan) })
   return {
     result,
-    summary: summarizeProjection(definition.plan, result),
+    summary: summarizeProjection(definition.plan, result, { conversionFreeRun: null }),
   }
 }
 

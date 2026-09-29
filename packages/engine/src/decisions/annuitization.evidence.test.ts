@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
-import { cashAccount, singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
+import { cashAccount, couplePlan, singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { buildAnnuitizationSweep } from './annuitization.js'
 import { spiaPayoutRate } from './spiaQuotes.js'
@@ -118,6 +118,38 @@ describeCalculation(
       expect((smallPct / 100) * total).toBe(expected.smallPointPremiumWrongReading)
       expect((smallPct / 100) * total).toBeLessThan(inputs.minimumPremium as number)
       expect(result.points.map((entry) => entry.allocationPct)).toEqual([0, gridPct])
+    })
+
+    it('for a couple, prices every point on the older person, whoever is listed first, and names them', () => {
+      // The worksheet's couple case: Pat (1966, 60 in 2026) listed first and
+      // Robin (1954, 72) second, the same accounts. The canonical order puts
+      // Robin first, so the start age and rate are the single case's (72,
+      // 9.16%), not the first-listed reading's (65, spiaPayoutRate(65)).
+      const run = (reversed: boolean) => {
+        const plan = couplePlan({ p1Dob: '1966-06-15', p2Dob: '1954-06-15', p1PlanningAge: 67, p2PlanningAge: 73 })
+        plan.accounts = [cashAccount('cash', funding), traditionalAccount('trad', total - funding, 'p2')]
+        if (reversed) plan.household.people.reverse()
+        return buildAnnuitizationSweep(
+          validatePlan(plan),
+          {
+            startYear: START_YEAR,
+            taxCalculator: createFlatTaxCalculator(0),
+            model: { type: 'lognormal', inflationMeanPct: 0, returnVolPct: 10 },
+            pathCount: inputs.pathCount as number,
+            seed: inputs.seed as number,
+          },
+          { allocationPcts: [smallPct, gridPct] },
+        )
+      }
+      for (const reversed of [false, true]) {
+        const result = run(reversed)
+        expect(result.startAge).toBe(inputs.currentAndStartAge)
+        expect(withinTolerance(result.payoutRatePct, expected.payoutRatePct!, pctTolerance)).toBe(true)
+        expect(withinTolerance(result.payoutRatePct, spiaPayoutRate(65) * 100, pctTolerance)).toBe(false)
+        expect(result.notes).toContain("Each annuity in the sweep pays on Robin's life from age 72.")
+        const point = result.points.find((entry) => entry.allocationPct === gridPct)!
+        expectWithin(point.annualIncome, expected.annualIncome!, 'annualIncome')
+      }
     })
   },
 )

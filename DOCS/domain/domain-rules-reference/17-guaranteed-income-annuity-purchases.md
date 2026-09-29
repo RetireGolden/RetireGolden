@@ -16,6 +16,17 @@ and after-tax estate.
     fallback only.
   - **Qualified** (traditional-funded): payouts are fully ordinary income, and because the premium leaves the
     traditional balance, future RMDs shrink automatically.
+- **Whose contract it is (plan schema v7).** Every pension and annuity names its owner, the participant or first
+  annuitant, and the income starts on that person's age and ends or reduces on that person's death, the other
+  household member being the survivor or second annuitant (`irc-72-c-3-A-annuity-measured-on-named-lives`).
+  A qualified purchase must name the owner of the traditional account that paid for it, except that after the
+  owner's death (the owner's planning age) the surviving spouse may buy from the account (IRC 402(c)(9),
+  408(d)(3)(C)(ii)(II)); a pension lump sum rolls over only into the participant's own traditional account; and no
+  annuity may be bought for a person whose planning age has ended by its purchase year, since it would never pay.
+  `checkAccountCrossFieldRules` refuses the other shapes, and a stored plan is repaired on load (the owner-less
+  contract takes the funding owner, or the surviving spouse after the owner's death, else the person then listed
+  first; a contract named for its dead owner goes to the surviving spouse; a spouse-target election is dropped,
+  keeping the offer), and never onto a person who is dead at the purchase.
 - **QLAC support.** `purchase.qlac` marks a deferred-start qualified longevity annuity. Its premium is
   **excluded from the RMD base** until payouts begin, capped at the SECURE 2.0 statutory limit (**$210,000
   for 2026**, sourced in `year2026.ts`); a warning fires if the entered premium exceeds the cap, and `qlac`

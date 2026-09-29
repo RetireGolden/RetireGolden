@@ -16,7 +16,7 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-annuitization-headroom-illustrative-spia'],
     statement:
-      'For a plan whose maximum planning age is at least 95, with a qualifying largest cash-or-taxable account of at least $100,000 and no annuity or pension covering the floor: premium = min(0.25 × liquidBalance, $250,000); monthly payout = premium × spiaPayoutRate(startAge) / 12, where startAge = min(95, max(currentAge, 65)). Units: nominal dollars. Rounding: none; the production function returns a binary float, formatted to whole dollars only at the card.',
+      'For a plan whose maximum planning age is at least 95, with a qualifying largest cash-or-taxable account of at least $100,000 and no annuity or pension covering the floor: premium = min(0.25 × liquidBalance, $250,000); monthly payout = premium × spiaPayoutRate(startAge) / 12, where startAge = min(95, max(currentAge, 65)) and currentAge is that of the person model/peopleOrder.ts#canonicalFirstPerson puts first (the older; between two people born the same day, the sex order female, male, average and then the smaller id by ordinal comparison decide, so for two people with the same birth date and sex renaming the ids can move the annuitant and every figure on that life), whoever is listed first, whom the card names and on whose life the previewed annuity is written (decision D-PEOPLE-ORDER). Units: nominal dollars. Rounding: none; the production function returns a binary float, formatted to whole dollars only at the card.',
     formula: {
       expression: 'premium = min(0.25 L, 250000); monthly = premium × r(startAge) / 12',
       variables: [
@@ -36,9 +36,12 @@ export const insightsRecords = {
       'The worksheet supplies the already-resolved spiaPayoutRate(startAge) = 6.6%/year; the evidence passes that rate through rather than re-quoting the table',
       'startAge is clamped to [65, 95], so a rate below the age-65 table point is not reachable without substituting the resolved rate',
     ],
-    implementedBy: ['packages/engine/src/insights/detectors/annuitizationHeadroom.ts'],
-    implementedByFunctions: ['packages/engine/src/insights/detectors/annuitizationHeadroom.ts#annuitizationHeadroom.screen'],
-    verifiedOn: '2026-09-17',
+    implementedBy: ['packages/engine/src/insights/detectors/annuitizationHeadroom.ts', 'packages/engine/src/model/peopleOrder.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/insights/detectors/annuitizationHeadroom.ts#annuitizationHeadroom.screen',
+      'packages/engine/src/model/peopleOrder.ts#canonicalFirstPerson',
+    ],
+    verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-asset-location-swappable-exposure': {

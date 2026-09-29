@@ -13,6 +13,7 @@ import {
 } from '../../data/planStore'
 import { indexedDbPlanStore, type PlanStore } from '../../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { exampleFixedNow } from './buildContext'
 import { getExampleById, type ExamplePlan } from './registry'
 
@@ -26,7 +27,10 @@ export function isDemoPlan(plan: Plan): boolean {
 
 function stampDemo(example: ExamplePlan): Plan {
   const built = example.build()
-  return {
+  // A canonical scenario patch names the plan id it was written against (the
+  // builder's); the demo is stored under its own id, so its patches are
+  // rebound to it, or they would refuse to apply (decision D-SCENARIO-JSON-LOSS).
+  return rebindScenarioPatchesToPlan({
     ...built,
     id: demoPlanId(example.id),
     name: example.title,
@@ -34,7 +38,7 @@ function stampDemo(example: ExamplePlan): Plan {
     exampleSourceId: example.id,
     createdAtIso: exampleFixedNow().toISOString(),
     updatedAtIso: exampleFixedNow().toISOString(),
-  }
+  })
 }
 
 export async function demoRecordExists(exampleId: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 9adc55e64bff205822a6bd330ad81658693cd5c7.
+ * Output field coverage imported from the output-family census at commit 5d156cf4b2f65ca52d3afbbde380838dc3a72f42.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -2926,7 +2926,7 @@ const coverageCensus = [
     "field": "coastFireNumber",
     "disposition": "family",
     "familyId": "projection-summary-coast-fire-number",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "engine/src/projection/compare.ts",
@@ -2990,7 +2990,7 @@ const coverageCensus = [
     "field": "fiNumber",
     "disposition": "family",
     "familyId": "projection-summary-fi-number",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "engine/src/projection/compare.ts",
@@ -7351,7 +7351,7 @@ const coverageCensus = [
   {
     "source": "engine/src/scenarios/planHeadlines.ts",
     "owner": "PlanHeadlineComparison",
-    "field": "depletionAgePrimary",
+    "field": "depletionAge",
     "disposition": "family",
     "familyId": "compare-plan-deltas",
     "tsType": "NullableScalarComparison"
@@ -8679,7 +8679,7 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "runtime-diagnostic",
     "reason": "The module.fiTarget field is an internal diagnostic used to trace or validate calculation behavior.",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -9713,7 +9713,7 @@ const coverageCensus = [
     "field": "fiTarget",
     "disposition": "family",
     "familyId": "display-fi-target-annual",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -10554,7 +10554,7 @@ const coverageCensus = [
     "field": "coastFireNumber",
     "disposition": "family",
     "familyId": "projection-summary-coast-fire-number",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",
@@ -10602,7 +10602,7 @@ const coverageCensus = [
     "field": "fiNumber",
     "disposition": "family",
     "familyId": "projection-summary-fi-number",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",

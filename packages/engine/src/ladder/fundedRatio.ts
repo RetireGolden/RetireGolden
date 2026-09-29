@@ -13,6 +13,8 @@
 
 import type { RealYieldCurve } from '../params/types.js'
 import type { YearResult } from '../projection/types.js'
+import type { Plan } from '../model/plan.js'
+import { householdRetirement, type PersonRetirement, type RetirementYearRule } from '../projection/householdRetirement.js'
 import { realPresentValue } from './ladderMath.js'
 
 export interface FundedRatioInput {
@@ -72,5 +74,55 @@ export function computeFundedRatio(input: FundedRatioInput): FundedRatioResult |
     unfundedPv: Math.max(0, essentialSpendingPv - guaranteedIncomePv),
     fromYear,
     toYear,
+  }
+}
+
+/** Where a household's funded ratio starts counting, and whose retirement that is. */
+export interface FundedRatioStart {
+  /**
+   * The first year counted: the household's later retirement, never before
+   * the start year. Null when nobody in the household retires in the plan:
+   * wages carry the floor throughout, so there is no retirement to count from
+   * and no ratio (the independent review's N3).
+   */
+  fromYear: number | null
+  /**
+   * The person whose retirement year is the household's later one; null when
+   * nobody retires in the plan. For a couple the ratio is still the
+   * household's: its floor and all of its guaranteed income.
+   */
+  personId: string | null
+  /** That person's retirement year under `rule`; null when nobody retires in the plan. */
+  retirementYear: number | null
+  /** Which rule gave it (projection/householdRetirement.ts); null when nobody retires in the plan. */
+  rule: RetirementYearRule | null
+  /** That person's last year alive at the planning age; null when nobody retires in the plan. */
+  lastYearAlive: number | null
+  /** The people who never retire in the plan, left out of the later retirement, in the canonical order. */
+  notRetiring: readonly PersonRetirement[]
+}
+
+/**
+ * The year a household's essential floor starts to be counted (decision
+ * D-PEOPLE-ORDER): the household's later retirement, the year the last
+ * person's wages stop, since until then wages carry part of the floor. It is
+ * the one rule the FI figures use (projection/householdRetirement.ts): a
+ * retirement age gives birth year plus that age; a person with no retirement
+ * age retires in the first year without their wages, else in the start year;
+ * a person who never retires in the plan (wages through their last year
+ * alive, a retirement age past the planning age) is left out, and with nobody
+ * retiring there is no start; a tie goes to the older person, then the
+ * smaller id, so the answer is the same whoever is listed first. Never before
+ * the start year.
+ */
+export function fundedRatioStart(plan: Pick<Plan, 'household' | 'incomes'>, startYear: number): FundedRatioStart {
+  const { retirement, notRetiring } = householdRetirement(plan, startYear)
+  return {
+    fromYear: retirement === null ? null : Math.max(retirement.year, startYear),
+    personId: retirement?.personId ?? null,
+    retirementYear: retirement?.year ?? null,
+    rule: retirement?.rule ?? null,
+    lastYearAlive: retirement?.lastYearAlive ?? null,
+    notRetiring,
   }
 }

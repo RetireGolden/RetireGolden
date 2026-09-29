@@ -128,8 +128,8 @@ describe('asset-location invariance of Roth conversions', () => {
 
     const baseline = simulatePlan(baselinePlan, simOptions())
     const converted = simulatePlan(conversionPlan, simOptions())
-    const baselineEstate = summarizeProjection(baselinePlan, baseline).endingAfterTaxEstate
-    const convertedEstate = summarizeProjection(conversionPlan, converted).endingAfterTaxEstate
+    const baselineEstate = summarizeProjection(baselinePlan, baseline, { conversionFreeRun: null }).endingAfterTaxEstate
+    const convertedEstate = summarizeProjection(conversionPlan, converted, { conversionFreeRun: null }).endingAfterTaxEstate
 
     const lastBaseline = baseline.years[baseline.years.length - 1]!
     const lastConverted = converted.years[converted.years.length - 1]!

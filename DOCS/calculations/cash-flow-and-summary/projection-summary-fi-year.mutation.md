@@ -1,22 +1,22 @@
 # Mutation receipt: projection-summary-fi-year
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
-@@ -362,7 +362,7 @@
-   let fiAge: number | null = null
-   for (const y of result.years) {
+diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
+index 6b4a9cfc..bf8ea270 100644
+--- a/packages/engine/src/projection/compare.ts
++++ b/packages/engine/src/projection/compare.ts
+@@ -548,3 +548,3 @@
      const deflatedInvestable = y.investableTotal / Math.pow(1 + inflationRate, y.year - startYear)
--    if (deflatedInvestable >= fiNumber) {
-+    if (deflatedInvestable > fiNumber) {
+-    if (deflatedInvestable >= fiNumber!) {
++    if (deflatedInvestable > fiNumber!) {
        fiYear = y.year
-       fiAge = y.year - birthYear
-       break
 ```
 
-This makes the crossing comparison strict, so the first crossing moves from 2027 to 2028 — the worksheet's first wrong reading.
+This makes the crossing comparison strict, so the first crossing moves from 2027 to 2028 — the worksheet's first wrong reading. Re-derived for the independent review's N3, which made the FI number nullable: the same reading on the new line.
 
 ## Command
 
@@ -26,19 +26,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 on B2-P1 slice 3, which moved the lines this receipt quotes (new comparison fields, basis doc comments and helper calls in the production file, or new cases and fixture fields in the evidence file) without changing the mutation, so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-derived for the independent review's N3: the mutation keeps its reading on the line N3 made null-aware. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (19 tests | 2 failed) 23ms
+ ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 2 failed) 24ms
    ❯ projection-summary-fi-age — Projection summary fi age (2)
      × crosses inclusively in 2027 at age 47 and ignores the later sentinel row 4ms
    ❯ projection-summary-fi-year — First financial-independence crossing year (2)
      × crosses inclusively in 2027 and never waits for the larger 2028 row 1ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 17 passed (19)
+      Tests  2 failed | 21 passed (23)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -74,13 +74,13 @@ AssertionError: expected 2028 to be 2027 // Object.is equality
 - 2027
 + 2028
 
- ❯ src/projection/compareSummary.evidence.test.ts:844:30
-    842|         `fiNumber: actual ${summary.fiNumber}, worksheet ${inputs.fiNu…
-    843|       ).toBe(true)
-    844|       expect(summary.fiYear).toBe(expected.crossingFiYear)
+ ❯ src/projection/compareSummary.evidence.test.ts:873:30
+    871|         `fiNumber: actual ${summary.fiNumber}, worksheet ${inputs.fiNu…
+    872|       ).toBe(true)
+    873|       expect(summary.fiYear).toBe(expected.crossingFiYear)
        |                              ^
-    845|       // The worksheet's three wrong readings all land on 2028.
-    846|       expect(summary.fiYear).not.toBe(expected.strictComparisonWrongRe…
+    874|       // The worksheet's three wrong readings all land on 2028.
+    875|       expect(summary.fiYear).not.toBe(expected.strictComparisonWrongRe…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

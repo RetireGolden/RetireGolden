@@ -111,6 +111,8 @@ function giftPlan(options: GiftPlanOptions = {}): Plan {
   plan.scenarios = []
   plan.expenses.baseAnnual = 0
   plan.expenses.phases = []
+  // One person: no one to name for the phases (the sample couple named Alex).
+  delete plan.expenses.phasesAgeOf
   plan.expenses.oneTimeGoals = []
   plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
   plan.expenses.healthcare.applyAcaCredit = false

@@ -468,7 +468,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -636,7 +636,7 @@
           "functions": [
             {
               "name": "wagesIncomeSchema",
-              "line": 1843
+              "line": 1894
             }
           ]
         },
@@ -714,7 +714,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -908,7 +908,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -1051,7 +1051,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         }
@@ -1200,7 +1200,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         }
@@ -1257,7 +1257,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -1325,7 +1325,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         }
@@ -1382,7 +1382,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -1470,7 +1470,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         }
@@ -1525,11 +1525,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1122
+              "line": 1152
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -1974,7 +1974,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -2238,7 +2238,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -2595,7 +2595,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -2667,11 +2667,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1122
+              "line": 1152
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1068
+              "line": 1098
             }
           ]
         },
@@ -2855,7 +2855,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2839
+              "line": 2910
             }
           ]
         }
@@ -2920,7 +2920,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2839
+              "line": 2910
             }
           ]
         }
@@ -2977,7 +2977,7 @@
           "functions": [
             {
               "name": "equityCompAccountSchema",
-              "line": 505
+              "line": 534
             }
           ]
         }
@@ -3050,7 +3050,7 @@
           "functions": [
             {
               "name": "strategiesSchema",
-              "line": 2546
+              "line": 2617
             }
           ]
         }
@@ -3097,7 +3097,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2839
+              "line": 2910
             }
           ]
         },

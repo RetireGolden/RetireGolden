@@ -17,6 +17,7 @@ import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_Y
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'
 import type { OptimizedSchedule } from '../strategies/optimizer.js'
 import { QLAC_DEFERRED_PAYOUT_RATE, spiaPayoutRate } from './spiaQuotes.js'
+import { canonicalFirstPerson } from '../model/peopleOrder.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext } from './types.js'
 
 const AGGREGATE_RETIREMENT_ACTION_EXPLORATION = {
@@ -627,9 +628,13 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
   generate(ctx: DecisionContext): DecisionCandidate[] {
     const plan = ctx.plan
     const startYear = ctx.simulateOptions.startYear
-    const primary = plan.household.people[0]
-    if (!primary) return []
-    const currentAge = startYear - dobYear(primary.dob)
+    // The SPIA candidates are on one person's life: the person the canonical
+    // order puts first (the older; model/peopleOrder.ts), whoever is listed
+    // first, named in each explanation. The QLAC candidate below is its
+    // funding account owner's.
+    const annuitant = canonicalFirstPerson(plan.household.people)
+    if (!annuitant) return []
+    const currentAge = startYear - dobYear(annuitant.dob)
     const candidates: DecisionCandidate[] = []
 
     // No-purchase alternative, only meaningful when the plan already buys one.
@@ -660,7 +665,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         id: `annuity-spia-candidate-${startYear}-${liquid.id}`,
         type: 'annuity',
         name: 'SPIA (candidate)',
-        ownerPersonId: primary.id,
+        ownerPersonId: annuitant.id,
         annualReturnPct: null,
         startAge,
         monthlyAmount: monthly,
@@ -673,7 +678,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: 'Cover-the-floor SPIA purchase',
-        explanation: `Trades ${formatWholeUsd(premium)} of liquid savings for an immediate life annuity (~${formatWholeUsd(monthly)}/mo), taxed by exclusion ratio and priced on the exact ledger.`,
+        explanation: `Trades ${formatWholeUsd(premium)} of liquid savings for an immediate life annuity on ${annuitant.name}'s life from age ${startAge} (~${formatWholeUsd(monthly)}/mo), taxed by exclusion ratio and priced on the exact ledger.`,
         planPatch: { accounts: [...plan.accounts, annuity] },
         metadata: { premium: Math.round(premium), monthly: Math.round(monthly) },
       })
@@ -690,7 +695,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
           id: `annuity-spia-ladder-candidate-${startYear + offset}-${liquid.id}`,
           type: 'annuity',
           name: `SPIA ladder tranche ${startYear + offset} (candidate)`,
-          ownerPersonId: primary.id,
+          ownerPersonId: annuitant.id,
           annualReturnPct: null,
           startAge: trancheStartAge,
           monthlyAmount: (tranchePremium * spiaPayoutRate(trancheStartAge)) / 12,
@@ -709,7 +714,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: 'SPIA laddered over three purchases',
-        explanation: `Splits the same ${formatWholeUsd(premium)} into three SPIA purchases (now, +3y, +6y) at each age's payout rate, keeping deferred dollars invested meanwhile; priced on the exact ledger.`,
+        explanation: `Splits the same ${formatWholeUsd(premium)} into three SPIA purchases on ${annuitant.name}'s life (now, +3y, +6y) at each age's payout rate, keeping deferred dollars invested meanwhile; priced on the exact ledger.`,
         planPatch: { accounts: [...plan.accounts, ...ladderAccounts] },
         metadata: { premium: Math.round(premium), tranches: trancheYears.length },
       })

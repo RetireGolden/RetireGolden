@@ -12,6 +12,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
@@ -64,7 +65,7 @@ function solved(overrides: Partial<SpendingSolveResult>): SpendingSolveResult {
 function stampedExample(id: string): Plan {
   const example = getExampleById(id)
   if (!example) throw new Error(`no example ${id}`)
-  return {
+  return rebindScenarioPatchesToPlan({
     ...example.build(),
     id: `example--${id}`,
     name: example.title,
@@ -72,7 +73,7 @@ function stampedExample(id: string): Plan {
     exampleSourceId: id,
     createdAtIso: exampleFixedNow().toISOString(),
     updatedAtIso: exampleFixedNow().toISOString(),
-  }
+  })
 }
 
 describe('SpendingSolverPage statements', () => {

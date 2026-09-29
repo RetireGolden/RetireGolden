@@ -74,6 +74,7 @@ function fixedPlan(): Plan {
     { fromAge: 60, multiplier: 1.5 },
     { fromAge: 40, multiplier: 0.5 },
   ]
+  plan.expenses.phasesAgeOf = plan.household.people[0]!.id
   return validatePlan(plan)
 }
 
@@ -114,7 +115,7 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
 
     for (const phase of phases) {
       expect(phase.input.expenses).toBe(plan.expenses)
-      expect(phase.input.primaryAge).toBe(60)
+      expect(phase.input.phasesPersonAge).toBe(60)
       expect(phase.input.peopleStateCount).toBe(2)
       expect(phase.input.aliveCount).toBe(1)
       expect(phase.input.anyAlive).toBe(true)

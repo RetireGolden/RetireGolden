@@ -78,6 +78,9 @@ export function buildNoAnnuityBrokerage(): Plan {
     phases: [
       { fromAge: 75, multiplier: 0.88 },
     ],
+    // The phases follow this person's age (schema v7, decision D-PEOPLE-ORDER): the plan names
+    // them rather than reading whoever is listed first.
+    phasesAgeOf: me,
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 880, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 210 },
   }

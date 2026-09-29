@@ -154,6 +154,24 @@ function MetricRow({
   )
 }
 
+/**
+ * The depletion-age row names whose age it is: on each side the person the
+ * engine's canonical order puts first (the older), never "primary". The two
+ * plans can name different people; the label then says which is whose.
+ */
+function depletionAgeLabel(
+  headline: PlanHeadlineComparison,
+  planA: Plan | undefined,
+  planB: Plan | undefined,
+): string {
+  const nameIn = (plan: Plan | undefined, id: string | null) =>
+    plan?.household.people.find((person) => person.id === id)?.name ?? null
+  const a = nameIn(planA, headline.depletionAgePersonId.baseline)
+  const b = nameIn(planB, headline.depletionAgePersonId.proposal)
+  if (a === null || b === null) return 'Depletion age'
+  return a === b ? `Depletion age (${a})` : `Depletion age (${a} in A, ${b} in B)`
+}
+
 export function ComparePlansPage() {
   const store = usePlanStore()
   const [summaries, setSummaries] = useState<PlanSummary[] | null>(null)
@@ -249,7 +267,7 @@ export function ComparePlansPage() {
       ...(lifetime ? { higherIsGood: false } : {}),
     })
     const lasts = headline.moneyLasts
-    const age = headline.depletionAgePrimary
+    const age = headline.depletionAge
     const success = headline.deterministicSuccessPct
     return [
       {
@@ -271,15 +289,17 @@ export function ComparePlansPage() {
         unit: 'pp',
       },
       {
-        label: 'Depletion age (primary)',
+        label: depletionAgeLabel(headline, left?.plan, right?.plan),
         a: age.baseline === null ? '—' : String(age.baseline),
         b: age.proposal === null ? '—' : String(age.proposal),
         delta: age.delta,
+        // Two different people's ages have no difference to show (review L1).
+        ...(headline.depletionAgeDeltaWithheld === 'differentPeople' ? { deltaLabel: 'different people' } : {}),
         unit: 'years',
       },
       money('Lifetime tax + penalties', headline.lifetimeTaxesAndPenalties, true),
     ]
-  }, [headline])
+  }, [headline, left, right])
 
   return (
     <section className="page planner-shell" style={{ textAlign: 'left' }}>

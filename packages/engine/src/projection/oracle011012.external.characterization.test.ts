@@ -92,14 +92,14 @@ describe('ORACLE-011: Roth bridge optimizer direction vs Owl', () => {
 
     const valid = validatePlan(plan)
     const baselineResult = simulatePlan(valid, opts)
-    const baseline = summarizeProjection(valid, baselineResult)
+    const baseline = summarizeProjection(valid, baselineResult, { conversionFreeRun: null })
 
     const { schedule } = await optimizePlan(valid, opts)
     const optimizedPlan = validatePlan(
       withOptimizedConversions(valid, schedule.conversions, '2026-06-30T00:00:00.000Z'),
     )
     const exactResult = simulatePlan(optimizedPlan, opts)
-    const exact = summarizeProjection(optimizedPlan, exactResult)
+    const exact = summarizeProjection(optimizedPlan, exactResult, { conversionFreeRun: null })
 
     const rmdStartYear = 1958 + 73
     const bridgeRequested = schedule.conversions
@@ -188,7 +188,7 @@ describe('ORACLE-012: five-year retirement bridge with RMD start', () => {
 
     const valid = validatePlan(plan)
     const result = simulatePlan(valid, opts)
-    const summary = summarizeProjection(valid, result)
+    const summary = summarizeProjection(valid, result, { conversionFreeRun: null })
 
     expect({
       depletionYear: result.depletionYear,

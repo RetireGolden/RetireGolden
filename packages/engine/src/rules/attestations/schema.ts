@@ -18,5 +18,6 @@ export const schemaAttestations: Readonly<Record<string, CoverageAttestation>> =
   'schema/plan.v4.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
   'schema/plan.v5.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-31', note: 'generated file' }),
   'schema/plan.v6.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-28', note: 'generated file' }),
+  'schema/plan.v7.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-28', note: 'generated file' }),
   'schema/planSchemaMeta.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
 })

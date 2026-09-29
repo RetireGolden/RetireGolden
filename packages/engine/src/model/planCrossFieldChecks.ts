@@ -35,8 +35,22 @@ import {
   type RetirementActionIraClassification,
 } from './plan.js'
 
-/** Account types the model refuses to leave without an individual owner. */
-const individuallyOwnedAccountTypes = new Set(['traditional', 'roth', 'hsa'])
+/**
+ * Account types the model refuses to leave without an individual owner. An
+ * IRA is "for the exclusive benefit of an individual" (IRC 408(a)); a pension
+ * belongs to the participant who earned it; and an annuity's payments are
+ * measured on named lives (IRC 72(c)(3)(A); a joint-and-survivor contract has
+ * a first and a second annuitant, Treas. Reg. 1.72-5(b)(1)), so "joint" names
+ * no one whose age starts it or whose death ends it (decision D-PEOPLE-ORDER).
+ */
+const individuallyOwnedAccountTypes = new Set(['traditional', 'roth', 'hsa', 'pension', 'annuity'])
+
+/** The plain-words refusal for an owner-less account of an individually owned type. */
+function missingOwnerMessage(type: AccountType): string {
+  if (type === 'pension') return 'a pension must name its owner, the person who earned it'
+  if (type === 'annuity') return 'an annuity must name its annuitant, the person whose age starts it and whose life it pays for'
+  return `${type} accounts must have an individual owner`
+}
 
 /**
  * The ordinary rate-bracket percentages the parameter pack publishes for a
@@ -892,6 +906,11 @@ export function checkRetirementActionReferences(
  * offer, election and rollover target, HECM residence, and a charity estate
  * destination.
  */
+/** A person's last year alive at the plan's planning age: ISO birth year plus planning age. */
+function lastYearAlive(person: Person): number {
+  return Number(person.dob.slice(0, 4)) + person.longevity.planningAge
+}
+
 export function checkAccountCrossFieldRules(
   plan: PlanDocument,
   ctx: z.RefinementCtx,
@@ -910,7 +929,38 @@ export function checkAccountCrossFieldRules(
       ctx.addIssue({
         code: 'custom',
         path: ['accounts', i, 'ownerPersonId'],
-        message: `${a.type} accounts must have an individual owner`,
+        message: missingOwnerMessage(a.type),
+      })
+    }
+    // A jointly owned account's contribution schedule follows a named
+    // person's age (decision D-PEOPLE-ORDER); an owned account's follows its
+    // owner's, so it names no one else.
+    if ('contributionScheduleAgeOf' in a && a.contributionScheduleAgeOf !== undefined) {
+      if (!personIds.has(a.contributionScheduleAgeOf)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', i, 'contributionScheduleAgeOf'],
+          message: `unknown person id "${a.contributionScheduleAgeOf}"`,
+        })
+      } else if (a.ownerPersonId !== null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', i, 'contributionScheduleAgeOf'],
+          message: "an account with an owner follows its owner's age: clear contributionScheduleAgeOf",
+        })
+      }
+    }
+    if (
+      (a.type === 'taxable' || a.type === 'cash' || a.type === 'equityComp') &&
+      a.ownerPersonId === null &&
+      (a.contributionSchedule?.length ?? 0) > 0 &&
+      a.contributionScheduleAgeOf === undefined &&
+      plan.household.people.length > 1
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['accounts', i, 'contributionScheduleAgeOf'],
+        message: "a joint account's contribution schedule must name the person whose age it follows",
       })
     }
     if (a.ownerPersonId !== null && !personIds.has(a.ownerPersonId)) {
@@ -959,6 +1009,19 @@ export function checkAccountCrossFieldRules(
     if (a.type === 'annuity' && a.purchase) {
       const fundingType = accountTypeById.get(a.purchase.fundingAccountId)
       const fundingAccount = accountById.get(a.purchase.fundingAccountId)
+      // An annuity bought for a person who has died by its purchase year pays
+      // nothing, ever: refuse it in plain words rather than spend the premium
+      // (the independent review's M2). A person is alive through birth year
+      // plus planning age.
+      const annuitantPerson = a.ownerPersonId !== null ? personById.get(a.ownerPersonId) : undefined
+      if (annuitantPerson !== undefined && a.purchase.year > lastYearAlive(annuitantPerson)) {
+        const last = lastYearAlive(annuitantPerson)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', i, 'ownerPersonId'],
+          message: `${annuitantPerson.name}'s planning age ends in ${last}, so an annuity bought in ${a.purchase.year} on ${annuitantPerson.name}'s life would never pay: name a person who is alive in ${a.purchase.year}, or buy it in ${last} or earlier`,
+        })
+      }
       if (a.purchase.fundingAccountId === a.id || fundingType === undefined) {
         ctx.addIssue({
           code: 'custom',
@@ -994,6 +1057,45 @@ export function checkAccountCrossFieldRules(
           message: 'a non-qualified annuity purchase must be funded from cash, taxable, or equity-comp savings',
         })
       }
+      // An annuity bought with IRA or 401(k) dollars belongs to the person
+      // whose account paid for it: an IRA is "for the exclusive benefit of an
+      // individual or his beneficiaries" (IRC 408(a)), an IRA annuity "is not
+      // transferable by the owner" (IRC 408(b)(1); the quotes are held in
+      // irc-72-c-3-A-annuity-measured-on-named-lives), and a QLAC is
+      // purchased "for an employee", the IRA owner
+      // standing in for the employee (Treas. Reg. 1.401(a)(9)-6(q)(1),
+      // 1.408-8(a)(3)). The model does not price a contract named for the
+      // other spouse while the owner lives. After the owner's death the
+      // surviving spouse stands in the owner's place: a distribution paid to
+      // the spouse is treated "as if the spouse were the employee" (IRC
+      // 402(c)(9)), and a spouse's IRA is not "inherited" (IRC
+      // 408(d)(3)(C)(ii)(II)), so the plan keeps the account under the dead
+      // owner's id and lets the living spouse buy from it.
+      const fundingOwnerPerson = fundingAccount?.ownerPersonId != null ? personById.get(fundingAccount.ownerPersonId) : undefined
+      const survivingSpousePurchase =
+        plan.household.people.length === 2 &&
+        fundingOwnerPerson !== undefined &&
+        a.purchase.year > lastYearAlive(fundingOwnerPerson) &&
+        annuitantPerson !== undefined &&
+        annuitantPerson.id !== fundingOwnerPerson.id &&
+        a.purchase.year <= lastYearAlive(annuitantPerson)
+      if (
+        a.purchase.taxQualification === 'qualified' &&
+        fundingAccount !== undefined &&
+        fundingAccount.type === 'traditional' &&
+        fundingAccount.ownerPersonId !== null &&
+        a.ownerPersonId !== null &&
+        a.ownerPersonId !== fundingAccount.ownerPersonId &&
+        !survivingSpousePurchase
+      ) {
+        const fundingOwner = personById.get(fundingAccount.ownerPersonId)?.name ?? fundingAccount.ownerPersonId
+        const annuitant = personById.get(a.ownerPersonId)?.name ?? a.ownerPersonId
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', i, 'ownerPersonId'],
+          message: `an annuity bought from an IRA or 401(k) belongs to that account's owner: make ${fundingOwner} its annuitant, or buy it from one of ${annuitant}'s own accounts`,
+        })
+      }
       if (a.purchase.qlac && a.purchase.taxQualification !== 'qualified') {
         ctx.addIssue({
           code: 'custom',
@@ -1025,10 +1127,9 @@ export function checkAccountCrossFieldRules(
       // 401(a)(9) at all, and an already-owned annuity with no `purchase`
       // moves no premium out of any balance, so neither is tested.
       if (a.purchase.taxQualification === 'qualified') {
-        // Same owner resolution the guaranteed-income pass takes: an annuity
-        // may be stored with no individual owner, and the projection reads it
-        // as the first person's.
-        const owner = personById.get(a.ownerPersonId ?? '') ?? plan.household.people[0]
+        // The annuitant's own birth date: every annuity names one (an
+        // owner-less one is refused above, and never read by position).
+        const owner = personById.get(a.ownerPersonId ?? '')
         const birthYear = owner === undefined ? null : Number(owner.dob.slice(0, 4))
         const birthMonth = owner === undefined ? null : Number(owner.dob.slice(5, 7))
         if (
@@ -1140,6 +1241,16 @@ export function checkAccountCrossFieldRules(
           code: 'custom',
           path: ['accounts', i, 'lumpSumElection', 'rolloverAccountId'],
           message: 'a pension lump sum must roll over into an existing traditional account you own (not an inherited IRA)',
+        })
+      } else if (a.ownerPersonId !== null && rollover.ownerPersonId !== null && rollover.ownerPersonId !== a.ownerPersonId) {
+        // An IRA is an individual account (IRC 408(a)): the participant's
+        // lump sum rolls into the participant's own IRA or plan, never the
+        // spouse's.
+        const participant = personById.get(a.ownerPersonId)?.name ?? a.ownerPersonId
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', i, 'lumpSumElection', 'rolloverAccountId'],
+          message: `a pension lump sum rolls over only into an IRA or 401(k) of the person who earned it: choose one of ${participant}'s own traditional accounts`,
         })
       }
     }
@@ -1384,6 +1495,33 @@ export function checkRothConversionFillToTarget(
         })
       }
     }
+  }
+}
+
+/**
+ * The spending phases follow a named person's age (decision D-PEOPLE-ORDER):
+ * `expenses.phasesAgeOf` must name someone in the household, and a two-person
+ * plan with phases must name one.
+ */
+export function checkSpendingPhasesPerson(
+  plan: PlanDocument,
+  ctx: z.RefinementCtx,
+  context: PlanCrossFieldContext = planCrossFieldContext(plan),
+): void {
+  const named = plan.expenses.phasesAgeOf
+  if (named !== undefined && !context.personIds.has(named)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['expenses', 'phasesAgeOf'],
+      message: `unknown person id "${named}"`,
+    })
+  }
+  if (named === undefined && plan.expenses.phases.length > 0 && plan.household.people.length > 1) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['expenses', 'phasesAgeOf'],
+      message: 'spending phases must name the person whose age they follow',
+    })
   }
 }
 
@@ -1756,6 +1894,7 @@ export function runPlanCrossFieldChecks(plan: PlanDocument, ctx: z.RefinementCtx
   checkIncomeFloorLadders(plan, ctx, context)
   checkRecurringIncomeWindows(plan, ctx)
   checkRothConversionFillToTarget(plan, ctx)
+  checkSpendingPhasesPerson(plan, ctx, context)
   checkRequiredSpendingFloor(plan, ctx)
   checkOneTimeGoalWindows(plan, ctx)
   checkFederalAuditPlanFacts(plan, ctx)

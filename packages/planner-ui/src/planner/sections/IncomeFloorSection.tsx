@@ -11,7 +11,8 @@ import { useMemo, useState } from 'react'
 import type { TipsLadder } from '@retiregolden/engine/model/plan'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import { quotePlanLadder } from '@retiregolden/engine/ladder/ladderMath'
-import { computeFundedRatio } from '@retiregolden/engine/ladder/fundedRatio'
+import { computeFundedRatio, fundedRatioStart, type FundedRatioStart } from '@retiregolden/engine/ladder/fundedRatio'
+import { householdRetirementClause, notRetiringPhrase } from '@retiregolden/engine/projection/householdRetirement'
 import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import {
   FEDINVEST_PAGE_URL,
@@ -260,26 +261,69 @@ export function FundedRatioCard() {
   )
 }
 
+/** Who never retires in the plan, in the engine's one wording: "Sam works through the plan". */
+function whoWorksThrough(start: FundedRatioStart, people: readonly { id: string; name: string }[], nobody = false): string {
+  return notRetiringPhrase(
+    start.notRetiring.map((person) => ({ ...person, name: people.find((p) => p.id === person.personId)?.name ?? null })),
+    people.length > 1,
+    nobody,
+  )
+}
+
+/**
+ * Why the count starts in its year: whose retirement decides it and by which
+ * rule (the household's later one, ladder/fundedRatio.ts#fundedRatioStart,
+ * worded by projection/householdRetirement.ts#householdRetirementClause), and
+ * who works through the plan when someone does. Null when nobody retires.
+ */
+function countedFromPhrase(start: FundedRatioStart, people: readonly { id: string; name: string }[]): string | null {
+  const person = people.find((p) => p.id === start.personId)
+  if (person === undefined || start.retirementYear === null || start.rule === null || start.fromYear === null) return null
+  const couple = people.length > 1
+  const clause = householdRetirementClause(
+    { year: start.retirementYear, rule: start.rule },
+    couple ? person.name : null,
+    start.fromYear,
+    start.notRetiring.length === 0,
+  )
+  return couple && start.notRetiring.length > 0
+    ? `${clause}; ${whoWorksThrough(start, people)}, so the count starts at ${person.name}'s retirement`
+    : clause
+}
+
 /** The live readout: projects the (valid) plan and renders nothing when it has no measurable essential spending. */
 function FundedRatioReadout() {
   const { plan } = usePlan()
   const { result, basis } = useProjection(plan)
   const startYear = result.startYear
+  // Counted from the household's later retirement, whoever is listed first.
+  const start = useMemo(() => fundedRatioStart(plan, startYear), [plan, startYear])
   const fr = useMemo(() => {
-    const primary = plan.household.people[0]
-    const retirementYear =
-      primary && primary.retirementAge !== null ? Number(primary.dob.slice(0, 4)) + primary.retirementAge : startYear
+    // Nobody retires in the plan: no retirement to count the floor from.
+    if (start.fromYear === null) return null
     return computeFundedRatio({
       years: result.years,
       startYear,
       // Today's dollars by the run's own published inflation factor.
       deflate: (y, a) => toTodayDollars(basis, y, a),
       curve: CURVE,
-      fromYear: Math.max(retirementYear, startYear),
+      fromYear: start.fromYear,
     })
-  }, [plan, result, basis, startYear])
+  }, [result, basis, startYear, start])
 
+  if (start.fromYear === null && plan.household.people.length > 0) {
+    // Said in plain words rather than left out (the independent review's N3).
+    return (
+      <div className="card">
+        <FundedRatioIntro />
+        <p className="card-hint">
+          {`No funded ratio is counted: ${whoWorksThrough(start, plan.household.people, true)} and your wages carry the floor throughout.`}
+        </p>
+      </div>
+    )
+  }
   if (!fr) return null
+  const countedFrom = countedFromPhrase(start, plan.household.people)
   return (
     <div className="card">
       <FundedRatioIntro />
@@ -288,7 +332,11 @@ function FundedRatioReadout() {
           <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
             {Math.round(fr.fundedRatioPct)}%
           </div>
-          <div className="muted">of the essential floor is funded by guaranteed income</div>
+          <div className="muted">
+            {plan.household.people.length > 1
+              ? "of your household's essential floor is funded by guaranteed income"
+              : 'of the essential floor is funded by guaranteed income'}
+          </div>
         </div>
         <div>
           <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
@@ -305,8 +353,10 @@ function FundedRatioReadout() {
       </div>
       <p className="card-hint">
         {plan.expenses.requiredAnnual === undefined
-          ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
-          : `Counted from ${fr.fromYear} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
+          ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low. '
+          : ''}
+        {/* Always said, so a couple sees whose retirement starts the count. */}
+        {`Counted from ${fr.fromYear}${countedFrom === null ? '' : ` (${countedFrom})`} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
       </p>
     </div>
   )

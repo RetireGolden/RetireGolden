@@ -18,6 +18,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, Text
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
 import { updateAccountField } from '../eligibilityFactActions'
+import { ownerHelp } from './accountOwnerHelp'
 
 function ownerOptions(plan: Plan, type: Account['type']) {
   const peopleOptions = plan.household.people.map((person) => ({ value: person.id, label: person.name }))
@@ -76,7 +77,8 @@ export function AccountEditorShell({
         onCommit={(value) => onCommit('name', value || ACCOUNT_LABEL[account.type])}
       />
       <SelectField
-        label="Owner"
+        label={account.type === 'annuity' ? 'Annuitant' : 'Owner'}
+        help={ownerHelp(account, plan.household.people.length)}
         value={account.ownerPersonId ?? 'joint'}
         options={ownerOptions(plan, account.type)}
         onCommit={(value) => setOwner(value === 'joint' ? null : value)}
@@ -176,6 +178,30 @@ function InvestmentFields({
   )
 }
 
+/**
+ * On a joint account in a two-person plan, whose age the schedule's From and To
+ * ages are (schema v7): the plan names the person rather than using whoever is
+ * listed first.
+ */
+function ScheduleAgeOfField({ account, onCommit }: { account: Account; onCommit: CommitAccountField }) {
+  const { plan } = usePlan()
+  if (account.ownerPersonId !== null || plan.household.people.length < 2) return null
+  if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') return null
+  const named = account.contributionScheduleAgeOf ?? plan.household.people[0]!.id
+  return (
+    <div className="form-grid">
+      <SelectField
+        label="Ages follow"
+        help="Whose age the From and To ages below are. A joint schedule keeps contributing while either of you is alive, whether or not either of you has wages."
+        learn={LEARN.accumulation}
+        value={named}
+        options={plan.household.people.map((person) => ({ value: person.id, label: `${person.name}'s age` }))}
+        onCommit={(value) => onCommit('contributionScheduleAgeOf', value)}
+      />
+    </div>
+  )
+}
+
 function ContributionFields({
   account,
   index,
@@ -209,6 +235,7 @@ function ContributionFields({
       {account.contributionSchedule !== undefined ? (
         <div className="nested-form-section field-span-full" data-testid="contribution-schedule-panel">
           <h4>Contribution Schedule</h4>
+          <ScheduleAgeOfField account={account} onCommit={onCommit} />
           {account.contributionSchedule.map((phase, phaseIndex) => {
             const updatePhase = (key: string, value: unknown) => {
               const schedule = [...(account.contributionSchedule ?? [])]

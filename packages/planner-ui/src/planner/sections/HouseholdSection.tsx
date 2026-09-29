@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { CURRENT_LIFE_TABLE_EDITION, isCurrentLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 
 import { storedLifeTablePhrase } from '../../longevity/constants'
-import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
+import { addPartner, invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { updatePersonDob } from '../eligibilityFactActions'
 import { SINGLE_WITH_PARTNER_NOTE } from '../filingStatusNotice'
 import { usePlan } from '../planContextCore'
@@ -232,7 +232,7 @@ export function HouseholdSection() {
               className="btn btn-secondary btn-small"
               onClick={() =>
                 update((d) => {
-                  d.household.people.push({
+                  addPartner(d, {
                     id: newId(),
                     name: 'Partner',
                     dob: '1965-01-01',
@@ -240,8 +240,6 @@ export function HouseholdSection() {
                     retirementAge: 65,
                     longevity: { planningAge: 95, source: 'manual' },
                   })
-                  d.household.filingStatus = 'marriedFilingJointly'
-                  invalidateAcaEvidence(d, 'partnerAdded')
                 })
               }
             >

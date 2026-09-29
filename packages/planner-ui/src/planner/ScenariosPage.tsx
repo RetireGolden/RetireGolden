@@ -24,7 +24,7 @@ import {
   type ScalarComparison,
   type ScenarioPlanComparison,
 } from '@retiregolden/engine/scenarios/comparison'
-import { scenarioPlanSnapshotHash } from '@retiregolden/engine/scenarios/patch'
+import { scenarioChangesNothing, scenarioPlanSnapshotHash } from '@retiregolden/engine/scenarios/patch'
 import {
   applyScenarioPatch,
   compareScenarios,
@@ -64,6 +64,8 @@ import {
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 import { US_STATES } from './usStates'
 import { labelOfSegments } from './validationIssues'
+/** Said of a scenario whose plan is the base plan, in its row and in its detail. */
+const SCENARIO_CHANGES_NOTHING = 'This scenario changes nothing in your plan.'
 
 /**
  * A JSON-pointer or dotted plan path as a person reads it:
@@ -941,6 +943,12 @@ function ComparableScenariosPage() {
       return { plan: null, error: 'The selected scenario could not be prepared for comparison.' }
     }
   }, [plan, selectedScenario])
+  // A scenario whose plan is the base plan is said to change nothing, never
+  // shown as a copy of the baseline (decision D-SCENARIO-JSON-LOSS).
+  const proposalChangesNothing = useMemo(
+    () => (proposal.plan ? scenarioChangesNothing(plan, proposal.plan) : false),
+    [plan, proposal.plan],
+  )
   const baselineFingerprint = useMemo(() => comparisonFingerprint(plan, 'baseline'), [plan])
   const proposalFingerprint = useMemo(
     () => (proposal.plan ? comparisonFingerprint(proposal.plan, 'proposal') : { hash: null, error: null }),
@@ -1140,11 +1148,12 @@ function ComparableScenariosPage() {
                       <td>
                         <strong>{row.name}</strong>
                         {row.error ? <div className="small" style={{ color: 'var(--bad)' }}>{row.error}</div> : null}
+                        {row.changesNothing ? <div className="small">{SCENARIO_CHANGES_NOTHING}</div> : null}
                       </td>
-                      <td>{row.error ? '—' : fmtMoneyCompact(row.summary.endingNetWorth)}</td>
-                      <td>{row.error ? '—' : fmtMoneyCompact(row.summary.endingAfterTaxEstate)}</td>
-                      <td>{row.error ? '—' : fmtMoneyCompact(row.summary.lifetimeTaxesAndPenalties)}</td>
-                      <td>{row.error ? '—' : (row.summary.depletionYear ?? 'never')}</td>
+                      <td>{row.error || row.changesNothing ? '—' : fmtMoneyCompact(row.summary.endingNetWorth)}</td>
+                      <td>{row.error || row.changesNothing ? '—' : fmtMoneyCompact(row.summary.endingAfterTaxEstate)}</td>
+                      <td>{row.error || row.changesNothing ? '—' : fmtMoneyCompact(row.summary.lifetimeTaxesAndPenalties)}</td>
+                      <td>{row.error || row.changesNothing ? '—' : (row.summary.depletionYear ?? 'never')}</td>
                       <td style={{ maxWidth: '16rem', textAlign: 'left' }}>
                         {row.diff.slice(0, 4).map((d) => (
                           <span key={d.path} className="diff-chip" title={`${d.path}: ${JSON.stringify(d.baseValue)} → ${JSON.stringify(d.scenarioValue)}`}>
@@ -1213,7 +1222,9 @@ function ComparableScenariosPage() {
               {capacityError}
             </p>
           ) : null}
-          {detailBusy || detail === null ? (
+          {proposalChangesNothing ? (
+            <p>{SCENARIO_CHANGES_NOTHING}</p>
+          ) : detailBusy || detail === null ? (
             detailError ? null : (
               <div className="skeleton" style={{ height: '14rem' }} aria-label="Comparing selected scenario" />
             )

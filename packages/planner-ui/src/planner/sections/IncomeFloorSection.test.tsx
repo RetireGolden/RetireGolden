@@ -8,7 +8,8 @@ import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { ImportAvailabilityProvider } from '../../import/ImportAvailabilityProvider'
 import { STORAGE_KEYS } from '../../data/localStore'
 import { PlanCtx } from '../planContextCore'
-import { LivePricesCard } from './IncomeFloorSection'
+import { FundedRatioCard, LivePricesCard } from './IncomeFloorSection'
+import { appExamplePlanById } from '../../testSupport/appExamples'
 
 let container: HTMLDivElement
 let root: Root
@@ -63,5 +64,35 @@ describe('LivePricesCard cache recovery', () => {
     })
 
     expect(container.textContent).toContain('Fetch live prices from Treasury FedInvest')
+  })
+})
+
+describe('FundedRatioCard for a couple (D-PEOPLE-ORDER)', () => {
+  async function cardText(plan: Plan): Promise<string> {
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={{ plan, update: () => {}, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+            <FundedRatioCard />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    return container.textContent ?? ''
+  }
+
+  it('counts from the later retirement, names whose it is, calls the floor the household\'s, in either order', async () => {
+    // survivor-years lists Lee (retires 2027) before Chris (retires 2025):
+    // the count starts on Lee's retirement, the later one, whoever is first;
+    // with and without a required floor, the card says so.
+    for (const requiredAnnual of [40_000, undefined]) {
+      const plan = appExamplePlanById('survivor-years')
+      plan.expenses.requiredAnnual = requiredAnnual
+      const listed = await cardText(plan)
+      expect(listed).toContain("of your household's essential floor is funded by guaranteed income")
+      expect(listed).toContain('Counted from 2027 (the year Lee retires, the later of your two retirements) through')
+      const reversed = { ...structuredClone(plan), household: { ...plan.household, people: [...plan.household.people].reverse() } }
+      expect(await cardText(reversed)).toBe(listed)
+    }
   })
 })

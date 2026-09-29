@@ -87,6 +87,37 @@ describe('jointSurvivalPercentileAge', () => {
     expect(eitherAliveAt(joint)).toBeGreaterThanOrEqual(0.25)
     expect(eitherAliveAt(joint + 1)).toBeLessThan(0.25)
   })
+
+  it('names the same calendar year whichever person is passed first, at every age gap (D-PEOPLE-ORDER, R6)', () => {
+    // Birth years chosen so the start year is 2026: age = 2026 - birth year.
+    let differences = 0
+    let beyondOlderTable = 0
+    for (const pct of [25, 10]) {
+      for (let olderAge = 20; olderAge <= 100; olderAge += 5) {
+        for (let youngerAge = 20; youngerAge <= olderAge; youngerAge += 5) {
+          for (const [olderSex, youngerSex] of [['male', 'female'], ['female', 'male'], ['average', 'average']] as const) {
+            const older = { age: olderAge, sex: olderSex }
+            const younger = { age: youngerAge, sex: youngerSex }
+            const olderFirst = 2026 - olderAge + jointSurvivalPercentileAge(older, younger, pct)
+            const youngerFirst = 2026 - youngerAge + jointSurvivalPercentileAge(younger, older, pct)
+            if (olderFirst !== youngerFirst) differences++
+            if (jointSurvivalPercentileAge(older, younger, pct) > MAX_AGE + 1) beyondOlderTable++
+          }
+        }
+      }
+    }
+    expect(differences).toBe(0)
+    // The walk reaches past the older person's table end at wide gaps.
+    expect(beyondOlderTable).toBeGreaterThan(0)
+  })
+
+  it("walks a much younger partner past the older person's table end", () => {
+    // A 35-year gap. On the older person's clock the joint answer's calendar
+    // year is never before the younger partner's own single-life answer.
+    const joint = jointSurvivalPercentileAge({ age: 70, sex: 'male' }, { age: 35, sex: 'female' }, 25)
+    const youngerSingle = survivalPercentileAge(35, 'female', 25)
+    expect(2026 - 70 + joint).toBeGreaterThanOrEqual(2026 - 35 + youngerSingle)
+  })
 })
 
 describe('hazardForExpectancyMultiplier', () => {

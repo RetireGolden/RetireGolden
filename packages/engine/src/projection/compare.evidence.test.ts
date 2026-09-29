@@ -56,7 +56,7 @@ describeCalculation(
       const plan = singlePersonPlan({ dob: '1961-01-01' })
       const summary = summarizeProjection(
         plan,
-        resultOf(example.inputs.years as Array<{ year: number; rothConversion: number }>),
+        resultOf(example.inputs.years as Array<{ year: number; rothConversion: number }>), { conversionFreeRun: null },
       )
       const expected = example.expected.lifetimeRothConversions as number
       expect(

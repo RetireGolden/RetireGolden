@@ -145,6 +145,71 @@ export const annuityRecords = {
     ],
   },
 
+  'irc-72-c-3-A-annuity-measured-on-named-lives': {
+    title: 'An annuity is paid and measured on the lives it names, not on whoever a household lists first',
+    statement:
+      'A life-contingent contract is measured on the life expectancy of the individuals it names, and a joint and survivor contract names a first annuitant who is paid for life and a second annuitant who is paid after the first annuitant dies. A contract bought with individual retirement money belongs to that account\'s individual: an individual retirement account is for the exclusive benefit of an individual or his beneficiaries, and an individual retirement annuity is not transferable by its owner, whose entire interest is nonforfeitable. The engine therefore requires every pension and annuity to name its owner (the participant, or the first annuitant), starts and ends the income on that person\'s age and life, treats the other household member as the second annuitant or survivor, and refuses a qualified purchase named for anyone but the owner of the traditional account that paid for it, with one exception: after the owner\'s death the surviving spouse stands in the owner\'s place, since a distribution paid to the spouse is treated as if the spouse were the employee and a surviving spouse\'s IRA is not an inherited one, so a qualified purchase from the dead owner\'s account may name the living spouse. A purchase named for a person whose planning age has ended by its purchase year is refused in plain words, because it would never pay; a stored plan is never repaired onto such a person. A stored plan of that shape still opens: the contract is given the other household member when that person is alive in the purchase year, the only one who could have bought it, and is otherwise removed with its premium left where it was, and the load says the figures change. Until plan schema v7 a contract with no owner was paid on the age and life of whichever person the household listed first, so reordering the people moved a contract\'s first payment and its last.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The lives are a fact of the contract, so the Plan records them rather than the engine choosing them: ownerPersonId on a pension or annuity is the participant or first annuitant, and a two-person household supplies the second annuitant. Scope: a contract whose second annuitant is not a household member, and a joint form that reduces on the first death of either rather than the named owner\'s, are other payout forms, not other owners, and are not modelled. Plans saved before v7 are given the funding account\'s owner for a qualified purchase (the surviving spouse when that owner\'s planning age had ended by the purchase year), and otherwise the person then listed first, and the load says which. The plan keeps an account under its dead owner\'s id, so a surviving spouse\'s purchase from what was the decedent\'s 401(k) or IRA is expressed as a purchase funded from that account and named for the spouse; the engine models the spouse\'s taking over the account (the spousal rollover or treat-as-own election) no further than that. Death is the plan\'s planning age, not a Monte Carlo path\'s sampled death.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(c)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If the expected return under the contract, for the period on and after the annuity starting date, depends in whole or in part on the life expectancy of one or more individuals, the expected return shall be computed with reference to actuarial tables prescribed by the Secretary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-5(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.72-5',
+      quotedText:
+        'In the case of a joint and survivor annuity contract involving two annuitants which provides the first annuitant with a fixed monthly income for life and, after the death of the first annuitant, provides an identical monthly income for life to a second annuitant, the expected return shall be determined by multiplying the total amount of the payments to be received annually by the multiple obtained from Table II or VI (whichever is applicable) of § 1.72-9 under the ages (as of the annuity starting date) and, if applicable, sexes of the living annuitants.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "individual retirement account" means a trust created or organized in the United States for the exclusive benefit of an individual or his beneficiaries, but only if the written governing instrument creating the trust meets the following requirements:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(b)(1), (4)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        '(1) The contract is not transferable by the owner. ... (4) The entire interest of the owner is nonforfeitable.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(c)(9)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        "If any distribution attributable to an employee is paid to the spouse of the employee after the employee's death, the preceding provisions of this subsection shall apply to such distribution in the same manner as if the spouse were the employee.",
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(C)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'An individual retirement account or individual retirement annuity shall be treated as inherited if- (I) the individual for whose benefit the account or annuity is maintained acquired such account by reason of the death of another individual, and (II) such individual was not the surviving spouse of such other individual.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
+      'packages/engine/src/model/migrations.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#guaranteedIncomeOwnerId',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
+      'packages/engine/src/model/migrations.ts#nameAccountPeople',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+    ],
+  },
+
   'irc-72-e-8-B-employer-plan-pro-rata-basis': {
     title: 'Employer-plan after-tax basis comes out pro rata, not first',
     statement:

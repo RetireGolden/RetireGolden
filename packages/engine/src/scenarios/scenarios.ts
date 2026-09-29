@@ -19,7 +19,7 @@ import type { ParsePlanResult } from '../model/plan.js'
 import type { MarketModelConfig } from '../montecarlo/marketModels.js'
 import { createMarketModel } from '../montecarlo/marketModels.js'
 import { aggregateMonteCarlo, runMonteCarloPaths } from '../montecarlo/run.js'
-import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
+import { conversionFreeRun, summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan, type SimulateOptions } from '../projection/simulate.js'
 import type { TaxCalculator } from '../projection/types.js'
 import {
@@ -29,7 +29,7 @@ import {
   type ScenarioOperation,
   type ScenarioPatchInput,
 } from './contract.js'
-import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
+import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState, scenarioChangesNothing } from './patch.js'
 import { acaContractEditBetween, removeStaleAcaContracts } from '../model/acaContractRemovals.js'
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -174,6 +174,13 @@ export interface ScenarioComparisonRow {
   error: string | null
   diff: ScenarioDiffEntry[]
   successRate: number | null
+  /**
+   * True when the scenario applies and its plan is the base plan
+   * (`scenarioChangesNothing`), so its figures are the baseline's; false for
+   * the base row and for a scenario that does not apply. A host says so rather
+   * than showing a copy of the baseline (decision D-SCENARIO-JSON-LOSS).
+   */
+  changesNothing: boolean
 }
 
 export interface ScenarioComparison {
@@ -185,7 +192,10 @@ function runOne(
   opts: CompareScenariosOptions,
 ): { summary: ProjectionSummary; successRate: number | null } {
   const taxCalculator = opts.taxCalculatorForPlan ? opts.taxCalculatorForPlan(plan) : opts.taxCalculator
-  const summary = summarizeProjection(plan, simulatePlan(plan, { startYear: opts.startYear, taxCalculator }))
+  const simulateOptions = { startYear: opts.startYear, taxCalculator }
+  const summary = summarizeProjection(plan, simulatePlan(plan, simulateOptions), {
+    conversionFreeRun: conversionFreeRun(plan, simulateOptions),
+  })
   let successRate: number | null = null
   if (opts.monteCarlo) {
     const result = runMonteCarloPaths(plan, {
@@ -218,6 +228,7 @@ const EMPTY_SUMMARY: ProjectionSummary = {
   fiYear: null,
   fiAge: null,
   coastFireNumber: 0,
+  fiBasis: { spendingYear: null, spendingSource: 'baseAnnual', personId: null, retirementYear: null, retirementRule: null, personLastYearAlive: null, notRetiring: [] },
 }
 
 /**
@@ -228,7 +239,7 @@ const EMPTY_SUMMARY: ProjectionSummary = {
 export function compareScenarios(plan: Plan, opts: CompareScenariosOptions, scenarios?: Scenario[]): ScenarioComparison {
   const rows: ScenarioComparisonRow[] = []
   const base = runOne(plan, opts)
-  rows.push({ scenarioId: null, name: 'Base plan', summary: base.summary, error: null, diff: [], successRate: base.successRate })
+  rows.push({ scenarioId: null, name: 'Base plan', summary: base.summary, error: null, diff: [], successRate: base.successRate, changesNothing: false })
 
   for (const scenario of scenarios ?? plan.scenarios) {
     const applied = applyScenarioPatch(plan, scenario.patch)
@@ -240,6 +251,7 @@ export function compareScenarios(plan: Plan, opts: CompareScenariosOptions, scen
         error: `Scenario overrides are invalid: ${applied.issues.join('; ')}`,
         diff: diffScenarioPatch(plan, scenario.patch),
         successRate: null,
+        changesNothing: false,
       })
       continue
     }
@@ -251,6 +263,7 @@ export function compareScenarios(plan: Plan, opts: CompareScenariosOptions, scen
       error: null,
       diff: diffScenarioPatch(plan, scenario.patch),
       successRate: run.successRate,
+      changesNothing: scenarioChangesNothing(plan, applied.plan),
     })
   }
   return { rows }

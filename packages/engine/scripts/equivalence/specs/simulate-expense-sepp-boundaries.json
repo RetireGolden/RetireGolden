@@ -8,17 +8,17 @@
       "label": "annual lifestyle-layer input selection and positional cardinality guard",
       "file": "projection/internal/annualLifestyleLayers.ts",
       "lines": [
-        42,
-        58
+        43,
+        59
       ],
       "note": "The mismatch throw on lines 59-60 is excluded: simulatePlan supplies one opening value per physical balance, while focused helper tests pin fail-closed cardinality drift.",
       "anchors": [
         {
-          "line": 42,
+          "line": 43,
           "text": "const {"
         },
         {
-          "line": 58,
+          "line": 59,
           "text": "if (startOfYearBalances.length !== balances.length) {"
         }
       ]
@@ -28,21 +28,21 @@
       "label": "annual lifestyle-layer phase, survivor, ABW and spending arithmetic",
       "file": "projection/internal/annualLifestyleLayers.ts",
       "lines": [
-        62,
-        105
+        63,
+        106
       ],
       "note": "The corpus reaches fixed and ABW modes, stable phase ordering, couple/survivor/no-survivor scaling, optional lifestyle layers, ordered positional portfolio folding, and the planning-age horizon.",
       "anchors": [
         {
-          "line": 62,
+          "line": 63,
           "text": "let phaseMultiplier = 1"
         },
         {
-          "line": 75,
+          "line": 76,
           "text": "expenses.requiredAnnual ?? expenses.baseAnnual,"
         },
         {
-          "line": 105,
+          "line": 106,
           "text": "})"
         }
       ]
@@ -52,21 +52,21 @@
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        249,
-        268
+        250,
+        269
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 249,
+          "line": 250,
           "text": "const {"
         },
         {
-          "line": 254,
+          "line": 255,
           "text": "} = annualLifestyleLayers({"
         },
         {
-          "line": 268,
+          "line": 269,
           "text": "})"
         }
       ]
@@ -100,25 +100,25 @@
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        341,
-        348
+        342,
+        349
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 341,
+          "line": 342,
           "text": "let insurancePremiums = 0"
         },
         {
-          "line": 342,
+          "line": 343,
           "text": "for (const row of annualInsurancePremiumRows({"
         },
         {
-          "line": 347,
+          "line": 348,
           "text": "yearSites?.recordInsurancePremium(row.record)"
         },
         {
-          "line": 348,
+          "line": 349,
           "text": "}"
         }
       ]
@@ -152,25 +152,25 @@
       "label": "ordered property-cost fold and publication",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        377,
-        386
+        378,
+        387
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 377,
+          "line": 378,
           "text": "let propertyCosts = 0"
         },
         {
-          "line": 378,
+          "line": 379,
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 385,
+          "line": 386,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 386,
+          "line": 387,
           "text": "}"
         }
       ]
@@ -204,25 +204,25 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        476,
-        506
+        477,
+        507
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 476,
+          "line": 477,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 501,
+          "line": 502,
           "text": "})"
         },
         {
-          "line": 502,
+          "line": 503,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 506,
+          "line": 507,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]
@@ -276,32 +276,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        887,
-        951
+        888,
+        952
       ],
       "anchors": [
         {
-          "line": 887,
+          "line": 888,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 899,
+          "line": 900,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 900,
+          "line": 901,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 910,
+          "line": 911,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 942,
+          "line": 943,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 950,
+          "line": 951,
           "text": "}"
         }
       ],

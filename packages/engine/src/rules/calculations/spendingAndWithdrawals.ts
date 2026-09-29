@@ -199,7 +199,7 @@ export const spendingAndWithdrawalsRecords = {
       'sustainable-spending-result-spending-slack-dollars',
     ],
     statement:
-      'deltaPct = 0 returns no phases. startAge = min(max(round(retirementAge), 40), 105). For age = startAge + 5, startAge + 10, ... while age <= 100: multiplier = (1 + deltaPct/100)^(age - startAge), rounded to two decimals as Math.round(x x 100)/100 and clamped into [0, 3]; each row is { fromAge: age, multiplier }. Units: fromAge in years of the primary person; multiplier a factor on baseAnnual. Rounding: two decimals per row, as stated.',
+      'deltaPct = 0 returns no phases. startAge = min(max(round(retirementAge), 40), 105). For age = startAge + 5, startAge + 10, ... while age <= 100: multiplier = (1 + deltaPct/100)^(age - startAge), rounded to two decimals as Math.round(x x 100)/100 and clamped into [0, 3]; each row is { fromAge: age, multiplier }. Units: fromAge in years of the person the phases follow (expenses.phasesAgeOf; spending-phase-person); multiplier a factor on baseAnnual. Rounding: two decimals per row, as stated.',
     formula: {
       expression: 'm(age) = clamp(round2((1 + d/100)^(age - a0)), 0, 3) for age = a0 + 5k <= 100, k >= 1, a0 = clamp(round(retirementAge), 40, 105)',
       variables: [
@@ -242,7 +242,7 @@ export const spendingAndWithdrawalsRecords = {
       expression: 'flat: []; smile: [(75, 0.9), (85, 0.8)]; smirk: annualDeltaPhases(-1, retirementAge); frontLoaded: [(clamp(retirementAge, 40, 100), 1.1), (75, 1)] when that age < 75, else []',
       variables: [
         { symbol: 'shape', meaning: 'The preset id', unit: 'enum', domain: 'flat | smile | frontLoaded | smirk' },
-        { symbol: 'retirementAge', meaning: 'The primary person\'s retirement age', unit: 'years', domain: 'finite' },
+        { symbol: 'retirementAge', meaning: 'The retirement age of the person the phases follow (expenses.phasesAgeOf)', unit: 'years', domain: 'finite' },
         { symbol: 'rows', meaning: 'The phase rows written into expenses.phases', unit: 'rows', domain: 'each within the phase schema' },
       ],
       timing: 'compiled once when the preset is chosen; never re-evaluated for a saved plan',
@@ -408,6 +408,41 @@ export const spendingAndWithdrawalsRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-phase-person': {
+    title: 'Whose age the spending phases follow',
+    purpose: 'The phase multiplier follows the person the plan names, never whoever is listed first.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['spending-base-annual'],
+    statement:
+      'projection/internal/annualLifestyleLayers.ts#annualLifestyleLayers multiplies the base lifestyle by the multiplier of the last phase, phases stably sorted by fromAge, whose fromAge is at or below the attained age of the person expenses.phasesAgeOf names (annualExpenseAssemblyPhase passes phasesPersonId = phasesAgeOf, else the only person); the phases keep that person\'s age after that person dies (decision D-PEOPLE-ORDER, rule R1). No law says whose age a household\'s spending shape follows, so the household names the person and the Spending page shows the name; schema v7 requires it in a two-person plan with phases, and plans saved earlier are given the person then listed first, whose age their phases already followed, so no stored figure moves. Units: a factor on baseAnnual. Rounding: none.',
+    formula: {
+      expression: 'multiplier = phases sorted by fromAge; last p with age(phasesAgeOf) >= p.fromAge; else 1',
+      variables: [
+        { symbol: 'age(phasesAgeOf)', meaning: 'Attained age of the named person this year', unit: 'years', domain: 'integer' },
+      ],
+      timing: 'once per projection year, in the expense assembly',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-phase-person.md',
+    },
+    limits: [
+      'A convention the household chooses, stated on the Spending page; the presets (spending-shape-preset-compilation, spending-shape-comparison) start at the named person\'s retirement age',
+      'A JSON file whose people were reordered by another tool before it was ever loaded at v7 is read by position that one time: its intent was never stored',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualLifestyleLayers.ts',
+      'packages/engine/src/projection/internal/annualExpenseAssemblyPhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualLifestyleLayers.ts#annualLifestyleLayers',
+      'packages/engine/src/projection/internal/annualExpenseAssemblyPhase.ts#annualExpenseAssemblyPhase',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'spending-base-annual': {
     title: 'Annual base spending after the guardrail cut',
@@ -794,7 +829,7 @@ export const spendingAndWithdrawalsRecords = {
     kind: 'composition',
     outputs: ['spending-shape-delta-vs-flat'],
     statement:
-      'decisions/spendingShapes.ts#planWithSpendingShape builds the plan solved for each shape in SPENDING_SHAPE_COMPARISON (flat, smile, smirk): the plan\'s own phases replaced by the shape\'s rows on the first person\'s retirement age (65 when unset), and amortized (ABW) spending removed; every other field, a guardrail policy included, is unchanged. spendingShapeRows publishes, for each shape, the solver\'s published maxBaseAnnual and deltaVsFlatDollars, that amount minus the flat shape\'s, null on the flat row and when either amount is null (owner decision R5), so the difference is always the gap between the two amounts shown. It refuses an input without exactly one flat row, a shape listed twice, and any amount that is not a published answer (a rounded amount that is not a whole multiple of $100, or an amount without its rounding). With passing levels of $50,050 (flat) and $50,149 (smile) the published amounts are $50,000 and $50,100 and the difference is +$100, where subtracting the passing levels printed +$99. Units: today\'s dollars per year. Rounding: none beyond the published amounts.',
+      'decisions/spendingShapes.ts#planWithSpendingShape builds the plan solved for each shape in SPENDING_SHAPE_COMPARISON (flat, smile, smirk): the plan\'s own phases replaced by the shape\'s rows on the retirement age of the person the phases follow (expenses.phasesAgeOf, the person listed first when a two-person plan names none, which the plan then names; 65 when unset), and amortized (ABW) spending removed; every other field, a guardrail policy included, is unchanged. spendingShapeRows publishes, for each shape, the solver\'s published maxBaseAnnual and deltaVsFlatDollars, that amount minus the flat shape\'s, null on the flat row and when either amount is null (owner decision R5), so the difference is always the gap between the two amounts shown. It refuses an input without exactly one flat row, a shape listed twice, and any amount that is not a published answer (a rounded amount that is not a whole multiple of $100, or an amount without its rounding). With passing levels of $50,050 (flat) and $50,149 (smile) the published amounts are $50,000 and $50,100 and the difference is +$100, where subtracting the passing levels printed +$99. Units: today\'s dollars per year. Rounding: none beyond the published amounts.',
     formula: {
       expression: 'delta_s = M_s − M_flat',
       variables: [
@@ -810,7 +845,7 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Each shape is a separate solve that resolves to about $500, so a difference smaller than that is not meaningful.',
-      'Shapes use the first person\'s retirement age (65 when unset); a plan with amortized spending is compared as fixed-target versions of itself.',
+      'Shapes use the retirement age of the person the phases follow (65 when unset); a plan with amortized spending is compared as fixed-target versions of itself.',
       'Under guardrail spending a row can publish the exact amount that passed rather than the rounded one (see solved-spending-rounding); its difference is still taken between the amounts shown.',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingShapes.ts'],

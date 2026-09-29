@@ -52,7 +52,10 @@ export function buildAnnuityEstate(): Plan {
       type: 'annuity',
       id: exampleEntityId(EXAMPLE_ID, 'spiA'),
       name: 'SPIA (non-qualified)',
-      ownerPersonId: null,
+      // Every annuity names its annuitant (schema v7, decision D-PEOPLE-ORDER).
+      // Jordan, listed first, is whose age and life the contract was already
+      // paid on, so naming him moves no figure.
+      ownerPersonId: me,
       annualReturnPct: null,
       startAge: 66,
       monthlyAmount: 1450,
@@ -71,7 +74,9 @@ export function buildAnnuityEstate(): Plan {
       type: 'annuity',
       id: exampleEntityId(EXAMPLE_ID, 'qlac'),
       name: 'QLAC (qualified deferred)',
-      ownerPersonId: null,
+      // A QLAC is bought for the owner of the IRA that pays for it (Treas.
+      // Reg. 1.401(a)(9)-6(q)(1), 1.408-8(a)(3)): Jordan, whose IRA it is.
+      ownerPersonId: me,
       annualReturnPct: null,
       startAge: 80,
       monthlyAmount: 920,
@@ -114,6 +119,9 @@ export function buildAnnuityEstate(): Plan {
     phases: [
       { fromAge: 75, multiplier: 0.88 },
     ],
+    // The phases follow this person's age (schema v7, decision D-PEOPLE-ORDER): the plan names
+    // them rather than reading whoever is listed first.
+    phasesAgeOf: me,
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 880, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 210 },
   }

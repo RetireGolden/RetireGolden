@@ -26,6 +26,7 @@
 
 import { migratePlanToCurrent, type PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { CURRENT_PLAN_SCHEMA_VERSION, type Plan } from '@retiregolden/engine/model/plan'
+import { convertUndefinedLegacyScenarioPatches } from '@retiregolden/engine/scenarios/patch'
 import { ENGINE_VERSION } from '@retiregolden/engine/version'
 
 export const V2_BACKUP_KIND = 'retiregolden.v2.backup'
@@ -43,12 +44,23 @@ export interface V2BackupEnvelope {
   plans: unknown[]
 }
 
+/**
+ * A plan ready to leave as JSON: any stored scenario whose loose patch
+ * removes fields with JavaScript `undefined`, which JSON cannot carry, is
+ * made canonical first, so the file keeps what the scenario does (decision
+ * D-SCENARIO-JSON-LOSS). Loading already does this; the export guards plans
+ * that reached memory another way.
+ */
+function jsonSafePlan(plan: Plan): Plan {
+  return convertUndefinedLegacyScenarioPatches(plan).plan
+}
+
 export function serializeV2Backup(plans: Plan[], now: () => Date = () => new Date()): string {
   const envelope: V2BackupEnvelope = {
     kind: V2_BACKUP_KIND,
     backupVersion: V2_BACKUP_VERSION,
     exportedAtIso: now().toISOString(),
-    plans,
+    plans: plans.map(jsonSafePlan),
   }
   return JSON.stringify(envelope, null, 2)
 }
@@ -97,7 +109,7 @@ export interface SinglePlanExport {
  */
 export function serializeSinglePlan(plan: Plan, startYear: number): string {
   const payload: SinglePlanExport = {
-    plan,
+    plan: jsonSafePlan(plan),
     startYear,
     // Equal to `plan.schemaVersion` by construction — every plan reaching here
     // has been through parsePlan/migratePlanToCurrent, which pin that field to

@@ -74,9 +74,11 @@ describe('effectiveAcaYearContract, premiumField basis', () => {
     })
     expect(out.premiumBasis).toBe('premiumField')
     expect(out.fplRegion).toBe('contiguous')
+    // The older person (p2, 66) is the primary, whoever is listed first
+    // (the canonical people order; the labels only count).
     expect(out.taxFamilyMembers).toStrictEqual([
-      { personId: 'p1', relationship: 'primary', requiredToFile: 'required', magi: 0 },
-      { personId: 'p2', relationship: 'spouse', requiredToFile: 'required', magi: 0 },
+      { personId: 'p2', relationship: 'primary', requiredToFile: 'required', magi: 0 },
+      { personId: 'p1', relationship: 'spouse', requiredToFile: 'required', magi: 0 },
     ])
     expect(out.coveredMembers.map((member) => member.personId)).toStrictEqual(['p1'])
     const premium = out.coveredMembers[0]!.enrollmentPremiumByMonth

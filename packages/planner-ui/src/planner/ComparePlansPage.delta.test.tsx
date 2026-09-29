@@ -96,7 +96,7 @@ describe('ComparePlansPage delta column (#499)', () => {
     const success = rowByLabel('Success % (deterministic)')
     expect(success).toEqual(['100%', '0%', '−100 pp'])
 
-    const age = rowByLabel('Depletion age (primary)')
+    const age = rowByLabel('Depletion age')
     expect(age[0]).toBe('—')
     expect(age[1]).toMatch(/^\d+$/)
     // One side never depletes: the age difference is undefined, and only then a dash.

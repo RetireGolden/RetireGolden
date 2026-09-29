@@ -896,7 +896,7 @@
     }
   ],
   "plan": {
-    "schemaVersion": 6,
+    "schemaVersion": 7,
     "id": "early-retiree-aca--seq-1",
     "name": "Early retiree & the ACA cliff",
     "origin": "user",

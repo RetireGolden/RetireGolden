@@ -132,7 +132,7 @@ only `ordinaryOrigination` is currently modeled, while purchase, refinance, and 
 are refused rather than defaulted to ordinary origination. Absence of optional inherited-account history / spousal-election / Roth-pool facts
 means unknown, never false or zero.
 
-`schemaVersion` is currently **6**. Plan v3 added the optional
+`schemaVersion` is currently **7**. Plan v3 added the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA
 classification, action-year SEP/SIMPLE activity, and deductible-IRA
 contribution evidence. Deductible-contribution records use `amountCents`, a
@@ -238,6 +238,54 @@ household where it sets them): rewritten, removed and recorded in the scenario, 
 where the v5 engine refused them, announced; each repair then names the scenario. Each
 operation's `before` is migrated as the plan itself is, so the scenario still applies.
 `exampleSourceId` is provenance only: the projection never reads it.
+
+Plan v7 names a person wherever the engine used to read whoever the household lists
+first (decision D-PEOPLE-ORDER, 2026-09-28), so listing the same two people the other
+way round no longer changes a figure. A two-person plan's spending phases name the
+person whose age they follow, `expenses.phasesAgeOf`. A jointly owned (no
+`ownerPersonId`) cash, taxable or equity-compensation account with a contribution
+schedule names the person whose age the schedule follows, `contributionScheduleAgeOf`.
+A pension or annuity must name its owner, the participant or first annuitant: the
+"Joint" owner is gone for both, because a contract is paid on named lives. Validation
+refuses a couple's spending phases or scheduled joint account that names no one, an
+owner-less pension or annuity, an annuity bought from an IRA or 401(k) and
+named for anyone but that account's owner (unless the owner has died by the purchase
+year and the living spouse buys it), an annuity bought for a person whose planning age
+has ended by its purchase year, and a pension lump sum rolled into another person's
+account.
+
+**The v6 → v7 step changes nothing; the load repair names the people.** Every load,
+whatever the stored version, runs the naming pass in `normalizeCurrentPlan`, which
+writes the person the engine already used, so the figures stay put: `phasesAgeOf` and
+`contributionScheduleAgeOf` take the person then listed first, and an owner-less
+pension or annuity takes that person too, except a qualified annuity purchase, which
+takes its funding account's owner, or the surviving spouse when that owner's planning
+age had ended by the purchase year (a surviving spouse may take over the account, IRC
+402(c)(9) and 408(d)(3)(C)(ii)(II)). No repair names a person whose planning age has
+ended by the purchase year, and every stored plan still opens: an annuity of any tax
+qualification bought after its annuitant's planning age has ended is given the other
+person when that person is alive in the purchase year, the only one who could have
+bought it (`annuityOwnerNamedLivingPerson`, or basis `livingPerson` for an owner-less
+one), and is removed, its premium left in the account it was to come from, when nobody
+is (`annuityPurchaseDropped`); validation still refuses one authored that way. Six
+repairs move figures, and each notice says so: an owner-less qualified purchase whose
+annuitant is not the person listed first; a qualified purchase named for the other
+person while the account's owner lives (`annuityOwnerMatchedToFundingAccount`); one
+named for its dead owner, which is given to the surviving spouse
+(`annuityOwnerNamedSurvivingSpouse`); a purchase for a person already dead, given to
+the living person or removed (the two just named); and a lump-sum election aimed at
+the other person's account, which is dropped, keeping the offer, so the pension pays
+its monthly benefit instead (`lumpSumElectionDroppedSpouseTarget`). The pass runs over saved scenarios'
+copies of the accounts as well. Each repair is reported (`spendingPhasesPersonNamed`,
+`contributionSchedulePersonNamed`, `guaranteedIncomeOwnerBackFilled`), and the planner
+phrases it on load.
+
+A loose scenario patch written by an older build could remove a field by giving it
+JavaScript `undefined`, which the browser's own store keeps and every JSON route
+(export, share link, library) silently drops, so the exported scenario applied a
+different plan (decision D-SCENARIO-JSON-LOSS). Every load now converts such a patch
+to a canonical operation document whose "remove" operations survive JSON, reports
+`legacyScenarioConverted`, and applies the same plan it did before.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

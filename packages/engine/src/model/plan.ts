@@ -56,7 +56,7 @@ export type {
   StateTaxYearHouseholdFacts,
 } from './stateTaxPlanFacts.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 6
+export const CURRENT_PLAN_SCHEMA_VERSION = 7
 
 /**
  * The latest `startAge` a QUALIFIED annuity purchase that is not a QLAC may
@@ -445,8 +445,17 @@ export type EmployerMatch = z.infer<typeof employerMatchSchema>
 const accountBase = {
   id: idSchema,
   name: z.string().min(1),
-  /** null = jointly owned. */
-  ownerPersonId: idSchema.nullable(),
+  /**
+   * The person who owns the account; null = jointly owned. Traditional, Roth
+   * and HSA accounts, pensions and annuities must name one (an IRA is an
+   * individual account, a pension belongs to the participant who earned it,
+   * and an annuity pays on its annuitant's life). A jointly owned cash, taxable
+   * or equity-compensation account takes its contributions while either person
+   * is alive and the household has wages.
+   */
+  ownerPersonId: idSchema.nullable().describe(
+    'Id of the person who owns the account; null means jointly owned. Traditional, Roth and HSA accounts, pensions and annuities must name an owner: a pension belongs to the participant who earned it, and an annuity to its (first) annuitant, whose age sets startAge. A qualified annuity purchase must name the owner of its funding account, and a pension lump sum must roll into its own owner\'s traditional account. A jointly owned cash, taxable or equity-comp account takes contributions while either person is alive and the household has wages.',
+  ),
   /** When null, assumptions.defaultReturnPct applies. Superseded by an account's opt-in `allocation`. */
   annualReturnPct: pct.nullable(),
   /**
@@ -457,8 +466,27 @@ const accountBase = {
   estateBeneficiary: estateBeneficiarySchema.optional(),
 }
 
-/** Nominal dollars contributed per year while the owner still has wages; capped by IRS limits where applicable. */
+/**
+ * Nominal dollars contributed per year while the owner still has wages (a
+ * jointly owned account: while either person is alive and the household has
+ * wages); capped by IRS limits where applicable.
+ */
 const annualContribution = nonNegative
+
+/**
+ * On a jointly owned account with a `contributionSchedule`, the person whose
+ * age the schedule's `fromAge`/`toAge` follow (schema v7, decision
+ * D-PEOPLE-ORDER). Required for such an account in a two-person plan, refused
+ * on an account with an owner (its schedule follows its owner's age), and
+ * optional in a one-person plan. A schedule has no wage test: it contributes
+ * while either person is alive. Plans saved before v7 are given the person
+ * then listed first.
+ */
+const contributionScheduleAgeOf = idSchema
+  .describe(
+    "On a jointly owned account (ownerPersonId null) with a contributionSchedule: id of the person whose age the schedule's fromAge/toAge follow. Required on such an account in a two-person plan; refused on an account with an owner, whose schedule follows the owner's age.",
+  )
+  .optional()
 
 export const taxableAccountSchema = z.object({
   ...accountBase,
@@ -500,6 +528,7 @@ export const taxableAccountSchema = z.object({
   allocation: assetAllocationPolicySchema.optional(),
   annualContribution,
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
+  contributionScheduleAgeOf,
 })
 
 export const equityCompAccountSchema = z.object({
@@ -511,6 +540,7 @@ export const equityCompAccountSchema = z.object({
   costBasis: nonNegative,
   annualContribution,
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
+  contributionScheduleAgeOf,
   /** final = fully available now; cliff = unavailable for spending until vestDate. */
   vestingMode: z.enum(['final', 'cliff']),
   vestDate: isoDate.nullable(),
@@ -1210,6 +1240,7 @@ export const cashAccountSchema = z.object({
   balance: nonNegative,
   annualContribution,
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
+  contributionScheduleAgeOf,
 })
 
 /**
@@ -1694,6 +1725,26 @@ export function selectedLogicalAccounts(accounts: readonly Account[]): Account[]
   return [...selected.values()]
 }
 
+/**
+ * The owner of a pension or annuity: the participant who earned the pension,
+ * or the annuity's (first) annuitant. Schema v7 requires one on every pension
+ * and annuity (decision D-PEOPLE-ORDER), so an owner-less one can only come
+ * from a caller that built a plan without parsing it; it is refused here,
+ * never read as whoever is listed first.
+ */
+export function guaranteedIncomeOwnerId(account: {
+  readonly id: string
+  readonly type: string
+  readonly ownerPersonId: string | null
+}): string {
+  if (account.ownerPersonId === null) {
+    throw new Error(
+      `${account.type} "${account.id}" names no owner; a parsed plan names one on every pension and annuity`,
+    )
+  }
+  return account.ownerPersonId
+}
+
 /** Last facts and first insertion order for each balance-bearing logical ID. */
 export function selectedLogicalBalanceAccounts(
   accounts: readonly Account[],
@@ -2018,7 +2069,11 @@ export type IncomeStream = z.infer<typeof incomeStreamSchema>
 // ---------------------------------------------------------------------------
 
 export const expensePhaseSchema = z.object({
-  /** Phase applies from this age of the primary (first) person. */
+  /**
+   * Phase applies from this age of the person named by
+   * `expenses.phasesAgeOf` (the only person in a one-person plan). The phases
+   * keep following that person's age after that person dies.
+   */
   fromAge: z.number().int().min(40).max(110),
   /** Multiplier on baseAnnual (go-go / slow-go / no-go). */
   multiplier: z.number().min(0).max(3),
@@ -2400,8 +2455,10 @@ export const abwPolicySchema = z.object({
   bondRealYieldPct: z.number().min(-2).max(8).optional(),
   /**
    * Amortization horizon: 'planningAge' (the household's plan horizon) or the
-   * age the primary has a 25%/10% chance of reaching (couples: either member;
-   * survival percentiles from the same SSA table as the horizon picker).
+   * age the primary has a 25%/10% chance of reaching (couples: either member,
+   * the last year in which at least one of you is alive with that probability,
+   * both survival curves walked to the end of the table; survival percentiles
+   * from the same SSA table as the horizon picker).
    */
   horizon: z.enum(['planningAge', 'survival25', 'survival10']).optional(),
   /** Planned real spending growth %/yr (negative = spend more early). Absent ⇒ 0. */
@@ -2470,6 +2527,20 @@ export const expensePlanSchema = z.object({
   /** Annual opportunistic spending above ideal, funded last. */
   excessAnnual: nonNegative.optional(),
   phases: z.array(expensePhaseSchema),
+  /**
+   * The person whose age the spending phases follow (schema v7, decision
+   * D-PEOPLE-ORDER). No law says whose age a household's spending shape
+   * follows, so the household names the person; the phases keep following
+   * that person's age after that person dies. Required in a two-person plan
+   * with phases; optional and ignored in a one-person plan. Plans saved before
+   * v7 are given the person then listed first, which is whose age their phases
+   * already followed, and the load says so.
+   */
+  phasesAgeOf: idSchema
+    .describe(
+      "Id of the person whose age the spending phases' fromAge follows (the phases keep following that age after the person dies). Required when a two-person plan has phases; optional and ignored with one person.",
+    )
+    .optional(),
   oneTimeGoals: z.array(oneTimeGoalSchema),
   healthcare: healthcareConfigSchema,
   /** Opt-in spending policy; absent ⇒ fixed-target (today's behavior). */

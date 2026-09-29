@@ -1,15 +1,15 @@
 # Mutation receipt: monte-carlo-histogram-bin-centres
 
-Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/run.ts b/packages/engine/src/montecarlo/run.ts
-index 67701ffe..6d9ad75f 100644
+index c12606f1..422b7976 100644
 --- a/packages/engine/src/montecarlo/run.ts
 +++ b/packages/engine/src/montecarlo/run.ts
-@@ -425,5 +425,5 @@
+@@ -430,5 +430,5 @@
      counts[Math.min(histogramBins - 1, Math.floor((v - min) / binWidth))]!++
    }
 -  const binCenters = counts.map((_, i) => (max > min ? min + (i + 0.5) * binWidth : min))
@@ -28,10 +28,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Executed for B2-P1 slice 2. The baseline is green (run.binCenters.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.binCenters.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
  ❯ src/montecarlo/run.binCenters.evidence.test.ts (6 tests | 2 failed) 8ms
    ❯ monte-carlo-histogram-bin-centres — Histogram bin centres (6)

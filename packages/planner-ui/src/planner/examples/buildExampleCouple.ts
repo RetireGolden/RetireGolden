@@ -80,6 +80,9 @@ export function buildExampleCouple(): Plan {
       { fromAge: 75, multiplier: 0.9 },
       { fromAge: 85, multiplier: 0.8 },
     ],
+    // The phases follow this person's age (schema v7, decision D-PEOPLE-ORDER): the plan names
+    // them rather than reading whoever is listed first.
+    phasesAgeOf: meId,
     oneTimeGoals: [{ id: exampleEntityId(EXAMPLE_ID, 'remodel'), label: 'Kitchen remodel', year: EXAMPLE_FIXED_YEAR + 3, amount: 45_000 }],
     healthcare: { pre65MonthlyPremiumPerPerson: 950, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 180 },
   }

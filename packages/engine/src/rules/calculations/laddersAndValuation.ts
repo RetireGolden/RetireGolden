@@ -262,6 +262,49 @@ export const laddersAndValuationRecords = {
     verifiedOn: '2026-09-14',
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
+  'funded-ratio-household-start': {
+    title: 'Funded ratio: the year the household floor starts to count',
+    purpose: 'The funded ratio counts from the household\'s later retirement and names whose it is, never from whoever is listed first.',
+    kind: 'model',
+    outputs: [],
+    feeds: [
+      'funded-ratio-result-essential-spending-pv',
+      'funded-ratio-result-guaranteed-income-pv',
+      'funded-ratio-result-funded-ratio-pct',
+      'funded-ratio-result-unfunded-pv',
+    ],
+    statement:
+      'ladder/fundedRatio.ts#fundedRatioStart returns fromYear = max(startYear, the household\'s later retirement), the person whose retirement that is, that person\'s retirement year and the rule that gave it, all from household-later-retirement (a retirement age gives ISO birth year plus that age; a person with none retires in the first year without their wages, else in the start year; a person who never retires in the plan is left out and listed in notRetiring; a tie to the older person, then the smaller id; decision D-PEOPLE-ORDER and the independent review\'s M4 and N3). When nobody retires in the plan fromYear is null: wages carry the floor throughout, no ratio is counted, the card says so in plain words and the insight does not fire. The funded-ratio card (planner-ui IncomeFloorSection.tsx#FundedRatioCard, shown on Income floor and Results) and the income-floor-funded insight pass fromYear to ladder/fundedRatio.ts#computeFundedRatio, and for a couple name the person and call the ratio the household\'s. Units: calendar years. Rounding: none.',
+    formula: {
+      expression: 'fromYear = max(startYear, householdRetirement(plan, startYear).retirement.year), or null when nobody retires in the plan; person = its personId',
+      variables: [
+        { symbol: 'retirementAge', meaning: 'Each person\'s retirement age, or null', unit: 'years', domain: '30 to 80, or null' },
+        { symbol: 'startYear', meaning: 'The projection\'s first year', unit: 'calendar year', domain: 'integer' },
+      ],
+      timing: 'once per funded-ratio reading',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/ladders-and-valuation/funded-ratio-household-start.md',
+    },
+    limits: [
+      'A convention, not a statute: the household floor is counted from the first year without the last earner\'s wages, so a couple with one person retired and one working shows the ratio from the later retirement',
+      'A missing retirement age means the first year without that person\'s wages, else the start year, and a person who works through the plan is left out, the one rule the FI figures use (household-later-retirement); the card and the insight say which rule applied and who works through the plan',
+    ],
+    implementedBy: [
+      'packages/engine/src/ladder/fundedRatio.ts',
+      'packages/engine/src/insights/detectors/incomeFloorFunded.ts',
+      'packages/engine/src/projection/householdRetirement.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/fundedRatio.ts#fundedRatioStart',
+      'packages/engine/src/projection/householdRetirement.ts#householdRetirement',
+      'packages/engine/src/insights/detectors/incomeFloorFunded.ts#incomeFloorFunded',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
   'fedinvest-csv-tips-parsing': {
     title: 'FedInvest security-price CSV: TIPS rows to reference records',
     purpose: 'Turns the FedInvest end-of-day price file into TIPS reference rows with rates in percent and ISO maturities.',
