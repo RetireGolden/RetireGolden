@@ -10,15 +10,17 @@ contextual links from the planner, and the body of educational content itself.
 **Code:** [packages/planner-ui/src/learn/](../../packages/planner-ui/src/learn/) — pages (`LearningCenterPage`,
 `ArticlePage`, `GlossaryPage`, `SourcesPage`), the article registry
 ([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)) over the metadata index
-([articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts)), reusable blocks under
-`components/`, and the article bodies authored as structured TypeScript under `content/`, reached through
+([articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts), plus the test-only sidecar
+[testSupport/articleEditorial.ts](../../packages/planner-ui/src/testSupport/articleEditorial.ts) for the
+three editorial fields no page renders: `audience`, `reviewCadence`, `currentYearSensitive`), reusable
+blocks under `components/`, and the article bodies authored as structured TypeScript under `content/`, reached through
 the per-article `import()` map in
 [articleBodies.ts](../../packages/planner-ui/src/learn/articleBodies.ts).
 
 This document is the **authoring standard**: the product stance, information
 architecture, the article style guide, the topic inventory, and how the planner
 links into articles. Read it before writing or revising Learn content. Rule-heavy
-content carries `lastReviewed` / `reviewCadence` metadata — re-review cadence is in
+content carries `lastReviewed` (index) / `reviewCadence` (editorial sidecar) metadata — re-review cadence is in
 [maintenance-schedule.md](../maintenance-schedule.md).
 
 ## 1. Goals
@@ -226,8 +228,9 @@ Initial category set:
 Articles are authored as **structured TypeScript** so prose and visuals bundle for
 offline use and stay type-safe. Metadata and prose live **apart**: an article's
 metadata is an entry in `articleIndex.ts`, which is statically imported and rides the
-landing critical path, while its `blocks[]` body is a module under `content/` loaded
-on demand. Never put prose in the index — that coupling is exactly what
+landing critical path, plus an entry for its three editorial fields in the test-only
+sidecar `testSupport/articleEditorial.ts`, while its `blocks[]` body is a module under
+`content/` loaded on demand. Never put prose in the index — that coupling is exactly what
 [operations/bundle-budget.md](../operations/bundle-budget.md) exists to catch. The
 content lives under `packages/planner-ui/src/learn/`:
 
@@ -237,7 +240,7 @@ packages/planner-ui/src/learn/
   ArticlePage.tsx
   GlossaryPage.tsx
   learningRegistry.ts     # types, categories, selectors
-  articleIndex.ts         # metadata for every article (static)
+  articleIndex.ts         # metadata for every article (static), less the editorial fields
   articleBodies.ts        # slug -> () => import('./content/…')
   glossary.ts
   learn.css
@@ -270,9 +273,12 @@ split — so the reload is the deliberate trade.
 
 ### 7.2 Article metadata
 
-Article metadata is one entry per article in
-[articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts) (the source of truth), typed by
+Article metadata has two sources of truth, both keyed by slug. Everything a page reads is one entry per
+article in [articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts), typed by
 `LearningArticleMeta` in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts).
+The three editorial fields (`audience`, `reviewCadence`, `currentYearSensitive`) are one entry per article
+in the test-only sidecar
+[testSupport/articleEditorial.ts](../../packages/planner-ui/src/testSupport/articleEditorial.ts), below.
 The `blocks[]` body is a separate module under `content/`, so it never travels with the metadata:
 
 ```ts
@@ -282,13 +288,23 @@ type LearningArticle = {
   description: string
   category: LearningCategoryId
   tags: string[]
-  audience: 'beginner' | 'intermediate'
   status: 'stub' | 'draft' | 'ready' | 'needs-review'
   lastReviewed: string
-  reviewCadence: 'annual' | 'rule-change' | 'stable'
   sourceUrls: string[]
   relatedArticles: string[]
   relatedPlannerRoutes: string[]
+}
+```
+
+Editorial review metadata, which no page renders, is one entry per slug in the test-only sidecar
+[testSupport/articleEditorial.ts](../../packages/planner-ui/src/testSupport/articleEditorial.ts), so the
+index that rides the landing critical path carries only what pages read.
+`learn/articleEditorial.test.ts` fails when the index and the sidecar disagree:
+
+```ts
+type ArticleEditorial = {
+  audience: 'beginner' | 'intermediate'
+  reviewCadence: 'annual' | 'rule-change' | 'stable'
   currentYearSensitive: boolean
 }
 ```

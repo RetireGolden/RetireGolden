@@ -24,6 +24,7 @@ import type { MonteCarloRateRun } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
+import { WorkerUnavailableError } from '../workers/spawn'
 import { buildModel, type ModelKind } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 
@@ -224,6 +225,11 @@ export interface McSuccessRateState {
   status: McSuccessRateStatus
   /** How many market paths `rate` came from; the default count while none has finished. */
   pathCount: number
+  /**
+   * With `status: 'failed'`, the plain reason when running again cannot help
+   * (this runtime has no Web Worker, ../workers/spawn.ts); otherwise null.
+   */
+  failureReason: string | null
 }
 
 /**
@@ -237,7 +243,13 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   // previous plan's rate through the debounce + recompute, and a silently
   // failed re-run can never leave a stale rate up (edits produce a new plan
   // object via structuredClone, so reference identity is the right key).
-  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; pathCount: number; failed: boolean } | null>(null)
+  const [snapshot, setSnapshot] = useState<{
+    plan: Plan
+    rate: number | null
+    pathCount: number
+    failed: boolean
+    failureReason: string | null
+  } | null>(null)
   const runToken = useRef(0)
   // A run the Monte Carlo page published for this exact plan object wins over
   // the hook's own default run.
@@ -256,12 +268,18 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
         .then((result) => {
           // The count rides with the rate: an attached 10,000-path page run is
           // reported as 10,000, not as the default.
-          if (token === runToken.current) setSnapshot({ plan, rate: result.rate, pathCount: result.pathCount, failed: false })
+          if (token === runToken.current) {
+            setSnapshot({ plan, rate: result.rate, pathCount: result.pathCount, failed: false, failureReason: null })
+          }
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           // The Monte Carlo page carries the error detail and retry; here the
-          // KPI only needs to stop claiming a simulation is in progress.
-          if (token === runToken.current) setSnapshot({ plan, rate: null, pathCount: DEFAULT_PATH_COUNT, failed: true })
+          // KPI only needs to stop claiming a simulation is in progress, and to
+          // say why when retrying cannot help (no Web Worker).
+          if (token === runToken.current) {
+            const failureReason = error instanceof WorkerUnavailableError ? error.message : null
+            setSnapshot({ plan, rate: null, pathCount: DEFAULT_PATH_COUNT, failed: true, failureReason })
+          }
         })
     }
     // A run for this plan already exists (typically started by the KPI bar):
@@ -276,8 +294,15 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
       window.clearTimeout(t)
     }
   }, [plan, enabled, headline])
-  if (enabled && headline !== undefined) return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount }
+  if (enabled && headline !== undefined) {
+    return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount, failureReason: null }
+  }
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
-  return { rate: current?.rate ?? null, status, pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT }
+  return {
+    rate: current?.rate ?? null,
+    status,
+    pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT,
+    failureReason: status === 'failed' ? (current?.failureReason ?? null) : null,
+  }
 }

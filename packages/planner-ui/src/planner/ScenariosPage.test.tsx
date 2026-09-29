@@ -57,6 +57,7 @@ import * as scenarioPatchModule from '@retiregolden/engine/scenarios/patch'
 import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import * as scenarioLeverModule from '../scenarioLevers'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
 import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
 import {
@@ -1032,6 +1033,23 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(visibleError).toBeTruthy()
     expect(visibleError!.hasAttribute('role')).toBe(false)
+  })
+
+  it('shows the no-Worker reason when the capacity solves cannot start', async () => {
+    mockedRunSpendingSolve.mockRejectedValue(new WorkerUnavailableError())
+    await mount()
+    await advanceComparison()
+    const calculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    await act(async () => {
+      calculate!.click()
+      await Promise.resolve()
+    })
+    const alerts = container.querySelectorAll('[role="alert"][aria-live="assertive"]')
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0]!.textContent).toBe(WORKER_UNAVAILABLE_MESSAGE)
+    expect(Array.from(container.querySelectorAll('p')).some((p) => p.textContent === WORKER_UNAVAILABLE_MESSAGE)).toBe(true)
   })
 
   it("names each side's unpriced credit years in plain words instead of the raw engine sentence", async () => {

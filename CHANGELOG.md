@@ -4,6 +4,49 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed (build): six reductions take 251.0 KiB out of the app's JavaScript and 278.1 KiB
+  out of its PWA precache, with no budget cap moved and no computed figure changed.** Measured
+  in raw KiB against 4d2d9d67 (with the 2023 life table): all JS 5,096.6 → 4,845.6 of 5,100,
+  precache 5,244.3 → 4,966.2 of 5,250 (203 → 195 entries), app entry 413.1 → 403.8, landing
+  critical path 729.2 → 719.9. Each reduction was built and measured in turn on 04e71e59,
+  before the life table (all JS / precache; R6 saves about 1.4 KiB more since the catalog
+  gained the two life-table rows):
+  - **R1, −132.9 / −132.9.** The seven in-process fallbacks in planner-ui's worker runners
+    (`mc/pool.ts` ×4, `optimize/runner.ts`, `optimize/spendingRunner.ts`,
+    `relocation/runner.ts`) are guarded by `typeof Worker === 'undefined' &&
+    import.meta.env.DEV`, so a production build no longer ships a main-thread copy of the
+    solvers the worker already carries. Worker is tested first, so a bundler without
+    `import.meta.env` never reads it where Worker exists. The `planner.worker` chunk is
+    byte-identical (same hash).
+  - **R2, −58.8 / −58.8.** "How RetireGolden is tested" gets its suite names and counts from
+    `app/vite.config.ts` at build time (`fs.globSync` over one shared pattern list,
+    `planner/howTestedSuites.ts`, injected with `define`) instead of shipping ~960 test-file
+    paths; development builds keep the `import.meta.glob` branch. The page prints the same
+    eight suite names and counts.
+  - **R3, 0 / −27.0.** Six PWA icons were listed twice in the precache manifest
+    (`includeAssets` and `includeManifestIcons` on top of `globPatterns`); each is now listed
+    once, and the service worker caches the same (URL, revision) set.
+  - **R4, −39.9 / −40.0.** The RMD Joint and Last Survivor table (`rmd/jointLifeTable.ts`)
+    ships delta-packed and is decoded once at module load; `rmd/jointLifeTable.test.ts` proves
+    the encoding lossless against the literal extract, cell for cell and on 67,081 age pairs.
+  - **R5, −9.2 / −9.2.** The Learning Center index no longer carries `audience`,
+    `reviewCadence` and `currentYearSensitive`, which no page renders; they live in a
+    test-only sidecar keyed by slug (`testSupport/articleEditorial.ts`).
+  - **R6, −8.9 / −8.8.** The QCD post-pass reads the `rmd-qcd` provenance entry directly
+    (`RMD_QCD_PARAMETER_SOURCE`, still listed in `PARAMETER_PROVENANCE` in the same place), so
+    the worker no longer carries the whole catalog; its evidence IDs are unchanged.
+
+  **Behaviour change (R1):** a production build running where `Worker` does not exist no
+  longer computes Monte Carlo, the optimizer, the spending solver or relocation compare on the
+  main thread. It fails through the worker error path with a plain-words reason ("This
+  browser can't run calculations in the background, which this page needs…"). Every browser
+  that can run the app, and the RetireGolden-Pro renderer, has `Worker`; Vitest, the dev
+  server and the dev-mode scripts keep the in-process path. The bundle budget now also fails
+  when any chunk names a test file or the precache manifest lists a URL twice (a measurement
+  fix; no cap moved). Figures: the 29 examples and their 10 scenarios give byte-identical
+  engine output in the default, cash-flow and optimizer-probe modes, and the full equivalence
+  corpus (150 members, four modes) is byte-identical, against both 04e71e59 and 4d2d9d67.
+
 - **Changed: the life table is SSA's 2023 period table, read as published, and a sex
   that is not stated is the average of the male and female chances (displayed numbers
   change)** (decision D-LIFE-TABLE-2023; derived, independently checked and the

@@ -1,9 +1,9 @@
 /**
  * Executes one relocation-compare sweep. Shared by the Web Worker entry and
- * the synchronous fallback (tests / no-Worker environments). The engine
- * builds the app-standard per-candidate tax stacks itself (federal + modeled
- * state packs with the plan's flat rate as an override), so both paths run
- * identical numbers.
+ * the synchronous fallback (a development build without a Worker, tests
+ * included). The engine builds the app-standard per-candidate tax stacks
+ * itself (federal + modeled state packs with the plan's flat rate as an
+ * override), so both paths run identical numbers.
  */
 
 import { compareRelocationCandidates, type RelocationComparison } from '@retiregolden/engine/projection/relocation'

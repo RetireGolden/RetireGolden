@@ -19,6 +19,7 @@ import type { SpendingSolveResult } from '../optimize/spendingMessages'
 
 vi.mock('../optimize/spendingRunner', () => ({ runSpendingSolve: vi.fn() }))
 import { runSpendingSolve } from '../optimize/spendingRunner'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 import { SpendingSolverPage } from './SpendingSolverPage'
 
 const mockedSolve = vi.mocked(runSpendingSolve)
@@ -126,5 +127,51 @@ describe('Spending Solver — Apply to Spending', () => {
     // The published 92,400, not the 92,450 that passed: applying the passing
     // probe (or rounding up) would fail here.
     expect(mutated.expenses.baseAnnual).toBe(92_400)
+  })
+
+  it('shows the no-Worker reason for the solve and for the per-shape solves', async () => {
+    const plan = createSamplePlan()
+    const ctx: PlanContextValue = { plan, update: () => {}, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
+    // The page's own solve succeeds so the per-shape section renders; the
+    // per-shape solves then fail the way a production build without Worker does.
+    mockedSolve.mockResolvedValueOnce(result).mockRejectedValue(new WorkerUnavailableError())
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={ctx}>
+            <SpendingSolverPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    const perShape = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.startsWith('Solve per shape'))
+    expect(perShape, 'the per-shape solve button').toBeTruthy()
+    await act(async () => perShape!.click())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    expect(container.textContent).toContain(`Per-shape solve error: ${WORKER_UNAVAILABLE_MESSAGE}`)
+
+    // A fresh mount whose own solve fails.
+    await act(async () => root.unmount())
+    root = createRoot(container)
+    mockedSolve.mockReset()
+    mockedSolve.mockRejectedValue(new WorkerUnavailableError())
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={ctx}>
+            <SpendingSolverPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    expect(container.textContent).toContain(`Solver error: ${WORKER_UNAVAILABLE_MESSAGE}`)
   })
 })

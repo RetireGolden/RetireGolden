@@ -1,8 +1,8 @@
 /**
  * Executes one sustainable-spending solve. Shared by the Web Worker entry and
- * the synchronous fallback (tests / no-Worker environments) so both run the
- * identical tax stack — federal engine + per-state engine with the plan's flat
- * rate as an override, matching ./runOptimize.ts.
+ * the synchronous fallback (a development build without a Worker, tests
+ * included) so both run the identical tax stack — federal engine + per-state
+ * engine with the plan's flat rate as an override, matching ./runOptimize.ts.
  */
 
 import { createDecisionContext, solveMaxSustainableSpending, SPENDING_SOLVER_UI_BUDGET } from '@retiregolden/engine/decisions'

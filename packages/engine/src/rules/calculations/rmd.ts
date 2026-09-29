@@ -134,7 +134,7 @@ export const rmdRecords = {
     outputs: ['rmd-required-annual'],
     feeds: [],
     statement:
-      'rmd/jointLifeTable.ts#jointLifeTableDivisor and rmd/rmd.ts#requiredMinimumDistribution use the Joint and Last Survivor table of 26 CFR 1.401(a)(9)-9(d) when the sole-beneficiary spouse is more than ten years younger, dividing the prior-year-end balance by the owner-age / spouse-age table entry. The qualifying-spouse exception replaces the Uniform Lifetime divisor with the larger of the two, so the RMD falls. Units: nominal USD. Rounding: none; the published figure is a binary float compared to cents.',
+      'rmd/jointLifeTable.ts#jointLifeTableDivisor and rmd/rmd.ts#requiredMinimumDistribution use the Joint and Last Survivor table of 26 CFR 1.401(a)(9)-9(d) when the sole-beneficiary spouse is more than ten years younger, dividing the prior-year-end balance by the owner-age / spouse-age table entry. The qualifying-spouse exception replaces the Uniform Lifetime divisor with the larger of the two, so the RMD falls. Units: nominal USD. Rounding: none; the published figure is a binary float compared to cents. The table ships delta-packed (each owner-age row as its spouse-age-0 divisor in tenths, then one letter per later spouse age for the tenths the divisor falls) and is decoded once at module load. The encoding is lossless: rmd/jointLifeTable.test.ts compares the decoded table with the literal extract kept in rmd/jointLifeTable.literal.test-support.ts, every cell and the lookup on 67,081 owner and spouse age pairs, by Object.is.',
     formula: {
       expression: 'divisor = ownerAge - spouseAge > 10 ? max(uniform[ownerAge], jointLife[ownerAge][spouseAge]) : uniform[ownerAge]; rmd = priorYearEndBalance / divisor',
       variables: [

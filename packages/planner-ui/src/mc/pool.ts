@@ -4,8 +4,10 @@
  * Splits the requested paths across a pool of Web Workers (one per core by
  * default, capped at 8) and merges the results. Per-path seeds derive from
  * (seed, globalPathIndex) inside the engine, so the outcome is identical for
- * any worker count — including the synchronous fallback used where Worker is
- * unavailable (tests, very old browsers).
+ * any worker count — including the synchronous in-process path a development
+ * build (`import.meta.env.DEV`: tests, the dev server) takes where Worker is
+ * unavailable. A production build compiles that path out, and a runtime with
+ * no Worker fails with a stated reason instead (../workers/spawn.ts).
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
@@ -149,7 +151,7 @@ function runHistoricalSuitesInWorker(req: HistoricalWorkerRequest): Promise<Hist
 /** Run the full Monte Carlo and aggregate it. Reproducible per (plan, seed, model). */
 export async function runMonteCarlo(plan: Plan, opts: MonteCarloRunOptions): Promise<MonteCarloSummary> {
   const total = opts.pathCount
-  if (typeof Worker === 'undefined') {
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) {
     const result = runMcRequest(makeRequest(plan, opts, 0, total), (completed) => opts.onProgress?.(completed, total))
     return aggregateMonteCarlo(result)
   }
@@ -228,7 +230,7 @@ export async function runRiskBasedGuardrailSolve(
     stochasticLongevity: opts.stochasticLongevity,
     ltcShock: opts.ltcShock,
   }
-  if (typeof Worker === 'undefined') return runRiskBasedGuardrailRequest(req)
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) return runRiskBasedGuardrailRequest(req)
   return runWorkerRequest<McEnvelope<RiskBasedWorkerRequest>, RiskBasedWorkerResponse, RiskBasedGuardrailSolution>({
     request: envelope('monteCarlo', req),
     createWorker: spawnPlannerWorker,
@@ -255,7 +257,7 @@ export async function runStochasticFrontiers(
     stochasticLongevity: opts.stochasticLongevity,
     ltcShock: opts.ltcShock,
   }
-  if (typeof Worker === 'undefined') return runFrontierRequest(req)
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) return runFrontierRequest(req)
   return runFrontiersInWorker(req)
 }
 
@@ -271,6 +273,6 @@ export async function runHistoricalStressSuiteViews(
     classShocks: opts.classShocks,
     worstWindowCount: opts.worstWindowCount,
   }
-  if (typeof Worker === 'undefined') return runHistoricalStressSuiteRequest(req)
+  if (typeof Worker === 'undefined' && import.meta.env.DEV) return runHistoricalStressSuiteRequest(req)
   return runHistoricalSuitesInWorker(req)
 }

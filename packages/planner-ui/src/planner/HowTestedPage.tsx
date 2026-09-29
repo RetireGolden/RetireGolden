@@ -3,45 +3,35 @@
  * in-app validation story — one auditable ledger, external-oracle golden
  * suites, the independent-optimizer parity harness, the asset-location
  * invariance guarantee, and the simplifications stated as plainly as the
- * strengths. Harness counts are derived from the source tree at build time
- * (`import.meta.glob` keys), so they cannot go stale.
+ * strengths. Harness counts are derived from the source tree at build time,
+ * so they cannot go stale (./howTestedSuites.ts).
  */
 
 import { Link } from 'react-router'
 
-// Sibling-workspace globs (engine, app harness tests) resolve when this file
-// is built inside the RetireGolden monorepo — retiregolden.app's build. In an
-// external consumer of the published package they match nothing (the tarball
-// ships without test files), so the counts degrade to zero rather than lie.
-/** Suites checked against third-party implementations that share no code with RetireGolden. */
-const EXTERNAL_ORACLE_SUITES = Object.keys(
-  import.meta.glob(['../**/*.external.golden.test.ts', '../../../engine/src/**/*.external.golden.test.ts']),
-)
-/** All golden suites (fixed expected-value fixtures), external and internal. */
-const GOLDEN_SUITES = Object.keys(
-  import.meta.glob(['../**/*.golden.test.ts', '../../../engine/src/**/*.golden.test.ts']),
-)
-/** Every automated test file in the source tree (planner-ui + engine + app harness). */
-const ALL_TEST_FILES = Object.keys(
-  import.meta.glob([
-    '../**/*.test.{ts,tsx}',
-    '../../../engine/src/**/*.test.ts',
-    '../../../../app/src/**/*.test.{ts,tsx}',
-  ]),
-)
+import { howTestedSummaryFromGlob } from './howTestedGlob'
+import { NO_SUITE_DATA, type HowTestedSummary } from './howTestedSuites'
 
-/** "federalTaxSocialSecurity.external.golden.test.ts" → "federal tax social security". */
-function suiteName(path: string): string {
-  const base = path.split('/').pop()!.replace(/\.external\.golden\.test\.ts$/, '')
-  return base.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
-}
+/** Injected by app/vite.config.ts (`define`); absent in any other build. */
+declare const __RG_HOW_TESTED__: HowTestedSummary | undefined
+
+// A development build (vitest, the dev server) globs the tree through
+// import.meta.glob. A production build reads the summary the app's Vite config
+// computed with the same patterns, so the chunk ships three numbers and eight
+// names rather than ~960 test-file paths. A production build without the
+// injection (another host building the published package) has no counts.
+const SUMMARY: HowTestedSummary = import.meta.env.DEV
+  ? howTestedSummaryFromGlob()
+  : typeof __RG_HOW_TESTED__ === 'undefined'
+    ? NO_SUITE_DATA
+    : __RG_HOW_TESTED__
 
 // True when built inside the RetireGolden monorepo (retiregolden.app). A
 // build from the published tarball has no test files to count, and a trust
 // page must not report zeros as if the suites didn't exist — so counts and
 // the pinned-suite list degrade to count-free prose plus a pointer at the
 // upstream tree where they are derived.
-const HAS_SUITE_DATA = ALL_TEST_FILES.length > 0
+const HAS_SUITE_DATA = SUMMARY.testFileCount > 0
 
 export function HowTestedPage() {
   return (
@@ -68,7 +58,7 @@ export function HowTestedPage() {
 
       <h2>Checked against independent implementations</h2>
       <p>
-        {HAS_SUITE_DATA ? `${EXTERNAL_ORACLE_SUITES.length} external-oracle` : 'External-oracle'} suites pin
+        {HAS_SUITE_DATA ? `${SUMMARY.externalOracleSuites.length} external-oracle` : 'External-oracle'} suites pin
         RetireGolden's calculations to third-party references that share no code with it:
       </p>
       <ul>
@@ -88,7 +78,7 @@ export function HowTestedPage() {
       </ul>
       {HAS_SUITE_DATA && (
         <p className="muted small">
-          Suites currently pinned: {EXTERNAL_ORACLE_SUITES.map(suiteName).join(' · ')}.
+          Suites currently pinned: {SUMMARY.externalOracleSuites.join(' · ')}.
         </p>
       )}
       <p>
@@ -122,8 +112,8 @@ export function HowTestedPage() {
       <p>
         {HAS_SUITE_DATA ? (
           <>
-            {GOLDEN_SUITES.length} suites hold fixed expected values for the tax engine, RMDs, Social Security,
-            and full-plan projections, out of {ALL_TEST_FILES.length} automated test files overall.
+            {SUMMARY.goldenSuiteCount} suites hold fixed expected values for the tax engine, RMDs, Social Security,
+            and full-plan projections, out of {SUMMARY.testFileCount} automated test files overall.
           </>
         ) : (
           <>

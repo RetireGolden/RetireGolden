@@ -2263,7 +2263,7 @@
           "functions": [
             {
               "name": "jointLifeTableDivisor",
-              "line": 659
+              "line": 100
             }
           ]
         },
@@ -2943,7 +2943,7 @@
           "functions": [
             {
               "name": "jointLifeTableDivisor",
-              "line": 659
+              "line": 100
             }
           ]
         },

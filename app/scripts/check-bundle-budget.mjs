@@ -29,6 +29,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  chunksNamingTestFiles,
   evaluateBudget,
   parseLandingScripts,
   parsePrecacheUrls,
@@ -137,6 +138,16 @@ if (workerGraph.importers === null) {
   )
 }
 
+// Test-file paths are bytes no page needs (HowTestedPage's counts are
+// injected at build time by vite.config.ts).
+const testFileChunks = chunksNamingTestFiles(jsChunks)
+if (testFileChunks.length > 0) {
+  result.failures.push(
+    `${testFileChunks.join(', ')} name a test file (*.test.ts / *.test.tsx): no shipped page needs a ` +
+      'test-file path; count test files at build time instead (see HOW_TESTED_GLOBS in app/vite.config.ts)',
+  )
+}
+
 if (result.failures.length > 0 && !reportOnly) {
   console.error('\nbundle budget FAILED:')
   for (const failure of result.failures) console.error(`  - ${failure}`)
@@ -158,5 +169,8 @@ if (result.failures.length > 0) {
   }
   if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
     console.log('worker graph: no isolated chunk imports the worker entry')
+  }
+  if (testFileChunks.length === 0) {
+    console.log('test files: no chunk names one')
   }
 }

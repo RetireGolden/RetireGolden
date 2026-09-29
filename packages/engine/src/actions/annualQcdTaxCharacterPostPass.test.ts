@@ -17,6 +17,8 @@ import {
   stageAnnualQcdTaxCharacterPostPass,
   type StageAnnualQcdTaxCharacterPostPassInput,
 } from './annualQcdTaxCharacterPostPass.js'
+import { PARAMETER_PROVENANCE } from '../params/index.js'
+import { RMD_QCD_PARAMETER_SOURCE } from '../params/provenance.js'
 import { irc408d8APriorReductionsAreProvable } from './qcdDeductibleContributionOffset.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
 interface ActionSpec {
@@ -685,3 +687,46 @@ describeRefusal('irc-408-d-8-A-named-qcd-limit-after-the-pack-year', {
     })
   })
 })
+
+describe('stageAnnualQcdTaxCharacterPostPass: the rmd-qcd source it cites', () => {
+  it('cites the catalog entry itself, read directly rather than filtered out of the catalog', () => {
+    const filtered = PARAMETER_PROVENANCE.filter((source) => source.id === 'rmd-qcd')
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0]).toBe(RMD_QCD_PARAMETER_SOURCE)
+    const evidence = staged(fixture()).personalLimitEvidence
+    expect(evidence.parameterSource).toEqual(RMD_QCD_PARAMETER_SOURCE)
+    expect(evidence.parameterSource).not.toBe(RMD_QCD_PARAMETER_SOURCE)
+  })
+
+  it('mints the same evidence IDs as when it filtered the catalog (pinned at 04e71e59)', () => {
+    // The personal-limit evidence ID hashes the cited source's fields, and every
+    // application and pool transition ID chains from it, so a change in what
+    // the post-pass cites moves all of these. Values captured on 04e71e59,
+    // before the entry was exported on its own.
+    const result = staged(fixture([
+      { id: 'p1-qcd', donor: 'p1', amount: 1_000 },
+      { id: 'p2-qcd', donor: 'p2', amount: 1_000, sequence: 2 },
+    ], { contribution: { p1: 300 }, capacity: { p1: 600, p2: 1_000 } }))
+    expect({
+      personalLimit: result.personalLimitEvidence.evidenceId,
+      applications: result.applications.map((application) => application.evidenceId),
+      applicationLimitRefs: result.applications.map((application) => application.personalLimitEvidenceId),
+      pools: result.pools.map((pool) => pool.transitionEvidenceId),
+    }).toEqual(PINNED_QCD_EVIDENCE_IDS)
+  })
+})
+
+const PERSONAL_LIMIT_2026 =
+  'annual-qcd-personal-limit:cf8676bbace1588b3e067dd7f926f31a5ed88fe2387208cffff3a642c09a2227'
+const PINNED_QCD_EVIDENCE_IDS = {
+  personalLimit: PERSONAL_LIMIT_2026,
+  applications: [
+    'annual-qcd-tax-character-post-pass:cace4ab79782b9cca18331fc4aff1243d509e5d773696ed7e3d1a062b960c29f',
+    'annual-qcd-tax-character-post-pass:380a32914c7ddf8412d96a882a7ac2d09fb92fe9306b1ce9c979beda26db1c34',
+  ],
+  applicationLimitRefs: [PERSONAL_LIMIT_2026, PERSONAL_LIMIT_2026],
+  pools: [
+    'annual-qcd-pool-transition:b8d3baea5bc5cf1872c200c9167c5ca1938905df408e9288e11e75edfaef81a4',
+    'annual-qcd-pool-transition:df411989c4ece7bea7e18e33a4e7b9a2b766381e89a747817c9d1e31af5a4d00',
+  ],
+}

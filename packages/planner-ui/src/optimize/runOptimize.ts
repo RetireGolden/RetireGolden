@@ -1,8 +1,9 @@
 /**
  * Executes one optimize request. Shared by the Web Worker entry and the
- * synchronous fallback (tests / no-Worker environments) so both run the
- * identical tax stack — federal engine + per-state engine with the plan's flat
- * rate as an override, matching src/mc/runRequest.ts.
+ * synchronous fallback (a development build without a Worker, tests
+ * included) so both run the identical tax stack — federal engine + per-state
+ * engine with the plan's flat rate as an override, matching
+ * src/mc/runRequest.ts.
  */
 
 import { objectivePolicyForPlan } from '@retiregolden/engine/decisions'

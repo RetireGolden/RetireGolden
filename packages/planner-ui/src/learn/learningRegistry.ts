@@ -102,24 +102,44 @@ export type ArticleBlock =
   | ScenarioBlockData
   | TableBlockData
 
+/**
+ * An article's editorial review metadata. No page renders any of it, so it is
+ * kept out of ./articleIndex (which rides the landing critical path) in the
+ * test-only sidecar ../testSupport/articleEditorial.ts, keyed by slug; the
+ * Learn tests hold every index slug to an entry there.
+ */
+export type ArticleEditorial = {
+  audience: Audience
+  reviewCadence: ReviewCadence
+  /** True when the article leans on current-year dollar figures or rules. */
+  currentYearSensitive: boolean
+}
+
 export type LearningArticle = {
   slug: string
   title: string
   description: string
   category: LearningCategoryId
   tags: string[]
-  audience: Audience
+  /**
+   * @deprecated Editorial metadata ({@link ArticleEditorial}) is no longer in
+   * the index: an article from {@link getArticle} or {@link LEARNING_ARTICLES}
+   * never carries it. Kept optional on the type so the published
+   * `@retiregolden/planner-ui/learn/learningRegistry` surface stays compatible.
+   */
+  audience?: Audience
   status: ArticleStatus
   /** ISO date (YYYY-MM-DD) the content was last reviewed. */
   lastReviewed: string
-  reviewCadence: ReviewCadence
+  /** @deprecated As `audience`: never populated; see {@link ArticleEditorial}. */
+  reviewCadence?: ReviewCadence
   sourceUrls: string[]
   /** Slugs of related articles. */
   relatedArticles: string[]
   /** Planner route patterns this article relates to (see KNOWN_PLANNER_ROUTES). */
   relatedPlannerRoutes: string[]
-  /** True when the article leans on current-year dollar figures or rules. */
-  currentYearSensitive: boolean
+  /** @deprecated As `audience`: never populated; see {@link ArticleEditorial}. */
+  currentYearSensitive?: boolean
   priority?: Priority
   /** Surfaced in the Learning Center home "Featured" strip. */
   featured?: boolean

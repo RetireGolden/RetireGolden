@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         }
@@ -116,12 +116,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 339,
+          "line": 341,
           "note": null,
           "tests": [
             {
               "title": "excludes only the indexed annual limit",
-              "line": 343
+              "line": 345
             }
           ]
         }
@@ -161,7 +161,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         },
@@ -192,16 +192,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 659,
+          "line": 661,
           "note": null,
           "tests": [
             {
               "title": "refuses the unsourced year instead of inflating the pack limit into it",
-              "line": 664
+              "line": 666
             },
             {
               "title": "produces the sourced limit for the pack year, so the refusal is the missing source and not the batch",
-              "line": 678
+              "line": 680
             }
           ]
         }
@@ -258,7 +258,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         },
@@ -278,12 +278,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 260,
+          "line": 262,
           "note": null,
           "tests": [
             {
               "title": "nets the prior reductions off the aggregate deductions",
-              "line": 264
+              "line": 266
             }
           ]
         }
@@ -443,7 +443,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         },
@@ -571,7 +571,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         },
@@ -600,35 +600,35 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 413,
+          "line": 415,
           "note": "The 408(d)(8)(B) taxable trim runs before the annual limit, not after it.",
           "tests": [
             {
               "title": "limits what survives the taxable trim, not the gross distribution",
-              "line": 421
+              "line": 423
             },
             {
               "title": "reproduces the contract's $100,000-pool worked example",
-              "line": 434
+              "line": 436
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 462,
+          "line": 464,
           "note": "The post-70.5 offset reduces the already-limited amount, not the amount going into the limit.",
           "tests": [
             {
               "title": "subtracts the deduction offset after the annual limit has bound",
-              "line": 470
+              "line": 472
             },
             {
               "title": "floors the reduction at zero rather than going negative",
-              "line": 483
+              "line": 485
             },
             {
               "title": "reproduces the contract's fully-taxable worked example",
-              "line": 495
+              "line": 497
             }
           ]
         }
@@ -1278,7 +1278,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         },
@@ -1298,12 +1298,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 351,
+          "line": 353,
           "note": null,
           "tests": [
             {
               "title": "caps the QCD at aggregate pre-tax dollars and leaves the rest to basis",
-              "line": 359
+              "line": 361
             }
           ]
         }
@@ -1371,7 +1371,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         }
@@ -1733,7 +1733,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 471
+              "line": 472
             }
           ]
         }
@@ -1744,12 +1744,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 368,
+          "line": 370,
           "note": null,
           "tests": [
             {
               "title": "keeps the includible excess inside the QCD and discloses the reading",
-              "line": 376
+              "line": 378
             }
           ]
         }

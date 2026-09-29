@@ -116,12 +116,15 @@ insight preview:
 ## Adding a Learning Center article
 
 Content is **structured TypeScript**, not Markdown/MDX, and an article is two pieces in two files:
-its metadata (`slug`, `category`, `status`, `lastReviewed`, `reviewCadence`, `currentYearSensitive`,
-`sourceUrls`, `relatedPlannerRoutes`) as an entry in `packages/planner-ui/src/learn/articleIndex.ts`, and
-its `blocks[]` body as a module under `learn/content/` wired into the loader map in `learn/articleBodies.ts`.
-The split is what keeps article prose off the landing critical path
+its metadata (`slug`, `category`, `status`, `lastReviewed`, `sourceUrls`, `relatedPlannerRoutes`) as an
+entry in `packages/planner-ui/src/learn/articleIndex.ts`, and its `blocks[]` body as a module under
+`learn/content/` wired into the loader map in `learn/articleBodies.ts`. Its editorial review metadata
+(`audience`, `reviewCadence`, `currentYearSensitive`), which no page renders, is an entry keyed by slug in
+the test-only sidecar `packages/planner-ui/src/testSupport/articleEditorial.ts`, so the index ships only
+what pages read. The split is what keeps article prose off the landing critical path
 ([operations/bundle-budget.md](operations/bundle-budget.md)); `learn/articleIndex.test.ts` fails when the
-index and the body modules disagree. Rule-heavy articles must set
+index and the body modules disagree, and `learn/articleEditorial.test.ts` when the index and the sidecar
+do. Rule-heavy articles must set
 `currentYearSensitive` and a `reviewCadence`, cite primary sources (IRS/SSA/CMS), and avoid hardcoding
 current-year dollars in evergreen prose. Follow the full style guide and topic inventory in
 [features/learning-center.md](features/learning-center.md). Link from the planner via `LearnLink` /

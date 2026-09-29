@@ -32,6 +32,8 @@ import { IncomeFloorSection } from './sections/IncomeFloorSection'
 import { RiskBasedThresholdsCallout } from './sections/SpendingPolicyRiskBased'
 import { useThresholdSolve, type ThresholdSolve } from './sections/useThresholdSolve'
 import { currentStartYear } from './useProjection'
+import { runRiskBasedGuardrailSolve } from '../mc/pool'
+import { WORKER_UNAVAILABLE_MESSAGE, WorkerUnavailableError } from '../workers/spawn'
 
 vi.mock('./useMcSuccessRate', async (importOriginal) => {
   const original = await importOriginal<typeof import('./useMcSuccessRate')>()
@@ -225,6 +227,30 @@ describe('the threshold solve', () => {
     // The analytic curve's edges are the solver's lattice points 1.4036718749999997 and 1.9011718749999997.
     expect(policy.lowerBalanceThresholdPct).toBe(140.37)
     expect(policy.upperBalanceThresholdPct).toBe(190.12)
+  })
+
+  it('shows the no-Worker reason when the solve cannot start', async () => {
+    vi.mocked(runRiskBasedGuardrailSolve).mockRejectedValueOnce(new WorkerUnavailableError())
+    function Solver() {
+      const thresholds = useThresholdSolve()
+      return (
+        <>
+          <button type="button" onClick={thresholds.solve}>
+            solve
+          </button>
+          {thresholds.error ? <p className="error-text">{thresholds.error}</p> : null}
+        </>
+      )
+    }
+    const plan = validPlan((draft) => {
+      draft.expenses.spendingPolicy = { mode: 'riskBasedGuardrails' }
+    })
+    const drafts: Plan[] = []
+    const host = await mount(plan, <Solver />, (next) => drafts.push(next))
+    await act(async () => host.querySelector('button')!.click())
+    await waitFor(() => host.querySelector('.error-text') !== null, { what: 'the solve error' })
+    expect(host.querySelector('.error-text')!.textContent).toBe(WORKER_UNAVAILABLE_MESSAGE)
+    expect(drafts).toHaveLength(0)
   })
 })
 

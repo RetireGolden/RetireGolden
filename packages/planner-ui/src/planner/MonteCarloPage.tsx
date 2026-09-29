@@ -58,6 +58,7 @@ import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
 import { ScrollRegion } from './ScrollRegion'
+import { canRunAgain } from './engineRefusalCopy'
 
 function SuccessGauge({ rate, pathCount }: { rate: number; pathCount: number }) {
   const pct = Math.round(rate * 100)
@@ -425,9 +426,11 @@ export function MonteCarloPage() {
         {error ? (
           <div className="error-recovery" role="alert">
             <p className="error-text">Simulation error: {error}</p>
-            <button type="button" className="btn btn-secondary btn-small" onClick={() => run(DEFAULT_PATH_COUNT)}>
-              Run again
-            </button>
+            {canRunAgain(error) ? (
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => run(DEFAULT_PATH_COUNT)}>
+                Run again
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -712,9 +715,11 @@ export function MonteCarloPage() {
             {frontierError ? (
               <div className="error-recovery" role="alert">
                 <p className="error-text">Frontier run error: {frontierError}</p>
-                <button type="button" className="btn btn-secondary btn-small" disabled={frontierRunning} onClick={runFrontiers}>
-                  Run again
-                </button>
+                {canRunAgain(frontierError) ? (
+                  <button type="button" className="btn btn-secondary btn-small" disabled={frontierRunning} onClick={runFrontiers}>
+                    Run again
+                  </button>
+                ) : null}
               </div>
             ) : null}
             {visibleFrontier ? (
@@ -887,9 +892,11 @@ export function MonteCarloPage() {
             {historicalError ? (
               <div className="error-recovery" role="alert">
                 <p className="error-text">Stress suite error: {historicalError}</p>
-                <button type="button" className="btn btn-secondary btn-small" disabled={historicalRunning} onClick={runHistoricalSuites}>
-                  Run again
-                </button>
+                {canRunAgain(historicalError) ? (
+                  <button type="button" className="btn btn-secondary btn-small" disabled={historicalRunning} onClick={runHistoricalSuites}>
+                    Run again
+                  </button>
+                ) : null}
               </div>
             ) : null}
             {visibleHistorical ? (

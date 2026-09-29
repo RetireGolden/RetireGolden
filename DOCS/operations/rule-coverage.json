@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 458,
+    "totalFiles": 459,
     "byStatus": {
       "partial": 93,
       "registered": 121,
-      "rule-free": 244,
+      "rule-free": 245,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -660,10 +660,11 @@
     },
     {
       "directory": "rmd",
-      "files": 5,
+      "files": 6,
       "byStatus": {
         "partial": 1,
-        "registered": 4
+        "registered": 4,
+        "rule-free": 1
       }
     },
     {
