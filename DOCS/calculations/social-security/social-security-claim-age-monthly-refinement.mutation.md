@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-claim-age-monthly-refinement
 
-Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765), and re-executed 2026-09-29 against RetireGolden base `07d0c328` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/claimAgeSweep.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/claimAgeSweep.ts b/packages/engine/src/decisions/claimAgeSweep.ts
-index ac091401..1262fc08 100644
+index 86d314b3..f4585567 100644
 --- a/packages/engine/src/decisions/claimAgeSweep.ts
 +++ b/packages/engine/src/decisions/claimAgeSweep.ts
-@@ -393,4 +393,3 @@
+@@ -391,4 +391,3 @@
          if (!row.eligible) {
            rejected.add(key)
 -          continue
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/c
 
 ## Captured failing output
 
-Re-derived for the round-one review of #765 (issue 4): the same mutation on the line the removal of the pass cap re-indented. The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the pass count moved out of the published refinement, which moved this receipt's hunk; the mutation is unchanged. The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/decisions/claimAgeSweep.refine.evidence.test.ts (3 tests | 1 failed) 18ms
+ ❯ src/decisions/claimAgeSweep.refine.evidence.test.ts (3 tests | 1 failed) 20ms
    ❯ social-security-claim-age-monthly-refinement — Claim-age refinement to the month (3)
-     × R-A: takes the best eligible month on the objective, not the highest estate, and counts the rejected one 5ms
+     × R-A: takes the best eligible month on the objective, not the highest estate, and counts the rejected one 6ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 2 passed (3)
