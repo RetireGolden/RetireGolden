@@ -17,6 +17,7 @@ import { createEmptyPlan, CURRENT_PLAN_SCHEMA_VERSION, type Plan } from './plan.
 import { simulatePlan } from '../projection/simulate.js'
 import { cashAccount, productionTaxCalculator, recurringOrdinaryIncome } from '../testing/planFixtures.js'
 import { migratePlanToCurrent, migratePlanV5ToV6 } from './migrations.js'
+import { applyScenarioPatch } from '../scenarios/scenarios.js'
 
 const fixedNow = () => new Date('2026-06-29T12:00:00.000Z')
 let counter = 0
@@ -337,6 +338,7 @@ describe('migratePlanV5ToV6', () => {
   it('rewrites a stored scenario that writes the contracts, on both legs', () => {
     const raw = rawV5(couple(), 'early-retiree-aca')
     const stored = structuredClone(contractsOf(raw))
+    const healthcare = structuredClone((raw['expenses'] as { healthcare: Record<string, unknown> }).healthcare)
     raw['scenarios'] = [
       {
         id: 's1',
@@ -346,19 +348,29 @@ describe('migratePlanV5ToV6', () => {
           version: 1,
           operations: [
             { op: 'set', path: '/expenses/healthcare/acaYears', before: { present: true, value: stored }, value: stored },
-            { op: 'set', path: '/expenses/healthcare/acaYears/0', before: { present: true, value: stored[0] }, value: stored[0] },
           ],
         },
       },
       { id: 's2', name: 'Loose', patch: { expenses: { healthcare: { acaYears: stored } } } },
+      {
+        id: 's3',
+        name: 'Whole healthcare',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          operations: [{ op: 'set', path: '/expenses/healthcare', before: { present: true, value: healthcare }, value: healthcare }],
+        },
+      },
     ]
     const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
     const ops = migrated[0]!['patch']!['operations'] as Record<string, unknown>[]
     const derived = stored.map((c) => ({ year: c['year'], premiumBasis: 'premiumField', ...FACTS }))
     expect(ops[0]!['value']).toEqual(derived)
     expect((ops[0]!['before'] as Record<string, unknown>)['value']).toEqual(derived)
-    expect(ops[1]!['value']).toEqual(derived[0])
     expect(((migrated[1]!['patch'] as Record<string, Record<string, Record<string, unknown>>>)['expenses']!['healthcare']!)['acaYears']).toEqual(derived)
+    const whole = (migrated[2]!['patch']!['operations'] as Record<string, Record<string, unknown>>[])[0]!
+    expect(whole['value']!['acaYears']).toEqual(derived)
+    expect(((whole['before'] as Record<string, unknown>)['value'] as Record<string, unknown>)['acaYears']).toEqual(derived)
   })
 
   it('keeps an unedited converted plan\'s figures to the cent at a 2026 start', () => {
@@ -479,5 +491,131 @@ describe('migratePlanV5ToV6', () => {
     const own = contractsOf(household)[0]!
     ;(own['coveredMembers'] as Record<string, number[]>[])[0]!['slcspBenchmarkPremiumByMonth']![0] = 950
     expect(bases(household)).toEqual(['stated', ...new Array<string>(7).fill('removed')])
+  })
+
+  // PR #761 follow-up. The figures pinned below were measured on the v5
+  // engine (origin/main 5224c5d0) for these same documents, deterministic run
+  // from 2026 with this file's production tax calculator: each year's
+  // healthcare spending, premium credit and investable balance, 2026-2028.
+  // Every other ledger value was compared too: the ones marked "unchanged"
+  // matched the v5 engine to the last bit.
+  const setMonths = (contract: Record<string, unknown>, enrollment: number, benchmark: number) => {
+    for (const member of contract['coveredMembers'] as Record<string, number[]>[]) {
+      member['enrollmentPremiumByMonth'] = member['enrollmentPremiumByMonth']!.map((v) => (v > 0 ? enrollment : 0))
+      member['slcspBenchmarkPremiumByMonth'] = member['slcspBenchmarkPremiumByMonth']!.map((v) => (v > 0 ? benchmark : 0))
+    }
+  }
+  const firstYears = (plan: Plan) =>
+    simulatePlan(plan, { startYear: 2026, taxCalculator: productionTaxCalculator() })
+      .years.slice(0, 3)
+      .map((year) => [year.expenses.healthcare, year.aca?.modeledAllowablePtc ?? null, year.investableTotal])
+  const expectFigures = (actual: (number | null)[][], expected: (number | null)[][], label: string) => {
+    expected.forEach((row, index) =>
+      row.forEach((value, column) => {
+        const got = actual[index]![column]!
+        if (value === null) expect(got, `${label} ${index}.${column}`).toBeNull()
+        else expect(got, `${label} ${index}.${column}`).toBeCloseTo(value, 2)
+      }),
+    )
+  }
+  // The v5 engine's figures when the 2026 credit is left out, and when the
+  // example's own 2026 contract is priced.
+  const V5_2026_LEFT_OUT = [
+    [21_600, null, 867_276.8],
+    [2_396, 20_176, 852_623.52],
+    [20_542.74, null, 819_354.33],
+  ]
+
+  it('prices a contract entered for a saved example that the v5 engine refused, and says the figures change (PR #761 follow-up a)', () => {
+    // Not the recipe's (its benchmark, $1,200, is not its premium, $1,150), so
+    // it stays 'stated'; the v5 engine refused it because $1,150 is not the
+    // example's $900, and left the 2026 credit out. v6 prices it as entered.
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    setMonths(contractsOf(raw)[0]!, 1_150, 1_200)
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.plan.expenses.healthcare.acaYears?.[0]?.premiumBasis).toBeUndefined()
+    expect(result.repairs).toContainEqual({
+      kind: 'exampleEnteredContractsNowPriced',
+      exampleSourceId: 'early-retiree-aca',
+      contractCount: 1,
+      firstYear: 2026,
+      lastYear: 2026,
+    })
+    const figures = firstYears(result.plan)
+    // v5: $21,600 gross, no credit. v6: $27,600 gross, a $26,372 credit.
+    expect(figures[0]![0]).not.toBeCloseTo(V5_2026_LEFT_OUT[0]![0]!, 2)
+    expectFigures(figures, [[1_228, 26_372, 887_648.8], [2_396, 20_176, 872_995.52], [20_542.74, null, 839_726.33]], 'v6')
+    // A contract the v5 engine priced as written is not announced: the
+    // unedited example reports only the rewrite.
+    const unedited = migratePlanToCurrent(rawV5(couple(), 'early-retiree-aca'))
+    if (!unedited.ok) throw new Error('did not load')
+    expect(unedited.repairs.map((repair) => repair.kind)).toEqual(['exampleContractsFollowPremiumField'])
+  })
+
+  it("sorts the contracts a stored scenario writes by the same rule, in the scenario's plan (PR #761 follow-up b)", () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const stored = structuredClone(contractsOf(raw))
+    const quote = structuredClone(stored)
+    setMonths(quote[0]!, 1_150, 1_150)
+    const own = structuredClone(stored)
+    setMonths(own[0]!, 1_150, 1_200)
+    raw['scenarios'] = [
+      { id: 's-rewrite', name: 'Spend more', patch: { expenses: { baseAnnual: 52_000, healthcare: { acaYears: structuredClone(stored) } } } },
+      { id: 's-removed', name: 'A quote', patch: { expenses: { healthcare: { acaYears: quote } } } },
+      { id: 's-priced', name: 'Own figures', patch: { expenses: { healthcare: { acaYears: own } } } },
+      {
+        id: 's-canonical',
+        name: 'Quote, canonical',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: { planId: raw['id'], planSchemaVersion: 5, snapshotHash: 'fnv1a64:0000000000000000' },
+          title: 'Quote, canonical',
+          rationale: null,
+          createdAtIso: '2026-06-29T12:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [{ op: 'set', path: '/expenses/healthcare/acaYears', before: { present: true, value: stored }, value: quote }],
+        },
+      },
+    ]
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const scenario = (id: string) => {
+      const found = result.plan.scenarios.find((entry) => entry.id === id)!
+      const applied = applyScenarioPatch(result.plan, found.patch as never)
+      if (!applied.ok) throw new Error(`${id}: ${applied.issues.join('; ')}`)
+      return applied.plan
+    }
+    const repairFor = (id: string, kind: string) =>
+      result.repairs.find((repair) => repair.kind === kind && 'scenario' in repair && repair.scenario?.id === id)
+    // Each kind once: the recipe's contracts rewritten, the same figures.
+    const rewrite = scenario('s-rewrite')
+    expect(rewrite.expenses.healthcare.acaYears?.every((contract) => contract.premiumBasis === 'premiumField')).toBe(true)
+    expectFigures(firstYears(rewrite), [[2_428, 19_172, 884_448.8], [2_396, 20_176, 867_745.52], [20_542.74, null, 832_375.08]], 's-rewrite')
+    expect(repairFor('s-rewrite', 'exampleContractsFollowPremiumField')).toMatchObject({ contractCount: 8, firstYear: 2026, lastYear: 2033 })
+    // A recipe-shaped quote that no longer matched: removed, recorded, the same figures.
+    for (const id of ['s-removed', 's-canonical']) {
+      const removed = scenario(id)
+      expect(removed.expenses.healthcare.acaYears?.map((contract) => contract.year)[0], id).toBe(2027)
+      expect(removed.expenses.healthcare.acaYearsRemoved, id).toEqual([{ edit: 'exampleNoLongerMatched', years: [2026] }])
+      expectFigures(firstYears(removed), V5_2026_LEFT_OUT, id)
+      expect(repairFor(id, 'exampleContractsLeftOut'), id).toMatchObject({ contractCount: 1, firstYear: 2026, lastYear: 2026 })
+    }
+    // An entered contract the v5 engine refused: priced now, and announced.
+    const priced = scenario('s-priced')
+    expect(priced.expenses.healthcare.acaYears?.[0]).toMatchObject({ year: 2026 })
+    expect(priced.expenses.healthcare.acaYears?.[0]?.premiumBasis).toBeUndefined()
+    expect(firstYears(priced)[0]![1]).toBeCloseTo(26_372, 2)
+    expect(repairFor('s-priced', 'exampleEnteredContractsNowPriced')).toEqual({
+      kind: 'exampleEnteredContractsNowPriced',
+      exampleSourceId: 'early-retiree-aca',
+      contractCount: 1,
+      firstYear: 2026,
+      lastYear: 2026,
+      scenario: { id: 's-priced', name: 'Own figures' },
+    })
   })
 })

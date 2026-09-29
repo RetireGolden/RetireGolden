@@ -114,7 +114,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   engine, so the migration removes it, records it in `healthcare.acaYearsRemoved` as
   `'exampleNoLongerMatched'` and reports the new `exampleContractsLeftOut` repair; the
   figures do not change (measured against the v5 engine on four such documents: every
-  ledger value identical). It reports the new
+  ledger value identical). A contract not in the recipe's shape that the v5 engine refused
+  (it did not match the example's premium) stays `'stated'` and is now priced as entered,
+  so its year's figures change, and the new `exampleEnteredContractsNowPriced` repair says so.
+  The contracts a stored scenario writes are sorted by the same rule in the plan the
+  scenario makes, with the removal recorded in the scenario and each repair naming it
+  (the optional `scenario` on the three repairs); each operation's `before` is migrated as
+  the plan is, so the scenario still applies and gives the v5 engine's figures, or the
+  notice says what changes. It reports the new
   `exampleContractsFollowPremiumField` load repair, which carries no `accountId`; the load
   notice words it differently for the library's own demo record, and restoring a v5 backup
   now says the same in the import notice. An unedited converted plan projects to the same

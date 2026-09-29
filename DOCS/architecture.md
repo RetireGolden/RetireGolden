@@ -101,9 +101,11 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
   `premiumBasis: 'premiumField'`, which the engine prices from the premium field on every run; a contract
   from the recipe that no longer matched the plan's premium, which the v5 engine was already leaving out,
   is removed and recorded in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`; every other
-  contract stays `'stated'`. The migration reports both as load repairs
-  (`exampleContractsFollowPremiumField`, `exampleContractsLeftOut`), and the engine never reads
-  `exampleSourceId` at run time. Earlier additive fields (`stateMoves`,
+  contract stays `'stated'`, and one of those the v5 engine refused is now priced as entered. The
+  contracts a stored scenario writes are sorted by the same rule in the plan the scenario makes. The
+  migration reports each as a load repair (`exampleContractsFollowPremiumField`,
+  `exampleContractsLeftOut`, `exampleEnteredContractsNowPriced`, naming the scenario where it is a
+  scenario's), and the engine never reads `exampleSourceId` at run time. Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults
   rather than migrations. The plan backup JSON is a documented contract

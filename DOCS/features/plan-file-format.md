@@ -215,9 +215,17 @@ engine at run time (gross premium, no credit): the migration removes it, records
 in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`, and reports the
 `exampleContractsLeftOut` repair, so the plan's figures do not change. One the v5 engine
 priced as written (the premium field at the plan's stored rates) stays `'stated'`, and so
-does every contract not in the recipe's shape. An unedited converted plan projects to the
-same figures to the cent; saved scenarios that write the contracts are rewritten on both
-legs, as in v5, and keep any contract that no longer matches as they wrote it.
+does every contract not in the recipe's shape. Among those, one the v5 engine refused
+because it did not match the example's premium (a contract entered for the plan, say, with
+its own benchmark) is now priced as entered, so that year's figures change: the load reports
+`exampleEnteredContractsNowPriced` and the notice says the figures change. An unedited
+converted plan projects to the same figures to the cent. The contracts a stored scenario
+writes (a legacy patch's `expenses.healthcare.acaYears`, or a canonical operation setting
+`/expenses/healthcare/acaYears`, `/expenses/healthcare` or `/expenses` with them inside)
+are sorted by the same rule in the plan the scenario makes (its own premium, inflation and
+household where it sets them): rewritten, removed and recorded in the scenario, or kept and,
+where the v5 engine refused them, announced; each repair then names the scenario. Each
+operation's `before` is migrated as the plan itself is, so the scenario still applies.
 `exampleSourceId` is provenance only: the projection never reads it.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.

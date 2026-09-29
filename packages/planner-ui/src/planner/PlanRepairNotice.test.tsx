@@ -103,7 +103,7 @@ describe('PlanRepairNotice', () => {
       { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2028, lastYear: 2028 },
     ])
     expect(lead()).toBe(
-      "This plan's premium tax credit details came from a library example, and the app now stores an example's details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
+      "This plan came from a library example, and the app now handles an example's premium tax credit details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
     )
     const plan = createSamplePlan()
     await mount(
@@ -115,7 +115,7 @@ describe('PlanRepairNotice', () => {
       plan,
     )
     expect(lead()).toBe(
-      'This plan was stored with details the app no longer accepts, and its premium tax credit details came from a library example, which the app now stores differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+      'This plan was stored with details the app no longer accepts, and it came from a library example, whose premium tax credit details the app now handles differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
     )
     await mount(
       [{ kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: plan.household.people[0]!.id }],
@@ -125,6 +125,22 @@ describe('PlanRepairNotice', () => {
     expect(lead()).toBe(
       'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
     )
+  })
+
+  it('says entered credit details are now priced as entered and the figures change, for the plan and for a scenario (PR #761 follow-up)', async () => {
+    const scenario = { id: 's1', name: 'Own figures' }
+    await mount([
+      { kind: 'exampleEnteredContractsNowPriced', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2027, lastYear: 2027 },
+      { kind: 'exampleEnteredContractsNowPriced', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2026, lastYear: 2026, scenario },
+      { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2026, lastYear: 2026, scenario },
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 7, firstYear: 2027, lastYear: 2033, scenario },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carries premium tax credit details for 2027 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the credit in those years, and your plan's figures, change.",
+      "The scenario \u201cOwn figures\u201d writes premium tax credit details for 2026 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the scenario's figures change.",
+      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 2026, and they no longer matched the scenario's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed from the scenario, and none of its figures change.",
+      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 7 years from 2027 to 2033 as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo.",
+    ])
   })
 
   it('renders nothing when the load repaired nothing', async () => {
