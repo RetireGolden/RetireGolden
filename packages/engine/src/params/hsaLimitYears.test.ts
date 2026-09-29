@@ -8,6 +8,7 @@ import {
   hsaLimitsForYear,
 } from './hsaLimitYears.js'
 import { packForYear } from './index.js'
+import { indexingScaleFor } from './indexingScale.js'
 import { year2026 } from './data/year2026.js'
 
 const block2026 = hsaLimitsForYear(2026).params
@@ -25,6 +26,23 @@ describe('hsaLimitsForYear', () => {
     expect(hsaLimitsForYear(2045).params.year).toBe(2027)
     // Before the earliest, the earliest stands in.
     expect(hsaLimitsForYear(2025)).toEqual({ params: block2026, isStandIn: true })
+  })
+
+  it('gives a year before the earliest published one the earliest limits, unscaled and flagged as a stand-in', () => {
+    // PR #762 review: those are not that year's limits (Rev. Proc. 2024-25 set
+    // 2025's at $4,300 and $8,550), so the flag is what tells a caller. No plan
+    // reaches such a year: the examples are pinned to 2026 and a user's plan
+    // starts in the clock's year.
+    for (const year of [2025, 2024, 2000]) {
+      const lookup = hsaLimitsForYear(year)
+      expect(lookup.isStandIn, `${year}`).toBe(true)
+      expect(lookup.params, `${year}`).toBe(hsaLimitYear2026)
+      expect(lookup.params.year).toBe(EARLIEST_HSA_LIMIT_YEAR)
+      // simulate.ts scales a stand-in by indexingScaleFor from the block's year,
+      // which is exactly 1 at or below the latest published year: unscaled.
+      expect(indexingScaleFor(lookup.params.year, year, () => 1.5, LATEST_HSA_LIMIT_YEAR)).toBe(1)
+    }
+    expect(hsaLimitsForYear(2025).params).toMatchObject({ selfOnly: 4_400, family: 8_750 })
   })
 
   it('carries the amounts each revenue procedure prints', () => {

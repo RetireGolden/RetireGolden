@@ -16,9 +16,14 @@
  * later year stands in on the latest block and grows at the plan's inflation
  * from that block's year, the same approximation the other contribution limits
  * make (the plan's inflation rather than the C-CPI-U, and no rounding to a
- * multiple of 50 dollars). The age-55 catch-up of IRC 223(b)(3)(B) is a flat
- * 1,000 dollars that 223(g) does not index and no revenue procedure restates,
- * so it stays in the pack (`contributionLimits.hsaCatchUp55`).
+ * multiple of 50 dollars). A year before the earliest published one gets the
+ * earliest published limits, unscaled and flagged `isStandIn`, which are not
+ * that year's limits (Rev. Proc. 2024-25 set 2025's at $4,300 and $8,550); no
+ * plan reaches such a year, because the examples are pinned to 2026 and a
+ * user's plan starts in the clock's year. The age-55 catch-up of IRC
+ * 223(b)(3)(B) is a flat 1,000 dollars that 223(g) does not index and no
+ * revenue procedure restates, so it stays in the pack
+ * (`contributionLimits.hsaCatchUp55`).
  *
  * The 2026 income-tax pack references the 2026 block for its
  * `contributionLimits.hsaSelfOnly` and `hsaFamily`, and a test holds it there,
@@ -69,7 +74,8 @@ export interface HsaLimitYearLookup {
   /**
    * True when `year` has no published limits and a neighbouring year stands
    * in. A stand-in after the latest published year is grown at the plan's
-   * inflation from that year; one before the earliest is read as published.
+   * inflation from that year; one before the earliest gets the earliest
+   * published limits unscaled, a year no plan reaches (see the module doc).
    */
   isStandIn: boolean
 }
