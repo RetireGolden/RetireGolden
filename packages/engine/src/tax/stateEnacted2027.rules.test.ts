@@ -1221,6 +1221,38 @@ describeRule('dc-code-47-1801-04-3a-standard-deduction-2026-2029', {
     // 2027 through the annual calculation: 60,000 - 15,350 = 44,650.
     expect(computeStateTaxYearTotal(household(false, 60_000, 2027, 1.025))).toBeCloseTo(400 + 1_800 + 4_650 * 0.065, 6)
   })
+
+  // The indexing vintage, a stated limit: the engine scales the 2026 amount by
+  // the plan's cumulative inflation from 2026, so 2027 carries the 2026-to-2027
+  // change; the contrary reading measures a year earlier, so 2027 carries the
+  // 2025-to-2026 change. On a declining path, 3% from 2025 to 2026, 2% to
+  // 2027 and 1% a year after:
+  //   engine    2027 15,000 x 1.02                = 15,300
+  //             2028 15,000 x 1.02 x 1.01         = 15,453    -> 15,450
+  //             2029 15,000 x 1.02 x 1.01^2       = 15,607.53 -> 15,600
+  //   contrary  2027 15,000 x 1.03                = 15,450
+  //             2028 15,000 x 1.03 x 1.02         = 15,759    -> 15,750
+  //             2029 15,000 x 1.03 x 1.02 x 1.01  = 15,916.59 -> 15,900
+  // A single filer with $60,000 is in the 6.5% band, so $150 of deduction is
+  // $9.75 of tax for 2027 and $300 is $19.50 for 2028 and 2029.
+  it('prices the indexing vintage on a declining-inflation path: the engine reads a year later than the contrary reading', () => {
+    const pathFrom2025 = [0.03, 0.02, 0.01, 0.01]
+    const scaleFrom2026 = (year: number) => pathFrom2025.slice(1, year - 2025).reduce((factor, rate) => factor * (1 + rate), 1)
+    const lagged = (year: number) => pathFrom2025.slice(0, year - 2026).reduce((factor, rate) => factor * (1 + rate), 1)
+    const floor50 = (amount: number) => Math.floor(amount / 50 + 1e-9) * 50
+    const engine = (year: number) =>
+      statutorilyIndexedStandardDeduction(stateParamsFor('DC', year)!, { year, packYear: 2026, inflationScale: scaleFrom2026(year) }).standardDeduction.single
+    expect([2027, 2028, 2029].map(engine)).toEqual([15_300, 15_450, 15_600])
+    const contrary = [2027, 2028, 2029].map((year) => floor50(15_000 * lagged(year)))
+    expect(contrary).toEqual([15_450, 15_750, 15_900])
+    // Under constant inflation the two readings agree.
+    expect(floor50(15_000 * 1.025)).toBe(15_350)
+    // Each reading's tax for a single filer with $60,000; the engine's through the annual calculation.
+    const taxOn = (deduction: number) => 400 + 1_800 + (60_000 - deduction - 40_000) * 0.065
+    const engineTax = [2027, 2028, 2029].map((year) => computeStateTaxYearTotal(household(false, 60_000, year, scaleFrom2026(year))))
+    engineTax.forEach((tax, index) => expect(tax).toBeCloseTo(taxOn([15_300, 15_450, 15_600][index]!), 6))
+    expect(engineTax.map((tax, index) => Math.round((tax - taxOn(contrary[index]!)) * 100) / 100)).toEqual([9.75, 19.5, 19.5])
+  })
 })
 
 // Washington's deduction indexing (ESSB 6346 section 316): each October of an
