@@ -142,6 +142,26 @@ describe('migratePlanV5ToV6', () => {
     expect(bases(premium).every((basis) => basis === 'stated')).toBe(true)
   })
 
+  it('needs two contracts to agree on a factor, the plan rates included (PR #761 review 9)', () => {
+    // The premium field edited to $1,300 after saving, and one later contract
+    // that happens to be $1,300 grown one year at the plan's rates (1.045):
+    // $1,358.50 in 2027. It is the only later contract the stored rates fit,
+    // and six others do not, so the rates do not qualify and the match is not
+    // taken for the recipe: the 2027 contract is not rewritten.
+    const coincidence = rawV5(couple(), 'early-retiree-aca')
+    ;(coincidence['expenses'] as { healthcare: Record<string, number> }).healthcare['pre65MonthlyPremiumPerPerson'] = 1_300
+    setAmount(contractsOf(coincidence)[1]!, 1_300 * 1.045)
+    const stored2027 = structuredClone(contractsOf(coincidence)[1]!)
+    const migrated2027 = contractsOf(migratePlanV5ToV6(coincidence)).find((contract) => contract['year'] === 2027)
+    expect(migrated2027).toEqual(stored2027)
+    // With a single contract after 2026 the stored rates alone qualify, by
+    // fitting it: a saved example covered in 2026 and 2027 only.
+    const twoYears = rawV5(couple(), 'early-retiree-aca')
+    const healthcare = (twoYears['expenses'] as { healthcare: Record<string, unknown> }).healthcare
+    healthcare['acaYears'] = contractsOf(twoYears).slice(0, 2)
+    expect(bases(twoYears)).toEqual(['premiumField', 'premiumField'])
+  })
+
   it('compares the dollars to half a cent', () => {
     // 2026 must equal the premium field, $900: $900.004 is the recipe's,
     // $900.006 is not.

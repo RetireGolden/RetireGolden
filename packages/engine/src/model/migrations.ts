@@ -782,11 +782,16 @@ function fitsRecipeDollars(amount: number, year: number, premium: number, growth
 
 /**
  * The one yearly growth factor the recipe-shaped contracts after 2026 were
- * written with: `1 + (inflation + healthcare extra) / 100` when the stored
- * rates fit them, else the factor the most of them agree on, provided at
- * least two do (a factor read off one contract fits that contract whatever
- * it holds, so alone it proves nothing). Null when no factor qualifies: then
- * only a 2026 contract, whose factor is 1, can be the recipe's.
+ * written with. Any factor, the plan's stored rates included, must fit at
+ * least two of those contracts when there are two or more, because one match
+ * alone can be a coincidence (PR #761 review 9): `1 + (inflation + healthcare
+ * extra) / 100` when the stored rates qualify, else the factor the most of
+ * them agree on, read off one of them (a factor read off one contract fits
+ * that contract whatever it holds, so it needs a second). With a single
+ * contract after 2026 only the stored rates can qualify, by fitting it; with
+ * none, no factor is needed (a 2026 contract's factor is 1) and the result is
+ * null. Null also when no factor qualifies: then only a 2026 contract can be
+ * the recipe's.
  */
 function exampleRecipeGrowth(
   shaped: readonly { year: number; amount: number }[],
@@ -794,15 +799,20 @@ function exampleRecipeGrowth(
   planGrowth: number | null,
 ): number | null {
   const later = shaped.filter((entry) => entry.year > EXAMPLE_RECIPE_FIRST_YEAR)
+  if (later.length === 0) return null
+  const needed = Math.min(2, later.length)
   const fits = (growth: number) => later.filter((entry) => fitsRecipeDollars(entry.amount, entry.year, premium, growth)).length
   let best: { growth: number; fits: number } | null = null
-  if (planGrowth !== null) best = { growth: planGrowth, fits: fits(planGrowth) }
+  if (planGrowth !== null) {
+    const count = fits(planGrowth)
+    if (count >= needed) best = { growth: planGrowth, fits: count }
+  }
   for (const entry of later) {
     const growth = Math.pow(entry.amount / premium, 1 / (entry.year - EXAMPLE_RECIPE_FIRST_YEAR))
     const count = fits(growth)
     if (count >= 2 && (best === null || count > best.fits)) best = { growth, fits: count }
   }
-  return best === null || best.fits === 0 ? null : best.growth
+  return best === null ? null : best.growth
 }
 
 /**
