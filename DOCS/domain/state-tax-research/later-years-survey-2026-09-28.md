@@ -17,8 +17,10 @@ This page records the outcome for all 50 states and the District of Columbia, on
 - **Outside the model** means an enacted change to something the engine does not compute (a credit, or a
   subtraction for income the plan does not carry).
 
-The plan files as single or married filing jointly only. Head of household needs a dependent, which the plan
-does not collect, so head-of-household figures below are listed for completeness and are not used for a plan.
+The plan models single and married filing jointly. Head of household needs a dependent, which the plan does not
+collect, so head-of-household figures below are listed for completeness; the ones the engine loads (Montana's and
+Hawaii's) are used only on a state return whose filing status is set to head of household (in the planner, the
+state filing status under Assumptions, State tax worksheet facts).
 
 | State | Result |
 |---|---|

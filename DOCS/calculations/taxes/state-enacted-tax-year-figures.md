@@ -80,7 +80,7 @@ Section 302(3) of ESSB 6346 adds back into the income-tax base, for a filer who 
 
 ### Filing statuses
 
-The plan models single and married filing jointly only. Head of household and qualifying surviving spouse need dependents, which the plan does not collect. Delaware's new domicile test for the pension subtraction at 60 or older needs a domicile history the plan does not hold and is assumed to be met.
+The plan models single and married filing jointly. Head of household and qualifying surviving spouse need dependents, which the plan does not collect, so a state's head-of-household schedule or deduction is used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts). Delaware's new domicile test for the pension subtraction at 60 or older needs a domicile history the plan does not hold and is assumed to be met.
 
 ## Inputs
 
