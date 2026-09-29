@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -298,12 +298,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2160,
+          "line": 2161,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 2164
+              "line": 2165
             }
           ]
         }
@@ -352,7 +352,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -418,11 +418,11 @@
           "functions": [
             {
               "name": "LP_LTCG_RATE",
-              "line": 88
+              "line": 89
             },
             {
               "name": "buildOptimizerInput",
-              "line": 495
+              "line": 518
             }
           ]
         }
@@ -846,7 +846,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1259,7 +1259,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1343,12 +1343,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2382,
+          "line": 2383,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 2386
+              "line": 2387
             }
           ]
         }
@@ -1906,12 +1906,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2648,
+          "line": 2649,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2656
+              "line": 2657
             }
           ]
         }
@@ -2007,12 +2007,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2716,
+          "line": 2717,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2725
+              "line": 2726
             }
           ]
         }
@@ -2180,7 +2180,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }

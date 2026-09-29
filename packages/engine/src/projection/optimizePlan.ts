@@ -18,6 +18,7 @@
 import { indexFederalTaxPack, packForYear } from '../params/index.js'
 import { flatInflationPath, indexingScaleFor } from '../params/indexingScale.js'
 import { stateParamsFor } from '../params/state/index.js'
+import { statutorilyIndexedStandardDeduction } from '../tax/stateEnactedLaw.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
@@ -92,21 +93,43 @@ const LP_LTCG_RATE = 0.15
  * federal `bracketSegments`: ascending segment widths + rates over the state's
  * brackets for the filing status. Returns undefined for no-income-tax states,
  * unknown codes, or a missing state — those keep the flat state term only.
+ *
+ * The LP lays these segments over its taxable ordinary income, which is
+ * already net of the federal deduction (`lp.federalDeduction`, the indexed
+ * basic amount plus the age-65 additions the LP itself subtracts). A state
+ * whose own deduction for the year is larger gets the difference as a
+ * zero-rate band ahead of its brackets, so the solve does not tax income the
+ * state exempts: Washington's $1,000,000 from 2028, indexed on its statute's
+ * schedule (`wa-essb-6346-s316-standard-deduction-indexing`), is the one such
+ * deduction today. A smaller state deduction, a deduction tagged as the
+ * federal one, and every state exemption are not reflected: the LP keeps the
+ * federal deduction for them, which is the registered approximation
+ * `va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction`. The exact
+ * ledger re-prices every schedule the LP proposes.
  */
-function stateBracketSegmentsFor(
+export function stateBracketSegmentsFor(
   state: string | undefined,
   year: number,
   status: FilingStatus,
+  lp?: { readonly federalDeduction: number; readonly packYear: number; readonly inflationScale: number },
 ): { width: number | null; rate: number }[] | undefined {
   if (!state) return undefined
   const params = stateParamsFor(state, year)
   if (!params || !params.hasIncomeTax) return undefined
   const brackets = params.brackets[status]
   if (!brackets || brackets.length === 0) return undefined
-  return brackets.map((b, i) => ({
+  const segments = brackets.map((b, i) => ({
     width: i + 1 < brackets.length ? brackets[i + 1]!.lowerBound - b.lowerBound : null,
     rate: b.ratePct / 100,
   }))
+  if (!lp || params.standardDeductionConformity === 'federal') return segments
+  const own = statutorilyIndexedStandardDeduction(params, {
+    year,
+    packYear: lp.packYear,
+    inflationScale: lp.inflationScale,
+  }).standardDeduction[status]
+  const zeroBand = own - lp.federalDeduction
+  return zeroBand > 0 ? [{ width: zeroBand, rate: 0 }, ...segments] : segments
 }
 
 function isInvestable(a: Account): a is Extract<Account, { balance: number; annualReturnPct: number | null }> {
@@ -570,7 +593,15 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       year: p.year,
       pack,
       filingStatus,
-      stateBrackets: useStateBrackets ? stateBracketSegmentsFor(plan.household.state, p.year, filingStatus) : undefined,
+      stateBrackets: useStateBrackets
+        ? stateBracketSegmentsFor(plan.household.state, p.year, filingStatus, {
+            federalDeduction:
+              pack.federalTax.standardDeduction[filingStatus] +
+              (p.peopleAged65Plus > 0 ? pack.federalTax.age65Addition[filingStatus] * p.peopleAged65Plus : 0),
+            packYear: publishedPack.year,
+            inflationScale,
+          })
+        : undefined,
       ordinaryIncomeBase: p.ordinaryIncomeBase,
       // The other half of a committed conversion's double entry. The movement
       // below already debits the source and credits the Roth; this puts the

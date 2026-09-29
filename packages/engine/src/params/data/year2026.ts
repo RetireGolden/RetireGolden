@@ -9,10 +9,12 @@
  * - Medicare: CMS 2026 ($202.90 standard Part B); IRMAA tiers per statute
  * - Social Security: SSA 2026 COLA fact sheet
  * - FPL and ACA table: the 2026 coverage-year block (../acaCoverageYears.ts)
+ * - HSA limits: the 2026 block of ../hsaLimitYears.ts (Rev. Proc. 2025-19)
  */
 
 import type { ParameterPack } from '../types.js'
 import { acaCoverageYear2026 } from '../acaCoverageYears.js'
+import { hsaLimitYear2026 } from '../hsaLimitYears.js'
 
 export const year2026: ParameterPack = {
   year: 2026,
@@ -93,8 +95,10 @@ export const year2026: ParameterPack = {
     rothCatchUpWageThreshold: 150_000,
     ira: 7_500,
     iraCatchUp50: 1_100,
-    hsaSelfOnly: 4_400,
-    hsaFamily: 8_750,
+    // The 2026 block of ../hsaLimitYears.ts (Rev. Proc. 2025-19). The ledger
+    // reads the limits through that module, which also holds 2027's.
+    hsaSelfOnly: hsaLimitYear2026.selfOnly,
+    hsaFamily: hsaLimitYear2026.family,
     hsaCatchUp55: 1_000,
     section415cLimit: 72_000,
   },

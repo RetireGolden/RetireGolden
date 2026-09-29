@@ -456,11 +456,13 @@ describe('a conformed state standard deduction in a stand-in year', () => {
     // no federal provision reaches it. SC decoupled from the federal basic for
     // 2026 so its published amount would not move with federal indexing; Maine
     // also decoupled the basic but separately adopts the federal age-65 addition.
+    // The rate is the 2.99% S.L. 2026-41 enacts for taxable years after 2032,
+    // the latest enacted North Carolina step, carried forward to the projected year.
     const tax = calc.compute(input({
       state: 'NC', year: PROJECTED_YEAR, ordinaryIncome: 100_000, inflationScale: DOUBLED,
     }))
-    expect(tax).toBeCloseTo((100_000 - 12_750) * 0.0399, 6)
-    expect(tax).not.toBeCloseTo((100_000 - 25_500) * 0.0399, 6)
+    expect(tax).toBeCloseTo((100_000 - 12_750) * 0.0299, 6)
+    expect(tax).not.toBeCloseTo((100_000 - 25_500) * 0.0299, 6)
   })
 
   it('does not sweep the state retirement-exclusion cap along with the deduction', () => {
@@ -496,15 +498,19 @@ describe('a conformed state standard deduction in a stand-in year', () => {
 describe('the age-65 additional standard deduction in a conformed state', () => {
   const calc = createStateTaxCalculator()
   const CO_RATE = 0.044
+  // Each person 65 or older also takes the federal senior deduction, $6,000
+  // below the phase-out, which Colorado's federal-taxable-income base carries
+  // for 2025 to 2028 (co-crs-39-22-104-federal-taxable-income-senior-deduction).
+  const SENIOR = 6_000
 
   it('taxes a 65-year-old single filer less than the same filer at 64', () => {
     const at64 = calc.compute(input({ state: 'CO', ordinaryIncome: 60_000, peopleAged65Plus: 0 }))
     const at65 = calc.compute(input({ state: 'CO', ordinaryIncome: 60_000, peopleAged65Plus: 1 }))
 
     expect(at64).toBeCloseTo((60_000 - 16_100) * CO_RATE, 6)
-    expect(at65).toBeCloseTo((60_000 - 16_100 - 2_050) * CO_RATE, 6)
+    expect(at65).toBeCloseTo((60_000 - 16_100 - 2_050 - SENIOR) * CO_RATE, 6)
     expect(at65).toBeLessThan(at64)
-    expect(at64 - at65).toBeCloseTo(2_050 * CO_RATE, 6)
+    expect(at64 - at65).toBeCloseTo((2_050 + SENIOR) * CO_RATE, 6)
   })
 
   it('gives the joint addition once per person who has reached 65, not once per return', () => {
@@ -513,8 +519,8 @@ describe('the age-65 additional standard deduction in a conformed state', () => 
     const both = calc.compute(input({ state: 'CO', filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 2 }))
 
     expect(neither).toBeCloseTo((100_000 - 32_200) * CO_RATE, 6)
-    expect(one).toBeCloseTo((100_000 - 32_200 - 1_650) * CO_RATE, 6)
-    expect(both).toBeCloseTo((100_000 - 32_200 - 3_300) * CO_RATE, 6)
+    expect(one).toBeCloseTo((100_000 - 32_200 - 1_650 - SENIOR) * CO_RATE, 6)
+    expect(both).toBeCloseTo((100_000 - 32_200 - 3_300 - 2 * SENIOR) * CO_RATE, 6)
     // The second spouse is worth exactly as much as the first.
     expect(neither - one).toBeCloseTo(one - both, 6)
   })
@@ -532,26 +538,28 @@ describe('the age-65 additional standard deduction in a conformed state', () => 
 
   it('gives a part-year resident a prorated addition, not a full one', () => {
     // Five months in Colorado, seven in no-tax Florida. Residency scales the
-    // income, the basic deduction AND the addition by 5/12, so the Colorado
-    // slice is exactly five twelfths of the full-year Colorado bill:
+    // income, the basic deduction, the addition AND the federal senior
+    // deduction by 5/12, so the Colorado slice is exactly five twelfths of the
+    // full-year Colorado bill:
     //   income     60,000 x 5/12 = 25,000.0000
     //   basic      16,100 x 5/12 =  6,708.3333
     //   addition    2,050 x 5/12 =    854.1667
-    //   taxable                   = 17,437.5000 -> 4.4% = 767.25
+    //   senior      6,000 x 5/12 =  2,500.0000
+    //   taxable                   = 14,937.5000 -> 4.4% = 657.25
     const tax = calc.compute(input({
       ordinaryIncome: 60_000,
       peopleAged65Plus: 1,
       stateResidency: [{ state: 'CO', months: 5 }, { state: 'FL', months: 7 }],
     }))
 
-    const fullYearCo = (60_000 - 16_100 - 2_050) * CO_RATE
-    expect(tax).toBeCloseTo(767.25, 6)
+    const fullYearCo = (60_000 - 16_100 - 2_050 - SENIOR) * CO_RATE
+    expect(tax).toBeCloseTo(657.25, 6)
     expect(tax).toBeCloseTo(fullYearCo * (5 / 12), 6)
     // The failure mode this pins: a full-year addition against a five-month
     // income slice, which would under-tax the Colorado months.
-    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12) - 2_050) * CO_RATE, 6)
+    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12) - 2_050 - SENIOR * (5 / 12)) * CO_RATE, 6)
     // ...and the defect itself: no addition at all.
-    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12)) * CO_RATE, 6)
+    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12) - SENIOR * (5 / 12)) * CO_RATE, 6)
   })
 
   it('gives nothing to a state that publishes its own deduction', () => {

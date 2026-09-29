@@ -1524,7 +1524,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1533,7 +1533,7 @@
           "functions": [
             {
               "name": "singleLifeExpectancyYears",
-              "line": 171
+              "line": 178
             }
           ]
         },

@@ -420,7 +420,7 @@ export const southAtlanticStateRecords = {
   'dc-code-47-1803-03-federal-standard-and-ss': {
     title: 'The District excludes federally taxable Social Security and follows the federal standard-deduction choice',
     statement:
-      'D.C. separately excludes Social Security and Tier 1 Railroad benefits that were taxable under IRC section 86, exactly the federal share omitted by the pack\'s `taxesSocialSecurity: false`. It also requires a federal standard-deduction claimant to take the applicable District standard deduction, whose amount is specified in a separate definition. The staged sections establish the Social Security subtraction and the linked filing choice; they do not restate that definition section\'s dollar amount, so this record makes no independent claim about the amount or its future indexation.',
+      'D.C. separately excludes Social Security and Tier 1 Railroad benefits that were taxable under IRC section 86, exactly the federal share omitted by the pack\'s `taxesSocialSecurity: false`. It also requires a federal standard-deduction claimant to take the applicable District standard deduction, whose amount is specified in a separate definition. The staged sections establish the Social Security subtraction and the linked filing choice; they do not restate that definition section\'s dollar amount, so this record makes no claim about the amount; dc-code-47-1801-04-3a-standard-deduction-2026-2029 records the amount the act in force sets for 2026 to 2029 and what happens at each date.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -455,10 +455,75 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'dc-code-47-1801-04-3a-standard-deduction-2026-2029': {
+    title: 'The District’s own standard deduction for 2026 to 2029 is loaded as the emergency act in force sets it, with the permanent act’s congressional review named',
+    statement:
+      'Which act is in force on 2026-09-28, and what happens at each date. D.C. Act 26-416, the Fiscal Year 2027 Budget Support Emergency Act of 2026, took effect August 13, 2026 and remains in effect for no longer than 90 days, so to about November 11, 2026. It adds D.C. Code 47-1801.04(3A): a basic standard deduction of $15,000 single or married filing separately, $22,500 head of household and $30,000 joint for taxable years 2026 to 2029, increased annually by the District cost-of-living adjustment from a 2025 base year and rounded down to a multiple of $50, so 2026 carries no adjustment; it amends (44) so that the standard deduction is that basic amount plus the IRC 63(c)(3) additional amount for 2025 to 2029, and the federal standard deduction from 2030. The temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026. The permanent act with the same text, D.C. Act 26-418 (B26-0661), was enacted August 14, 2026 and transmitted to Congress on August 20, 2026, with a projected law date of November 20, 2026 (the Council’s legislative record, read 2026-09-28; the act is not yet on the code site). The engine loads the law in force: the 2026 figures (params/state/data/year2026.ts) carry $15,000 and $30,000 with the federal additional amount, indexed from 2027 at the plan’s inflation and rounded down to $50 (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction), and the figures enacted for 2030 (params/state/data/enacted2030.ts) return to the federal deduction. A single filer under 65 with $60,000 of District income pays $2,525.00 for 2026, where the federal deduction the engine carried before gave $2,453.50; a couple with $120,000, $6,050.00 where it gave $5,863.00. If Act 26-418 becomes law, nothing here changes; if Congress disapproves it and no further emergency act follows the lapse of Act 26-416, the code’s permanent text, the federal deduction for every year after 2017, returns, and this record and the figures are revisited on November 20, 2026. Settled for the act in force on 2026-09-28.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Law in force is loaded, and a pending event that could change it is named, dated and revisited (decision of 2026-09-28, State income tax follows each state’s enacted law, applied as it is for Washington’s and California’s votes): congressional review of the permanent act is that event here. The plan’s general inflation stands in for the District’s consumer price index.',
+    jurisdiction: 'state:DC',
+    authority: [{
+      kind: 'statute',
+      citation: 'D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)',
+      url: 'https://code.dccouncil.gov/us/dc/council/acts/26-416',
+      quotedText:
+        'For taxable years beginning after December 31, 2025, but before January 1, 2030: ... In the case of a return filed by a single individual or married individual filing a separate return, $15,000, increased annually pursuant to the cost-of living adjustment (if the adjustment does not result in a multiple of $50, rounded down to the next multiple of $50);',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year',
+      url: 'https://code.dccouncil.gov/us/dc/council/acts/26-416',
+      quotedText:
+        'shall mean the calendar year beginning January 1, 2025, or the calendar year beginning one calendar year before the calendar year in which the new dollar amount of the basic standard deduction shall become effective, whichever is later',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)',
+      url: 'https://code.dccouncil.gov/us/dc/council/acts/26-416',
+      quotedText:
+        'The additional standard deduction as prescribed in section 63(c)(3) of the Internal Revenue Code of 1986; or ... For taxable years beginning after December 31, 2029, the standard deduction as prescribed in section 63(c) of the Internal Revenue Code of 1986.',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Act 26-416, sec. 9003',
+      url: 'https://code.dccouncil.gov/us/dc/council/acts/26-416',
+      quotedText:
+        'This act shall take effect following approval by the Mayor (or in the event of veto by the Mayor, action by the Council to override the veto), and shall remain in effect for no longer than 90 days',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Code 47-1801.04(44)(A)(iv), permanent version',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04(Perm)',
+      quotedText:
+        'For taxable years beginning after December 31, 2017, the standard deduction as prescribed in section 63(c) of the Internal Revenue Code of 1986.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'D.C. Code 47-1801.04, code site note on D.C. Law 26-89',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04',
+      quotedText:
+        'This section includes amendments by temporary legislation that will expire on September 25, 2026.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#DC',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.DC',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction',
+    ],
+  },
+
   'ga-code-48-7-27-retirement-and-social-security-exclusion': {
     title: 'Georgia has a $35,000 retirement-income tier at ages 62-64 and separately subtracts taxable Social Security',
     statement:
-      'Georgia DOR\'s filing instructions make taxable Social Security a subtraction and direct retirees to the official IT-511 worksheet. That worksheet allows $35,000 at ages 62-64 and $65,000 at age 65 or older. Approximated: the pack preserves the age-65 $65,000 cap and separately excludes federally taxable Social Security, but has no $35,000 62-64 tier. It therefore leaves that source-covered retirement income in the base and overstates tax for the 62-64 limb. The DOR page also says retirement income reaches investment sources and up to $5,000 of earned income; the two retirement buckets cannot represent that broader base, so the record does not pretend that the age-65 bucket alone exhausts Georgia\'s exclusion.',
+      'Georgia DOR\'s filing instructions make taxable Social Security a subtraction and direct retirees to the official IT-511 worksheet. That worksheet allows $35,000 at ages 62-64 and $65,000 at age 65 or older. From 2027, HB 463 raises the amount at 65 or older to $70,000 (ga-hb-463-2027-retirement-exclusion). Approximated: the pack preserves the age-65 cap, $65,000 for 2026, and separately excludes federally taxable Social Security, but has no $35,000 62-64 tier. It therefore leaves that source-covered retirement income in the base and overstates tax for the 62-64 limb. The DOR page also says retirement income reaches investment sources and up to $5,000 of earned income; the two retirement buckets cannot represent that broader base, so the record does not pretend that the age-65 bucket alone exhausts Georgia\'s exclusion.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -496,6 +561,51 @@ export const southAtlanticStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#GA',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'ga-hb-463-2027-retirement-exclusion': {
+    title: 'Georgia raises the retirement income exclusion at 65 or older to $70,000 from 2027',
+    statement:
+      'HB 463 (2026), section 2-3, adds O.C.G.A. 48-7-27(a)(5)(A)(xiv): for taxable years beginning on or after January 1, 2027, retirement income from any source is excluded up to $35,000 for each taxpayer who meets division (i) or (ii) of subparagraph (D), the ages 62 to 64 and permanent disability tests, and up to $70,000 for each taxpayer who meets division (iii), age 65 or older, up from $65,000 under (xiii), which now ends with 2026. No condition applies to it: the determination as of December 1 that can delay HB 463’s rate cut and standard deduction steps does not reach this division, and the act’s automatic repeal reaches only its overtime and tip exclusions. The act took effect on the Governor’s approval (section 5-1). The figures enacted for 2027 (params/state/data/enacted2027.ts) carry a $70,000 cap at 65 or older for both retirement buckets, which Georgia shares as one rule, and hold it for later years. The $35,000 tier for ages 62 to 64 is still not carried (ga-code-48-7-27-retirement-and-social-security-exclusion), so that limb still overstates tax. Settled for the amount at 65 or older; the 62 to 64 tier, the earned income limb and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Georgia’s Code host renders its text in the browser and yields no quote-verifiable page, so the act is quoted from the copy the Governor’s office publishes among its 2026 signed legislation, admitted by exact URL only. HB 463’s rate cut and standard deduction steps are not loaded: they turn on the Office of Planning and Budget’s determination as of December 1.',
+    jurisdiction: 'state:GA',
+    authority: [{
+      kind: 'statute',
+      citation: 'HB 463 (2026), section 2-3, adding O.C.G.A. §48-7-27(a)(5)(A)(xiv)',
+      url: 'https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download',
+      quotedText:
+        '(xiv) For taxable years beginning on or after January 1, 2027, retirement income from any source not to exceed an exclusion amount of $35,000.00 for each taxpayer meeting the eligibility requirement set forth in division (i) or (ii) of subparagraph (D) of this paragraph or an amount of $70,000.00 for each taxpayer meeting the eligibility requirement set forth in division (iii) of subparagraph (D) of this paragraph.',
+    }, {
+      kind: 'statute',
+      citation: 'HB 463 (2026), section 2-3, revising O.C.G.A. §48-7-27(a)(5)(A)(xiii)',
+      url: 'https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download',
+      quotedText:
+        '(xiii) For taxable years beginning on or after January 1, 2012, and ending on or … before December 31, 2026, retirement income from any source not to exceed an',
+    }, {
+      kind: 'statute',
+      citation: 'HB 463 (2026), section 5-1',
+      url: 'https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download',
+      quotedText:
+        'This Act shall become effective upon its approval by the Governor or upon its becoming law',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.GA',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -741,6 +851,163 @@ export const southAtlanticStateRecords = {
     ]
   },
 
+  'md-tg-10-217-2026-indexed-standard-deduction': {
+    title: 'Maryland indexes its standard deduction from 2026; the engine carries $3,400 single and $6,850 joint, where the Comptroller has printed two different amounts',
+    statement:
+      'Md. Tax-General 10-217(b) sets the standard deduction at $3,350 for an individual and $6,700 for spouses on a joint return, a head of household or a surviving spouse, and (c) increases each amount for every taxable year beginning after December 31, 2025 by the IRC 1(f)(3) cost-of-living adjustment with calendar year 2024 as the base, as determined by the Comptroller, each increase rounded down to a multiple of $50. The Comptroller has printed two different 2026 figures: the 2026 Employer Withholding Guide gives $3,400, and the 2026 estimated-tax worksheet (Form PV, dated April 2026) gives $3,350 single and $6,700 joint, the 2025 amounts. The engine keeps $3,400 single, from the withholding guide, and computes the joint amount by the statute’s rule: the chained CPI average for September 2024 to August 2025 (177.2058) over that for September 2023 to August 2024 (173.0158) is a 2.4217% adjustment; $6,700 grows by $162.26, rounded down to $150, giving $6,850, and $3,350 grows by $81.13, rounded down to $50, giving the withholding guide’s $3,400. The 2026 figures (params/state/data/year2026.ts) carry $3,400 and $6,850; they carried $3,350 and $6,700 until the survey of 2026-09-28. Approximated because the statute leaves the adjustment to the Comptroller and the only joint amount the Comptroller has printed is $6,700: if that stands, the engine understates Maryland tax by $150 of deduction on a joint return, about $11.60 a year with a 3% county rate, and by $50 single. It is settled when the 2026 Form 502 instructions print the amounts, expected in January 2027. Later years are indexed the same way and stand at the 2026 amounts until the Comptroller publishes them.',
+    classification: 'approximated',
+    contraryReading:
+      'Use the Comptroller’s 2026 estimated-tax worksheet, $3,350 single and $6,700 joint: the statute makes the adjustment the one the Comptroller determines, and the worksheet is the Comptroller’s latest print. Not taken because the Comptroller’s withholding guide prints $3,400 single, which is what the statute’s formula gives, and the worksheet’s amounts are the unindexed 2025 ones.',
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The joint figure rests on the statute’s rule and the Bureau of Labor Statistics chained CPI (series SUUR0000SA0); the same adjustment reproduces the withholding guide’s $3,400 and the federal $16,100 single deduction for 2026, which uses the same base-year substitution. The record is revisited when the 2026 Form 502 instructions publish.',
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-217(b)(1) and (3)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf',
+      quotedText:
+        '(b) (1) For an individual other than one described in paragraphs (2) and (3) of this subsection, the standard deduction is $3,350. … (3) For spouses on a joint return, the standard deduction is $6,700.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-217(c)(1) and (3)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf',
+      quotedText:
+        '(c) (1) For each taxable year beginning after December 31, 2025, the standard deduction amount specified in subsection (b) of this section shall be increased by an amount equal to the product of multiplying the standard deduction amount by the … (3) If any increase determined under paragraph (1) of this subsection is not a multiple of $50, the increase shall be rounded down to the next lowest multiple of $50',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)',
+      url: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/instructions/withholding/2026/withholding-guide.pdf',
+      quotedText: 'For the purpose of the percentage method calculation the Standard Deduction is $3,400.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-217(c)(2)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf',
+      quotedText:
+        'for the calendar year in which a taxable year begins, as determined by the Comptroller, by substituting',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction',
+      url: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/2026-pv-worksheet.pdf',
+      quotedText:
+        'your standard deduction amount … is $3,350. … amount is $6,700.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.MD',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+    ],
+  },
+
+  'md-tg-10-105-a-3-capital-gain-surtax': {
+    title: 'Maryland adds 2% on net capital gain when federal AGI exceeds $350,000; the engine also charges it on a primary-residence gain the law excludes',
+    statement:
+      'Md. Tax-General 10-105(a)(3), in effect since tax year 2025, makes the state income tax of an individual whose Maryland AGI includes net capital gain the sum of the rate schedule on Maryland taxable income and an additional 2% of the net capital gain included in Maryland AGI; (a)(4) applies it only to an individual with federal AGI above $350,000. (a)(3)(ii) excludes gain on a primary residence sold for less than $1,500,000, on assets held in 401(k), 403(b), 457(b), IRA, Roth IRA and similar plans, and on some farm, easement, section 179 and affordable-housing property. The 2026 figures (params/state/data/year2026.ts) carry the 2% and the $350,000 threshold, and the engine adds 2% of the net capital gain it taxes to Maryland state tax when federal AGI is above the threshold; county tax is not charged on it. Before the survey of 2026-09-28 it was not modeled, understating Maryland tax by $2,000 for a single filer with $500,000 of federal AGI that includes $100,000 of gain. Approximated because the state calculation receives a home sale’s taxable gain as capital gain like any other: the plan knows a property is a primary residence and its sale price, but the gain reaches the Maryland calculation without them, so a primary-residence gain on a sale under $1,500,000, which (a)(3)(ii) excludes, is surcharged, overstating Maryland tax by 2% of that gain ($2,000 on $100,000 above the section 121 exclusion). Gain on a taxable account is priced as the law requires; the other excluded assets (farm, easement, section 179 and affordable-housing property) are not modeled, and gain inside retirement plans never reaches net capital gain; whole-return accuracy is outside this record.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-105(a)(3)(i)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf',
+      quotedText:
+        'the State income tax for the individual is the sum of: 1. the rates specified in paragraph (1) or (2) of this subsection applied to Maryland taxable income; and 2. an additional 2% of the amount of net capital gain included in the individual’s Maryland adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-105(a)(4)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf',
+      quotedText:
+        '(4) The provisions of paragraph (3) of this subsection shall apply for individuals described in paragraph (1) or (2) of this subsection with a federal adjusted gross income in excess of $350,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-105(a)(3)(ii)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf',
+      quotedText:
+        'any amount of capital gain from the sale or exchange of the following assets is not subject to the additional 2% tax rate specified in subparagraph (i)2 of this paragraph: 1. any residential dwelling sold for less than $1,500,000 that is the individual’s primary residence',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.MD',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#marylandCapitalGainSurtax',
+    ],
+  },
+
+  'md-tg-10-207-mm-public-safety-retirement-subtraction': {
+    title: 'Maryland subtracts the first $16,000 of public-safety retirement income at 55, rising to $20,000 by 2030',
+    statement:
+      'Md. Tax-General 10-207(mm), as amended by 2026 Md. Laws ch. 686 (S.B. 607, approved May 26, 2026, effective July 1, 2026), subtracts income from an employee retirement system attributable to service as a correctional officer, law enforcement officer, or fire, rescue or emergency services personnel of the United States, the State or a political subdivision, received by an individual at least 55 on the last day of the taxable year: the first $16,000 for 2026, $17,000 for 2027, $18,000 for 2028, $19,000 for 2029 and $20,000 from 2030. 10-209(d)(2) keeps that income out of the pension exclusion. The 2026 figures and the figures enacted for 2027 to 2030 (params/state/data/year2026.ts, enacted2027.ts to enacted2030.ts) carry the amounts, and the engine subtracts them for each retiree 55 or older from a pension the plan marks with the state eligibility code MD-PUBLIC-SAFETY, taking the subtracted amount out of the pension exclusion. The planner’s pension editor does not yet offer that marker, so it reaches a plan only through its file or the MCP interface; an unmarked public-safety pension is taxed without the subtraction, which overstates Maryland tax by up to 4.75% of the amount, $760.00 in 2026 on a $30,000 police pension at 58. Settled for a marked pension; whole-return accuracy is outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The statute names the service, not a retirement system, so the plan states it with a marker on the pension rather than the engine inferring it from the payer, as West Virginia’s police and fire exclusion does with WV-POLICE-FIRE.',
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: '2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(2)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf',
+      quotedText:
+        'income from an employee retirement system that is attributable to service as a public safety employee, if the income is received by an individual who is at least 55 years old on the last day of the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: '2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(3)(II) to (VI)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf',
+      quotedText:
+        '(II) FOR A TAXABLE YEAR BEGINNING AFTER DECEMBER 31, 2025, BUT BEFORE JANUARY 1, 2027, THE FIRST $16,000 OF INCOME DESCRIBED UNDER PARAGRAPH (2) OF THIS SUBSECTION; (III) FOR A TAXABLE YEAR BEGINNING AFTER DECEMBER 31, 2026, BUT BEFORE JANUARY 1, 2028, THE FIRST $17,000 OF INCOME DESCRIBED UNDER PARAGRAPH (2) OF THIS SUBSECTION; … (VI) FOR A TAXABLE YEAR BEGINNING AFTER DECEMBER 31, 2029, THE FIRST $20,000 OF INCOME DESCRIBED UNDER PARAGRAPH (2) OF THIS SUBSECTION.',
+    }, {
+      kind: 'statute',
+      citation: '2026 Md. Laws ch. 686 (S.B. 607), section 2 and approval',
+      url: 'https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf',
+      quotedText: 'That this Act shall take effect July 1, 2026. Approved by the Governor, May 26, 2026.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General §10-209(d)(2)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-209.pdf',
+      quotedText:
+        '(2) Public safety employee retirement income that is included in the subtraction under … of this subtitle may not be taken into account for purposes of the subtraction under this section',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.MD',
+      'packages/engine/src/params/state/data/enacted2027.ts#states.MD',
+      'packages/engine/src/params/state/data/enacted2028.ts#states.MD',
+      'packages/engine/src/params/state/data/enacted2029.ts#states.MD',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.MD',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#marylandPublicSafetySubtraction',
+    ],
+  },
+
   'ncgs-105-153-5-social-security-exclusion': {
     title: 'North Carolina subtracts Title II Social Security benefits',
     statement:
@@ -774,7 +1041,7 @@ export const southAtlanticStateRecords = {
   'ncgs-105-153-7-2026-flat-rate-and-standard-deduction': {
     title: 'North Carolina taxes TY2026 ordinary income at 3.99% after supported single/MFJ standard deductions',
     statement:
-      'For taxable years beginning after calendar 2025, N.C. Gen. Stat. §105-153.7(a) imposes a flat 3.99% tax on North Carolina taxable income. Section 105-153.7(a1)\'s revenue-trigger rate reductions apply only from taxable years beginning in 2027 onward and are outside this record. Section 105-153.5(a)(1) sets fixed standard-deduction amounts by filing status: $12,750 single and $25,500 married filing jointly/surviving spouse. The statute has no annual indexing formula; NCDOR\'s 2026 NC-40 worksheet republishes the same cells under a "For Tax Years Beginning on or after January 1, 2026" footer. The pack stores those deduction cells and a single 3.99% bracket for both supported filing statuses. North Carolina does not import the federal age-65 standard-deduction addition; the state amount is filing-status based only. Settled only for that TY2026 flat ordinary rate and supported single/MFJ standard-deduction mapping; head-of-household, married-filing-separate, itemization, child-deduction schedules, Bailey and military limbs, and whole-return accuracy are outside this record. The record is bounded to TY2026 even though the current statutory table continues until amended.',
+      'For taxable years beginning in 2026, N.C. Gen. Stat. §105-153.7(a) imposes a flat 3.99% tax on North Carolina taxable income. The codified table quoted below still reads "After 2025 3.99%"; Session Law 2026-41, section 44.1(a), rewrote it to 3.99% for 2026 and lower rates from 2027, and moved the first section 105-153.7(a1) revenue trigger to taxable years beginning in 2035 (nc-sl-2026-41-2027-flat-rate). Later years are outside this record. Section 105-153.5(a)(1) sets fixed standard-deduction amounts by filing status: $12,750 single and $25,500 married filing jointly/surviving spouse. The statute has no annual indexing formula; NCDOR\'s 2026 NC-40 worksheet republishes the same cells under a "For Tax Years Beginning on or after January 1, 2026" footer. The pack stores those deduction cells and a single 3.99% bracket for both supported filing statuses. North Carolina does not import the federal age-65 standard-deduction addition; the state amount is filing-status based only. Settled only for that TY2026 flat ordinary rate and supported single/MFJ standard-deduction mapping; head-of-household, married-filing-separate, itemization, child-deduction schedules, Bailey and military limbs, and whole-return accuracy are outside this record. The record is bounded to TY2026, the year the rewritten table still sets at 3.99%.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -820,7 +1087,7 @@ export const southAtlanticStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-09-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -828,6 +1095,110 @@ export const southAtlanticStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#NC',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'nc-sl-2026-41-2027-flat-rate': {
+    title: 'North Carolina taxes TY2027 ordinary income at 3.49% under Session Law 2026-41',
+    statement:
+      'Session Law 2026-41 (Senate Bill 257, the Current Operations Appropriations Act of 2026, chaptered on July 7, 2026), section 44.1(a), rewrites the rate table in N.C. Gen. Stat. §105-153.7(a): 3.99% for taxable years beginning in 2026, 3.49% in 2027, 2028 and 2029, 3.24% in 2030, 2031 and 2032, and 2.99% after 2032. The same section rewrites the (a1) revenue trigger: its first row is now fiscal year 2033-2034 for taxable years beginning in 2035, so the 2027 rate no longer depends on fiscal year 2025-2026 revenue. Section 44.1(b) makes the section effective when the act became law. The rates enacted for 2027 (params/state/data/enacted2027.ts) carry 3.49% for 2027, read as enacted rather than projected from 2026, and hold it through 2029; the 3.24% and 2.99% steps are the record nc-sl-2026-41-rate-steps-2030-and-after. The standard deduction is the fixed §105-153.5(a)(1) amount, as for 2026. The codified statute page still showed the table before the act when this was verified.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The session law is quoted rather than the codified section because the codified page had not been updated when this was verified on 2026-09-28. The act strikes the fiscal year 2025-2026 trigger row, so no revenue test can move the 2027 rate. The record covers 2027 to 2029, the years the 3.49% row names.',
+    jurisdiction: 'state:NC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a)',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'In 2026 3.99% In 2027, 2028, and 2029 3.49% In 2030, 2031, and 2032 3.24% After 2032 2.99%',
+    }, {
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'FY 2033‑2034 $40,258,000,000 In 2035 FY 2034‑2035 $41,087,000,000 In 2036',
+    }, {
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(b)',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'SECTION 44.1.(b) This section is effective when this act becomes law.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'N.C. General Assembly, Senate Bill 257 / SL 2026-41, bill history',
+      url: 'https://www.ncleg.gov/BillLookUp/2025/S257',
+      quotedText:
+        'Ch. SL 2026-41 Documents: None Votes: None Date: 7/7/2026 Chamber: Action: Signed by Gov. 7/7/2026',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: 2029,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.NC',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'nc-sl-2026-41-rate-steps-2030-and-after': {
+    title: 'North Carolina taxes TY2030 to TY2032 at 3.24% and later years at 2.99% under Session Law 2026-41',
+    statement:
+      'Session Law 2026-41, section 44.1(a), sets the rate in N.C. Gen. Stat. §105-153.7(a) at 3.24% for taxable years beginning in 2030, 2031 and 2032 and 2.99% for taxable years beginning after 2032. Neither step depends on revenue. The rewritten (a1) trigger can cut the rate further, to the greater of the prior year\'s rate less one-fourth of a point (the act strikes "one-half" and "(0.50%)" and inserts "one-fourth" and "(0.25%)") or 2.49%, but only for the taxable year named beside a fiscal year whose General Fund revenue exceeds its trigger amount; the first such row is fiscal year 2033-2034, for taxable years beginning in 2035. The enacted-year figures carry 3.24% for 2030 (params/state/data/enacted2030.ts) and 2.99% for 2033 (enacted2033.ts), read as enacted, each held until the next; from 2035 the engine holds 2.99% and overstates the rate in any year a trigger fires. The standard deduction is the fixed §105-153.5(a)(1) amount.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The session law is quoted because the codified page had not been updated when this was verified on 2026-09-28. The (a1) cuts from 2035 turn on General Fund revenue that no projection can know, so the record covers 2030 to 2034, the years the unconditional rows fix.',
+    jurisdiction: 'state:NC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a), rows for 2027 on',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'In 2027, 2028, and 2029 3.49% In 2030, 2031, and 2032 3.24% After 2032 2.99%',
+    }, {
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), the trigger',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'Notwithstanding the tax rates set out in subsection (a) of this section, if total General Fund revenue in a fiscal year set out below exceeds the trigger amount indicated for that fiscal year, then the applicable tax rate for the indicated and subsequent tax years shall be equal to the greater of (i) the prior taxable year\'s rate decreased by ... or (ii) two and forty‑nine hundredths percent (2.49%).',
+    }, {
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'FY 2033‑2034 $40,258,000,000 In 2035 FY 2034‑2035 $41,087,000,000 In 2036',
+    }, {
+      kind: 'statute',
+      citation: 'S.L. 2026-41, section 44.1(b)',
+      url: 'https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html',
+      quotedText:
+        'SECTION 44.1.(b) This section is effective when this act becomes law.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2030,
+    effectiveThrough: 2034,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/params/state/data/enacted2033.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2030.ts#states.NC',
+      'packages/engine/src/params/state/data/enacted2033.ts#states.NC',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
       'packages/engine/src/tax/stateTax.ts#bracketTax',
     ],
   },
@@ -906,6 +1277,174 @@ export const southAtlanticStateRecords = {
       'packages/engine/src/params/state/types.ts#StateTaxParams',
     ],
   },
+  'va-code-58-1-322-03-standard-deduction-steps': {
+    title: 'Virginia’s standard deduction is $9,200 and $18,400 for 2027, $9,300 and $18,600 for 2028 and 2029, and $3,000 and $6,000 from 2030',
+    statement:
+      'Va. Code 58.1-322.03(1)(b) sets the standard deduction for a taxpayer who has not itemized on the federal return: $8,750 single and $17,500 married for 2025 and 2026 ((v)); $9,200 and $18,400 for taxable years beginning in 2027 ((vi)); $9,300 and $18,600 for 2028 and 2029 ((vii)); and $3,000 and $6,000 on and after January 1, 2030 ((i)), when the temporary amounts end. A married individual filing a separate return takes half. The code attaches no condition to any of these amounts. The figures enacted for 2027, 2028 and 2030 (params/state/data/enacted2027.ts, enacted2028.ts and enacted2030.ts) carry them and hold the 2030 amounts for later years, so from 2030 the engine charges more Virginia tax on the same income than in 2029. Settled for the single and joint amounts; the requirement not to itemize federally, the limit for a dependent and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Virginia has extended its temporary amounts before; the record carries the code as it reads on 2026-09-28, and the 2030 amount is re-read at each refresh.',
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(1)(b)(vi) and (vii)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '(vi) for taxable years beginning on and after January 1, 2027, but before January 1, 2028, $9,200 for single individuals and $18,400 for married persons (one-half of such amounts in the case of a married individual filing a separate return); and (vii) for taxable years beginning on and after January 1, 2028, but before January 1, 2030, $9,300 for single individuals and $18,600 for married persons',
+    }, {
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(1)(b)(i)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        'b. Provided that the taxpayer has not itemized deductions for the taxable year on his federal income tax return: (i) for taxable years beginning before January 1, 2019, and on and after January 1, 2030, $ 3,000 for single individuals and $ 6,000 for married persons',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.VA',
+      'packages/engine/src/params/state/data/enacted2028.ts#states.VA',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.VA',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction': {
+    title: 'The optimizer prices a state’s brackets on federal taxable income, so a state deduction smaller than the federal one and the state’s exemptions are left out of its in-solve state tax (Virginia is the pinned case)',
+    statement:
+      'The optimizer’s linear program lays a state’s brackets over its own taxable ordinary income, which is gross ordinary income less the federal deduction (projection/optimizePlan.ts#stateBracketSegmentsFor, strategies/optimizer.ts#buildOptimizerModel). It therefore uses the federal deduction in place of the state’s own deduction and ignores the state’s personal exemptions. Where the state’s own deduction is larger than the federal one, the difference is added as a zero-rate band, which is Washington’s $1,000,000 alone today (wa-essb-6346-s316-standard-deduction-indexing). Every other state’s deduction and exemptions together are smaller than the federal deduction, so the solve starts the state’s brackets too high and understates its state tax, most in the lower bands. Virginia is the pinned case: for 2026 Va. Code 58.1-322.03 allows $8,750 single plus a $930 exemption, where the LP subtracts the federal $16,100; on $60,000 of ordinary income the LP charges $2,266.75 of Virginia tax where the law charges $2,635.90, $369.15 less, which is the $6,420 between the two deductions at 5.75%. The marginal rate the solve sees is the state’s own except within that width of a bracket boundary, and the exact projection re-prices every schedule the solve proposes, so the gap reaches a recommendation only through the schedule it proposes. A deduction tagged as the federal one is exact already. State retirement exclusions are also left to the exact projection, as the model states.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(1)(b)(i)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        'b. Provided that the taxpayer has not itemized deductions for the taxable year on his federal income tax return: (i) for taxable years beginning before January 1, 2019, and on and after January 1, 2030, $ 3,000 for single individuals and $ 6,000 for married persons',
+    }, {
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(2)(a)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '2. a. A deduction in the amount of $ 930 for each personal exemption allowable to the taxpayer for federal income tax purposes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/optimizePlan.ts',
+      'packages/engine/src/strategies/optimizer.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.VA',
+      'packages/engine/src/projection/optimizePlan.ts#stateBracketSegmentsFor',
+      'packages/engine/src/projection/optimizePlan.ts#buildOptimizerInput',
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
+    ],
+  },
+
+  'va-code-58-1-322-03-2-personal-exemptions': {
+    title: 'Virginia deducts $930 for each personal exemption and $800 more for each taxpayer 65 or older',
+    statement:
+      'Va. Code 58.1-322.03(2)(a) deducts $930 for each personal exemption allowable to the taxpayer for federal income tax purposes, and (2)(b) gives each blind or aged taxpayer, as IRC 63(f) defines them, an additional $800. Both apply whether or not the taxpayer itemizes. The 2026 figures (params/state/data/year2026.ts) carry them: one exemption for a single filer and two on a joint return, plus $800 for each taxpayer 65 or older. Before the survey of 2026-09-28 the engine allowed neither, overstating Virginia tax by $99.48 for a single filer aged 65 and $198.95 for a couple both 65 in the 5.75% band. Settled for the taxpayer and spouse exemptions and the age addition; dependents are not collected by the plan, blindness is not modeled, and whole-return accuracy is outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(2)(a)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '2. a. A deduction in the amount of $ 930 for each personal exemption allowable to the taxpayer for federal income tax purposes.',
+    }, {
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(2)(b)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        'b. Each blind or aged taxpayer as defined under § 63(f) of the Internal Revenue Code shall be entitled to an additional personal exemption in the amount of $ 800. The additional deduction for blind or aged taxpayers allowed under this subdivision shall be allowable regardless of whether the taxpayer itemizes deductions for the taxable year for federal income tax purposes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.VA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#virginiaPersonalExemptions',
+    ],
+  },
+
+  'de-code-30-1106-b-3-military-pension-steps-2027-2029': {
+    title: 'Delaware raises the military pension subtraction to $15,000, $20,000 and $25,000 over 2027 to 2029, and adds it at 60 and over',
+    statement:
+      '30 Del. C. 1106(b)(3), as amended by S.B. 219 (85 Del. Laws c. 426, signed and effective August 17, 2026), lets a person under 60 subtract the greater of up to $2,000 of employer or government pension and up to $15,000 of U.S. military pension for 2027, $20,000 for 2028 and $25,000 from 2029, up from $12,500; and a person 60 or older the greater of up to $12,500 of pension or eligible retirement income and the same military amount, where before a military pension counted only inside the $12,500. The limits apply to each spouse receiving a military pension. The figures enacted for 2027, 2028 and 2029 (params/state/data/enacted2027.ts to enacted2029.ts) carry both limbs, and the engine applies them to a pension the plan marks as U.S. military retirement. The same act adds a domicile test for the whole subtraction at 60 or older: three years of Delaware domicile, or five for a person domiciled from 2027. The plan holds no domicile history, so the engine assumes the test is met, which understates Delaware tax for a retiree who moved in recently; the act names no taxable year for the test, so whether it reaches 2026 is unresolved. Settled for the military limbs; the domicile test and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:DE',
+    authority: [{
+      kind: 'statute',
+      citation: '30 Del. C. §1106(b)(3)c. (S.B. 219, 85 Del. Laws c. 426)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'c. For the taxable year beginning on January 1, 2027: 1. For persons under age 60, the greater of: A. Amounts received, not to exceed $2,000, as pensions from employers, the United States, this State, or any subdivision of this State; or B. Amounts received, not to exceed $15,000, as a United States military pension. 2. For persons age 60 or older, the greater of: A. Amounts received, not to exceed $12,500, as pensions from employers, the United States, this State, or any subdivision of this State, or as eligible retirement income; or B. Amounts received, not to exceed $15,000, as a United States military pension.',
+    }, {
+      kind: 'statute',
+      citation: '30 Del. C. §1106(b)(3)d. and e.',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'd. For the taxable year beginning on January 1, 2028: … B. Amounts received, not to exceed $20,000, as a United States military pension. … e. For taxable years beginning on or after January 1, 2029: … B. Amounts received, not to exceed $25,000, as a United States military pension.',
+    }, {
+      kind: 'statute',
+      citation: '30 Del. C. §1106(b)(3)f.3. and f.4.',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'The dollar limits of the subtraction modifications specified in this paragraph (b)(3) apply individually to each spouse who is receiving a United States military pension on a joint return. … A person who is age 60 or older is eligible for the subtraction under this paragraph (b)(3) only if 1 of the following applies:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateNortheastExtras.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.DE',
+      'packages/engine/src/params/state/data/enacted2028.ts#states.DE',
+      'packages/engine/src/params/state/data/enacted2029.ts#states.DE',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction',
+    ],
+  },
+
   "de-early-distribution-gate": {
     "title": "Delaware early-distribution gate applies before pension exclusions",
     "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published.",

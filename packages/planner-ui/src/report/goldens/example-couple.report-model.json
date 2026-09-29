@@ -673,6 +673,12 @@
           "url": "https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500"
         },
         {
+          "figures": "$4,500 self-only / $9,000 family for 2027 (Rev. Proc. 2026-24, section 3.01(1)), used as published; later years grow from 2027 at the plan's inflation until the IRS publishes them. The $1,000 catch-up at 55+ is set by statute and not indexed.",
+          "label": "HSA contribution limits, 2027",
+          "publisher": "IRS",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf"
+        },
+        {
           "figures": "IRS Uniform Lifetime Table (Pub 590-B, 2022+); RMDs begin at age 73–75 per SECURE 2.0; QCD exclusion limit $111,000.",
           "label": "Required minimum distributions & QCD",
           "publisher": "IRS Publication 590-B",
@@ -757,10 +763,118 @@
           "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
         },
         {
-          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. California 2026: Form 540-ES estimated-tax worksheet $5,706/$11,412 standard deduction with retained 2025 Schedule X/Y bracket arrays; FTB directs the tax table through $100,000 while the engine uses continuous schedules at lower incomes (not FTB table oracle). Minnesota TY2026: $15,300/$30,600 standard deduction and DOR whole-dollar bands at 5.35%/6.80%/7.85%/9.85% represented by continuous breakpoints; §290.0132 subd. 26 simplified-subtraction thresholds are annually indexed but alternate maxima are not indexed — the pack still taxes federally taxable Social Security with zero subtraction. Delaware 2026: $3,250/$6,500 basic standard deduction plus $2,500 per age-65 person (30 Del. C. § 1108; 2026 PIT-EST), corrected from erroneous unenacted HB 89 figures; §1102(a)(14) 5.55% on $25,000–$60,000. Hawaii 2026: $8,000/$16,000 standard deduction under §235-2.4(a)(2)(F) for tax years beginning after 2025 through 2027 (later phases unimplemented). Louisiana 2026: La. R.S. 47:294 CPI-indexed standard deduction $12,875/$25,750 per LDR 2026 IT-540ESi (`la-ldr-it540es-2026-standard-deduction`); retirement cap CPI indexing remains unindexed. Oregon 2026: LRO Report #1-26 $2,910/$5,820 standard deduction and indexed breakpoints single $4,550/$11,400/$125,000 and joint $9,100/$22,800/$250,000 (`or-lro-2026-rate-schedule-and-standard-deduction`); continuous marginal rates do not replicate LRO printed whole-dollar base taxes; HOH/credits/unmodeled inputs unsupported. Rhode Island 2026: ADV 2025-22 $11,200/$22,400 standard deduction and uniform schedule at $82,050/$186,450 (3.75%/4.75%/5.99%). Utah 2026: 4.45% flat rate under enrolled S.B. 60 / §59-10-104; §59-10-1042 Social Security credit remains unmodeled. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges; MRS July 2026 Form 1040ES-ME (https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf) $49,824 pension-income maximum per person (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`) without SS/RRB offset, military separation, M-3 phaseout, or plan qualification. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table). Michigan 2026: ordinary qualifying combined public/private retirement ceiling $67,610 single/MFS / $135,220 MFJ (Guide 446 / RAB 2026-1); qualification, elections, pre-1946 public benefits and return-level allocation remain approximated. California, Louisiana, Minnesota, Ohio, and Oregon calendar-year records expire after 2026; later plan years may reuse the latest 2026 pack as a planning stand-in.",
+          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. California 2026: Form 540-ES estimated-tax worksheet $5,706/$11,412 standard deduction with retained 2025 Schedule X/Y bracket arrays; FTB directs the tax table through $100,000 while the engine uses continuous schedules at lower incomes (not FTB table oracle). Minnesota TY2026: $15,300/$30,600 standard deduction and DOR whole-dollar bands at 5.35%/6.80%/7.85%/9.85% represented by continuous breakpoints; §290.0132 subd. 26 simplified-subtraction thresholds are annually indexed but alternate maxima are not indexed — the pack still taxes federally taxable Social Security with zero subtraction. Delaware 2026: $3,250/$6,500 basic standard deduction plus $2,500 per age-65 person (30 Del. C. § 1108; 2026 PIT-EST), corrected from erroneous unenacted HB 89 figures; §1102(a)(14) 5.55% on $25,000–$60,000. Hawaii 2026: $8,000/$16,000 standard deduction under §235-2.4(a)(2)(F) for tax years beginning after 2025 through 2027; the later steps are in their own row. Louisiana 2026: La. R.S. 47:294 CPI-indexed standard deduction $12,875/$25,750 per LDR 2026 IT-540ESi (`la-ldr-it540es-2026-standard-deduction`); retirement cap CPI indexing remains unindexed. Oregon 2026: LRO Report #1-26 $2,910/$5,820 standard deduction and indexed breakpoints single $4,550/$11,400/$125,000 and joint $9,100/$22,800/$250,000 (`or-lro-2026-rate-schedule-and-standard-deduction`); continuous marginal rates do not replicate LRO printed whole-dollar base taxes; HOH/credits/unmodeled inputs unsupported. Rhode Island 2026: ADV 2025-22 $11,200/$22,400 standard deduction and uniform schedule at $82,050/$186,450 (3.75%/4.75%/5.99%). Utah 2026: 4.45% flat rate under enrolled S.B. 60 / §59-10-104; §59-10-1042 Social Security credit remains unmodeled. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges; MRS July 2026 Form 1040ES-ME (https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf) $49,824 pension-income maximum per person (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`) without SS/RRB offset, military separation, M-3 phaseout, or plan qualification. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table). Michigan 2026: ordinary qualifying combined public/private retirement ceiling $67,610 single/MFS / $135,220 MFJ (Guide 446 / RAB 2026-1); qualification, elections, pre-1946 public benefits and return-level allocation remain approximated. California, Louisiana, Minnesota, Ohio, and Oregon calendar-year records expire after 2026; later plan years may reuse the latest 2026 pack as a planning stand-in. Corrected for 2026 after the survey of every state (2026-09-28): Arkansas’s 3.7% top rate (2026 First Extraordinary Session); Maryland’s indexed $3,400/$6,850 deduction, 2% tax on capital gain above $350,000 of federal AGI and public-safety pension subtraction; Virginia’s personal exemptions; Rhode Island’s $50,000 pension modification and its Social Security modification; California’s military retirement exclusions; and the federal senior deduction in Arizona, Colorado and Idaho through 2028. Figures already enacted for 2027 and later are listed in their own rows; that list is what has been verified against the statutes, and the survey of all 51 jurisdictions, recorded state by state at the linked source index, covers the rest. Washington’s income tax from 2028 and the end of California’s top bands from 2031 are applied with votes pending on November 3, 2026 (Initiative 645, Proposition 3), and the District of Columbia’s own standard deduction for 2026 to 2029, in force by emergency act, is applied with the permanent act under congressional review to about November 20, 2026, in its own row. Changes that turn on a determination are not applied until it is made: Georgia and South Carolina 2027 rates await determinations due December 1, 2026 and February 15, 2027, so both use their 2026 rates; likewise Colorado’s TABOR cut (October 1, 2026), Minnesota (December 15, 2026), Oklahoma (December 2026 and February 2027), Michigan (January 2027), and Kansas, Missouri and West Virginia (not yet published). The plan models single and married filing jointly.",
           "label": "State income tax",
           "publisher": "State revenue departments / state legislatures (per-state source index)",
           "url": "https://github.com/RetireGolden/RetireGolden/tree/main/DOCS/domain/state-tax-research"
+        },
+        {
+          "figures": "2.9% flat for 2027 through 2029 (IC 6-3-2-1(b)(8)), then carried forward: each later cut of 0.05 point applies only on a budget agency determination and is not applied until one is made.",
+          "label": "Indiana income tax rate from 2027",
+          "publisher": "Indiana General Assembly (Indiana Code)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "figures": "No tax on the first $10,000; above it 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% from 2030 (Miss. Code Ann. 27-7-5(1)(b)(ii), 2025 H.B. 1). The further cuts from 2031, which depend on the reserve fund and a revenue test (H.B. 1, section 2), are not applied.",
+          "label": "Mississippi income tax rates from 2027",
+          "publisher": "Mississippi Legislature (2025 H.B. 1)",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "figures": "4.7% up to $65,000 single or married filing separately, $97,500 head of household and $130,000 joint, then 5.4%; long-term capital gains 3% / 4.1% at the same breaks (MCA 15-30-2103, effective January 1, 2027). The breaks are indexed from 2028; the 2027 breaks are used until the department publishes them.",
+          "label": "Montana income tax brackets from 2027",
+          "publisher": "Montana Legislature (Montana Code Annotated)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "figures": "2.46%, 3.51% and 3.99% (rates three and four) from 2027 (Neb. Rev. Stat. 77-2715.03(2)); the 2026 bracket amounts are used until the Tax Commissioner publishes the indexed 2027 schedule.",
+          "label": "Nebraska income tax rates from 2027",
+          "publisher": "Nebraska Legislature (Nebraska Revised Statutes)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03"
+        },
+        {
+          "figures": "3.49% for 2027 through 2029, 3.24% for 2030 through 2032 and 2.99% after 2032 (Session Law 2026-41, section 44.1(a), rewriting G.S. 105-153.7(a)). The further cuts from 2035, which depend on General Fund revenue, are not applied.",
+          "label": "North Carolina income tax rates from 2027",
+          "publisher": "North Carolina General Assembly (Session Law 2026-41)",
+          "url": "https://www.ncleg.gov/EnactedLegislation/SessionLaws/HTML/2025-2026/SL2026-41.html"
+        },
+        {
+          "figures": "The Act 24 tables from 2027 (Act 24, SLH 2026, amending HRS 235-51): 2.5% and 5% in the second and third bands and 13% above $500,000 single, $1,000,000 joint and $750,000 head of household, with wider low bands again from 2029. Standard deduction $9,000 / $18,000 from 2028, $10,000 / $20,000 from 2030 and $12,000 / $24,000 from 2031 (HRS 235-2.4(a)(2)(G)-(I)).",
+          "label": "Hawaii income tax from 2027",
+          "publisher": "Hawaii State Legislature (Act 24, SLH 2026)",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "figures": "The five lowest rates 3.8%, 4.3%, 5.05%, 5.3% and 5.8% for 2027 through 2032, and 8.82% above $2,155,350 joint and $1,077,550 single from 2033 (Tax Law 601(a) and (c), paragraphs (viii) and (ix)).",
+          "label": "New York income tax rates from 2027",
+          "publisher": "New York State Senate (Consolidated Laws, Tax Law)",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "figures": "A surtax of 1% for 2027, 2% for 2028 and 3% from 2029 on Rhode Island taxable income over $1,000,000, held at $1,000,000 until the indexed threshold is published (44-30-2.6(c)(3)(A)(I)(2)), and the Social Security modification without its age test from 2027 (44-30-12(c)(8)(ii)), both added by 2026 H 7127 Sub A, Article 6.",
+          "label": "Rhode Island income tax from 2027",
+          "publisher": "Rhode Island General Assembly (2026 H 7127 Sub A)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "figures": "Standard deduction $9,200 / $18,400 for 2027, $9,300 / $18,600 for 2028 and 2029, and $3,000 / $6,000 from 2030 (Va. Code 58.1-322.03(1)(b)); personal exemptions of $930, plus $800 at 65, from 2026 (58.1-322.03(2)).",
+          "label": "Virginia standard deduction from 2027",
+          "publisher": "Virginia General Assembly (Code of Virginia)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "figures": "Retirement income exclusion $70,000 at 65 or older from 2027 (O.C.G.A. 48-7-27(a)(5)(A)(xiv), HB 463). HB 463’s rate cut and deduction steps wait on the December 1 determination and are not applied.",
+          "label": "Georgia retirement exclusion from 2027",
+          "publisher": "Office of the Governor of Georgia (HB 463, 2026 signed legislation)",
+          "url": "https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download"
+        },
+        {
+          "figures": "Military pension subtraction $15,000 for 2027, $20,000 for 2028 and $25,000 from 2029, under 60 and as a greater-of limb at 60 and over (30 Del. C. 1106(b)(3), S.B. 219).",
+          "label": "Delaware military pension subtraction from 2027",
+          "publisher": "Delaware General Assembly (Delaware Code)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "figures": "Basic exemption $1,000 from 2029, when the indexed amount of 35 ILCS 5/204(b)(7) ends; 2027 and 2028 stay at the 2026 amount until published.",
+          "label": "Illinois exemption from 2029",
+          "publisher": "Illinois General Assembly (Illinois Compiled Statutes)",
+          "url": "https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm"
+        },
+        {
+          "figures": "Standard deduction equal to the federal standard deduction from 2027, subject to Maine’s phase-out (36 M.R.S. 5124-C(1-D), P.L. 2025, c. 650).",
+          "label": "Maine standard deduction from 2027",
+          "publisher": "Maine Legislature (P.L. 2025, c. 650)",
+          "url": "https://legislature.maine.gov/legis/bills/getPDF.asp?paper=HP1491&item=37&snum=132"
+        },
+        {
+          "figures": "Public-safety retirement subtraction at 55 or older of $16,000 for 2026, $17,000 for 2027, $18,000 for 2028, $19,000 for 2029 and $20,000 from 2030 (Tax-General 10-207(mm), 2026 Md. Laws ch. 686), for a pension the plan marks as public-safety service.",
+          "label": "Maryland public-safety retirement subtraction",
+          "publisher": "Maryland General Assembly (2026 Md. Laws ch. 686)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf"
+        },
+        {
+          "figures": "The ORS 316.157 retirement income credit cannot be claimed for tax years from 2032 (Oregon Laws 2009, chapter 913, section 36, as amended in 2025).",
+          "label": "Oregon retirement income credit ends from 2032",
+          "publisher": "Oregon Legislature (Oregon Revised Statutes)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "figures": "The 10.3%, 11.3% and 12.3% bands end from 2031 (Cal. Const. art. XIII, sec. 36(f)(2)); Proposition 3 on the November 3, 2026 ballot would make them permanent, and this is revisited when it is decided. The military retirement and Survivor Benefit Plan exclusions of $20,000 each end from 2030 (RTC 17132.9, 17132.10).",
+          "label": "California top bands end from 2031",
+          "publisher": "California Legislature (California Constitution)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII"
+        },
+        {
+          "figures": "9.9% of federal AGI less long-term capital gains less a $1,000,000 deduction per individual or couple, from 2028 (ESSB 6346, chapter 238, Laws of 2026), the deduction indexed every second year from 2029 (section 316). Initiative 645 on the November 3, 2026 ballot would repeal it; this is revisited when it is decided.",
+          "label": "Washington income tax from 2028",
+          "publisher": "Washington State Legislature (ESSB 6346, chapter 238, Laws of 2026)",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "figures": "Basic standard deduction $15,000 single and $30,000 joint for 2026, plus the federal additional amount at 65, indexed from 2027 and rounded down to $50, and the federal standard deduction from 2030 (D.C. Code 47-1801.04(3A) and (44), D.C. Act 26-416, an emergency act in force from August 13, 2026 for no more than 90 days). The permanent act with the same text, D.C. Act 26-418, is under congressional review with a projected law date of about November 20, 2026; this is revisited then.",
+          "label": "District of Columbia standard deduction, 2026 to 2029",
+          "publisher": "Council of the District of Columbia (D.C. Act 26-416)",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
         }
       ]
     },

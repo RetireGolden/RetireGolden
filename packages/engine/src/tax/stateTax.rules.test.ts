@@ -1689,8 +1689,11 @@ function arkansasBandedTax(
     0,
   )
 }
+// The 2026 schedule as Act 1 of the 2026 First Extraordinary Session set it:
+// the published thresholds with the top rate at 3.7%, not the 3.9% the
+// department printed before the session.
 const AR_2026_PUBLISHED = [
-  [0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.9],
+  [0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.7],
 ] as const
 // 26-51-201(a)(3)(B)'s un-indexed schedule, which the pack carried until
 // 2026-08-05 and which Arkansas applies only to a filer above roughly $94,700.
@@ -1722,7 +1725,7 @@ describeRule('aca-26-51-201-published-indexed-rate-schedule', {
   it('would over-tax the same household on the schedule the pack used to carry', () => {
     // The defect this replaces, priced. Under 26-51-201(a)(3)(B) the first
     // 5,600 dollars are taxed at 2% instead of nothing and the three middle
-    // bands disappear, so an ordinary retiree pays about 335 dollars a year
+    // bands disappear, so an ordinary retiree pays about 377 dollars a year
     // Arkansas does not charge.
     const highIncomeSchedule = {
       ...pack('AR'),
@@ -1972,11 +1975,16 @@ describeRule('ars-43-1011-a-9-flat-rate', {
   })
 })
 
+// The filer below is 65 or older, so Arizona also subtracts the federal senior
+// deduction (ars-43-1022-35-federal-senior-deduction-subtraction): $6,000 less
+// 6% of the $45,000 of AGI above $75,000, $3,300 under either reading.
+const AZ_SENIOR_AT_AZ_INCOME = 6_000 - 0.06 * (AZ_INCOME - 75_000)
+
 describeRule('ars-43-1041-standard-deduction-published-amount', {
   readings: {
-    arizonasOwnPublishedAmount: azTax(AZ_INCOME - AZ_DEDUCTION_SINGLE),
+    arizonasOwnPublishedAmount: azTax(AZ_INCOME - AZ_DEDUCTION_SINGLE - AZ_SENIOR_AT_AZ_INCOME),
     federalFigureWithItsAgeSixtyFiveAddition:
-      azTax(AZ_INCOME - 16_100 - FEDERAL_AGE65_ADDITION.single),
+      azTax(AZ_INCOME - 16_100 - FEDERAL_AGE65_ADDITION.single - AZ_SENIOR_AT_AZ_INCOME),
   },
   accepted: 'arizonasOwnPublishedAmount',
 }, ({ accepted, readings }) => {
@@ -2569,7 +2577,10 @@ describeRule('mn-dor-2026-rate-schedule-and-standard-deduction', {
 const DC_SS_OTHER_INCOME = 90_000
 const DC_SS_BENEFITS = 40_000
 const DC_FEDERALLY_TAXABLE_SS = 0.85 * DC_SS_BENEFITS
-const DC_DEDUCTION_SINGLE = 16_100
+// D.C. Act 26-416's basic deduction for 2026, the law in force
+// (dc-code-47-1801-04-3a-standard-deduction-2026-2029); the raw figures carry it
+// without the federal addition at 65, which the annual resolver attaches.
+const DC_DEDUCTION_SINGLE = 15_000
 
 describeRule('dc-code-47-1803-03-federal-standard-and-ss', {
   readings: {
@@ -3390,7 +3401,8 @@ const mdSingleTax = (taxable: number) => bandedTax(
   ],
   taxable,
 )
-const MD_DEDUCTION = 3350
+// Tax-General 10-217(c): the $3,350 deduction indexed for 2026.
+const MD_DEDUCTION = 3400
 const MD_SS_OTHER = 90_000
 const MD_SS = 40_000
 const MD_SS_FEDERALLY_TAXABLE = 0.85 * MD_SS
@@ -4328,40 +4340,47 @@ describeRule('ri-dot-adv-2025-22-2026-deduction-and-rate-schedule', {
   })
 })
 
-describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
+describeRule('ri-gen-laws-44-30-12-c-8-c-9-2026-modifications', {
   readings: {
     sourceExcludesSocialSecurityBelowTheThreshold: 30_000 - 11_200,
-    packIncludesTheTaxableShareForEveryFiler: 36_900,
+    socialSecurityTaxedForEveryFiler: 36_900,
   },
   accepted: 'sourceExcludesSocialSecurityBelowTheThreshold',
-  produced: 'packIncludesTheTaxableShareForEveryFiler',
   note: 'Social Security AGI threshold limb',
-}, ({ accepted, produced }) => {
-  // Federal AGI is below RI's $80,000 single threshold, so the source removes
-  // the entire federally taxable Social Security amount; the pack still adds
-  // its computed 18,100 federal share (30,000 + 18,100 - 11,200 = 36,900)
-  // because `taxesSocialSecurity` is true.
+}, ({ accepted, readings }) => {
+  // Federal AGI is $48,100 (30,000 plus the 18,100 federal share of the
+  // benefits), below the $107,000 single limit, and the filer is past full
+  // retirement age, so the modification removes the whole federal share.
+  // Before it was modeled the engine taxed the share for every filer
+  // (30,000 + 18,100 - 11,200 = 36,900).
   const scenario = input({ state: 'RI', ordinaryIncome: 30_000, ssBenefits: 40_000, agesAlive: [70] })
 
-  it('pins the low-AGI age-qualified Social Security modification', () => {
+  it('subtracts the Social Security below the limit at full retirement age', () => {
     const taxable = computeStateTaxableIncome(pack('RI'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    expect(taxable).toBe(accepted)
+    expect(taxable).not.toBe(readings.socialSecurityTaxedForEveryFiler)
+  })
+
+  it('keeps the Social Security for a filer under full retirement age, and above the limit', () => {
+    expect(computeStateTaxableIncome(pack('RI'), { ...scenario, agesAlive: [66] })).toBe(readings.socialSecurityTaxedForEveryFiler)
+    // $120,000 of other income puts federal AGI above $107,000.
+    const above = input({ state: 'RI', ordinaryIncome: 120_000, ssBenefits: 40_000, agesAlive: [70] })
+    expect(computeStateTaxableIncome(pack('RI'), above)).toBe(120_000 + 40_000 * 0.85 - 11_200)
   })
 })
 
-describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
+describeRule('ri-gen-laws-44-30-12-c-8-c-9-2026-modifications', {
   readings: {
     sourceAllowsTheCurrentFiftyThousandDollarCeiling: 10_000 + 60_000 - 50_000 - 11_200,
-    packAppliesTheTwentyThousandDollarCeiling: 38_800,
+    preTwentyTwentyFiveTwentyThousandDollarCeiling: 38_800,
   },
   accepted: 'sourceAllowsTheCurrentFiftyThousandDollarCeiling',
-  produced: 'packAppliesTheTwentyThousandDollarCeiling',
   note: 'pension ceiling limb',
-}, ({ accepted, produced }) => {
-  // Federal AGI is $70,000, below the $80,000 single threshold, so the 2025+
-  // $50,000 source ceiling is reachable and differs from the pack's $20,000;
-  // the rejected pack reading is 70,000 - 20,000 - 11,200 = 38,800.
+}, ({ accepted, readings }) => {
+  // Federal AGI is $70,000, below the limit, so the $50,000 ceiling that
+  // applies from tax year 2025 is reachable. The engine carried the $20,000
+  // ceiling of 2023 and 2024 until the survey of 2026-09-28
+  // (70,000 - 20,000 - 11,200 = 38,800).
   const scenario = input({
     state: 'RI',
     ordinaryIncome: 70_000,
@@ -4369,37 +4388,50 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
     agesAlive: [70],
   })
 
-  it('pins the current pension ceiling rather than the stale pack cap', () => {
+  it('applies the $50,000 pension ceiling', () => {
     const taxable = computeStateTaxableIncome(pack('RI'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    expect(taxable).toBe(accepted)
+    expect(taxable).not.toBe(readings.preTwentyTwentyFiveTwentyThousandDollarCeiling)
   })
 })
 
+// Rhode Island 44-30-12(c)(9), 2026, single at 67 with a $60,000 pension:
+//   AGI $150,000 >= $107,000: no modification. 150,000 - 11,200 = 138,800;
+//     82,050 x 3.75% + 56,750 x 4.75% = 3,076.875 + 2,695.625 = 5,772.50
+//   the $50,000 cap without the AGI test: 88,800 -> 3,076.875 + 6,750 x 4.75%
+//     = 3,397.50 (and 4,822.50 at the earlier $20,000 cap)
+//   AGI $100,000 < $107,000: 100,000 - 50,000 - 11,200 = 38,800
+const RI_TAX = (taxable: number): number =>
+  Math.min(taxable, 82_050) * 0.0375 + Math.max(0, Math.min(taxable, 186_450) - 82_050) * 0.0475
 describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   readings: {
-    sourceDeniesThePensionModificationAboveTheAGIThreshold: 210_000 - 11_200,
-    packStillAppliesTheAgeSixtySevenCap: 178_800,
+    noModificationAtOrAboveTheLimit: { tax150k: RI_TAX(150_000 - 11_200), taxable210k: 210_000 - 11_200, taxable100k: 100_000 - 50_000 - 11_200 },
+    capWithoutTheAgiTest: { tax150k: RI_TAX(150_000 - 50_000 - 11_200), taxable210k: 210_000 - 50_000 - 11_200, taxable100k: 100_000 - 50_000 - 11_200 },
   },
-  accepted: 'sourceDeniesThePensionModificationAboveTheAGIThreshold',
-  produced: 'packStillAppliesTheAgeSixtySevenCap',
-  note: 'pension AGI-threshold limb',
-}, ({ accepted, produced }) => {
-  // The $210,000 ordinary total includes the $60,000 pension, so federal AGI
-  // is above RI's $80,000 threshold: the source allows no modification while
-  // the pack still subtracts its age-67 $20,000 cap (210,000 - 20,000 -
-  // 11,200 = 178,800).
-  const scenario = input({
-    state: 'RI',
-    ordinaryIncome: 210_000,
-    privateRetirementIncome: 60_000,
-    agesAlive: [70],
+  accepted: 'noModificationAtOrAboveTheLimit',
+  note: 'pension AGI-threshold limb and IRA exclusion',
+}, ({ accepted, readings }) => {
+  it('allows no pension modification at or above the Social Security modification limit', () => {
+    const at150k = input({ state: 'RI', ordinaryIncome: 150_000, privateRetirementIncome: 60_000, agesAlive: [67] })
+    expect(accepted.tax150k).toBeCloseTo(5_772.5, 6)
+    expect(computeStateTaxYearTotal(at150k)).toBeCloseTo(accepted.tax150k, 6)
+    expect(computeStateTaxYearTotal(at150k)).not.toBeCloseTo(readings.capWithoutTheAgiTest.tax150k, 6)
+    expect(computeStateTaxableIncome(pack('RI'), input({ state: 'RI', ordinaryIncome: 210_000, privateRetirementIncome: 60_000, agesAlive: [70] }))).toBe(accepted.taxable210k)
+    // Exactly at the limit is not less than it.
+    expect(computeStateTaxableIncome(pack('RI'), input({ state: 'RI', ordinaryIncome: 107_000, privateRetirementIncome: 60_000, agesAlive: [70] }))).toBe(107_000 - 11_200)
+    expect(computeStateTaxableIncome(pack('RI'), input({ state: 'RI', ordinaryIncome: 106_999, privateRetirementIncome: 60_000, agesAlive: [70] }))).toBe(106_999 - 50_000 - 11_200)
   })
 
-  it('pins the opposite direction when the pension AGI test disallows any modification', () => {
-    const taxable = computeStateTaxableIncome(pack('RI'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+  it('keeps the $50,000 modification below the limit, and leaves IRA distributions out of it', () => {
+    expect(computeStateTaxableIncome(pack('RI'), input({ state: 'RI', ordinaryIncome: 100_000, privateRetirementIncome: 60_000, agesAlive: [70] }))).toBe(accepted.taxable100k)
+    const year = input({ state: 'RI', ordinaryIncome: 100_000, agesAlive: [70] })
+    const row = (sourceKind: 'employerPlan' | 'ira') => ({
+      accountId: sourceKind, ownerPersonId: 'owner', sourceKind, federallyIncludedAmount: 60_000, grossDistribution: 60_000,
+      recipientAgeYears: 70, recipientAgeKnown: true, cause: 'ordinary' as const, earlyDistributionDisqualifier: 'false' as const,
+    })
+    const taxable = (rows: ReturnType<typeof row>[]) => computeStateTaxYearResult(year, { retirementDistributions: rows }).taxableIncome
+    expect(taxable([]) - taxable([row('employerPlan')])).toBe(50_000)
+    expect(taxable([]) - taxable([row('ira')])).toBe(0)
   })
 })
 
@@ -4480,7 +4512,9 @@ describeRule('vt-stat-32-5830e-social-security-inclusion', {
   })
 })
 
-const VA_STD_DED = 8_750
+// The $8,750 standard deduction plus, for these single filers aged 65, the
+// $930 personal exemption and the $800 aged exemption of 58.1-322.03(2).
+const VA_STD_DED = 8_750 + 930 + 800
 const VA_PENSION = 20_000
 const VA_SS_BENEFITS = 30_000
 // SS-adjusted FAGI limb: $56,000 total ordinary including $20,000 private
@@ -4524,14 +4558,16 @@ describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
     ordinaryIncome: 120_000,
     privateRetirementIncome: 20_000,
     agesAlive: [65],
+    peopleAged65Plus: 1,
   })
-  const wageOnly = input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [65] })
+  const wageOnly = input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [65], peopleAged65Plus: 1 })
   const socialSecurityAdjusted = input({
     state: 'VA',
     ordinaryIncome: VA_SS_ORDINARY,
     privateRetirementIncome: VA_PENSION,
     ssBenefits: VA_SS_BENEFITS,
     agesAlive: [65],
+    peopleAged65Plus: 1,
   })
 
   it('pins the high-income phase-out that the retirement-cap mapping misses', () => {

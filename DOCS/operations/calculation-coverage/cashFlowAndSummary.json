@@ -770,6 +770,80 @@
       }
     },
     {
+      "id": "hsa-contribution-limit-years",
+      "title": "HSA contribution limits by year",
+      "kind": "data",
+      "outputs": [],
+      "feeds": [
+        "year-result-contributions"
+      ],
+      "purpose": "Hold each year's HSA contributions to the self-only and family limits the IRS publishes for that year, and grow only the years after the latest published one.",
+      "statement": "params/hsaLimitYears.ts#hsaLimitsForYear returns the published IRC 223(b)(2) base limits for a calendar year: 4,400 self-only and 8,750 family for 2026 (Rev. Proc. 2025-19), and 4,500 and 9,000 for 2027 (Rev. Proc. 2026-24 section 3.01(1)). projection/simulate.ts#simulatePlan reads them for each year at a scale of exactly 1 when the year is published, so 2027 is read as published although its income tax figures are still projected from 2026. A year after the latest published one grows from that year at the plan inflation path, and a year before the earliest reads the earliest as published. projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch holds each owner's HSA contributions to that base (the family base halved between two spouses filing jointly) plus the flat 1,000 dollar age-55 catch-up, which is not scaled. Units: nominal USD per year. Rounding: none; the projected years do not reproduce the statute's rounding to a multiple of 50 dollars.",
+      "formula": {
+        "expression": "limit(Y) = base(Y) x g(Y) + catchUp; base(Y) = published block for Y, else the latest block before Y (or the earliest after it); g(Y) = 1 for a published Y and for Y before the earliest block, else inflation from the latest block year to Y",
+        "variables": [
+          {
+            "symbol": "Y",
+            "meaning": "Contribution year",
+            "unit": "year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "base(Y)",
+            "meaning": "Self-only amount, or the family amount (halved between two spouses filing jointly)",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "g(Y)",
+            "meaning": "Cumulative plan inflation from the latest published year to Y",
+            "unit": "ratio",
+            "domain": "positive; 1 for a published year"
+          },
+          {
+            "symbol": "catchUp",
+            "meaning": "IRC 223(b)(3)(B) additional amount at age 55 or older",
+            "unit": "usd/year",
+            "domain": "0 or 1,000"
+          }
+        ],
+        "timing": "once per projection year, when contributions are credited",
+        "rounding": "none"
+      },
+      "limits": [
+        "Years after the latest published limits (2028 and later today) are projected at the plan inflation path, not the C-CPI-U of section 1(f)(3), and without the rounding to a multiple of 50 dollars under section 223(g)(2)",
+        "The coverage tier, the monthly eligibility and Medicare entitlement are not modeled; irc-223-b-2-7-projection-coverage-proration-and-medicare carries those shortcuts",
+        "The 2027 high deductible health plan minimum deductibles (1,750 and 3,500) and out of pocket limits (8,700 and 17,400) in the same revenue procedure are not read by any calculation"
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/hsa-contribution-limit-years.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/hsa-contribution-limit-years.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/params/hsaLimitYears.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/params/hsaLimitYears.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "income-annuity-annual",
       "title": "Annual annuity income under the joint-survivor payout form",
       "kind": "model",

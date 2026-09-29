@@ -39,7 +39,7 @@ export function HouseholdSection() {
         <div className="form-grid">
           <SelectField
             label="Filing status"
-            help="Sets the federal tax brackets, deductions, and IRMAA tiers. Married filing jointly requires two people; the death year remains joint, then the survivor normally files single."
+            help="Sets the federal and state tax brackets, deductions, and IRMAA tiers. The plan files as single or married filing jointly only: head of household needs a dependent, which the plan does not collect, so no state's head-of-household figures are used, and the qualifying surviving spouse option below uses the joint figures. Married filing jointly requires two people; the death year remains joint, then the survivor normally files single."
             value={plan.household.filingStatus}
             options={[
               { value: 'single', label: 'Single' },

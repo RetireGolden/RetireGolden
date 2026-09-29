@@ -43,7 +43,7 @@ exclusion for the common private-pension/IRA retiree, this is mapped to
 - Zero-rate floor ($4,811 single / $9,622 MFJ) modeled as a 0% first bracket so brackets remain monotonic.
 - Characterized retirement facts apply the qualified-plan deduction only for named eligible systems and its age/disability, filing-status, and Social-Security conditions. Private plans, FERS, and unclassified public income do not qualify merely because a retirement amount is positive.
 - Idaho's capital-gains deduction (60% of net gain on qualifying Idaho real/tangible property) not modeled; `capitalGainsAsOrdinary: true` overstates tax for those gains.
-- Senior, grocery-credit, and tip/overtime deductions not modeled.
+- The federal senior deduction applies in Idaho for 2025 to 2028 by conformity (H 559, 2026) and is modeled from 2026-09-28 (`id-h559-2026-conformity-senior-deduction`); the grocery credit and tip/overtime deductions are not modeled.
 
 ## Citations
 - https://tax.idaho.gov/pressrelease/whats-new-for-2025-income-tax-returns/ — 5.3% rate for 2025, federal-conforming standard deduction, SS exempt.

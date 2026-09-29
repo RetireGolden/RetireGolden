@@ -746,18 +746,18 @@
           "year": 2059
         },
         {
-          "cash": 2698896,
+          "cash": 2699102,
           "equityComp": 0,
           "hsa": 0,
           "income": 411141,
           "roth": 613661,
-          "spendingPlusTax": 225256,
+          "spendingPlusTax": 225056,
           "taxable": 0,
           "traditional": 2009017,
           "year": 2060
         },
         {
-          "cash": 2649674,
+          "cash": 2649886,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -768,7 +768,7 @@
           "year": 2061
         },
         {
-          "cash": 2595316,
+          "cash": 2595536,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -779,7 +779,7 @@
           "year": 2062
         },
         {
-          "cash": 2535560,
+          "cash": 2535786,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -790,7 +790,7 @@
           "year": 2063
         },
         {
-          "cash": 2470130,
+          "cash": 2470362,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -801,7 +801,7 @@
           "year": 2064
         },
         {
-          "cash": 2398738,
+          "cash": 2398978,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -812,7 +812,7 @@
           "year": 2065
         },
         {
-          "cash": 2320878,
+          "cash": 2321124,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -823,7 +823,7 @@
           "year": 2066
         },
         {
-          "cash": 2236428,
+          "cash": 2236682,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -834,7 +834,7 @@
           "year": 2067
         },
         {
-          "cash": 2214798,
+          "cash": 2215060,
           "equityComp": 0,
           "hsa": 0,
           "income": 67704,
@@ -845,7 +845,7 @@
           "year": 2068
         },
         {
-          "cash": 2189747,
+          "cash": 2190017,
           "equityComp": 0,
           "hsa": 0,
           "income": 69396,
@@ -856,7 +856,7 @@
           "year": 2069
         },
         {
-          "cash": 2161078,
+          "cash": 2161356,
           "equityComp": 0,
           "hsa": 0,
           "income": 71131,
@@ -867,7 +867,7 @@
           "year": 2070
         },
         {
-          "cash": 2128585,
+          "cash": 2128871,
           "equityComp": 0,
           "hsa": 0,
           "income": 72910,
@@ -878,7 +878,7 @@
           "year": 2071
         },
         {
-          "cash": 2092051,
+          "cash": 2092346,
           "equityComp": 0,
           "hsa": 0,
           "income": 74732,
@@ -889,7 +889,7 @@
           "year": 2072
         },
         {
-          "cash": 2051251,
+          "cash": 2051555,
           "equityComp": 0,
           "hsa": 0,
           "income": 76601,
@@ -900,7 +900,7 @@
           "year": 2073
         },
         {
-          "cash": 2005948,
+          "cash": 2006260,
           "equityComp": 0,
           "hsa": 0,
           "income": 78516,
@@ -911,7 +911,7 @@
           "year": 2074
         },
         {
-          "cash": 1955892,
+          "cash": 1956214,
           "equityComp": 0,
           "hsa": 0,
           "income": 80479,
@@ -922,7 +922,7 @@
           "year": 2075
         },
         {
-          "cash": 2081449,
+          "cash": 2081781,
           "equityComp": 0,
           "hsa": 0,
           "income": 82491,
@@ -933,7 +933,7 @@
           "year": 2076
         },
         {
-          "cash": 2218007,
+          "cash": 2218348,
           "equityComp": 0,
           "hsa": 0,
           "income": 84553,
@@ -944,7 +944,7 @@
           "year": 2077
         },
         {
-          "cash": 2365642,
+          "cash": 2365993,
           "equityComp": 0,
           "hsa": 0,
           "income": 86667,
@@ -955,7 +955,7 @@
           "year": 2078
         },
         {
-          "cash": 2525999,
+          "cash": 2526362,
           "equityComp": 0,
           "hsa": 0,
           "income": 88833,
@@ -966,7 +966,7 @@
           "year": 2079
         },
         {
-          "cash": 2700061,
+          "cash": 2700434,
           "equityComp": 0,
           "hsa": 0,
           "income": 91054,
@@ -977,7 +977,7 @@
           "year": 2080
         },
         {
-          "cash": 2888871,
+          "cash": 2889256,
           "equityComp": 0,
           "hsa": 0,
           "income": 93331,
@@ -988,7 +988,7 @@
           "year": 2081
         },
         {
-          "cash": 3092346,
+          "cash": 3092742,
           "equityComp": 0,
           "hsa": 0,
           "income": 95664,
@@ -999,7 +999,7 @@
           "year": 2082
         },
         {
-          "cash": 3312750,
+          "cash": 3313158,
           "equityComp": 0,
           "hsa": 0,
           "income": 98055,
@@ -1010,7 +1010,7 @@
           "year": 2083
         },
         {
-          "cash": 3549851,
+          "cash": 3550271,
           "equityComp": 0,
           "hsa": 0,
           "income": 100507,
@@ -1021,78 +1021,78 @@
           "year": 2084
         },
         {
-          "cash": 3806172,
+          "cash": 3806736,
           "equityComp": 0,
           "hsa": 0,
           "income": 103019,
           "roth": 3330602,
-          "spendingPlusTax": 347530,
+          "spendingPlusTax": 347402,
           "taxable": 0,
           "traditional": 6592871,
           "year": 2085
         },
         {
-          "cash": 4081154,
+          "cash": 4082095,
           "equityComp": 0,
           "hsa": 0,
           "income": 105595,
           "roth": 3563744,
-          "spendingPlusTax": 361535,
+          "spendingPlusTax": 361187,
           "taxable": 0,
           "traditional": 6613473,
           "year": 2086
         },
         {
-          "cash": 4375865,
+          "cash": 4377430,
           "equityComp": 0,
           "hsa": 0,
           "income": 108235,
           "roth": 3813206,
-          "spendingPlusTax": 376074,
+          "spendingPlusTax": 375495,
           "taxable": 0,
           "traditional": 6610863,
           "year": 2087
         },
         {
-          "cash": 4691308,
+          "cash": 4693842,
           "equityComp": 0,
           "hsa": 0,
           "income": 110941,
           "roth": 4080131,
-          "spendingPlusTax": 391225,
+          "spendingPlusTax": 390330,
           "taxable": 0,
           "traditional": 6582399,
           "year": 2088
         },
         {
-          "cash": 5007039,
+          "cash": 5011012,
           "equityComp": 0,
           "hsa": 0,
           "income": 113714,
           "roth": 4365740,
-          "spendingPlusTax": 424286,
+          "spendingPlusTax": 422963,
           "taxable": 0,
           "traditional": 6529067,
           "year": 2089
         },
         {
-          "cash": 5343825,
+          "cash": 5349808,
           "equityComp": 0,
           "hsa": 0,
           "income": 116557,
           "roth": 4671342,
-          "spendingPlusTax": 441546,
+          "spendingPlusTax": 439710,
           "taxable": 0,
           "traditional": 6444544,
           "year": 2090
         },
         {
-          "cash": 5699509,
+          "cash": 5708018,
           "equityComp": 0,
           "hsa": 0,
           "income": 119471,
           "roth": 4998335,
-          "spendingPlusTax": 458034,
+          "spendingPlusTax": 455755,
           "taxable": 0,
           "traditional": 6330444,
           "year": 2091
@@ -1108,14 +1108,14 @@
       "averagePreRetirementSavingsRatePct": 36.5,
       "coastFireNumber": 399420,
       "depletionYear": null,
-      "endingAfterTaxEstate": 15445677,
-      "endingInvestable": 17028288,
-      "endingNetWorth": 17028288,
+      "endingAfterTaxEstate": 15454186,
+      "endingInvestable": 17036797,
+      "endingNetWorth": 17036797,
       "fiAge": 52,
       "fiNumber": 1331502,
       "fiYear": 2053,
       "lifetimeRothConversions": 0,
-      "lifetimeTaxesAndPenalties": 2806009
+      "lifetimeTaxesAndPenalties": 2798421
     },
     "household": {
       "filingStatus": "single",
@@ -1192,6 +1192,12 @@
           "label": "Contribution limits",
           "publisher": "IRS",
           "url": "https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500"
+        },
+        {
+          "figures": "$4,500 self-only / $9,000 family for 2027 (Rev. Proc. 2026-24, section 3.01(1)), used as published; later years grow from 2027 at the plan's inflation until the IRS publishes them. The $1,000 catch-up at 55+ is set by statute and not indexed.",
+          "label": "HSA contribution limits, 2027",
+          "publisher": "IRS",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf"
         },
         {
           "figures": "IRS Uniform Lifetime Table (Pub 590-B, 2022+); RMDs begin at age 73–75 per SECURE 2.0; QCD exclusion limit $111,000.",
@@ -1278,10 +1284,118 @@
           "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
         },
         {
-          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. California 2026: Form 540-ES estimated-tax worksheet $5,706/$11,412 standard deduction with retained 2025 Schedule X/Y bracket arrays; FTB directs the tax table through $100,000 while the engine uses continuous schedules at lower incomes (not FTB table oracle). Minnesota TY2026: $15,300/$30,600 standard deduction and DOR whole-dollar bands at 5.35%/6.80%/7.85%/9.85% represented by continuous breakpoints; §290.0132 subd. 26 simplified-subtraction thresholds are annually indexed but alternate maxima are not indexed — the pack still taxes federally taxable Social Security with zero subtraction. Delaware 2026: $3,250/$6,500 basic standard deduction plus $2,500 per age-65 person (30 Del. C. § 1108; 2026 PIT-EST), corrected from erroneous unenacted HB 89 figures; §1102(a)(14) 5.55% on $25,000–$60,000. Hawaii 2026: $8,000/$16,000 standard deduction under §235-2.4(a)(2)(F) for tax years beginning after 2025 through 2027 (later phases unimplemented). Louisiana 2026: La. R.S. 47:294 CPI-indexed standard deduction $12,875/$25,750 per LDR 2026 IT-540ESi (`la-ldr-it540es-2026-standard-deduction`); retirement cap CPI indexing remains unindexed. Oregon 2026: LRO Report #1-26 $2,910/$5,820 standard deduction and indexed breakpoints single $4,550/$11,400/$125,000 and joint $9,100/$22,800/$250,000 (`or-lro-2026-rate-schedule-and-standard-deduction`); continuous marginal rates do not replicate LRO printed whole-dollar base taxes; HOH/credits/unmodeled inputs unsupported. Rhode Island 2026: ADV 2025-22 $11,200/$22,400 standard deduction and uniform schedule at $82,050/$186,450 (3.75%/4.75%/5.99%). Utah 2026: 4.45% flat rate under enrolled S.B. 60 / §59-10-104; §59-10-1042 Social Security credit remains unmodeled. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges; MRS July 2026 Form 1040ES-ME (https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf) $49,824 pension-income maximum per person (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`) without SS/RRB offset, military separation, M-3 phaseout, or plan qualification. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table). Michigan 2026: ordinary qualifying combined public/private retirement ceiling $67,610 single/MFS / $135,220 MFJ (Guide 446 / RAB 2026-1); qualification, elections, pre-1946 public benefits and return-level allocation remain approximated. California, Louisiana, Minnesota, Ohio, and Oregon calendar-year records expire after 2026; later plan years may reuse the latest 2026 pack as a planning stand-in.",
+          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. California 2026: Form 540-ES estimated-tax worksheet $5,706/$11,412 standard deduction with retained 2025 Schedule X/Y bracket arrays; FTB directs the tax table through $100,000 while the engine uses continuous schedules at lower incomes (not FTB table oracle). Minnesota TY2026: $15,300/$30,600 standard deduction and DOR whole-dollar bands at 5.35%/6.80%/7.85%/9.85% represented by continuous breakpoints; §290.0132 subd. 26 simplified-subtraction thresholds are annually indexed but alternate maxima are not indexed — the pack still taxes federally taxable Social Security with zero subtraction. Delaware 2026: $3,250/$6,500 basic standard deduction plus $2,500 per age-65 person (30 Del. C. § 1108; 2026 PIT-EST), corrected from erroneous unenacted HB 89 figures; §1102(a)(14) 5.55% on $25,000–$60,000. Hawaii 2026: $8,000/$16,000 standard deduction under §235-2.4(a)(2)(F) for tax years beginning after 2025 through 2027; the later steps are in their own row. Louisiana 2026: La. R.S. 47:294 CPI-indexed standard deduction $12,875/$25,750 per LDR 2026 IT-540ESi (`la-ldr-it540es-2026-standard-deduction`); retirement cap CPI indexing remains unindexed. Oregon 2026: LRO Report #1-26 $2,910/$5,820 standard deduction and indexed breakpoints single $4,550/$11,400/$125,000 and joint $9,100/$22,800/$250,000 (`or-lro-2026-rate-schedule-and-standard-deduction`); continuous marginal rates do not replicate LRO printed whole-dollar base taxes; HOH/credits/unmodeled inputs unsupported. Rhode Island 2026: ADV 2025-22 $11,200/$22,400 standard deduction and uniform schedule at $82,050/$186,450 (3.75%/4.75%/5.99%). Utah 2026: 4.45% flat rate under enrolled S.B. 60 / §59-10-104; §59-10-1042 Social Security credit remains unmodeled. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges; MRS July 2026 Form 1040ES-ME (https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf) $49,824 pension-income maximum per person (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`) without SS/RRB offset, military separation, M-3 phaseout, or plan qualification. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table). Michigan 2026: ordinary qualifying combined public/private retirement ceiling $67,610 single/MFS / $135,220 MFJ (Guide 446 / RAB 2026-1); qualification, elections, pre-1946 public benefits and return-level allocation remain approximated. California, Louisiana, Minnesota, Ohio, and Oregon calendar-year records expire after 2026; later plan years may reuse the latest 2026 pack as a planning stand-in. Corrected for 2026 after the survey of every state (2026-09-28): Arkansas’s 3.7% top rate (2026 First Extraordinary Session); Maryland’s indexed $3,400/$6,850 deduction, 2% tax on capital gain above $350,000 of federal AGI and public-safety pension subtraction; Virginia’s personal exemptions; Rhode Island’s $50,000 pension modification and its Social Security modification; California’s military retirement exclusions; and the federal senior deduction in Arizona, Colorado and Idaho through 2028. Figures already enacted for 2027 and later are listed in their own rows; that list is what has been verified against the statutes, and the survey of all 51 jurisdictions, recorded state by state at the linked source index, covers the rest. Washington’s income tax from 2028 and the end of California’s top bands from 2031 are applied with votes pending on November 3, 2026 (Initiative 645, Proposition 3), and the District of Columbia’s own standard deduction for 2026 to 2029, in force by emergency act, is applied with the permanent act under congressional review to about November 20, 2026, in its own row. Changes that turn on a determination are not applied until it is made: Georgia and South Carolina 2027 rates await determinations due December 1, 2026 and February 15, 2027, so both use their 2026 rates; likewise Colorado’s TABOR cut (October 1, 2026), Minnesota (December 15, 2026), Oklahoma (December 2026 and February 2027), Michigan (January 2027), and Kansas, Missouri and West Virginia (not yet published). The plan models single and married filing jointly.",
           "label": "State income tax",
           "publisher": "State revenue departments / state legislatures (per-state source index)",
           "url": "https://github.com/RetireGolden/RetireGolden/tree/main/DOCS/domain/state-tax-research"
+        },
+        {
+          "figures": "2.9% flat for 2027 through 2029 (IC 6-3-2-1(b)(8)), then carried forward: each later cut of 0.05 point applies only on a budget agency determination and is not applied until one is made.",
+          "label": "Indiana income tax rate from 2027",
+          "publisher": "Indiana General Assembly (Indiana Code)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "figures": "No tax on the first $10,000; above it 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% from 2030 (Miss. Code Ann. 27-7-5(1)(b)(ii), 2025 H.B. 1). The further cuts from 2031, which depend on the reserve fund and a revenue test (H.B. 1, section 2), are not applied.",
+          "label": "Mississippi income tax rates from 2027",
+          "publisher": "Mississippi Legislature (2025 H.B. 1)",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "figures": "4.7% up to $65,000 single or married filing separately, $97,500 head of household and $130,000 joint, then 5.4%; long-term capital gains 3% / 4.1% at the same breaks (MCA 15-30-2103, effective January 1, 2027). The breaks are indexed from 2028; the 2027 breaks are used until the department publishes them.",
+          "label": "Montana income tax brackets from 2027",
+          "publisher": "Montana Legislature (Montana Code Annotated)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "figures": "2.46%, 3.51% and 3.99% (rates three and four) from 2027 (Neb. Rev. Stat. 77-2715.03(2)); the 2026 bracket amounts are used until the Tax Commissioner publishes the indexed 2027 schedule.",
+          "label": "Nebraska income tax rates from 2027",
+          "publisher": "Nebraska Legislature (Nebraska Revised Statutes)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03"
+        },
+        {
+          "figures": "3.49% for 2027 through 2029, 3.24% for 2030 through 2032 and 2.99% after 2032 (Session Law 2026-41, section 44.1(a), rewriting G.S. 105-153.7(a)). The further cuts from 2035, which depend on General Fund revenue, are not applied.",
+          "label": "North Carolina income tax rates from 2027",
+          "publisher": "North Carolina General Assembly (Session Law 2026-41)",
+          "url": "https://www.ncleg.gov/EnactedLegislation/SessionLaws/HTML/2025-2026/SL2026-41.html"
+        },
+        {
+          "figures": "The Act 24 tables from 2027 (Act 24, SLH 2026, amending HRS 235-51): 2.5% and 5% in the second and third bands and 13% above $500,000 single, $1,000,000 joint and $750,000 head of household, with wider low bands again from 2029. Standard deduction $9,000 / $18,000 from 2028, $10,000 / $20,000 from 2030 and $12,000 / $24,000 from 2031 (HRS 235-2.4(a)(2)(G)-(I)).",
+          "label": "Hawaii income tax from 2027",
+          "publisher": "Hawaii State Legislature (Act 24, SLH 2026)",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "figures": "The five lowest rates 3.8%, 4.3%, 5.05%, 5.3% and 5.8% for 2027 through 2032, and 8.82% above $2,155,350 joint and $1,077,550 single from 2033 (Tax Law 601(a) and (c), paragraphs (viii) and (ix)).",
+          "label": "New York income tax rates from 2027",
+          "publisher": "New York State Senate (Consolidated Laws, Tax Law)",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "figures": "A surtax of 1% for 2027, 2% for 2028 and 3% from 2029 on Rhode Island taxable income over $1,000,000, held at $1,000,000 until the indexed threshold is published (44-30-2.6(c)(3)(A)(I)(2)), and the Social Security modification without its age test from 2027 (44-30-12(c)(8)(ii)), both added by 2026 H 7127 Sub A, Article 6.",
+          "label": "Rhode Island income tax from 2027",
+          "publisher": "Rhode Island General Assembly (2026 H 7127 Sub A)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "figures": "Standard deduction $9,200 / $18,400 for 2027, $9,300 / $18,600 for 2028 and 2029, and $3,000 / $6,000 from 2030 (Va. Code 58.1-322.03(1)(b)); personal exemptions of $930, plus $800 at 65, from 2026 (58.1-322.03(2)).",
+          "label": "Virginia standard deduction from 2027",
+          "publisher": "Virginia General Assembly (Code of Virginia)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "figures": "Retirement income exclusion $70,000 at 65 or older from 2027 (O.C.G.A. 48-7-27(a)(5)(A)(xiv), HB 463). HB 463’s rate cut and deduction steps wait on the December 1 determination and are not applied.",
+          "label": "Georgia retirement exclusion from 2027",
+          "publisher": "Office of the Governor of Georgia (HB 463, 2026 signed legislation)",
+          "url": "https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download"
+        },
+        {
+          "figures": "Military pension subtraction $15,000 for 2027, $20,000 for 2028 and $25,000 from 2029, under 60 and as a greater-of limb at 60 and over (30 Del. C. 1106(b)(3), S.B. 219).",
+          "label": "Delaware military pension subtraction from 2027",
+          "publisher": "Delaware General Assembly (Delaware Code)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "figures": "Basic exemption $1,000 from 2029, when the indexed amount of 35 ILCS 5/204(b)(7) ends; 2027 and 2028 stay at the 2026 amount until published.",
+          "label": "Illinois exemption from 2029",
+          "publisher": "Illinois General Assembly (Illinois Compiled Statutes)",
+          "url": "https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm"
+        },
+        {
+          "figures": "Standard deduction equal to the federal standard deduction from 2027, subject to Maine’s phase-out (36 M.R.S. 5124-C(1-D), P.L. 2025, c. 650).",
+          "label": "Maine standard deduction from 2027",
+          "publisher": "Maine Legislature (P.L. 2025, c. 650)",
+          "url": "https://legislature.maine.gov/legis/bills/getPDF.asp?paper=HP1491&item=37&snum=132"
+        },
+        {
+          "figures": "Public-safety retirement subtraction at 55 or older of $16,000 for 2026, $17,000 for 2027, $18,000 for 2028, $19,000 for 2029 and $20,000 from 2030 (Tax-General 10-207(mm), 2026 Md. Laws ch. 686), for a pension the plan marks as public-safety service.",
+          "label": "Maryland public-safety retirement subtraction",
+          "publisher": "Maryland General Assembly (2026 Md. Laws ch. 686)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf"
+        },
+        {
+          "figures": "The ORS 316.157 retirement income credit cannot be claimed for tax years from 2032 (Oregon Laws 2009, chapter 913, section 36, as amended in 2025).",
+          "label": "Oregon retirement income credit ends from 2032",
+          "publisher": "Oregon Legislature (Oregon Revised Statutes)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "figures": "The 10.3%, 11.3% and 12.3% bands end from 2031 (Cal. Const. art. XIII, sec. 36(f)(2)); Proposition 3 on the November 3, 2026 ballot would make them permanent, and this is revisited when it is decided. The military retirement and Survivor Benefit Plan exclusions of $20,000 each end from 2030 (RTC 17132.9, 17132.10).",
+          "label": "California top bands end from 2031",
+          "publisher": "California Legislature (California Constitution)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII"
+        },
+        {
+          "figures": "9.9% of federal AGI less long-term capital gains less a $1,000,000 deduction per individual or couple, from 2028 (ESSB 6346, chapter 238, Laws of 2026), the deduction indexed every second year from 2029 (section 316). Initiative 645 on the November 3, 2026 ballot would repeal it; this is revisited when it is decided.",
+          "label": "Washington income tax from 2028",
+          "publisher": "Washington State Legislature (ESSB 6346, chapter 238, Laws of 2026)",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "figures": "Basic standard deduction $15,000 single and $30,000 joint for 2026, plus the federal additional amount at 65, indexed from 2027 and rounded down to $50, and the federal standard deduction from 2030 (D.C. Code 47-1801.04(3A) and (44), D.C. Act 26-416, an emergency act in force from August 13, 2026 for no more than 90 days). The permanent act with the same text, D.C. Act 26-418, is under congressional review with a projected law date of about November 20, 2026; this is revisited then.",
+          "label": "District of Columbia standard deduction, 2026 to 2029",
+          "publisher": "Council of the District of Columbia (D.C. Act 26-416)",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
         }
       ]
     },
@@ -1733,12 +1847,12 @@
           "contributions": 20838,
           "expenses": 122948,
           "income": 411141,
-          "investable": 5321573,
+          "investable": 5321780,
           "magi": 397249,
-          "netWorth": 5321573,
+          "netWorth": 5321780,
           "rmd": 0,
           "rothConversion": 0,
-          "taxAndPenalties": 102308,
+          "taxAndPenalties": 102107,
           "withdrawals": 0,
           "year": 2060
         },
@@ -1746,9 +1860,9 @@
           "contributions": 0,
           "expenses": 126397,
           "income": 0,
-          "investable": 5455939,
+          "investable": 5456151,
           "magi": 0,
-          "netWorth": 5455939,
+          "netWorth": 5456151,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1759,9 +1873,9 @@
           "contributions": 0,
           "expenses": 129949,
           "income": 0,
-          "investable": 5598020,
+          "investable": 5598239,
           "magi": 0,
-          "netWorth": 5598020,
+          "netWorth": 5598239,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1772,9 +1886,9 @@
           "contributions": 0,
           "expenses": 133608,
           "income": 0,
-          "investable": 5748453,
+          "investable": 5748679,
           "magi": 0,
-          "netWorth": 5748453,
+          "netWorth": 5748679,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1785,9 +1899,9 @@
           "contributions": 0,
           "expenses": 137376,
           "income": 0,
-          "investable": 5907925,
+          "investable": 5908158,
           "magi": 0,
-          "netWorth": 5907925,
+          "netWorth": 5908158,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1798,9 +1912,9 @@
           "contributions": 0,
           "expenses": 141258,
           "income": 0,
-          "investable": 6077179,
+          "investable": 6077419,
           "magi": 0,
-          "netWorth": 6077179,
+          "netWorth": 6077419,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1811,9 +1925,9 @@
           "contributions": 0,
           "expenses": 145459,
           "income": 0,
-          "investable": 6256809,
+          "investable": 6257056,
           "magi": 0,
-          "netWorth": 6256809,
+          "netWorth": 6257056,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1824,9 +1938,9 @@
           "contributions": 0,
           "expenses": 149588,
           "income": 0,
-          "investable": 6447875,
+          "investable": 6448129,
           "magi": 0,
-          "netWorth": 6447875,
+          "netWorth": 6448129,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1837,9 +1951,9 @@
           "contributions": 0,
           "expenses": 153843,
           "income": 67704,
-          "investable": 6721046,
+          "investable": 6721308,
           "magi": 4426,
-          "netWorth": 6721046,
+          "netWorth": 6721308,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1850,9 +1964,9 @@
           "contributions": 0,
           "expenses": 158227,
           "income": 69396,
-          "investable": 7011433,
+          "investable": 7011702,
           "magi": 5094,
-          "netWorth": 7011433,
+          "netWorth": 7011702,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1863,9 +1977,9 @@
           "contributions": 0,
           "expenses": 162744,
           "income": 71131,
-          "investable": 7320282,
+          "investable": 7320559,
           "magi": 5831,
-          "netWorth": 7320282,
+          "netWorth": 7320559,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1876,9 +1990,9 @@
           "contributions": 0,
           "expenses": 167401,
           "income": 72910,
-          "investable": 7648933,
+          "investable": 7649219,
           "magi": 6587,
-          "netWorth": 7648933,
+          "netWorth": 7649219,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1889,9 +2003,9 @@
           "contributions": 0,
           "expenses": 172199,
           "income": 74732,
-          "investable": 7998823,
+          "investable": 7999118,
           "magi": 7361,
-          "netWorth": 7998823,
+          "netWorth": 7999118,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1902,9 +2016,9 @@
           "contributions": 0,
           "expenses": 177146,
           "income": 76601,
-          "investable": 8371498,
+          "investable": 8371801,
           "magi": 8155,
-          "netWorth": 8371498,
+          "netWorth": 8371801,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1915,9 +2029,9 @@
           "contributions": 0,
           "expenses": 182245,
           "income": 78516,
-          "investable": 8768611,
+          "investable": 8768924,
           "magi": 8969,
-          "netWorth": 8768611,
+          "netWorth": 8768924,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1928,9 +2042,9 @@
           "contributions": 0,
           "expenses": 187502,
           "income": 80479,
-          "investable": 9191942,
+          "investable": 9192264,
           "magi": 9803,
-          "netWorth": 9191942,
+          "netWorth": 9192264,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1941,9 +2055,9 @@
           "contributions": 0,
           "expenses": 192921,
           "income": 82491,
-          "investable": 9582927,
+          "investable": 9583259,
           "magi": 295440,
-          "netWorth": 9582927,
+          "netWorth": 9583259,
           "rmd": 225323,
           "rothConversion": 0,
           "taxAndPenalties": 49960,
@@ -1954,9 +2068,9 @@
           "contributions": 0,
           "expenses": 198509,
           "income": 84553,
-          "investable": 9987704,
+          "investable": 9988046,
           "magi": 311948,
-          "netWorth": 9987704,
+          "netWorth": 9988046,
           "rmd": 240078,
           "rothConversion": 0,
           "taxAndPenalties": 54167,
@@ -1967,9 +2081,9 @@
           "contributions": 0,
           "expenses": 204272,
           "income": 86667,
-          "investable": 10406754,
+          "investable": 10407105,
           "magi": 328307,
-          "netWorth": 10406754,
+          "netWorth": 10407105,
           "rmd": 254640,
           "rothConversion": 0,
           "taxAndPenalties": 58302,
@@ -1980,9 +2094,9 @@
           "contributions": 0,
           "expenses": 210214,
           "income": 88833,
-          "investable": 10839777,
+          "investable": 10840139,
           "magi": 346735,
-          "netWorth": 10839777,
+          "netWorth": 10840139,
           "rmd": 271226,
           "rothConversion": 0,
           "taxAndPenalties": 63061,
@@ -1993,9 +2107,9 @@
           "contributions": 0,
           "expenses": 216342,
           "income": 91054,
-          "investable": 11286748,
+          "investable": 11287121,
           "magi": 366233,
-          "netWorth": 11286748,
+          "netWorth": 11287121,
           "rmd": 288837,
           "rothConversion": 0,
           "taxAndPenalties": 68130,
@@ -2006,9 +2120,9 @@
           "contributions": 0,
           "expenses": 222663,
           "income": 93331,
-          "investable": 11747574,
+          "investable": 11747958,
           "magi": 386856,
-          "netWorth": 11747574,
+          "netWorth": 11747958,
           "rmd": 307525,
           "rothConversion": 0,
           "taxAndPenalties": 73525,
@@ -2019,9 +2133,9 @@
           "contributions": 0,
           "expenses": 229183,
           "income": 95664,
-          "investable": 12222701,
+          "investable": 12223097,
           "magi": 406974,
-          "netWorth": 12222701,
+          "netWorth": 12223097,
           "rmd": 325660,
           "rothConversion": 0,
           "taxAndPenalties": 78735,
@@ -2032,9 +2146,9 @@
           "contributions": 0,
           "expenses": 235909,
           "income": 98055,
-          "investable": 12711398,
+          "investable": 12711806,
           "magi": 429920,
-          "netWorth": 12711398,
+          "netWorth": 12711806,
           "rmd": 346573,
           "rothConversion": 0,
           "taxAndPenalties": 84803,
@@ -2045,9 +2159,9 @@
           "contributions": 0,
           "expenses": 242848,
           "income": 100507,
-          "investable": 13214096,
+          "investable": 13214516,
           "magi": 452073,
-          "netWorth": 13214096,
+          "netWorth": 13214516,
           "rmd": 366642,
           "rothConversion": 0,
           "taxAndPenalties": 90595,
@@ -2058,12 +2172,12 @@
           "contributions": 0,
           "expenses": 250007,
           "income": 103019,
-          "investable": 13729644,
+          "investable": 13730209,
           "magi": 477539,
-          "netWorth": 13729644,
+          "netWorth": 13730209,
           "rmd": 389972,
           "rothConversion": 0,
-          "taxAndPenalties": 97523,
+          "taxAndPenalties": 97395,
           "withdrawals": 389972,
           "year": 2085
         },
@@ -2071,12 +2185,12 @@
           "contributions": 0,
           "expenses": 257394,
           "income": 105595,
-          "investable": 14258372,
+          "investable": 14259312,
           "magi": 501810,
-          "netWorth": 14258372,
+          "netWorth": 14259312,
           "rmd": 412054,
           "rothConversion": 0,
-          "taxAndPenalties": 104142,
+          "taxAndPenalties": 103793,
           "withdrawals": 412054,
           "year": 2086
         },
@@ -2084,12 +2198,12 @@
           "contributions": 0,
           "expenses": 265017,
           "income": 108235,
-          "investable": 14799934,
+          "investable": 14801499,
           "magi": 527097,
-          "netWorth": 14799934,
+          "netWorth": 14801499,
           "rmd": 435097,
           "rothConversion": 0,
-          "taxAndPenalties": 111057,
+          "taxAndPenalties": 110478,
           "withdrawals": 435097,
           "year": 2087
         },
@@ -2097,12 +2211,12 @@
           "contributions": 0,
           "expenses": 272884,
           "income": 110941,
-          "investable": 15353838,
+          "investable": 15356372,
           "magi": 553387,
-          "netWorth": 15353838,
+          "netWorth": 15356372,
           "rmd": 459088,
           "rothConversion": 0,
-          "taxAndPenalties": 118342,
+          "taxAndPenalties": 117447,
           "withdrawals": 459088,
           "year": 2088
         },
@@ -2110,12 +2224,12 @@
           "contributions": 0,
           "expenses": 299379,
           "income": 113714,
-          "investable": 15901846,
+          "investable": 15905819,
           "magi": 577124,
-          "netWorth": 15901846,
+          "netWorth": 15905819,
           "rmd": 480467,
           "rothConversion": 0,
-          "taxAndPenalties": 124907,
+          "taxAndPenalties": 123585,
           "withdrawals": 480467,
           "year": 2089
         },
@@ -2123,12 +2237,12 @@
           "contributions": 0,
           "expenses": 308586,
           "income": 116557,
-          "investable": 16459711,
+          "investable": 16465693,
           "magi": 605203,
-          "netWorth": 16459711,
+          "netWorth": 16465693,
           "rmd": 506129,
           "rothConversion": 0,
-          "taxAndPenalties": 132959,
+          "taxAndPenalties": 131123,
           "withdrawals": 506129,
           "year": 2090
         },
@@ -2136,12 +2250,12 @@
           "contributions": 0,
           "expenses": 318102,
           "income": 119471,
-          "investable": 17028288,
+          "investable": 17036797,
           "magi": 629792,
-          "netWorth": 17028288,
+          "netWorth": 17036797,
           "rmd": 528241,
           "rothConversion": 0,
-          "taxAndPenalties": 139932,
+          "taxAndPenalties": 137654,
           "withdrawals": 528241,
           "year": 2091
         }

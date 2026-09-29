@@ -28,7 +28,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -57,12 +57,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 680,
+          "line": 774,
           "note": null,
           "tests": [
             {
               "title": "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
-              "line": 687
+              "line": 781
             }
           ]
         }
@@ -119,7 +119,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -198,6 +198,7 @@
       "dueOn": "2026-12-25",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/hsaLimitYears.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -207,7 +208,20 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/hsaLimitYears.ts",
+          "functions": [
+            {
+              "name": "hsaLimitYear2026",
+              "line": 43
+            },
+            {
+              "name": "hsaLimitsForYear",
+              "line": 83
             }
           ]
         },
@@ -216,7 +230,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -267,6 +281,115 @@
       ]
     },
     {
+      "id": "irc-223-b-2-hsa-base-limits-2027",
+      "title": "The 2027 HSA base limits are 4,500 self-only and 9,000 family",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Section 223(g)(1) raises the (b)(2) amounts each year by a cost of living adjustment, and the IRS publishes the result in a revenue procedure each May, months before the income tax figures for the same year. So a year can have its own published HSA limits while its brackets are still projected. The projection reads a published year as published and grows only the years after the latest published one, at the plan inflation rate and without the rounding to a multiple of 50 dollars. The age-55 catch-up is a flat 1,000 dollars that Rev. Proc. 2026-24 does not restate, and it is irc-223-b-3-hsa-catch-up-not-indexed.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2027,
+      "effectiveThrough": 2027,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/hsaLimitYears.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/hsaLimitYears.ts",
+          "functions": [
+            {
+              "name": "hsaLimitsForYear",
+              "line": 83
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 231
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 415
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 723,
+          "note": null,
+          "tests": [
+            {
+              "title": "reads the published 2027 self-only and family limits at 2.5% inflation",
+              "line": 731
+            },
+            {
+              "title": "reads the same published limits at 4% inflation",
+              "line": 739
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 752,
+          "note": "a later year grows from the 2027 limits",
+          "tests": [
+            {
+              "title": "grows the 2028 limits one year from the published 2027 limits",
+              "line": 760
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2026-24, section 3.01(1)",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2026-24, section 4",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(g)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "irc-223-b-3-hsa-catch-up-not-indexed",
       "title": "The age-55 HSA catch-up is a flat 1,000 dollars and is not indexed",
       "classification": "settled",
@@ -291,7 +414,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -300,7 +423,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -369,7 +492,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -456,7 +579,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1058,7 +1181,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },

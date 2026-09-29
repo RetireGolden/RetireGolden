@@ -1018,6 +1018,13 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   HI: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
     'https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1135_.PDF',
+    // Verified 2026-09-28: Act 24, SLH 2026 (S.B. 3125), which replaced the HRS
+    // 235-51 tables for 2027 and 2029, for hi-act-24-2026-rate-schedules: the
+    // conference draft its status page names as enacted, and the Governor's
+    // message of approval. data.capitol.hawaii.gov stays out of
+    // STATE_PRIMARY_PUBLISHERS.
+    'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+    'https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1124_.PDF',
   ],
   IL: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
@@ -1035,6 +1042,41 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   MD: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
     'https://services.marylandcomptroller.gov/taxes/en/maryland-pension-exclusion?id=kb_article_view&sysparm_article=KB0010012',
+    // Verified 2026-09-28: the Comptroller's 2026 Employer Withholding Guide,
+    // which prints the indexed $3,400 standard deduction, for
+    // md-tg-10-217-2026-indexed-standard-deduction.
+    'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/instructions/withholding/2026/withholding-guide.pdf',
+    // Verified 2026-09-28: the Comptroller's 2026 Form PV estimated-tax
+    // worksheet (dated April 2026), which prints $3,350 and $6,700, the
+    // contrary reading of md-tg-10-217-2026-indexed-standard-deduction.
+    'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/2026-pv-worksheet.pdf',
+  ],
+  CA: [
+    // Verified 2026-09-28: the Secretary of State's list of measures on the
+    // November 3, 2026 ballot, which names Proposition 3, for
+    // ca-const-art-13-sec-36-f-2-top-bands-end-2031; sos.ca.gov stays out of
+    // STATE_PRIMARY_PUBLISHERS.
+    'https://www.sos.ca.gov/elections/ballot-measures/qualified-ballot-measures',
+  ],
+  WA: [
+    // Verified 2026-09-28: ESSB 6346 as the session law the Code Reviser
+    // publishes, and the Secretary of State's signature statistics certifying
+    // Initiative 645, for wa-essb-6346-2028-income-tax.
+    'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+    'https://www.sos.wa.gov/elections/initiatives-referenda/submitted-signature-statistics',
+  ],
+  ID: [
+    // Verified 2026-09-28: the State Tax Commission's release on the 2025
+    // conformity deductions, for id-h559-2026-conformity-senior-deduction;
+    // tax.idaho.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://tax.idaho.gov/pressrelease/file-now-to-get-your-conformity-deductions/',
+  ],
+  GA: [
+    // Verified 2026-09-28: HB 463 (2026) as passed, from the Governor's 2026
+    // signed legislation, for ga-hb-463-2027-retirement-exclusion. Georgia's
+    // Code host yields no quote-verifiable text; gov.georgia.gov stays out of
+    // STATE_PRIMARY_PUBLISHERS.
+    'https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download',
   ],
 }
 
@@ -2557,7 +2599,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-27')
+    expect(latestDueOn).toBe('2027-09-28')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

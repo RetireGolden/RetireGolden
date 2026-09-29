@@ -138,12 +138,14 @@ describe('comparePlanHeadlines on every ordered pair of the example library', ()
     expect(differentEnd).toBeGreaterThan(0)
   })
 
-  it('pins the worksheet sample: example-couple against hsa-stealth-retirement flips from +$330k to −$466k', () => {
+  it('pins the worksheet sample: example-couple against hsa-stealth-retirement flips from +$329k to −$466k', () => {
     const a = sides.find((s) => s.id === 'example-couple')!
     const b = sides.find((s) => s.id === 'hsa-stealth-retirement')!
     const headline = compared(a, b)
     expect(headline.endYear).toEqual({ baseline: 2059, proposal: 2076, delta: 17 })
-    expect(formatDelta(b.view.summary.endingAfterTaxEstate - a.view.summary.endingAfterTaxEstate, 'money')).toBe('+$330k')
+    // The worksheet measured +$330k; the published 2027 HSA limit lowers
+    // hsa-stealth-retirement's nominal estate by $240, and it now rounds to +$329k.
+    expect(formatDelta(b.view.summary.endingAfterTaxEstate - a.view.summary.endingAfterTaxEstate, 'money')).toBe('+$329k')
     expect(formatDelta(headline.endingAfterTaxEstate.delta, 'money')).toBe('−$466k')
   })
 })

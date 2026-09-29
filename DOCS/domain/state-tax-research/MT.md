@@ -27,7 +27,8 @@ Tax year: 2025. Researched 2026-06-13.
 
 > **2026 update (staleness sweep, 2026-07-16):** HB 337 (2025 session) rewrote the brackets: 2026 =
 > **4.7% / 5.65%** with the threshold widened to **$47,500 single / $95,000 MFJ**; 2027 steps again to
-> 4.7% / 5.4% at $65,000 / $130,000. The 2026 pack encodes the 2026 values, and the standard deduction
+> 4.7% / 5.4% at $65,000 / $130,000 ($97,500 head of household; loaded for 2027 on 2026-09-28 from MCA 15-30-2103,
+> the version effective January 1, 2027, in `params/state/data/enacted2027.ts`). The 2026 pack encodes the 2026 values, and the standard deduction
 > now tracks the federal pack's 2026 figure ($16,100/$32,200), resolving the Form 2 conflict noted
 > below. Do not hold MT forward at refresh time. Source (primary): MT DOR HB-337 notice,
 > https://revenue.mt.gov/news/recent-news/HB-337 (accessed 2026-07-16).

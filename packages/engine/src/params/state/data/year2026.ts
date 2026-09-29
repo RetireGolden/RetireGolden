@@ -9,7 +9,11 @@
  * latest-published (≈2025) figures carried forward; like the federal pack,
  * nominal brackets are carried forward for future years (bracket creep
  * modeled). States on legislated rate ramps (GA, IN, MS, MT, NE, NC, OK) are
- * commented inline — never hold those forward at refresh time. North Dakota
+ * commented inline — never hold those forward at refresh time. A rate already
+ * enacted for a year after this pack lives in ./enacted<year>.ts, not here: the
+ * 2027 rates of IN, MS, MT, NE and NC and the later unconditional MS and NC
+ * steps are loaded there, while GA's and SC's 2027 rates still depend on a
+ * determination not yet made. North Dakota
  * and Arkansas join them for a different reason and with the same instruction:
  * both states index by statute and publish the result. N.D.C.C.
  * 57-38-30.3(1)(g) makes the tax commissioner publish a cost-of-living-adjusted
@@ -21,7 +25,7 @@
  * each autumn.
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
- * standard deduction — CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
+ * standard deduction — CO, IA, ID, MO, MT, ND, NM, and DC from 2030 — carry the federal
  * pack's figure for the same year ($16,100/$32,200 for 2026) and are tagged
  * `standardDeductionConformity: 'federal'`. That tag is load-bearing, not
  * documentation: IRC 63(c)(7)(B)(ii) raises the federal amount every year
@@ -188,6 +192,10 @@ const rawStateYear2026 = {
       standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
       brackets: { single: [{ lowerBound: 0, ratePct: 2.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.5 }] },
       retirement: { kind: 'none' },
+      // 43-1022(35), Laws 2026 ch. 140: the federal IRC 151(d)(5)(C) senior
+      // deduction is subtracted for 2025 to 2028
+      // (ars-43-1022-35-federal-senior-deduction-subtraction).
+      federalSeniorDeduction: 'subtracted',
     },
     AR: {
       // The thresholds below are DFA's PUBLISHED 2026 schedule (2026 Form
@@ -199,6 +207,9 @@ const rawStateYear2026 = {
       // time. The 0 / 4,500 pair this entry used to carry was the un-indexed
       // 26-51-201(a)(3)(B) schedule, which by its own terms reaches only
       // filers above roughly $94,700 of net income.
+      // The top rate is 3.7% for 2026: Act 1 and Act 2 of the 2026 First
+      // Extraordinary Session (approved May 6, 2026) rewrote 26-51-201(a)(4)
+      // for tax years from January 1, 2026, after DFA had printed 3.9%.
       code: 'AR', name: 'Arkansas', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       capitalGainsTaxablePct: 50,
       capitalGainsNotes: 'A.C.A. 26-51-815(b)(2)(C) exempts fifty percent of net capital gain, so half of it reaches ordinary Arkansas rates (Form AR1000D line 8). Not modeled: (b)(3) exempts net capital gain above $10,000,000 in full, and Arkansas taxes net SHORT-term gain without the fifty percent exclusion (Form AR1000D lines 11 and 12).',
@@ -211,11 +222,11 @@ const rawStateYear2026 = {
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 5600, ratePct: 2 }, { lowerBound: 11200, ratePct: 3 },
-          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.9 },
+          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.7 },
         ],
         marriedFilingJointly: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 5600, ratePct: 2 }, { lowerBound: 11200, ratePct: 3 },
-          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.9 },
+          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.7 },
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 6000 },
@@ -253,6 +264,11 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'none' },
+      // RTC 17132.9 and 17132.10 (2025 to 2029): up to $20,000 each of military
+      // retirement pay and Survivor Benefit Plan annuities, per return, at federal
+      // AGI up to $125,000 ($250,000 joint)
+      // (ca-rtc-17132-9-10-military-retirement-exclusions).
+      californiaMilitaryExclusions: { retirementCap: 20000, survivorBenefitCap: 20000, agiLimitNonjoint: 125000, agiLimitJoint: 250000 },
       hsaConformity: 'nonconformingCalifornia',
       directQcdPolicy: { kind: 'unknown' },
     },
@@ -267,6 +283,10 @@ const rawStateYear2026 = {
       // §39-22-104(3)(p.7) TY2026: when federal AGI >= $300,000, add back the
       // federal deduction used above $1,000 single / $2,000 joint.
       highAgiFederalDeductionAddback: { agiTrigger: 300_000, retainSingle: 1_000, retainJoint: 2_000 },
+      // The base is federal taxable income, which carries the IRC 151(d)(5)(C)
+      // senior deduction for 2025 to 2028
+      // (co-crs-39-22-104-federal-taxable-income-senior-deduction).
+      federalSeniorDeduction: 'subtracted',
     },
     CT: {
       code: 'CT', name: 'Connecticut', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
@@ -318,8 +338,16 @@ const rawStateYear2026 = {
       delawareUnder60Pension: { ordinaryCap: 2000, militaryCap: 12500 },
     },
     DC: {
+      // D.C. Act 26-416 (emergency, effective 2026-08-13) adds 47-1801.04(3A):
+      // the District's own basic deduction for 2026 to 2029, $15,000 single and
+      // $30,000 joint, increased from 2027 by the cost-of-living adjustment
+      // (2025 base year, rounded down to $50), plus the IRC 63(c)(3) additional
+      // amount; from 2030 the federal deduction (./enacted2030.ts). The
+      // permanent act, D.C. Act 26-418, is under congressional review to about
+      // 2026-11-20 (`dc-code-47-1801-04-3a-standard-deduction-2026-2029`).
       code: 'DC', name: 'District of Columbia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
+      standardDeduction: { single: 15000, marriedFilingJointly: 30000 }, standardDeductionAge65AdditionConformity: 'federal',
+      standardDeductionStatutoryIndexing: { firstIndexedYear: 2027, intervalYears: 1, roundToNearest: 50, rounding: 'down', basis: 'cumulative' },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 4 }, { lowerBound: 10000, ratePct: 6 }, { lowerBound: 40000, ratePct: 6.5 },
@@ -345,6 +373,9 @@ const rawStateYear2026 = {
       // 2026 vintage per GA DOR "Important Tax Updates" (accessed 2026-07-15):
       // flat 4.99% and $15,000/$30,000 standard deductions. (2025 was cut
       // retroactively from 5.39% to 5.19%; 2026 continues the ramp to 4.99%.)
+      // 2027 is NOT loaded: HB 463 (2026) cuts 0.125 point a year from January
+      // 1, 2027 (4.865%) unless the Office of Planning and Budget's test "as of
+      // December 1" delays it, so 2027 prices at 4.99% until that determination.
       code: 'GA', name: 'Georgia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
       brackets: { single: [{ lowerBound: 0, ratePct: 4.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.99 }] },
@@ -392,6 +423,10 @@ const rawStateYear2026 = {
       },
       retirement: { kind: 'none' },
       idahoQualifiedRetirementCaps: { single: 49824, joint: 74736 },
+      // H.B. 559 (2026) adopts the Code as of January 1, 2026, so the IRC
+      // 151(d)(5)(C) senior deduction applies for 2025 to 2028
+      // (id-h559-2026-conformity-senior-deduction).
+      federalSeniorDeduction: 'subtracted',
     },
     IL: {
       code: 'IL', name: 'Illinois', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -416,7 +451,8 @@ const rawStateYear2026 = {
       // revenue growth of at least 3.5% plus a forecast of the same. Nothing
       // lets a projection know a post-2029 rate, so 2.9% is the last figure
       // this pack may carry and only through 2029. Registered as
-      // `ic-6-3-2-1-flat-rate-ramp`.
+      // `ic-6-3-2-1-flat-rate-ramp`. The 2027 step, 2.9%, is loaded in
+      // ./enacted2027.ts.
       //
       // `capitalGainsAsOrdinary: true` is CORRECT here and is not the defect
       // North Dakota, Arkansas and Arizona each carried. Indiana's base is
@@ -508,8 +544,19 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 49824 },
     },
     MD: {
+      // Tax-General 10-217(c) indexes the $3,350 / $6,700 deduction from 2026
+      // (IRC 1(f)(3) with a 2024 base, increases rounded down to $50): $3,400
+      // as the Comptroller prints it, and $6,850 computed by the same rule
+      // (md-tg-10-217-2026-indexed-standard-deduction).
       code: 'MD', name: 'Maryland', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 3350, marriedFilingJointly: 6700 },
+      standardDeduction: { single: 3400, marriedFilingJointly: 6850 },
+      // 10-105(a)(3)-(4): 2% more on net capital gain above $350,000 of
+      // federal AGI (md-tg-10-105-a-3-capital-gain-surtax).
+      marylandCapitalGainSurtax: { ratePct: 2, federalAgiThreshold: 350000 },
+      // 10-207(mm): the first $16,000 of public-safety retirement income at 55
+      // or older, for a pension the plan marks MD-PUBLIC-SAFETY
+      // (md-tg-10-207-mm-public-safety-retirement-subtraction).
+      marylandPublicSafetySubtraction: { amount: 16000, minAge: 55, planSystemCode: 'MD-PUBLIC-SAFETY' },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 2 }, { lowerBound: 1000, ratePct: 3 }, { lowerBound: 2000, ratePct: 4 },
@@ -575,6 +622,9 @@ const rawStateYear2026 = {
       // effective July 1, 2025. The quoted 2030 clause holds 3% except as
       // otherwise provided in Section 2 of that act. So the next four refreshes
       // each have a published figure waiting and NONE of them is this one.
+      // Loaded as enacted: 3.75% for 2027 (./enacted2027.ts), 3.5% for 2028,
+      // 3.25% for 2029 and 3% from 2030 (./enacted2028.ts to ./enacted2030.ts);
+      // the Section 2 cuts from 2031 are conditional and not loaded.
       //
       // `capitalGainsAsOrdinary: true` is CORRECT here for the same reason it
       // is in Indiana, and for the opposite reason to the three states a sweep
@@ -638,6 +688,8 @@ const rawStateYear2026 = {
     MT: {
       // HB 337 (2025): 2026 = 4.7%/5.65% at 47,500/95,000; 2027 steps again to
       // 4.7%/5.4% at 65,000/130,000 (MT DOR, accessed 2026-07-16). Re-verify annually.
+      // The 2027 schedule is loaded in ./enacted2027.ts from MCA 15-30-2103
+      // (effective January 1, 2027).
       code: 'MT', name: 'Montana', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
@@ -657,7 +709,8 @@ const rawStateYear2026 = {
     },
     NE: {
       // LB 754 ramp: top 5.2% (2025) -> 4.55% (2026, brackets consolidated to
-      // three) -> 3.99% (2027). Re-verify annually.
+      // three) -> 3.99% (2027). Re-verify annually. The 2027 rates are loaded in
+      // ./enacted2027.ts (Neb. Rev. Stat. 77-2715.03(2)(b)(iii), (2)(c)(vi)).
       code: 'NE', name: 'Nebraska', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 8850, marriedFilingJointly: 17700 },
       brackets: {
@@ -742,8 +795,11 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 20000, minAge: 59 },
     },
     NC: {
-      // Statutory ramp: 4.25% (2025) -> 3.99% (2026), with revenue-triggered
-      // cuts possible after. Re-verify annually.
+      // Statutory ramp: 4.25% (2025) -> 3.99% (2026). S.L. 2026-41 section 44.1
+      // (chaptered 2026-07-07) rewrote the table to 3.49% for 2027-2029, 3.24%
+      // for 2030-2032 and 2.99% after 2032, and moved the first revenue trigger
+      // to 2035. The unconditional steps are loaded: 3.49% (./enacted2027.ts),
+      // 3.24% (./enacted2030.ts) and 2.99% (./enacted2033.ts). Re-verify annually.
       code: 'NC', name: 'North Carolina', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.99 }] },
@@ -838,13 +894,20 @@ const rawStateYear2026 = {
       // RI Division of Taxation ADV 2025-22 (TY2026): $11,200/$22,400 standard
       // deduction; uniform schedule thresholds $82,050 and $186,450.
       // https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf
+      // Pension modification, 44-30-12(c)(9): up to $50,000 from tax year 2025
+      // (flat; only its AGI test is indexed), at full retirement age, 67 for
+      // everyone reaching it from 2026. Its AGI test is not modeled.
+      // Social Security modification, 44-30-12(c)(8): subtracted below the
+      // AGI limits at full retirement age; the limits are the TY2025 figures
+      // ADV 2025-22 prints, the latest published, standing in for 2026.
       code: 'RI', name: 'Rhode Island', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 11200, marriedFilingJointly: 22400 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 82050, ratePct: 4.75 }, { lowerBound: 186450, ratePct: 5.99 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 82050, ratePct: 4.75 }, { lowerBound: 186450, ratePct: 5.99 }],
       },
-      retirement: { kind: 'capped', capPerPerson: 20000, minAge: 67 },
+      retirement: { kind: 'capped', capPerPerson: 50000, minAge: 67 },
+      rhodeIslandSocialSecurityModification: { nonjointAgiLimit: 107000, jointAgiLimit: 133750, minAge: 67 },
     },
     SC: {
       // H.4216 (signed 2026-03-30) rewrote TY2026: SCIAD deduction of
@@ -852,7 +915,9 @@ const rawStateYear2026 = {
       // modeled in the SCIAD leaf helper, not as this coarse field), and
       // "5.21% minus $966 at/above $30,000" is exactly the graduated pair below
       // (1.99% x 30,000 gap = 966). Revenue-triggered further cuts are
-      // legislated — re-verify annually via SCDOR news.
+      // legislated — re-verify annually via SCDOR news. 2027 is NOT loaded:
+      // 12-6-510(C)(2) cuts the top rate from Tax Year 2027 only on the Board of
+      // Economic Advisors forecast "in effect on February fifteenth" (2027).
       //
       // §12-6-1170(A) tiers: $3,000 under 65 / $10,000 at 65+. Military full
       // deduction is §12-6-1171 via characterized facts, not a public override.
@@ -983,6 +1048,10 @@ const rawStateYear2026 = {
       },
       retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
       virginiaMilitarySubtractionCap: 40000,
+      // Va. Code 58.1-322.03(2)(a)-(b): $930 for each personal exemption the
+      // filer could claim federally, and $800 more for each taxpayer 65 or
+      // older (or blind; blindness is not modeled). Dependents are not collected.
+      virginiaPersonalExemptions: { perExemption: 930, perAgedTaxpayer: 800 },
     },
     WA: {
       // No broad income tax; a 7% tax on large long-term gains is out of scope.

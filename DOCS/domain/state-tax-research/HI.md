@@ -66,7 +66,7 @@ Hawaii lists IRC section 86 among the Internal Revenue Code provisions that are 
 - Fully-employer-funded pension exemption not modeled (`none` overstates tax for retirees with a traditional non-contributory pension). The model targets the dominant IRA/401(k) case, which Hawaii taxes.
 - Capital gains: Hawaii caps the long-term capital-gains rate at **7.25%**; we set `capitalGainsAsOrdinary: true`, which overstates tax for high-bracket filers with large gains.
 - Employee-contributed pensions are partially taxable (pro-rata); not modeled.
-- Standard deduction phases after 2027 under § 235-2.4(a)(2)(G) and later limbs; only the 2026–2027 (F) phase is carried.
+- Standard deduction phases after 2027 under § 235-2.4(a)(2)(G) to (I) ($9,000 / $18,000 from 2028, $10,000 / $20,000 from 2030, $12,000 / $24,000 from 2031) are loaded as enacted figures, as are the Act 24 (SLH 2026) rate tables for 2027 and 2029, which replaced Act 46's before they took effect (see [later-years-survey-2026-09-28.md](later-years-survey-2026-09-28.md)).
 - Head-of-household, MFS, and surviving-spouse standard-deduction amounts not modeled.
 
 ## Citations

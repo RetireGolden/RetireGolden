@@ -52,9 +52,69 @@ export const healthSavingsAccountRecords = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/hsaLimitYears.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/hsaLimitYears.ts#hsaLimitYear2026',
+      'packages/engine/src/params/hsaLimitYears.ts#hsaLimitsForYear',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
+    ],
+  },
+
+  'irc-223-b-2-hsa-base-limits-2027': {
+    title: 'The 2027 HSA base limits are 4,500 self-only and 9,000 family',
+    statement:
+      'For calendar year 2027, the annual HSA contribution limitation is 4,500 dollars for self-only coverage and 9,000 dollars for family coverage, as Rev. Proc. 2026-24 publishes them. These are the subsection (b)(2) base limits before any age-55 catch-up, married-spouse division, or monthly eligibility proration. The projection reads them as published for 2027, not the 2026 limits grown by the plan inflation rate (4,510 and 8,968.75 at 2.5%, 4,576 and 9,100 at 4%), and grows later years from these 2027 figures.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Section 223(g)(1) raises the (b)(2) amounts each year by a cost of living adjustment, and the IRS publishes the result in a revenue procedure each May, months before the income tax figures for the same year. So a year can have its own published HSA limits while its brackets are still projected. The projection reads a published year as published and grows only the years after the latest published one, at the plan inflation rate and without the rounding to a multiple of 50 dollars. The age-55 catch-up is a flat 1,000 dollars that Rev. Proc. 2026-24 does not restate, and it is irc-223-b-3-hsa-catch-up-not-indexed.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2026-24, section 3.01(1)',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-26-24.pdf',
+      quotedText:
+        'For calendar year 2027, the annual limitation on deductions under section 223(b)(2)(A) for an individual with self-only coverage under a high deductible health plan is $4,500. For calendar year 2027, the annual limitation on deductions under § 223(b)(2)(B) for an individual with family coverage under a high deductible health plan is $9,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2026-24, section 4',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-26-24.pdf',
+      quotedText:
+        'This revenue procedure is effective for HSAs for calendar year 2027,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        '(A) in the case of an eligible individual who has self-only coverage under a high deductible health plan as of the first day of such month, $2,250.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        '(B) in the case of an eligible individual who has family coverage under a high deductible health plan as of the first day of such month, $4,500.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(g)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'Each dollar amount in subsections (b)(2), (c)(2)(A), and in the case of taxable years beginning after 2026, (c)(1)(E)(ii)(II) shall be increased by an amount equal to',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: 2027,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/hsaLimitYears.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/hsaLimitYears.ts#hsaLimitsForYear',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],

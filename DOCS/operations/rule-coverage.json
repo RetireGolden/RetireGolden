@@ -2,87 +2,87 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 542,
+    "total": 574,
     "byClassification": {
-      "approximated": 120,
+      "approximated": 123,
       "outOfScope": 88,
-      "settled": 328,
-      "unsettled": 6
+      "settled": 356,
+      "unsettled": 7
     },
     "approximatedByKind": {
-      "convention": 22,
-      "fix": 74,
+      "convention": 23,
+      "fix": 76,
       "needs-fact": 24
     },
     "byVolatility": {
-      "annuallyIndexed": 90,
-      "awaitingGuidance": 12,
-      "staticStatute": 433,
-      "sunsetting": 7
+      "annuallyIndexed": 96,
+      "awaitingGuidance": 13,
+      "staticStatute": 456,
+      "sunsetting": 9
     },
     "byJurisdiction": {
-      "federal": 352,
+      "federal": 353,
       "states": {
         "AK": 1,
         "AL": 9,
         "AR": 10,
-        "AZ": 8,
-        "CA": 3,
-        "CO": 3,
+        "AZ": 9,
+        "CA": 5,
+        "CO": 4,
         "CT": 2,
-        "DC": 2,
-        "DE": 5,
+        "DC": 3,
+        "DE": 6,
         "FL": 1,
-        "GA": 1,
-        "HI": 5,
+        "GA": 2,
+        "HI": 7,
         "IA": 3,
-        "ID": 2,
-        "IL": 3,
+        "ID": 3,
+        "IL": 4,
         "IN": 7,
         "KS": 3,
         "KY": 2,
         "LA": 4,
         "MA": 5,
-        "MD": 2,
-        "ME": 3,
+        "MD": 5,
+        "ME": 4,
         "MI": 3,
         "MN": 3,
         "MO": 3,
         "MS": 7,
-        "MT": 4,
-        "NC": 2,
+        "MT": 5,
+        "NC": 4,
         "ND": 8,
-        "NE": 3,
+        "NE": 5,
         "NH": 1,
         "NJ": 5,
         "NM": 2,
         "NV": 1,
-        "NY": 5,
+        "NY": 6,
         "OH": 2,
         "OK": 1,
-        "OR": 4,
+        "OR": 5,
         "PA": 3,
-        "RI": 4,
+        "RI": 7,
         "SC": 8,
         "SD": 1,
         "TN": 2,
         "TX": 2,
         "UT": 6,
-        "VA": 5,
+        "VA": 8,
         "VT": 6,
-        "WA": 2,
+        "WA": 5,
         "WI": 4,
         "WV": 8,
         "WY": 1
       },
-      "stateTotal": 190
+      "stateTotal": 221
     }
   },
   "attestations": {
-    "totalFiles": 463,
+    "totalFiles": 472,
     "byStatus": {
       "partial": 94,
-      "registered": 121,
+      "registered": 130,
       "rule-free": 248,
       "unswept": 0
     },
@@ -238,8 +238,8 @@
     },
     {
       "path": "params/state/index.ts",
-      "sweptOn": "2026-09-05",
-      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata"
+      "sweptOn": "2026-09-28",
+      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; stateParamsFor applies every enacted year at or before a year past the pack in order, each replacing the fields it names or, named as null, ending them (./data/enacted2027.ts to enacted2033.ts), named by the enacted-figure records and the state-enacted-tax-year-figures calculation; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -647,10 +647,10 @@
     },
     {
       "directory": "params",
-      "files": 10,
+      "files": 18,
       "byStatus": {
         "partial": 2,
-        "registered": 6,
+        "registered": 14,
         "rule-free": 2
       }
     },
@@ -721,10 +721,10 @@
     },
     {
       "directory": "tax",
-      "files": 19,
+      "files": 20,
       "byStatus": {
         "partial": 12,
-        "registered": 6,
+        "registered": 7,
         "rule-free": 1
       }
     },
@@ -766,7 +766,7 @@
     {
       "module": "healthSavingsAccounts",
       "path": "rule-coverage/healthSavingsAccounts.json",
-      "ruleCount": 19
+      "ruleCount": 20
     },
     {
       "module": "individualIncomeTax",
@@ -816,17 +816,17 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 43
+      "ruleCount": 46
     },
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 34
+      "ruleCount": 39
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 34
+      "ruleCount": 45
     },
     {
       "module": "statesSouthCentral",
@@ -836,7 +836,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 43
+      "ruleCount": 55
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -846,17 +846,17 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1612,
+    "entryCount": 1734,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 127,
+      "ELISION-EXACT": 141,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1116,
+      "EXACT": 1171,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 358,
+      "PDF-WORD-LEVEL": 406,
       "PUNCTUATION": 4,
-      "UNFETCHABLE": 5
+      "UNFETCHABLE": 10
     },
     "amendments": [
       {
@@ -1352,6 +1352,836 @@
           {
             "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
             "citation": "20 CFR 404.403(a)(2)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Added with the 2027 published figures (decision D-2027-PUBLISHED-FIGURES): the four new records, each checked against its source with verify-quotes on 2026-09-28 (fetched live that day with --refresh), filtered to the record: irc-223-b-2-hsa-base-limits-2027 (2 PDF-WORD-LEVEL, 3 EXACT), neb-rev-stat-77-2715-03-2027-rates-three-and-four (2 ELISION-EXACT, 1 EXACT), nc-sl-2026-41-2027-flat-rate (4 EXACT) and mt-mca-15-30-2103-2027-rate-schedule (11 EXACT). The same live run re-checked the unchanged quotes of the three records whose statements changed, ic-6-3-2-1-flat-rate-ramp, ms-27-7-5-rate-ramp and ncgs-105-153-7-2026-flat-rate-and-standard-deduction, and their rows are unchanged. PDF rows were extracted with pdftotext 4.00 (xpdf). No other entry was re-run.",
+        "entries": [
+          {
+            "id": "irc-223-b-2-hsa-base-limits-2027",
+            "citation": "Rev. Proc. 2026-24, section 3.01(1)"
+          },
+          {
+            "id": "irc-223-b-2-hsa-base-limits-2027",
+            "citation": "Rev. Proc. 2026-24, section 4"
+          },
+          {
+            "id": "irc-223-b-2-hsa-base-limits-2027",
+            "citation": "IRC 223(b)(2)(A)"
+          },
+          {
+            "id": "irc-223-b-2-hsa-base-limits-2027",
+            "citation": "IRC 223(b)(2)(B)"
+          },
+          {
+            "id": "irc-223-b-2-hsa-base-limits-2027",
+            "citation": "IRC 223(g)(1)"
+          },
+          {
+            "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
+            "citation": "Neb. Rev. Stat. 77-2715.03(2)(b)(iii)"
+          },
+          {
+            "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
+            "citation": "Neb. Rev. Stat. 77-2715.03(2)(c)(vi)"
+          },
+          {
+            "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)"
+          },
+          {
+            "id": "nc-sl-2026-41-2027-flat-rate",
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a)"
+          },
+          {
+            "id": "nc-sl-2026-41-2027-flat-rate",
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows"
+          },
+          {
+            "id": "nc-sl-2026-41-2027-flat-rate",
+            "citation": "S.L. 2026-41, section 44.1(b)"
+          },
+          {
+            "id": "nc-sl-2026-41-2027-flat-rate",
+            "citation": "N.C. General Assembly, Senate Bill 257 / SL 2026-41, bill history"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103 (effective January 1, 2027), heading"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(1)(a) (effective January 1, 2027), joint return and surviving spouse"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(1)(b) (effective January 1, 2027), head of household"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(1)(c) (effective January 1, 2027), single"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(1)(d) (effective January 1, 2027), married filing separately"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(2)(a) (effective January 1, 2027), joint net long-term capital gains"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(2)(b) (effective January 1, 2027), head of household net long-term capital gains"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(2)(c) (effective January 1, 2027), single net long-term capital gains"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(3) (effective January 1, 2027), indexing"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2103(4)(a) (effective January 1, 2027), modified inflation factor"
+          },
+          {
+            "id": "mt-mca-15-30-2103-2027-rate-schedule",
+            "citation": "MCA 15-30-2101(12), inflation factor"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Added with the later unconditional state rate steps (decision D-2027-PUBLISHED-FIGURES, second round): the new record nc-sl-2026-41-rate-steps-2030-and-after (3 EXACT, 1 ELISION-EXACT), the new section 2(2) quote of ms-27-7-5-rate-ramp and the new (b)(16) quote of ic-6-3-2-1-flat-rate-ramp. Every authority of those three records, and of nc-sl-2026-41-2027-flat-rate, was checked against its source with verify-quotes on 2026-09-28 (fetched live that day with --refresh), filtered to the record: ms-27-7-5-rate-ramp 8 EXACT, ic-6-3-2-1-flat-rate-ramp 6 PDF-WORD-LEVEL (pdftotext 4.00), nc-sl-2026-41-2027-flat-rate unchanged. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "nc-sl-2026-41-rate-steps-2030-and-after",
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a), rows for 2027 on"
+          },
+          {
+            "id": "nc-sl-2026-41-rate-steps-2030-and-after",
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), the trigger"
+          },
+          {
+            "id": "nc-sl-2026-41-rate-steps-2030-and-after",
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows"
+          },
+          {
+            "id": "nc-sl-2026-41-rate-steps-2030-and-after",
+            "citation": "S.L. 2026-41, section 44.1(b)"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)"
+          },
+          {
+            "id": "ic-6-3-2-1-flat-rate-ramp",
+            "citation": "IC 6-3-2-1(b)(16)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Added with the widened set of figures already enacted for 2027 and later (decision D-2027-PUBLISHED-FIGURES, third round): hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps (3 PDF-WORD-LEVEL); ny-tax-601-2027-rate-cuts-and-2033-top-rate (5 UNFETCHABLE); ri-44-30-2-6-high-income-surtax (5 PDF-WORD-LEVEL); ga-hb-463-2027-retirement-exclusion (3 PDF-WORD-LEVEL); va-code-58-1-322-03-standard-deduction-steps (2 EXACT). Every authority of those records was checked against its source with verify-quotes on 2026-09-28 (fetched live that day with --refresh), filtered to the record, pdftotext 4.00 for the PDFs. nysenate.gov answers scripted requests with HTTP 403, so the five New York quotes are UNFETCHABLE here; each was checked the same day against the page text read in a browser (revision of 2025-07-11) and found word for word. No other entry was re-run. The same run first added a sixth record, hi-hrs-235-51-2027-and-2029-rate-schedules, quoting the HRS 235-51 tables the compilation printed for 2027 and 2029; Act 24, SLH 2026 had repealed them, so that record and its rows were withdrawn the same day (next amendment).",
+        "entries": [
+          {
+            "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G)"
+          },
+          {
+            "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(H)"
+          },
+          {
+            "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(I)"
+          },
+          {
+            "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table for taxable years after 2026 and before 2033"
+          },
+          {
+            "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table, fourth band"
+          },
+          {
+            "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(ix), joint table for taxable years after 2032, top band"
+          },
+          {
+            "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+            "citation": "N.Y. Tax Law §601(c)(1)(B)(viii), single table for taxable years after 2026 and before 2033"
+          },
+          {
+            "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+            "citation": "N.Y. Tax Law §601(c)(1)(B)(ix), single table for taxable years after 2032, top band"
+          },
+          {
+            "id": "ri-44-30-2-6-high-income-surtax",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-2.6(c)(3)(A)(I)(2)(i)"
+          },
+          {
+            "id": "ri-44-30-2-6-high-income-surtax",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(A)(I)(2)(ii) and (iii)"
+          },
+          {
+            "id": "ri-44-30-2-6-high-income-surtax",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(E)(III)"
+          },
+          {
+            "id": "ri-44-30-2-6-high-income-surtax",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 6"
+          },
+          {
+            "id": "ri-44-30-2-6-high-income-surtax",
+            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, High-Income Surtax"
+          },
+          {
+            "id": "ga-hb-463-2027-retirement-exclusion",
+            "citation": "HB 463 (2026), section 2-3, adding O.C.G.A. §48-7-27(a)(5)(A)(xiv)"
+          },
+          {
+            "id": "ga-hb-463-2027-retirement-exclusion",
+            "citation": "HB 463 (2026), section 2-3, revising O.C.G.A. §48-7-27(a)(5)(A)(xiii)"
+          },
+          {
+            "id": "ga-hb-463-2027-retirement-exclusion",
+            "citation": "HB 463 (2026), section 5-1"
+          },
+          {
+            "id": "va-code-58-1-322-03-standard-deduction-steps",
+            "citation": "Va. Code §58.1-322.03(1)(b)(vi) and (vii)"
+          },
+          {
+            "id": "va-code-58-1-322-03-standard-deduction-steps",
+            "citation": "Va. Code §58.1-322.03(1)(b)(i)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Hawaii corrected (decision D-2027-PUBLISHED-FIGURES, third round, and the survey of all 51 jurisdictions): Act 24, SLH 2026 (S.B. 3125, approved May 21, 2026) struck the HRS 235-51 tables for 2027 and 2029 before they took effect, so hi-hrs-235-51-2027-and-2029-rate-schedules (8 rows, quoted from the unofficial compilation current to December 31, 2025) is withdrawn and hi-act-24-2026-rate-schedules (2 EXACT, 4 ELISION-EXACT, 1 PDF-WORD-LEVEL) replaces it. Its authorities, the S.B. 3125 C.D. 2 text and Governor’s Message No. 1124, were checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 9(2)"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Rhode Island (decision D-2027-PUBLISHED-FIGURES, third round, and D-STATE-TAX-2026-CORRECTIONS): the new records ri-gen-laws-44-30-12-c-8-c-9-2026-modifications (the Social Security modification at full retirement age and the $50,000 pension ceiling from tax year 2025, now modeled) and ri-h7127-2027-social-security-modification-without-age-test (H 7127 Sub A, Article 6, section 5, dropping the age test from 2027). Every authority of both records was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. The approximated record ri-gen-laws-44-30-12-social-security-and-pension-modification keeps its six authorities unchanged and was re-checked the same day (6 EXACT). No other entry was re-run.",
+        "entries": [
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025"
+          },
+          {
+            "id": "ri-h7127-2027-social-security-modification-without-age-test",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, R.I. Gen. Laws §44-30-12(c)(8)(i), as amended to end with tax year 2026"
+          },
+          {
+            "id": "ri-h7127-2027-social-security-modification-without-age-test",
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-12(c)(8)(ii)"
+          },
+          {
+            "id": "ri-h7127-2027-social-security-modification-without-age-test",
+            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, Social Security Relief"
+          },
+          {
+            "id": "ri-h7127-2027-social-security-modification-without-age-test",
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Virginia personal exemptions (D-STATE-TAX-2026-CORRECTIONS): the new record va-code-58-1-322-03-2-personal-exemptions, quoting Va. Code 58.1-322.03(2)(a) and (b) from law.lis.virginia.gov, checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Va. Code §58.1-322.03(2)(a)"
+          },
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Va. Code §58.1-322.03(2)(b)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Arkansas top rate (D-STATE-TAX-2026-CORRECTIONS): aca-26-51-201-published-indexed-rate-schedule gains two authorities quoting Act 1 of the 2026 First Extraordinary Session (the 26-51-201(a)(4) table with the 3.7% top rate for tax years from January 1, 2026, and its approval on May 6, 2026); its rows were all re-checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record (8 PDF-WORD-LEVEL). No other entry was re-run.",
+        "entries": [
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule, \"IF YOUR NET TAXABLE INCOME IS\" column"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2025 Indexed Tax Brackets, \"Less Than or Equal To\" and \"Percentage\" columns"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2025 Indexed Tax Brackets, \"From\" column"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, § 1, Ark. Code Ann. 26-51-201(a)(4)"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, approval"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)"
+          },
+          {
+            "id": "aca-26-51-201-published-indexed-rate-schedule",
+            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Maryland (D-STATE-TAX-2026-CORRECTIONS and D-2027-PUBLISHED-FIGURES, third round): the new records md-tg-10-217-2026-indexed-standard-deduction (Tax-General 10-217(b)-(c) and the Comptroller's 2026 Employer Withholding Guide), md-tg-10-105-a-3-capital-gain-surtax (10-105(a)(3)-(4)) and md-tg-10-207-mm-public-safety-retirement-subtraction (2026 Md. Laws ch. 686 and 10-209(d)(2)). Every authority was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record; two quotes were cut before characters the PDF extraction damages (a hyphenated compound and a section reference) so they verify word for word. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+          },
+          {
+            "id": "md-tg-10-105-a-3-capital-gain-surtax",
+            "citation": "Md. Tax-General §10-105(a)(3)(i)"
+          },
+          {
+            "id": "md-tg-10-105-a-3-capital-gain-surtax",
+            "citation": "Md. Tax-General §10-105(a)(4)"
+          },
+          {
+            "id": "md-tg-10-105-a-3-capital-gain-surtax",
+            "citation": "Md. Tax-General §10-105(a)(3)(ii)"
+          },
+          {
+            "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(2)"
+          },
+          {
+            "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(3)(II) to (VI)"
+          },
+          {
+            "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), section 2 and approval"
+          },
+          {
+            "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
+            "citation": "Md. Tax-General §10-209(d)(2)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "The federal senior deduction in Arizona, Colorado and Idaho (D-STATE-TAX-2026-CORRECTIONS): the new records ars-43-1022-35-federal-senior-deduction-subtraction (Laws 2026, ch. 140, sections 12, 15 and 35(A)), co-crs-39-22-104-federal-taxable-income-senior-deduction (C.R.S. 39-22-104(1.7)(c) and IRC 151(d)(5)(C)(i)) and id-h559-2026-conformity-senior-deduction (H.B. 559 (2026) section 4, the State Tax Commission's release of March 3, 2026, and IRC 151(d)(5)(C)(i)). Every authority was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 15, adding A.R.S. 43-1022(35)"
+          },
+          {
+            "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 12, A.R.S. 43-105(A)"
+          },
+          {
+            "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 35(A)"
+          },
+          {
+            "id": "co-crs-39-22-104-federal-taxable-income-senior-deduction",
+            "citation": "C.R.S. 39-22-104(1.7)(c)"
+          },
+          {
+            "id": "co-crs-39-22-104-federal-taxable-income-senior-deduction",
+            "citation": "IRC 151(d)(5)(C)(i)"
+          },
+          {
+            "id": "id-h559-2026-conformity-senior-deduction",
+            "citation": "H.B. 559 (2026), section 4"
+          },
+          {
+            "id": "id-h559-2026-conformity-senior-deduction",
+            "citation": "Idaho State Tax Commission, press release of March 3, 2026, File now to get your conformity deductions"
+          },
+          {
+            "id": "id-h559-2026-conformity-senior-deduction",
+            "citation": "IRC 151(d)(5)(C)(i)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Later enacted steps (D-2027-PUBLISHED-FIGURES, third round): the new records de-code-30-1106-b-3-military-pension-steps-2027-2029 (30 Del. C. 1106(b)(3)c.-f., delcode), il-35-ilcs-5-204-b-basic-amount-1000-from-2029 (35 ILCS 5/204(b), ilga.gov), me-pl-2025-c650-k-15-federal-standard-deduction-from-2027 (P.L. 2025, c. 650, Pt. K, sec. K-15) and or-laws-2009-c913-s36-retirement-credit-ends-2032 (the section 36 note to ORS 316.157). Every authority was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
+            "citation": "30 Del. C. §1106(b)(3)c. (S.B. 219, 85 Del. Laws c. 426)"
+          },
+          {
+            "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
+            "citation": "30 Del. C. §1106(b)(3)d. and e."
+          },
+          {
+            "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
+            "citation": "30 Del. C. §1106(b)(3)f.3. and f.4."
+          },
+          {
+            "id": "il-35-ilcs-5-204-b-basic-amount-1000-from-2029",
+            "citation": "35 ILCS 5/204(b)"
+          },
+          {
+            "id": "il-35-ilcs-5-204-b-basic-amount-1000-from-2029",
+            "citation": "35 ILCS 5/204(b)(7)"
+          },
+          {
+            "id": "me-pl-2025-c650-k-15-federal-standard-deduction-from-2027",
+            "citation": "P.L. 2025, c. 650, Pt. K, §K-15, enacting 36 M.R.S. §5124-C(1-D)"
+          },
+          {
+            "id": "or-laws-2009-c913-s36-retirement-credit-ends-2032",
+            "citation": "Or. Laws 2009, ch. 913, §36, as amended by Or. Laws 2025, ch. 562, §5 (note to ORS 316.157)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "California (D-STATE-TAX-2026-CORRECTIONS and D-2027-PUBLISHED-FIGURES, third round): the new records ca-rtc-17132-9-10-military-retirement-exclusions (RTC 17132.9 and 17132.10) and ca-const-art-13-sec-36-f-2-top-bands-end-2031 (Cal. Const. art. XIII, sec. 36(f)(2), and the Secretary of State's list naming Proposition 3 for November 3, 2026). Every authority was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
+            "citation": "Cal. Rev. & Tax. Code §17132.9(a)"
+          },
+          {
+            "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
+            "citation": "Cal. Rev. & Tax. Code §17132.9(b)(1)"
+          },
+          {
+            "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
+            "citation": "Cal. Rev. & Tax. Code §17132.10(a)"
+          },
+          {
+            "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
+            "citation": "Cal. Const. art. XIII, §36(f)(2)"
+          },
+          {
+            "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
+            "citation": "Cal. Const. art. XIII, §36(f)(2)(D)"
+          },
+          {
+            "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
+            "citation": "California Secretary of State, Qualified Statewide Ballot Measures, November 3, 2026"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "Washington (D-2027-PUBLISHED-FIGURES, third round; enacted law with a vote pending): the new record wa-essb-6346-2028-income-tax, quoting ESSB 6346 (chapter 238, Laws of 2026) sections 201, 302(1) and 314 and its approval, from the session law the Code Reviser publishes, and the Secretary of State's signature statistics certifying Initiative 645. Every authority was checked with verify-quotes on 2026-09-28, fetched live that day with --refresh, filtered to the record. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, cross-check of the survey (2026-09-28): dc-code-47-1801-04-3a-standard-deduction-2026-2029 records which District act is in force and what happens at each date. Four quotes, each checked by a live verify-quotes --refresh run on 2026-09-28: D.C. Act 26-416 sec. 7112(b)(1) adding 47-1801.04(3A)(A)(ii)(I) (elided between the lead-in and subclause (I)), and sec. 9003 (the 90-day limit), both from code.dccouncil.gov/us/dc/council/acts/26-416; the permanent text of 47-1801.04(44)(A)(iv) from the (Perm) page; and the code site's note that D.C. Law 26-89's amendments expire September 25, 2026. Sources saved under C:/rgwt/staging/2027-figures/sources/ (dc-act-26-416.html, dc-47-1801.04-perm.html, dc-47-1801.04.html, each with URL, time and SHA-256; the SHA-256s match the survey's captures).",
+        "entries": [
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 9003"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): wa-essb-6346-s316-standard-deduction-indexing quotes ESSB 6346 (chapter 238, Laws of 2026) section 316(1), the biennial inflation indexing of the $1,000,000 standard deduction, and its no-reduction and effective-year sentences. Two quotes from the enrolled session law PDF (lawfilesext.leg.wa.gov 6346-S.SL.pdf), each elided at the printed line numbers, checked by a live verify-quotes --refresh run on 2026-09-28 (PDF-WORD-LEVEL). The same PDF is saved under C:/rgwt/staging/2027-figures/survey/sources/WA/ with URL, time and SHA-256.",
+        "entries": [
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)"
+          },
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal registers, as an approximation pinned on Nebraska, that state figures a statute indexes stay at their latest published amounts in later years. Two quotes from Neb. Rev. Stat. 77-2715.03(3)(a) (elided between the adjustment sentence and the rounding sentence) and (3)(b)(ii), checked by a live verify-quotes --refresh run on 2026-09-28. The statute page is saved under C:/rgwt/staging/2027-figures/survey/sources/NE/ with URL, time and SHA-256.",
+        "entries": [
+          {
+            "id": "neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal",
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(a)"
+          },
+          {
+            "id": "neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal",
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F10 (2026-09-28): two quotes made byte-verbatim. wa-essb-6346-2028-income-tax section 201 now reads \"TAX IMPOSED—RATES\" with the em dash (U+2014) the session law PDF prints, confirmed in a pdftotext extraction of the enrolled PDF; verify-quotes reports PDF-NOT-VERIFIABLE (advisory) because its own PDF extraction does not carry the dash through. hi-act-24-2026-rate-schedules quotes Governor's Message No. 1124 as its text layer reads, \"May 21,2026\". Both checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Act 24, SLH 2026, section 9(2)"
+          },
+          {
+            "id": "hi-act-24-2026-rate-schedules",
+            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F1 (2026-09-28): wa-essb-6346-s301-direct-qcd-conformity quotes ESSB 6346 (chapter 238, Laws of 2026) section 301, which excludes from the Washington tax any item excluded from federal adjusted gross income. One quote from the enrolled session law PDF, elided at the printed line numbers, checked by a live verify-quotes --refresh run on 2026-09-28 (PDF-WORD-LEVEL).",
+        "entries": [
+          {
+            "id": "wa-essb-6346-s301-direct-qcd-conformity",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 301"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F2 (2026-09-28): va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction registers, pinned on Virginia, that the optimizer's linear program lays a state's brackets over federal taxable income. Two quotes of Va. Code 58.1-322.03(1)(b)(i) and (2)(a), the same text two Virginia records already quote, checked by a live verify-quotes --refresh run on 2026-09-28 (EXACT).",
+        "entries": [
+          {
+            "id": "va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction",
+            "citation": "Va. Code §58.1-322.03(1)(b)(i)"
+          },
+          {
+            "id": "va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction",
+            "citation": "Va. Code §58.1-322.03(2)(a)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F3 (2026-09-28): wa-essb-6346-s316-standard-deduction-indexing now reads section 316's \"taxes due in the following calendar year\" as the tax year of each October adjustment, so the first indexed year is 2029, and is unsettled with the 2030 reading as its contrary one. Two quotes added: ESSB 6346 section 205(1), the act's own \"tax year 2028 with taxes due in 2029\" usage (session law PDF, elided at the line numbers), and the Department of Revenue capital gains tax page's deduction figures for 2025 and 2024. All four quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)"
+          },
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year"
+          },
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 205(1), the act’s usage of taxes due"
+          },
+          {
+            "id": "wa-essb-6346-s316-standard-deduction-indexing",
+            "citation": "Washington Department of Revenue, Capital gains tax, deductions"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F4 (2026-09-28): md-tg-10-217-2026-indexed-standard-deduction is now approximated. Two quotes added: Md. Tax-General 10-217(c)(2), which leaves the cost-of-living adjustment \"as determined by the Comptroller\", and the Comptroller's 2026 Form PV estimated-tax worksheet (PDF modified 2026-04-20, saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256), which prints $3,350 and $6,700, the contrary reading. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(c)(2)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F5 (2026-09-28): ri-gen-laws-44-30-12-social-security-and-pension-modification is now settled: the engine applies (c)(9)'s AGI test with the (c)(8) limits and leaves IRA distributions out. One quote added from the Division of Taxation's 2025 RI-1040 resident instructions (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the forms page refuses scripts and was read in the in-app browser to find the link). All seven quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-1(a)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(ii)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(A)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 resident instructions, Schedule M line 1t"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F6 (2026-09-28): dc-code-47-1801-04-3a-standard-deduction-2026-2029 is now settled on the act in force: the engine loads D.C. Act 26-416's deduction for 2026 to 2029 and names the permanent act's congressional review. Two quotes added from the act (47-1801.04(3A)(B), the base year, and (44)(A)(v)(II) and (vi), the additional amount and the federal deduction from 2030), and the (3A)(A)(ii)(I) quote extended to its rounding rule. All six quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 9003"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F9 (2026-09-28): wa-essb-6346-2028-income-tax names section 302(3), the add-back of Washington capital gains for a filer who owes the RCW 82.87 tax, as a stated limit, and quotes it from the session law PDF (elided at the line numbers). All six quotes checked by a live verify-quotes --refresh run on 2026-09-28; the section 201 quote stays PDF-NOT-VERIFIABLE (advisory) for its em dash.",
+        "entries": [
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(3)"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+          },
+          {
+            "id": "wa-essb-6346-2028-income-tax",
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F8 (2026-09-28): ri-gen-laws-44-30-12-c-8-c-9-2026-modifications quotes the Division of Taxation's 2025 Modification Worksheet for taxable Social Security (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the link was found by reading the forms page in the in-app browser), whose Step 2 prorates the modification when only one spouse has reached full retirement age. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "entries": [
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025"
+          },
+          {
+            "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+            "citation": "Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-28",
+        "note": "D-2027-PUBLISHED-FIGURES, verification pass L3 (2026-09-28): the District of Columbia record, settled since the round-three review, is renamed to dc-code-47-1801-04-3a-standard-deduction-2026-2029, so its id no longer ends in \"pending\"; its six rows are unchanged apart from the id.",
+        "entries": [
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 9003"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
           }
         ]
       }

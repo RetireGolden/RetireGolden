@@ -30,7 +30,7 @@
           "functions": [
             {
               "name": "CT",
-              "line": 271
+              "line": 291
             }
           ]
         },
@@ -48,7 +48,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -59,24 +59,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2820,
+          "line": 2831,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2851
+              "line": 2862
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2864
+              "line": 2875
             },
             {
               "title": "pins the pack’s omission of the above-threshold partial Social Security subtraction",
-              "line": 2870
+              "line": 2881
             },
             {
               "title": "pins the pack’s omission when the §86(b)(1) excess limb binds below 25% of benefits",
-              "line": 2893
+              "line": 2904
             }
           ]
         }
@@ -126,7 +126,7 @@
           "functions": [
             {
               "name": "CT",
-              "line": 271
+              "line": 291
             }
           ]
         },
@@ -144,11 +144,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -223,7 +223,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 531
+              "line": 578
             }
           ]
         },
@@ -241,11 +241,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -305,7 +305,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 531
+              "line": 578
             }
           ]
         },
@@ -314,7 +314,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -325,16 +325,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3433,
+          "line": 3445,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 3447
+              "line": 3459
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 3452
+              "line": 3464
             }
           ]
         }
@@ -379,7 +379,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 531
+              "line": 578
             }
           ]
         },
@@ -397,11 +397,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -462,7 +462,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 531
+              "line": 578
             }
           ]
         },
@@ -480,11 +480,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -540,7 +540,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 531
+              "line": 578
             }
           ]
         },
@@ -558,11 +558,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -629,7 +629,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 481
+              "line": 517
             }
           ]
         },
@@ -638,11 +638,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -719,6 +719,88 @@
       ]
     },
     {
+      "id": "me-pl-2025-c650-k-15-federal-standard-deduction-from-2027",
+      "title": "Maine’s standard deduction equals the federal standard deduction from 2027",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ME",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.ME",
+              "line": 247
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 143
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 989,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts the federal amount from 2027: $27 less tax single and $54 joint",
+              "line": 1007
+            },
+            {
+              "title": "moves with the federal figure in a projected year",
+              "line": 1016
+            },
+            {
+              "title": "keeps the federal age-65 addition, as in 2026",
+              "line": 1021
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "P.L. 2025, c. 650, Pt. K, §K-15, enacting 36 M.R.S. §5124-C(1-D)",
+          "url": "https://legislature.maine.gov/legis/bills/getPDF.asp?paper=HP1491&item=37&snum=132"
+        }
+      ]
+    },
+    {
       "id": "mrs-36-5124-c-1-b-decoupled-standard-deduction",
       "title": "Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition",
       "classification": "settled",
@@ -729,7 +811,7 @@
       "jurisdiction": "state:ME",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
-      "effectiveThrough": null,
+      "effectiveThrough": 2026,
       "verifiedOn": "2026-09-06",
       "dueOn": "2027-01-04",
       "implementedBy": [
@@ -743,7 +825,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 481
+              "line": 517
             }
           ]
         },
@@ -752,7 +834,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -761,7 +843,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -860,7 +942,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 481
+              "line": 517
             }
           ]
         },
@@ -954,7 +1036,7 @@
           "functions": [
             {
               "name": "NH",
-              "line": 678
+              "line": 731
             }
           ]
         },
@@ -963,7 +1045,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -974,16 +1056,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3728,
+          "line": 3740,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 3749
+              "line": 3761
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 3754
+              "line": 3766
             }
           ]
         }
@@ -1028,7 +1110,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 684
+              "line": 737
             }
           ]
         },
@@ -1050,7 +1132,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 1705
+              "line": 1852
             }
           ]
         }
@@ -1110,7 +1192,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 684
+              "line": 737
             }
           ]
         },
@@ -1128,11 +1210,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1200,7 +1282,7 @@
           "functions": [
             {
               "name": "states.NJ",
-              "line": 684
+              "line": 737
             }
           ]
         },
@@ -1209,7 +1291,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1266,7 +1348,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 684
+              "line": 737
             }
           ]
         },
@@ -1275,11 +1357,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -1290,20 +1372,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1320,
+          "line": 1323,
           "note": null,
           "tests": [
             {
               "title": "grants a $50,000 subtraction to a household over the $150,000 AGI ceiling",
-              "line": 1337
+              "line": 1340
             },
             {
               "title": "reaches the statute once the cap is withheld",
-              "line": 1343
+              "line": 1346
             },
             {
               "title": "under-excludes a single filer below $100,000 of income, in the other direction",
-              "line": 1351
+              "line": 1354
             }
           ]
         }
@@ -1363,7 +1445,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 684
+              "line": 737
             }
           ]
         },
@@ -1381,11 +1463,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1445,11 +1527,11 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "line": 68
             },
             {
               "name": "states.NY",
-              "line": 723
+              "line": 776
             }
           ]
         },
@@ -1458,11 +1540,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -1531,7 +1613,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 723
+              "line": 776
             }
           ]
         },
@@ -1540,7 +1622,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1609,7 +1691,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "line": 68
             }
           ]
         },
@@ -1636,7 +1718,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -1737,6 +1819,114 @@
       ]
     },
     {
+      "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
+      "title": "New York cuts its five lowest rates for 2027 to 2032 and its top rate to 8.82% from 2033",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "nysenate.gov refuses scripted requests (HTTP 403), so each quote was checked against the page as read in a browser on 2026-09-28, the revision of 2025-07-11, and the ledger records the source as unfetchable. The statute prints a whole-dollar base on each band; the enacted-year tables carry the printed bases.",
+      "contraryReading": null,
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2033.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.NY",
+              "line": 198
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2033.ts",
+          "functions": [
+            {
+              "name": "states.NY",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 462,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges 0.1 point less on each of the five lowest bands from 2027: $100.20 joint and $99.45 single on $100,000",
+              "line": 479
+            },
+            {
+              "title": "keeps 9.65% through 2032 and charges 8.82% above $2,155,350 joint from 2033",
+              "line": 492
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table for taxable years after 2026 and before 2033",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table, fourth band",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law §601(a)(1)(B)(ix), joint table for taxable years after 2032, top band",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law §601(c)(1)(B)(viii), single table for taxable years after 2026 and before 2033",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law §601(c)(1)(B)(ix), single table for taxable years after 2032, top band",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/601"
+        }
+      ]
+    },
+    {
       "id": "ny-tax-612-c-3-a-pension-annuity-exclusion",
       "title": "New York’s $20,000 pension exclusion requires attaining 59½",
       "classification": "approximated",
@@ -1763,7 +1953,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 723
+              "line": 776
             }
           ]
         },
@@ -1772,11 +1962,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -1845,7 +2035,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 828
+              "line": 884
             }
           ]
         },
@@ -1854,7 +2044,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1921,7 +2111,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 828
+              "line": 884
             }
           ]
         },
@@ -1930,11 +2120,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -2002,7 +2192,7 @@
           "functions": [
             {
               "name": "states.PA",
-              "line": 828
+              "line": 884
             }
           ]
         },
@@ -2011,7 +2201,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2039,6 +2229,124 @@
           "kind": "stateAgencyPublication",
           "citation": "Pennsylvania Department of Revenue, Personal Income Tax Guide: Gross Compensation, Income Items Never Taxable as PA Compensation",
           "url": "https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation"
+        }
+      ]
+    },
+    {
+      "id": "ri-44-30-2-6-high-income-surtax",
+      "title": "Rhode Island adds a surtax on taxable income over $1,000,000: 1% for 2027, 2% for 2028, 3% from 2029",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The enrolled budget article is quoted because the codified section on the General Assembly site returned no page when this was verified on 2026-09-28. The bill text carries line numbers, so each quote stops at a line end and resumes after an elision.",
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/data/enacted2029.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.RI",
+              "line": 220
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.RI",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2029.ts",
+          "functions": [
+            {
+              "name": "states.RI",
+              "line": 85
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 507,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds 1% for 2027, 2% for 2028 and 3% from 2029 on taxable income over $1,000,000",
+              "line": 514
+            },
+            {
+              "title": "uses the same $1,000,000 for a single filer and adds nothing at or below it",
+              "line": 527
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-2.6(c)(3)(A)(I)(2)(i)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(A)(I)(2)(ii) and (iii)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(E)(III)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 6",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, High-Income Surtax",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-07/2026_summary_of_legislative_changes.pdf"
         }
       ]
     },
@@ -2135,7 +2443,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 837
+              "line": 893
             }
           ]
         },
@@ -2144,11 +2452,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2159,12 +2467,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4304,
+          "line": 4316,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 4319
+              "line": 4331
             }
           ]
         }
@@ -2195,23 +2503,22 @@
       ]
     },
     {
-      "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-      "title": "Rhode Island limits Social Security and pension modifications by age, AGI, and year",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": null,
+      "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
+      "title": "Rhode Island subtracts Social Security below its AGI limits at full retirement age, and up to $50,000 of pension from 2025",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Full retirement age is 67 for anyone born in 1960 or later and 66 and 10 months for anyone born in 1959, so every filer who reaches it in 2026 or later is 67 by the end of that year; the age at year end is the test the engine reads.",
       "contraryReading": null,
       "jurisdiction": "state:RI",
-      "volatility": "staticStatute",
+      "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-01-26",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
@@ -2220,7 +2527,16 @@
           "functions": [
             {
               "name": "RI",
-              "line": 837
+              "line": 893
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "rhodeIslandSocialSecurityModification",
+              "line": 42
             }
           ]
         },
@@ -2228,12 +2544,12 @@
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
             {
-              "name": "computeStateTaxableIncome",
-              "line": 1160
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -2244,34 +2560,129 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4331,
+          "line": 4343,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
-              "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 4346
+              "title": "subtracts the Social Security below the limit at full retirement age",
+              "line": 4358
+            },
+            {
+              "title": "keeps the Social Security for a filer under full retirement age, and above the limit",
+              "line": 4364
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4353,
+          "line": 4372,
           "note": "pension ceiling limb",
           "tests": [
             {
-              "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 4372
+              "title": "applies the $50,000 pension ceiling",
+              "line": 4391
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/Social%20Security%20Worksheet_b.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+      "title": "Rhode Island allows the pension modification only below its federal-AGI limits, and not for IRA distributions",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "RI",
+              "line": 893
             }
           ]
         },
         {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "rhodeIslandPensionModificationAllowed",
+              "line": 74
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 1275
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 142
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4379,
-          "note": "pension AGI-threshold limb",
+          "line": 4406,
+          "note": "pension AGI-threshold limb and IRA exclusion",
           "tests": [
             {
-              "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 4399
+              "title": "allows no pension modification at or above the Social Security modification limit",
+              "line": 4414
+            },
+            {
+              "title": "keeps the $50,000 modification below the limit, and leaves IRA distributions out of it",
+              "line": 4425
             }
           ]
         }
@@ -2308,6 +2719,114 @@
           "kind": "statute",
           "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)",
           "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI-1040 resident instructions, Schedule M line 1t",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ri-h7127-2027-social-security-modification-without-age-test",
+      "title": "Rhode Island drops the full-retirement-age test from its Social Security modification from 2027",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The enrolled budget article is quoted because the codified section on the General Assembly site had not been updated when this was verified on 2026-09-28. The bill text carries line numbers, so each quote stops at a line end and resumes after an elision.",
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.RI",
+              "line": 220
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "rhodeIslandSocialSecurityModification",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 616,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the Social Security of a filer under full retirement age from 2027, $838.13 less tax",
+              "line": 634
+            },
+            {
+              "title": "keeps the AGI test: nothing comes out above $107,000 single or $133,750 joint",
+              "line": 642
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, R.I. Gen. Laws §44-30-12(c)(8)(i), as amended to end with tax year 2026",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-12(c)(8)(ii)",
+          "url": "https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, Social Security Relief",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-07/2026_summary_of_legislative_changes.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
         }
       ]
     },
@@ -2399,7 +2918,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2408,11 +2927,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2478,7 +2997,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2487,11 +3006,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -2556,7 +3075,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2565,11 +3084,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -2639,7 +3158,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2648,11 +3167,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -2717,7 +3236,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2726,11 +3245,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -2796,7 +3315,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 926
+              "line": 991
             }
           ]
         },
@@ -2805,7 +3324,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2816,20 +3335,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4435,
+          "line": 4467,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 4460
+              "line": 4492
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 4470
+              "line": 4502
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 4476
+              "line": 4508
             }
           ]
         }

@@ -817,7 +817,7 @@ export const midwestStateRecords = {
   'ic-6-3-2-1-flat-rate-ramp': {
     title: 'Indiana’s flat individual rate and its legislated ramp',
     statement:
-      'Indiana imposes one flat rate on Indiana adjusted gross income, with no brackets and no variation by filing status. For taxable years beginning after December 31, 2025, and before January 1, 2027, the quoted schedule is 2.95%; for taxable years beginning after December 31, 2026, and before January 1, 2030, 2.9%. Subsection (b)(9) governs taxable years beginning after December 31, 2029, and before January 1, 2032: a further 0.05-percentage-point reduction is conditional on the budget agency determination — each of the four specified fiscal years must meet the 3.5% revenue-growth test and the specified forecast must also meet 3.5% — and the decrease begins January 1 of the even-numbered year immediately succeeding the year of that determination. This record does not certify a projected rate after 2029 or fix when the determination occurs. The pack holds 2.95% for both filing statuses. A refresh that carries a prior year’s rate forward is wrong by construction, which is why Indiana sits on the never-hold-forward list in the pack header.',
+      'Indiana imposes one flat rate on Indiana adjusted gross income, with no brackets and no variation by filing status. For taxable years beginning after December 31, 2025, and before January 1, 2027, the quoted schedule is 2.95%; for taxable years beginning after December 31, 2026, and before January 1, 2030, 2.9%. Subsection (b)(9) governs taxable years beginning after December 31, 2029, and before January 1, 2032: a further 0.05-percentage-point reduction is conditional on the budget agency determination — each of the four specified fiscal years must meet the 3.5% revenue-growth test and the specified forecast must also meet 3.5% — and the decrease begins January 1 of the even-numbered year immediately succeeding the year of that determination. This record does not certify a projected rate after 2029 or fix when the determination occurs. The 2026 pack holds 2.95% for both filing statuses, and the rates enacted for 2027 (params/state/data/enacted2027.ts) hold 2.9% from 2027, read as enacted rather than projected from 2026. Every later subdivision, (b)(9) to (b)(15), is a 0.05-point cut that applies only on a budget agency determination under subsection (e), and (b)(16) keeps the rate then in effect after 2043, so no later step is unconditional: the engine carries 2.9% forward past 2029 and overstates the rate in any year a determination has cut it. A refresh that carries a prior year’s rate forward is wrong by construction, which is why Indiana sits on the never-hold-forward list in the pack header.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -841,6 +841,15 @@ export const midwestStateRecords = {
       url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
       quotedText:
         '(9) For taxable years beginning after December 31, 2029, and before January 1, 2032, if, as determined by the budget agency under subsection (e), the: (A) state general fund revenue collections in each of the state fiscal years ending: (i) June 30, 2025; (ii) June 30, 2026; (iii) June 30, 2027; and (iv) June 30, 2028; exceed by at least three and one-half percent (3.5%) the state general fund revenue collections for the respective immediately preceding state fiscal year; and (B) amount of forecasted state general fund revenue collections for the state fiscal year ending June 30, 2029, are estimated to exceed by at least three and one-half percent (3.5%) the state general fund revenue collections in the state fiscal year ending June 30, 2028; the tax rate shall be decreased by the percentage point of five one-hundredths of one percent (0.05%) beginning January 1 of the even-numbered year immediately succeeding the year of the budget agency determination under subsection (e).',
+    }, {
+      // The end of the ladder: after the last conditional cut the rate then in
+      // effect stays. With (b)(9) to (b)(15) all conditional, it is what makes
+      // 2.9% the only unconditional figure after 2029.
+      kind: 'statute',
+      citation: 'IC 6-3-2-1(b)(16)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        '(16) For taxable years beginning after December 31, 2043, the tax rate in effect in taxable years beginning after December 31, 2042, remains in effect.',
     }, {
       // Not `formInstruction`: Departmental Notice #1 is neither a form nor an
       // instruction to one. It is a WITHHOLDING notice that states the annual
@@ -866,18 +875,22 @@ export const midwestStateRecords = {
         'As amended by Acts 1979, P.L.68, SEC.1; Acts 1981, P.L.77, SEC.8; P.L.2-1982(ss), SEC.8; P.L.47-1984, SEC.4; P.L.390-1987(ss), SEC.37; P.L.192-2002(ss), SEC.70; P.L.81-2004, SEC.20; P.L.172-2011, SEC.54; P.L.205-2013, SEC.82; P.L.80-2014, SEC.9; P.L.212-2018(ss), SEC.20; P.L.138-2022, SEC.4; P.L.201-2023, SEC.95; P.L.80-2025, SEC.1.',
     }],
     volatility: 'staticStatute',
-    // Deliberate. The rate moves on January 1, 2027 by operation of the same
-    // statute, so a record left open would go stale in silence rather than
-    // name the year it stopped being true.
+    // Deliberate. (b)(8)'s 2.9% runs to the end of 2029 and (b)(9) makes any
+    // later cut conditional, so a record left open would go stale in silence
+    // rather than name the year it stopped being true.
     effectiveFrom: 2026,
-    effectiveThrough: 2026,
-    verifiedOn: '2026-08-05',
+    effectiveThrough: 2029,
+    verifiedOn: '2026-09-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#IN',
+      'packages/engine/src/params/state/data/enacted2027.ts#states.IN',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -1740,6 +1753,88 @@ export const midwestStateRecords = {
     ],
   },
 
+  'neb-rev-stat-77-2715-03-2027-rates-three-and-four': {
+    title: 'Nebraska rates three and four are 3.99% for TY2027',
+    statement:
+      'Neb. Rev. Stat. 77-2715.03(2)(b)(iii) sets rate three, and (2)(c)(vi) sets rate four, at 3.99% for taxable years beginning or deemed to begin on or after January 1, 2027, down from 4.55% for 2026. Rates one and two, 2.46% and 3.51%, are unchanged. The rates enacted for 2027 (params/state/data/enacted2027.ts) carry 2.46%, 3.51% and 3.99% for 2027, read as enacted rather than projected from 2026, and hold them for later years. Rates three and four are one band, as the 2026 figures joined them at 4.55%. Subsection (3) indexes the bracket amounts each year from the twelve months ending August 31 of the year before, and the Tax Commissioner has not yet published the 2027 schedule, so the 2026 amounts ($4,130 and $24,760 single, $8,250 and $49,530 married filing jointly) stand in for 2027. Settled for the 2027 rates only; the 2027 bracket amounts, other filing statuses, credits and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The bracket amounts move each year by the index in subsection (3), and the 2027 schedule is not yet published, so the 2026 amounts are used for 2027. That places the step from 3.51% to 3.99% at the 2026 amount; it does not change a rate. The record covers the rates.',
+    jurisdiction: 'state:NE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2715.03(2)(b)(iii)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03',
+      quotedText:
+        '(b) For purposes of this subsection, rate three shall be: ... (iii) 3.99% for taxable years beginning or deemed to begin on or after January 1, 2027.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2715.03(2)(c)(vi)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03',
+      quotedText:
+        '(c) For purposes of this subsection, rate four shall be: ... (vi) 3.99% for taxable years beginning or deemed to begin on or after January 1, 2027.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2715.03(3)(b)(ii)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03',
+      quotedText:
+        'For taxable years beginning or deemed to begin on or after January 1, 2018, the Tax Commissioner shall adjust the income tax brackets based on the percentage change in the Consumer Price Index for All Urban Consumers published by the federal Bureau of Labor Statistics from the twelve months ending on August 31, 2016, to the twelve months ending on August 31 of the year preceding the taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.NE',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal': {
+    title: 'State figures a statute indexes stay at their latest published amounts in later years, so tax is overstated over a long projection (Nebraska’s brackets are the pinned case)',
+    statement:
+      'For a year after the latest published state figures, params/state/index.ts#stateParamsFor carries every state figure forward at its latest published amount. tax/stateTax.ts projects only two kinds at the plan’s inflation: a standard deduction tagged as the federal one (params/state/index.ts#conformStateStandardDeduction) and a deduction whose statute sets its own indexing schedule, which is Washington’s alone (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction). Many state statutes index their figures every year instead, so in a nominal projection those figures fall behind incomes that grow with inflation: brackets start lower in real terms, deductions, exemptions, exclusions and income limits shrink, and more income is taxed at higher rates. The engine therefore overstates state tax, by more each year the projection runs. Nebraska is the pinned case: 77-2715.03(3) adjusts the minimum and maximum of every bracket each year by the change in the Consumer Price Index for All Urban Consumers, rounded to the nearest $10, and the engine holds the 2026 amounts. In 2046, at 2.5% inflation a year, the 3.99% bracket that starts at $24,760 single would start at $40,570 and the 3.51% bracket at $6,770 rather than $4,130; on $100,000 of Nebraska taxable income the engine charges $3,827.79 where the indexed brackets give $3,724.18, $103.61 more. The survey of 2026-09-28 (DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md) found these state figures indexed by statute: Arkansas’s brackets and standard deduction; Arizona’s standard deduction; California’s brackets and standard deduction; Idaho’s zero-rate thresholds; Illinois’s exemption for 2027 and 2028; Kentucky’s standard deduction; Louisiana’s standard deduction and retirement exemption; Maine’s brackets, surcharge threshold from 2027, deduction phase-out and pension cap; Maryland’s standard deduction; the Massachusetts surtax threshold; Michigan’s retirement ceiling; Minnesota’s brackets and standard deduction; Missouri’s brackets and its public-pension Social Security figure; Montana’s brackets and capital-gain breaks from 2028; Nebraska’s brackets and standard deduction; North Dakota’s brackets; Ohio’s bracket threshold from 2027; Oregon’s brackets and standard deduction; Rhode Island’s brackets, standard deduction, surtax threshold from 2028 and the income limits of its Social Security and pension modifications; South Carolina’s bracket; and Vermont’s and Wisconsin’s brackets and standard deductions. The District of Columbia’s own deduction would be indexed from 2027 if its pending act becomes law. The survey reported no indexed figure for the other states with an income tax, but it did not read every statute for indexing, so the list may be incomplete. The deductions tagged as federal (Colorado, the District of Columbia, Idaho, Iowa, Missouri, Montana, North Dakota and New Mexico) and Washington’s deduction are already projected. The engine has what indexing the rest needs from the plan: every state calculation receives the year’s cumulative inflation factor. What it lacks is each figure’s schedule, which differs by state (annual or biennial, CPI-U, chained CPI, CPI-W or the GDP deflator, with caps and rounding). This release registers the gap and does not change it.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:NE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2715.03(3)(a)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03',
+      quotedText:
+        'the minimum and maximum dollar amounts for each income tax bracket provided in subsection (2) of this section shall be adjusted for inflation by the percentage determined under subdivision (3)(b) of this section. ... The minimum and maximum dollar amounts for each income tax bracket as adjusted shall be rounded to the nearest ten-dollar amount.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2715.03(3)(b)(ii)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03',
+      quotedText:
+        'the Tax Commissioner shall adjust the income tax brackets based on the percentage change in the Consumer Price Index for All Urban Consumers published by the federal Bureau of Labor Statistics from the twelve months ending on August 31, 2016, to the twelve months ending on August 31 of the year preceding the taxable year.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult',
+    ],
+  },
+
   'ne-stat-77-2716-public-pension-exemption': {
     title: 'Nebraska\'s public-pension override is military and CSRS, not every public pension',
     statement:
@@ -2098,6 +2193,44 @@ export const midwestStateRecords = {
       'packages/engine/src/tax/stateMidwestExtras.ts#illinoisPersonalExemptionAllowance',
     ],
   },
+  'il-35-ilcs-5-204-b-basic-amount-1000-from-2029': {
+    title: 'Illinois’s exemption returns to $1,000 per exemption from tax year 2029',
+    statement:
+      '35 ILCS 5/204(b) allows each taxpayer a basic amount of $1,000, except that item (7) sets it at $2,050 plus the cost-of-living adjustment of subsection (d-5) for taxable years ending on or after December 31, 2024 and on or before December 31, 2028; $2,925 for 2026. From tax year 2029 the lead-in amount of $1,000 applies again, to the taxpayer, the spouse and each dependent under subsection (c). The $1,000 additions for age 65 and blindness and the $250,000 and $500,000 AGI cutoffs of 204(g) are unchanged. The figures enacted for 2029 (params/state/data/enacted2029.ts) carry the $1,000 basic amount; 2027 and 2028 are indexed and stand at the 2026 $2,925 until the Department publishes them. The General Assembly has extended item (7) before (P.A. 103-9 did), but as enacted the change is unconditional. Settled for the 2029 basic amount; whole-return accuracy is outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IL',
+    authority: [{
+      kind: 'statute',
+      citation: '35 ILCS 5/204(b)',
+      url: 'https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm',
+      quotedText:
+        'each taxpayer shall be allowed a basic amount of $1000, except that for corporations the basic amount shall be zero for tax years ending on or after December 31, 2003, and for individuals the basic amount shall be:',
+    }, {
+      kind: 'statute',
+      citation: '35 ILCS 5/204(b)(7)',
+      url: 'https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm',
+      quotedText:
+        '(7) for taxable years ending on or after December 31, 2024 and on or before December 31, 2028, $2,050 plus the cost-of-living adjustment under subsection (d-5).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2029,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateMidwestExtras.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2029.ts#states.IL',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateMidwestExtras.ts#illinoisPersonalExemptionAllowance',
+    ],
+  },
+
   'mo-retirement-income-deduction': {
     title: 'Missouri separates public, private, military and railroad retirement',
     statement: 'TY2026 public retirement is limited to the $48,967 maximum Social Security benefit less the applicable Social Security subtraction, without the pre-2024 AGI gate. Private retirement is capped at $6,000 per taxpayer and reduced by excess Missouri AGI above $25,000 single/HOH/QSS, $32,000 joint or $16,000 MFS. Military and qualifying Railroad Retirement benefits have separate full-subtraction treatment. Survivor Benefit Plan annuities belong to public pension treatment, not the military subtraction. Characterized source, owner and income facts are required.',

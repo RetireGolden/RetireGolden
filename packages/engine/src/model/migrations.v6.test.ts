@@ -98,6 +98,15 @@ function rawV5(plan: Plan, exampleSourceId: string | null): Record<string, unkno
 const contractsOf = (raw: Record<string, unknown>) =>
   (raw['expenses'] as { healthcare: { acaYears: Record<string, unknown>[] } }).healthcare.acaYears
 
+// The v5 engine's figures below were measured on origin/main 5224c5d0, then
+// re-measured on a v5 engine carrying the 2027 published figures (decision
+// D-2027-PUBLISHED-FIGURES): Colorado's base is federal taxable income, which
+// carries the IRC 151(d)(5)(C) senior deduction for 2025 to 2028, so the couple
+// pays less Colorado tax in the year Blair is 65 (2028; 2027 when Blair is born
+// a year earlier) and every later balance moves with it. On each document whose
+// figures the tests say do not change, every numeric ledger value of the
+// migrated plan equals that engine's to 4e-12 dollars, and so does the
+// depletion year.
 describe('migratePlanV5ToV6', () => {
   it('rewrites every recipe-shaped contract of a saved example to premiumField, keeping only its year and facts', () => {
     const raw = rawV5(couple(), 'early-retiree-aca')
@@ -325,12 +334,13 @@ describe('migratePlanV5ToV6', () => {
     ])
     // The deterministic figures equal the v5 engine's, measured on origin/main
     // 5224c5d0 for this document (every ledger value within 4e-12 dollars):
-    // healthcare spending, the credit and the investable balance, 2026-2028.
+    // healthcare spending, the credit and the investable balance, 2026-2028
+    // (2028's balance re-measured with the 2027 published figures, above).
     const years = simulatePlan(result.plan, { startYear: 2026, taxCalculator: productionTaxCalculator() }).years.slice(0, 3)
     const v5 = [
       [2_428, 19_172, 886_448.8],
       [2_396, 20_392, 871_341.89],
-      [20_937.78, null, 836_678.34],
+      [20_937.78, null, 836_842.86],
     ]
     v5.forEach(([healthcare, credit, investable], index) => {
       expect(years[index]!.expenses.healthcare, `healthcare ${2026 + index}`).toBeCloseTo(healthcare!, 2)
@@ -465,7 +475,9 @@ describe('migratePlanV5ToV6', () => {
   // the v5 engine (origin/main 5224c5d0) for these same documents, deterministic
   // run from 2026 with this file's production tax calculator: depletion year,
   // healthcare spending 2026-2029, and investable balances 2026-2031. Every
-  // ledger value of each document was identical between the two engines.
+  // ledger value of each document was identical between the two engines. The
+  // balances from Blair's 65th year are re-measured with the 2027 published
+  // figures (see the note above the describe block).
   it('leaves out the contracts the v5 engine was leaving out, and the figures do not change (PR #761 review 2)', () => {
     const healthcareOf = (raw: Record<string, unknown>) => (raw['expenses'] as { healthcare: Record<string, unknown> }).healthcare
     const docs: Record<string, { edit: (raw: Record<string, unknown>) => void; v5: { depletion: number; healthcare: number[]; investable: number[] }; removed: number[] }> = {
@@ -474,7 +486,7 @@ describe('migratePlanV5ToV6', () => {
         v5: {
           depletion: 2048,
           healthcare: [31_200, 32_604, 29_278.94, 20_580.7],
-          investable: [857_676.8, 812_815.52, 770_810.13, 735_874.09, 698_797.04, 659_506.93],
+          investable: [857_676.8, 812_815.52, 771_005.33, 736_069.29, 698_992.24, 659_702.12],
         },
         removed: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033],
       },
@@ -486,7 +498,7 @@ describe('migratePlanV5ToV6', () => {
         v5: {
           depletion: 2046,
           healthcare: [2_428, 22_788, 20_937.78, 15_540.85],
-          investable: [886_448.8, 850_949.89, 816_286.34, 784_953.93, 751_015.67, 714_334],
+          investable: [886_448.8, 850_949.89, 816_450.86, 785_118.45, 751_180.19, 714_498.52],
         },
         removed: [2027],
       },
@@ -495,7 +507,7 @@ describe('migratePlanV5ToV6', () => {
         v5: {
           depletion: 2049,
           healthcare: [2_428, 19_658.12, 14_452.73, 15_103.11],
-          investable: [886_448.8, 855_307.31, 828_128.13, 798_669.69, 767_316.73, 734_008.28],
+          investable: [886_448.8, 855_540.68, 828_556.7, 799_098.25, 767_745.29, 734_436.85],
         },
         removed: [2027, 2028],
       },
@@ -504,7 +516,7 @@ describe('migratePlanV5ToV6', () => {
         v5: {
           depletion: 2049,
           healthcare: [21_600, 2_396, 20_542.74, 15_103.11],
-          investable: [867_276.8, 852_623.52, 819_354.33, 789_895.89, 758_542.93, 725_234.49],
+          investable: [867_276.8, 852_623.52, 819_549.53, 790_091.09, 758_738.13, 725_429.68],
         },
         removed: [2026],
       },
@@ -540,7 +552,8 @@ describe('migratePlanV5ToV6', () => {
   // PR #761 follow-up. The figures pinned below were measured on the v5
   // engine (origin/main 5224c5d0) for these same documents, deterministic run
   // from 2026 with this file's production tax calculator: each year's
-  // healthcare spending, premium credit and investable balance, 2026-2028.
+  // healthcare spending, premium credit and investable balance, 2026-2028
+  // (2028's balance re-measured with the 2027 published figures, above).
   // Every other ledger value was compared too: the ones marked "unchanged"
   // matched the v5 engine to the last bit.
   const setMonths = (contract: Record<string, unknown>, enrollment: number, benchmark: number) => {
@@ -567,7 +580,7 @@ describe('migratePlanV5ToV6', () => {
   const V5_2026_LEFT_OUT = [
     [21_600, null, 867_276.8],
     [2_396, 20_176, 852_623.52],
-    [20_542.74, null, 819_354.33],
+    [20_542.74, null, 819_549.53],
   ]
 
   it('prices a contract entered for a saved example that the v5 engine refused, and says the figures change (PR #761 follow-up a)', () => {
@@ -590,7 +603,7 @@ describe('migratePlanV5ToV6', () => {
     const figures = firstYears(result.plan)
     // v5: $21,600 gross, no credit. v6: $27,600 gross, a $26,372 credit.
     expect(figures[0]![0]).not.toBeCloseTo(V5_2026_LEFT_OUT[0]![0]!, 2)
-    expectFigures(figures, [[1_228, 26_372, 887_648.8], [2_396, 20_176, 872_995.52], [20_542.74, null, 839_726.33]], 'v6')
+    expectFigures(figures, [[1_228, 26_372, 887_648.8], [2_396, 20_176, 872_995.52], [20_542.74, null, 839_921.53]], 'v6')
     // A contract the v5 engine priced as written is not announced: the
     // unedited example reports only the rewrite.
     const unedited = migratePlanToCurrent(rawV5(couple(), 'early-retiree-aca'))
@@ -638,7 +651,7 @@ describe('migratePlanV5ToV6', () => {
     // Each kind once: the recipe's contracts rewritten, the same figures.
     const rewrite = scenario('s-rewrite')
     expect(rewrite.expenses.healthcare.acaYears?.every((contract) => contract.premiumBasis === 'premiumField')).toBe(true)
-    expectFigures(firstYears(rewrite), [[2_428, 19_172, 884_448.8], [2_396, 20_176, 867_745.52], [20_542.74, null, 832_375.08]], 's-rewrite')
+    expectFigures(firstYears(rewrite), [[2_428, 19_172, 884_448.8], [2_396, 20_176, 867_745.52], [20_542.74, null, 832_570.28]], 's-rewrite')
     expect(repairFor('s-rewrite', 'exampleContractsFollowPremiumField')).toMatchObject({ contractCount: 8, firstYear: 2026, lastYear: 2033 })
     // A recipe-shaped quote that no longer matched: removed, recorded, the same figures.
     for (const id of ['s-removed', 's-canonical']) {
@@ -696,12 +709,13 @@ describe('migratePlanV5ToV6', () => {
     ])
     // The deterministic figures equal the v5 engine's, measured on origin/main
     // 5224c5d0 for this document (every ledger value identical): healthcare
-    // spending, the credit and the investable balance, 2026-2028.
+    // spending, the credit and the investable balance, 2026-2028 (2028's
+    // balance re-measured with the 2027 published figures, above).
     const years = simulatePlan(result.plan, { startYear: 2026, taxCalculator: productionTaxCalculator() }).years.slice(0, 3)
     const v5 = [
       [2_428, 19_172, 886_448.8],
       [968, 21_604, 873_223.52],
-      [20_542.74, null, 839_954.33],
+      [20_542.74, null, 840_149.53],
     ]
     v5.forEach(([healthcare, credit, investable], index) => {
       expect(years[index]!.expenses.healthcare, `healthcare ${2026 + index}`).toBeCloseTo(healthcare!, 2)

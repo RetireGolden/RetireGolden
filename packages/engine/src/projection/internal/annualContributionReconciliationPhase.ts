@@ -57,6 +57,7 @@ import {
   type AnnualContributionOwnerState,
   type AnnualContributionsAndEmployerMatchResult,
   type AnnualEmployerPriorElectiveContributions,
+  type AnnualHsaBaseLimits,
 } from './annualContributionsAndEmployerMatch.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 
@@ -300,6 +301,8 @@ export interface AnnualContributionReconciliationPhaseInput {
   readonly startYear: number
   readonly inflFactor: number
   readonly limitGrowth: number
+  /** The year's HSA base limits and their scale, from `params/hsaLimitYears.ts`. */
+  readonly hsaLimits: AnnualHsaBaseLimits
   readonly filingStatus: ProjectedFilingStatus
   readonly aliveCount: number
   readonly peopleCount: number
@@ -367,6 +370,7 @@ export function annualContributionReconciliationPhase(
     startYear,
     inflFactor,
     limitGrowth,
+    hsaLimits,
     filingStatus,
     aliveCount,
     peopleCount,
@@ -394,6 +398,7 @@ export function annualContributionReconciliationPhase(
       startYear,
       inflFactor,
       limitGrowth,
+      hsaLimits,
       filingStatus,
       aliveCount,
       peopleCount,

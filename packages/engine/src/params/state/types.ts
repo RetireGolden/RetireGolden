@@ -348,6 +348,95 @@ export interface StateTaxParams {
   }
   /** Kansas named statutory plan codes for the public-pension allowlist. */
   kansasNamedPlanCodes?: readonly string[]
+  /**
+   * Rhode Island 44-30-12(c)(8) Social Security modification: the Social
+   * Security included in federal AGI is subtracted when federal AGI is below
+   * the limit for the filing status (joint, or every other status) and, where
+   * `minAge` is set, a filer has reached full retirement age, read as that age
+   * at the end of the year. The limits are indexed; each is the latest figure
+   * the Division of Taxation has published.
+   */
+  rhodeIslandSocialSecurityModification?: {
+    nonjointAgiLimit: number
+    jointAgiLimit: number
+    minAge?: number
+  }
+  /**
+   * Virginia 58.1-322.03(2) personal exemptions: an amount for each personal
+   * exemption the filer could claim federally, plus an amount for each
+   * taxpayer 65 or older. Dependents are not modeled.
+   */
+  virginiaPersonalExemptions?: {
+    perExemption: number
+    perAgedTaxpayer: number
+  }
+  /**
+   * Maryland Tax-General 10-105(a)(3)-(4): an additional state rate on the net
+   * capital gain in Maryland AGI when federal AGI exceeds the threshold.
+   */
+  marylandCapitalGainSurtax?: {
+    ratePct: number
+    federalAgiThreshold: number
+  }
+  /**
+   * Maryland Tax-General 10-207(mm): the first `amount` of retirement income
+   * from service as a correctional, law enforcement, fire, rescue or emergency
+   * services officer, for a retiree at or above `minAge`. The plan marks such a
+   * pension with the state eligibility `planSystemCode` given here.
+   */
+  marylandPublicSafetySubtraction?: {
+    amount: number
+    minAge: number
+    planSystemCode: string
+  }
+  /**
+   * Set when the state base subtracts the federal IRC 151(d)(5)(C) senior
+   * deduction: Arizona by its own subtraction (43-1022(35)), Colorado and Idaho
+   * by taxing federal taxable income. The amount is the federal figure for the
+   * same return, so it ends when the federal deduction does (after 2028).
+   */
+  federalSeniorDeduction?: 'subtracted'
+  /**
+   * Delaware 1106(b)(3) from 2027: at 60 or older, the greater of the $12,500
+   * pension limb and this cap on U.S. military pension.
+   */
+  delawareMilitaryPension60Plus?: {
+    militaryCap: number
+  }
+  /**
+   * California RTC 17132.9 and 17132.10 (2025 to 2029): military retirement pay
+   * and Survivor Benefit Plan annuities each excluded up to a cap per return,
+   * when federal AGI is at or below the limit.
+   */
+  californiaMilitaryExclusions?: {
+    retirementCap: number
+    survivorBenefitCap: number
+    agiLimitNonjoint: number
+    agiLimitJoint: number
+  }
+  /**
+   * A standard deduction the state's own statute indexes on its own schedule,
+   * so a year past the published amount projects it at the plan's inflation
+   * (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction). The first
+   * year an adjustment applies, the years between adjustments, and the
+   * rounding of each adjusted amount. Washington, ESSB 6346 section 316: 2029,
+   * every 2 years, to the nearest $1,000. The District of Columbia, D.C. Act
+   * 26-416: 2027, every year, cumulative from a 2025 base, rounded down to $50.
+   */
+  standardDeductionStatutoryIndexing?: {
+    firstIndexedYear: number
+    intervalYears: number
+    roundToNearest: number
+    /** Rounding of each adjusted amount; absent means to the nearest multiple. */
+    rounding?: 'nearest' | 'down'
+    /**
+     * `stepwise` (absent): each adjustment multiplies the current amount by one
+     * year's inflation (Washington). `cumulative`: each year's amount is the
+     * published amount times the cumulative inflation from the base, rounded
+     * once (the District of Columbia, D.C. Code 47-1801.04(3A)(B)).
+     */
+    basis?: 'stepwise' | 'cumulative'
+  }
   /** Citation / modeled simplifications for the data-refresh workstream. */
   notes?: string
 }
@@ -356,6 +445,37 @@ export interface StateTaxPack {
   year: number
   /** Keyed by two-letter code. Absent states fall back to the flat override. */
   states: Record<string, StateTaxParams>
+}
+
+/**
+ * The figures a state has already enacted, without a condition, for a tax year
+ * after the latest pack: any field of its entry a statute changes for that year,
+ * for every filing status the entry carries. Rate schedules (`brackets` and the
+ * head-of-household and separate-filer schedules), the standard deduction, the
+ * retirement exclusions and any state-specific block (the Montana capital-gain
+ * schedule, for one) are all fields of `StateTaxParams`, and a surtax on taxable
+ * income above a threshold is a further band of the schedule.
+ *
+ * Each field an entry names replaces the field whole, so a schedule or a block
+ * is written out in full; a field it does not name keeps what the pack, or an
+ * earlier enacted year, gives it. An optional field set to `null` ends: a
+ * statute that repeals a credit or a subtraction from a year on (Oregon's
+ * retirement income credit from 2032, say) removes the field from that year.
+ * The identity fields cannot be changed. An entry that changes any rate
+ * schedule sets every schedule its state's pack carries (`stateParams.test.ts`
+ * holds this), so a head-of-household or separate-filer table is never left at
+ * the old rates beside a new single and joint one.
+ */
+export type StateEnactedFigures = {
+  readonly [K in Exclude<keyof StateTaxParams, 'code' | 'name'>]?:
+    | StateTaxParams[K]
+    | (undefined extends StateTaxParams[K] ? null : never)
+}
+
+/** Enacted figures for one tax year, keyed by two-letter code. */
+export interface StateEnactedYear {
+  readonly year: number
+  readonly states: Readonly<Record<string, StateEnactedFigures>>
 }
 
 export type { FilingStatus }

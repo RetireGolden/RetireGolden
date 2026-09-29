@@ -2,6 +2,10 @@
 
 Tax year: 2026. Authority reconciliation: 2026-09-12.
 
+> **2027 (2026-09-28):** S.C. Code 12-6-510(C)(2) (H. 4216, Act 110) cuts the top rate beginning with
+> Tax Year 2027 only if the Board of Economic Advisors projects the five percent revenue increase, on the
+> forecast "in effect on February fifteenth" (2027). Not loaded: 2027 prices at the 2026 rates until then.
+
 ## Current calculation contract
 
 The following source-specific contracts supersede older aggregate assumptions. A rule record identifies the calculator boundary; it does not certify that a projection fixture or a release gate has passed. Missing eligibility, source, allocation or state-basis facts must remain visible as incomplete.

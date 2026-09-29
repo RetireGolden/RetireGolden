@@ -31,6 +31,8 @@ export interface AnnualStateHouseholdFactsInput {
     readonly agi: number
     readonly taxableIncome: number
     readonly deductionUsed: number
+    /** The federal IRC 151(d)(5)(C) senior deduction, when the caller has it. */
+    readonly seniorDeduction?: number
     readonly taxableSocialSecurity: number
     readonly taxExemptInterest: number
   }
@@ -122,6 +124,7 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
       : validDerivedAge65Count === undefined ? {} : { age65EligibleCount: validDerivedAge65Count }),
     federalAgi: federal.agi, federalTaxableIncome: federal.taxableIncome,
     federalDeductionUsed: federal.deductionUsed,
+    ...(federal.seniorDeduction === undefined ? {} : { federalSeniorDeduction: federal.seniorDeduction }),
     householdGrossSocialSecurity: grossSs,
     federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
     // The modeled SS stream enters Utah's federal-AGI base. A complete

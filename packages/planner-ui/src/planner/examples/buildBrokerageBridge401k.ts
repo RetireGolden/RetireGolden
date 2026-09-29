@@ -4,9 +4,9 @@
  * the employer match (slightly above the 6%-of-pay cap so the match stays
  * identical to the control as wages grow 1% real), and the remaining $30,600/yr
  * builds a taxable brokerage "bridge" that, after the cash, funds ages 52–59½
- * at low MAGI and avoids the control's early-withdrawal penalties ($87,045
+ * at low MAGI and avoids the control's early-withdrawal penalties ($83,312
  * over 2042–2045). That buys one year, not the horizon: this plan runs out in
- * 2068 and the control in 2067 (examples.golden.test.ts pins both), both
+ * 2069 and the control in 2068 (examples.golden.test.ts pins both), both
  * before the planning horizon (2078). No premium tax credit is priced in either plan:
  * the bridge years (2038 on) come after the last coverage year whose ACA
  * figures are published, so both budget the full marketplace premium, and in
@@ -112,7 +112,7 @@ export function buildBrokerageBridge401k(): Plan {
   // expecting the conversion tax, plus any ACA credit the extra MAGI forfeits,
   // to drain the bridge fund; the projection says otherwise. No ACA year in the
   // bridge is priced, the brokerage still lasts into 2046, and lifetime tax
-  // falls from 876,459 to 566,785 while the money lasts to 2070 instead of 2068.
+  // falls from 865,395 to 534,028 while the money lasts to 2071 instead of 2069.
   plan.scenarios = [
     {
       id: exampleEntityId(EXAMPLE_ID, 'bridge-conversions'),

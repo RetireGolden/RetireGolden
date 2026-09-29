@@ -185,7 +185,21 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 79_020.67, lifetimeRoth: 0 },
   'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_516.31, lifetimeTax: 732_565.75, lifetimeRoth: 0 },
   'ltc-shock': { depletionYear: 2033, endingInvestable: 0, lifetimeTax: 0, lifetimeRoth: 0 },
-  'early-career-match': { depletionYear: null, endingInvestable: 17_028_288.16, lifetimeTax: 2_806_009.29, lifetimeRoth: 0 },
+  // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES, the survey of every state):
+  // California's 10.3%, 11.3% and 12.3% bands end from 2031 (Cal. Const. art.
+  // XIII, sec. 36(f)(2)). This California household reaches them only in its
+  // 2060 Roth conversion year and from 2085, so 2060's tax falls 200.64 and
+  // 2085 to 2091 fall 127.87 to 2,278.21 a year: ending investable
+  // 17,028,288.16 -> 17,036,796.98, lifetime tax 2,806,009.29 -> 2,798,420.94.
+  'early-career-match': { depletionYear: null, endingInvestable: 17_036_796.98, lifetimeTax: 2_798_420.94, lifetimeRoth: 0 },
+  // Reviewed 2026-09-28 (D-2027-PUBLISHED-FIGURES, the survey of every state):
+  // Washington taxes income above a 1,000,000 deduction at 9.9% from 2028
+  // (ESSB 6346, chapter 238, Laws of 2026; Initiative 645 on the November 3,
+  // 2026 ballot would repeal it), and section 316 indexes the deduction every
+  // second year from 2029. At this plan's 2.5% the deduction is 2,148,000 for
+  // 2089 and 2090 and 2,202,000 for 2091, and the household's Washington base
+  // income peaks at 2,023,808 in 2091, so it never owes the tax and nothing
+  // here moves.
   'aggressive-saver': { depletionYear: null, endingInvestable: 138_916_241.94, lifetimeTax: 6_849_942.2, lifetimeRoth: 0 },
   // coast-fire reviewed 2026-07-16: CO standard deduction moved to the 2026
   // federal-equivalent ($15,750 -> $16,100) in the state-pack staleness sweep,
@@ -254,9 +268,19 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // larger balance instead of at ages 45-59. A smaller forced distribution
   // buying more estate and more nominal lifetime tax is the expected shape for
   // a household this far from depletion.
-  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_977_572.35, lifetimeTax: 1_451_864.02, lifetimeRoth: 0 },
+  //
+  // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES): California's top three
+  // bands end from 2031, and this household reaches them only in 2070 and 2071,
+  // whose tax falls 178.38 and 370.23: ending investable 11,977,572.35 ->
+  // 11,978,172.73, lifetime tax 1,451,864.02 -> 1,451,315.41.
+  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_978_172.73, lifetimeTax: 1_451_315.41, lifetimeRoth: 0 },
   'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_918.82, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },
-  'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_493_650.52, lifetimeTax: 807_950.5, lifetimeRoth: 0 },
+  // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES): the 2027 HSA limit is the
+  // published 4,500 (Rev. Proc. 2026-24), not 4,400 grown to 4,510, and later
+  // years grow from it. The capped HSA takes 10 less in 2027 and a little less
+  // every later working year: ending investable falls 240.41, lifetime tax and
+  // penalties rise 186.04.
+  'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_493_410.11, lifetimeTax: 808_136.54, lifetimeRoth: 0 },
   'salary-growth-escalation': { depletionYear: null, endingInvestable: 46_295_269.76, lifetimeTax: 2_552_250.15, lifetimeRoth: 0 },
   // New July enhancement examples (positive/negative cases for guardrails, annuities+estate, allocation+MC v2, HSA/property depth)
   'guardrails-flex-goals': { depletionYear: 2041, endingInvestable: 0, lifetimeTax: 7_903.47, lifetimeRoth: 0 },
@@ -285,9 +309,9 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'static-allocation-control': { depletionYear: null, endingInvestable: 840_094.51, lifetimeTax: 328_960.33, lifetimeRoth: 759_850.34 },
   'brokerage-no-hsa': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 24_137.83, lifetimeRoth: 0 },
   // A-B decision pairs (savings location for early retirement; Trump-account IRA head start).
-  // The A-vs-B deltas are the story: the all-401(k) control pays $87.0k of
+  // The A-vs-B deltas are the story: the all-401(k) control pays $83.3k of
   // early-withdrawal penalties, depleting before the identical-budget bridge
-  // version (2067 against 2068); the seeded IRA still compounds into a ~$8.4M
+  // version (2068 against 2069); the seeded IRA still compounds into a ~$8.4M
   // larger estate on identical behavior. Neither bridge plan prices an ACA
   // credit in any year (restated 2026-09-27): the bridge years, 2038 on, come
   // after the last coverage year with published ACA figures, and the priced
@@ -300,8 +324,14 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // $64.7k against an actual $97.4k -- and indexing lowered it to $87.0k by
   // shrinking the withdrawals needed to fund the same budget. Neither figure is
   // asserted; they are narration, and they now match the run.
-  'all-401k-no-bridge': { depletionYear: 2067, endingInvestable: 0, lifetimeTax: 950_722.5, lifetimeRoth: 0 },
-  'brokerage-bridge-401k': { depletionYear: 2068, endingInvestable: 0, lifetimeTax: 876_459.16, lifetimeRoth: 0 },
+  // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES): North Carolina's rates are
+  // the ones S.L. 2026-41 enacts, 3.49% for 2027-2029, 3.24% for 2030-2032 and
+  // 2.99% after 2032, not 3.99% held forward. Both plans pay less state tax from
+  // 2027, and each lasts one year longer: the control to 2068 (was 2067), the
+  // bridge to 2069 (was 2068). Lifetime tax and penalties: control 950,722.50 ->
+  // 934,906.80 (penalties 87,045 -> 83,312), bridge 876,459.16 -> 865,395.15.
+  'all-401k-no-bridge': { depletionYear: 2068, endingInvestable: 0, lifetimeTax: 934_906.8, lifetimeRoth: 0 },
+  'brokerage-bridge-401k': { depletionYear: 2069, endingInvestable: 0, lifetimeTax: 865_395.15, lifetimeRoth: 0 },
   // Reviewed 2026-09-05: MI ordinary qualifying retirement cap $49,423 -> $67,610
   // under MCL 206.30(10)(d), RAB 2026-1 / Guide 446. Both long-horizon A-B examples
   // move identically: lifetime tax falls $13,913.05, ending investable rises $18,641.07.

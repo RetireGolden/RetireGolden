@@ -4,6 +4,11 @@ Tax year: 2026. Researched 2026-06-13; re-verified against the GA DOR 2026 updat
 (PR #22 review caught the 2025 vintage going stale — the rate ramp moved faster than the hold-forward
 convention assumed).
 
+> **2027 (2026-09-28):** HB 463 (2026, signed 2026-05-11) cuts the rate 0.125 point a year from
+> January 1, 2027 (4.865% for 2027) unless the Office of Planning and Budget's test "as of December 1"
+> delays it (O.C.G.A. 48-7-20(a.1)(2)). Not loaded: 2027 prices at 4.99% until the December 1, 2026
+> determination is published.
+
 ## Summary
 - Broad individual income tax: **yes** (flat 4.99% for 2026)
 - Taxes Social Security benefits: no (fully exempt)

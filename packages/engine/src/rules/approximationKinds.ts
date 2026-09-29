@@ -84,6 +84,27 @@
  *   (2026-09-27). The plan holds the disability onset
  *   (incomes[].disability.onsetAge and onsetMonth), which gives the year of
  *   eligibility for the disability benefit that the statute counts.
+ * - neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal, fix: registered
+ *   with the indexing of Washington's deduction (decision
+ *   D-2027-PUBLISHED-FIGURES, 2026-09-28). A state figure its statute indexes
+ *   is held at its latest published amount in later years. Every state
+ *   calculation already receives the year's cumulative inflation factor from
+ *   the plan; what the engine lacks is each statute's indexing schedule, which
+ *   is data it can carry, not a fact the plan must collect.
+ * - va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction, fix:
+ *   registered in the round-three review of the same decision (F2). The
+ *   optimizer's linear program lays a state's brackets over federal taxable
+ *   income; the state's own deduction and exemption figures are already in
+ *   the state parameters, so the zero-rate band each needs can be computed.
+ * - md-tg-10-217-2026-indexed-standard-deduction, convention: reclassified
+ *   from settled in the same review (F4). The Comptroller's withholding guide
+ *   prints $3,400 single and its estimated-tax worksheet $3,350 and $6,700;
+ *   the engine keeps the guide and the statute's rule until the 2026 Form 502
+ *   instructions print the amounts.
+ * - md-tg-10-105-a-3-capital-gain-surtax, fix: reclassified from settled in
+ *   the same review (F7). The plan marks a primary residence and holds its
+ *   sale price, so the excluded residence gain can be kept out of the surtax
+ *   base; today it reaches the state calculation as ordinary capital gain.
  *
  * Reclassified when the plan began collecting the fact (decision
  * D-APPROX-FACTS, 2026-09-27):
@@ -102,6 +123,10 @@
  * - usc-42-415-b-2-a-i-computation-years-five-year-dropout: the earnings window
  *   starts at 1951, so the computation years are the elapsed years less five,
  *   fixed with the contribution and benefit base table back to 1937.
+ * - ri-gen-laws-44-30-12-social-security-and-pension-modification (fixed in
+ *   the round-three review of D-2027-PUBLISHED-FIGURES, F5, 2026-09-28): the
+ *   pension modification applies the Social Security modification's AGI
+ *   limits and leaves IRA distributions out.
  *
  * Settled and removed from this list (decision D-LIFE-TABLE-2023, 2026-09-27):
  * - ssa-table-4c6-period-life-table-vintage, a convention until then (the
@@ -209,6 +234,8 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-86-a-optimizer-taxable-social-security-linearization': { kind: 'convention', reason: "the optimizer's linear program requires a linear candidate objective and the full year-by-year projection re-prices candidates" },
   'la-rs-47-44-2-public-bucket-overreach': { kind: 'fix' },
   'md-tax-10-209-pension-exclusion': { kind: 'fix' },
+  'md-tg-10-105-a-3-capital-gain-surtax': { kind: 'fix' },
+  'md-tg-10-217-2026-indexed-standard-deduction': { kind: 'convention', reason: 'the Comptroller has printed two different 2026 amounts, so the engine keeps the withholding guide and the statute rule until the 2026 Form 502 instructions settle it' },
   'me-mrs-36-5122-2-m2-m3-2026-pension-deduction': { kind: 'fix' },
   'mi-mcl-206-30-retirement-and-ss': { kind: 'fix' },
   'mn-stat-290-0132-subd-26-social-security-inclusion': { kind: 'fix' },
@@ -220,6 +247,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'ndcc-57-38-30-3-2-closed-subtraction-list': { kind: 'needs-fact', missingInput: 'whether a public pension is a qualified retired law enforcement (peace officer) benefit' },
   'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': { kind: 'fix' },
   'ne-stat-77-2716-public-pension-exemption': { kind: 'fix' },
+  'neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal': { kind: 'fix' },
   'nj-stat-54a-6-10-retirement-income-exclusion': { kind: 'fix' },
   'nm-stat-7-2-5-14-social-security-and-federal-standard': { kind: 'fix' },
   'notice-2004-50-a-39-prior-section-213-deduction': { kind: 'needs-fact', missingInput: 'per-expense prior-section-213-deduction status' },
@@ -233,7 +261,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'pa-pit-retirement-benefits-not-compensation': { kind: 'needs-fact', missingInput: 'plan age or service requirement and satisfaction at separation' },
   'pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary': { kind: 'fix' },
   'poms-rs-00615-482-arf-crediting-months': { kind: 'fix' },
-  'ri-gen-laws-44-30-12-social-security-and-pension-modification': { kind: 'fix' },
   'sc-code-12-6-1170-retirement-income-deduction': { kind: 'fix' },
   'treas-reg-1-1012-1-c-lot-basis-and-holding-period': { kind: 'convention', reason: 'specific-lot selection decades ahead is unknowable where the plan stores aggregate basis' },
   'treas-reg-1-1275-7-f-1-deflation-adjustment-income': { kind: 'fix' },
@@ -256,6 +283,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': { kind: 'fix' },
   'usc-42-423-c-2-ssdi-five-month-waiting-period': { kind: 'convention', reason: 'the plan asks for the month a disability began but not the day, so the month is read as a start after the 1st, and a blank month as January 1, the earliest start and so the largest amount the law allows for that year' },
   'va-code-58-1-322-03-age-deduction-and-social-security': { kind: 'fix' },
+  'va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction': { kind: 'fix' },
   'vt-stat-32-5830e-social-security-inclusion': { kind: 'fix' },
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': { kind: 'fix' },
   'wi-stat-71-05-retirement-income-subtraction': { kind: 'needs-fact', missingInput: 'restricted-credit or election status' },

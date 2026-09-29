@@ -52,7 +52,10 @@ the big-levers private-retiree model.)
   and Railroad Retirement not modeled (`none` overstates tax for those retirees).
 - Nebraska's top rate is **phasing down** under LB 754 (5.20% in 2025 → 4.55% in
   2026 → 3.99% in 2027); the 2025 nominal rates are held forward — re-check at the
-  2026 transcription point.
+  2026 transcription point. (2026-09-28: rates three and four at 3.99% from 2027,
+  Neb. Rev. Stat. 77-2715.03(2)(b)(iii) and (2)(c)(vi), are loaded for 2027 in
+  `params/state/data/enacted2027.ts` on the 2026 thresholds, which stand in until the
+  Tax Commissioner publishes the 2027 schedule.)
 - Bracket thresholds inflation-adjusted annually; 2025 values held forward.
 - Personal-exemption credit (per-person nonrefundable credit) not modeled.
 

@@ -28,7 +28,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -65,12 +65,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2096,
+          "line": 2097,
           "note": null,
           "tests": [
             {
               "title": "taxes each bracket slice at its own rate",
-              "line": 2125
+              "line": 2126
             }
           ]
         }
@@ -125,7 +125,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 113
+              "line": 120
             }
           ]
         },
@@ -154,20 +154,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2459,
+          "line": 2460,
           "note": null,
           "tests": [
             {
               "title": "prices nominal wages on the rate tables prescribed for that year",
-              "line": 2468
+              "line": 2469
             },
             {
               "title": "leaves a published year exactly as published",
-              "line": 2483
+              "line": 2484
             },
             {
               "title": "starts the 15% layer at the breakpoint prescribed for that year",
-              "line": 2492
+              "line": 2493
             }
           ]
         }
@@ -242,7 +242,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -349,7 +349,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 113
+              "line": 120
             }
           ]
         },
@@ -369,12 +369,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2532,
+          "line": 2533,
           "note": null,
           "tests": [
             {
               "title": "holds the amount and the phase-out threshold flat in a projected year",
-              "line": 2536
+              "line": 2537
             }
           ]
         }
@@ -705,7 +705,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -782,7 +782,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -865,12 +865,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2356,
+          "line": 2357,
           "note": null,
           "tests": [
             {
               "title": "caps the tentative minimum tax on capital gain at the preferential rates",
-              "line": 2360
+              "line": 2361
             }
           ]
         }
@@ -914,7 +914,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1008,12 +1008,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2322,
+          "line": 2323,
           "note": null,
           "tests": [
             {
               "title": "adds back capped state and local taxes but leaves charitable gifts alone",
-              "line": 2330
+              "line": 2331
             }
           ]
         }
@@ -1067,16 +1067,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1750,
+          "line": 1751,
           "note": null,
           "tests": [
             {
               "title": "adds the senior deduction back on a return that itemizes",
-              "line": 1754
+              "line": 1755
             },
             {
               "title": "adds it back on a return that takes the standard deduction too",
-              "line": 1770
+              "line": 1771
             }
           ]
         }
@@ -1138,12 +1138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2410,
+          "line": 2411,
           "note": null,
           "tests": [
             {
               "title": "adds no tax-exempt interest to AMTI, even when it is all PAB interest",
-              "line": 2415
+              "line": 2416
             }
           ]
         }
@@ -1197,12 +1197,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2246,
+          "line": 2247,
           "note": null,
           "tests": [
             {
               "title": "itemizes when larger and adds the senior deduction on top",
-              "line": 2254
+              "line": 2255
             }
           ]
         }
@@ -1251,7 +1251,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1322,7 +1322,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 113
+              "line": 120
             }
           ]
         },
@@ -1331,35 +1331,35 @@
           "functions": [
             {
               "name": "CO",
-              "line": 259
+              "line": 275
             },
             {
               "name": "DC",
-              "line": 320
+              "line": 340
             },
             {
               "name": "IA",
-              "line": 443
+              "line": 479
             },
             {
               "name": "ID",
-              "line": 386
+              "line": 417
             },
             {
               "name": "MO",
-              "line": 607
+              "line": 657
             },
             {
               "name": "MT",
-              "line": 638
+              "line": 688
             },
             {
               "name": "NM",
-              "line": 708
+              "line": 761
             },
             {
               "name": "states.ND",
-              "line": 752
+              "line": 808
             }
           ]
         },
@@ -1368,7 +1368,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -1377,7 +1377,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1457,7 +1457,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1466,11 +1466,11 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 408
+              "line": 415
             },
             {
               "name": "standardDeduction",
-              "line": 416
+              "line": 423
             }
           ]
         },
@@ -1549,12 +1549,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2278,
+          "line": 2279,
           "note": null,
           "tests": [
             {
               "title": "offers no channel by which a miscellaneous itemized deduction is allowed",
-              "line": 2288
+              "line": 2289
             }
           ]
         }

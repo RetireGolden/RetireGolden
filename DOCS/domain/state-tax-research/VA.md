@@ -36,6 +36,18 @@ Authority: [Va. Code §58.1-322.02(11)](https://law.lis.virginia.gov/vacode/titl
 
 > Any income received during the taxable year derived from a qualified pension, profit-sharing, or stock bonus plan as described by § 401 of the Internal Revenue Code, an individual retirement account or annuity established under § 408 of the Internal Revenue Code, a deferred compensation plan as defined by § 457 of the Internal Revenue Code, or any federal government retirement program, the contributions to which were deductible from the taxpayer's federal adjusted gross income, but only to the extent the contributions to such plan or program were subject to taxation under the income tax in another state.
 
+### Virginia personal exemptions: $930 each, plus $800 at 65
+
+Record: `va-code-58-1-322-03-2-personal-exemptions`. Classification: `settled`.
+
+Section 58.1-322.03(2) allows $930 for each personal exemption the filer may claim federally, and $800 more for each taxpayer who is 65 or older or blind (IRC 63(f)); blindness is not modeled. The engine counts one exemption for a single filer and two on a joint return, and the $800 for each person 65 or older. It carried neither until the survey of 2026-09-28, which overstated tax by $99.48 for a single filer at 65 and $198.95 for a couple both 65 in the 5.75% bracket.
+
+### Virginia standard deduction steps from 2027
+
+Record: `va-code-58-1-322-03-standard-deduction-steps`. Classification: `settled`.
+
+Section 58.1-322.03(1)(b) sets the standard deduction at $9,200 single and $18,400 joint for 2027, $9,300 and $18,600 for 2028 and 2029, and $3,000 and $6,000 from 2030. The figures enacted for those years carry each step; see [later-years-survey-2026-09-28.md](later-years-survey-2026-09-28.md).
+
 ## Validation boundary
 
 Source records above require discriminating positive and negative fixtures through the state calculation entry point, followed by actual `simulatePlan` event/basis integration. The source record alone does not establish those results. Annual parameters and generated rule/quote ledgers must be refreshed by the integration owner.

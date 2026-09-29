@@ -4,6 +4,255 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: 2026 state income tax figures that a survey of every state found wrong
+  (displayed numbers change from 2026 for plans in Arkansas, Arizona, Colorado, Idaho,
+  Maryland, Virginia, Rhode Island, California and the District of Columbia that meet each
+  provision; none of the
+  29 examples or their 10 scenarios moves)** (decision D-2027-PUBLISHED-FIGURES, from the
+  survey of all 51 jurisdictions on 2026-09-28, recorded state by state in
+  `DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md`). Each correction has
+  its own rule record, quotes checked live on 2026-09-28, and a fixture that prices both
+  readings:
+  - **Arkansas.** The top rate is 3.7% from $26,400 for tax years from January 1, 2026
+    (Acts 1 and 2 of the 2026 First Extraordinary Session, approved May 6, 2026); the
+    engine charged 3.9%. On $50,000 of Arkansas taxable income, $1,530.00 becomes
+    $1,482.80.
+  - **District of Columbia.** D.C. Act 26-416, an emergency act in force from August 13,
+    2026 for no more than 90 days, sets the District's own basic standard deduction for
+    2026 to 2029: $15,000 single and $30,000 joint plus the IRC 63(c)(3) additional
+    amount, indexed from 2027 and rounded down to $50, and the federal deduction from
+    2030 (D.C. Code 47-1801.04(3A) and (44)). The engine carried the federal $16,100 and
+    $32,200. A single filer under 65 with $60,000 pays $2,525.00 for 2026, not $2,453.50;
+    a couple with $120,000, $6,050.00, not $5,863.00. The permanent act, D.C. Act 26-418,
+    is under congressional review with a projected law date of about November 20, 2026,
+    when this is revisited; the law in force is loaded, as for Washington's and
+    California's votes.
+  - **The federal senior deduction in Arizona, Colorado and Idaho, 2025 to 2028.**
+    Arizona subtracts it (A.R.S. 43-1022(35), Laws 2026, ch. 140), Colorado's base is
+    federal taxable income, and Idaho conforms to the Code as of January 1, 2026 (H 559).
+    The engine left it in all three bases: $150, $264 and $318 less tax for each person
+    65 or older below the federal phase-out.
+  - **Maryland.** The standard deduction is indexed from 2026 (Tax-General 10-217(c)),
+    by an adjustment "as determined by the Comptroller": $3,400 single, as the
+    Comptroller's withholding guide prints it, and $6,850 joint, computed by the same
+    rule; the engine carried 2025's $3,350 and $6,700. The Comptroller's April 2026
+    estimated-tax worksheet still prints $3,350 and $6,700, so the record is
+    approximated with that as the contrary reading (at most about $11.60 a year joint)
+    and is revisited when the 2026 Form 502 instructions publish in January 2027. The 2% tax on net capital gain when federal AGI exceeds $350,000
+    (10-105(a)(3)) was missing: $2,000 more for a single filer with $500,000 of federal
+    AGI that includes $100,000 of gain. A primary-residence gain on a sale under
+    $1,500,000, which the statute leaves out of that base, still reaches it, because the
+    state calculation sees a home sale's gain as ordinary capital gain; the record is
+    approximated (overstates tax) until the gain carries its source. The public-safety retirement subtraction of
+    10-207(mm), $16,000 at 55 or older for 2026 (2026 Md. Laws ch. 686), is now applied
+    to a pension the plan marks with the eligibility code `MD-PUBLIC-SAFETY`: $760 less
+    tax on a $30,000 police pension at 58. The planner's pension editor does not yet
+    offer that marker, so it reaches a plan only through its file or the MCP interface.
+  - **Virginia.** Personal exemptions of $930 each, plus $800 for each taxpayer 65 or
+    older (Va. Code 58.1-322.03(2)), were missing: $99.48 less tax for a single filer at
+    65 and $198.95 for a couple both 65.
+  - **Rhode Island.** The pension and annuity modification is capped at $50,000 from
+    2025 (44-30-12(c)(9)), not $20,000: $1,125 less tax for a single filer at 67 with
+    $50,000 of pension. The Social Security modification (44-30-12(c)(8)), which the
+    engine did not model, now subtracts the benefits included in federal AGI at full
+    retirement age below $107,000 single and $133,750 joint, the 2025 limits and the
+    latest published; on a 2026 joint return where only one spouse has reached full
+    retirement age, the modification is that spouse's share, as the Division's worksheet
+    prorates it. The pension modification now applies only below those same AGI
+    limits, as (c)(9) requires, and leaves IRA distributions out, as the Division's
+    instructions say: a single filer at 67 with $150,000 of federal AGI including a
+    $60,000 pension pays $5,772.50, where the $50,000 cap without the test gave
+    $3,397.50. `RI.md` no longer calls the flat $50,000 ceiling inflation-adjusted.
+  - **California.** The military retirement and Survivor Benefit Plan exclusions of
+    $20,000 each, tested on AGI, for 2025 to 2029 (RTC 17132.9, 17132.10), were missing:
+    up to $1,860 less tax for each at 9.3%.
+
+- **Changed: 2027 and later are priced on the figures already published or enacted for
+  them, not on the 2026 figures (displayed numbers change from 2027 on for every plan whose
+  HSA contribution reaches the limit and every plan in a state with an enacted later-year
+  figure; five of the 29 examples and one of their 10 scenarios move)** (decision
+  D-2027-PUBLISHED-FIGURES, from the 2027 rollover check, widened by the survey of every
+  state). The engine projected every 2027 figure from 2026, although these were law
+  already:
+  - **HSA limits.** Rev. Proc. 2026-24, section 3.01(1): "For calendar year 2027, the
+    annual limitation on deductions under section 223(b)(2)(A) for an individual with
+    self-only coverage under a high deductible health plan is $4,500", and $9,000 for
+    family coverage. The engine allowed $4,510 / $8,968.75 at 2.5% inflation and
+    $4,576 / $9,100 at 4%. The limits now have their own published years
+    (`params/hsaLimitYears.ts`, 2026 from Rev. Proc. 2025-19), read at a scale of 1,
+    and a later year grows from the latest published one: 2028 at 2.5% is $4,612.50
+    self-only (was $4,622.75). The $1,000 age-55 catch-up is statutory (26 U.S.C.
+    223(b)(3)(B)) and unchanged; the revenue procedure's high deductible health plan
+    figures ($1,750 / $3,500 deductible, $8,700 / $17,400 out of pocket) are read by
+    no calculation.
+  - **How the enacted state figures are read.** `stateParamsFor` applies every enacted
+    year module at or before the year in order (`params/state/data/enacted2027.ts` to
+    `enacted2033.ts`): each field an entry names replaces the field for every filing
+    status it carries, a field named as null ends, and every other field keeps the 2026
+    figure. Any state field can be enacted, not only rates.
+  - **Rates enacted for 2027.** On $100,000 of 2027 state taxable income, married filing
+    jointly, the engine overstated the tax by: North Carolina $500 (3.99% for 3.49%,
+    Session Law 2026-41, section 44.1(a)); Nebraska $282.63 (4.55% for 3.99% above the
+    third threshold, Neb. Rev. Stat. 77-2715.03, on the 2026 thresholds until the 2027
+    schedule is final); Mississippi $225 (4% for 3.75% above $10,000, Miss. Code Ann.
+    27-7-5(1)(b)(ii)4); Indiana $50 (2.95% for 2.9%, IC 6-3-2-1(b)(8)); and Montana, on
+    $150,000, $382.50 ($7,572.50 for $7,190: 4.7% to $130,000 joint, $97,500 head of
+    household and $65,000 single or separate, then 5.4%, with the capital-gain breaks at
+    the same figures, MCA 15-30-2103 effective January 1, 2027).
+  - **Later rate steps.** Mississippi 3.5% for 2028, 3.25% for 2029 and 3% from 2030;
+    North Carolina 3.24% for 2030 to 2032 and 2.99% from 2033. On the same $100,000:
+    Mississippi $3,150, $2,925 and $2,700 (were $3,375 each), North Carolina $3,240 for
+    2030 and $2,990 for 2033 (were $3,490).
+  - **Hawaii.** The Act 24 (SLH 2026) rate tables for 2027 and 2029, which replaced the
+    Act 46 tables before they took effect: 2.5% and 5% in the second and third bands and
+    13% above $500,000 single, $1,000,000 joint and $750,000 head of household, with the
+    whole-dollar base taxes the act prints. A single filer with $100,000 of Hawaii
+    taxable income pays $5,890 for 2027 and $5,293 from 2029 on those printed bases
+    (continuous arithmetic gives $5,889.60 and $5,292.80). The standard deduction steps to
+    $9,000 / $18,000 in 2028, $10,000 / $20,000 in 2030 and $12,000 / $24,000 in 2031
+    (HRS 235-2.4(a)(2)(G) to (I)).
+  - **New York.** The five lowest rates each 0.1 point lower for 2027 to 2032 (3.8%,
+    4.3%, 5.05%, 5.3%, 5.8%) and an 8.82% top rate from 2033 above $1,077,550 single and
+    $2,155,350 joint (Tax Law 601, paragraphs (viii) and (ix)).
+  - **Rhode Island.** A surtax on taxable income over $1,000,000 of 1% for 2027, 2% for
+    2028 and 3% from 2029 (44-30-2.6(c)(3)(A)(I)(2)), carried as a top band at 6.99%,
+    7.99% and 8.99% with the threshold held at $1,000,000 until the indexed one is
+    published; and the Social Security modification without its full-retirement-age test
+    from 2027 (44-30-12(c)(8)(ii)). Both from 2026 H 7127 Sub A, Article 6.
+  - **Virginia.** The standard deduction is $9,200 / $18,400 for 2027, $9,300 / $18,600
+    for 2028 and 2029, and $3,000 / $6,000 from 2030 (Va. Code 58.1-322.03(1)(b)); it
+    was $8,750 / $17,500 every year.
+  - **Georgia.** The retirement exclusion at 65 or older is $70,000 from 2027 (HB 463,
+    division (xiv), no delay clause); it was $65,000.
+  - **Delaware.** The military pension subtraction is $15,000 for 2027, $20,000 for 2028
+    and $25,000 from 2029, under 60 and, as a new greater-of limb, at 60 and over
+    (30 Del. C. 1106(b)(3), S.B. 219).
+  - **Illinois.** The basic exemption falls to $1,000 from 2029 (35 ILCS 5/204(b)); it
+    was $2,925.
+  - **Maine.** The standard deduction equals the federal standard deduction from 2027,
+    subject to Maine's phase-out (36 M.R.S. 5124-C(1-D), P.L. 2025, c. 650, Part K).
+  - **Maryland.** The public-safety retirement subtraction rises to $17,000 for 2027,
+    $18,000 for 2028, $19,000 for 2029 and $20,000 from 2030 (10-207(mm)).
+  - **Oregon.** The ORS 316.157 retirement income credit cannot be claimed from 2032
+    (Oregon Laws 2009, chapter 913, section 36, as amended in 2025); the engine kept it in
+    every year.
+  - **California.** The 10.3%, 11.3% and 12.3% bands end from 2031 (Cal. Const. art. XIII,
+    sec. 36(f)(2)), and the military and Survivor Benefit Plan exclusions end from 2030.
+    Proposition 3 on the November 3, 2026 ballot would keep the bands; the end is loaded
+    as current law and is revisited when the vote is decided.
+  - **Washington.** A 9.9% tax on federal AGI less long-term capital gains less a
+    $1,000,000 deduction per individual or couple, from 2028, with the taxable share of
+    Social Security included (ESSB 6346, chapter 238, Laws of 2026); the engine had no
+    Washington income tax. Section 316 indexes the deduction: each October of an
+    odd-numbered year from 2029 it is multiplied by one plus the 12-month change in the
+    consumer price index, rounded to the nearest $1,000 and never reduced, for taxes
+    due the next year, read as the tax year of the adjustment (the act's own usage in
+    sections 204 and 205, and the Department's under the same words for the capital
+    gains tax), and the engine projects that schedule at the plan's inflation
+    (`wa-essb-6346-s316-standard-deduction-indexing`, unsettled; the contrary reading,
+    from 2030, is a year behind and charges $2,475 more for 2029 on $1,500,000). At 2.5%
+    a year the deduction is $1,025,000 for 2029 and 2030 and $1,051,000 for 2031 and
+    2032, so a single filer with $1,500,000 owes $47,025 for 2029 and $44,451 for 2031
+    rather than $49,500. Initiative 645 on the November
+    3, 2026 ballot would repeal the tax; it is loaded as current law and is revisited
+    when the vote is decided. Its direct-QCD policy conforms from 2028, because
+    section 301 excludes what federal AGI excludes, so a Washington year with a QCD is
+    priced exactly rather than marked incomplete (which had set every optimizer
+    candidate aside). The optimizer's linear program gives the deduction a zero-rate
+    band ahead of the 9.9%, so it no longer front-loads conversions to escape a tax a
+    household below the deduction never pays: early-retiree-aca moved to Washington
+    converts about $10,500 and $10,763 in 2026 and 2027, as it does elsewhere, where
+    the solve had proposed about $44,600 and $45,390. Section 302(3), which adds back
+    Washington capital gains for a filer who owes the RCW 82.87 tax, is a stated limit.
+  - **Examples.** Against main at `9676392f`, 6 of the 39 plans move. North Carolina's
+    all-401k-no-bridge and brokerage-bridge-401k each last a year longer (2068 and
+    2069, were 2067 and 2068); lifetime tax and penalties $950,722.50 to $934,906.80
+    and $876,459.16 to $865,395.15; the control's penalties $87,045 to $83,312 (still
+    2042 to 2045); sustainable spending $71,250 to $71,844 ($71,800 shown); headline
+    Market success 28.6% to 29.6% and 29.4% to 30.0% (1,000 paths). The bridge
+    conversion scenario: $566,785 to $534,028, lasting to 2071 (was 2070).
+    hsa-stealth-retirement, the only example at the HSA cap, puts $10 less in its HSA
+    in 2027 and a little less every later working year: ending investable $4,493,650.52
+    to $4,493,410.11, lifetime tax and penalties $807,950.50 to $808,136.54, which moves
+    two Compare cells against example-couple by one rounding
+    step (+$329k, was +$330k; −$332k, was −$331k). California's early-career-match
+    pays less tax once the top bands end: the 2060 Roth conversion year $102,308.02 to
+    $102,107.38, and 2085 to 2091 between $127.87 and $2,278.21 less a year; ending net
+    worth $17,028,288.16 to $17,036,796.98, and the sum of each year's tax
+    $2,806,009.29 to $2,798,420.94. bridge-early-retirement (California): $178.38 and
+    $370.23 less tax in 2070 and 2071, ending net worth $11,977,572.35 to
+    $11,978,172.73. Market success is unchanged for both (100% and 83.6%).
+    aggressive-saver (Washington) does not move: its Washington base income peaks at
+    $2,023,808 in 2091, below the indexed deduction ($2,148,000 for 2089 and 2090 and
+    $2,202,000 for 2091 at its 2.5% inflation), so it never owes the tax. With the deduction held at $1,000,000 it
+    would have owed from 2078, $3,310.24 that year rising to $101,357.04 in 2091.
+    barista-fire (Oregon) moves no figure, but its tax status for 2058 to 2086 is
+    complete where it was incomplete, and the "Oregon retirement credit requires
+    characterized pension recipients" warning goes, because the credit ends from 2032.
+    Every plan's accepted tax input gains `stateHouseholdFacts.federalSeniorDeduction`.
+    The report goldens and example copy state the new figures.
+  - **Sources shown.** The report's parameter source appendix and the in-app source
+    list gain eighteen rows: the 2027 HSA limits (Rev. Proc. 2026-24) and one row per
+    state with enacted figures, each linking the statute or session law that sets them
+    (the North Carolina row links Session Law 2026-41's page). The state summary names
+    the 2026 corrections, the November 3, 2026 votes and the changes that wait on a
+    determination, and points to the survey instead of listing states as if complete.
+  - **Records.** New settled records for each loaded figure, each quote checked live on
+    2026-09-28; Hawaii's HRS 235-51 2027 and 2029 record is withdrawn in favour of
+    `hi-act-24-2026-rate-schedules`. New calculation records
+    `hsa-contribution-limit-years` and `state-enacted-tax-year-figures`, each with a
+    worksheet, an evidence test and a mutation receipt; the
+    `parameter-provenance-catalog` record now counts 34 entries. All are unreviewed.
+
+- **Stated: state changes that wait on a vote or a determination, and what the plan does
+  not model (no displayed number changes beyond the entries above)** (decision
+  D-2027-PUBLISHED-FIGURES). The engine names each with its trigger and date, and
+  `DOCS/maintenance-schedule.md` lists them under "Dated state tax decisions":
+  - **Loaded with a vote or approval pending:** Washington's income tax (Initiative 645)
+    and the end of California's top bands (Proposition 3), both on the November 3, 2026
+    ballot, and the District of Columbia's own standard deduction, whose permanent act
+    (D.C. Act 26-418) is under congressional review to about November 20, 2026.
+  - **Not loaded until decided:** Colorado's TABOR rate cut (October 1, 2026); Georgia's
+    rate, deduction and exemption steps (December
+    1, 2026); Minnesota's one-year cut (December 15, 2026); Oklahoma's cuts (December
+    2026 and February 2027, for 2028 at the earliest); Michigan's one-year cut (January
+    2027); South Carolina's top-rate cut (February 15, 2027); Kansas, Missouri and West
+    Virginia (determinations not yet published); and the later Indiana, Mississippi and
+    North Carolina triggers.
+  - **Held at the latest published figure, now a registered approximation:** a state
+    figure its statute indexes stays at its latest published amount in every later
+    year, so a long projection overstates state tax by more each year
+    (`neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal`, kind fix). Nebraska is
+    the pinned case: in 2046 at 2.5% inflation, $100,000 of Nebraska taxable income is
+    charged $3,827.79 on the 2026 brackets against $3,724.18 on indexed ones. The record
+    lists every figure the survey found indexed, among them Nebraska's 2027 thresholds
+    (draft only), Montana's breaks from 2028, Rhode Island's surtax threshold from 2028
+    and Social Security limits, Maryland's deduction from 2027, Illinois's exemption for
+    2027 and 2028, and the brackets and deductions of Arkansas, California, Minnesota,
+    Missouri, Ohio, North Dakota, Oregon, Maine, Vermont, Wisconsin and others. Only the
+    deductions tagged as federal and the Washington and District of Columbia deductions
+    are projected; no other state's projection changes in this release.
+  - **Optimizer, registered approximation:** the linear program lays a state's brackets
+    over federal taxable income, so it uses the federal deduction in place of a smaller
+    state deduction and ignores state exemptions
+    (`va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction`, understates the
+    in-solve state tax; Virginia pinned: $2,266.75 in the solve against $2,635.90 at law
+    on $60,000). Only a state deduction larger than the federal one, Washington's, gets
+    its zero-rate band. The exact projection re-prices every schedule the solve
+    proposes.
+  - **Also approximated after the review:** Maryland's capital-gain surtax, which
+    reaches a primary-residence gain the statute excludes (overstates tax), and
+    Maryland's 2026 deduction, where the Comptroller has printed two amounts.
+  - **Follow-up:** a public-safety marker in the pension editor, so that Maryland's
+    public-safety retirement subtraction reaches a plan built in the planner and not
+    only one edited as a file or through the MCP interface.
+  - **Filing status.** The plan models single and married filing jointly only: head of
+    household and qualifying surviving spouse need dependents, which the plan does not
+    collect, so no state's head-of-household figures are used for a plan. The Household
+    page's filing-status help and the state records say so. Delaware's new domicile test
+    for the pension subtraction at 60 or older needs a domicile history the plan does not
+    hold and is assumed met.
+
 - **Changed: every plan's Monte Carlo draws from one default seed, so every Monte Carlo
   figure moves once, by sampling noise (the headline success rate moves on 20 of the 29
   examples; the mean change across all 29 is 0.7 points, and the largest is 2.3 apart
