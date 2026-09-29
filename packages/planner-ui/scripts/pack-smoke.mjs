@@ -174,6 +174,7 @@ import {
   parseReportModel,
   serializeReportModel,
   REPORT_BLOCK_IDS,
+  ROTH_FIVE_YEAR_INCOMPLETE_NOTE,
 } from '@retiregolden/planner-ui/report-model'
 import {
   projectPlan,
@@ -233,6 +234,7 @@ console.debug(
   parseReportModel.name,
   serializeReportModel.name,
   REPORT_BLOCK_IDS.length,
+  ROTH_FIVE_YEAR_INCOMPLETE_NOTE.length,
   projectPlan.name,
   currentStartYear.name,
   projectionContract,

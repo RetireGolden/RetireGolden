@@ -29,6 +29,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  chunkModuleExclusionFailures,
   chunksNamingTestFiles,
   evaluateBudget,
   parseLandingScripts,
@@ -39,6 +40,8 @@ import {
 
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 const assetsDir = join(distDir, 'assets')
+// Written by `vite build` (chunkModuleMap in app/vite.config.ts, same path).
+const chunkModuleMapFile = fileURLToPath(new URL('../node_modules/.vite/chunk-modules.json', import.meta.url))
 
 function listAssets() {
   let names
@@ -148,6 +151,21 @@ if (testFileChunks.length > 0) {
   )
 }
 
+// Modules that must stay out of a chunk (CHUNK_MODULE_EXCLUSIONS), read from
+// the build's own module-to-chunk record rather than from import statements,
+// so an import through any chain of modules is caught.
+let chunkModuleMap
+try {
+  chunkModuleMap = JSON.parse(readFileSync(chunkModuleMapFile, 'utf8'))
+} catch {
+  chunkModuleMap = null
+}
+const moduleExclusions = chunkModuleExclusionFailures(
+  jsChunks.map((chunk) => chunk.name),
+  chunkModuleMap,
+)
+result.failures.push(...moduleExclusions.failures)
+
 if (result.failures.length > 0 && !reportOnly) {
   console.error('\nbundle budget FAILED:')
   for (const failure of result.failures) console.error(`  - ${failure}`)
@@ -172,5 +190,8 @@ if (result.failures.length > 0) {
   }
   if (testFileChunks.length === 0) {
     console.log('test files: no chunk names one')
+  }
+  for (const { name, modules } of moduleExclusions.checked) {
+    console.log(`module membership: ${name} holds none of ${modules.join(', ')}`)
   }
 }

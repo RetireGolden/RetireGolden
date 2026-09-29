@@ -1,9 +1,10 @@
-import { existsSync, globSync } from 'node:fs'
+import { existsSync, globSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import type { BuildEnvironmentOptions } from 'vite'
+import type { BuildEnvironmentOptions, Plugin } from 'vite'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 import { howTestedSummaryFromFileGlob } from '../packages/planner-ui/src/planner/howTestedSuites.ts'
@@ -145,6 +146,36 @@ const navigateFallbackDenylist = [
   /^\/THIRD-PARTY-NOTICES\.txt$/,
 ]
 
+// Which source modules render code into each emitted app chunk, for the
+// bundle budget's module-membership checks (CHUNK_MODULE_EXCLUSIONS in
+// scripts/bundleBudget.mjs). dist/ holds only minified output, which no
+// longer says which module a byte came from, so the build records it here.
+// The file goes under node_modules/.vite (gitignored), not dist/: everything
+// in dist/ is deployed, and hosts have no use for a module list.
+// scripts/check-bundle-budget.mjs reads this same path and fails closed when
+// the file is missing or names chunks this build did not emit.
+const chunkModuleMapFile = fileURLToPath(new URL('./node_modules/.vite/chunk-modules.json', import.meta.url))
+const repoRoot = fileURLToPath(new URL('..', import.meta.url)).replaceAll('\\', '/')
+
+function chunkModuleMap(): Plugin {
+  return {
+    name: 'retiregolden:chunk-module-map',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const chunks: Record<string, string[]> = {}
+      for (const output of Object.values(bundle)) {
+        if (output.type !== 'chunk') continue
+        chunks[output.fileName.split('/').pop()!] = Object.entries(output.modules)
+          .filter(([, rendered]) => rendered.renderedLength > 0)
+          .map(([id]) => (id.startsWith(repoRoot) ? id.slice(repoRoot.length) : id))
+          .sort()
+      }
+      mkdirSync(dirname(chunkModuleMapFile), { recursive: true })
+      writeFileSync(chunkModuleMapFile, `${JSON.stringify({ chunks }, null, 1)}\n`)
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -190,6 +221,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    chunkModuleMap(),
     VitePWA({
       registerType: 'autoUpdate',
       // Both empty/off: workbox.globPatterns below already precaches every

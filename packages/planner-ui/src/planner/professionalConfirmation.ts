@@ -2,6 +2,17 @@
 export const ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE = 'roth-five-year-incomplete'
 
 /**
+ * UI-side earnings-taxability caution when the Roth five-year window may still
+ * be open. `report/reportModel.ts` re-exports it, so the published
+ * report-model subpath is unchanged. It lives here so the retirement-account
+ * editor can show it without importing reportModel: a module lands whole in
+ * one chunk, and that one string had pulled the entire report model into the
+ * plan route chunk.
+ */
+export const ROTH_FIVE_YEAR_INCOMPLETE_NOTE =
+  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
+
+/**
  * True when an inherited-account evidence row carries anything a household
  * cannot rely on without professional confirmation: an unsettled reading, a
  * typed limitation, a disclosure, or facts the model does not cover. Kept
