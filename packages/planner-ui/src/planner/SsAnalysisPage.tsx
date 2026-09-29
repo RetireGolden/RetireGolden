@@ -34,6 +34,7 @@ import { runMonteCarlo } from '../mc/pool'
 import { sizeBridge, type BridgeSizing } from '@retiregolden/engine/ladder/bridge'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { Person, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
 import { earningsTestReach } from '@retiregolden/engine/socialSecurity/analysis/earningsTestReach'
 import {
@@ -68,7 +69,7 @@ import { LEARN } from './learnLinks'
 import { LearnLink } from '../learn/LearnLink'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { currentStartYear, projectPlan, seedFromPlanId, taxCalculatorFor, useProjection } from './useProjection'
+import { currentStartYear, projectPlan, taxCalculatorFor, useProjection } from './useProjection'
 import { claimingPeople, dobParts, piaAsOfPlan, planWithClaimAges } from './ssAnalysis'
 import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
@@ -333,7 +334,7 @@ function BridgePanel() {
         const mc = await runMonteCarlo(v.plan, {
           startYear,
           pathCount: 500,
-          seed: seedFromPlanId(plan.id),
+          seed: DEFAULT_MONTE_CARLO_SEED,
           model: { type: 'lognormal', inflationMeanPct: plan.assumptions.inflationPct },
         })
         out.push({
@@ -586,7 +587,7 @@ function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'
         const summary = await runMonteCarlo(candidate, {
           startYear,
           pathCount: 500,
-          seed: seedFromPlanId(forPlan.id),
+          seed: DEFAULT_MONTE_CARLO_SEED,
           model: { type: 'lognormal', inflationMeanPct: forPlan.assumptions.inflationPct },
         })
         out[keyOf(row)] = summary.successRate
@@ -698,7 +699,7 @@ function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'
         </div>
       ) : sweep.verdict === 'aca-unpriced' ? (
         <div className="callout callout--note" role="note">
-          <strong>No claim age is ranked.</strong> {claimAgeUnpricedCreditReason(sweep.unpricedAca)} The table below
+          <strong>No claim age is ranked.</strong> {claimAgeUnpricedCreditReason(sweep.unpricedAca, plan.expenses.healthcare)} The table below
           shows each claim age without the credit in those years.
         </div>
       ) : sweep.verdict === 'flat' || sweep.verdict === 'current-best' || sweep.verdict === 'ineligible' ? (

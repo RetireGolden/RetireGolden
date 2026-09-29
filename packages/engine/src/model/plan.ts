@@ -56,7 +56,7 @@ export type {
   StateTaxYearHouseholdFacts,
 } from './stateTaxPlanFacts.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 5
+export const CURRENT_PLAN_SCHEMA_VERSION = 6
 
 /**
  * The latest `startAge` a QUALIFIED annuity purchase that is not a QLAC may
@@ -2082,62 +2082,120 @@ const acaCharacterizedAmountSchema = z.discriminatedUnion('state', [
   z.object({ state: z.literal('unknown'), amount: z.null() }),
 ])
 
-export const acaYearContractSchema = z
+const acaYearContractAssertionsSchema = z
   .object({
-    year: calendarYear,
+    /**
+     * 'supported' asserts that every covered member is eligible for the
+     * credit on the facts the engine models. From 2027 (Pub. L. 119-21
+     * section 71301, amending IRC 36B(e)) that includes asserting that every
+     * lawfully present tax-family member is an eligible alien: a lawful
+     * permanent resident, a Cuban and Haitian entrant, or a Compact of Free
+     * Association resident. The engine does not compute 36B(e), so a family
+     * with any other lawfully present alien answers 'unsupported', which
+     * leaves the year's credit unpriced.
+     */
+    coverageEligibility: z.enum(['supported', 'unsupported']).describe(
+      "'supported' asserts every covered member is eligible for the premium tax credit on the facts the engine models; from 2027 it also asserts that every lawfully present tax-family member is an eligible alien (a lawful permanent resident, a Cuban and Haitian entrant, or a Compact of Free Association resident; Pub. L. 119-21 section 71301, IRC 36B(e)). 'unsupported' leaves the year's credit unpriced.",
+    ),
+    form8814: z.enum(['notApplicable', 'unsupported']).describe(
+      "'notApplicable' asserts no parent in the tax family reports a child's interest or dividends on Form 8814 this year. 'unsupported' leaves the year's credit unpriced.",
+    ),
+    specialAllocation: z.enum(['notApplicable', 'unsupported']).describe(
+      "'notApplicable' asserts no Form 8962 allocation applies this year (a policy shared with another tax family, or a marriage or divorce during the year). 'unsupported' leaves the year's credit unpriced.",
+    ),
+    marriedFilingSeparatelyException: z.enum(['notApplicable', 'unsupported']).describe(
+      "'notApplicable' asserts no married-filing-separately exception (domestic abuse or spousal abandonment) is claimed this year. 'unsupported' leaves the year's credit unpriced.",
+    ),
+    selfEmployedHealthInsuranceDeduction: z.enum(['notApplicable', 'unsupported']).describe(
+      "'notApplicable' asserts no one in the tax family deducts these premiums as self-employed health insurance this year. 'unsupported' leaves the year's credit unpriced.",
+    ),
+    otherMaterialFacts: z.enum(['none', 'unsupported']).describe(
+      "'none' asserts no other fact the engine does not model bears on this year's credit. 'unsupported' leaves the year's credit unpriced.",
+    ),
+  })
+  .describe(
+    "Facts about the return that the engine does not model, each ruled out explicitly. Any answer other than the first leaves the year's credit unpriced; nothing is assumed by default.",
+  )
+
+const ACA_TAX_EXEMPT_INTEREST_DESCRIPTION =
+  "The tax family's tax-exempt interest for the year, which the credit adds to income. 'known' gives the amount, 'notApplicable' says there is none, and 'unknown' leaves the year's credit unpriced unless the plan's own accounts produce the interest."
+const ACA_FOREIGN_EXCLUSION_DESCRIPTION =
+  "Foreign earned income and housing amounts excluded from income this year, which the credit adds back. 'known' gives the amount, 'notApplicable' says there is none, and 'unknown' leaves the year's credit unpriced."
+
+/**
+ * A premium-credit year contract whose premiums are the coverage year's
+ * actual figures: the household's own Marketplace enrollment premium and
+ * second-lowest-cost silver plan (SLCSP) benchmark for each covered member,
+ * by month, in that year's dollars. The engine uses them as written on every
+ * run: they are not grown with inflation, on the deterministic projection or
+ * on any Monte Carlo path, because a quoted premium does not change with a
+ * simulated inflation rate. A covered member who has died on a run is not
+ * charged from 1 January of the year after the death (the ledger's annual
+ * convention: a person is alive through the year of the death age), and a tax
+ * family that names that member no longer describes the household, so the
+ * year's credit is left unpriced with `tax-family-member-unknown`.
+ */
+export const acaStatedYearContractSchema = z
+  .object({
+    year: calendarYear.describe('The coverage year (calendar year) this contract describes.'),
+    premiumBasis: z
+      .literal('stated')
+      .optional()
+      .describe(
+        "'stated' (the default when absent): this contract's premiums are the coverage year's actual figures, used as written on every run and never grown with inflation. Use 'premiumField' for a year whose premiums you are estimating.",
+      ),
     /** HHS poverty-guideline table used for this tax family. */
-    fplRegion: z.enum(['contiguous', 'alaska', 'hawaii']),
+    fplRegion: z
+      .enum(['contiguous', 'alaska', 'hawaii'])
+      .describe('Which HHS poverty-guideline table applies to the tax family: the 48 contiguous states and DC, Alaska, or Hawaii.'),
     /**
      * Tax-family membership is deliberately independent of Marketplace coverage.
      * The return's primary/spouse income is already in federal AGI; only a
      * required-filer dependent's MAGI is added separately.
      */
-    taxFamilyMembers: z.array(
-      z.object({
-        personId: idSchema,
-        relationship: z.enum(['primary', 'spouse', 'dependent']),
-        requiredToFile: z.enum(['required', 'notRequired', 'unknown']),
-        magi: nonNegative,
-      }),
-    ).min(1),
+    taxFamilyMembers: z
+      .array(
+        z.object({
+          personId: idSchema.describe('A person in the plan, or a dependent the plan does not model.'),
+          relationship: z
+            .enum(['primary', 'spouse', 'dependent'])
+            .describe('Role on the tax return: exactly one primary, a spouse when filing jointly, and any dependents.'),
+          requiredToFile: z
+            .enum(['required', 'notRequired', 'unknown'])
+            .describe("Whether this member must file a return. A dependent's income counts toward the credit only when the dependent must file; 'unknown' leaves the year's credit unpriced."),
+          magi: nonNegative.describe("A dependent's own modified AGI for the year, added to household income when the dependent must file. Not read for the primary or spouse, whose income the projection computes."),
+        }),
+      )
+      .min(1)
+      .describe('Everyone on the tax return for the year, covered or not; their number sets the poverty line.'),
     /**
      * Actual enrollment premium and applicable SLCSP benchmark, by calendar
      * month. Zero means no Marketplace coverage in that month.
      */
-    coveredMembers: z.array(
-      z.object({
-        personId: idSchema,
-        enrollmentPremiumByMonth: z.array(nonNegative).length(12),
-        slcspBenchmarkPremiumByMonth: z.array(nonNegative).length(12),
-      }),
-    ).min(1),
-    taxExemptInterest: acaCharacterizedAmountSchema,
-    foreignExclusionAddback: acaCharacterizedAmountSchema,
+    coveredMembers: z
+      .array(
+        z.object({
+          personId: idSchema.describe('A tax-family member enrolled in a Marketplace plan in some month of the year.'),
+          enrollmentPremiumByMonth: z
+            .array(nonNegative)
+            .length(12)
+            .describe("The full monthly premium of the plan this member is enrolled in, January to December, in that year's dollars, before any credit. 0 means no Marketplace coverage that month."),
+          slcspBenchmarkPremiumByMonth: z
+            .array(nonNegative)
+            .length(12)
+            .describe("The monthly premium of the second-lowest-cost silver plan (SLCSP) that applies to this member, January to December, in that year's dollars. The credit is measured against it, in months with enrollment only."),
+        }),
+      )
+      .min(1)
+      .describe('The members with Marketplace coverage and their actual monthly premiums for the coverage year, held fixed on every Monte Carlo path.'),
+    taxExemptInterest: acaCharacterizedAmountSchema.describe(ACA_TAX_EXEMPT_INTEREST_DESCRIPTION),
+    foreignExclusionAddback: acaCharacterizedAmountSchema.describe(ACA_FOREIGN_EXCLUSION_DESCRIPTION),
     /**
      * Filing/eligibility mechanics intentionally outside this planning model must
      * be affirmatively ruled out. `unsupported` fails closed; there are no silent
      * defaults for an ACA-actionable year.
      */
-    assertions: z.object({
-      /**
-       * 'supported' asserts that every covered member is eligible for the
-       * credit on the facts the engine models. From 2027 (Pub. L. 119-21
-       * section 71301, amending IRC 36B(e)) that includes asserting that every
-       * lawfully present tax-family member is an eligible alien: a lawful
-       * permanent resident, a Cuban and Haitian entrant, or a Compact of Free
-       * Association resident. The engine does not compute 36B(e), so a family
-       * with any other lawfully present alien answers 'unsupported', which
-       * leaves the year's credit unpriced.
-       */
-      coverageEligibility: z.enum(['supported', 'unsupported']).describe(
-        "'supported' asserts every covered member is eligible for the premium tax credit on the facts the engine models; from 2027 it also asserts that every lawfully present tax-family member is an eligible alien (a lawful permanent resident, a Cuban and Haitian entrant, or a Compact of Free Association resident; Pub. L. 119-21 section 71301, IRC 36B(e)). 'unsupported' leaves the year's credit unpriced.",
-      ),
-      form8814: z.enum(['notApplicable', 'unsupported']),
-      specialAllocation: z.enum(['notApplicable', 'unsupported']),
-      marriedFilingSeparatelyException: z.enum(['notApplicable', 'unsupported']),
-      selfEmployedHealthInsuranceDeduction: z.enum(['notApplicable', 'unsupported']),
-      otherMaterialFacts: z.enum(['none', 'unsupported']),
-    }),
+    assertions: acaYearContractAssertionsSchema,
   })
   .superRefine((contract, ctx) => {
     const taxFamilyIds = new Set<string>()
@@ -2178,6 +2236,53 @@ export const acaYearContractSchema = z
       }
     })
   })
+  .describe(
+    "A premium-credit year with the coverage year's actual Marketplace figures, used as written on every run and never grown with inflation.",
+  )
+export type AcaStatedYearContract = z.infer<typeof acaStatedYearContractSchema>
+
+/**
+ * A premium-credit year contract whose premiums follow the plan's premium
+ * field. It stores only the facts the household asserts (the year, the
+ * filing assertions, tax-exempt interest and the foreign-exclusion addback);
+ * the engine fills the rest on each run for each year: the poverty-guideline
+ * region from the state the household lives in that year, the tax family
+ * from the people alive that year (the first as primary, the next as spouse,
+ * each required to file), the covered members (those alive and under Medicare
+ * age, for their months before Medicare), and each covered month's enrollment
+ * premium and SLCSP benchmark, both `pre65MonthlyPremiumPerPerson` grown by
+ * that run's health-inflation factor from the start year. It refuses a stored
+ * region, roster or premium: the engine would not read one, so storing it
+ * would be a field that does not do what its name says.
+ */
+export const acaPremiumFieldYearContractSchema = z
+  .object({
+    year: calendarYear.describe('The coverage year (calendar year) this contract covers.'),
+    premiumBasis: z
+      .literal('premiumField')
+      .describe(
+        "'premiumField': the engine fills this year's region, tax family, covered members and premiums on every run. Each covered month's enrollment premium and SLCSP benchmark are both the plan's pre-65 monthly premium per person, grown by that run's healthcare inflation from the start year, for each person alive and under Medicare age. Use it for a year whose premiums you are estimating.",
+      ),
+    taxExemptInterest: acaCharacterizedAmountSchema.describe(ACA_TAX_EXEMPT_INTEREST_DESCRIPTION),
+    foreignExclusionAddback: acaCharacterizedAmountSchema.describe(ACA_FOREIGN_EXCLUSION_DESCRIPTION),
+    assertions: acaYearContractAssertionsSchema,
+  })
+  .strict()
+  .describe(
+    "A premium-credit year whose premiums follow the plan's pre-65 premium, grown with healthcare inflation on each run, for the people alive and under Medicare age that year. It carries no region, roster or premiums: the engine derives them.",
+  )
+export type AcaPremiumFieldYearContract = z.infer<typeof acaPremiumFieldYearContractSchema>
+
+/**
+ * One premium-credit (ACA) year contract. `premiumBasis` says where its
+ * premiums come from: 'stated' (the default when absent) holds the coverage
+ * year's actual figures, and 'premiumField' has the engine derive them on
+ * each run from the plan's premium field.
+ */
+export const acaYearContractSchema = z.discriminatedUnion('premiumBasis', [
+  acaStatedYearContractSchema,
+  acaPremiumFieldYearContractSchema,
+])
 export type AcaYearContract = z.infer<typeof acaYearContractSchema>
 
 export const healthcareConfigSchema = z.object({
@@ -2190,7 +2295,45 @@ export const healthcareConfigSchema = z.object({
    * with Marketplace premiums but no matching contract funds the gross premium
    * and emits typed non-actionable evidence.
    */
-  acaYears: z.array(acaYearContractSchema).optional(),
+  acaYears: z
+    .array(acaYearContractSchema)
+    .optional()
+    .describe(
+      "Premium-credit (ACA) contracts, one per coverage year. A year with Marketplace months and the credit on but no contract pays the full premium and says why. Each contract's premiumBasis says where its premiums come from: 'stated' (the default) holds the coverage year's actual figures, used as written on every run; 'premiumField' has the engine derive them from pre65MonthlyPremiumPerPerson on each run.",
+    ),
+  /**
+   * Which edits removed premium-credit contracts, and the years they covered
+   * (decision D-EXAMPLE-SOURCE-SWITCH, review finding M2). A premium-field
+   * contract is derived on every run, so only a change to who is on the
+   * return (a partner added or removed, the people replaced, the filing
+   * status changed) removes it; a stated contract is also removed by a
+   * household or premium edit, because its written roster or premiums may no
+   * longer hold. The projection does not read this; the planner uses it to
+   * name the edit when it explains an unpriced credit year.
+   */
+  acaYearsRemoved: z
+    .array(
+      z.object({
+        edit: z
+          .enum([
+            'partnerAdded',
+            'partnerRemoved',
+            'peopleChanged',
+            'filingStatusChanged',
+            'householdChanged',
+            'premiumChanged',
+            'exampleNoLongerMatched',
+          ])
+          .describe(
+            "The edit that removed the contracts; 'exampleNoLongerMatched' is the v5 -> v6 migration removing contracts a library example wrote that no longer matched the plan's premium, which the v5 engine was already leaving out.",
+          ),
+        years: z.array(calendarYear).describe('The coverage years whose contracts the edit removed.'),
+      }),
+    )
+    .optional()
+    .describe(
+      "A record of edits that removed premium-credit contracts, oldest first, with the years each removed. The projection does not read it; a host uses it to say which edit left a year's credit uncounted.",
+    ),
   /** Part D / Medigap / Advantage base premium per person 65+, today's dollars (Part B + IRMAA added automatically). */
   medicareExtrasMonthlyPerPerson: nonNegative,
   /**
@@ -2288,6 +2431,23 @@ export const spendingPolicySchema = z.object({
   lowerBalanceThresholdPct: z.number().positive().optional(),
   /** Risk-based, solver output: real balance as a % of the starting portfolio above which raises trigger. */
   upperBalanceThresholdPct: z.number().positive().optional(),
+  /**
+   * Risk-based, solver provenance: the Monte Carlo seed the balance thresholds
+   * were solved on, written with them. The projection does not read it; the
+   * planner compares it with the engine's default seed to say whether the
+   * saved thresholds came from today's markets. Absent while a threshold is
+   * present means the thresholds were solved before schema v6, on a seed
+   * taken from the plan's id (decision D-MC-DEFAULT-SEED, 2026-09-28).
+   */
+  balanceThresholdSeed: z
+    .number()
+    .int()
+    .min(0)
+    .max(0xffffffff)
+    .optional()
+    .describe(
+      "The Monte Carlo seed the balance thresholds were solved on, stored with them. The projection does not read it. When a threshold is present without it, the thresholds were solved before plan schema v6, on a seed taken from the plan's id, not the engine's default seed.",
+    ),
   /** Size of each cut/raise as a percent of the full discretionary layer. Absent ⇒ 10. */
   adjustmentPct: z.number().min(0).max(100).optional(),
   /** Allow raises above the target lifestyle into ideal/excess annual layers and early flexible goals. */

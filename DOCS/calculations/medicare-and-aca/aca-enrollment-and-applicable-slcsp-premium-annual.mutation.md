@@ -1,15 +1,15 @@
 # Mutation receipt: aca-enrollment-and-applicable-slcsp-premium-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualHealthcareExpenses.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualHealthcareExpenses.ts b/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
-index eff40c08..7ee12e46 100644
+index faf74279..6f794d5b 100644
 --- a/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
 +++ b/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
-@@ -241,7 +241,7 @@ export function annualHealthcareExpenses(
+@@ -220,7 +220,7 @@ export function annualHealthcareExpenses(
          const enrollmentPremium =
            member.enrollmentPremiumByMonth[month] ?? 0
          acaEnrollmentPremiums[month]! += enrollmentPremium
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/projection/internal/types/aca.evidence.test.ts (2 tests | 1 failed) 32ms
+ ❯ src/projection/internal/types/aca.evidence.test.ts (2 tests | 1 failed) 44ms
    ❯ aca-enrollment-and-applicable-slcsp-premium-annual — ACA gross enrollment premium and applicable SLCSP benchmark (2)
-     × sums three enrolled months of premium and three of benchmark, excluding April 29ms
+     × sums three enrolled months of premium and three of benchmark, excluding April 41ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed (2)
@@ -57,14 +57,14 @@ AssertionError: applicableSlcspPremium 2400 is not within {"abs":0.005} of 1800:
 - true
 + false
 
- ❯ expectWithin src/projection/internal/types/aca.evidence.test.ts:85:9
-     83|         withinTolerance(actual, target, example.tolerance),
-     84|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
-     85|       ).toBe(true)
+ ❯ expectWithin src/projection/internal/types/aca.evidence.test.ts:84:9
+     82|         withinTolerance(actual, target, example.tolerance),
+     83|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
+     84|       ).toBe(true)
        |         ^
-     86|     }
-     87|
- ❯ src/projection/internal/types/aca.evidence.test.ts:130:7
+     85|     }
+     86|
+ ❯ src/projection/internal/types/aca.evidence.test.ts:129:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

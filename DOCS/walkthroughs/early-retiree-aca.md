@@ -97,7 +97,7 @@ benchmark-premium rule**: it reads the SLCSP only from a contract.
 | Market series | none (deterministic: plan assumptions every year) | `SimulateOptions.market` doc |
 | Fixed "now" | `2026-06-29T12:00:00.000Z`. It only stamps `createdAtIso`/`updatedAtIso`; `simulatePlan` takes no date | `buildContext.ts#EXAMPLE_FIXED_NOW_ISO`; `projection/simulate.ts#SimulateOptions` |
 | End year | 2056 = 1964 + 92 | `simulate.ts` (`endYear = horizonEndYear ?? max(dobYear + lifeAge)`) |
-| `plan.exampleSourceId` | absent in the harness (set only by `loadExample.ts` when the app opens the example) | `loadExample.ts` line 34. It gates only the example-contract mismatch check, which passes in 2026 either way (row 44) |
+| `plan.exampleSourceId` | absent in the harness (set only by `loadExample.ts` when the app opens the example) | `loadExample.ts` line 34. Provenance only: the projection never reads it (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28, deleted the example-contract check it once gated), so the harness and the app give the same figures |
 
 ### 1b. Plan facts
 
@@ -238,7 +238,7 @@ stand-in.
 
 | # | Figure | Value | Derivation | Contract source |
 |---|---|---|---|---|
-| 44 | Contract and support gates | one 2026 contract; **no initial support codes** | The 2026 pack is published (not a stand-in); no spending policy; exactly one contract; one primary and 0 spouses (single); every living person is in the tax family; covered members are in the tax family; 12 marketplace months with 0 Medicare months, so no overlap; tax-exempt and foreign items are `notApplicable`; SLCSP > 0 in every enrolled month and no benchmark-only month; every assertion is supported or ruled out. The example-mismatch check: the contract's 1,000 equals 1,000 × health factor 1, and in the harness the check is not even reached (`exampleSourceId` absent). | domain rules §8 (gate list); `annualHealthcareExpenses.ts` lines 200–229, 284–441 (body) |
+| 44 | Contract and support gates | one 2026 contract; **no initial support codes** | The 2026 pack is published (not a stand-in); no spending policy; exactly one contract; one primary and 0 spouses (single); every living person is in the tax family; covered members are in the tax family; 12 marketplace months with 0 Medicare months, so no overlap; tax-exempt and foreign items are `notApplicable`; SLCSP > 0 in every enrolled month and no benchmark-only month; every assertion is supported or ruled out. The contract is a `premiumField` contract: the run fills it with region contiguous (the household's state), tax family [p1] (the one person alive) and 12 months of 1,000 × health factor 1 = 1,000 for p1, enrollment and benchmark alike (record `aca-contract-premium-basis`). No example check exists (deleted by decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28). | domain rules §8 (gate list); `effectiveAcaYearContract.ts#effectiveAcaYearContract` and the support-code gates of `annualHealthcareExpenses.ts#annualHealthcareExpenses` (body) |
 | 45 | Tax-family size / region | 1 / contiguous | | `AcaResult` inputs; contract |
 | 46 | **FPL** (`aca.federalPovertyLine`) | **15,650** | first person 15,650 + 5,500 × 0 additional people, × FPL scale 1. These are the HHS **2025** guidelines, which apply to 2026 coverage. | `year2026.federalPovertyLine.contiguous` (value on line 237; the comment "HHS 2025 poverty guidelines used for 2026 Marketplace coverage" on line 236); `aca.ts#acaFederalPovertyLine` |
 | 47 | Months on the Marketplace / monthly enrollment premium | **12** (`coveredMonths` [1…12]) / 1,000.00 | 1,000 × health factor 1; the premium is per person, not age-rated | row 6; `healthcareConfigSchema.pre65MonthlyPremiumPerPerson` doc |
@@ -393,12 +393,19 @@ from `parseExamplePlan`, a planner-ui helper, and it sets SLCSP = enrollment = t
 `pre65MonthlyPremiumPerPerson`, which is not age-rated. Two consequences for the page:
 - The net premium always equals the expected contribution (row 56), so the page is really showing
   "contribution = 5.74% of MAGI". It should say that the benchmark was set equal to the premium by assumption.
-- In the app (`exampleSourceId` set), editing the premium so that it no longer matches the synthesized contract
-  trips `example-contract-input-mismatch` and falls back to the gross premium. A user who "tries a different premium"
-  sees the credit vanish for a reason unrelated to the cliff.
+- Editing the premium re-prices the credit. The contract is a `premiumField` contract (decision
+  D-EXAMPLE-SOURCE-SWITCH, 2026-09-28): it stores no premium, and every run fills the enrollment premium and the
+  benchmark from the premium field, so both move with an edit and, below the cliff, the net premium stays the
+  expected contribution. The premium form keeps such a contract (it clears only `stated` ones), and so do a change of
+  state, a move, a date of birth and a planning age; adding a partner or changing the filing status removes it, and the
+  planner then says that edit is why the credit is not counted (review finding M2). Before the decision
+  the edit deleted the contract (`missing-year-contract`) and, with `exampleSourceId` set, a contract that no longer
+  matched tripped `example-contract-input-mismatch`; either way the credit vanished for a reason unrelated to the
+  cliff.
 
-The standard UI "does not yet author `acaYears`" (domain rules §8), so a user-built copy of this plan would show no
-credit at all.
+The standard UI "does not yet author `acaYears`" (domain rules §8). A copy saved from this example (Save to My Plans,
+Duplicate) keeps its `premiumField` contracts, and one saved before plan schema v6 has them rewritten to
+`premiumField` when it opens; a plan built from scratch in the UI would show no credit at all.
 
 **A5. Which years are actionable, and what the example's copy says (restated 2026-09-27).** On the engine since
 decision D-ACA-2027-TABLE (2026-09-26), **2026 and 2027 are actionable ACA years**: each coverage year has published
@@ -409,8 +416,12 @@ fill the top of the **10% bracket** (`topOfBracket`), not the cliff (`acaCliff`)
 and the builder chose that target because it keeps the baseline under the cliff where filling the 12% bracket would
 cross it; the 2026 conversion lands 34,100 below the cliff because of it. Since decision D-ACA-EXAMPLE-COPY (2026-09-27)
 the example's `lookFor` and learn article say exactly this (credits in 2026 and 2027, the full premium from 2028, the
-benchmark assumed equal to the $1,000 premium so that editing the premium turns the credit off, and conversions sized to
-the bracket), and `exampleCopyFigures.test.ts` holds the copy's years and figures to the engine.
+benchmark assumed equal to the premium, and conversions sized to the bracket), and `exampleCopyFigures.test.ts` holds
+the copy's years and figures to the engine. Since decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) the contracts are
+`premiumField` ones, so editing the premium re-prices the credit rather than turning it off: the enrollment premium
+and the benchmark both follow the new premium, the credit moves with it, and what Casey pays stays her expected
+contribution. The copy says so, and `exampleCopyFigures.test.ts` checks that the credit moves by the premium's change to
+the cent (PR #761 review 4).
 
 *As derived on 2026-09-22 (history).* Only 2026 was actionable then: 2027 and 2028 had contracts but no published
 figures, a stand-in year "reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable
@@ -642,8 +653,8 @@ The inputs are exactly those of the 2026 document, section 1. The plan is built 
 `buildEarlyRetireeAca` and `parseExamplePlan`, with start year 2026. The walkthrough harness calls
 `projectPlan(plan, { startYear: 2026 })`, which calls `simulatePlan` with `taxCalculatorFor(plan)` =
 `combineTaxCalculators(createFederalTaxCalculator(), createStateTaxCalculator({ overridePct: 0, localPct: 0 }))`
-(`packages/planner-ui/src/projection.ts`, `planTaxCalculator.ts`). There is no market series, and `exampleSourceId`
-is absent. The 2027 openings (2026 closing, approved):
+(`packages/planner-ui/src/projection.ts`, `planTaxCalculator.ts`). There is no market series, and `exampleSourceId`,
+absent here, is never read by the projection. The 2027 openings (2026 closing, approved):
 
 | Account | Opening 2027 | Exact | Source |
 |---|---|---|---|
@@ -668,7 +679,7 @@ My binary64 replay of 2026 reproduces all three to within 1e-9 (178,627.26927795
 | I9 | AMT exemption (single) | × 1.025: 90,100 × 1.025 = **92,352.50** | 1.025 | same doc ("AMT exemption and its phase-out threshold -- IRC 55(d)(4)(B)") |
 | I10 | Left flat (no indexing provision) | the §86 tiers, the NIIT threshold, the §1211(b) offset, and the senior deduction with its MAGI threshold. None reaches this plan in 2027: no Social Security, no investment income, nobody 65 | 1 | `indexFederalTaxPack` doc ("Figures deliberately left alone"); domain rules §1 |
 | I11 | Health inflation factor | **additive**: 1 + 0.025 + 0.03 = **1.055**, from the start year | 1.055 | `simulate.ts` lines 516–520, 532–534 (`cumHealthInfl`, "general inflation + the healthcare premium"); `YearExpenses.healthcare` doc ("the marketplace premium use[s] the health inflation factor from the start year") |
-| I12 | 2027 Marketplace premium | The synthesized contract carries 1,000 × (1 + (2.5 + 3)/100)^(2027 − 2026) = **1,055** a month, for enrollment and SLCSP alike. The gross premium is read from the contract: 12 × 1,055 = **12,660** | 1.055 | `buildContext.ts#parseExamplePlan` lines 93–95 and 118–137 (body; doc: "The SLCSP equals the example's stated enrollment premium"); `YearAcaResult.grossEnrollmentPremium` doc; `annualHealthcareExpenses.ts` lines 231–240, 264–277 (body). Both routes give exactly 1,055.0 in binary64: `1000 × Math.pow(1 + 0.055, 1)` and `1000 × ((1 + 0.025) + 0.03)` |
+| I12 | 2027 Marketplace premium | The `premiumField` contract is filled for 2027 with 1,000 × the run's health factor (1 + (2.5 + 3)/100) = **1,055** a month, for enrollment and SLCSP alike (record `aca-contract-premium-basis`). The gross premium is read from the filled contract: 12 × 1,055 = **12,660** | 1.055 | `buildContext.ts#parseExamplePlan` (doc: "The SLCSP equals the enrollment premium, an explicit example assumption"); `effectiveAcaYearContract.ts#effectiveAcaYearContract` (body); `YearAcaResult.grossEnrollmentPremium` doc. The factor is the ledger's running product `1000 × ((1 + 0.025) + 0.03)`, exactly 1,055.0 in binary64; before decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) the stored contract carried `1000 × Math.pow(1 + 0.055, 1)`, the same 1,055.0 |
 | I13 | Poverty line and ACA schedule | **Not indexed and not published.** A stand-in year "exposes no inflation-scaled FPL as actionable evidence". The engine never prices the credit, so its would-be pricing scale (`pricingInflationScale` = `inflFactorFrom(2026, 2027)`) is never applied | none | domain rules §8 ("Only years with sourced tax-year parameters can be actionable; a stand-in future pack reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable evidence, and funds gross premium"); `annualAcaResultPublication.ts` lines 181–191 (body: `!input.isStandIn`) |
 | I14 | Florida | the 2026 state pack stands in, with no marker; FL has `hasIncomeTax: false` | n/a | `params/state/index.ts` header ("the latest pack for future years … no supported-year guard and no validity marker"); `params/state/data/year2026.ts` lines 337–343 |
 | I15 | IRMAA thresholds | not reached: no Medicare months | n/a | `annualHealthcareExpenses.ts` lines 155–199 (body) |
@@ -760,8 +771,8 @@ Rows 48 to 66 that Revision 2 lists are superseded by it; rows 47, 53, 54, 58 to
 
 | # | Figure | Value | Derivation | Contract source | Tolerance |
 |---|---|---|---|---|---|
-| 47 | The 2027 contract | one contract: `year` 2027, `fplRegion` contiguous, tax family [p1, primary, required, `magi` 0], covered member p1 with enrollment **12 × 1,055** and SLCSP **12 × 1,055**, both addbacks `notApplicable`, every assertion supported or ruled out | I12. Casey is 63, so all 12 months are covered | `parseExamplePlan` lines 103–150 (body) | |
-| 48 | **The gate** | the initial support codes are **['tax-year-parameters-unsupported']** and nothing else | The year is ACA-active (credit on, gross 12,660 > 0) and `isStandIn`, which pushes the code. Every other gate passes, as in 2026: no spending policy; one contract; one primary and 0 spouses (single); no omitted living person; unique ids; 12 marketplace months with no enrolled month at or past month 12, so no Medicare overlap; the primary is modeled, alive and `required`; no dependents; tax-exempt and foreign items `notApplicable`; SLCSP > 0 in every enrolled month; no benchmark-only month; no example mismatch (`exampleSourceId` is absent, and 1,055.0 = 1,055.0 in any case); all six assertions pass | `annualHealthcareExpenses.ts` line 269 and **lines 284–287** (body); domain rules §8 | |
+| 47 | The 2027 contract | one `premiumField` contract for 2027, which the run fills: `fplRegion` contiguous, tax family [p1, primary, required, `magi` 0], covered member p1 with enrollment **12 × 1,055** and SLCSP **12 × 1,055**; both addbacks `notApplicable` and every assertion supported or ruled out, as stored | I12. Casey is 63, so all 12 months are covered | `parseExamplePlan` (body); `effectiveAcaYearContract.ts#effectiveAcaYearContract` (body) | |
+| 48 | **The gate** | the initial support codes are **['tax-year-parameters-unsupported']** and nothing else | The year is ACA-active (credit on, gross 12,660 > 0) and `isStandIn`, which pushes the code. Every other gate passes, as in 2026: no spending policy; one contract; one primary and 0 spouses (single); no omitted living person; unique ids; 12 marketplace months with no enrolled month at or past month 12, so no Medicare overlap; the primary is modeled, alive and `required`; no dependents; tax-exempt and foreign items `notApplicable`; SLCSP > 0 in every enrolled month; no benchmark-only month; the `premiumField` contract is filled for 2027 at 1,000 × the 2027 health factor = 1,055.0 a month for p1 (no example check exists since decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28); all six assertions pass | `effectiveAcaYearContract.ts#effectiveAcaYearContract`; the `acaParametersStandIn` gate of `annualHealthcareExpenses.ts#annualHealthcareExpenses` (body); domain rules §8 | |
 | 49 | **Pricing refused** | no quote | The candidate evaluation drops the two informational tax-exempt codes, then prices only when no code is left (`blockingAcaCodes.length === 0 && acaMagiProbe.magi !== null && !request.forceGrossAca`). The list holds `tax-year-parameters-unsupported`, so `acaEconomicPremiumByMonth` is never called, `acaQuote` stays null, and candidate healthcare stays at healthcare excluding enrollment (0) + gross (12,660) | `annualFundingCandidateEvaluation.ts` lines 363–364 and **401–409** (body) | |
 | 50 | **`aca.readiness`** | **`nonActionable`** | actionable needs no blocking code **and** a non-null quote | `annualAcaResultPublication.ts` lines 114–121 and 205 (body); domain rules §8 | exact |
 | 51 | **`aca.supportCodes`** | **['tax-year-parameters-unsupported']** | the evaluation's codes. `fixed-point-nonconvergent` is not added, because the funding root converged (row 77). `conflicting-cliff-fixed-points` is not added, because no basin probe ran (row 78) | publication lines 101–108 and 206–208 (body) | exact |
@@ -771,9 +782,9 @@ Rows 48 to 66 that Revision 2 lists are superseded by it; rows 47, 53, 54, 58 to
 | 55 | **`aca.federalPovertyLine`** | **null** | The contract is present, but the year is a stand-in, so no inflation-scaled line is exposed | domain rules §8 ("exposes no inflation-scaled FPL as actionable evidence"); publication lines 181–191 (body: `!input.isStandIn`) | null |
 | 56 | **`aca.fplPct`** | **null** | taken from the priced quote, and there is none | publication line 192 (body) | null |
 | 57 | **`aca.cliffState`** | **`unsupported`** | the year is not actionable. It is **not** `above-cliff`: no cliff test is run | publication lines 193–202 (body) | exact |
-| 58 | `aca.coveredMembers` | [{p1, `coveredMonths` [1…12], `grossEnrollmentPremium` 12,660, `applicableSlcspPremium` 12,660}] | contract present, no mismatch | publication lines 143–158 (body) | 0.005 on the dollars |
+| 58 | `aca.coveredMembers` | [{p1, `coveredMonths` [1…12], `grossEnrollmentPremium` 12,660, `applicableSlcspPremium` 12,660}] | contract present (the `premiumField` contract as the run fills it) | publication lines 143–158 (body) | 0.005 on the dollars |
 | 59 | **`aca.grossEnrollmentPremium`** | **12,660.00** | 12 × 1,055 (I12) | `YearAcaResult.grossEnrollmentPremium` doc; worksheet `aca-enrollment-and-applicable-slcsp-premium-annual` | 0.005 |
-| 60 | **`aca.applicableSlcspPremium`** | **12,660.00** | 12 × 1,055. Each month counts because its enrollment is > 0. The contract is present, so the field is not null | `YearAcaResult.applicableSlcspPremium` doc ("null without an ACA contract or when the example contract's inputs mismatch") | 0.005 |
+| 60 | **`aca.applicableSlcspPremium`** | **12,660.00** | 12 × 1,055. Each month counts because its enrollment is > 0. The contract is present, so the field is not null | `YearAcaResult.applicableSlcspPremium` doc ("null without exactly one ACA contract for the year") | 0.005 |
 | 61 | **`aca.modeledAllowablePtc`** (the credit) | **null** | no quote | publication line 236 (body); `YearAcaResult.modeledAllowablePtc` doc | null |
 | 62 | **`aca.economicNetPremium`** | **12,660.00**, equal to the gross premium | published as `healthcare − healthcareExcludingAcaEnrollment` = 12,660 − 0 | publication lines 237–238 (body). No doc comment; the 2026 review's C13 says "On a gross fallback the field shows the gross premium" | 0.005 |
 | 63 | `aca.aptcModeled` / `form8962ReconciliationSupported` | false / false | constants | `YearAcaResult` | exact |

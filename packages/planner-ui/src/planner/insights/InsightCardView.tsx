@@ -109,7 +109,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
               // 2026-09-26). Other refusals keep the engine's diagnostics.
               const unpricedCredit =
                 card.id === 'spending-guardrails'
-                  ? guardrailPreviewUnpricedCreditRefusal(projectionView.result.years, evaluation.candidateResult.years)
+                  ? guardrailPreviewUnpricedCreditRefusal(projectionView.result.years, evaluation.candidateResult.years, plan.expenses.healthcare)
                   : null
               setPreviewError(
                 unpricedCredit ??

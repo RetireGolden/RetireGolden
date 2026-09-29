@@ -4,7 +4,7 @@
  * co-optimization name a claim already made the same way.
  */
 import type { AlreadyClaimed, ClaimAgeValue } from '@retiregolden/engine/socialSecurity/openClaims'
-import { claimAgeUnpricedCreditReason, type UnpricedCreditYear } from './acaVetoCopy'
+import { claimAgeUnpricedCreditReason, type AcaContractRemovals, type UnpricedCreditYear } from './acaVetoCopy'
 
 /** A claim age as the page prints it: "67", or "67y 6m" with months. */
 export function fmtClaimAge(c: ClaimAgeValue): string {
@@ -36,16 +36,18 @@ export interface ClaimAgeSearchFacts {
  * same on the Optimize card and in the downloadable report: an unpriced
  * premium credit (each year with its reason), every claim already made, or no
  * claim age left to try. Null when the search ran ('searched') or there was
- * no stream ('no-claims').
+ * no stream ('no-claims'). With the plan's removal record, an unpriced year
+ * whose contract an edit removed names that edit.
  */
 export function claimAgeSearchRefusal(
   search: ClaimAgeSearchFacts,
   personName: (id: string) => string,
   startYear: number,
+  removals?: AcaContractRemovals,
 ): string | null {
   switch (search.outcome) {
     case 'aca-unpriced':
-      return `Social Security claim age not searched. ${claimAgeUnpricedCreditReason(search.unpricedAca)} The recommendation keeps your current claim ages.`
+      return `Social Security claim age not searched. ${claimAgeUnpricedCreditReason(search.unpricedAca, removals)} The recommendation keeps your current claim ages.`
     case 'already-claimed':
       return `Social Security claim age not searched: ${alreadyClaimedText(search.alreadyClaimed, personName)}, before the plan starts in ${startYear}, so there is no claim age left to move. ${ALREADY_CLAIMED_LIMITS}`
     case 'no-age-left':

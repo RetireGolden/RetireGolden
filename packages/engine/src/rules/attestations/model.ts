@@ -9,6 +9,7 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const modelAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'model/acaContractRemovals.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-28', note: null }),
   'model/migrations.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records' }),
   'model/plan.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers covered; inherited/election contradiction checks are law-sensitive mirrored validation with missing-fact/year-granular limits; 403(b)/spouse/SEPP carriers are not calculators' }),
   'model/planCrossFieldChecks.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates' }),

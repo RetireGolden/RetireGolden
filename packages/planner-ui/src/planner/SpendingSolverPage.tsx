@@ -254,7 +254,7 @@ export function SpendingSolverPage() {
   // Only the rounding puts the shown figure below a baseline the plan
   // sustains: the headroom is under $100, not negative.
   const headroomUnderHundred = sustainsCurrent && slack !== null && slack < 0
-  const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null) : null
+  const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null, plan.expenses.healthcare) : null
   // The failure well prints the engine's reasons verbatim, except the
   // unpriced-credit sentence, which the plain note under it replaces.
   const failureDiagnostics = result ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics) : []

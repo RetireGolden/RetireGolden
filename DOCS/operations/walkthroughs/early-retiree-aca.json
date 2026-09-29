@@ -896,7 +896,7 @@
     }
   ],
   "plan": {
-    "schemaVersion": 5,
+    "schemaVersion": 6,
     "id": "early-retiree-aca--seq-1",
     "name": "Early retiree & the ACA cliff",
     "origin": "user",
@@ -977,48 +977,7 @@
         "acaYears": [
           {
             "year": 2026,
-            "fplRegion": "contiguous",
-            "taxFamilyMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "relationship": "primary",
-                "requiredToFile": "required",
-                "magi": 0
-              }
-            ],
-            "coveredMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "enrollmentPremiumByMonth": [
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000
-                ],
-                "slcspBenchmarkPremiumByMonth": [
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000,
-                  1000
-                ]
-              }
-            ],
+            "premiumBasis": "premiumField",
             "taxExemptInterest": {
               "state": "notApplicable",
               "amount": null
@@ -1038,48 +997,7 @@
           },
           {
             "year": 2027,
-            "fplRegion": "contiguous",
-            "taxFamilyMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "relationship": "primary",
-                "requiredToFile": "required",
-                "magi": 0
-              }
-            ],
-            "coveredMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "enrollmentPremiumByMonth": [
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055
-                ],
-                "slcspBenchmarkPremiumByMonth": [
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055,
-                  1055
-                ]
-              }
-            ],
+            "premiumBasis": "premiumField",
             "taxExemptInterest": {
               "state": "notApplicable",
               "amount": null
@@ -1099,48 +1017,7 @@
           },
           {
             "year": 2028,
-            "fplRegion": "contiguous",
-            "taxFamilyMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "relationship": "primary",
-                "requiredToFile": "required",
-                "magi": 0
-              }
-            ],
-            "coveredMembers": [
-              {
-                "personId": "early-retiree-aca--p1",
-                "enrollmentPremiumByMonth": [
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999
-                ],
-                "slcspBenchmarkPremiumByMonth": [
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999,
-                  1113.0249999999999
-                ]
-              }
-            ],
+            "premiumBasis": "premiumField",
             "taxExemptInterest": {
               "state": "notApplicable",
               "amount": null

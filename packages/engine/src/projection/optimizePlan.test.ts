@@ -24,7 +24,7 @@ import {
 } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { LATEST_PACK_YEAR, packForYear } from '../params/index.js'
-import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
+import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome, statedAcaYears } from '../testing/planFixtures.js'
 import { buildOptimizerModel, conversionScheduleTotal, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { HECM_MODELED_DEBT_TIMING_ISSUE } from './internal/hecmLineState.js'
@@ -2565,7 +2565,7 @@ describe('optimizePlan end-to-end', () => {
     raw.incomes = [socialSecurityIncome('ss', 3_572, 62)]
     raw.assumptions.ssCola = { mode: 'fixed', annualPct: 0 }
     raw.assumptions.ssHaircut = null
-    raw.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+    statedAcaYears(raw)[0]!.taxExemptInterest = {
       state: 'known',
       amount: 25_000,
     }
@@ -2655,7 +2655,7 @@ describe('optimizePlan end-to-end', () => {
     {
       name: 'below the cliff with zero modeled PTC',
       mutate: (plan: Plan) => {
-        const contract = plan.expenses.healthcare.acaYears![0]!
+        const contract = statedAcaYears(plan)[0]!
         for (const member of contract.coveredMembers) {
           member.enrollmentPremiumByMonth.fill(100)
           member.slcspBenchmarkPremiumByMonth.fill(100)

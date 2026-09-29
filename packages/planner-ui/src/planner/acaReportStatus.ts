@@ -1,3 +1,4 @@
+import { acaContractRemovalFor, type AcaContractRemovalEdit } from '@retiregolden/engine/model/acaContractRemovals'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { formatYearList } from './acaVetoCopy'
@@ -58,8 +59,44 @@ export function acaProjectedIncomeTaxNote(years: YearResult[]): string | null {
   return `${formatYearList(projected)} ${projected.length === 1 ? 'is' : 'are'} ${PROJECTED_INCOME_TAX_PHRASE}.`
 }
 
+/** The report's clause for an edit that removed the credit's details (review finding M2). */
+const REMOVED_BY_PHRASE: Record<Exclude<AcaContractRemovalEdit, 'exampleNoLongerMatched'>, string> = {
+  partnerAdded: 'adding a partner',
+  partnerRemoved: 'removing a partner',
+  peopleChanged: 'changing the people in the household',
+  filingStatusChanged: 'changing the filing status',
+  householdChanged: "changing the household's details",
+  premiumChanged: 'changing the pre-65 premium',
+}
+
+/**
+ * "; details removed by adding a partner" when the plan's unpriced years had
+ * their contracts removed by a recorded edit, naming each such edit once; ''
+ * otherwise.
+ */
+function removedDetailsClause(plan: Plan, years: YearResult[]): string {
+  const edits = [
+    ...new Set(
+      years
+        .filter((year) => year.aca?.supportCodes.includes('missing-year-contract'))
+        .map((year) => acaContractRemovalFor(plan.expenses.healthcare, year.year))
+        .filter((edit): edit is AcaContractRemovalEdit => edit !== null),
+    ),
+  ]
+  const byEdit = edits.filter((edit): edit is Exclude<AcaContractRemovalEdit, 'exampleNoLongerMatched'> => edit !== 'exampleNoLongerMatched')
+  const clauses = [
+    ...(byEdit.length === 0 ? [] : [`the credit details were removed by ${byEdit.map((edit) => REMOVED_BY_PHRASE[edit]).join(' and ')}`]),
+    // Removed by the v5 -> v6 migration, not an edit (PR #761 review 2).
+    ...(edits.includes('exampleNoLongerMatched')
+      ? ["the library example's credit details no longer matched the plan's premium and were already left out"]
+      : []),
+  ]
+  return clauses.length === 0 ? '' : `; ${clauses.join('; ')}`
+}
+
 export function acaReportStatus(plan: Plan, years: YearResult[]): string {
   if (!plan.expenses.healthcare.applyAcaCredit) return ''
+  const removed = removedDetailsClause(plan, years)
   const acaYears = acaLedgerSummary(years)
   if (acaYears.length === 0) return ', ACA credit requested; annual evidence required'
   const actionableYears = acaYears.filter((year) => year.readiness === 'actionable').length
@@ -70,7 +107,7 @@ export function acaReportStatus(plan: Plan, years: YearResult[]): string {
       : `; ${formatYearList(projected)} ${PROJECTED_INCOME_TAX_PHRASE}`
   if (actionableYears === acaYears.length) return `, ACA credit modeled for evidenced years${projectedNote}`
   if (actionableYears > 0) {
-    return `, ACA credit modeled for supported years; unsupported years use gross premium${projectedNote}`
+    return `, ACA credit modeled for supported years; unsupported years use gross premium${projectedNote}${removed}`
   }
-  return ', ACA credit not modeled; unsupported years use gross premium'
+  return `, ACA credit not modeled; unsupported years use gross premium${removed}`
 }

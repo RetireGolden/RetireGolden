@@ -75,18 +75,18 @@ import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema
 This current-only subpath is **zod-free** and resolves only to the current
 generated constant and plain metadata. Importing it pulls in neither zod, the
 plan model, nor any historical generated schema module. The same bytes ship as
-`@retiregolden/engine/schema/plan.v5.json` for offline, no-import reads.
+`@retiregolden/engine/schema/plan.v6.json` for offline, no-import reads.
 
 Historical schemas have explicit module and JSON entry points:
 
 ```ts
-import { planJsonSchema as planV4JsonSchema } from '@retiregolden/engine/schema/v4'
+import { planJsonSchema as planV5JsonSchema } from '@retiregolden/engine/schema/v5'
 ```
 
-The module subpaths are `schema/v1` through `schema/v5`; the static artifacts
-are `schema/plan.v1.json` through `schema/plan.v5.json`. Existing named imports
+The module subpaths are `schema/v1` through `schema/v6`; the static artifacts
+are `schema/plan.v1.json` through `schema/plan.v6.json`. Existing named imports
 from `@retiregolden/engine/schema` remain compatible, including
-`planV1JsonSchema` through `planV4JsonSchema`, but that legacy barrel necessarily
+`planV1JsonSchema` through `planV5JsonSchema`, but that legacy barrel necessarily
 loads every historical generated module. New code should use `schema/current`
 or one explicit version. The legacy barrel will not be removed before a
 semver-major release.
@@ -123,7 +123,7 @@ supported runtime API.
 | Subpath | Contents |
 |---------|----------|
 | `model/` | Plan schema (Zod), types, migrations |
-| `schema/` | Derived, versioned JSON Schema for the `Plan` document: lightweight `schema/current`, explicit `schema/v1`…`schema/v5` modules, legacy-compatible `schema`, and static `schema/plan.v1.json`…`plan.v5.json` artifacts |
+| `schema/` | Derived, versioned JSON Schema for the `Plan` document: lightweight `schema/current`, explicit `schema/v1`…`schema/v6` modules, legacy-compatible `schema`, and static `schema/plan.v1.json`…`plan.v6.json` artifacts |
 | `params/` | Annual parameter packs (tax brackets, limits, RMD, Medicare, SS, state) + typed accessors |
 | `tax/` | Federal + state tax engine, ACA credit, Medicare/IRMAA |
 | `rmd/` | Required minimum distributions (SECURE 2.0) |

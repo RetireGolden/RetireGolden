@@ -52,21 +52,21 @@
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        250,
-        269
+        249,
+        268
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 250,
+          "line": 249,
           "text": "const {"
         },
         {
-          "line": 255,
+          "line": 254,
           "text": "} = annualLifestyleLayers({"
         },
         {
-          "line": 269,
+          "line": 268,
           "text": "})"
         }
       ]
@@ -100,25 +100,25 @@
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        344,
-        351
+        341,
+        348
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 344,
+          "line": 341,
           "text": "let insurancePremiums = 0"
         },
         {
-          "line": 345,
+          "line": 342,
           "text": "for (const row of annualInsurancePremiumRows({"
         },
         {
-          "line": 350,
+          "line": 347,
           "text": "yearSites?.recordInsurancePremium(row.record)"
         },
         {
-          "line": 351,
+          "line": 348,
           "text": "}"
         }
       ]
@@ -152,25 +152,25 @@
       "label": "ordered property-cost fold and publication",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        380,
-        389
+        377,
+        386
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 380,
+          "line": 377,
           "text": "let propertyCosts = 0"
         },
         {
-          "line": 381,
+          "line": 378,
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 388,
+          "line": 385,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 389,
+          "line": 386,
           "text": "}"
         }
       ]
@@ -204,25 +204,25 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        479,
-        509
+        476,
+        506
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 479,
+          "line": 476,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 504,
+          "line": 501,
           "text": "})"
         },
         {
-          "line": 505,
+          "line": 502,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 509,
+          "line": 506,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]

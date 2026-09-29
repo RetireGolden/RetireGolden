@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Account, type Plan, type Scenario } from '../model/plan.js'
 import type { TaxCalculator } from '../projection/types.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
-import { setAcaYearContract } from '../testing/planFixtures.js'
+import { setAcaYearContract, statedAcaYears } from '../testing/planFixtures.js'
 import { applyScenarioPatch, compareScenarios, diffScenarioPatch } from './scenarios.js'
+import { createScenarioPatch } from './patch.js'
 
 let counter = 0
 const testIds = () => `sc-${++counter}`
@@ -92,7 +93,7 @@ describe('applyScenarioPatch', () => {
     const plan = basePlan()
     setAcaYearContract(plan)
     const base = validate(plan)
-    const refreshed = structuredClone(base.expenses.healthcare.acaYears!)
+    const refreshed = structuredClone(statedAcaYears(base))
     refreshed[0]!.coveredMembers[0]!.enrollmentPremiumByMonth = new Array<number>(12).fill(750)
 
     const withEvidence = applyScenarioPatch(base, {
@@ -109,6 +110,127 @@ describe('applyScenarioPatch', () => {
     expect(withoutEvidence.ok).toBe(true)
     if (withoutEvidence.ok) {
       expect(withoutEvidence.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
+  })
+
+  it('keeps premium-field contracts through a premium patch and clears only the stated ones', () => {
+    // Decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28): a premiumField contract
+    // derives its premiums from the premium field on every run, so a patch to
+    // the premium leaves it in place and the credit is priced on the new
+    // premium; a stated contract's written premiums are stale and go. Each
+    // removal is recorded with the edit and the years it removed.
+    const plan = basePlan()
+    setAcaYearContract(plan, { year: 2026 })
+    const facts = structuredClone(statedAcaYears(plan)[0]!)
+    plan.expenses.healthcare.acaYears!.push({
+      year: 2027,
+      premiumBasis: 'premiumField',
+      taxExemptInterest: facts.taxExemptInterest,
+      foreignExclusionAddback: facts.foreignExclusionAddback,
+      assertions: facts.assertions,
+    })
+    const base = validate(plan)
+    const derivedOnly = base.expenses.healthcare.acaYears!.filter((contract) => contract.premiumBasis === 'premiumField')
+    expect(derivedOnly).toHaveLength(1)
+
+    for (const patch of [
+      { expenses: { healthcare: { pre65MonthlyPremiumPerPerson: 1_250 } } },
+      (() => {
+        const edited = structuredClone(base)
+        edited.expenses.healthcare.pre65MonthlyPremiumPerPerson = 1_250
+        const created = createScenarioPatch(base, edited, {
+          title: 'Premium',
+          createdAtIso: '2026-07-01T00:00:00.000Z',
+          actor: { kind: 'user' },
+        })
+        if (!created.ok) throw new Error(created.issues.join('; '))
+        return created.patch
+      })(),
+    ]) {
+      const premium = applyScenarioPatch(base, patch)
+      expect(premium.ok).toBe(true)
+      if (premium.ok) {
+        expect(premium.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(1_250)
+        expect(premium.plan.expenses.healthcare.acaYears).toEqual(derivedOnly)
+        expect(premium.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'premiumChanged', years: [2026] }])
+      }
+    }
+
+    // With only stated contracts a premium patch clears the key, as before.
+    const statedOnly = basePlan()
+    setAcaYearContract(statedOnly, { year: 2026 })
+    const cleared = applyScenarioPatch(validate(statedOnly), { expenses: { healthcare: { pre65MonthlyPremiumPerPerson: 1_250 } } })
+    expect(cleared.ok).toBe(true)
+    if (cleared.ok) expect(cleared.plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+
+  it('keeps premium-field contracts through a household change, and removes every contract when who is on the return changes', () => {
+    // Review finding M2: a premium-field contract derives its region, family
+    // and members from the household on every run, so a move, a state, a
+    // date of birth or a planning age cannot leave it stale; a person added
+    // or removed, or a new filing status, can falsify its stored assertions.
+    const plan = basePlan()
+    setAcaYearContract(plan, { year: 2026 })
+    const facts = structuredClone(statedAcaYears(plan)[0]!)
+    plan.expenses.healthcare.acaYears!.push({
+      year: 2027,
+      premiumBasis: 'premiumField',
+      taxExemptInterest: facts.taxExemptInterest,
+      foreignExclusionAddback: facts.foreignExclusionAddback,
+      assertions: facts.assertions,
+    })
+    const base = validate(plan)
+    const derivedOnly = base.expenses.healthcare.acaYears!.filter((contract) => contract.premiumBasis === 'premiumField')
+
+    for (const patch of [
+      { household: { state: 'FL' } },
+      { household: { people: [{ ...base.household.people[0]!, dob: '1962-06-15' }] } },
+      { household: { people: [{ ...base.household.people[0]!, longevity: { planningAge: 92, source: 'manual' } }] } },
+      { household: { stateMoves: [{ fromYear: 2030, fromMonth: 7, state: 'GA' }] } },
+    ]) {
+      const kept = applyScenarioPatch(base, patch)
+      expect(kept.ok, JSON.stringify(patch)).toBe(true)
+      if (!kept.ok) continue
+      expect(kept.plan.expenses.healthcare.acaYears, JSON.stringify(patch)).toEqual(derivedOnly)
+      expect(kept.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'householdChanged', years: [2026] }])
+    }
+
+    const partner = {
+      id: 'p2',
+      name: 'Sam',
+      dob: '1962-01-01',
+      sex: 'average' as const,
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' as const },
+    }
+    const added = applyScenarioPatch(base, {
+      household: { filingStatus: 'marriedFilingJointly', people: [base.household.people[0]!, partner] },
+    })
+    expect(added.ok).toBe(true)
+    if (added.ok) {
+      expect(added.plan.expenses.healthcare.acaYears).toBeUndefined()
+      expect(added.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'partnerAdded', years: [2026, 2027] }])
+    }
+    const couple = validate({
+      ...structuredClone(base),
+      household: { ...structuredClone(base.household), filingStatus: 'marriedFilingJointly', people: [base.household.people[0]!, partner] },
+    })
+    const removed = applyScenarioPatch(couple, { household: { filingStatus: 'single', people: [couple.household.people[0]!] } })
+    expect(removed.ok).toBe(true)
+    if (removed.ok) expect(removed.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'partnerRemoved', years: [2026, 2027] }])
+    const replaced = applyScenarioPatch(couple, {
+      household: { people: [couple.household.people[0]!, { ...partner, id: 'p3', name: 'Alex' }] },
+    })
+    expect(replaced.ok).toBe(true)
+    if (replaced.ok) {
+      expect(replaced.plan.expenses.healthcare.acaYears).toBeUndefined()
+      expect(replaced.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'peopleChanged', years: [2026, 2027] }])
+    }
+    const refiled = applyScenarioPatch(couple, { household: { filingStatus: 'single' } })
+    expect(refiled.ok).toBe(true)
+    if (refiled.ok) {
+      expect(refiled.plan.expenses.healthcare.acaYears).toBeUndefined()
+      expect(refiled.plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'filingStatusChanged', years: [2026, 2027] }])
     }
   })
 })

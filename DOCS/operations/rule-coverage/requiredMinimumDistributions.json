@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 450
+              "line": 448
             }
           ]
         },
@@ -47,12 +47,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 28,
+          "line": 29,
           "note": "RMD-shortfall excise remains outside AGI, taxable income, and MAGI",
           "tests": [
             {
               "title": "keeps a chapter 43 RMD-shortfall excise out of the income-tax base",
-              "line": 44
+              "line": 45
             }
           ]
         }
@@ -2330,7 +2330,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1584
+              "line": 2458
             }
           ]
         },
@@ -2461,7 +2461,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1584
+              "line": 2458
             }
           ]
         },
@@ -4149,7 +4149,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 450
+              "line": 448
             }
           ]
         },

@@ -13,8 +13,8 @@ import { type RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo
 
 import { runRiskBasedGuardrailSolve } from '../../mc/pool'
 import { usePlan } from '../planContextCore'
-import { buildModel } from '../marketModelPicker'
-import { currentStartYear, seedFromPlanId } from '../useProjection'
+import { headlineMcRunOptions } from '../useMcSuccessRate'
+import { currentStartYear } from '../useProjection'
 
 /** Solver budget for the on-demand threshold solve (worker; ~40 probes). */
 const THRESHOLD_SOLVE_PATH_COUNT = 200
@@ -50,12 +50,11 @@ export function useThresholdSolve(): ThresholdSolve {
     setSolving(true)
     setError(null)
     const solvedBand = { ...committedBandRef.current }
-    void runRiskBasedGuardrailSolve(plan, {
-      startYear: currentStartYear(),
-      pathCount: THRESHOLD_SOLVE_PATH_COUNT,
-      seed: seedFromPlanId(plan.id),
-      model: buildModel('lognormal', plan.assumptions.inflationPct, 12, 60, plan),
-    })
+    // The headline model on the engine's default seed, at the solver's
+    // bounded path count; the seed is stored with the thresholds so a later
+    // read can tell which markets solved them (D-MC-DEFAULT-SEED).
+    const options = headlineMcRunOptions(plan, THRESHOLD_SOLVE_PATH_COUNT, currentStartYear())
+    void runRiskBasedGuardrailSolve(plan, options)
       .then((solved) => {
         const current = committedBandRef.current
         if (current.mode !== 'riskBasedGuardrails' || current.lower !== solvedBand.lower || current.upper !== solvedBand.upper) {
@@ -70,6 +69,8 @@ export function useThresholdSolve(): ThresholdSolve {
           else delete policy.lowerBalanceThresholdPct
           if (solved.upper) policy.upperBalanceThresholdPct = solved.upper.balancePct
           else delete policy.upperBalanceThresholdPct
+          if (solved.lower || solved.upper) policy.balanceThresholdSeed = options.seed
+          else delete policy.balanceThresholdSeed
         })
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))

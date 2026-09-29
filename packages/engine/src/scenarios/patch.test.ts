@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import {
+  statedAcaYears,
   ownedNonRothIraAnnualFilingSourceRecord,
   setAcaYearContract,
   traditionalAccount,
@@ -142,7 +143,7 @@ describe('canonical scenario patch documents', () => {
     const edited = clonePlan(base)
     edited.household.state = 'FL'
     edited.expenses.healthcare.pre65MonthlyPremiumPerPerson = 750
-    const refreshedContracts = structuredClone(edited.expenses.healthcare.acaYears!)
+    const refreshedContracts = structuredClone(statedAcaYears(edited))
     refreshedContracts[0]!.coveredMembers[0]!.enrollmentPremiumByMonth =
       new Array<number>(12).fill(750)
     refreshedContracts[0]!.coveredMembers[0]!.slcspBenchmarkPremiumByMonth =
@@ -815,7 +816,7 @@ describe('scenario patch validation and hostile paths', () => {
     version: 1,
     base: {
       planId: 'plan-1',
-      planSchemaVersion: 5,
+      planSchemaVersion: 6,
       snapshotHash: 'fnv1a64:0000000000000000',
     },
     title: 'Hostile path',

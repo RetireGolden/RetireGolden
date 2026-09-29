@@ -26,6 +26,7 @@ import type { LtcShockParams } from './ltcShock.js'
 import type { MarketModelConfig } from './marketModels.js'
 import { createMarketModel } from './marketModels.js'
 import { runMonteCarloPaths } from './run.js'
+import { DEFAULT_MONTE_CARLO_SEED } from './rng.js'
 
 export const DEFAULT_TARGET_SUCCESS_LOWER_PCT = 70
 export const DEFAULT_TARGET_SUCCESS_UPPER_PCT = 95
@@ -379,4 +380,31 @@ export function guardrailThresholdDollars(plan: Plan): GuardrailThresholdDollars
   const lower = lowerPct === null ? null : (lowerPct / 100) * base
   const upper = upperPct === null ? null : (upperPct / 100) * base
   return { status: 'anchored', base, lower, upper, acts: !(lower !== null && upper !== null && lower >= upper) }
+}
+
+/**
+ * Which Monte Carlo draw a risk-based policy's saved thresholds were solved
+ * on (decision D-MC-DEFAULT-SEED, 2026-09-28), read from the seed the solve
+ * stores beside them (`balanceThresholdSeed`):
+ * - 'default': the engine's default seed, the draw every host now uses;
+ * - 'plan-id': thresholds with no stored seed, solved before plan schema v6
+ *   on a seed the planner took from the plan's id, which Duplicate, Save to
+ *   My Plans and an import change;
+ * - 'other': another stored seed (a document written by hand or by a tool).
+ * Null unless the policy is risk-based with a threshold saved. The projection
+ * does not read the seed: a saved threshold acts the same whichever draw
+ * solved it.
+ */
+export type GuardrailThresholdSeedBasis =
+  | { readonly basis: 'default' }
+  | { readonly basis: 'plan-id' }
+  | { readonly basis: 'other'; readonly seed: number }
+
+export function guardrailThresholdSeedBasis(plan: Plan): GuardrailThresholdSeedBasis | null {
+  const policy = plan.expenses.spendingPolicy
+  if (policy?.mode !== 'riskBasedGuardrails') return null
+  if (policy.lowerBalanceThresholdPct === undefined && policy.upperBalanceThresholdPct === undefined) return null
+  const seed = policy.balanceThresholdSeed
+  if (seed === undefined) return { basis: 'plan-id' }
+  return seed === DEFAULT_MONTE_CARLO_SEED ? { basis: 'default' } : { basis: 'other', seed }
 }

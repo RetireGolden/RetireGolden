@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import {
@@ -37,7 +38,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
 import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
 import { runSpendingSolve } from '../optimize/spendingRunner'
-import { diagnosticsWithoutUnpricedCreditSentence, unpricedCreditSpendingNote } from './acaVetoCopy'
+import { diagnosticsWithoutUnpricedCreditSentence, unpricedCreditSpendingNote, type AcaContractRemovals } from './acaVetoCopy'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { ScenarioActionComparisonTable } from './ScenarioActionComparisonTable'
@@ -60,7 +61,7 @@ import {
   spendingCapacityStatus,
   type MetricFormat,
 } from './scenarioComparisonView'
-import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProjection'
+import { currentStartYear, taxCalculatorFor } from './useProjection'
 import { US_STATES } from './usStates'
 import { labelOfSegments } from './validationIssues'
 
@@ -587,10 +588,15 @@ function CapacitySection({
   capacity,
   running,
   onCalculate,
+  baselineRemovals,
+  proposalRemovals,
 }: {
   capacity: ScenarioPlanComparison['spendingCapacity']
   running: boolean
   onCalculate: () => void
+  /** Each side's record of the edits that removed premium-credit contracts, so a note can name the edit. */
+  baselineRemovals?: AcaContractRemovals
+  proposalRemovals?: AcaContractRemovals
 }) {
   // Each side's unpriced-credit sentence is replaced by the plain note that
   // names the years, why, and which way a credit would move that answer; when
@@ -600,10 +606,12 @@ function CapacitySection({
     reasons: AcaSupportCode[],
     direction: 'conservative' | 'uncertain' | null,
     answered: boolean,
+    removals: AcaContractRemovals | undefined,
   ): string | null =>
     unpricedCreditSpendingNote(
       { acaGrossPremiumYears: years, acaGrossPremiumReasons: reasons, acaGrossPremiumDirection: direction },
       answered,
+      removals,
     )
   const baselineNote = capacity
     ? sideNote(
@@ -611,6 +619,7 @@ function CapacitySection({
         capacity.baselineAcaGrossPremiumReasons,
         capacity.baselineAcaGrossPremiumDirection,
         capacity.maxBaseAnnual.baseline !== null,
+        baselineRemovals,
       )
     : null
   const proposalNote = capacity
@@ -619,6 +628,7 @@ function CapacitySection({
         capacity.proposalAcaGrossPremiumReasons,
         capacity.proposalAcaGrossPremiumDirection,
         capacity.maxBaseAnnual.proposal !== null,
+        proposalRemovals,
       )
     : null
   const sharedNote = baselineNote !== null && baselineNote === proposalNote
@@ -714,11 +724,15 @@ function ScenarioDetail({
   capacity,
   capacityRunning,
   onCalculateCapacity,
+  baselineRemovals,
+  proposalRemovals,
 }: {
   comparison: ScenarioPlanComparison
   capacity: ScenarioPlanComparison['spendingCapacity']
   capacityRunning: boolean
   onCalculateCapacity: () => void
+  baselineRemovals?: AcaContractRemovals
+  proposalRemovals?: AcaContractRemovals
 }) {
   return (
     <>
@@ -746,7 +760,13 @@ function ScenarioDetail({
           { label: 'Target-lifestyle shortfall', metric: comparison.spending.targetShortfall, format: 'money' },
         ]}
       />
-      <CapacitySection capacity={capacity} running={capacityRunning} onCalculate={onCalculateCapacity} />
+      <CapacitySection
+        capacity={capacity}
+        running={capacityRunning}
+        onCalculate={onCalculateCapacity}
+        baselineRemovals={baselineRemovals}
+        proposalRemovals={proposalRemovals}
+      />
 
       <h3>Income and withdrawals</h3>
       <MetricTable
@@ -907,7 +927,7 @@ function ComparableScenariosPage() {
   const detailGeneration = useRef(0)
   const capacityGeneration = useRef(0)
   const startYear = currentStartYear()
-  const seed = useMemo(() => seedFromPlanId(plan.id), [plan.id])
+  const seed = DEFAULT_MONTE_CARLO_SEED
   const selectedScenario =
     plan.scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? plan.scenarios[0] ?? null
   const proposal = useMemo(() => {
@@ -1203,6 +1223,8 @@ function ComparableScenariosPage() {
               capacity={capacity}
               capacityRunning={capacityBusy}
               onCalculateCapacity={calculateCapacity}
+              baselineRemovals={plan.expenses.healthcare}
+              proposalRemovals={proposal.plan?.expenses.healthcare}
             />
           )}
         </div>

@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: composition. `projection/internal/types/aca.ts#YearAcaResult.grossEnrollmentPremium` sums each covered member's enrollment premium over all 12 months, while `projection/internal/types/aca.ts#YearAcaResult.applicableSlcspPremium` sums that member's SLCSP benchmark only in months whose enrollment premium is above zero; the latter is `null` without an ACA contract or when example-contract inputs mismatch. These identities are stated directly by the field comments.
+Kind: composition. `projection/internal/types/aca.ts#YearAcaResult.grossEnrollmentPremium` sums each covered member's enrollment premium over all 12 months, while `projection/internal/types/aca.ts#YearAcaResult.applicableSlcspPremium` sums that member's SLCSP benchmark only in months whose enrollment premium is above zero; the latter is `null` without exactly one ACA contract for the year. These identities are stated directly by the field comments. The monthly figures summed are the contract's as the run prices it (`aca-contract-premium-basis`); before decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) an example contract whose inputs mismatched the premium field also gave `null`, and that switch is deleted.
 
 ## Justification
 
@@ -16,7 +16,7 @@ The benchmark gate is monthly and member-specific. A benchmark quote alone does 
 | Enrollment premium, April–December | 0 each | dollars/month |
 | SLCSP benchmark, January–April | 600 each | dollars/month |
 | SLCSP benchmark, May–December | 0 each | dollars/month |
-| Contract present / inputs match | true / true | Booleans |
+| Contract present | true | Boolean |
 
 ## Arithmetic
 

@@ -402,6 +402,51 @@ describe('planner home restore from backup', () => {
     expect(notice()).toBe('No plans were imported. 2 could not be saved to this browser: "A", "B".')
   })
 
+  it('says what the migration changed in a restored plan, as the load notice would (review finding L1)', async () => {
+    // A plan saved from a library example before plan schema v6: its
+    // premium-credit contracts are the recipe's fixed figures for 2026 and
+    // 2027 (the premium field, $900, grown 4.5 percent a year).
+    const saved = plan('s', 'Saved example') as Plan & Record<string, unknown>
+    const person = saved.household.people[0]!
+    person.dob = '1966-01-01'
+    saved.assumptions.inflationPct = 2.5
+    saved.assumptions.healthcareExtraInflationPct = 2
+    saved.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 900, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 }
+    const facts = {
+      taxExemptInterest: { state: 'notApplicable', amount: null },
+      foreignExclusionAddback: { state: 'notApplicable', amount: null },
+      assertions: {
+        coverageEligibility: 'supported',
+        form8814: 'notApplicable',
+        specialAllocation: 'notApplicable',
+        marriedFilingSeparatelyException: 'notApplicable',
+        selfEmployedHealthInsuranceDeduction: 'notApplicable',
+        otherMaterialFacts: 'none',
+      },
+    }
+    const v5 = JSON.parse(JSON.stringify(saved)) as Record<string, unknown>
+    v5['schemaVersion'] = 5
+    v5['exampleSourceId'] = 'early-retiree-aca'
+    ;(v5['expenses'] as { healthcare: Record<string, unknown> }).healthcare['acaYears'] = [2026, 2027].map((year) => {
+      const row = new Array<number>(12).fill(900 * Math.pow(1.045, year - 2026))
+      return {
+        year,
+        fplRegion: 'contiguous',
+        taxFamilyMembers: [{ personId: person.id, relationship: 'primary', requiredToFile: 'required', magi: 0 }],
+        coveredMembers: [{ personId: person.id, enrollmentPremiumByMonth: row, slcspBenchmarkPremiumByMonth: [...row] }],
+        ...facts,
+      }
+    })
+    const store = storeOf([])
+    await render(store)
+
+    await act(async () => api().handleImportFile(backupFile([v5 as unknown as Plan])))
+
+    expect(notice()).toBe(
+      "Imported 1 plan. \"Saved example\": This plan was saved from a library example and carried the example's premium tax credit details for 2 years from 2026 to 2027, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    )
+  })
+
   it('still says how many landed on the happy path', async () => {
     const store = storeOf([])
     await render(store)

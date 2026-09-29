@@ -1957,8 +1957,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const healthcareExcludingMarketplacePremium =
       expenseAssembly.healthcareExcludingMarketplacePremium
     const acaInitialSupportCodes = expenseAssembly.acaInitialSupportCodes
-    const exampleContractInputMismatch =
-      expenseAssembly.exampleContractInputMismatch
     const medicarePremiums = expenseAssembly.medicarePremiums
     const irmaaSurcharge = expenseAssembly.irmaaSurcharge
     const irmaaTier = expenseAssembly.irmaaTier
@@ -2702,7 +2700,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         healthcareExcludingMarketplacePremium,
         netCare,
         hsaReimburseLaterActive,
-        exampleContractInputMismatch,
         acaContractsForYear,
         marketplaceMonthsByPersonPosition,
         pre65MonthlyPremiumPerPerson,

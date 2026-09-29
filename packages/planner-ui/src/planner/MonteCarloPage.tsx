@@ -1,8 +1,9 @@
 /**
  * Monte Carlo: success gauge, percentile fan, ending-balance and depletion
  * distributions. Runs 1,000 paths automatically on the worker pool (sync
- * fallback in tests) and 10,000 on demand; the seed is stable per plan and
- * re-rollable.
+ * fallback in tests) and 10,000 on demand. Every plan starts from the
+ * engine's one default seed (DEFAULT_MONTE_CARLO_SEED), the same for every
+ * plan and every copy of it; Re-roll replaces it for this page only.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -25,6 +26,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { DEFAULT_LTC_SHOCK } from '@retiregolden/engine/montecarlo/ltcShock'
 import { guardrailThresholdDollars } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import type { AnnuitizationSweep } from '@retiregolden/engine/decisions/annuitization'
 import type { StochasticFrontierPoint } from '@retiregolden/engine/montecarlo/frontiers'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
@@ -52,7 +54,7 @@ import {
   presetFamilyOf,
   type ModelKind,
 } from './marketModelPicker'
-import { currentStartYear, seedFromPlanId } from './useProjection'
+import { currentStartYear } from './useProjection'
 import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, registerMcHeadlineRun, useMcHeadline } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
@@ -106,7 +108,9 @@ export function MonteCarloPage() {
   // shown whatever model is picked: the model's equity weight is only offered for the models that
   // read it, so the stress table must not depend on a value the page may be hiding.
   const [stressEquityWeightPct, setStressEquityWeightPct] = useState<number>(HEADLINE_MC_MODEL.equityWeightPct)
-  const [seed, setSeed] = useState(() => seedFromPlanId(plan.id))
+  // Every plan starts from the engine's one default seed (D-MC-DEFAULT-SEED);
+  // Re-roll replaces it for this page only, never saved with the plan.
+  const [seed, setSeed] = useState<number>(DEFAULT_MONTE_CARLO_SEED)
   const [stochasticLongevity, setStochasticLongevity] = useState(false)
   const [ltcShock, setLtcShock] = useState(false)
   // The page's own latest run; `summary` below prefers a published headline run.
@@ -155,7 +159,7 @@ export function MonteCarloPage() {
       setProgress(0)
       setError(null)
       setStatusMessage(`Simulating ${paths.toLocaleString()} market paths…`)
-      const headlineRun = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+      const headlineRun = isHeadlineMcConfig({ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
       // The start year is read once and published with the run, so a
       // comparison with it runs from the same year (PR #754 findings 1 and 2).
       const startYear = currentStartYear()
@@ -247,7 +251,7 @@ export function MonteCarloPage() {
   // gauge here and the KPI bar can never quote different runs (#497). A
   // subscription, so a publish from any surface re-renders this page.
   const publishedHeadline = useMcHeadline(plan)
-  const cachedHeadline = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+  const cachedHeadline = isHeadlineMcConfig({ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
     ? publishedHeadline
     : undefined
   const summary = cachedHeadline ?? ownSummary
@@ -384,7 +388,7 @@ export function MonteCarloPage() {
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Market draw</span>
-              <HelpTip text="The random sequence is reproducible: the same draw always produces the same markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
+              <HelpTip text="The random sequence is reproducible: the same draw always produces the same markets, so results don't jump around as you edit the plan. Every plan, and every copy of a plan, starts from the same draw, so two plans compared side by side face the same markets, except that a plan whose accounts use an asset allocation draws extra numbers each year for its asset classes, so beside a plan without one it shares only the first year's markets. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
             </span>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setSeed((Math.random() * 0xffffffff) >>> 0)}>
               Re-roll markets

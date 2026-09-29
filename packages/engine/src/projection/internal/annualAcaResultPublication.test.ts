@@ -61,6 +61,7 @@ function input(
     evaluationCount: 7,
     maxEvaluationCount: 5,
     contract: {
+      premiumBasis: 'stated',
       fplRegion: 'alaska',
       taxFamilyMembers: [
         {
@@ -83,7 +84,6 @@ function input(
       }],
     },
     contractCount: 1,
-    exampleContractInputMismatch: false,
     acaParametersStandIn: false,
     people: [{ personId: 'primary', alive: true }],
     marketplaceMonthsByPersonPosition: [12],
@@ -157,6 +157,7 @@ describe('annualAcaResultPublication', () => {
         foreignExclusionAddback: 0,
         requiredFilerDependentMagi: 5_000,
       },
+      premiumBasis: 'stated',
       fplRegion: 'alaska',
       fplPct: 450,
       taxFamilySize: 2,
@@ -272,6 +273,7 @@ describe('annualAcaResultPublication', () => {
         foreignExclusionAddback: 1_000,
         requiredFilerDependentMagi: 0,
       },
+      premiumBasis: null,
       fplRegion: null,
       federalPovertyLine: null,
       taxFamilySize: null,
@@ -296,25 +298,40 @@ describe('annualAcaResultPublication', () => {
       .toBeCloseTo(220)
   })
 
-  it('uses positional fallback members for mismatched example contracts', () => {
+  it('publishes where the contract premiums came from, and the derived members of a premium-field contract', () => {
+    // Decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28): a premiumField contract
+    // reaches the publication already filled for this run, so its members
+    // and benchmark are published like a stated contract's, with the basis
+    // named. Before the decision an example contract whose premiums differed
+    // from the premium field was refused and its members replaced by the
+    // positional premium-field rows, with a null benchmark.
     const result = annualAcaResultPublication(input({
-      exampleContractInputMismatch: true,
+      contract: {
+        premiumBasis: 'premiumField',
+        fplRegion: 'contiguous',
+        taxFamilyMembers: [{ personId: 'primary', relationship: 'primary', requiredToFile: 'required', magi: 0 }],
+        coveredMembers: [{
+          personId: 'primary',
+          enrollmentPremiumByMonth: [110, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          slcspBenchmarkPremiumByMonth: [110, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        }],
+      },
+      slcspBenchmarkPremiums: [110, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       marketplaceMonthsByPersonPosition: [2],
     }))
 
     expect(result.yearAcaResult).toMatchObject({
-      taxFamilyMembers: [
-        expect.objectContaining({ personId: 'primary' }),
-        expect.objectContaining({ personId: 'dependent' }),
-      ],
+      premiumBasis: 'premiumField',
+      fplRegion: 'contiguous',
+      taxFamilyMembers: [expect.objectContaining({ personId: 'primary' })],
       coveredMembers: [{
         personId: 'primary',
         coveredMonths: [1, 2],
+        grossEnrollmentPremium: 220,
+        applicableSlcspPremium: 220,
       }],
-      applicableSlcspPremium: null,
+      applicableSlcspPremium: 220,
     })
-    expect(result.yearAcaResult?.coveredMembers[0]?.grossEnrollmentPremium)
-      .toBeCloseTo(220)
   })
 
   it('suppresses fallback member synthesis for duplicate contracts and pins every lower cliff state', () => {

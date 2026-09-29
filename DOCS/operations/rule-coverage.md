@@ -84,12 +84,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 459 |
+| Engine source files | 463 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 93 |
+| partial | 94 |
 | registered | 121 |
-| rule-free | 245 |
+| rule-free | 248 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -104,14 +104,14 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
-| model | 9 | 6 | 0 | 3 | 0 |
-| montecarlo | 12 | 2 | 0 | 10 | 0 |
+| model | 10 | 6 | 0 | 4 | 0 |
+| montecarlo | 13 | 2 | 0 | 11 | 0 |
 | params | 10 | 2 | 6 | 2 | 0 |
-| projection | 127 | 42 | 21 | 64 | 0 |
+| projection | 128 | 43 | 21 | 64 | 0 |
 | rmd | 6 | 1 | 4 | 1 | 0 |
 | rules | 68 | 0 | 22 | 46 | 0 |
 | scenarios | 11 | 0 | 0 | 11 | 0 |
-| schema | 9 | 0 | 0 | 9 | 0 |
+| schema | 10 | 0 | 0 | 10 | 0 |
 | socialSecurity | 23 | 4 | 11 | 8 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 9 | 3 | 5 | 1 | 0 |
@@ -180,6 +180,7 @@ None.
 | projection/internal/annualStateRailroadFacts.ts | 2026-09-12 | Derives RRA source-kind, gross and federal-inclusion facts from the pension producer or disjoint additional events; producer-specific gross equality, source attribution and missing-gross refusal remain unregistered adapter contracts. |
 | projection/internal/annualStateRetirementEvents.ts | 2026-09-12 | Actual federally included distribution events are mapped by account and recipient; IRA versus employer-plan and inherited source identity mapping require rule-trail reconciliation. |
 | projection/internal/beneficiarySpousalElectionGateAdapter.ts | 2026-09-12 | Dated eligibility and current-year owner routing map to the spousal-election records. Accepted qualifying-distribution credit requires completed deadline/observation provenance or coherent j(4) pre-election actuals; proposed/display rows do not supply credit. The reference-balance and accepted-history adapters are pinned with the owner-RMD route. General chronological transaction-tax adaptation remains partial and no full original acceptance is claimed. |
+| projection/internal/effectiveAcaYearContract.ts | 2026-09-28 | 26 U.S.C. 36B(c)(2)(A) counts a coverage month only when the member is enrolled on its first day, so no month after the month of death counts; the module stops a dead member's premium on 1 January of the year after the death, the ledger's annual alive convention, and that coverage-month rule has no registry record of its own. The premium-field fill (region by state, tax family from the people alive, premiums from the premium field at the run's healthcare inflation) is a modeling basis with no statutory claim. |
 | projection/internal/hecmHudValidatedOpeningAdapter.ts | 2026-09-12 | Live simulatePlan opening and property-year servicing delegate through this adapter. Production regressions distinguish modeled versus observed closing cash, monthly assessment capitalization, missing timing evidence, and modeled draws retained across servicing updates. HUD leaf arithmetic is registered; producer-ledger completeness, full-month timing convention and cash/debt adaptation remain partial direct registry trails. |
 | projection/internal/hecmLineOpenings.ts | 2026-09-12 | Legacy quote-estimate opening retains planning PLF/upfront-cost defaults and an age-62 disclosure rather than enforcement. The hudValidated mode exclusion here is pinned by hud-hecm-mca-mip-limits; the live annual path delegates through hecmHudValidatedOpeningAdapter to registered MCA/MIP leaves. simulate.hecmHudProduction.test.ts covers once-only closing cash, compounded monthly debt and incomplete evidence. Legacy planning defaults and direct legacy-helper source eligibility remain residual claims. |
 | projection/internal/hecmLineState.ts | 2026-09-12 | HUD line bookkeeping separates observed servicing baseline from modeled draw debt, preserves both through accepted draws and rollback, and composes the registered adapter-produced MIP amounts. These helpers do not independently establish the source-backed MCA or monthly MIP rate. Growth of modeled draws and growth of the baseline when timing evidence is missing remain disclosed annual planning estimates; inventory, replacement and incomplete-ledger composition retain a direct rule/convention trail to complete. |

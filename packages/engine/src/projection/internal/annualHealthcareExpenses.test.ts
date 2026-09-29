@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { packForYear } from '../../params/index.js'
 import type { ParameterPack } from '../../params/types.js'
 import { acaLegacyForeignExclusionSourceKind } from '../../model/annualFederalTaxFacts.js'
-import type { AcaYearContract } from '../../model/plan.js'
+import type { AcaStatedYearContract } from '../../model/plan.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { PersonYearState } from '../types.js'
 import { resolveAnnualFederalTaxFacts } from './annualFederalTaxFacts.js'
@@ -58,7 +58,7 @@ function run(
   })
 }
 
-function acaContract(monthly: number): AcaYearContract {
+function acaContract(monthly: number): AcaStatedYearContract {
   return {
     year: 2026,
     fplRegion: 'contiguous' as const,
@@ -168,7 +168,6 @@ describe('annualHealthcareExpenses', () => {
 
   it('keeps referenced duplicate person IDs first-wins like simulatePlan', () => {
     const plan = singlePersonPlan()
-    plan.exampleSourceId = 'duplicate-person-contract-oracle'
     plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
     plan.expenses.healthcare.applyAcaCredit = true
     plan.expenses.healthcare.acaYears = [acaContract(100)]
@@ -177,7 +176,9 @@ describe('annualHealthcareExpenses', () => {
 
     const result = run(plan, [first, second])
 
-    expect(result.exampleContractInputMismatch).toBe(false)
+    // The covered member resolves to the first (living) row, so the
+    // dead-member rule charges the stated premium in full.
+    expect(result.acaEnrollmentPremiums).toStrictEqual(new Array<number>(12).fill(100))
     expect(result.acaInitialSupportCodes).not.toContain(
       'tax-family-member-unknown',
     )
@@ -235,14 +236,18 @@ describe('annualHealthcareExpenses', () => {
     ])
   })
 
-  it('preserves the sole contract and monthly array identities downstream', () => {
+  it('preserves the sole stated contract and its monthly array identities downstream', () => {
     const plan = singlePersonPlan()
     const contract = acaContract(80)
     plan.expenses.healthcare.applyAcaCredit = true
     plan.expenses.healthcare.acaYears = [contract]
     const result = run(plan)
 
-    expect(result.acaContract).toBe(contract)
+    // The priced contract is the stated one with its basis named; nothing in
+    // it is rewritten when every covered member is alive.
+    expect(result.acaContract).toStrictEqual({ ...contract, premiumBasis: 'stated' })
+    expect(result.acaContract!.coveredMembers).toBe(contract.coveredMembers)
+    expect(result.acaContract!.taxFamilyMembers).toBe(contract.taxFamilyMembers)
     expect(result.acaEnrollmentPremiums).toStrictEqual(
       new Array<number>(12).fill(80),
     )
@@ -358,7 +363,7 @@ describe('annualHealthcareExpenses', () => {
     expect(duplicateResult.acaInitialSupportCodes).toContain('covered-member-duplicate')
   })
 
-  it('marks dormant, duplicate, mismatched, zero-gross, and legacy-fallback paths ineligible', () => {
+  it('marks dormant, duplicate, zero-gross, and legacy-fallback paths ineligible, and ignores exampleSourceId', () => {
     const dormant = singlePersonPlan()
     dormant.expenses.healthcare.applyAcaCredit = false
     dormant.expenses.healthcare.acaYears = [acaContract(120)]
@@ -369,11 +374,18 @@ describe('annualHealthcareExpenses', () => {
     duplicate.expenses.healthcare.acaYears = [acaContract(120), acaContract(90)]
     expect(run(duplicate).acaGeneralTaxCompatibilityEligible).toBe(false)
 
-    const mismatched = singlePersonPlan()
-    mismatched.exampleSourceId = 'example-mismatch'
-    mismatched.expenses.healthcare.applyAcaCredit = true
-    mismatched.expenses.healthcare.acaYears = [acaContract(120)]
-    expect(run(mismatched).acaGeneralTaxCompatibilityEligible).toBe(false)
+    // A plan's provenance changes nothing: before decision
+    // D-EXAMPLE-SOURCE-SWITCH (2026-09-28) the engine refused this contract
+    // with example-contract-input-mismatch because its premium differs from
+    // the premium field (120 against the plan's 0).
+    const fromExample = singlePersonPlan()
+    fromExample.exampleSourceId = 'early-retiree-aca'
+    fromExample.expenses.healthcare.applyAcaCredit = true
+    fromExample.expenses.healthcare.acaYears = [acaContract(120)]
+    const withSource = run(fromExample)
+    delete fromExample.exampleSourceId
+    expect(withSource).toStrictEqual(run(fromExample))
+    expect(withSource.acaGeneralTaxCompatibilityEligible).toBe(true)
 
     const zeroGross = singlePersonPlan()
     zeroGross.expenses.healthcare.applyAcaCredit = true

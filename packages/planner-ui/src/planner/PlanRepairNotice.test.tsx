@@ -65,6 +65,135 @@ async function mount(repairs: readonly PlanLoadRepair[], dismiss: () => void = (
 const items = () => [...container.querySelectorAll('li')].map((li) => li.textContent)
 
 describe('PlanRepairNotice', () => {
+  it('says the credit details of a saved example now follow the premium field', async () => {
+    await mount([
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 8, firstYear: 2026, lastYear: 2033 },
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'under-saved-single', contractCount: 1, firstYear: 2026, lastYear: 2026 },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 2026, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    ])
+  })
+
+  it('describes the library demo record itself as the example, not as a saved plan (review finding L8)', async () => {
+    const demo = { ...createSamplePlan(), origin: 'example' as const }
+    await mount(
+      [{ kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 3, firstYear: 2026, lastYear: 2028 }],
+      () => undefined,
+      demo,
+    )
+    expect(items()).toEqual([
+      "This copy of the library example was stored in this browser with its premium tax credit details for 3 years from 2026 to 2028 written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    ])
+    expect(items()[0]).not.toContain('saved from a library example')
+  })
+
+  it('says the credit details that no longer matched were left out, and that no figure changes (PR #761 review 2)', async () => {
+    await mount([{ kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 3, firstYear: 2026, lastYear: 2028 }])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 3 years from 2026 to 2028, and they no longer matched the plan's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed, and none of the plan's figures change. The credit in those years is not counted until the planner has details for them.",
+    ])
+  })
+
+  it('leads with the example sentence when every repair is about example credit details, the stored-details one otherwise (PR #761 review 8)', async () => {
+    const lead = () => container.querySelectorAll('.plan-repair-notice p')[1]!.textContent
+    await mount([
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 2, firstYear: 2026, lastYear: 2027 },
+      { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2028, lastYear: 2028 },
+    ])
+    expect(lead()).toBe(
+      "This plan came from a library example, and the app now handles an example's premium tax credit details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
+    )
+    const plan = createSamplePlan()
+    await mount(
+      [
+        { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2028, lastYear: 2028 },
+        { kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: plan.household.people[0]!.id },
+      ],
+      () => undefined,
+      plan,
+    )
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts, and it came from a library example, whose premium tax credit details the app now handles differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+    await mount(
+      [{ kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: plan.household.people[0]!.id }],
+      () => undefined,
+      plan,
+    )
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+  })
+
+  it('says entered credit details are now priced as entered and the figures change, for the plan and for a scenario (PR #761 follow-up)', async () => {
+    const scenario = { id: 's1', name: 'Own figures' }
+    await mount([
+      { kind: 'exampleEnteredContractsNowPriced', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2027, lastYear: 2027 },
+      { kind: 'exampleEnteredContractsNowPriced', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2026, lastYear: 2026, scenario },
+      { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2026, lastYear: 2026, scenario },
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 7, firstYear: 2027, lastYear: 2033, scenario },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carries premium tax credit details for 2027 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the credit in those years, and your plan's figures, change.",
+      "The scenario \u201cOwn figures\u201d writes premium tax credit details for 2026 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the scenario's figures change.",
+      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 2026, and they no longer matched the scenario's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed from the scenario, and none of its figures change.",
+      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 7 years from 2027 to 2033 as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate.",
+    ])
+  })
+
+  it('says which years the planner had been leaving out, and that Monte Carlo can move (PR #761 second review)', async () => {
+    await mount([
+      {
+        kind: 'exampleContractsFollowPremiumField',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 8,
+        firstYear: 2026,
+        lastYear: 2033,
+        previouslyLeftOut: { contractCount: 6, firstYear: 2028, lastYear: 2033 },
+      },
+      {
+        kind: 'exampleContractsFollowPremiumField',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 2,
+        firstYear: 2027,
+        lastYear: 2028,
+        previouslyLeftOut: { contractCount: 2, firstYear: 2027, lastYear: 2028 },
+      },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same except in 6 years from 2028 to 2033, which the planner had been leaving out because the example's amounts no longer matched the plan's inflation or state: the credit there is now counted where it can be priced, so those figures can change. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 2 years from 2027 to 2028, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The planner had been leaving these details out, because the example's amounts no longer matched the plan's inflation or state, so the credit is now counted where it can be priced, and the year-by-year figures of those years can change. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    ])
+  })
+
+  it('says details changed by hand are kept as entered and Monte Carlo can move, for the plan, the demo record and a scenario (PR #761 second review)', async () => {
+    const repairs = [
+      { kind: 'exampleEditedContractsKept' as const, exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2027, lastYear: 2027 },
+      {
+        kind: 'exampleEditedContractsKept' as const,
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 2,
+        firstYear: 2026,
+        lastYear: 2027,
+        scenario: { id: 's1', name: 'Hand-edited' },
+      },
+    ]
+    await mount(repairs)
+    expect(items()).toEqual([
+      'This plan came from a library example, and some of its premium tax credit details, for 2027, were changed by hand. They are kept as entered. The year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.',
+      "The scenario \u201cHand-edited\u201d writes premium tax credit details for 2 years from 2026 to 2027 that were changed by hand from the example's. They are kept as entered. The scenario's year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.",
+    ])
+    expect(container.querySelectorAll('.plan-repair-notice p')[1]!.textContent).toBe(
+      "This plan came from a library example, and the app now handles an example's premium tax credit details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
+    )
+    await mount([repairs[0]!], () => undefined, { ...createSamplePlan(), origin: 'example' as const })
+    expect(items()).toEqual([
+      'This copy of the library example stored in this browser has premium tax credit details for 2027 that were changed by hand. They are kept as entered. The year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.',
+    ])
+  })
+
   it('renders nothing when the load repaired nothing', async () => {
     await mount([])
     expect(container.querySelector('.plan-repair-notice')).toBeNull()

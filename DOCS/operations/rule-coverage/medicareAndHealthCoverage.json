@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2183
+              "line": 2288
             }
           ]
         },
@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },
@@ -360,7 +360,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2085
+              "line": 2282
             }
           ]
         },
@@ -436,7 +436,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2379
+              "line": 2539
             }
           ]
         },
@@ -551,7 +551,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2379
+              "line": 2539
             }
           ]
         },
@@ -773,16 +773,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 102,
+          "line": 103,
           "note": "Published poverty line for a single filer in the 2027 coverage year at 2.5% plan inflation.",
           "tests": [
             {
               "title": "prices a coverage year from its published ACA figures and fails closed for one without them",
-              "line": 112
+              "line": 113
             },
             {
               "title": "sizes a 2027 acaCliff conversion to four times the published 2027 poverty line",
-              "line": 165
+              "line": 166
             }
           ]
         }
@@ -832,7 +832,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 2085
+              "line": 2282
             }
           ]
         },
@@ -841,7 +841,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },
@@ -1066,7 +1066,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2183
+              "line": 2288
             }
           ]
         },
@@ -1075,7 +1075,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },
@@ -1217,7 +1217,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2183
+              "line": 2288
             }
           ]
         },
@@ -1235,7 +1235,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },
@@ -1376,7 +1376,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 450
+              "line": 448
             }
           ]
         },
@@ -1396,12 +1396,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1219,
+          "line": 1220,
           "note": "foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory",
           "tests": [
             {
               "title": "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
-              "line": 1228
+              "line": 1229
             }
           ]
         }
@@ -1440,7 +1440,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 450
+              "line": 448
             }
           ]
         },
@@ -1460,12 +1460,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1162,
+          "line": 1163,
           "note": null,
           "tests": [
             {
               "title": "carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income",
-              "line": 1169
+              "line": 1170
             }
           ]
         }
@@ -1509,7 +1509,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },
@@ -1529,12 +1529,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1105,
+          "line": 1106,
           "note": null,
           "tests": [
             {
               "title": "raises Medicare premiums two years after an income spike",
-              "line": 1112
+              "line": 1113
             }
           ]
         }
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2183
+              "line": 2288
             }
           ]
         },
@@ -1894,7 +1894,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 81
+              "line": 78
             }
           ]
         },

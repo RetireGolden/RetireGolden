@@ -19,7 +19,7 @@ import {
   type ExactLedgerRecommendationState,
   withOptimizedConversions,
 } from '@retiregolden/engine/projection/optimizePlan'
-import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
+import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
 import type { OptimizeResult } from '../optimize/messages'
 import { runOptimize } from '../optimize/runner'
 import { downloadStandaloneReport } from '../report/downloadReport'
@@ -75,7 +75,8 @@ import {
   PromotionWithheldPanel,
 } from './retirementActionPromotionPanels'
 import { promotedScheduleApplyHint } from './retirementActionPromotionCopy'
-import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
+import { currentStartYear, projectPlan } from './useProjection'
+import { headlineMcRunOptions } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 
 function DeltaStat({
@@ -131,6 +132,10 @@ export function OptimizePage() {
   const startYear = currentStartYear()
 
   const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null)
+  // The plan object the held result was computed for. After an edit the result
+  // is stale until the debounced re-run lands; nothing downstream that runs
+  // new work (the proposed schedule's Monte Carlo) may start from it meanwhile.
+  const [resultPlan, setResultPlan] = useState<typeof plan | null>(null)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mcRate, setMcRate] = useState<number | null>(null)
@@ -335,7 +340,10 @@ export function OptimizePage() {
     setMcRate(null)
     runOptimize({ plan, startYear, objectivePolicyId: objectiveId, coOptimizeClaimAge: coOptimizeRequested })
       .then((s) => {
-        if (token === runToken.current) setOptimizeResult(s)
+        if (token === runToken.current) {
+          setOptimizeResult(s)
+          setResultPlan(plan)
+        }
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
@@ -362,22 +370,33 @@ export function OptimizePage() {
     return () => window.clearTimeout(t)
   }, [run])
 
-  // Auto Monte Carlo success-% for the proposed schedule (V8 §1.6).
+  // Auto Monte Carlo success-% for the proposed schedule (V8 §1.6), on the
+  // headline configuration built from the base plan (the engine's default seed
+  // and the plan's own model, class shocks included), so the proposed
+  // schedule's rate is comparable with the headline rate. The run depends only
+  // on the fresh result and on what those options read from the plan (its
+  // inflation, and its accounts' class allocations and the class volatilities
+  // through the model), keyed by value. A plan edit starts no run by itself:
+  // the held result is stale until the debounced re-optimization lands, and
+  // only that fresh result is simulated, once; an edit to anything else (a
+  // name, notes, another section) leaves the options, and so the run, alone
+  // (PR #761 review 1 and 7).
+  const proposedMcOptionsKey = JSON.stringify(headlineMcRunOptions(plan, DEFAULT_PATH_COUNT, startYear))
+  const proposedMcOptions = useMemo(
+    () => JSON.parse(proposedMcOptionsKey) as MonteCarloRunOptions,
+    [proposedMcOptionsKey],
+  )
+  const resultIsCurrent = resultPlan === plan
   useEffect(() => {
-    if (!optimizedPlan) return
+    if (!optimizedPlan || !resultIsCurrent) return
     let cancelled = false
-    void runMonteCarlo(optimizedPlan, {
-      startYear,
-      pathCount: DEFAULT_PATH_COUNT,
-      seed: seedFromPlanId(plan.id),
-      model: { type: 'lognormal', inflationMeanPct: plan.assumptions.inflationPct, returnVolPct: 12 },
-    }).then((s) => {
+    void runMonteCarlo(optimizedPlan, proposedMcOptions).then((s) => {
       if (!cancelled) setMcRate(s.successRate)
     })
     return () => {
       cancelled = true
     }
-  }, [optimizedPlan, startYear, plan.id, plan.assumptions.inflationPct])
+  }, [optimizedPlan, resultIsCurrent, proposedMcOptions])
 
   const estateDelta = validation?.afterTaxEstateDelta ?? 0
   const taxDelta = validation?.lifetimeTaxDelta ?? 0
@@ -689,7 +708,7 @@ export function OptimizePage() {
           // The same sentence the downloadable report prints (claimAgeCopy.ts#claimAgeSearchRefusal).
           <div className="card">
             <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome={claimAge.outcome}>
-              {claimAgeSearchRefusal(claimAge, personName, startYear)}
+              {claimAgeSearchRefusal(claimAge, personName, startYear, plan.expenses.healthcare)}
             </p>
           </div>
         ) : (

@@ -57,7 +57,6 @@ describeCalculation(
         slcspBenchmarkJanuaryToApril: 600,
         slcspBenchmarkMayToDecember: 0,
         contractPresent: true,
-        contractInputsMatch: true,
       },
       expected: {
         grossEnrollmentPremium: 1_500,

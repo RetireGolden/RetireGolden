@@ -13,6 +13,8 @@
  */
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
+import { acaContractRemovalFor, type AcaContractRemovalEdit } from '@retiregolden/engine/model/acaContractRemovals'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { isAcaGrossPremiumDiagnostic } from '@retiregolden/engine/decisions/spendingSolverDiagnostics'
 import {
   INFORMATIONAL_ACA_SUPPORT_CODES,
@@ -74,7 +76,6 @@ const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
   // 400%) is not modeled.
   'below-100-fpl-exception-unsupported':
     'income is below the poverty line, where there is generally no credit and Medicaid may apply',
-  'example-contract-input-mismatch': "the example's inputs were edited, so its stated credit figures no longer apply",
   // The ledger's own fixed points: the credit and the income it depends on are
   // solved together each year, and these say the solution did not settle, not
   // that any fact is missing (annualAcaResultPublication.ts,
@@ -93,6 +94,40 @@ function creditReasonText(code: AcaSupportCode, oneYear: boolean): string {
   const reason = UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON
   return oneYear ? reason : reason.replace('for that year', 'for those years').replace('in that year', 'in those years')
 }
+
+/**
+ * Why a year has no contract when an edit removed it (review finding M2): the
+ * edit, named, instead of the planner's missing editor. The contracts are
+ * recorded on the plan with the edit that removed them
+ * (`healthcare.acaYearsRemoved`).
+ */
+const CONTRACT_REMOVED_BY: Record<AcaContractRemovalEdit, string> = {
+  partnerAdded: 'the details the credit needs were removed when a partner was added',
+  partnerRemoved: 'the details the credit needs were removed when a partner was removed',
+  peopleChanged: 'the details the credit needs were removed when the people in the household were changed',
+  filingStatusChanged: 'the details the credit needs were removed when the filing status was changed',
+  householdChanged: "the credit's written figures were removed when the household's details were changed",
+  premiumChanged: "the credit's written figures were removed when the pre-65 premium was changed",
+  // The v5 -> v6 migration, not an edit (PR #761 review 2).
+  exampleNoLongerMatched:
+    "the details the credit needs came from the library example and no longer matched this plan's premium, so the planner was already leaving them out",
+}
+
+/** Where an edit removed a year's contracts: the plan's record of those removals. */
+export type AcaContractRemovals = Pick<Plan['expenses']['healthcare'], 'acaYearsRemoved'>
+
+/**
+ * The reasons a set of years has no contract: the edit that removed each
+ * year's contract, named, and the planner's missing editor for a year no
+ * recorded edit removed.
+ */
+function missingContractReasons(years: readonly number[], removals: AcaContractRemovals | undefined): string[] {
+  const reasons = years.map((year) => {
+    const edit = removals === undefined ? null : acaContractRemovalFor(removals, year)
+    return edit === null ? UNPRICED_CREDIT_REASONS['missing-year-contract']! : CONTRACT_REMOVED_BY[edit]
+  })
+  return [...new Set(reasons)]
+}
 const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set<AcaSupportCode>([
   'actionable',
   ...INFORMATIONAL_ACA_SUPPORT_CODES,
@@ -109,11 +144,27 @@ export interface UnpricedCreditFacts {
  * "The premium tax credit isn't counted in YEARS: REASON." for Marketplace
  * years whose credit is unpriced, with the engine's blocking codes in plain
  * words. The reasons are merged across years, so with several years and
- * several reasons the sentence says each year has at least one of them.
+ * several reasons the sentence says each year has at least one of them. A
+ * missing contract is explained by the edit that removed it when the plan
+ * records one (`missingYears`: the years known to have no contract, else all
+ * the years).
  */
-function unpricedCreditSentence(years: readonly number[], codes: readonly AcaSupportCode[]): string {
+function unpricedCreditSentence(
+  years: readonly number[],
+  codes: readonly AcaSupportCode[],
+  removals?: AcaContractRemovals,
+  missingYears: readonly number[] = years,
+): string {
   const one = new Set(years).size === 1
-  const reasons = [...new Set(codes.filter((code) => !NOT_A_REASON.has(code)).map((code) => creditReasonText(code, one)))]
+  const reasons = [
+    ...new Set(
+      codes
+        .filter((code) => !NOT_A_REASON.has(code))
+        .flatMap((code) =>
+          code === 'missing-year-contract' ? missingContractReasons(missingYears, removals) : [creditReasonText(code, one)],
+        ),
+    ),
+  ]
   const lead = `The premium tax credit isn't counted in ${formatYearRuns([...years])}`
   return reasons.length === 0
     ? `${lead}: ${OTHER_UNPRICED_CREDIT_REASON}.`
@@ -132,12 +183,16 @@ function unpricedCreditSentence(years: readonly number[], codes: readonly AcaSup
  * reasons the note says each year has at least one of them rather than pinning
  * every reason on every year. Null when there are no such years.
  */
-export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered: boolean): string | null {
+export function unpricedCreditSpendingNote(
+  facts: UnpricedCreditFacts,
+  answered: boolean,
+  removals?: AcaContractRemovals,
+): string | null {
   const years = facts.acaGrossPremiumYears
   const codes = facts.acaGrossPremiumReasons
   if (years.length === 0) return null
   const one = new Set(years).size === 1
-  const why = unpricedCreditSentence(years, codes)
+  const why = unpricedCreditSentence(years, codes, removals)
   const adaptive = facts.acaGrossPremiumDirection === 'uncertain'
   const guardrails = 'because your spending guardrails respond to what healthcare costs'
   const effect = answered
@@ -164,13 +219,17 @@ export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered:
 export function guardrailPreviewUnpricedCreditRefusal(
   baselineYears: readonly Pick<YearResult, 'year' | 'aca'>[],
   previewYears: readonly Pick<YearResult, 'year' | 'aca'>[],
+  removals?: AcaContractRemovals,
 ): string | null {
   const unpriced = [...baselineYears, ...previewYears].filter((year) => year.aca?.readiness === 'nonActionable')
   if (unpriced.length === 0) return null
   const years = [...new Set(unpriced.map((year) => year.year))].sort((a, b) => a - b)
   const codes = unpriced.flatMap((year) => year.aca?.supportCodes ?? [])
+  const missing = [
+    ...new Set(unpriced.filter((year) => year.aca?.supportCodes.includes('missing-year-contract')).map((year) => year.year)),
+  ]
   return (
-    `No preview is shown for this plan. ${unpricedCreditSentence(years, codes)} Guardrail spending changes how ` +
+    `No preview is shown for this plan. ${unpricedCreditSentence(years, codes, removals, missing)} Guardrail spending changes how ` +
     'much you withdraw each year, and your withdrawals change the credit, so a preview that leaves the credit ' +
     'out could come out too high or too low.'
   )
@@ -193,16 +252,37 @@ export interface UnpricedCreditYear {
 }
 
 /**
+ * One year's reasons in plain words: a missing contract is explained by the
+ * edit that removed it when the plan records one (review finding M2), else by
+ * the planner's missing editor.
+ */
+function yearReasonTexts(
+  codes: readonly AcaSupportCode[],
+  year: number,
+  oneYear: boolean,
+  removals: AcaContractRemovals | undefined,
+): string[] {
+  return [
+    ...new Set(
+      codes.flatMap((code) =>
+        code === 'missing-year-contract' ? missingContractReasons([year], removals) : [creditReasonText(code, oneYear)],
+      ),
+    ),
+  ]
+}
+
+/**
  * The unpriced credit years in plain words, each with its own reason: years
  * that share their reasons are grouped as runs ("2028 to 2060 (RetireGolden
  * doesn't have the credit's figures for those years yet)"), the groups in
- * order of their first year and joined with semicolons.
+ * order of their first year and joined with semicolons. With the plan's
+ * removal record, a year whose contract an edit removed names that edit.
  */
-export function unpricedCreditYearsText(years: readonly UnpricedCreditYear[]): string {
+export function unpricedCreditYearsText(years: readonly UnpricedCreditYear[], removals?: AcaContractRemovals): string {
   const groups = new Map<string, { years: number[]; codes: AcaSupportCode[] }>()
   for (const entry of [...years].sort((a, b) => a.year - b.year)) {
     const codes = [...new Set(entry.reasons.filter((code) => !NOT_A_REASON.has(code)))]
-    const key = codes.map((code) => creditReasonText(code, true)).join('|')
+    const key = yearReasonTexts(codes, entry.year, true, removals).join('|')
     const group = groups.get(key) ?? { years: [], codes }
     group.years.push(entry.year)
     groups.set(key, group)
@@ -210,7 +290,9 @@ export function unpricedCreditYearsText(years: readonly UnpricedCreditYear[]): s
   return [...groups.values()]
     .map((group) => {
       const one = group.years.length === 1
-      const reasons = group.codes.length > 0 ? [...new Set(group.codes.map((code) => creditReasonText(code, one)))] : [OTHER_UNPRICED_CREDIT_REASON]
+      // Every year in a group has the same reasons, so its first year speaks for them all.
+      const reasons =
+        group.codes.length > 0 ? yearReasonTexts(group.codes, group.years[0]!, one, removals) : [OTHER_UNPRICED_CREDIT_REASON]
       return `${formatYearRuns(group.years)} (${reasons.join('; ')})`
     })
     .join('; ')
@@ -225,9 +307,9 @@ export function unpricedCreditYearsText(years: readonly UnpricedCreditYear[]): s
  * page's sweep and the Optimize page's claim-age co-optimization, so the two
  * pages refuse in the same words.
  */
-export function claimAgeUnpricedCreditReason(years: readonly UnpricedCreditYear[]): string {
+export function claimAgeUnpricedCreditReason(years: readonly UnpricedCreditYear[], removals?: AcaContractRemovals): string {
   return (
-    `Your plan's premium tax credit can't be priced in ${unpricedCreditYearsText(years)}. ` +
+    `Your plan's premium tax credit can't be priced in ${unpricedCreditYearsText(years, removals)}. ` +
     'All of your Social Security counts in the income that credit depends on, in the years it is paid, so a credit ' +
     'left unpriced there could change which claim age comes out ahead, in either direction.'
   )

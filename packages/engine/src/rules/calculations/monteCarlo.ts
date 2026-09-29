@@ -1052,7 +1052,7 @@ export const monteCarloRecords = {
     },
     limits: [
       'Monotonicity of success in f and m is assumed, not checked; with a curve that is not monotone the result is a lattice point but not a meaningful edge',
-      'The Spending card always solves under the lognormal model at 12 percent volatility around the plan\'s own expected returns (allocated accounts use their asset classes\' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows',
+      'The Spending card always solves under the lognormal model at 12 percent volatility around the plan\'s own expected returns (allocated accounts use their asset classes\' volatilities), with 200 paths and the engine\'s default seed (monte-carlo-default-seed), whatever model the Monte Carlo page shows; the solve stores the seed beside the thresholds, and thresholds saved before schema v6 carry none and were solved on a seed taken from the plan id, which the card says',
       'Successes are cached by the balance scale rounded to 1e-6; the lattice step is about 3.9e-3, so two lattice points never share a key. The spending phase is not cached, so successAfter re-evaluates a multiplier the bisection has usually tried already',
       'With a single path S is 0 or 1, so the two band edges are the same test and return the same point',
       'balancePct rounds in floating point: at three of the 1,024 lattice points (k = 192, 448 and 704) the product lands just below a half and rounds down, persisting 76.62, 176.12 and 275.62 where the exact values round half up to 76.63, 176.13 and 275.63; the callouts print the persisted percent of today\'s balances (guardrail-threshold-dollars)',
@@ -1095,6 +1095,42 @@ export const monteCarloRecords = {
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#startingInvestableOf'],
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
+  },
+  'monte-carlo-default-seed': {
+    title: 'Default Monte Carlo seed and the headline run\'s options',
+    purpose: 'The one base seed every plan\'s default Monte Carlo draws its markets from, and the headline configuration every host can match.',
+    kind: 'data',
+    outputs: [],
+    feeds: [...PATH_FAMILIES, 'insight-monte-carlo-success-delta', 'risk-based-guardrail-solved-balance-thresholds'],
+    statement:
+      'DEFAULT_MONTE_CARLO_SEED = 0x5eeded = 6,221,293 (decision D-MC-DEFAULT-SEED, 2026-09-28) is the base seed of every default Monte Carlo run, the same for every plan whatever its id: the headline success rate, the Monte Carlo page until the reader re-rolls (Re-roll replaces it for that page\'s runs only and is never saved), every comparison the planner pairs with the headline run (the Insight preview, Scenarios, the Social Security analysis, relocation, Optimize), the risk-based guardrail threshold solve, which stores the seed beside the thresholds, and the Optimize tournament\'s downside-resilience metric. headlineMonteCarloOptions(plan, startYear, pathCount = 1000) publishes { startYear, pathCount, seed: DEFAULT_MONTE_CARLO_SEED, model: buildLognormalModelConfigForPlan(plan, 12) }, so a host that uses it draws the app\'s markets. Path i is seeded with derivePathSeed(6,221,293, i): 2,931,854,348 for path 0 and 3,741,805,609 for path 1. Before the decision the planner hashed the plan id (FNV-1a), so Duplicate, Save to My Plans and import drew new markets and two plans compared side by side ran on independent markets. Units: unsigned 32-bit integer. Rounding: none.',
+    formula: {
+      expression: 'seed = 0x5eeded = 6,221,293 for every plan; pathSeed_i = derivePathSeed(seed, i); headline = { pathCount 1000, seed, lognormal(plan, 12) }',
+      variables: [
+        { symbol: 'seed', meaning: 'Base Monte Carlo seed of a default run', unit: 'uint32', domain: '6,221,293' },
+        { symbol: 'i', meaning: 'Zero-based path index', unit: '1', domain: 'integer >= 0; worksheet 0 and 1' },
+      ],
+      timing: 'once per run; the page\'s Re-roll replaces it for that page only',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/monte-carlo-default-seed.md',
+    },
+    limits: [
+      'Any fixed seed is one draw from the same sampling distribution: a headline rate on 1,000 paths still carries about 1.4 points of sampling error, which one seed for every plan does not remove; it removes the id\'s part of it and pairs every comparison',
+      'The value was kept because it was already the tournament\'s seed, before any figure was measured on it; choosing a seed by its outcomes would bias every figure',
+      'An allocated plan draws class shocks after each year\'s return and inflation draws, so an allocated plan and a single-return plan share only their first year\'s draws even on one seed',
+      'RetireGolden-Pro\'s meeting view and RetireGolden-MCP use their own seeds, path counts and models until they adopt these options',
+      'Risk-based thresholds saved before schema v6 carry no stored seed and were solved on the plan-id seed; the Spending card says so and offers to solve again (guardrailThresholdSeedBasis)',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/rng.ts', 'packages/engine/src/montecarlo/headline.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/rng.ts#DEFAULT_MONTE_CARLO_SEED',
+      'packages/engine/src/montecarlo/headline.ts#headlineMonteCarloOptions',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'rng-derived-path-seed': {
     title: 'SplitMix32-style per-path seed',

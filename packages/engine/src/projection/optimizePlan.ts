@@ -52,6 +52,7 @@ import {
 } from '../strategies/optimizer.js'
 import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
+import { DEFAULT_MONTE_CARLO_SEED } from '../montecarlo/rng.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
 import { lastFundedYear } from './moneyLasts.js'
 import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
@@ -1979,7 +1980,7 @@ function runPolicyRankedTournament(
       startYear: simulateOptions.startYear,
       taxCalculator: simulateOptions.taxCalculator,
       model: buildLognormalModelConfigForPlan(plan, 12),
-      seed: 0x5eeded,
+      seed: DEFAULT_MONTE_CARLO_SEED,
       pathCount: 200,
     })
   }

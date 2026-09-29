@@ -5,23 +5,37 @@ import {
   clearRetirementActionAnnualTaxFactsForOwners,
   type Plan,
 } from '@retiregolden/engine/model/plan'
+import { removeStaleAcaContracts, type AcaContractRemovalEdit } from '@retiregolden/engine/model/acaContractRemovals'
 import { clearDonorEligibilityFacts } from './eligibilityFactActions'
 
-/** Clear exact annual ACA facts after an edit that can stale their family,
- * coverage, region, or premium assumptions. */
-export function invalidateAcaEvidence(d: Plan) {
-  delete d.expenses.healthcare.acaYears
+/**
+ * Remove the annual premium-credit (ACA) contracts an edit leaves stale, and
+ * record which edit removed them for which years, so the planner can name the
+ * edit when it says why a year's credit is not counted (the engine's
+ * `removeStaleAcaContracts`; decision D-EXAMPLE-SOURCE-SWITCH, review finding
+ * M2). A partner added or removed, or a new filing status, removes every
+ * contract, because a contract's stored assertions are facts about who is on
+ * the return. A state, move, date-of-birth, planning-age or premium edit
+ * removes only the 'stated' contracts, whose roster and premiums are written
+ * figures; a 'premiumField' contract (every library example's, and every plan
+ * saved from one) derives its region, family, members and premiums from the
+ * household and the premium field on each run, so it stays and the credit is
+ * priced on the edited plan.
+ */
+export function invalidateAcaEvidence(d: Plan, edit: AcaContractRemovalEdit) {
+  removeStaleAcaContracts(d.expenses.healthcare, edit)
 }
 
-/** Apply a planning-horizon change and clear annual ACA evidence whose living
- * tax-family and coverage roster may no longer match the plan horizon. */
+/** Apply a planning-horizon change and clear the stated annual ACA evidence
+ * whose living tax-family and coverage roster may no longer match the plan
+ * horizon (premium-field contracts are derived from it and stay). */
 export function updatePersonLongevity(
   d: Plan,
   personIndex: number,
   longevity: Plan['household']['people'][number]['longevity'],
 ) {
   d.household.people[personIndex]!.longevity = longevity
-  invalidateAcaEvidence(d)
+  invalidateAcaEvidence(d, 'householdChanged')
 }
 
 /**
@@ -43,9 +57,10 @@ export function removePartner(d: Plan, removedId: string) {
   d.careEvents = d.careEvents.filter((c) => c.personId !== removedId)
   clearDonorEligibilityFacts(d, removedId)
   clearRetirementActionAnnualTaxFactsForOwners(d, [removedId, primaryId])
-  // Annual ACA evidence names an exact tax family and coverage roster. It
-  // cannot be safely rewritten after a household member is removed; clearing
-  // it makes a still-enabled ACA request fail closed to the visible gross
-  // premium until fresh evidence is supplied.
-  invalidateAcaEvidence(d)
+  // Annual ACA evidence asserts facts about who is on the return (and a stated
+  // contract names the roster). Neither holds once a household member is
+  // removed; clearing it makes a still-enabled ACA request fail closed to the
+  // visible gross premium until fresh evidence is supplied, and the planner
+  // says the partner's removal is why.
+  invalidateAcaEvidence(d, 'partnerRemoved')
 }

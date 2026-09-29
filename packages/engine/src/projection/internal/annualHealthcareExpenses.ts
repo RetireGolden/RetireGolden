@@ -1,26 +1,24 @@
 /** Pure annual marketplace/Medicare expense and ACA-support planning. */
 import type { Plan } from '../../model/plan.js'
-import { stateForYear } from '../../model/plan.js'
 import { irmaaTierThreshold } from '../../params/index.js'
 import type { FilingStatus, ParameterPack } from '../../params/types.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
 import type {
   AcaSupportCode,
   PersonYearState,
   ProjectedFilingStatus,
 } from '../types.js'
-
-const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
+import {
+  effectiveAcaYearContract,
+  type EffectiveAcaYearContract,
+} from './effectiveAcaYearContract.js'
 
 export type IrmaaLookbackMagiSource =
   | 'projected'
   | 'historicalInput'
   | 'planFallback'
 
-type AcaContract = NonNullable<
-  Plan['expenses']['healthcare']['acaYears']
->[number]
+type AcaContract = EffectiveAcaYearContract
 
 export interface AnnualHealthcareExpensesResult {
   readonly healthcare: number
@@ -35,7 +33,6 @@ export interface AnnualHealthcareExpensesResult {
   readonly healthcareExcludingAcaEnrollment: number
   readonly healthcareExcludingMarketplacePremium: number
   readonly acaInitialSupportCodes: AcaSupportCode[]
-  readonly exampleContractInputMismatch: boolean
   readonly medicarePremiums: number
   readonly irmaaSurcharge: number
   readonly irmaaTier: number
@@ -90,10 +87,6 @@ export function annualHealthcareExpenses(
   const acaEnrollmentPremiums: number[] = new Array<number>(12).fill(0)
   const acaSlcspBenchmarkPremiums: number[] = new Array<number>(12).fill(0)
   let legacyMarketplacePremiumPaidDirectly = 0
-  const acaContractsForYear =
-    hc.acaYears?.filter((contract) => contract.year === input.year) ?? []
-  const acaContract =
-    acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
 
   const lookbackPrimary = input.resolveMagiFor(input.year - 2)
   // SSA-44 selects the lower of the normal two-year lookback and the prior-year
@@ -140,6 +133,23 @@ export function annualHealthcareExpenses(
       input.birthMonthByPerson.get(person.personId) ?? 1,
     ),
   )
+  // The contracts this run prices: a 'premiumField' contract is filled from
+  // the premium field at this run's healthcare inflation for the people alive
+  // this year, and a 'stated' one charges nothing for a covered member who
+  // is not (effectiveAcaYearContract.ts).
+  const acaContractsForYear: AcaContract[] = (
+    hc.acaYears?.filter((contract) => contract.year === input.year) ?? []
+  ).map((contract) =>
+    effectiveAcaYearContract(contract, {
+      plan: input.plan,
+      year: input.year,
+      peopleStates: input.peopleStates,
+      marketplaceMonthsByPersonPosition,
+      healthInflFactor,
+    }),
+  )
+  const acaContract =
+    acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
 
   for (const [position, state] of input.peopleStates.entries()) {
     if (!state.alive) continue
@@ -204,38 +214,7 @@ export function annualHealthcareExpenses(
             input.inflFactorFrom(input.pack.year, toYear),
           inflationFactorBetween: input.inflFactorFrom,
         })
-  const exampleContractInputMismatch =
-    input.plan.exampleSourceId !== undefined &&
-    acaContract !== undefined &&
-    (() => {
-      const residenceState = stateForYear(input.plan.household, input.year)
-      const expectedRegion =
-        residenceState === 'AK'
-          ? 'alaska'
-          : residenceState === 'HI'
-            ? 'hawaii'
-            : 'contiguous'
-      const expectedMonthlyPremium =
-        hc.pre65MonthlyPremiumPerPerson * healthInflFactor
-      return (
-        acaContract.fplRegion !== expectedRegion ||
-        acaContract.coveredMembers.some((member) => {
-          const personPosition = input.peopleStates.findIndex(
-            (state) => state.personId === member.personId,
-          )
-          const expectedMonths =
-            personPosition < 0
-              ? 0
-              : marketplaceMonthsByPersonPosition[personPosition]!
-          return member.enrollmentPremiumByMonth.some((premium, month) => {
-            const expected = month < expectedMonths ? expectedMonthlyPremium : 0
-            return Math.abs(premium - expected) > EPSILON
-          })
-        })
-      )
-    })()
-
-  if (hc.applyAcaCredit && acaContract && !exampleContractInputMismatch) {
+  if (hc.applyAcaCredit && acaContract) {
     for (const member of acaContract.coveredMembers) {
       for (let month = 0; month < 12; month++) {
         const enrollmentPremium =
@@ -277,7 +256,6 @@ export function annualHealthcareExpenses(
   const acaGeneralTaxCompatibilityEligible =
     hc.applyAcaCredit &&
     acaContract !== undefined &&
-    !exampleContractInputMismatch &&
     acaGrossEnrollmentPremium > 0
   // Begin at gross premium. Only the caller's exact tax/withdrawal fixed point
   // may replace this with a supported economic net premium.
@@ -417,9 +395,6 @@ export function annualHealthcareExpenses(
       ) {
         acaInitialSupportCodes.push('benchmark-only-coverage-unsupported')
       }
-      if (exampleContractInputMismatch) {
-        acaInitialSupportCodes.push('example-contract-input-mismatch')
-      }
       if (acaContract.assertions.coverageEligibility !== 'supported') {
         acaInitialSupportCodes.push('coverage-eligibility-unsupported')
       }
@@ -460,7 +435,6 @@ export function annualHealthcareExpenses(
     healthcareExcludingAcaEnrollment,
     healthcareExcludingMarketplacePremium,
     acaInitialSupportCodes,
-    exampleContractInputMismatch,
     medicarePremiums,
     irmaaSurcharge,
     irmaaTier,

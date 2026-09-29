@@ -92,7 +92,7 @@ Each of them has a Roth IRA, because a conversion can land only in its owner's o
 const exampleEarlyRetireeAcaBody = exampleBody(
   `Casey retired at 58 and buys marketplace coverage until Medicare. She has part-time consulting income, and her Roth conversions fill the 10% tax bracket each year. The conversions are sized to the bracket, not to the subsidy cliff: the top of the 10% bracket happens to keep her income below the cliff, and filling the 12% bracket would cross it. Both income sources count toward MAGI, so converting one bracket higher forfeits the entire credit.
 
-The credit is priced for 2026 and 2027, the two coverage years whose figures are published so far. From 2028 the plan budgets the full premium until that year's figures are published. The example also assumes the benchmark silver plan costs the same $1,000 a month Casey pays, so the credit brings her premium down to exactly the share of income the law expects her to pay. Its coverage details are written for that premium: change the premium and the credit is no longer priced.`,
+The credit is priced for 2026 and 2027, the two coverage years whose figures are published so far. From 2028 the plan budgets the full premium until that year's figures are published. The example also assumes the benchmark silver plan costs the same $1,000 a month Casey pays, so the credit brings her premium down to exactly the share of income the law expects her to pay. Its coverage details follow that premium: change the premium and the benchmark moves with it, so the credit rises or falls by the same amount and what she pays stays her expected share.`,
   'Check the 2026 and 2027 premium credits in the printable report\'s ACA ledger, then raise the conversion bracket to 12% on Strategy and watch both go to zero.',
 )
 
@@ -215,7 +215,7 @@ Instead of a single expected return on each account, he assigns target weights t
 A linear glidepath gradually shifts the taxable account from aggressive (70% stocks) to conservative (30% stocks) over 12 years. Rebalancing happens annually.
 
 In the taxable account, bonds generate more interest (taxed every year) while stocks generate qualified dividends and growth. Monte Carlo now applies correlated shocks to the classes rather than a single return.`,
-  'Edit the allocation policy on each account and watch the target weights change over time. Run Monte Carlo with and without the allocation to compare downside percentiles and frontiers.',
+  'Edit the allocation policy on each account and watch the target weights change over time. Run Monte Carlo on this plan and on the static-allocation version to compare downside percentiles and frontiers. Both start from the same market draw, but this plan also draws a shock for each asset class, so after the first year they see different markets and a small gap can be sampling noise.',
   {
     name: 'The Morgan household',
     assumptions: [
@@ -257,7 +257,7 @@ const exampleFixedTargetSpendingBody = exampleBody(
 All spending is treated as a single target. In bad markets the full amount is at risk.
 
 Compare this plan directly with the guardrails version using the Compare feature to isolate the effect of the spending policy.`,
-  'Open both examples, then use Compare Plans and look at Monte Carlo success rates (overall vs any required floor distinction) and when each version depletes.',
+  'Open both examples, then use Compare Plans to see when each version depletes, and the Monte Carlo page of each for its success rates (overall, and for the required floor). Every plan starts from the same market draw, so the two sets of rates come from the same simulated markets.',
   {
     name: 'The Riley household (fixed target version)',
     assumptions: [
@@ -299,7 +299,7 @@ Every account uses a single flat expected return instead of class weights, glide
 Monte Carlo applies a single-factor shock rather than correlated class shocks.
 
 Load both this plan and the glidepath version, then use Compare or run Monte Carlo on each to see the impact of the allocation model on risk metrics.`,
-  'Compare Monte Carlo outcomes (especially 10th-percentile estate, depletion probability, and frontiers) between this flat-return version and the allocated glidepath version.',
+  'Compare Monte Carlo outcomes (especially 10th-percentile estate, depletion probability, and frontiers) between this flat-return version and the allocated glidepath version. Both start from the same market draw, but the glidepath version also draws a shock for each asset class, so after the first year they see different markets and a small gap can be sampling noise.',
   {
     name: 'The Morgan household (static allocation version)',
     assumptions: [

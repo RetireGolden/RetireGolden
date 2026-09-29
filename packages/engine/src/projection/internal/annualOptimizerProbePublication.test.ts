@@ -97,6 +97,7 @@ function actionableAca(): YearAcaResult {
       foreignExclusionAddback: 0,
       requiredFilerDependentMagi: 0,
     },
+    premiumBasis: 'stated',
     fplRegion: 'contiguous',
     federalPovertyLine: 20_000,
     fplPct: 150,

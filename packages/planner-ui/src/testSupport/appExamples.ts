@@ -1,8 +1,10 @@
 /**
  * Library examples as the app opens them (planner/examples/loadExample.ts
  * stamps the same fields), for parity tests that measure what a reader sees
- * on an example: the plan id `example:<id>` seeds Monte Carlo, and the
- * example's fixed clock sets the timestamps.
+ * on an example: the plan id `example:<id>`, the `example` origin and
+ * `exampleSourceId` (provenance only: neither the id nor the source changes
+ * a figure, and every plan's Monte Carlo draws from the engine's default
+ * seed), and the example's fixed clock sets the timestamps.
  */
 import type { Plan } from '@retiregolden/engine/model/plan'
 

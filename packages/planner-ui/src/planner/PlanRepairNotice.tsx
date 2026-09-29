@@ -15,9 +15,9 @@ import { usePlan } from './planContextCore'
 import { usePlanRepairs } from './planRepairContext'
 import {
   PLAN_REPAIR_NOTICE_DISMISS,
-  PLAN_REPAIR_NOTICE_INTRO,
   PLAN_REPAIR_NOTICE_TITLE,
   planRepairMessage,
+  planRepairNoticeIntro,
 } from './planRepairCopy'
 
 export function PlanRepairNotice() {
@@ -30,13 +30,15 @@ export function PlanRepairNotice() {
       <p>
         <strong>{PLAN_REPAIR_NOTICE_TITLE}</strong>
       </p>
-      <p>{PLAN_REPAIR_NOTICE_INTRO}</p>
+      <p>{planRepairNoticeIntro(repairs)}</p>
       <ul>
         {repairs.map((repair, index) => (
           // Repairs carry no id of their own and a plan can hold two of the same
           // kind on different accounts, so the position in the engine's ordered
           // list is the key. The list is fixed for the life of the notice.
-          <li key={`${repair.kind}:${repair.accountId}:${index}`}>{planRepairMessage(repair, plan)}</li>
+          <li key={`${repair.kind}:${'accountId' in repair ? repair.accountId : repair.exampleSourceId}:${index}`}>
+            {planRepairMessage(repair, plan)}
+          </li>
         ))}
       </ul>
       {/* Spacing lives in planner.css (`.plan-repair-notice .picker-actions`);

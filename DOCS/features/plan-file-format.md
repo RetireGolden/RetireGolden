@@ -125,15 +125,14 @@ IndexedDB reads, JSON imports, and migration output, so there is no separate (dr
 Field-level semantics are documented inline on the schema as doc comments.
 
 Additive audit-phase collections (`stateTaxFacts`, `inheritedRothTaxCharacterPools`,
-`employerElectiveDeferralHistory`) default to empty arrays/objects so existing schemaVersion **5**
-files stay valid without a version bump. QCD conformity policy is **not** a Plan field — it
+`employerElectiveDeferralHistory`) default to empty arrays/objects so existing files stay valid without a version bump. QCD conformity policy is **not** a Plan field — it
 resolves from versioned state parameters. HECM `calculationMode` defaults to `legacyQuoteEstimate`
 when omitted. A `hudValidated` HECM additionally requires a verified `hudTransactionKind`;
 only `ordinaryOrigination` is currently modeled, while purchase, refinance, and unknown facts
 are refused rather than defaulted to ordinary origination. Absence of optional inherited-account history / spousal-election / Roth-pool facts
 means unknown, never false or zero.
 
-`schemaVersion` is currently **5**. Plan v3 added the optional
+`schemaVersion` is currently **6**. Plan v3 added the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA
 classification, action-year SEP/SIMPLE activity, and deductible-IRA
 contribution evidence. Deductible-contribution records use `amountCents`, a
@@ -186,6 +185,59 @@ pick without it was made before the field existed, on the 2022 period table of t
 Report, and the planner labels it so. An engine that predates the field (0.3.0, which
 RetireGolden-Pro and RetireGolden-MCP pin) drops it when it parses and re-saves a plan, since the
 object is not strict; the pick's age is kept, and back in this planner it reads as a 2022 pick.
+
+Plan v6 gives each premium-credit (ACA) year contract in `expenses.healthcare.acaYears`
+a `premiumBasis` (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28). `'stated'`, the
+default when the field is absent and the only shape v5 had, holds the coverage year's
+actual enrollment premiums and SLCSP benchmarks, used as written on every run.
+`'premiumField'` stores only the year, the filing assertions, tax-exempt interest and
+the foreign-exclusion addback; the engine fills the region, tax family, covered members
+and premiums on each run from the household and `pre65MonthlyPremiumPerPerson`, and the
+schema refuses a stored roster or premium on such a contract. v6 also adds the optional
+`expenses.spendingPolicy.balanceThresholdSeed`, the Monte Carlo seed a risk-based
+policy's thresholds were solved on (D-MC-DEFAULT-SEED), and keeps v5's optional
+`longevity.percentile.tableEdition` (above) unchanged.
+
+**The v5 → v6 migration rewrites only a plan saved from a library example.** When the
+document carries `exampleSourceId`, each contract the example recipe wrote becomes
+`'premiumField'`: the recipe's shape (the people alive by planning age as the tax
+family, one premium shared by the covered members in their months, benchmark equal to
+premium, the recipe's facts) and the recipe's dollars (the premium field in 2026, and
+the premium field times one growth factor per plan to the power of the years since
+2026 after it, to half a cent; the factor is the plan's stored rates when they fit,
+else the one at least two contracts agree on, so an inflation edit after saving does
+not hide the recipe). The load reports the `exampleContractsFollowPremiumField` repair.
+A contract that came from the recipe (its facts, a family of primary and spouse members
+required to file with MAGI 0, one shared amount with benchmark equal to premium) but no
+longer matches the plan's premium, because the premium, the inflation or the household
+changed after saving or a quote was typed in its shape, was already left out by the v5
+engine at run time (gross premium, no credit): the migration removes it, records its year
+in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`, and reports the
+`exampleContractsLeftOut` repair, so the plan's figures do not change. One the v5 engine
+priced as written (the premium field grown at the plan's stored rates, to half a cent) whose
+shape is exactly what the premium-field fill derives also becomes `'premiumField'`, even when
+another factor fits more contracts: it keeps the deterministic figures and, as the v5 check
+did, follows the premium field on every Monte Carlo path, where `'stated'` would hold it in
+nominal dollars. The rewrite repair says the year-by-year figures stay the same, except in
+the years the v5 engine was leaving out (`previouslyLeftOut`), and that Monte Carlo now
+counts the credit on every simulated market, which can move the success rate. Every other
+contract stays `'stated'`. Among those, one changed by hand out of the fill's shape (a
+benchmark unlike the premium, say) that the v5 engine priced as written is kept as entered
+and announced (`exampleEditedContractsKept`): the year-by-year figures stay the same, but
+Monte Carlo now counts it at its entered dollars on every simulated market, where the v5
+engine dropped it on any market whose inflation differed, which can move the success rate.
+One the v5 engine refused
+because it did not match the example's premium (a contract entered for the plan, say, with
+its own benchmark) is now priced as entered, so that year's figures change: the load reports
+`exampleEnteredContractsNowPriced` and the notice says the figures change. An unedited
+converted plan projects to the same figures to the cent. The contracts a stored scenario
+writes (a legacy patch's `expenses.healthcare.acaYears`, or a canonical operation setting
+`/expenses/healthcare/acaYears`, `/expenses/healthcare` or `/expenses` with them inside)
+are sorted by the same rule in the plan the scenario makes (its own premium, inflation and
+household where it sets them): rewritten, removed and recorded in the scenario, or kept and,
+where the v5 engine refused them, announced; each repair then names the scenario. Each
+operation's `before` is migrated as the plan itself is, so the scenario still applies.
+`exampleSourceId` is provenance only: the projection never reads it.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

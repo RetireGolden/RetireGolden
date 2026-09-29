@@ -21,9 +21,37 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 /** Heading on the workspace notice. */
 export const PLAN_REPAIR_NOTICE_TITLE = 'This plan changed when it opened'
 
-/** Lead paragraph above the per-repair list. */
+/** Lead paragraph above the per-repair list, for repairs of details the app no longer accepts. */
 export const PLAN_REPAIR_NOTICE_INTRO =
   'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.'
+
+/**
+ * Lead paragraph when every repair is the v5 -> v6 handling of a library
+ * example's premium tax credit details. Those details were not refused: the
+ * app stores an example's credit details differently now, and the plan
+ * opened in the new form (PR #761 review 8).
+ */
+export const PLAN_REPAIR_NOTICE_EXAMPLE_INTRO =
+  "This plan came from a library example, and the app now handles an example's premium tax credit details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed."
+
+/** Lead paragraph when a plan has both kinds of repair. */
+export const PLAN_REPAIR_NOTICE_MIXED_INTRO =
+  "This plan was stored with details the app no longer accepts, and it came from a library example, whose premium tax credit details the app now handles differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed."
+
+/** The repairs that are the v5 -> v6 handling of an example's credit details, not a refusal. */
+const EXAMPLE_CONTRACT_REPAIR_KINDS: ReadonlySet<PlanLoadRepair['kind']> = new Set<PlanLoadRepair['kind']>([
+  'exampleContractsFollowPremiumField',
+  'exampleContractsLeftOut',
+  'exampleEnteredContractsNowPriced',
+  'exampleEditedContractsKept',
+])
+
+/** The notice's lead paragraph for these repairs. */
+export function planRepairNoticeIntro(repairs: readonly PlanLoadRepair[]): string {
+  const example = repairs.filter((repair) => EXAMPLE_CONTRACT_REPAIR_KINDS.has(repair.kind)).length
+  if (example === 0) return PLAN_REPAIR_NOTICE_INTRO
+  return example === repairs.length ? PLAN_REPAIR_NOTICE_EXAMPLE_INTRO : PLAN_REPAIR_NOTICE_MIXED_INTRO
+}
 
 /** Label on the control that closes the notice. */
 export const PLAN_REPAIR_NOTICE_DISMISS = 'Dismiss'
@@ -39,8 +67,132 @@ function ownerName(plan: Plan, personId: string): string {
   return person ? person.name : 'the first person in your household'
 }
 
+/**
+ * The v5 -> v6 rewrite of an example's premium-credit contracts (decision
+ * D-EXAMPLE-SOURCE-SWITCH): what the plan carried, what it carries now, and
+ * what that changes. A plan saved from an example (Save to My Plans,
+ * Duplicate, an import) is the household's copy; the library's own demo
+ * record (`origin: 'example'`, review finding L8) is the example itself,
+ * stored in this browser before the change, and is described as that.
+ */
+/** "2026", or "3 years from 2026 to 2028". */
+function repairYears(repair: { contractCount: number; firstYear: number; lastYear: number }): string {
+  return repair.contractCount === 1
+    ? `${repair.firstYear}`
+    : `${repair.contractCount} years from ${repair.firstYear} to ${repair.lastYear}`
+}
+
+/** 'the scenario "Name"', for a repair of the contracts a stored scenario writes. */
+function scenarioLabel(scenario: { name: string }): string {
+  return scenario.name.trim().length > 0 ? `The scenario “${scenario.name}”` : 'A saved scenario'
+}
+
+/**
+ * What the rewrite does to the figures (PR #761 second review): the
+ * year-by-year figures stay the same where the v5 engine priced the contracts
+ * as written, and can change in the years it was leaving out; Monte Carlo now
+ * counts the credit on every simulated market, which can move the success
+ * rate, since the v5 engine dropped these contracts on any market whose
+ * inflation differed.
+ */
+function exampleRewriteEffect(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsFollowPremiumField' }>,
+  whose: string,
+): string {
+  const monteCarlo =
+    'Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate.'
+  const leftOut = repair.previouslyLeftOut
+  if (leftOut === undefined) return `The year-by-year figures stay the same. ${monteCarlo}`
+  const leftOutYears = repairYears(leftOut)
+  const reason = `because the example's amounts no longer matched ${whose} inflation or state`
+  if (leftOut.contractCount === repair.contractCount) {
+    return `The planner had been leaving these details out, ${reason}, so the credit is now counted where it can be priced, and the year-by-year figures of those years can change. ${monteCarlo}`
+  }
+  return `The year-by-year figures stay the same except in ${leftOutYears}, which the planner had been leaving out ${reason}: the credit there is now counted where it can be priced, so those figures can change. ${monteCarlo}`
+}
+
+function exampleContractsMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsFollowPremiumField' }>,
+  plan: Plan,
+): string {
+  const years = repairYears(repair)
+  const grown =
+    "each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo."
+  const editing = 'Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.'
+  if (repair.scenario !== undefined) {
+    return `${scenarioLabel(repair.scenario)} wrote the example's premium tax credit details for ${years} as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: ${grown} ${exampleRewriteEffect(repair, "the scenario's")}`
+  }
+  if (plan.origin === 'example') {
+    return `This copy of the library example was stored in this browser with its premium tax credit details for ${years} written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: ${grown} ${exampleRewriteEffect(repair, "the example's")} ${editing}`
+  }
+  return `This plan was saved from a library example and carried the example's premium tax credit details for ${years}, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: ${grown} ${exampleRewriteEffect(repair, "the plan's")} ${editing}`
+}
+
+/**
+ * The v5 -> v6 removal of an example's premium-credit contracts that no longer
+ * matched the plan's premium (PR #761 review 2): the v5 engine was already
+ * leaving them out, so the figures do not change, and the notice says so.
+ */
+function exampleContractsLeftOutMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsLeftOut' }>,
+  plan: Plan,
+): string {
+  const years = repairYears(repair)
+  if (repair.scenario !== undefined) {
+    return `${scenarioLabel(repair.scenario)} wrote the example's premium tax credit details for ${years}, and they no longer matched the scenario's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed from the scenario, and none of its figures change.`
+  }
+  const copy = plan.origin === 'example' ? 'This copy of the library example was stored in this browser with' : 'This plan was saved from a library example and carried'
+  return `${copy} the example's premium tax credit details for ${years}, and they no longer matched the plan's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed, and none of the plan's figures change. The credit in those years is not counted until the planner has details for them.`
+}
+
+/**
+ * Premium-credit details entered for a plan saved from an example (not the
+ * example's own) that the v5 engine refused because they did not match the
+ * example's premium: v6 prices them as entered, so the figures of those years
+ * change, and the notice says so (PR #761 follow-up a).
+ */
+function exampleEnteredContractsMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleEnteredContractsNowPriced' }>,
+  plan: Plan,
+): string {
+  const years = repairYears(repair)
+  const refused =
+    "They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years."
+  if (repair.scenario !== undefined) {
+    return `${scenarioLabel(repair.scenario)} writes premium tax credit details for ${years} that were entered for it, not written by the example. ${refused} They are now priced as entered, so the scenario's figures change.`
+  }
+  const copy = plan.origin === 'example' ? 'This copy of the library example stored in this browser carries' : 'This plan was saved from a library example and carries'
+  return `${copy} premium tax credit details for ${years} that were entered for it, not written by the example. ${refused} They are now priced as entered, so the credit in those years, and your plan's figures, change.`
+}
+
+/**
+ * Premium-credit details changed by hand from the example's shape, which the
+ * v5 engine priced as written: kept as entered, with the same year-by-year
+ * figures, but Monte Carlo now counts them on every simulated market at their
+ * entered dollars, which can move the success rate (PR #761 second review).
+ */
+function exampleEditedContractsMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleEditedContractsKept' }>,
+  plan: Plan,
+): string {
+  const years = repairYears(repair)
+  const monteCarlo =
+    'Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.'
+  if (repair.scenario !== undefined) {
+    return `${scenarioLabel(repair.scenario)} writes premium tax credit details for ${years} that were changed by hand from the example's. They are kept as entered. The scenario's year-by-year figures stay the same. ${monteCarlo}`
+  }
+  if (plan.origin === 'example') {
+    return `This copy of the library example stored in this browser has premium tax credit details for ${years} that were changed by hand. They are kept as entered. The year-by-year figures stay the same. ${monteCarlo}`
+  }
+  return `This plan came from a library example, and some of its premium tax credit details, for ${years}, were changed by hand. They are kept as entered. The year-by-year figures stay the same. ${monteCarlo}`
+}
+
 /** One repair, as a paragraph for the household. */
 export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
+  if (repair.kind === 'exampleContractsFollowPremiumField') return exampleContractsMessage(repair, plan)
+  if (repair.kind === 'exampleContractsLeftOut') return exampleContractsLeftOutMessage(repair, plan)
+  if (repair.kind === 'exampleEnteredContractsNowPriced') return exampleEnteredContractsMessage(repair, plan)
+  if (repair.kind === 'exampleEditedContractsKept') return exampleEditedContractsMessage(repair, plan)
   const account = named(repair.accountName, 'An account')
   switch (repair.kind) {
     case 'accountOwnerBackFilled':

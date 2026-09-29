@@ -26,6 +26,8 @@ export interface AnnualAcaCoveredMemberSnapshot {
 }
 
 export interface AnnualAcaContractSnapshot {
+  /** Where the priced contract's premiums came from: stated in the plan, or derived from the premium field on this run. */
+  readonly premiumBasis: 'stated' | 'premiumField'
   readonly fplRegion: 'contiguous' | 'alaska' | 'hawaii'
   readonly taxFamilyMembers: readonly AnnualAcaTaxFamilyMemberSnapshot[]
   readonly coveredMembers: readonly AnnualAcaCoveredMemberSnapshot[]
@@ -61,7 +63,6 @@ export interface AnnualAcaResultPublicationInput {
   readonly maxEvaluationCount: number
   readonly contract: Readonly<AnnualAcaContractSnapshot> | null
   readonly contractCount: number
-  readonly exampleContractInputMismatch: boolean
   /** True when the coverage year has no published ACA block and a neighbouring block stands in. */
   readonly acaParametersStandIn: boolean
   readonly people: readonly AnnualAcaPersonSnapshot[]
@@ -146,7 +147,7 @@ export function annualAcaResultPublication(
           ? (dependentEvidence.get(member.personId)?.includedMagi ?? 0)
           : 0,
     })) ?? []
-  const coveredMembers = input.contract && !input.exampleContractInputMismatch
+  const coveredMembers = input.contract
     ? input.contract.coveredMembers.map((member) => ({
         personId: member.personId,
         coveredMonths: member.enrollmentPremiumByMonth
@@ -234,6 +235,7 @@ export function annualAcaResultPublication(
       foreignExclusionAddback: input.foreignExclusionAddback,
       requiredFilerDependentMagi: 0,
     },
+    premiumBasis: input.contract?.premiumBasis ?? null,
     fplRegion: input.contract?.fplRegion ?? null,
     federalPovertyLine: fpl,
     fplPct,
@@ -242,7 +244,7 @@ export function annualAcaResultPublication(
     coveredMembers,
     grossEnrollmentPremium: input.grossEnrollmentPremium,
     applicableSlcspPremium:
-      input.contract && !input.exampleContractInputMismatch
+      input.contract
         ? input.slcspBenchmarkPremiums.reduce(
             (sum, premium) => sum + premium,
             0,

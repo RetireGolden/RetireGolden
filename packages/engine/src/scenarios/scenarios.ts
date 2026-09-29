@@ -30,6 +30,7 @@ import {
   type ScenarioPatchInput,
 } from './contract.js'
 import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
+import { acaContractEditBetween, removeStaleAcaContracts } from '../model/acaContractRemovals.js'
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -54,53 +55,45 @@ export function canonicalOperationSuppliesCompleteAcaEvidence(operation: Scenari
 }
 
 /**
+ * Whether a patch writes the premium-credit contracts itself: then it
+ * supplies the evidence, and nothing it changes elsewhere removes any.
+ */
+function patchSuppliesAcaEvidence(patch: ScenarioPatchInput): boolean {
+  if (isScenarioPatchEnvelope(patch)) {
+    const parsed = parseScenarioPatch(patch)
+    return parsed.ok && parsed.patch.operations.some(canonicalOperationSuppliesCompleteAcaEvidence)
+  }
+  if (!isPlainObject(patch)) return false
+  const healthcare =
+    isPlainObject(patch['expenses']) && isPlainObject(patch['expenses']['healthcare'])
+      ? patch['expenses']['healthcare']
+      : null
+  return healthcare !== null && Object.hasOwn(healthcare, 'acaYears')
+}
+
+/**
  * Apply either a historical deep-merge patch or the canonical versioned
  * operation document. Legacy patches retain their original behavior; v1
- * documents add atomic precondition/conflict checks.
+ * documents add atomic precondition/conflict checks. Premium-credit contracts
+ * the change leaves stale are removed and the removal is recorded
+ * (model/acaContractRemovals.ts): a change to who is on the return (a person
+ * added, removed or replaced, or the filing status) removes every contract; a
+ * change to the rest of the household or to the pre-65 premium removes only
+ * the stated ones, because a premium-field contract is derived from them on
+ * every run (decision D-EXAMPLE-SOURCE-SWITCH, review finding M2). A patch
+ * that writes the contracts itself removes nothing.
  */
 export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): ParsePlanResult {
-  const invalidatesAcaEvidence = isScenarioPatchEnvelope(patch)
-    ? (() => {
-        const parsed = parseScenarioPatch(patch)
-        if (!parsed.ok) return false
-        const changesEvidence = parsed.patch.operations.some(canonicalOperationSuppliesCompleteAcaEvidence)
-        const paths = parsed.patch.operations.map((operation) => operation.path)
-        return (
-          !changesEvidence &&
-          paths.some(
-            (path) =>
-              path === '/household' ||
-              path.startsWith('/household/') ||
-              path.startsWith('/expenses/healthcare/pre65MonthlyPremiumPerPerson'),
-          )
-        )
-      })()
-    : isPlainObject(patch) &&
-      (() => {
-        const healthcare =
-          isPlainObject(patch['expenses']) && isPlainObject(patch['expenses']['healthcare'])
-            ? patch['expenses']['healthcare']
-            : null
-        const changesEvidence = healthcare !== null && Object.hasOwn(healthcare, 'acaYears')
-        return (
-          !changesEvidence &&
-          (
-            Object.hasOwn(patch, 'household') ||
-            (healthcare !== null && Object.hasOwn(healthcare, 'pre65MonthlyPremiumPerPerson'))
-          )
-        )
-      })()
+  const suppliesEvidence = patchSuppliesAcaEvidence(patch)
   const applied = applyScenarioPatchInput(plan, patch)
-  if (
-    !applied.ok ||
-    !invalidatesAcaEvidence ||
-    applied.plan.expenses.healthcare.acaYears === undefined
-  ) {
+  if (!applied.ok || suppliesEvidence || applied.plan.expenses.healthcare.acaYears === undefined) {
     return applied
   }
-  const evidenceFreePlan = structuredClone(applied.plan)
-  delete evidenceFreePlan.expenses.healthcare.acaYears
-  return parsePlan(evidenceFreePlan)
+  const edit = acaContractEditBetween(plan, applied.plan)
+  if (edit === null) return applied
+  const edited = structuredClone(applied.plan)
+  if (!removeStaleAcaContracts(edited.expenses.healthcare, edit)) return applied
+  return parsePlan(edited)
 }
 
 export interface ScenarioDiffEntry {

@@ -640,12 +640,801 @@ export const migratePlanV4ToV5: MigrationStep = (raw) => {
   return { ...raw, incomes, scenarios }
 }
 
+/**
+ * The facts the example library's recipe (the planner's `parseExamplePlan`
+ * before schema v6) wrote on every premium-credit contract, whatever the
+ * dollars: no tax-exempt interest, no foreign exclusion, and every filing
+ * assertion answered the supported way.
+ */
+const EXAMPLE_RECIPE_CONTRACT_FACTS = {
+  taxExemptInterest: { state: 'notApplicable', amount: null },
+  foreignExclusionAddback: { state: 'notApplicable', amount: null },
+  assertions: {
+    coverageEligibility: 'supported',
+    form8814: 'notApplicable',
+    specialAllocation: 'notApplicable',
+    marriedFilingSeparatelyException: 'notApplicable',
+    selfEmployedHealthInsuranceDeduction: 'notApplicable',
+    otherMaterialFacts: 'none',
+  },
+} as const
+
+interface RecipePerson {
+  readonly id: string
+  readonly birthYear: number
+  readonly birthMonth: number
+  readonly planningAge: number
+}
+
+function recipePeople(household: unknown): RecipePerson[] | null {
+  if (typeof household !== 'object' || household === null || Array.isArray(household)) return null
+  const people = (household as Record<string, unknown>)['people']
+  if (!Array.isArray(people)) return null
+  const out: RecipePerson[] = []
+  for (const person of people) {
+    if (typeof person !== 'object' || person === null || Array.isArray(person)) return null
+    const record = person as Record<string, unknown>
+    const dob = record['dob']
+    const longevity = record['longevity']
+    const planningAge =
+      typeof longevity === 'object' && longevity !== null && !Array.isArray(longevity)
+        ? (longevity as Record<string, unknown>)['planningAge']
+        : undefined
+    if (typeof record['id'] !== 'string' || typeof dob !== 'string' || typeof planningAge !== 'number') return null
+    const match = /^(\d{4})-(\d{2})-/.exec(dob)
+    if (match === null) return null
+    out.push({ id: record['id'], birthYear: Number(match[1]), birthMonth: Number(match[2]), planningAge })
+  }
+  return out
+}
+
+/**
+ * The shared monthly amount of a stored contract that has the shape the
+ * example recipe wrote, or null when it does not have that shape. For the
+ * contract's year: the tax family is the people alive by planning age, in
+ * household order, the first primary and the rest spouse, each required to
+ * file with MAGI 0; the covered members are those of them with Marketplace
+ * months before Medicare (12 under 65, birth month minus 1 in the year of 65),
+ * in the same order; every covered member's enrollment premium equals its
+ * benchmark in every month and is one positive amount shared by every covered
+ * member in its covered months, and 0 after; and the assertions, tax-exempt
+ * interest and foreign exclusion are the recipe's. The dollars are compared
+ * separately (`fitsRecipeDollars`). With `compareFacts` false the facts are
+ * not compared: the shape is then exactly what a 'premiumField' contract
+ * derives on each run, and the facts are the ones it keeps.
+ */
+function exampleRecipeAmount(contract: unknown, people: readonly RecipePerson[], compareFacts = true): number | null {
+  if (typeof contract !== 'object' || contract === null || Array.isArray(contract)) return null
+  const record = contract as Record<string, unknown>
+  if (Object.prototype.hasOwnProperty.call(record, 'premiumBasis')) return null
+  const year = record['year']
+  if (typeof year !== 'number' || !Number.isInteger(year)) return null
+  if (compareFacts) {
+    for (const [key, value] of Object.entries(EXAMPLE_RECIPE_CONTRACT_FACTS)) {
+      if (canonicalJson(record[key]) !== canonicalJson(value)) return null
+    }
+  }
+  const living = people.filter((person) => year - person.birthYear <= person.planningAge)
+  const family = record['taxFamilyMembers']
+  if (
+    canonicalJson(family) !==
+    canonicalJson(
+      living.map((person, index) => ({
+        personId: person.id,
+        relationship: index === 0 ? 'primary' : 'spouse',
+        requiredToFile: 'required',
+        magi: 0,
+      })),
+    )
+  ) {
+    return null
+  }
+  const covered = living
+    .map((person) => {
+      const age = year - person.birthYear
+      return { id: person.id, months: age < 65 ? 12 : age === 65 ? person.birthMonth - 1 : 0 }
+    })
+    .filter((person) => person.months > 0)
+  const members = record['coveredMembers']
+  if (!Array.isArray(members) || members.length !== covered.length || covered.length === 0) return null
+  let premium: number | null = null
+  for (const [index, member] of members.entries()) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) return null
+    const memberRecord = member as Record<string, unknown>
+    const expected = covered[index]!
+    if (Object.keys(memberRecord).length !== 3 || memberRecord['personId'] !== expected.id) return null
+    const enrollment = memberRecord['enrollmentPremiumByMonth']
+    const benchmark = memberRecord['slcspBenchmarkPremiumByMonth']
+    if (!Array.isArray(enrollment) || !Array.isArray(benchmark) || enrollment.length !== 12 || benchmark.length !== 12) {
+      return null
+    }
+    for (let month = 0; month < 12; month++) {
+      const value = enrollment[month]
+      if (typeof value !== 'number' || value !== benchmark[month]) return null
+      if (month >= expected.months) {
+        if (value !== 0) return null
+        continue
+      }
+      if (!(value > 0)) return null
+      if (premium === null) premium = value
+      else if (value !== premium) return null
+    }
+  }
+  return premium
+}
+
+/** The first coverage year the example recipe wrote a contract for (the planner's EXAMPLE_FIXED_YEAR). */
+const EXAMPLE_RECIPE_FIRST_YEAR = 2026
+
+/**
+ * How far a stored amount may be from the recipe's and still be the recipe's:
+ * half a cent. The recipe did not round: it stored the binary64 product
+ * `premium x Math.pow(g, year - 2026)`, which the factor re-derived here
+ * reproduces to within about 1e-9 dollars, so every contract it wrote fits.
+ * Half a cent is the bound the v5 engine's own example check applied, and an
+ * amount within it is the recipe's figure to the cent.
+ */
+const EXAMPLE_RECIPE_DOLLAR_TOLERANCE = 0.005
+
+/** Whether `amount` is the recipe's for `year`: `premium x g^(year - 2026)`, to half a cent. */
+function fitsRecipeDollars(amount: number, year: number, premium: number, growth: number | null): boolean {
+  if (year < EXAMPLE_RECIPE_FIRST_YEAR) return false
+  if (year === EXAMPLE_RECIPE_FIRST_YEAR) return Math.abs(amount - premium) <= EXAMPLE_RECIPE_DOLLAR_TOLERANCE
+  if (growth === null) return false
+  return Math.abs(amount - premium * Math.pow(growth, year - EXAMPLE_RECIPE_FIRST_YEAR)) <= EXAMPLE_RECIPE_DOLLAR_TOLERANCE
+}
+
+/**
+ * The one yearly growth factor the recipe-shaped contracts after 2026 were
+ * written with. Any factor, the plan's stored rates included, must fit at
+ * least two of those contracts when there are two or more, because one match
+ * alone can be a coincidence (PR #761 review 9): `1 + (inflation + healthcare
+ * extra) / 100` when the stored rates qualify, else the factor the most of
+ * them agree on, read off one of them (a factor read off one contract fits
+ * that contract whatever it holds, so it needs a second). With a single
+ * contract after 2026 only the stored rates can qualify, by fitting it; with
+ * none, no factor is needed (a 2026 contract's factor is 1) and the result is
+ * null. Null also when no factor qualifies: then only a 2026 contract can be
+ * the recipe's.
+ */
+function exampleRecipeGrowth(
+  shaped: readonly { year: number; amount: number }[],
+  premium: number,
+  planGrowth: number | null,
+): number | null {
+  const later = shaped.filter((entry) => entry.year > EXAMPLE_RECIPE_FIRST_YEAR)
+  if (later.length === 0) return null
+  const needed = Math.min(2, later.length)
+  const fits = (growth: number) => later.filter((entry) => fitsRecipeDollars(entry.amount, entry.year, premium, growth)).length
+  let best: { growth: number; fits: number } | null = null
+  if (planGrowth !== null) {
+    const count = fits(planGrowth)
+    if (count >= needed) best = { growth: planGrowth, fits: count }
+  }
+  for (const entry of later) {
+    const growth = Math.pow(entry.amount / premium, 1 / (entry.year - EXAMPLE_RECIPE_FIRST_YEAR))
+    const count = fits(growth)
+    if (count >= 2 && (best === null || count > best.fits)) best = { growth, fits: count }
+  }
+  return best === null ? null : best.growth
+}
+
+/**
+ * Whether a stored contract came from the example recipe, whatever household
+ * and premium the plan holds now: the recipe's facts (assertions, tax-exempt
+ * interest, foreign exclusion), a tax family of primary and spouse members
+ * each required to file with MAGI 0, and covered members whose enrollment
+ * premium equals their benchmark in every month and whose positive months
+ * all hold one shared amount. Unlike `exampleRecipeAmount` it does not
+ * compare the family or the coverage months with the current household, so it
+ * also recognises an example's contracts after a household edit.
+ */
+function cameFromExampleRecipe(contract: unknown): boolean {
+  if (typeof contract !== 'object' || contract === null || Array.isArray(contract)) return false
+  const record = contract as Record<string, unknown>
+  if (Object.prototype.hasOwnProperty.call(record, 'premiumBasis')) return false
+  if (typeof record['year'] !== 'number' || !Number.isInteger(record['year'])) return false
+  for (const [key, value] of Object.entries(EXAMPLE_RECIPE_CONTRACT_FACTS)) {
+    if (canonicalJson(record[key]) !== canonicalJson(value)) return false
+  }
+  const family = record['taxFamilyMembers']
+  if (!Array.isArray(family)) return false
+  for (const member of family) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) return false
+    const entry = member as Record<string, unknown>
+    if (entry['relationship'] !== 'primary' && entry['relationship'] !== 'spouse') return false
+    if (entry['requiredToFile'] !== 'required' || entry['magi'] !== 0) return false
+  }
+  const members = record['coveredMembers']
+  if (!Array.isArray(members) || members.length === 0) return false
+  let shared: number | null = null
+  for (const member of members) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) return false
+    const enrollment = (member as Record<string, unknown>)['enrollmentPremiumByMonth']
+    const benchmark = (member as Record<string, unknown>)['slcspBenchmarkPremiumByMonth']
+    if (!Array.isArray(enrollment) || !Array.isArray(benchmark) || enrollment.length !== 12 || benchmark.length !== 12) {
+      return false
+    }
+    for (let month = 0; month < 12; month++) {
+      const value = enrollment[month]
+      if (typeof value !== 'number' || value !== benchmark[month]) return false
+      if (value === 0) continue
+      if (shared === null) shared = value
+      else if (value !== shared) return false
+    }
+  }
+  return true
+}
+
+/**
+ * Whether the v5 engine priced a contract as written on a plan that carries
+ * `exampleSourceId`, at a start in the plan's first coverage year: its region
+ * was the one for the state lived in that year, and every covered member's
+ * premium was the premium field grown at the plan's stored rates, to half a
+ * cent, in that member's Marketplace months (12 under 65, the birth month
+ * minus 1 in the year of 65, none after or once the planning age is past)
+ * and 0 after. Otherwise it refused the contract
+ * ('example-contract-input-mismatch'), budgeting the gross premium with no
+ * credit (the check this rewrite replaces; annualHealthcareExpenses.ts at
+ * schema v5).
+ */
+function v5PricedExampleContract(
+  contract: Record<string, unknown>,
+  household: Record<string, unknown>,
+  people: readonly RecipePerson[],
+  premium: number,
+  planGrowth: number,
+): boolean {
+  const year = contract['year']
+  const members = contract['coveredMembers']
+  // A contract the schema would refuse is not judged here: the load refuses it.
+  if (typeof year !== 'number' || !Array.isArray(members)) return true
+  let state = household['state']
+  let latest = -Infinity
+  for (const move of Array.isArray(household['stateMoves']) ? household['stateMoves'] : []) {
+    const record = typeof move === 'object' && move !== null ? (move as Record<string, unknown>) : {}
+    const from = record['fromYear']
+    if (typeof from === 'number' && from <= year && from > latest) {
+      latest = from
+      state = record['state']
+    }
+  }
+  const region = state === 'AK' ? 'alaska' : state === 'HI' ? 'hawaii' : 'contiguous'
+  if (contract['fplRegion'] !== region) return false
+  const expected = premium * Math.pow(planGrowth, year - EXAMPLE_RECIPE_FIRST_YEAR)
+  for (const member of members) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) return true
+    const memberRecord = member as Record<string, unknown>
+    const enrollment = memberRecord['enrollmentPremiumByMonth']
+    if (!Array.isArray(enrollment) || enrollment.length !== 12) return true
+    const person = people.find((candidate) => candidate.id === memberRecord['personId'])
+    const age = person === undefined ? null : year - person.birthYear
+    const months =
+      person === undefined || age === null || age > person.planningAge
+        ? 0
+        : age < 65
+          ? 12
+          : age === 65
+            ? person.birthMonth - 1
+            : 0
+    for (let month = 0; month < 12; month++) {
+      const value = enrollment[month]
+      if (typeof value !== 'number') return true
+      if (Math.abs(value - (month < months ? expected : 0)) > EXAMPLE_RECIPE_DOLLAR_TOLERANCE) return false
+    }
+  }
+  return true
+}
+
+/** The plan's stored yearly healthcare growth, `1 + (inflation + healthcare extra) / 100`, or null when unreadable. */
+function storedHealthcareGrowth(assumptions: unknown): number | null {
+  const rates =
+    typeof assumptions === 'object' && assumptions !== null && !Array.isArray(assumptions)
+      ? (assumptions as Record<string, unknown>)
+      : {}
+  const inflation = rates['inflationPct']
+  const extra = rates['healthcareExtraInflationPct']
+  return typeof inflation === 'number' && typeof extra === 'number' && Number.isFinite(inflation + extra)
+    ? 1 + (inflation + extra) / 100
+    : null
+}
+
+/**
+ * Which contracts a v5 document's example recipe wrote, among `contracts`
+ * judged together (the plan's own, or the ones a stored scenario writes): the
+ * ones with the recipe's shape whose amount is `premium x g^(year - 2026)` to
+ * half a cent, for the premium field `premium` and one growth factor `g`
+ * (review finding M1: a household's own quote with the recipe's shape is not
+ * the recipe's).
+ */
+function exampleRecipeMatcher(
+  premium: unknown,
+  planGrowth: number | null,
+  contracts: readonly unknown[],
+  people: readonly RecipePerson[],
+): (contract: unknown) => boolean {
+  if (typeof premium !== 'number' || !(premium > 0)) return () => false
+  const shaped = contracts.flatMap((contract) => {
+    const amount = exampleRecipeAmount(contract, people)
+    return amount === null ? [] : [{ year: (contract as Record<string, number>)['year']!, amount }]
+  })
+  const growth = exampleRecipeGrowth(shaped, premium, planGrowth)
+  return (contract) => {
+    const amount = exampleRecipeAmount(contract, people)
+    return amount !== null && fitsRecipeDollars(amount, (contract as Record<string, number>)['year']!, premium, growth)
+  }
+}
+
+/** The premium-field contract a recipe contract becomes: only the year and the facts the recipe asserted. */
+function premiumFieldContract(contract: Record<string, unknown>): Record<string, unknown> {
+  return {
+    year: contract['year'],
+    premiumBasis: 'premiumField',
+    taxExemptInterest: contract['taxExemptInterest'],
+    foreignExclusionAddback: contract['foreignExclusionAddback'],
+    assertions: contract['assertions'],
+  }
+}
+
+/** A plain object, or null. */
+function plainObject(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null
+}
+
+/** A document's `expenses.healthcare`, or null. */
+function healthcareOf(doc: Record<string, unknown>): Record<string, unknown> | null {
+  const expenses = plainObject(doc['expenses'])
+  return expenses === null ? null : plainObject(expenses['healthcare'])
+}
+
+/**
+ * What the v5 -> v6 step reads to judge a set of contracts: the household, the
+ * pre-65 premium, the stored healthcare growth and whether the credit is
+ * applied, of the plan the contracts belong to (the saved plan, or the plan a
+ * stored scenario makes of it).
+ */
+interface ExampleContext {
+  readonly household: Record<string, unknown>
+  readonly people: readonly RecipePerson[]
+  readonly premium: unknown
+  readonly planGrowth: number | null
+  readonly applyAcaCredit: boolean
+}
+
+function exampleContextOf(doc: Record<string, unknown>): ExampleContext | null {
+  const household = plainObject(doc['household'])
+  const people = recipePeople(doc['household'])
+  const healthcare = healthcareOf(doc)
+  if (household === null || people === null || healthcare === null) return null
+  return {
+    household,
+    people,
+    premium: healthcare['pre65MonthlyPremiumPerPerson'],
+    planGrowth: storedHealthcareGrowth(doc['assumptions']),
+    applyAcaCredit: healthcare['applyAcaCredit'] === true,
+  }
+}
+
+/** How the step sorted one set of contracts, with the years of each kind. */
+interface SortedExampleContracts {
+  readonly contracts: unknown[]
+  /** Rewritten to 'premiumField'. */
+  readonly rewrittenYears: number[]
+  /**
+   * Among them, the years the v5 engine left out (the example's amounts no
+   * longer matched the plan's rates or state) and the credit is counted from
+   * now on, where it can be priced; only while the credit is applied.
+   */
+  readonly rewrittenLeftOutYears: number[]
+  /** Removed: from the recipe, no longer matching, left out by the v5 engine. */
+  readonly removedYears: number[]
+  /** Kept 'stated', not the recipe's, refused by the v5 engine and priced now. */
+  readonly nowPricedYears: number[]
+  /**
+   * Kept 'stated', outside the shape the premium-field fill derives, priced as
+   * written by the v5 engine: the year-by-year figures stay the same, but the
+   * v5 engine dropped them on any path whose inflation differed and v6 holds
+   * them at their entered dollars on every path (PR #761 second review).
+   */
+  readonly keptEditedYears: number[]
+}
+
+const sortedYears = (years: Iterable<number>): number[] => [...new Set(years)].sort((a, b) => a - b)
+
+/**
+ * A saved example's contracts sorted for v6, judged in the plan they belong to
+ * (PR #761 review 2 and the follow-ups):
+ * - the ones the recipe wrote are rewritten to 'premiumField', and so is one
+ *   the v5 engine priced as written (the premium field grown at the plan's
+ *   stored rates, to half a cent) whose shape is exactly what the premium-field
+ *   fill derives: it matches the v5 engine in the deterministic run and, like
+ *   the v5 engine's check, follows the premium field on every path, where
+ *   'stated' would hold it in nominal dollars (PR #761 second review);
+ * - the ones that came from the recipe but that the v5 engine did not price as
+ *   written (they no longer matched the premium) are removed, as the v5 engine
+ *   left them out, so the figures do not change;
+ * - every other contract is kept as it is, 'stated'. Among them, one not in the
+ *   recipe's shape that the v5 engine refused through the example check is
+ *   priced as entered from now on, so its year's figures change: its year is
+ *   returned for the notice (when the credit is applied at all).
+ * Years before the first coverage year are left alone (no start reached them).
+ */
+function sortExampleContracts(contracts: readonly unknown[], context: ExampleContext): SortedExampleContracts {
+  const isRecipe = exampleRecipeMatcher(context.premium, context.planGrowth, contracts, context.people)
+  const premium = context.premium
+  const growth = context.planGrowth
+  // Whether the v5 engine priced a contract as written, and whether it left it
+  // out; neither when the plan's premium or rates cannot be read.
+  const v5PricedAsWritten = (contract: Record<string, unknown>) =>
+    typeof premium === 'number' && growth !== null && v5PricedExampleContract(contract, context.household, context.people, premium, growth)
+  const v5LeftOut = (contract: Record<string, unknown>) =>
+    typeof premium === 'number' && growth !== null && !v5PricedExampleContract(contract, context.household, context.people, premium, growth)
+  const kept: unknown[] = []
+  const rewritten: number[] = []
+  const rewrittenLeftOut: number[] = []
+  const removed: number[] = []
+  const nowPriced: number[] = []
+  const keptEdited: number[] = []
+  for (const contract of contracts) {
+    const record = plainObject(contract)
+    const year = record?.['year']
+    const inCoverage = record !== null && typeof year === 'number' && Number.isInteger(year) && year >= EXAMPLE_RECIPE_FIRST_YEAR
+    if (
+      isRecipe(contract) ||
+      (inCoverage && exampleRecipeAmount(contract, context.people, false) !== null && v5PricedAsWritten(record))
+    ) {
+      kept.push(premiumFieldContract(record!))
+      rewritten.push(year as number)
+      if (inCoverage && context.applyAcaCredit && v5LeftOut(record)) rewrittenLeftOut.push(year as number)
+      continue
+    }
+    if (
+      inCoverage &&
+      !Object.prototype.hasOwnProperty.call(record, 'premiumBasis') &&
+      v5LeftOut(record)
+    ) {
+      if (cameFromExampleRecipe(record)) {
+        removed.push(year as number)
+        continue
+      }
+      if (context.applyAcaCredit) nowPriced.push(year as number)
+    } else if (
+      inCoverage &&
+      context.applyAcaCredit &&
+      !Object.prototype.hasOwnProperty.call(record, 'premiumBasis') &&
+      v5PricedAsWritten(record)
+    ) {
+      keptEdited.push(year as number)
+    }
+    kept.push(contract)
+  }
+  return {
+    contracts: kept,
+    rewrittenYears: sortedYears(rewritten),
+    rewrittenLeftOutYears: sortedYears(rewrittenLeftOut),
+    removedYears: sortedYears(removed),
+    nowPricedYears: sortedYears(nowPriced),
+    keptEditedYears: sortedYears(keptEdited),
+  }
+}
+
+const EMPTY_SORT: SortedExampleContracts = {
+  contracts: [],
+  rewrittenYears: [],
+  rewrittenLeftOutYears: [],
+  removedYears: [],
+  nowPricedYears: [],
+  keptEditedYears: [],
+}
+
+/** The removal record the step writes for `years`. */
+const exampleRemovalRecord = (years: readonly number[]) => ({ edit: 'exampleNoLongerMatched', years: [...years] })
+
+/**
+ * A healthcare object with its contracts sorted: rewritten, the ones no longer
+ * matching removed and recorded. An emptied `acaYears` is deleted for the
+ * saved plan (as an edit that removes every contract does) and kept as `[]` in
+ * what a scenario writes, which must still write "no contracts" over the plan's.
+ */
+function migrateExampleHealthcare(
+  healthcare: Record<string, unknown>,
+  context: ExampleContext,
+  keepEmpty: boolean,
+): { healthcare: Record<string, unknown>; sorted: SortedExampleContracts } {
+  const contracts = healthcare['acaYears']
+  if (!Array.isArray(contracts)) return { healthcare, sorted: EMPTY_SORT }
+  const sorted = sortExampleContracts(contracts, context)
+  if (sorted.rewrittenYears.length === 0 && sorted.removedYears.length === 0) return { healthcare, sorted }
+  const next: Record<string, unknown> = { ...healthcare }
+  if (sorted.contracts.length > 0 || keepEmpty) next['acaYears'] = sorted.contracts
+  else delete next['acaYears']
+  if (sorted.removedYears.length > 0) {
+    const prior = Array.isArray(healthcare['acaYearsRemoved']) ? (healthcare['acaYearsRemoved'] as unknown[]) : []
+    next['acaYearsRemoved'] = [...prior, exampleRemovalRecord(sorted.removedYears)]
+  }
+  return { healthcare: next, sorted }
+}
+
+/** `doc` with its `expenses.healthcare` replaced, or `doc` itself when there is none. */
+function withHealthcare(doc: Record<string, unknown>, healthcare: Record<string, unknown>): Record<string, unknown> {
+  const expenses = plainObject(doc['expenses'])
+  return expenses === null ? doc : { ...doc, expenses: { ...expenses, healthcare } }
+}
+
+/** Legacy scenario semantics: objects merge key by key, anything else replaces. */
+function legacyDeepMerge(base: unknown, patch: unknown): unknown {
+  const baseRecord = plainObject(base)
+  const patchRecord = plainObject(patch)
+  if (baseRecord === null || patchRecord === null) return patch
+  const out: Record<string, unknown> = { ...baseRecord }
+  for (const [key, value] of Object.entries(patchRecord)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
+    out[key] = Object.prototype.hasOwnProperty.call(out, key) ? legacyDeepMerge(out[key], value) : value
+  }
+  return out
+}
+
+/** RFC 6901 pointer segments, or null for a pointer this reader does not follow. */
+function pointerSegments(path: unknown): string[] | null {
+  if (typeof path !== 'string' || !path.startsWith('/')) return null
+  return path
+    .slice(1)
+    .split('/')
+    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'))
+}
+
+/**
+ * The plan a stored scenario makes of `doc`, as far as the step reads it: a
+ * legacy loose patch deep-merged, or a canonical patch's operations applied
+ * (they never traverse an array, scenarios/patch.ts).
+ */
+function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  const operations = patch['operations']
+  if (!Array.isArray(operations)) return (legacyDeepMerge(doc, patch) as Record<string, unknown>) ?? doc
+  const out = structuredClone(doc)
+  for (const operation of operations) {
+    const record = plainObject(operation)
+    const segments = pointerSegments(record?.['path'])
+    if (record === null || segments === null || segments.length === 0) continue
+    let parent: Record<string, unknown> | null = out
+    for (const segment of segments.slice(0, -1)) {
+      const next: Record<string, unknown> | null = plainObject(parent[segment])
+      if (next === null) {
+        parent = null
+        break
+      }
+      parent = next
+    }
+    if (parent === null) continue
+    const last = segments[segments.length - 1]!
+    if (record['op'] === 'set') parent[last] = structuredClone(record['value'])
+    else if (record['op'] === 'remove') delete parent[last]
+  }
+  return out
+}
+
+/** What the step did to one stored scenario's contracts, for its notices. */
+interface ScenarioExampleFacts {
+  readonly id: string
+  readonly name: string
+  readonly sorted: SortedExampleContracts
+}
+
+/**
+ * The same sorting applied to what a stored scenario writes, judged in the
+ * plan the scenario makes (its own premium, inflation and household where it
+ * sets them), so applying it after the upgrade gives what the v5 engine gave,
+ * or the notice says what changes (PR #761 review 2, follow-up (b)). The
+ * contracts it writes (a legacy loose patch's `expenses.healthcare.acaYears`;
+ * a canonical operation setting `/expenses/healthcare/acaYears`, or
+ * `/expenses/healthcare` or `/expenses` with the contracts inside) are sorted,
+ * and a removal is recorded in the scenario too. Each operation's `before`,
+ * the plan as the scenario was made against it, is migrated as the plan
+ * itself is, so the conflict check still matches.
+ */
+function migrateScenarioExampleContracts(
+  raw: Record<string, unknown>,
+  baseContext: ExampleContext,
+  baseHealthcareAfter: Record<string, unknown> | null,
+): { scenarios: unknown; facts: ScenarioExampleFacts[] } {
+  const scenarios = raw['scenarios']
+  if (!Array.isArray(scenarios)) return { scenarios, facts: [] }
+  const facts: ScenarioExampleFacts[] = []
+  const baseRemoved = baseHealthcareAfter?.['acaYearsRemoved']
+  const baseRemovedState =
+    baseRemoved === undefined ? { present: false } : { present: true, value: structuredClone(baseRemoved) }
+  const baseRemovedList = Array.isArray(baseRemoved) ? (baseRemoved as unknown[]) : []
+  const basePlanSide = (path: unknown, value: unknown): { present: boolean; value?: unknown } => {
+    // The plan as the scenario was made against it, migrated as the plan is.
+    if (path === '/expenses/healthcare/acaYears' && Array.isArray(value)) {
+      const sorted = sortExampleContracts(value, baseContext)
+      if (sorted.rewrittenYears.length === 0 && sorted.removedYears.length === 0) return { present: true, value }
+      return sorted.contracts.length === 0 ? { present: false } : { present: true, value: sorted.contracts }
+    }
+    if (path === '/expenses/healthcare' && plainObject(value) !== null) {
+      return { present: true, value: migrateExampleHealthcare(value as Record<string, unknown>, baseContext, false).healthcare }
+    }
+    if (path === '/expenses' && plainObject(value) !== null && plainObject((value as Record<string, unknown>)['healthcare']) !== null) {
+      const expenses = value as Record<string, unknown>
+      const migrated = migrateExampleHealthcare(expenses['healthcare'] as Record<string, unknown>, baseContext, false).healthcare
+      return { present: true, value: migrated === expenses['healthcare'] ? expenses : { ...expenses, healthcare: migrated } }
+    }
+    return { present: true, value }
+  }
+  let changedAny = false
+  const migrated = scenarios.map((scenario) => {
+    const scenarioRecord = plainObject(scenario)
+    const patch = plainObject(scenarioRecord?.['patch'])
+    if (scenarioRecord === null || patch === null) return scenario
+    const context = exampleContextOf(scenarioDocument(raw, patch))
+    if (context === null) return scenario
+    const identity = {
+      id: typeof scenarioRecord['id'] === 'string' ? scenarioRecord['id'] : '',
+      name: typeof scenarioRecord['name'] === 'string' ? scenarioRecord['name'] : '',
+    }
+    const operations = patch['operations']
+    if (Array.isArray(operations)) {
+      let changed = false
+      let sortedHere: SortedExampleContracts = EMPTY_SORT
+      const next: unknown[] = []
+      for (const operation of operations) {
+        const record = plainObject(operation)
+        if (record === null) {
+          next.push(operation)
+          continue
+        }
+        const path = record['path']
+        let out = record
+        if (record['op'] === 'set') {
+          const value = record['value']
+          if (path === '/expenses/healthcare/acaYears' && Array.isArray(value)) {
+            const sorted = sortExampleContracts(value, context)
+            sortedHere = sorted
+            if (sorted.rewrittenYears.length > 0 || sorted.removedYears.length > 0) out = { ...out, value: sorted.contracts }
+          } else if (path === '/expenses/healthcare' && plainObject(value) !== null) {
+            const migratedValue = migrateExampleHealthcare(value as Record<string, unknown>, context, true)
+            sortedHere = migratedValue.sorted
+            if (migratedValue.healthcare !== value) out = { ...out, value: migratedValue.healthcare }
+          } else if (path === '/expenses' && plainObject(value) !== null && plainObject((value as Record<string, unknown>)['healthcare']) !== null) {
+            const expenses = value as Record<string, unknown>
+            const migratedValue = migrateExampleHealthcare(expenses['healthcare'] as Record<string, unknown>, context, true)
+            sortedHere = migratedValue.sorted
+            if (migratedValue.healthcare !== expenses['healthcare']) out = { ...out, value: { ...expenses, healthcare: migratedValue.healthcare } }
+          }
+        }
+        const before = plainObject(out['before'])
+        if (before !== null && before['present'] === true) {
+          const side = basePlanSide(path, before['value'])
+          if (side.present === false) out = { ...out, before: { present: false } }
+          else if (side.value !== before['value']) out = { ...out, before: { ...before, value: side.value } }
+        }
+        if (out !== record) changed = true
+        next.push(out)
+        if (path === '/expenses/healthcare/acaYears' && record['op'] === 'set' && sortedHere.removedYears.length > 0) {
+          // The array operation leaves the rest of the healthcare object as the
+          // plan has it, so the scenario's record is its own operation.
+          next.push({
+            op: 'set',
+            path: '/expenses/healthcare/acaYearsRemoved',
+            before: structuredClone(baseRemovedState),
+            value: [...structuredClone(baseRemovedList), exampleRemovalRecord(sortedHere.removedYears)],
+          })
+          changed = true
+        }
+      }
+      facts.push({ ...identity, sorted: sortedHere })
+      if (!changed) return scenario
+      changedAny = true
+      return { ...scenarioRecord, patch: { ...patch, operations: next } }
+    }
+    const expenses = plainObject(patch['expenses'])
+    const healthcare = expenses === null ? null : plainObject(expenses['healthcare'])
+    const contracts = healthcare?.['acaYears']
+    if (expenses === null || healthcare === null || !Array.isArray(contracts)) return scenario
+    const sorted = sortExampleContracts(contracts, context)
+    facts.push({ ...identity, sorted })
+    if (sorted.rewrittenYears.length === 0 && sorted.removedYears.length === 0) return scenario
+    const nextHealthcare: Record<string, unknown> = { ...healthcare, acaYears: sorted.contracts }
+    if (sorted.removedYears.length > 0) {
+      // A loose patch's array replaces the plan's, so it carries the plan's record too.
+      nextHealthcare['acaYearsRemoved'] = [...structuredClone(baseRemovedList), exampleRemovalRecord(sorted.removedYears)]
+    }
+    changedAny = true
+    return { ...scenarioRecord, patch: { ...patch, expenses: { ...expenses, healthcare: nextHealthcare } } }
+  })
+  return { scenarios: changedAny ? migrated : scenarios, facts }
+}
+
+/**
+ * The v5 -> v6 step and what it did, for the step itself and for the load
+ * repairs `migratePlanToCurrent` reports (computed from the stored document,
+ * so they are the same facts the step acted on).
+ */
+function exampleMigration(raw: Record<string, unknown>): { doc: Record<string, unknown>; repairs: PlanLoadRepair[] } {
+  if (typeof raw['exampleSourceId'] !== 'string') return { doc: raw, repairs: [] }
+  const exampleSourceId = raw['exampleSourceId']
+  const context = exampleContextOf(raw)
+  const healthcare = healthcareOf(raw)
+  if (context === null || healthcare === null) return { doc: raw, repairs: [] }
+  const base = migrateExampleHealthcare(healthcare, context, false)
+  const scenarios = migrateScenarioExampleContracts(raw, context, base.healthcare)
+  const repairs: PlanLoadRepair[] = []
+  const report = (sorted: SortedExampleContracts, scenario?: { id: string; name: string }) => {
+    const entries: [PlanLoadRepair['kind'], number[]][] = [
+      ['exampleContractsFollowPremiumField', sorted.rewrittenYears],
+      ['exampleContractsLeftOut', sorted.removedYears],
+      ['exampleEnteredContractsNowPriced', sorted.nowPricedYears],
+      ['exampleEditedContractsKept', sorted.keptEditedYears],
+    ]
+    const span = (years: readonly number[]) => ({
+      contractCount: years.length,
+      firstYear: years[0]!,
+      lastYear: years[years.length - 1]!,
+    })
+    for (const [kind, years] of entries) {
+      if (years.length === 0) continue
+      const leftOut = kind === 'exampleContractsFollowPremiumField' ? sorted.rewrittenLeftOutYears : []
+      repairs.push({
+        kind,
+        exampleSourceId,
+        ...span(years),
+        ...(leftOut.length === 0 ? {} : { previouslyLeftOut: span(leftOut) }),
+        ...(scenario === undefined ? {} : { scenario }),
+      } as PlanLoadRepair)
+    }
+  }
+  report(base.sorted)
+  for (const fact of scenarios.facts) report(fact.sorted, { id: fact.id, name: fact.name })
+  if (base.healthcare === healthcare && scenarios.scenarios === raw['scenarios']) return { doc: raw, repairs }
+  return { doc: { ...withHealthcare(raw, base.healthcare), scenarios: scenarios.scenarios }, repairs }
+}
+
+/**
+ * Pure v5 -> v6 migration (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28).
+ *
+ * Before v6 an example's premium-credit contracts were stored as fixed
+ * dollars the recipe computed in advance at the plan's own inflation, and the
+ * engine kept any contract of a plan with `exampleSourceId` only while it still
+ * equalled the premium field grown at the run's inflation; otherwise it
+ * dropped it. v6 gives each contract a `premiumBasis`, and the engine never
+ * reads `exampleSourceId`. So a plan saved from an example (Save to My Plans,
+ * Duplicate, an import, Pro's library copy) has the contracts the recipe wrote
+ * rewritten to 'premiumField', which is what they always meant: the premium
+ * field, priced on each run. Left as they were, they would silently become
+ * stated facts: fixed dollars on every inflation path, anchored to 2026 at any
+ * start year, charged after a death, and no longer following a premium edit.
+ *
+ * Only a plan that carries `exampleSourceId` is touched (`sortExampleContracts`):
+ * a contract with the recipe's shape (`exampleRecipeAmount`) whose amount is the
+ * premium field times one growth factor per plan to the power of the years
+ * since 2026, to half a cent (`exampleRecipeMatcher`), is rewritten; the factor
+ * is the plan's stored rates when they fit, else the one at least two
+ * contracts agree on, so a contract written before an inflation edit is still
+ * recognised. A contract that came from the recipe but that the v5 engine did
+ * not price as written no longer matched the plan's premium: the v5 engine was
+ * leaving it out (gross premium, no credit), so it is removed and its year
+ * recorded in `healthcare.acaYearsRemoved` as 'exampleNoLongerMatched', and
+ * the figures do not change (PR #761 review 2). Every other contract stays
+ * 'stated'; one not in the recipe's shape that the v5 engine refused is now
+ * priced as entered, which changes that year's figures and is announced. The
+ * contracts a stored scenario writes are sorted the same way, in the plan the
+ * scenario makes. A plan whose figures were the recipe's keeps the same
+ * figures to the cent at a 2026 start. `migratePlanToCurrent` reports each
+ * kind as a load repair: `exampleContractsFollowPremiumField`,
+ * `exampleContractsLeftOut`, `exampleEnteredContractsNowPriced` and
+ * `exampleEditedContractsKept` (a contract changed by hand that the v5 engine
+ * priced as written stays 'stated': its Monte Carlo fate changes, so it is
+ * announced too), with the scenario named when it is a scenario's.
+ */
+export const migratePlanV5ToV6: MigrationStep = (raw) => exampleMigration(raw).doc
+
 /** Keyed by the version the step migrates FROM. */
 const defaultRegistry: Record<number, MigrationStep> = {
   1: migratePlanV1ToV2,
   2: migratePlanV2ToV3,
   3: migratePlanV3ToV4,
   4: migratePlanV4ToV5,
+  5: migratePlanV5ToV6,
 }
 
 /**
@@ -745,6 +1534,91 @@ export type PlanLoadRepair =
       keptName: string
       /** The kept row's account type, or its policy kind. */
       keptType: string
+    }
+  /**
+   * A plan saved from a library example (it carries `exampleSourceId`) whose
+   * premium-credit contracts were the ones the example recipe wrote: on the way
+   * to schema v6 they became 'premiumField' contracts, so their premiums follow
+   * the plan's pre-65 premium on every run instead of fixed dollars written in
+   * 2026 (decision D-EXAMPLE-SOURCE-SWITCH). With `scenario`, the contracts a
+   * stored scenario writes. Reported by the migration, not by load-time
+   * normalization, so a document already at v6 never reports it.
+   */
+  | {
+      kind: 'exampleContractsFollowPremiumField'
+      /** The example the plan came from. */
+      exampleSourceId: string
+      contractCount: number
+      firstYear: number
+      lastYear: number
+      /**
+       * Among them, the ones the v5 engine left out (the example's amounts no
+       * longer matched the plan's rates or state), whose credit is counted from
+       * now on where it can be priced, so those years' figures can change.
+       * Absent when the v5 engine priced every one of them as written, so the
+       * year-by-year figures stay the same.
+       */
+      previouslyLeftOut?: { contractCount: number; firstYear: number; lastYear: number }
+      /** Present when the contracts are the ones a stored scenario writes. */
+      scenario?: { id: string; name: string }
+    }
+  /**
+   * A plan saved from a library example whose example contracts no longer
+   * matched its premium (it, the inflation or the household was changed after
+   * saving), so the v5 engine was already leaving them out: on the way to
+   * schema v6 they were removed, and recorded in `healthcare.acaYearsRemoved`
+   * as 'exampleNoLongerMatched'. The figures do not change (PR #761 review 2).
+   * With `scenario`, the contracts a stored scenario writes. Reported by the
+   * migration only.
+   */
+  | {
+      kind: 'exampleContractsLeftOut'
+      /** The example the plan came from. */
+      exampleSourceId: string
+      contractCount: number
+      firstYear: number
+      lastYear: number
+      /** Present when the contracts are the ones a stored scenario writes. */
+      scenario?: { id: string; name: string }
+    }
+  /**
+   * A plan saved from a library example that carries contracts entered for it,
+   * not in the recipe's shape, which the v5 engine refused because they did not
+   * match the example's premium: kept 'stated' on the way to schema v6, they
+   * are now priced as entered, so the figures of those years change (PR #761
+   * review 2, follow-up (a)). With `scenario`, the contracts a stored scenario
+   * writes. Reported by the migration only.
+   */
+  | {
+      kind: 'exampleEnteredContractsNowPriced'
+      /** The example the plan came from. */
+      exampleSourceId: string
+      contractCount: number
+      firstYear: number
+      lastYear: number
+      /** Present when the contracts are the ones a stored scenario writes. */
+      scenario?: { id: string; name: string }
+    }
+  /**
+   * A plan saved from a library example that carries contracts changed by hand
+   * from the example's shape (a benchmark unlike the premium, say), which the
+   * v5 engine priced as written because their premiums were still the
+   * example's. They are kept 'stated', as entered: the year-by-year figures
+   * stay the same, but where the v5 engine dropped them on any Monte Carlo path
+   * whose inflation differed, v6 counts them on every path at their entered
+   * dollars, which can move the success rate (PR #761 second review). With
+   * `scenario`, the contracts a stored scenario writes. Reported by the
+   * migration only.
+   */
+  | {
+      kind: 'exampleEditedContractsKept'
+      /** The example the plan came from. */
+      exampleSourceId: string
+      contractCount: number
+      firstYear: number
+      lastYear: number
+      /** Present when the contracts are the ones a stored scenario writes. */
+      scenario?: { id: string; name: string }
     }
 
 /** The document as repaired, plus what the repairs were. */
@@ -1598,10 +2472,13 @@ export function migratePlanToCurrent(
     // A backup from a newer app build; never destructively "fix" it.
     return { ok: false, reason: 'newer_than_app' }
   }
+  const migrationRepairs: PlanLoadRepair[] = []
   for (let from = v; from < currentVersion; from++) {
     const step = registry[from]
     if (!step) return { ok: false, reason: 'missing_step' }
+    const before = raw
     raw = { ...step(raw), schemaVersion: from + 1 }
+    if (from === 5 && step === migratePlanV5ToV6) migrationRepairs.push(...exampleMigration(before).repairs)
   }
   const normalized = normalizeCurrentPlan(raw)
   raw = normalized.raw
@@ -1611,7 +2488,7 @@ export function migratePlanToCurrent(
   }
   return {
     ok: true,
-    repairs: normalized.repairs,
+    repairs: [...migrationRepairs, ...normalized.repairs],
     plan:
       v < currentVersion
         ? rebindScenarioPatchesToPlan(parsed.plan, {

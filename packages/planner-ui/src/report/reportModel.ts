@@ -26,6 +26,7 @@
  */
 
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
+import { acaContractRemovalFor, type AcaContractRemovalEdit } from '@retiregolden/engine/model/acaContractRemovals'
 import {
   ACA_COVERAGE_YEARS,
   LATEST_PACK_YEAR,
@@ -101,6 +102,13 @@ export interface ReportDecisionCandidateRow {
 export interface ReportUnpricedCreditYear {
   year: number
   reasons: string[]
+  /**
+   * The edit that removed the year's premium-credit contract, from the plan's
+   * record (`healthcare.acaYearsRemoved`), when the year is unpriced for a
+   * missing contract and an edit removed it; absent otherwise and on a model
+   * saved before it existed (review finding M2).
+   */
+  removedBy?: AcaContractRemovalEdit
 }
 
 /** A claim made before the plan starts, held by the search, with the person's name. */
@@ -671,8 +679,16 @@ function chartDataRows(plan: Plan, result: ProjectionResult): ReportChartDataRow
  * already-built model (all leaf fields are primitives, so shallow copies of
  * each layer suffice).
  */
-function snapshotFindings(findings: ReportRecommendationEvidence | null | undefined): ReportRecommendationEvidence | null {
+function snapshotFindings(
+  findings: ReportRecommendationEvidence | null | undefined,
+  healthcare: Pick<Plan['expenses']['healthcare'], 'acaYearsRemoved'>,
+): ReportRecommendationEvidence | null {
   if (!findings) return null
+  const removedBy = (year: ReportUnpricedCreditYear): Partial<ReportUnpricedCreditYear> => {
+    if (!year.reasons.includes('missing-year-contract')) return {}
+    const edit = acaContractRemovalFor(healthcare, year.year)
+    return edit === null ? {} : { removedBy: edit }
+  }
   return {
     ...findings,
     validation: findings.validation ? { ...findings.validation } : null,
@@ -681,7 +697,7 @@ function snapshotFindings(findings: ReportRecommendationEvidence | null | undefi
       ? {
           ...findings.claimAge,
           ...(findings.claimAge.unpricedAca
-            ? { unpricedAca: findings.claimAge.unpricedAca.map((year) => ({ ...year, reasons: [...year.reasons] })) }
+            ? { unpricedAca: findings.claimAge.unpricedAca.map((year) => ({ ...year, reasons: [...year.reasons], ...removedBy(year) })) }
             : {}),
           ...(findings.claimAge.alreadyClaimed
             ? { alreadyClaimed: findings.claimAge.alreadyClaimed.map((claim) => ({ ...claim, claimAge: { ...claim.claimAge } })) }
@@ -1166,7 +1182,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         // this derived percent platform-stable in serialized output.
         averagePreRetirementSavingsRatePct: Math.round(summary.averagePreRetirementSavingsRatePct * 10) / 10,
       },
-      'modeled-findings': snapshotFindings(input.modeledFindings),
+      'modeled-findings': snapshotFindings(input.modeledFindings, plan.expenses.healthcare),
       'household': {
         filingStatus: plan.household.filingStatus,
         state: plan.household.state,

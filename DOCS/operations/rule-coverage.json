@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 459,
+    "totalFiles": 463,
     "byStatus": {
-      "partial": 93,
+      "partial": 94,
       "registered": 121,
-      "rule-free": 245,
+      "rule-free": 248,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -362,6 +362,11 @@
       "note": "Dated eligibility and current-year owner routing map to the spousal-election records. Accepted qualifying-distribution credit requires completed deadline/observation provenance or coherent j(4) pre-election actuals; proposed/display rows do not supply credit. The reference-balance and accepted-history adapters are pinned with the owner-RMD route. General chronological transaction-tax adaptation remains partial and no full original acceptance is claimed."
     },
     {
+      "path": "projection/internal/effectiveAcaYearContract.ts",
+      "sweptOn": "2026-09-28",
+      "note": "26 U.S.C. 36B(c)(2)(A) counts a coverage month only when the member is enrolled on its first day, so no month after the month of death counts; the module stops a dead member's premium on 1 January of the year after the death, the ledger's annual alive convention, and that coverage-month rule has no registry record of its own. The premium-field fill (region by state, tax family from the people alive, premiums from the premium field at the run's healthcare inflation) is a modeling basis with no statutory claim."
+    },
+    {
       "path": "projection/internal/hecmHudValidatedOpeningAdapter.ts",
       "sweptOn": "2026-09-12",
       "note": "Live simulatePlan opening and property-year servicing delegate through this adapter. Production regressions distinguish modeled versus observed closing cash, monthly assessment capitalization, missing timing evidence, and modeled draws retained across servicing updates. HUD leaf arithmetic is registered; producer-ledger completeness, full-month timing convention and cash/debt adaptation remain partial direct registry trails."
@@ -626,18 +631,18 @@
     },
     {
       "directory": "model",
-      "files": 9,
+      "files": 10,
       "byStatus": {
         "partial": 6,
-        "rule-free": 3
+        "rule-free": 4
       }
     },
     {
       "directory": "montecarlo",
-      "files": 12,
+      "files": 13,
       "byStatus": {
         "partial": 2,
-        "rule-free": 10
+        "rule-free": 11
       }
     },
     {
@@ -651,9 +656,9 @@
     },
     {
       "directory": "projection",
-      "files": 127,
+      "files": 128,
       "byStatus": {
-        "partial": 42,
+        "partial": 43,
         "registered": 21,
         "rule-free": 64
       }
@@ -684,9 +689,9 @@
     },
     {
       "directory": "schema",
-      "files": 9,
+      "files": 10,
       "byStatus": {
-        "rule-free": 9
+        "rule-free": 10
       }
     },
     {

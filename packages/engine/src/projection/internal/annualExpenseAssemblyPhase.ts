@@ -163,7 +163,6 @@ export interface AnnualExpenseAssemblyPhaseResult {
   readonly healthcareExcludingAcaEnrollment: AnnualHealthcareExpensesResult['healthcareExcludingAcaEnrollment']
   readonly healthcareExcludingMarketplacePremium: AnnualHealthcareExpensesResult['healthcareExcludingMarketplacePremium']
   readonly acaInitialSupportCodes: AnnualHealthcareExpensesResult['acaInitialSupportCodes']
-  readonly exampleContractInputMismatch: AnnualHealthcareExpensesResult['exampleContractInputMismatch']
   readonly medicarePremiums: AnnualHealthcareExpensesResult['medicarePremiums']
   readonly irmaaSurcharge: AnnualHealthcareExpensesResult['irmaaSurcharge']
   readonly irmaaTier: AnnualHealthcareExpensesResult['irmaaTier']
@@ -323,8 +322,6 @@ export function annualExpenseAssemblyPhase(
   const healthcareExcludingMarketplacePremium =
     healthcarePlan.healthcareExcludingMarketplacePremium
   const acaInitialSupportCodes = healthcarePlan.acaInitialSupportCodes
-  const exampleContractInputMismatch =
-    healthcarePlan.exampleContractInputMismatch
   const medicarePremiums = healthcarePlan.medicarePremiums
   const irmaaSurcharge = healthcarePlan.irmaaSurcharge
   const irmaaTier = healthcarePlan.irmaaTier
@@ -525,7 +522,6 @@ export function annualExpenseAssemblyPhase(
     healthcareExcludingAcaEnrollment,
     healthcareExcludingMarketplacePremium,
     acaInitialSupportCodes,
-    exampleContractInputMismatch,
     medicarePremiums,
     irmaaSurcharge,
     irmaaTier,

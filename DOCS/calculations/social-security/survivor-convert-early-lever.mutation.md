@@ -1,15 +1,15 @@
 # Mutation receipt: survivor-convert-early-lever
 
-Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `34544677` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts b/packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts
-index b181f266..f9956da1 100644
+index d98910c8..e63500a4 100644
 --- a/packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts
 +++ b/packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts
-@@ -273,7 +273,7 @@ export function annualAggregateRothConversionTargetPlan(
+@@ -272,7 +272,7 @@ export function annualAggregateRothConversionTargetPlan(
      if (source.convertible) convertiblePlanDollars += Math.max(0, source.balancePlanDollars)
    }
    const fillTargetPlanDollars = Math.min(fill.desiredPlanDollars, convertiblePlanDollars)
@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-the slice 5 review fixes moved the production lines and test titles these receipts quote The baseline is green (survivorTransition.lever.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging origin/main 4d2d9d67 into this branch, which moved the hunk. The baseline is green (survivorTransition.lever.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
  ❯ src/projection/survivorTransition.lever.evidence.test.ts (4 tests | 2 failed) 49ms
    ❯ survivor-convert-early-lever — Survivor convert-early lever (4)

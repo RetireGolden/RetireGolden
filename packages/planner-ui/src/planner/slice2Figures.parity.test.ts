@@ -30,7 +30,7 @@ import { taxCalculatorFor } from './useProjection'
 import { buildYearCashFlowSankey, HOUSEHOLD_CASH_NODE_ID, UNFUNDED_ORIGIN_NODE_ID } from './yearCashFlow/buildYearCashFlow'
 import { fmtMoney, histogramBars } from './format'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
-import { seedFromPlanId } from './useProjection'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 
 /** The planner's bucket lens as it was until slice 2 (a missing need read as 0). */
 function retiredBucketLens(result: ProjectionResult, spans: readonly number[]) {
@@ -160,25 +160,34 @@ describe('slice 2 figures on the example library', () => {
     expect(degenerate).toBeGreaterThan(0)
   }, 300_000)
 
-  it("draws one bar, \"$0\", for the five examples every path of the page's own run ends at $0", async () => {
-    // The page's defaults (display-histogram-bin-label, correction 5): the plan
-    // id's seed as the app stamps an example (example:<id>), 1,000 paths, the
-    // headline model, no stochastic longevity or care shock.
-    const ALL_AT_ZERO = ['inherited-ira-beneficiary', 'survivor-years', 'ltc-shock', 'brokerage-no-hsa', 'fixed-target-spending']
+  it("draws one bar, \"$0\", for the three examples every path of the page's own run ends at $0", async () => {
+    // The page's defaults (display-histogram-bin-label, correction 5): the
+    // engine's default seed, which every plan shares (D-MC-DEFAULT-SEED;
+    // before 2026-09-28 the seed came from the plan id), 1,000 paths, the
+    // headline model, no stochastic longevity or care shock. On the plan-id
+    // seeds brokerage-no-hsa and fixed-target-spending were all at $0 too; on
+    // the default seed one path of each succeeds (the check of the diagnosis,
+    // section 4.4), so their histograms have two bars and they leave the set.
+    const ALL_AT_ZERO = ['inherited-ira-beneficiary', 'survivor-years', 'ltc-shock']
     expect(DEFAULT_PATH_COUNT).toBe(1_000)
-    for (const id of ALL_AT_ZERO) {
+    for (const id of [...ALL_AT_ZERO, 'brokerage-no-hsa', 'fixed-target-spending']) {
       const example = EXAMPLE_PLANS.find((candidate) => candidate.id === id)!
       const plan: Plan = { ...example.build(), id: `example:${id}` }
       const summary = await runMonteCarlo(plan, {
         startYear: EXAMPLE_FIXED_YEAR,
         pathCount: DEFAULT_PATH_COUNT,
-        seed: seedFromPlanId(plan.id),
+        seed: DEFAULT_MONTE_CARLO_SEED,
         model: buildModel(HEADLINE_MC_MODEL.kind, plan.assumptions.inflationPct, HEADLINE_MC_MODEL.returnVolPct, HEADLINE_MC_MODEL.equityWeightPct, plan),
         stochasticLongevity: false,
         ltcShock: null,
       })
       const histogram = summary.endingInvestable.histogram
       expect(summary.pathCount, id).toBe(1_000)
+      if (!ALL_AT_ZERO.includes(id)) {
+        expect(histogram.counts[0], id).toBe(999)
+        expect(histogramBars(histogram).filter((bar) => bar.count > 0).map((bar) => bar.count), id).toEqual([999, 1])
+        continue
+      }
       expect(histogram.counts[0], id).toBe(1_000)
       expect(new Set(histogram.binCenters), id).toEqual(new Set([0]))
       expect(histogramBars(histogram), id).toEqual([{ label: '$0', count: 1_000 }])

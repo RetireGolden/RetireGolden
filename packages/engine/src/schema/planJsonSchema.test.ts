@@ -54,10 +54,12 @@ import {
   planV2JsonSchema,
   planV3JsonSchema,
   planV4JsonSchema,
+  planV5JsonSchema,
 } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
-import shippedPlanJsonSchema from '../../schema/plan.v5.json' with { type: 'json' }
+import shippedPlanJsonSchema from '../../schema/plan.v6.json' with { type: 'json' }
+import shippedPlanV5JsonSchema from '../../schema/plan.v5.json' with { type: 'json' }
 import shippedPlanV4JsonSchema from '../../schema/plan.v4.json' with { type: 'json' }
 import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
 import shippedPlanV2JsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
@@ -563,7 +565,7 @@ describe('planJsonSchema — version', () => {
     // version from CURRENT_PLAN_SCHEMA_VERSION, so without this line a bump
     // would go through with nothing asserting what the number actually is.
     // Named in the bump checklist in scripts/generate-schema.mjs.
-    expect(PLAN_SCHEMA_VERSION).toBe(5)
+    expect(PLAN_SCHEMA_VERSION).toBe(6)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
@@ -589,6 +591,11 @@ describe('planJsonSchema — version', () => {
     expect(planV4JsonSchema).toEqual(shippedPlanV4JsonSchema)
   })
 
+  it('keeps the historical v5 schema available under an explicit export', () => {
+    expect(planV5JsonSchema.properties.schemaVersion).toMatchObject({ const: 5 })
+    expect(planV5JsonSchema).toEqual(shippedPlanV5JsonSchema)
+  })
+
   // The one field v5 added, asserted on both sides of the boundary: a v4
   // document's one-time income has no inflation election and a v5 document's
   // requires one. A consumer authoring against the historical artifact must not
@@ -605,11 +612,53 @@ describe('planJsonSchema — version', () => {
       return found
     }
     const v4 = oneTime(planV4JsonSchema)
-    const v5 = oneTime(planJsonSchema)
+    const v5 = oneTime(planV5JsonSchema)
     expect(Object.keys(v4['properties'] as object)).not.toContain('inflationAdjusted')
     expect(v4['required']).not.toContain('inflationAdjusted')
     expect(Object.keys(v5['properties'] as object)).toContain('inflationAdjusted')
     expect(v5['required']).toContain('inflationAdjusted')
+  })
+
+  // v6 (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28) gives each ACA year
+  // contract a premiumBasis: 'stated' (the default, and v5's only shape) or
+  // 'premiumField', which carries no region, roster or premiums. MCP callers
+  // author contracts from this schema alone, so every field is described.
+  it('adds the premium basis to ACA year contracts in v6 and not before, and describes every contract field', () => {
+    type Node = Record<string, unknown>
+    const acaItems = (schema: typeof planJsonSchema): Node => {
+      const expenses = (schema.properties as Record<string, Node>)['expenses']!
+      const healthcare = (expenses['properties'] as Record<string, Node>)['healthcare']!
+      const acaYears = (healthcare['properties'] as Record<string, Node>)['acaYears']!
+      return acaYears['items'] as Node
+    }
+    const v5 = acaItems(planV5JsonSchema)
+    expect(Object.keys(v5['properties'] as object)).not.toContain('premiumBasis')
+    const shapes = acaItems(planJsonSchema)['oneOf'] as Node[]
+    expect(shapes).toHaveLength(2)
+    const [stated, premiumField] = shapes as [Node, Node]
+    expect((stated['properties'] as Record<string, Node>)['premiumBasis']).toMatchObject({ const: 'stated' })
+    expect(stated['required']).not.toContain('premiumBasis')
+    expect((premiumField['properties'] as Record<string, Node>)['premiumBasis']).toMatchObject({ const: 'premiumField' })
+    expect(premiumField['required']).toContain('premiumBasis')
+    expect(Object.keys(premiumField['properties'] as object).sort()).toEqual(
+      ['assertions', 'foreignExclusionAddback', 'premiumBasis', 'taxExemptInterest', 'year'],
+    )
+    expect(premiumField['additionalProperties']).toBe(false)
+    const undescribed: string[] = []
+    const walk = (node: Node, path: string) => {
+      const properties = node['properties'] as Record<string, Node> | undefined
+      for (const [key, child] of Object.entries(properties ?? {})) {
+        if (typeof child['description'] !== 'string' || (child['description'] as string).trim() === '') {
+          undescribed.push(`${path}.${key}`)
+        }
+        walk(child, `${path}.${key}`)
+        if (child['items'] !== undefined) walk(child['items'] as Node, `${path}.${key}[]`)
+      }
+    }
+    walk(stated, 'stated')
+    walk(premiumField, 'premiumField')
+    // The characterized amounts' own `state`/`amount` leaves are generic.
+    expect(undescribed.filter((path) => !/\.(state|amount)$/u.test(path))).toEqual([])
   })
 
   it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
@@ -632,6 +681,7 @@ describe('schema barrel — zero-dependency data surface', () => {
         'planV2JsonSchema',
         'planV3JsonSchema',
         'planV4JsonSchema',
+        'planV5JsonSchema',
       ].sort(),
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
@@ -659,10 +709,10 @@ describe('current schema entry — common-case data surface', () => {
     const footprint = currentSchemaSourceGraph()
     expect([...footprint.externalSpecifiers]).toEqual([])
     expect([...footprint.dynamicSpecifiers]).toEqual([])
-    expect([...footprint.modulePaths]).toContain('./plan.v5.generated.ts')
+    expect([...footprint.modulePaths]).toContain('./plan.v6.generated.ts')
     expect([...footprint.modulePaths]).toContain('./planSchemaMeta.ts')
     expect([...footprint.modulePaths]).not.toContain('./index.ts')
-    expect([...footprint.modulePaths].filter((path) => /plan\.v[1-4]\.generated\.ts$/u.test(path))).toEqual([])
+    expect([...footprint.modulePaths].filter((path) => /plan\.v[1-5]\.generated\.ts$/u.test(path))).toEqual([])
   })
 })
 

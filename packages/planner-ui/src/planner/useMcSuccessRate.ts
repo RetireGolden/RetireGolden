@@ -22,20 +22,32 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { MonteCarloRateRun } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import {
+  HEADLINE_MONTE_CARLO_RETURN_VOL_PCT,
+  headlineMonteCarloOptions,
+} from '@retiregolden/engine/montecarlo/headline'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
 import { WorkerUnavailableError } from '../workers/spawn'
-import { buildModel, type ModelKind } from './marketModelPicker'
-import { currentStartYear, seedFromPlanId } from './useProjection'
+import type { ModelKind } from './marketModelPicker'
+import { currentStartYear } from './useProjection'
 
 const MC_DEBOUNCE_MS = 1200
 
 /**
- * The model settings the headline run uses. The Monte Carlo page initialises
- * its controls from this same constant, so the publish predicate below
- * compares like with like.
+ * The model settings the headline run uses, as the Monte Carlo page's
+ * controls name them: the engine's headline lognormal model
+ * (`headlineMonteCarloOptions`, its return volatility included). The page
+ * initialises its controls from this constant, so the publish predicate below
+ * compares like with like. The equity weight is read only by the historical
+ * models; the lognormal ignores it.
  */
-export const HEADLINE_MC_MODEL = { kind: 'lognormal' as ModelKind, returnVolPct: 12, equityWeightPct: 60 } as const
+export const HEADLINE_MC_MODEL = {
+  kind: 'lognormal' as ModelKind,
+  returnVolPct: HEADLINE_MONTE_CARLO_RETURN_VOL_PCT,
+  equityWeightPct: 60,
+} as const
 
 export interface McHeadlineConfig {
   modelKind: ModelKind
@@ -46,13 +58,18 @@ export interface McHeadlineConfig {
   ltcShock: boolean
 }
 
-/** True when a Monte Carlo page run is the headline simulation (only the path count may differ). */
-export function isHeadlineMcConfig(plan: Plan, config: McHeadlineConfig): boolean {
+/**
+ * True when a Monte Carlo page run is the headline simulation (only the path
+ * count may differ): the headline model on the engine's default seed, which
+ * every plan shares (decision D-MC-DEFAULT-SEED, 2026-09-28). A re-rolled seed
+ * is a different simulation and stays on the Monte Carlo page.
+ */
+export function isHeadlineMcConfig(config: McHeadlineConfig): boolean {
   return (
     config.modelKind === HEADLINE_MC_MODEL.kind &&
     config.returnVolPct === HEADLINE_MC_MODEL.returnVolPct &&
     config.equityWeightPct === HEADLINE_MC_MODEL.equityWeightPct &&
-    config.seed === seedFromPlanId(plan.id) &&
+    config.seed === DEFAULT_MONTE_CARLO_SEED &&
     !config.stochasticLongevity &&
     !config.ltcShock
   )
@@ -150,30 +167,22 @@ export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
 }
 
 /**
- * The headline configuration's run options for a plan: the headline model
- * built from this plan (its inflation mean, 12 percent return volatility, and
- * per-class shocks when it holds allocated accounts), the plan-id seed, the
- * given start year (the clock's by default), and the given path count. A
- * comparison run for a changed plan passes the base plan and the base run's
- * path count and start year here, so both runs see one market.
+ * The headline configuration's run options for a plan, as the engine
+ * publishes them for every host (`headlineMonteCarloOptions`): the headline
+ * model built from this plan (its inflation mean, 12 percent return
+ * volatility, and per-class shocks when it holds allocated accounts), the
+ * engine's default seed, the given start year (the clock's by default), and
+ * the given path count. A comparison run for a changed plan passes the base
+ * plan and the base run's path count and start year here, so both runs see
+ * one market.
  */
 export function headlineMcRunOptions(
   plan: Plan,
   pathCount: number = DEFAULT_PATH_COUNT,
   startYear: number = currentStartYear(),
 ): MonteCarloRunOptions {
-  return {
-    startYear,
-    pathCount,
-    seed: seedFromPlanId(plan.id),
-    model: buildModel(
-      HEADLINE_MC_MODEL.kind,
-      plan.assumptions.inflationPct,
-      HEADLINE_MC_MODEL.returnVolPct,
-      HEADLINE_MC_MODEL.equityWeightPct,
-      plan,
-    ),
-  }
+  const options = headlineMonteCarloOptions(plan, startYear, pathCount)
+  return { startYear: options.startYear, pathCount: options.pathCount, seed: options.seed, model: options.model }
 }
 
 /**

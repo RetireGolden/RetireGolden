@@ -10,6 +10,7 @@ import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optim
 import {
   acaVetoExplanation,
   acaVetoYears,
+  claimAgeUnpricedCreditReason,
   diagnosticsWithoutUnpricedCreditSentence,
   formatYearRuns,
   unpricedCreditSpendingNote,
@@ -137,9 +138,36 @@ describe('unpricedCreditSpendingNote', () => {
     )
   })
 
-  it('says an edited example no longer matches its stated credit figures', () => {
-    expect(unpricedCreditSpendingNote(facts([2026], ['example-contract-input-mismatch']), true)).toContain(
-      "isn't counted in 2026: the example's inputs were edited, so its stated credit figures no longer apply.",
+  it('names the edit that removed the contract of a year instead of the missing editor (review finding M2)', () => {
+    const removals = { acaYearsRemoved: [{ edit: 'filingStatusChanged' as const, years: [2026, 2027] }] }
+    expect(unpricedCreditSpendingNote(facts([2026, 2027], ['missing-year-contract']), true, removals)).toBe(
+      "The premium tax credit isn't counted in 2026 and 2027: the details the credit needs were removed when the filing status was changed. " +
+        fixedTail,
+    )
+    // A year no recorded edit removed keeps the planner's own reason; the
+    // latest edit that removed a year is the one named.
+    const mixed = {
+      acaYearsRemoved: [
+        { edit: 'premiumChanged' as const, years: [2026] },
+        { edit: 'partnerRemoved' as const, years: [2026] },
+      ],
+    }
+    const text = unpricedCreditSpendingNote(facts([2026, 2030], ['missing-year-contract']), true, mixed)!
+    expect(text).toContain('the details the credit needs were removed when a partner was removed')
+    expect(text).toContain("the planner doesn't yet collect the household details the credit needs")
+    expect(text).not.toContain('pre-65 premium was changed')
+    // The v5 -> v6 migration's removal of an example's contracts that no
+    // longer matched the premium is named too (PR #761 review 2).
+    expect(
+      unpricedCreditSpendingNote(facts([2027], ['missing-year-contract']), true, {
+        acaYearsRemoved: [{ edit: 'exampleNoLongerMatched' as const, years: [2027] }],
+      }),
+    ).toContain(
+      "isn't counted in 2027: the details the credit needs came from the library example and no longer matched this plan's premium, so the planner was already leaving them out.",
+    )
+    // Without a record, the reason is the planner's, as before.
+    expect(unpricedCreditSpendingNote(facts([2026], ['missing-year-contract']), true)).toContain(
+      "the planner doesn't yet collect the household details the credit needs",
     )
   })
 
@@ -183,6 +211,26 @@ describe('unpricedCreditSpendingNote', () => {
       '2026 (income is below the poverty line, where there is generally no credit and Medicaid may apply); ' +
         "2027 (the credit and the income it depends on didn't settle on one value in that year); " +
         "2028 and 2029 (RetireGolden doesn't have the credit's figures for those years yet)",
+    )
+  })
+
+  it('names the edit that removed the contract of a year in the claim-age refusals too (review finding M2)', () => {
+    const removals = { acaYearsRemoved: [{ edit: 'partnerAdded' as const, years: [2026, 2027] }] }
+    const years = [
+      { year: 2026, reasons: ['missing-year-contract' as const] },
+      { year: 2027, reasons: ['missing-year-contract' as const] },
+      { year: 2028, reasons: ['missing-year-contract' as const] },
+    ]
+    expect(unpricedCreditYearsText(years, removals)).toBe(
+      '2026 and 2027 (the details the credit needs were removed when a partner was added); ' +
+        "2028 (the planner doesn't yet collect the household details the credit needs)",
+    )
+    expect(claimAgeUnpricedCreditReason(years, removals)).toContain(
+      "can't be priced in 2026 and 2027 (the details the credit needs were removed when a partner was added)",
+    )
+    // Without the record, the reason is the planner's, as before.
+    expect(unpricedCreditYearsText(years)).toBe(
+      `${formatYearRuns([2026, 2027, 2028])} (the planner doesn't yet collect the household details the credit needs)`,
     )
   })
 

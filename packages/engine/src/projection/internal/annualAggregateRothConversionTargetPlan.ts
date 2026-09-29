@@ -21,13 +21,12 @@ import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
   ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
 } from '../moneyTolerance.js'
+import type { EffectiveAcaYearContract } from './effectiveAcaYearContract.js'
 
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
 type RothConversionStrategy = Plan['strategies']['rothConversion']
-type AcaContract = NonNullable<
-  Plan['expenses']['healthcare']['acaYears']
->[number]
+type AcaContract = EffectiveAcaYearContract
 
 export interface AnnualAggregateRothConversionTargetSource {
   /** Snapshot balance in the controlling annual conversion-source order. */

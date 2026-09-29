@@ -6,6 +6,21 @@
  * workers.
  */
 
+/**
+ * The Monte Carlo seed every host starts from (decision D-MC-DEFAULT-SEED,
+ * 2026-09-28): the app's headline run, its Monte Carlo page until the reader
+ * re-rolls, every comparison run the planner pairs with it, the guardrail
+ * threshold solve, and the Optimize tournament's downside-resilience metric.
+ * One constant for every plan, so the same financial plan draws the same
+ * markets whatever its id: after Save to My Plans, Duplicate or an import,
+ * and across two plans compared side by side (domain rule 12). The value is
+ * 0x5eeded (6,221,293), the tournament's seed before this decision; it was
+ * kept for that reason, not chosen by looking at any outcome, and any other
+ * fixed value is one draw from the same sampling distribution
+ * (`derivePathSeed` mixes every base seed into independent path seeds).
+ */
+export const DEFAULT_MONTE_CARLO_SEED = 0x5eeded
+
 export interface Rng {
   /** Uniform in [0, 1). */
   next(): number

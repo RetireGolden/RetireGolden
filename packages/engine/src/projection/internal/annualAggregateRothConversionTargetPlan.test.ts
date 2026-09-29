@@ -6,6 +6,7 @@ import {
   annualAggregateRothConversionTargetPlan,
   type AnnualAggregateRothConversionTargetPlanInput,
 } from './annualAggregateRothConversionTargetPlan.js'
+import type { EffectiveAcaYearContract } from './effectiveAcaYearContract.js'
 
 const { sizeRothConversionMock } = vi.hoisted(() => ({
   sizeRothConversionMock: vi.fn(),
@@ -17,15 +18,14 @@ vi.mock('../../strategies/rothConversion.js', async (importOriginal) => ({
 }))
 
 type Strategy = Plan['strategies']['rothConversion']
-type AcaContract = NonNullable<
-  Plan['expenses']['healthcare']['acaYears']
->[number]
+type AcaContract = EffectiveAcaYearContract
 
 const YEAR = 2026
 
 function contract(): AcaContract {
   return {
     year: YEAR,
+    premiumBasis: 'stated',
     fplRegion: 'contiguous',
     taxFamilyMembers: [
       {

@@ -429,13 +429,61 @@ export const medicareAndAcaRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
+  'aca-contract-premium-basis': {
+    title: 'Premium-credit contract as a run prices it: premium basis and deaths',
+    purpose: 'Where each year\'s Marketplace premiums come from on a run: filled from the premium field, or the coverage year\'s stated figures with nothing charged for a member who has died.',
+    kind: 'model',
+    outputs: [],
+    feeds: [
+      'aca-gross-enrollment-premium-annual',
+      'aca-applicable-slcsp-premium-annual',
+      'aca-modeled-allowable-ptc-annual',
+      'aca-economic-net-premium-annual',
+      'spending-healthcare-annual',
+    ],
+    statement:
+      'Each stored premium-credit year contract becomes the contract the run prices, by its premiumBasis (decisions D-EXAMPLE-SOURCE-SWITCH and D-ACA-CONTRACT-PATHS, 2026-09-28). A \'premiumField\' contract stores only its year, the filing assertions, tax-exempt interest and the foreign-exclusion addback; for the run and year the engine fills the poverty-guideline region from the state lived in (Alaska and Hawaii their own tables, every other state the contiguous one), the tax family from the people alive in household order (the first primary, the next spouse, each required to file, MAGI 0), the covered members alive with Marketplace months before Medicare (12 under 65, birth month minus 1 in the year of 65), and in each covered month an enrollment premium and an SLCSP benchmark both equal to pre65MonthlyPremiumPerPerson x h, with h the run\'s healthcare inflation factor from the start year (the path\'s own inflation on a Monte Carlo path). A \'stated\' contract (the default when the basis is absent) is the coverage year\'s actual figures, used as written on every run and never grown with inflation, except that a covered member not alive in the year is charged nothing: under the ledger\'s annual convention a person is alive through the calendar year of the death age, so charging stops on 1 January of the next year. The stated tax family is left as written, and because it names a person who is not alive the year is unpriced with tax-family-member-unknown. The engine never reads exampleSourceId. YearAcaResult.premiumBasis names the basis. Worksheet: a couple (born 1966-02-10 and 1961-07-20, Colorado, 2.5 percent inflation plus 2.0 percent healthcare extra, $800 premium field) prices 12 x 800 + 6 x 800 = 14,400 in 2026 with a family of 2, 12 x 836 = 10,032 in 2027 at the plan rates and 12 x 840 = 10,080 on a path with 3 percent inflation in 2026; a stated $700 couple contract charges 16,800 in 2026 and 8,400 in 2027 after one member\'s death age of 62 is passed, where the premium-field version charges 12 x 731.5 = 8,778 with a family of 1. Units: nominal dollars per month and per year. Rounding: none.',
+    formula: {
+      expression: "premiumField: E_i,m = B_i,m = [alive_i and m < M_i] x premium x h, family = alive people in order (primary, spouse); stated: E_i,m and B_i,m as written, 0 for a member not alive",
+      variables: [
+        { symbol: 'premium', meaning: 'pre65MonthlyPremiumPerPerson', unit: 'usd/month', domain: '>= 0; worksheet 800 and 700' },
+        { symbol: 'h', meaning: 'Run\'s healthcare inflation factor from the start year to the year', unit: 'ratio', domain: '> 0; worksheet 1, 1.045 and 1.05' },
+        { symbol: 'M_i', meaning: 'Marketplace months before Medicare for person i', unit: 'months', domain: '0 to 12; worksheet 12 and 6' },
+        { symbol: 'alive_i', meaning: 'Person i alive this year on this run (age attained at most the death age)', unit: 'boolean', domain: 'true or false' },
+      ],
+      timing: 'once per run and coverage year, before any reader of the year\'s contract',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-contract-premium-basis.md',
+    },
+    limits: [
+      'Coverage ends at death: 45 CFR 155.430(d)(7), "In the case of a termination due to death, the last day of enrollment in a QHP through the Exchange is the date of death.", and 26 U.S.C. 36B(c)(2)(A) counts no month after the month of death for the credit. The ledger has no month of death (a person is alive through the calendar year of the death age for income, benefits, filing status and spending), so the whole death year is charged. Measured by the independent review (finding L2) on all-401k-no-bridge with stated contracts and stochastic longevity, on the 2022 SSA period life table (before decision D-LIFE-TABLE-2023 moved the longevity draw to the 2023 table): a third of paths have a covered member die in a contract year, the convention overcharges about 5.5 months of that member\'s premium there (about $12,000 on such a path, $3,884 averaged over all paths), and it lowers the success rate by about 0.15 points, at most 0.23',
+      'A stated contract is held in nominal dollars on every Monte Carlo path, including a future year whose premiums are not published: the engine cannot tell a quote from an estimate, and an estimate belongs in the premiumField basis',
+      'The premium-field family is the people alive in household order: the first living person is the primary and the next the spouse, whatever the filing status. So the survivor\'s credit after a death is priced, except in two cases refused with tax-family-structure-unsupported, not repriced: a qualifying-surviving-spouse year (the structure check wants a dependent, which the derived family never has) and two people filing single (the second is made a spouse)',
+      'The premium-field SLCSP benchmark equals the enrollment premium, the library examples\' stated assumption, not a Marketplace estimate',
+      'A plan saved from an example before schema v6 has the contracts the recipe wrote (its shape, and the premium field grown at one rate per plan, to half a cent) rewritten to premiumField on load (migratePlanV5ToV6, reported as the exampleContractsFollowPremiumField repair). A contract that came from the recipe but no longer matched the plan\'s premium (the premium, the inflation or the household changed after saving, or a quote typed in the recipe\'s shape) was already left out by the v5 engine, so it is removed and recorded as exampleNoLongerMatched (the exampleContractsLeftOut repair) and the figures do not change; one the v5 engine priced as written (the premium field at the stored rates) whose shape is what the premium-field fill derives becomes premiumField too, so it matches the v5 engine in the deterministic run and follows the premium field on every path; the rewrite repair says the year-by-year figures stay the same except in the years the v5 engine left out (previouslyLeftOut) and that the Monte Carlo success rate can move. Any contract not in that shape stays stated, and one of those the v5 engine priced as written is announced (exampleEditedContractsKept: the same year-by-year figures, but Monte Carlo counts it at its entered dollars on every path, where the v5 engine dropped it when inflation differed); among those, one the v5 engine refused is now priced as entered and announced (exampleEnteredContractsNowPriced), since its figures change. The contracts a stored scenario writes are sorted by the same rule in the plan the scenario makes, and each repair names the scenario. The rewrite reads exampleSourceId once, on a v5 document, and the projection never does',
+      'A premium-field contract is kept through a premium edit and through a change of state, a move, a date of birth or a planning age, because everything but its assertions is derived on each run; a partner added or removed, or a new filing status, removes it, because the assertions are facts about who is on the return (model/acaContractRemovals.ts; review finding M2). A stated contract is removed by all of those edits. Each removal is recorded on the plan with the edit and its years, and the planner names the edit where it explains an unpriced year',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/effectiveAcaYearContract.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/effectiveAcaYearContract.ts#effectiveAcaYearContract',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
   'aca-enrollment-and-applicable-slcsp-premium-annual': {
     title: 'ACA gross enrollment premium and applicable SLCSP benchmark',
     purpose: 'The year\'s Marketplace premium actually enrolled for, and the benchmark premium the credit is measured against.',
     kind: 'composition',
     outputs: ['aca-gross-enrollment-premium-annual', 'aca-applicable-slcsp-premium-annual'],
     statement:
-      'YearAcaResult.grossEnrollmentPremium is the sum over all 12 months of every covered member\'s enrollment premium for that month (negatives floored at 0). YearAcaResult.applicableSlcspPremium sums that member\'s SLCSP benchmark premium only in months whose own enrollment premium is strictly above 0, so a benchmark quote in a month with no enrollment is excluded; it is null (not 0) when the year carries no ACA contract, when contracts for the year are duplicated, or when an example plan\'s contract inputs mismatch. Units: nominal dollars per year, or null. Rounding: none.',
+      'YearAcaResult.grossEnrollmentPremium is the sum over all 12 months of every covered member\'s enrollment premium for that month (negatives floored at 0). YearAcaResult.applicableSlcspPremium sums that member\'s SLCSP benchmark premium only in months whose own enrollment premium is strictly above 0, so a benchmark quote in a month with no enrollment is excluded; it is null (not 0) when the year does not carry exactly one ACA contract (none, or duplicates). The monthly figures are the contract\'s as the run prices it (aca-contract-premium-basis): filled from the premium field for a premiumField contract, as written for a stated one with nothing for a member who has died. Units: nominal dollars per year, or null. Rounding: none.',
     formula: {
       expression: 'gross = sum_m sum_i max(0, E_i,m); applicable = sum_m sum_i [E_i,m > 0] max(0, B_i,m)',
       variables: [
@@ -452,7 +500,7 @@ export const medicareAndAcaRecords = {
     limits: [
       'Beyond the worksheet\'s inputs the evidence plan fixes: a single filer aged 63 in 2026 (pre-65, so Marketplace months exist and no Medicare month competes), applyAcaCredit on with one contract for the year, a tax family of one, zero inflation and zero return, and a cash account to fund the premium',
       'The monthly gate is per MEMBER, not per household: a month can be applicable for one member and not another, which a household-level test would miss',
-      'The null case is asserted by turning the credit on with no contract for the year; the same null is produced by duplicate contracts and by an example-contract mismatch, which the evidence does not construct',
+      'The null case is asserted by turning the credit on with no contract for the year; the same null is produced by duplicate contracts, which the evidence does not construct. Before decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) an example contract whose premiums differed from the premium field at the run\'s inflation also gave null; that switch is deleted',
       'These two totals are inputs to the credit, not the credit: the allowable PTC and the economic net premium are separate families with their own records',
       'The monthly gate is applied where the per-member arrays are assembled, annualHealthcareExpenses.ts, and annualAcaResultPublication.ts sums the gated arrays onto YearAcaResult, which is what the test reads and what the receipt mutates; tax/aca.ts#acaEconomicPremiumByMonth repeats the gate for the credit and is the allowable-PTC record\'s site, not this one\'s',
     ],
@@ -496,6 +544,7 @@ export const medicareAndAcaRecords = {
       'Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet\'s $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,582.72 either way',
       'The second person\'s marketplace component is read as healthcare minus medicarePremiums minus that person\'s extras, since the phase result itself is not published on the year row; the extras rule it subtracts is pinned independently by the first person, whose zero marketplace months make healthcare minus medicarePremiums the extras exactly',
       'The credit-on branch carries no numeric expectation: the worksheet states none without a complete ACA quote and a converged fixed point',
+      'With the credit on, the gross premium is the year\'s contract as the run prices it (aca-contract-premium-basis): a premiumField contract grows the premium field by the same healthcare factor as the credit-off branch, and a stated contract is held as written and charges nothing for a member who has died',
       'A household funded just above 100% of the poverty line by need-driven withdrawals can have no self-consistent credit: the credit lowers the withdrawal need and with it MAGI, to below 100% where no credit is allowed, while the gross-funded MAGI is back above 100%. The fixed point then runs out its evaluations, publishes fixed-point-nonconvergent and budgets the gross premium (fixed-target-spending and brokerage-no-hsa in 2027, at 114.7% and 124.1% of the poverty line). That is the engine\'s model, not the law: 26 CFR 1.36B-2(b)(6) treats a household whose income ends below 100% as an applicable taxpayer when an Exchange estimated 100% to 400% at enrollment and advance credit was paid, and the engine does not model that exception (below-100-fpl-exception-unsupported), which is the truer reason such a year stays unpriced',
     ],
     implementedBy: [

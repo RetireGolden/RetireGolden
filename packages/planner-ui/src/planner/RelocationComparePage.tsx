@@ -23,6 +23,7 @@ import {
   type RelocationComparison,
 } from '@retiregolden/engine/projection/relocation'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import { runRelocationCompare } from '../relocation/runner'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
@@ -35,7 +36,7 @@ import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import { currentStartYear, seedFromPlanId } from './useProjection'
+import { currentStartYear } from './useProjection'
 import { US_STATES } from './usStates'
 
 const RELOCATION_MC_PATHS = 500
@@ -213,7 +214,7 @@ export function RelocationComparePage() {
       ? {
           model: buildModel('lognormal', plan.assumptions.inflationPct, 12, 60, plan),
           pathCount: RELOCATION_MC_PATHS,
-          seed: seedFromPlanId(plan.id),
+          seed: DEFAULT_MONTE_CARLO_SEED,
         }
       : null
     runRelocationCompare({ plan: forPlan, candidates: drafts.map(draftToCandidate), startYear, monteCarlo })

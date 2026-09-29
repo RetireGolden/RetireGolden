@@ -98,7 +98,7 @@ Outputs: `risk-based-guardrail-solved-balance-thresholds` (the solved `balanceFr
 ## Limits
 
 - Monotonicity is assumed, not checked; a probe that is not monotone yields a lattice point but not a meaningful edge.
-- The Spending card always solves under the lognormal model at 12 percent volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The equity weight the page passes is not read by the lognormal model.
+- The Spending card always solves under the lognormal model at 12 percent volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the engine's default seed `DEFAULT_MONTE_CARLO_SEED` (record `monte-carlo-default-seed`; the plan-id seed until decision D-MC-DEFAULT-SEED, 2026-09-28), whatever model the Monte Carlo page shows. The solve stores that seed beside the thresholds (`balanceThresholdSeed`); thresholds saved before plan schema v6 carry none, were solved on the plan-id seed, and the Spending card says so and offers to solve again. The equity weight the page passes is not read by the lognormal model.
 - The cache key `round(f x 1e6)` would merge two fractions closer than 5e-7; the lattice step is 3.9e-3, so it cannot bite on the lattice.
 - The spending phase is uncached: `successAfter` re-evaluates a multiplier the bisection has usually tried already (it has in both adjustments above, and their 10 calls include that repeat).
 
