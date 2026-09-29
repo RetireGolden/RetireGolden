@@ -53,7 +53,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   depletion-age difference between two people (9 examples against under-saved-single).
   The verification's fixes (a stored annuity bought for a person already dead, a refused
   conversion request, the first year without wages, a person who works through the
-  plan) move no figure or sentence on any example.
+  plan) move no figure or sentence on any example, and neither do the fixes from the
+  round-one review of #765 (wages paid past a retirement age, "Refine to the month"
+  without a pass cap, a failed scenario row's FI figures), re-measured against main at
+  81812497.
 
 - **Fixed: the FI number no longer prices a Roth conversion's one-off tax as yearly
   spending, and it prices the household's later retirement, not the first-listed
