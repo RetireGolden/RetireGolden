@@ -32,7 +32,11 @@ export interface FiTargetBasisFacts {
   personName: string | null
   /** That person's retirement year (projection/householdRetirement.ts). */
   retirementYear: number | null
-  /** Which rule gave it: a retirement age, the first year without wages, or the start year. */
+  /**
+   * Which rule gave it: a retirement age, the first year without wages paid
+   * past a retirement age, the first year without wages for a person with no
+   * retirement age, or the start year.
+   */
   retirementRule: RetirementYearRule | null
   /** That person's last year alive at the planning age. */
   personLastYearAlive: number | null

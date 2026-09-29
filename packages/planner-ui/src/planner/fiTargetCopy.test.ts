@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import type { RetirementYearRule } from '@retiregolden/engine/projection/householdRetirement'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 
 import { fiReachedPhrase, fiTargetBasisFacts, fiTargetBasisSentence } from './fiTargetCopy'
@@ -22,11 +23,15 @@ describe('fiTargetBasisSentence', () => {
   })
 
   it('says which rule gave the year when a person has no retirement age (review M4, N3)', () => {
-    const facts = (retirementRule: 'retirementAge' | 'wagesEnd' | 'startYear', retirementYear: number, householdSize = 2) =>
+    const facts = (retirementRule: RetirementYearRule, retirementYear: number, householdSize = 2) =>
       fiTargetBasisSentence({ spendingYear: Math.max(2026, retirementYear), spendingSource: 'projection', withdrawalRatePct: 4, personName: 'Sam', retirementYear, retirementRule, personLastYearAlive: 2059, householdSize, conversionExecuted: false, notRetiring: [] })
     expect(facts('wagesEnd', 2031)).toContain("(the first year without Sam's wages, since Sam has no retirement age, the later of your two retirements)")
     expect(facts('wagesEnd', 2031, 1)).toContain('(the first year without your wages, since you have no retirement age)')
     expect(facts('startYear', 2026)).toContain("(the plan's first year: Sam has no retirement age and no wages in the plan, and neither of you retires later)")
+    // Wages paid past a retirement age (round-one review of #765, issues 1 and 3).
+    expect(facts('wagesPastRetirementAge', 2046)).toContain("(the first year without Sam's wages, which continue past Sam's retirement age, the later of your two retirements)")
+    expect(facts('wagesPastRetirementAge', 2046, 1)).toContain('(the first year without your wages, which continue past your retirement age)')
+    expect(facts('wagesPastRetirementAge', 2020)).toContain("(the plan's first year: Sam's wages end in 2019, the later of your two retirements)")
   })
 
   it('names who works through the plan and prices the other person\'s retirement, or prices nothing (review N3)', () => {

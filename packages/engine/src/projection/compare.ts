@@ -175,12 +175,15 @@ export interface ProjectionSummary {
    *
    * A Roth conversion is a one-off prepayment of tax, not spending the
    * portfolio must fund every year, so it never enters the base (decision
-   * D-FI-CONVERSION-TAX). When the spending year carries a Roth conversion
-   * (`rothConversion > 0`, or a named conversion request that year), its
-   * `expenses.total + tax + penalties` are read from the same calendar year of
-   * the plan run with its Roth conversions removed (`withoutRothConversions`,
-   * run on the projection's own options): the year's outflows had the
-   * household not converted. That run is supplied by the caller
+   * D-FI-CONVERSION-TAX). When the plan converts in any year of the projection
+   * (`rothConversion > 0`, or a named conversion request, even one the ledger
+   * refused), the spending year's `expenses.total + tax + penalties` are read
+   * from the same calendar year of the plan run with its Roth conversions
+   * removed (`withoutRothConversions`, run on the projection's own options):
+   * the year's outflows had the household never converted, so neither a
+   * conversion's one-off tax nor what it costs in later years (the IRMAA
+   * lookback, a drained taxable account) is priced, even when the spending
+   * year itself converts nothing. That run is supplied by the caller
    * (`SummarizeProjectionOptions.conversionFreeRun`); a caller that supplies
    * none keeps that year's conversion tax in the base, and `fiBasis` says so.
    * `fiBasis` names the year and the source of every published FI number.
@@ -191,7 +194,7 @@ export interface ProjectionSummary {
    * or floor.
    *
    * Formula: fiNumber = ((expenses.total + tax + penalties) / (1 + inflationPct/100)^(spendingYear − startYear)) / (safeWithdrawalRatePct / 100),
-   * with the three figures from the conversion-free run when the spending year converts
+   * with the three figures from the conversion-free run when any year of the plan converts
    *
    * Empty ledger (`result.years` empty): `plan.expenses.baseAnnual / (safeWithdrawalRatePct / 100)`
    * with no tax, no penalties, and no deflation.
@@ -295,7 +298,12 @@ export interface FiBasis {
   personId: string | null
   /** That person's retirement year under `retirementRule`. */
   retirementYear: number | null
-  /** Which rule gave the retirement year: a retirement age, the first year without wages, or the start year. */
+  /**
+   * Which rule gave the retirement year: a retirement age (`retirementAge`),
+   * the first year without wages paid past it (`wagesPastRetirementAge`), the
+   * first year without wages for a person with no retirement age
+   * (`wagesEnd`), or the start year (`startYear`).
+   */
   retirementRule: RetirementYearRule | null
   /** That person's last year alive at the planning age. */
   personLastYearAlive: number | null

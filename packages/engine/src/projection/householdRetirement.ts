@@ -3,14 +3,18 @@
  * the pre-retirement savings rate and the funded ratio share (decision
  * D-PEOPLE-ORDER, rule R4; the independent review's M4 and N3).
  *
- * Each person's retirement year is the first year without their work:
- * - with a retirement age, the ISO birth year plus that age (`retirementAge`),
- *   the first year the engine pays them no wages;
- * - with no retirement age, whose wages the engine never stops at an age
- *   (projection/internal/wageIncomeStreams.ts), the year after the last year
- *   a wage stream of theirs pays (`wagesEnd`): its `endAge` if it has one, else
- *   through their last year alive at the planning age. A stream with no gross
- *   pay is no wages;
+ * Each person's retirement year is the first year without their work. A wage
+ * stream pays while the person is alive and younger than its stop age, its
+ * `endAge` if it has one, else the person's retirement age, and with neither
+ * it pays through their last year alive at the planning age
+ * (projection/internal/wageIncomeStreams.ts, `stopAge = endAge ?? retirementAge`);
+ * a stream with no gross pay is no wages. So:
+ * - with a retirement age, the later of the ISO birth year plus that age
+ *   (`retirementAge`) and the year after the last year a wage stream of theirs
+ *   pays, when a stream's `endAge` keeps paying past the retirement age
+ *   (`wagesPastRetirementAge`);
+ * - with no retirement age, the year after the last year a wage stream of
+ *   theirs pays (`wagesEnd`), when that last year is the start year or later;
  * - with no retirement age and no wages in the plan from the start year on,
  *   the plan's start year (`startYear`).
  *
@@ -32,7 +36,7 @@
 import type { Plan } from '../model/plan.js'
 import { canonicalPeopleOrder } from '../model/peopleOrder.js'
 
-export type RetirementYearRule = 'retirementAge' | 'wagesEnd' | 'startYear'
+export type RetirementYearRule = 'retirementAge' | 'wagesPastRetirementAge' | 'wagesEnd' | 'startYear'
 
 export interface PersonRetirement {
   readonly personId: string
@@ -73,17 +77,26 @@ export function personRetirement(plan: RetirementPlan, person: Person, startYear
     lastYearAlive,
     retiresInPlan: Math.max(year, startYear) <= lastYearAlive,
   })
-  if (person.retirementAge !== null) return result(birthYear + person.retirementAge, 'retirementAge')
   let lastWageYear: number | null = null
   for (const stream of plan.incomes) {
     if (stream.type !== 'wages' || stream.personId !== person.id || stream.annualGross <= 0) continue
-    // Wages pay while the attained age is below endAge, and while alive.
-    const last = Math.min(stream.endAge !== null ? birthYear + stream.endAge - 1 : lastYearAlive, lastYearAlive)
+    // Wages pay while the attained age is below the stream's stop age (its
+    // endAge, else the retirement age, as wageIncomeStreams stops them), and
+    // while alive.
+    const stopAge = stream.endAge ?? person.retirementAge
+    const last = Math.min(stopAge !== null ? birthYear + stopAge - 1 : lastYearAlive, lastYearAlive)
     if (lastWageYear === null || last > lastWageYear) lastWageYear = last
   }
-  // The first year without wages, as a retirement age gives the first year
-  // without them: a year still paid wages (and the income tax on them) is a
-  // working year, never the retirement priced (the independent review's N3).
+  // A year still paid wages (and the income tax on them) is a working year,
+  // never the retirement priced (the independent review's N3), so a person
+  // retires in the first year without wages, and never before their
+  // retirement age. A stream's endAge past the retirement age keeps paying
+  // (round-one review of #765, issues 1 and 3).
+  if (person.retirementAge !== null) {
+    const retirementYear = birthYear + person.retirementAge
+    if (lastWageYear !== null && lastWageYear + 1 > retirementYear) return result(lastWageYear + 1, 'wagesPastRetirementAge')
+    return result(retirementYear, 'retirementAge')
+  }
   if (lastWageYear !== null && lastWageYear >= startYear) return result(lastWageYear + 1, 'wagesEnd')
   return result(startYear, 'startYear')
 }
@@ -148,6 +161,9 @@ export function householdRetirementClause(
   if (retirement.rule === 'wagesEnd') {
     return `the first year without ${whose} wages, since ${who} ${has} no retirement age${later}`
   }
+  if (retirement.rule === 'wagesPastRetirementAge') {
+    return `the first year without ${whose} wages, which continue past ${whose} retirement age${later}`
+  }
   return `the year ${who} ${couple ? 'retires' : 'retire'}${later}`
 }
 
@@ -176,10 +192,12 @@ export function notRetiringPhrase(people: readonly NamedNotRetiring[], couple: b
 export function notRetiringClause(person: Pick<PersonRetirement, 'rule' | 'year' | 'lastYearAlive'>, name: string | null): string {
   const who = name ?? 'you'
   const whose = name === null ? 'your' : `${name}'s`
-  // Wages that end in the plan end while the person is alive, so a `wagesEnd`
-  // person left out works through it; a `startYear` one, and a retirement
-  // age reached while alive, can only be left out by dying before the start.
-  if (person.rule === 'wagesEnd') return `${who} ${name === null ? 'work' : 'works'} through the plan`
-  if (person.rule === 'retirementAge' && person.year > person.lastYearAlive) return `${whose} retirement age comes after ${whose} planning age`
+  // A retirement year after the last year alive is wages that run through
+  // it (`wagesEnd`, `wagesPastRetirementAge`) or a retirement age never
+  // reached; otherwise the person is left out only by dying before the start.
+  if (person.year > person.lastYearAlive) {
+    if (person.rule === 'wagesEnd' || person.rule === 'wagesPastRetirementAge') return `${who} ${name === null ? 'work' : 'works'} through the plan`
+    if (person.rule === 'retirementAge') return `${whose} retirement age comes after ${whose} planning age`
+  }
   return `${whose} planning age ends before the plan starts`
 }

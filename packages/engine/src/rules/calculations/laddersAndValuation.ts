@@ -274,7 +274,7 @@ export const laddersAndValuationRecords = {
       'funded-ratio-result-unfunded-pv',
     ],
     statement:
-      'ladder/fundedRatio.ts#fundedRatioStart returns fromYear = max(startYear, the household\'s later retirement), the person whose retirement that is, that person\'s retirement year and the rule that gave it, all from household-later-retirement (a retirement age gives ISO birth year plus that age; a person with none retires in the first year without their wages, else in the start year; a person who never retires in the plan is left out and listed in notRetiring; a tie to the older person, then the smaller id; decision D-PEOPLE-ORDER and the independent review\'s M4 and N3). When nobody retires in the plan fromYear is null: wages carry the floor throughout, no ratio is counted, the card says so in plain words and the insight does not fire. The funded-ratio card (planner-ui IncomeFloorSection.tsx#FundedRatioCard, shown on Income floor and Results) and the income-floor-funded insight pass fromYear to ladder/fundedRatio.ts#computeFundedRatio, and for a couple name the person and call the ratio the household\'s. Units: calendar years. Rounding: none.',
+      'ladder/fundedRatio.ts#fundedRatioStart returns fromYear = max(startYear, the household\'s later retirement), the person whose retirement that is, that person\'s retirement year and the rule that gave it, all from household-later-retirement (a retirement age gives ISO birth year plus that age, or the first year without the person\'s wages when a wage stream\'s end age keeps paying past it; a person with none retires in the first year without their wages, else in the start year; a person who never retires in the plan is left out and listed in notRetiring; a tie to the older person, then the smaller id; decision D-PEOPLE-ORDER and the independent review\'s M4 and N3). When nobody retires in the plan fromYear is null: wages carry the floor throughout, no ratio is counted, the card says so in plain words and the insight does not fire. The funded-ratio card (planner-ui IncomeFloorSection.tsx#FundedRatioCard, shown on Income floor and Results) and the income-floor-funded insight pass fromYear to ladder/fundedRatio.ts#computeFundedRatio, and for a couple name the person and call the ratio the household\'s. Units: calendar years. Rounding: none.',
     formula: {
       expression: 'fromYear = max(startYear, householdRetirement(plan, startYear).retirement.year), or null when nobody retires in the plan; person = its personId',
       variables: [
@@ -289,7 +289,7 @@ export const laddersAndValuationRecords = {
       worksheet: 'DOCS/calculations/ladders-and-valuation/funded-ratio-household-start.md',
     },
     limits: [
-      'A convention, not a statute: the household floor is counted from the first year without the last earner\'s wages, so a couple with one person retired and one working shows the ratio from the later retirement',
+      'A convention, not a statute: the household floor is counted from the first year without the last earner\'s wages, so a couple with one person retired and one working shows the ratio from the later retirement, and wages paid past a retirement age (a wage stream\'s end age after it) count until they end',
       'A missing retirement age means the first year without that person\'s wages, else the start year, and a person who works through the plan is left out, the one rule the FI figures use (household-later-retirement); the card and the insight say which rule applied and who works through the plan',
     ],
     implementedBy: [
@@ -302,7 +302,7 @@ export const laddersAndValuationRecords = {
       'packages/engine/src/projection/householdRetirement.ts#householdRetirement',
       'packages/engine/src/insights/detectors/incomeFloorFunded.ts#incomeFloorFunded',
     ],
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-09-29',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'fedinvest-csv-tips-parsing': {

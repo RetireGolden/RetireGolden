@@ -107,8 +107,10 @@ export interface FundedRatioStart {
  * D-PEOPLE-ORDER): the household's later retirement, the year the last
  * person's wages stop, since until then wages carry part of the floor. It is
  * the one rule the FI figures use (projection/householdRetirement.ts): a
- * retirement age gives birth year plus that age; a person with no retirement
- * age retires in the first year without their wages, else in the start year;
+ * retirement age gives birth year plus that age, or the first year without
+ * the person's wages when a wage stream's end age keeps paying past it; a
+ * person with no retirement age retires in the first year without their
+ * wages, else in the start year;
  * a person who never retires in the plan (wages through their last year
  * alive, a retirement age past the planning age) is left out, and with nobody
  * retiring there is no start; a tie goes to the older person, then the

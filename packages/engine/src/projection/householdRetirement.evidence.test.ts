@@ -1,10 +1,12 @@
 /**
  * Evidence for household-later-retirement: one rule for the household's later
  * retirement, shared by the FI figures and the funded ratio (the independent
- * review's M4 and N3). The ten cases and their years are the worksheet's; each
- * runs in list order and reversed, and cases 3 and 10 also run through
- * summarizeProjection and fundedRatioStart to show both surfaces name the same
- * person and year, or price nothing when nobody retires in the plan.
+ * review's M4 and N3). The thirteen cases and their years are the worksheet's;
+ * each runs in list order and reversed, and cases 3, 10 and 11 also run
+ * through summarizeProjection and fundedRatioStart to show both surfaces name
+ * the same person and year, or price nothing when nobody retires in the plan.
+ * Cases 11 to 13 are wages paid past a retirement age, and wages that stop
+ * before it (round-one review of #765, issues 1 and 3).
  */
 import { expect, it } from 'vitest'
 
@@ -42,6 +44,9 @@ const CASES: { label: string; people: Person[]; incomes?: Plan['incomes']; name:
   { label: 'Case 8', people: [person('Ann', '1970-01-01', null, 80)], incomes: [wages('ann', 90)], name: null, rule: null, notRetiring: ['ann'] },
   { label: 'Case 9', people: [person('Bo', '1970-01-01', 85, 80), person('Cy', '1972-01-01', 63)], name: 'Cy', rule: 'retirementAge', notRetiring: ['bo'] },
   { label: 'Case 10', people: [person('Ed', '1966-01-01', null), person('Flo', '1968-01-01', null)], incomes: [wages('ed', null), wages('flo', null)], name: null, rule: null, notRetiring: ['ed', 'flo'] },
+  { label: 'Case 11', people: [person('Gus', '1966-01-01', 65), person('Hal', '1964-01-01', 68)], incomes: [wages('gus', 75)], name: 'Gus', rule: 'wagesPastRetirementAge', notRetiring: [] },
+  { label: 'Case 12', people: [person('Ivy', '1970-01-01', 62)], incomes: [wages('ivy', 55)], name: 'Ivy', rule: 'retirementAge', notRetiring: [] },
+  { label: 'Case 13', people: [person('Jay', '1960-01-01', 67, 85), person('Kay', '1962-01-01', 66)], incomes: [wages('jay', 90)], name: 'Kay', rule: 'retirementAge', notRetiring: ['jay'] },
 ]
 
 function planOf(people: Person[], incomes: Plan['incomes']): Plan {
@@ -95,6 +100,26 @@ describeCalculation(
       const { retirement, notRetiring } = householdRetirement(plan, START)
       expect(householdRetirementClause(retirement!, 'Alex', retirement!.year, false)).toBe('the year Alex retires')
       expect(notRetiringClause(notRetiring[0]!, 'Sam')).toBe('Sam works through the plan')
+    })
+
+    it('prices the first year without wages paid past a retirement age on the FI figures and the funded ratio, and says why', () => {
+      const plan = planOf(CASES[10]!.people, CASES[10]!.incomes!)
+      const result = simulatePlan(plan, { startYear: START, taxCalculator: createFlatTaxCalculator(0) })
+      // The ledger pays Gus's wages through 2040, past his retirement age's 2031.
+      const paid = result.years.filter((y) => y.incomes.wages > 0).map((y) => y.year)
+      expect([paid[0], paid[paid.length - 1]]).toEqual([START, expectedYear('Case 11')! - 1])
+      const summary = summarizeProjection(plan, result, { conversionFreeRun: null })
+      expect([summary.fiBasis.personId, summary.fiBasis.retirementYear, summary.fiBasis.retirementRule, summary.fiBasis.spendingYear])
+        .toEqual(['gus', expectedYear('Case 11'), 'wagesPastRetirementAge', expectedYear('Case 11')])
+      const funded = fundedRatioStart(plan, START)
+      expect([funded.personId, funded.fromYear, funded.rule]).toEqual(['gus', expectedYear('Case 11'), 'wagesPastRetirementAge'])
+      const { retirement } = householdRetirement(plan, START)
+      expect(householdRetirementClause(retirement!, 'Gus', retirement!.year))
+        .toBe("the first year without Gus's wages, which continue past Gus's retirement age, the later of your two retirements")
+      expect(householdRetirementClause(retirement!, null, retirement!.year, false))
+        .toBe('the first year without your wages, which continue past your retirement age')
+      const jay = householdRetirement(household(CASES[12]!.people, CASES[12]!.incomes), START).notRetiring[0]!
+      expect([jay.rule, notRetiringClause(jay, 'Jay')]).toEqual(['wagesPastRetirementAge', 'Jay works through the plan'])
     })
 
     it('prices no FI figure and counts no funded ratio when nobody retires in the plan', () => {

@@ -13,6 +13,12 @@
  *   Alex's 2028 retirement, and every surface says Sam works through the plan;
  *   aggressive-saver with no retirement age prices no FI figure at all (the
  *   review measured $38,930,249, priced in the death year).
+ * - Wages paid past a retirement age keep the person working (round-one review
+ *   of #765, issues 1 and 3): aggressive-saver's Taylor, retiring at 45 (2041)
+ *   with wages to age 50, is paid through 2045, and FI, Coast-FIRE, the
+ *   savings-rate window and the funded ratio all start in 2046, exactly as a
+ *   retirement age of 50 gives; wages that stop at 42 leave the retirement
+ *   age's 2041.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -48,6 +54,27 @@ function figures(plan: Plan) {
   }
 }
 
+const mean = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+
+/** Every surface's year on one plan: the FI basis, Coast-FIRE's horizon, the savings-rate window, the funded ratio. */
+function surfaces(plan: Plan) {
+  const view = projectPlan(plan, EXAMPLE_FIXED_YEAR)
+  const s = view.summary
+  const facts = fiTargetBasisFacts(s, plan)
+  const start = fundedRatioStart(plan, view.startYear)
+  const wageYears = view.result.years.filter((y) => y.incomes.wages > 0).map((y) => y.year)
+  return {
+    view,
+    facts,
+    lastWageYear: wageYears[wageYears.length - 1],
+    fi: [s.fiBasis.retirementYear, s.fiBasis.retirementRule, s.fiBasis.spendingYear],
+    coastFireHorizon: coastFireHorizonYear(facts),
+    funded: [start.retirementYear, start.rule, start.fromYear],
+    // The savings-rate average is the mean of the published rates before the retirement year.
+    savingsWindow: (year: number) => [s.averagePreRetirementSavingsRatePct, mean(s.savingsRates.filter((r) => r.year < year).map((r) => r.ratePct))],
+  }
+}
+
 describe('one household retirement rule on every surface (review M4, N3)', () => {
   it('gives two ways of writing the same one-person household the same FI figures (aggressive-saver)', () => {
     const noAge = variant('aggressive-saver', (plan) => {
@@ -73,6 +100,42 @@ describe('one household retirement rule on every surface (review M4, N3)', () =>
     expect(a.ledger).toBe(b.ledger)
     expect(a.fi).toEqual(b.fi)
     expect(Math.round(b.fi[0]!)).toBe(3_377_120)
+  })
+
+  it('starts every surface in the first year without wages paid past a retirement age (review of #765, issues 1 and 3)', () => {
+    const taylorWagesTo = (endAge: number, retirementAge = 45) => variant('aggressive-saver', (plan) => {
+      const person = plan.household.people[0]!
+      person.retirementAge = retirementAge
+      wagesEndAt(plan, person.id, endAge)
+    })
+    const past = surfaces(taylorWagesTo(50))
+    // The ledger pays Taylor's wages through 2045, past the retirement age's 2041.
+    expect(past.lastWageYear).toBe(2045)
+    expect(past.fi).toEqual([2046, 'wagesPastRetirementAge', 2046])
+    expect(past.coastFireHorizon).toBe(2046)
+    expect(past.funded).toEqual([2046, 'wagesPastRetirementAge', 2046])
+    const [average, window] = past.savingsWindow(2046)
+    expect(average).toBeCloseTo(window!, 10)
+    expect(fiTargetBasisSentence(past.facts)).toContain(
+      "The FI target is 2046's spending, tax and penalties (the first year without your wages, which continue past your retirement age)",
+    )
+    // The same household written with a retirement age of 50 pays the same
+    // wages and gets the same FI figures, Coast-FIRE and savings rate.
+    const at50 = taylorWagesTo(50, 50)
+    expect(figures(taylorWagesTo(50)).ledger).toBe(figures(at50).ledger)
+    expect(figures(taylorWagesTo(50)).fi).toEqual(figures(at50).fi)
+    expect(surfaces(at50).funded).toEqual([2046, 'retirementAge', 2046])
+  })
+
+  it('keeps the retirement age when wages stop before it (review of #765, issues 1 and 3)', () => {
+    const early = surfaces(variant('aggressive-saver', (plan) => wagesEndAt(plan, plan.household.people[0]!.id, 42)))
+    expect(early.lastWageYear).toBe(2037)
+    expect(early.fi).toEqual([2041, 'retirementAge', 2041])
+    expect(early.coastFireHorizon).toBe(2041)
+    expect(early.funded).toEqual([2041, 'retirementAge', 2041])
+    const [average, window] = early.savingsWindow(2041)
+    expect(average).toBeCloseTo(window!, 10)
+    expect(fiTargetBasisSentence(early.facts)).toContain("The FI target is 2041's spending, tax and penalties (the year you retire)")
   })
 
   it('prices no FI figure for a person who works until death, and says so', () => {
