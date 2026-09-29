@@ -109,4 +109,45 @@ describe('Optimize proposed-schedule success rate', () => {
     expect(opts.pathCount).toBe(1_000)
     expect(opts.model).toStrictEqual(buildLognormalModelConfigForPlan(plan, 12))
   })
+
+  it('starts no run on an edit to anything else, and simulates the re-run once (PR #761 review 1 and 7)', async () => {
+    vi.mocked(runOptimize).mockResolvedValue(result())
+    const plan = createSamplePlan()
+    const render = async (current: Plan) =>
+      act(async () => {
+        root.render(
+          <MemoryRouter>
+            <PlanCtx.Provider value={contextFor(current)}>
+              <OptimizePage />
+            </PlanCtx.Provider>
+          </MemoryRouter>,
+        )
+      })
+    await render(plan)
+    await waitFor(() => vi.mocked(runMonteCarlo).mock.calls.length > 0, { what: 'the first run', attempts: 600, intervalMs: 20 })
+    const first = vi.mocked(runMonteCarlo).mock.calls.length
+    const firstOptions = vi.mocked(runMonteCarlo).mock.calls.at(-1)![1]
+    const optimizeCalls = vi.mocked(runOptimize).mock.calls.length
+
+    // Rename the plan: the held result is now stale and the re-optimization is
+    // held open, so nothing may be simulated in the meantime.
+    let finish: (value: OptimizeResult) => void = () => {}
+    vi.mocked(runOptimize).mockImplementationOnce(() => new Promise<OptimizeResult>((resolve) => (finish = resolve)))
+    await render({ ...plan, name: 'Renamed' })
+    await waitFor(() => vi.mocked(runOptimize).mock.calls.length > optimizeCalls, {
+      what: 'the debounced re-optimization',
+      attempts: 600,
+      intervalMs: 20,
+    })
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 200)))
+    expect(vi.mocked(runMonteCarlo).mock.calls.length).toBe(first)
+
+    // The fresh result is simulated once, on the same options: the rename
+    // touched nothing they read.
+    await act(async () => finish(result()))
+    await waitFor(() => vi.mocked(runMonteCarlo).mock.calls.length > first, { what: 'the fresh run', attempts: 600, intervalMs: 20 })
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 200)))
+    expect(vi.mocked(runMonteCarlo).mock.calls.length).toBe(first + 1)
+    expect(vi.mocked(runMonteCarlo).mock.calls.at(-1)![1]).toStrictEqual(firstOptions)
+  })
 })
