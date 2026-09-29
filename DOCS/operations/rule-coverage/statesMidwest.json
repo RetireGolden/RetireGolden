@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -216,7 +216,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -341,7 +341,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -518,7 +518,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -625,7 +625,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 443
+              "line": 446
             }
           ]
         },
@@ -796,7 +796,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 431
+              "line": 434
             }
           ]
         },
@@ -893,7 +893,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 431
+              "line": 434
             }
           ]
         },
@@ -958,7 +958,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 431
+              "line": 434
             }
           ]
         },
@@ -1037,7 +1037,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 479
+              "line": 482
             }
           ]
         },
@@ -1142,7 +1142,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 479
+              "line": 482
             }
           ]
         },
@@ -1239,7 +1239,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 479
+              "line": 482
             }
           ]
         },
@@ -1304,7 +1304,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 486
+              "line": 489
             }
           ]
         },
@@ -1378,7 +1378,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 486
+              "line": 489
             }
           ]
         },
@@ -1475,7 +1475,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 486
+              "line": 489
             }
           ]
         },
@@ -1579,7 +1579,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 593
+              "line": 596
             }
           ]
         },
@@ -1659,7 +1659,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 593
+              "line": 596
             }
           ]
         },
@@ -1757,7 +1757,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 599
+              "line": 602
             }
           ]
         },
@@ -1840,7 +1840,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 599
+              "line": 602
             }
           ]
         },
@@ -1919,7 +1919,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 599
+              "line": 602
             }
           ]
         },
@@ -2015,7 +2015,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 657
+              "line": 660
             }
           ]
         },
@@ -2152,7 +2152,7 @@
           "functions": [
             {
               "name": "states.MO",
-              "line": 657
+              "line": 660
             }
           ]
         },
@@ -2242,7 +2242,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 657
+              "line": 660
             }
           ]
         },
@@ -2315,7 +2315,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 808
+              "line": 811
             }
           ]
         },
@@ -2535,11 +2535,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 819
+              "line": 822
             },
             {
               "name": "states.ND",
-              "line": 808
+              "line": 811
             }
           ]
         },
@@ -2621,7 +2621,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 819
+              "line": 822
             }
           ]
         },
@@ -2779,7 +2779,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 808
+              "line": 811
             }
           ]
         },
@@ -2940,7 +2940,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 808
+              "line": 811
             }
           ]
         },
@@ -3022,7 +3022,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 710
+              "line": 713
             }
           ]
         },
@@ -3242,7 +3242,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 710
+              "line": 713
             }
           ]
         },
@@ -3434,12 +3434,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1303,
+          "line": 1335,
           "note": "a statutorily indexed state bracket held nominal for twenty years",
           "tests": [
             {
               "title": "holds Nebraska’s 2046 brackets at the 2026 amounts, overstating the tax on $100,000",
-              "line": 1320
+              "line": 1352
             }
           ]
         }
@@ -3574,7 +3574,7 @@
           "functions": [
             {
               "name": "states.OH",
-              "line": 833
+              "line": 836
             }
           ]
         },
@@ -3657,7 +3657,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 947
+              "line": 951
             }
           ]
         },
@@ -3731,7 +3731,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1088
+              "line": 1092
             }
           ]
         },
@@ -3877,7 +3877,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1088
+              "line": 1092
             }
           ]
         },
@@ -3949,7 +3949,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1088
+              "line": 1092
             }
           ]
         },

@@ -2189,7 +2189,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 417
+              "line": 420
             }
           ]
         },
@@ -2254,7 +2254,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 417
+              "line": 420
             }
           ]
         },
@@ -2332,7 +2332,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 417
+              "line": 420
             }
           ]
         },
@@ -2415,7 +2415,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 688
+              "line": 691
             }
           ]
         },
@@ -2502,7 +2502,7 @@
           "functions": [
             {
               "name": "states.MT",
-              "line": 688
+              "line": 691
             }
           ]
         },
@@ -2731,7 +2731,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 688
+              "line": 691
             }
           ]
         },
@@ -2821,7 +2821,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 688
+              "line": 691
             }
           ]
         },
@@ -2922,7 +2922,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 761
+              "line": 764
             }
           ]
         },
@@ -3007,7 +3007,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 761
+              "line": 764
             }
           ]
         },
@@ -3080,7 +3080,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 726
+              "line": 729
             }
           ]
         },
@@ -3149,7 +3149,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 862
+              "line": 865
             }
           ]
         },
@@ -3310,7 +3310,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 862
+              "line": 865
             }
           ]
         },
@@ -3472,7 +3472,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 862
+              "line": 865
             }
           ]
         },
@@ -3620,7 +3620,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -3698,7 +3698,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -3773,7 +3773,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -3855,7 +3855,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -3934,7 +3934,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -4007,7 +4007,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 962
+              "line": 966
             }
           ]
         },
@@ -4097,7 +4097,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1056
+              "line": 1060
             }
           ]
         },
@@ -4299,12 +4299,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1346,
+          "line": 1378,
           "note": "the federal QCD exclusion carried into Washington from 2028",
           "tests": [
             {
               "title": "keeps a direct QCD excluded and the year complete",
-              "line": 1378
+              "line": 1410
             }
           ]
         }
@@ -4373,20 +4373,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1239,
+          "line": 1271,
           "note": "the deduction indexed every second year from 2029 at the plan inflation",
           "tests": [
             {
               "title": "adjusts the deduction for 2029 and every second year after, rounded to $1,000",
-              "line": 1263
+              "line": 1295
             },
             {
               "title": "prices the indexed deduction through the annual state calculation",
-              "line": 1278
+              "line": 1310
             },
             {
               "title": "never reduces the deduction, and leaves it alone with no projected inflation",
-              "line": 1285
+              "line": 1317
             }
           ]
         }
@@ -4451,7 +4451,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1056
+              "line": 1060
             }
           ]
         },
@@ -4525,7 +4525,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 1125
+              "line": 1129
             }
           ]
         },

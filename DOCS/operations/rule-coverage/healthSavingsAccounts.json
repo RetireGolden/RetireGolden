@@ -217,11 +217,11 @@
           "functions": [
             {
               "name": "hsaLimitYear2026",
-              "line": 43
+              "line": 48
             },
             {
               "name": "hsaLimitsForYear",
-              "line": 83
+              "line": 89
             }
           ]
         },
@@ -305,7 +305,7 @@
           "functions": [
             {
               "name": "hsaLimitsForYear",
-              "line": 83
+              "line": 89
             }
           ]
         },
