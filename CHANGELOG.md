@@ -43,14 +43,18 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     year is sold in the first year, and its carrying costs stop from that same year
     (`projection/propertySaleYear.ts`, the independent review's H1): main held the house to the
     end with its tax and insurance dropped, +$1,017,839 on the review's case. A debt payoff dated
-    earlier is paid in the first year, as before, and is named with the amount. Every dated editor
-    field with a pre-start meaning now has a note.
+    earlier is paid in the first year, as before, and is named with the amount. A property at $0 is
+    not sold, so its warning says only that its property tax and insurance stop from the first year
+    (PR #768 review issue 9). Every dated editor field with a pre-start meaning now has a note.
   - **An example's other "today" labels, and a plan left open across New Year.** On an example,
     Accounts reads "Balances as of the start of 2026", and the whole-life cash value and the
     funded-ratio values name 2026; two example bodies name their contribution amounts instead of
     claiming the maximum. The headline Monte Carlo caches and the Social Security analysis are
     keyed on the start year, so a plan open at midnight on 31 December runs again from the new
-    year. Undated lines are dated (the Trustees' depletion year, Learn's ACA years, the report's
+    year; the workspace and Compare Plans render again at the local New Year with no click
+    (`useClockYear`), so Compare runs both plans from the new year and a plan whose pension
+    election has just gone stale reads "Fix 1 issue to store" at once (PR #768 review issues 3, 4
+    and 8). Undated lines are dated (the Trustees' depletion year, Learn's ACA years, the report's
     parameter appendix, a walkthrough row), and Compare's unreachable start-year message is gone.
   - **"Plan last saved in 2026" east of UTC.** The save stamp is read on the start year's calendar
     (`DetectorContext.planSavedOn`), so a Tokyo save at 04:59:50 on 1 January is not a 2026 save.
@@ -66,8 +70,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   state deduction that follows the federal one (Colorado's) conforms to the year's federal
   figure, loaded or projected, and the District's and Washington's statutory indexing runs at
   the plan's inflation from the state figures' year, so landing the IRS's income-tax figures
-  alone moves neither (`tax/stateDeductionLanding.test.ts`; the second verification's V1). Every
-  publisher's latest year is 2026, so no figure moves: the equivalence corpus (150 members, four
+  alone moves neither (`tax/stateDeductionLanding.test.ts`; the second verification's V1).
+  Nothing is left to move at the first landing (PR #768 review issues 1 and 7): the widow's-penalty
+  insight prices the survivor's tables at the income-tax figures' own factor, the law-pack insight
+  compares the save year with the latest year a publisher's figures for the plan's first year are
+  loaded for and names them (so a plan saved in 2026 and run from 2027 now reads "2027 rules need
+  a plan review" for the loaded 2027 HSA limits and premium tax credit figures), and the IRMAA
+  tier-edge insight and the optimizer LP read Medicare through CMS's own component.
+  `params/landing.readers.test.ts` lands the IRS's figures alone and CMS's alone, and
+  `params/baseYearReaders.contract.test.ts` fails on any new read of the base pack's year in engine
+  source not listed with its reason. Every publisher's latest year is 2026, so no figure moves: the equivalence corpus (150 members, four
   modes) against 5224c5d0 differs only in two members' new pre-start warnings (a QCD dated 2025
   and a HECM line dated 2022, each in a 2026 run). The HSA component reads `hsaLimitYears.ts`
   (from the state-tax change, #762), so 2027's HSA limits show as loaded and are projected only
@@ -120,9 +132,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     open across midnight on 31 December keeps a 2026 start); its records store `startYear` and
     the projected components beside the "law 2026/2026" labels; and the pin bump that brings
     pinned examples and the as-of save check.
-  - The methodology site: the walkthrough pages say each example runs "from a fixed 2026
-    start", read from the evidence files' `startYear` (format version 3, which the site's refresh
-    refuses until the site change that reads it lands); `about.astro`'s "models current law"
+  - The methodology site needs a version-3 reader for the walkthrough evidence before anything
+    else here reaches it: this change writes `DOCS/operations/walkthroughs/*.json` at format
+    version 3 (`WALKTHROUGH_EVIDENCE_VERSION`), and the site's refresh refuses a version it does not
+    know before staging anything, so its three walkthrough pages stop following the engine until
+    that reader ships (PR #768 review issue 10). With it, the walkthrough pages say each example
+    runs "from a fixed 2026 start", read from the evidence files' `startYear`; `about.astro`'s "models current law"
     says that later years use projected figures until RetireGolden loads each agency's; and the
     58 re-verification dates `tax-rules.astro` prints fall due on 1 January 2027.
   - RetireGolden-MCP and RetireGolden-Pro pin an engine that prices no 2027 premium tax credit
