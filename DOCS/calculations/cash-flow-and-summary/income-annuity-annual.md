@@ -40,7 +40,7 @@ feeds: `income-total-annual`.
 
 ## A purchase dated before the start year (D-2027-ROLLOVER): a registered limit
 
-The engine reads every entered balance as of the start year, so a contract whose purchase year is before the start is treated as already paid: its annuity pays, and no premium leaves the funding account. That is right when the balance was entered after the purchase. When it was entered before and not updated, the premium is counted twice. The derivation measured its U1 household ($100,000 non-qualified, bought in 2026 from the brokerage, $550 a month from 67): the purchase lowers ending net worth by $147,623 from a 2026 start and raises it by $454,837 from a 2027 start. The check found every tax qualification behaves the same way.
+The engine reads every entered balance as of the start year, so a contract whose purchase year is before the start is treated as already paid: its annuity pays, and no premium leaves the funding account. That is right when the balance was entered after the purchase. When it was entered before and not updated, the premium is counted twice. The derivation measured its U1 household ($100,000 non-qualified, bought in 2026 from the brokerage, $550 a month from 67): the purchase lowers ending net worth by $147,623 from a 2026 start and raises it by $454,837 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins U1 to the cent: -$147,622.51 from a 2026 start and +$455,165.79 from a 2027 start (main's #761 moved the 2027 figure from the derivation's, by pricing a saved example's 2027 premium tax credit from a 2027 start). The check found every tax qualification behaves the same way.
 
 The engine cannot tell which case it has, so the figure is not corrected: deducting the premium at the start would double-deduct it for every household that did update the balance. The projection names each such purchase instead (`projection/preStartEvents.ts#preStartEvents`):
 
@@ -48,7 +48,7 @@ The engine cannot tell which case it has, so the figure is not corrected: deduct
 
 Worked case for the evidence file: a $700,000 brokerage, zero returns, inflation and spending. From a 2026 start the 2026 brokerage row is `$100,000` lower with the contract than without it, and no warning is added. From a 2027 start the 2027 row is the same with and without it, and the warning above is added.
 
-Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check in C:/rgwt/staging/rollover-2027/ (derivation.md, check.md). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
 
 ## Provenance
 

@@ -34,10 +34,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/params/acaC
 
 ## Captured failing output
 
-The merge of main (c2d61967: #764, #765) into this branch moved the lines these receipts quote or the tests they capture; the mutations are unchanged. The baseline is green (acaCoverageYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of main (c2d61967: #764, #765) into this branch moved the lines these receipts quote or the tests they capture; the mutations are unchanged. The baseline is green (acaCoverageYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine21/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/params/acaCoverageYears.evidence.test.ts (4 tests | 1 failed) 31ms
    ❯ aca-coverage-year-parameters — ACA credit figures by coverage year (4)

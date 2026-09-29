@@ -44,7 +44,7 @@ A payoff year before the projection start year is reached in the first projected
 
 Worked case (the evidence file): Debt B's payoff moved to 2029 in a projection that starts in 2030. The 2030 row pays `1,000 x 1.12 = 1,120`, as for a 2030 payoff, and the warning names `$1,120, its $1,000 balance with a year of interest`. From a 2027 start the reviewer's mortgage with a 2026 payoff moved ending net worth by -$189,695.85 with nothing said.
 
-Restated 2026-09-29 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), after the independent review in C:/rgwt/staging/rollover-2027/ (review.md, finding L4). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-29 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), after the independent review (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-review.md`, finding L4). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
 
 ## Provenance
 

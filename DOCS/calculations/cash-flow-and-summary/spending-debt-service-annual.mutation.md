@@ -25,10 +25,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The independent review's fixes to D-2027-ROLLOVER moved the lines these receipts quote (the effective property sale year threaded through the property phases, the pre-start events for a sale and a debt payoff, the parameter test seam, and evidence cases added to the restated records); the mutations are unchanged. The baseline is green (annualDebtAndLongTermCare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The independent review's fixes to D-2027-ROLLOVER moved the lines these receipts quote (the effective property sale year threaded through the property phases, the pre-start events for a sale and a debt payoff, the parameter test seam, and evidence cases added to the restated records); the mutations are unchanged. The baseline is green (annualDebtAndLongTermCare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine21/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts (4 tests | 3 failed) 45ms
    ❯ spending-debt-service-annual — Annual debt service under the grow-then-pay convention (3)

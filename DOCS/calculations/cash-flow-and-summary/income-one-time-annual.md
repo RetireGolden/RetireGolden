@@ -45,7 +45,7 @@ A stream whose year is before the projection start year pays nothing, as the exa
 
 Worked case (the derivation's U1 inheritance): $50,000, not inflation-adjusted, dated 2026. From a 2026 start the 2026 row pays `$50,000` and no warning is added; from a 2027 start every row pays `$0` and the warning above is added. The evidence file asserts both.
 
-Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check in C:/rgwt/staging/rollover-2027/ (derivation.md, check.md). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
 
 ## Provenance
 
