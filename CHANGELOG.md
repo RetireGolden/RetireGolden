@@ -192,7 +192,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     Every plan's accepted tax input gains `stateHouseholdFacts.federalSeniorDeduction`.
     The report goldens and example copy state the new figures.
   - **Sources shown.** The report's parameter source appendix and the in-app source
-    list gain eighteen rows: the 2027 HSA limits (Rev. Proc. 2026-24) and one row per
+    list gain nineteen rows: the 2027 HSA limits (Rev. Proc. 2026-24) and one row per
     state with enacted figures, each linking the statute or session law that sets them
     (the North Carolina row links Session Law 2026-41's page). The state summary names
     the 2026 corrections, the November 3, 2026 votes and the changes that wait on a
@@ -202,7 +202,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     `hi-act-24-2026-rate-schedules`. New calculation records
     `hsa-contribution-limit-years` and `state-enacted-tax-year-figures`, each with a
     worksheet, an evidence test and a mutation receipt; the
-    `parameter-provenance-catalog` record now counts 34 entries. All are unreviewed.
+    `parameter-provenance-catalog` record now counts 40 entries. All are unreviewed.
 
 - **Stated: state changes that wait on a vote or a determination, and what the plan does
   not model (no displayed number changes beyond the entries above)** (decision
