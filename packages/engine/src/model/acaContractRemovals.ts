@@ -20,7 +20,11 @@
  *
  * Every removal is recorded on `healthcare.acaYearsRemoved` with the years it
  * covered, so a host can name the edit when it says why a year's credit is not
- * counted. The projection does not read the record.
+ * counted. The projection does not read the record. One kind is not an edit:
+ * 'exampleNoLongerMatched' is written only by the v5 -> v6 migration
+ * (migrations.ts#migratePlanV5ToV6), for a library example's contracts that no
+ * longer matched the plan's premium and that the v5 engine was already
+ * leaving out; no edit here produces it.
  */
 import type { Plan } from './plan.js'
 

@@ -156,6 +156,15 @@ describe('unpricedCreditSpendingNote', () => {
     expect(text).toContain('the details the credit needs were removed when a partner was removed')
     expect(text).toContain("the planner doesn't yet collect the household details the credit needs")
     expect(text).not.toContain('pre-65 premium was changed')
+    // The v5 -> v6 migration's removal of an example's contracts that no
+    // longer matched the premium is named too (PR #761 review 2).
+    expect(
+      unpricedCreditSpendingNote(facts([2027], ['missing-year-contract']), true, {
+        acaYearsRemoved: [{ edit: 'exampleNoLongerMatched' as const, years: [2027] }],
+      }),
+    ).toContain(
+      "isn't counted in 2027: the details the credit needs came from the library example and no longer matched this plan's premium, so the planner was already leaving them out.",
+    )
     // Without a record, the reason is the planner's, as before.
     expect(unpricedCreditSpendingNote(facts([2026], ['missing-year-contract']), true)).toContain(
       "the planner doesn't yet collect the household details the credit needs",

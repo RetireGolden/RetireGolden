@@ -108,6 +108,9 @@ const CONTRACT_REMOVED_BY: Record<AcaContractRemovalEdit, string> = {
   filingStatusChanged: 'the details the credit needs were removed when the filing status was changed',
   householdChanged: "the credit's written figures were removed when the household's details were changed",
   premiumChanged: "the credit's written figures were removed when the pre-65 premium was changed",
+  // The v5 -> v6 migration, not an edit (PR #761 review 2).
+  exampleNoLongerMatched:
+    "the details the credit needs came from the library example and no longer matched this plan's premium, so the planner was already leaving them out",
 }
 
 /** Where an edit removed a year's contracts: the plan's record of those removals. */

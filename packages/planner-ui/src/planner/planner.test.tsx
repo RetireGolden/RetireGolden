@@ -435,6 +435,21 @@ describe('report ACA wording', () => {
     ).toBe(', ACA credit modeled for evidenced years')
   })
 
+  it("says an example's details that no longer matched were left out, apart from an edit's removal (PR #761 review 2)", () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    plan.expenses.healthcare.acaYearsRemoved = [
+      { edit: 'exampleNoLongerMatched', years: [2026] },
+      { edit: 'partnerAdded', years: [2027] },
+    ]
+    const status = acaReportStatus(plan, [
+      { year: 2026, aca: { readiness: 'nonActionable', supportCodes: ['missing-year-contract'] } } as never,
+      { year: 2027, aca: { readiness: 'nonActionable', supportCodes: ['missing-year-contract'] } } as never,
+    ])
+    expect(status).toContain('; the credit details were removed by adding a partner')
+    expect(status).toContain("; the library example's credit details no longer matched the plan's premium and were already left out")
+  })
+
   it('distinguishes mixed actionable and non-actionable years', () => {
     const plan = createSamplePlan()
     plan.expenses.healthcare.applyAcaCredit = true

@@ -89,6 +89,13 @@ describe('PlanRepairNotice', () => {
     expect(items()[0]).not.toContain('saved from a library example')
   })
 
+  it('says the credit details that no longer matched were left out, and that no figure changes (PR #761 review 2)', async () => {
+    await mount([{ kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 3, firstYear: 2026, lastYear: 2028 }])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 3 years from 2026 to 2028, and they no longer matched the plan's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed, and none of the plan's figures change. The credit in those years is not counted until the planner has details for them.",
+    ])
+  })
+
   it('renders nothing when the load repaired nothing', async () => {
     await mount([])
     expect(container.querySelector('.plan-repair-notice')).toBeNull()

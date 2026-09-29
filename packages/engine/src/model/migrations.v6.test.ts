@@ -112,20 +112,33 @@ describe('migratePlanV5ToV6', () => {
       member['slcspBenchmarkPremiumByMonth'] = member['slcspBenchmarkPremiumByMonth']!.map((v) => (v > 0 ? amount : 0))
     }
   }
-  const bases = (raw: Record<string, unknown>) => contractsOf(migratePlanV5ToV6(raw)).map((c) => c['premiumBasis'] ?? 'stated')
+  // Each stored contract's fate, in stored order: its basis after the
+  // migration, or 'removed' when the migration took it out (review 2).
+  const bases = (raw: Record<string, unknown>) => {
+    const migrated = contractsOf(migratePlanV5ToV6(raw)) ?? []
+    return contractsOf(raw).map((stored) => {
+      const after = migrated.find((contract) => contract['year'] === stored['year'])
+      return after === undefined ? 'removed' : (after['premiumBasis'] ?? 'stated')
+    })
+  }
+  const removalsOf = (raw: Record<string, unknown>) =>
+    (migratePlanV5ToV6(raw)['expenses'] as { healthcare: { acaYearsRemoved?: unknown } }).healthcare.acaYearsRemoved
 
-  it('keeps a quote the household typed in, in the shape of the recipe, stated', () => {
-    // A real quote of $1,150 a month for both members in 2026, benchmark
-    // equal to enrollment: the recipe's shape, not its dollars ($900).
+  it('never takes a contract with the dollars of a quote for the recipe', () => {
+    // Review finding M1: a quote of $1,150 a month for both members in 2026,
+    // benchmark equal to enrollment, has the recipe's shape but not its
+    // dollars ($900), so it is not rewritten to follow the premium field. It
+    // does not match the plan's premium, so the v5 engine was leaving it out
+    // (PR #761 review 2): the migration removes it and records why.
     const quote = rawV5(couple(), 'early-retiree-aca')
     setAmount(contractsOf(quote)[0]!, 1_150)
-    expect(bases(quote)).toEqual(['stated', ...new Array<string>(7).fill('premiumField')])
-    expect(contractsOf(migratePlanV5ToV6(quote))[0]).toEqual(contractsOf(quote)[0])
-    // A later year at a real $1,400: the factor read off it alone
+    expect(bases(quote)).toEqual(['removed', ...new Array<string>(7).fill('premiumField')])
+    expect(removalsOf(quote)).toEqual([{ edit: 'exampleNoLongerMatched', years: [2026] }])
+    // A later year at $1,400: the factor read off it alone
     // ((1,400 / 900)^(1/1)) fits no other year, so it is not the plan's.
     const later = rawV5(couple(), 'early-retiree-aca')
     setAmount(contractsOf(later)[1]!, 1_400)
-    expect(bases(later)).toEqual(['premiumField', 'stated', ...new Array<string>(6).fill('premiumField')])
+    expect(bases(later)).toEqual(['premiumField', 'removed', ...new Array<string>(6).fill('premiumField')])
   })
 
   it('recognises the recipe after an inflation edit, but not after a premium edit', () => {
@@ -136,10 +149,12 @@ describe('migratePlanV5ToV6', () => {
     expect(bases(inflation).every((basis) => basis === 'premiumField')).toBe(true)
     // The premium field edited to $1,300 in the file after saving: the 2026
     // contract is not $1,300, and no one factor takes $1,300 to the later
-    // years' amounts, so none of them is the recipe's.
+    // years' amounts, so none of them is the recipe's; none matches the
+    // premium, so the v5 engine left them all out, and the migration removes
+    // them (review 2).
     const premium = rawV5(couple(), 'early-retiree-aca')
     ;(premium['expenses'] as { healthcare: Record<string, number> }).healthcare['pre65MonthlyPremiumPerPerson'] = 1_300
-    expect(bases(premium).every((basis) => basis === 'stated')).toBe(true)
+    expect(bases(premium).every((basis) => basis === 'removed')).toBe(true)
   })
 
   it('needs two contracts to agree on a factor, the plan rates included (PR #761 review 9)', () => {
@@ -151,9 +166,13 @@ describe('migratePlanV5ToV6', () => {
     const coincidence = rawV5(couple(), 'early-retiree-aca')
     ;(coincidence['expenses'] as { healthcare: Record<string, number> }).healthcare['pre65MonthlyPremiumPerPerson'] = 1_300
     setAmount(contractsOf(coincidence)[1]!, 1_300 * 1.045)
+    // The v5 engine priced it as written (it is the premium field grown at the
+    // stored rates), so it stays 'stated', as written; the others no longer
+    // matched and are removed.
     const stored2027 = structuredClone(contractsOf(coincidence)[1]!)
     const migrated2027 = contractsOf(migratePlanV5ToV6(coincidence)).find((contract) => contract['year'] === 2027)
     expect(migrated2027).toEqual(stored2027)
+    expect(bases(coincidence)).toEqual(['removed', 'stated', ...new Array<string>(6).fill('removed')])
     // With a single contract after 2026 the stored rates alone qualify, by
     // fitting it: a saved example covered in 2026 and 2027 only.
     const twoYears = rawV5(couple(), 'early-retiree-aca')
@@ -168,18 +187,19 @@ describe('migratePlanV5ToV6', () => {
     const within = rawV5(couple(), 'early-retiree-aca')
     setAmount(contractsOf(within)[0]!, 900.004)
     expect(bases(within)[0]).toBe('premiumField')
+    // $900.006 is not, and the v5 engine left it out at the same half cent.
     const outside = rawV5(couple(), 'early-retiree-aca')
     setAmount(contractsOf(outside)[0]!, 900.006)
-    expect(bases(outside)[0]).toBe('stated')
+    expect(bases(outside)[0]).toBe('removed')
     // 2027 at the plan's factor: 900 x 1.045 = 940.5.
     const later = rawV5(couple(), 'early-retiree-aca')
     setAmount(contractsOf(later)[1]!, 940.5 + 0.006)
-    expect(bases(later)[1]).toBe('stated')
+    expect(bases(later)[1]).toBe('removed')
     // A zero premium in the covered months is not the recipe's, even in every
     // year after 2026, where the one factor that fits them all would be 0.
     const zero = rawV5(couple(), 'early-retiree-aca')
     for (const contract of contractsOf(zero).slice(1)) setAmount(contract, 0)
-    expect(bases(zero)).toEqual(['premiumField', ...new Array<string>(7).fill('stated')])
+    expect(bases(zero)).toEqual(['premiumField', ...new Array<string>(7).fill('removed')])
     // The recipe wrote no year before 2026: a 2025 contract with its shape at
     // the premium field deflated by the plan's factor (900 / 1.045) is stated.
     const earlier = rawV5(couple(), 'early-retiree-aca')
@@ -211,7 +231,8 @@ describe('migratePlanV5ToV6', () => {
     // A covered member with a field the recipe never wrote.
     expect(variant((c) => void (member(c[0]!, 0)['note'] = 'quote from the broker'))[0]).toBe('stated')
     // A premium in a Medicare month: Blair turns 65 in September 2028, so
-    // January to August are covered and November is not.
+    // January to August are covered and November is not. The v5 engine left
+    // that contract out (a premium where none was expected), so it is removed.
     expect(
       variant((c) => {
         const blair = member(c[2]!, 1) as Record<string, number[]>
@@ -219,7 +240,7 @@ describe('migratePlanV5ToV6', () => {
         blair['enrollmentPremiumByMonth']![10] = amount
         blair['slcspBenchmarkPremiumByMonth']![10] = amount
       })[2],
-    ).toBe('stated')
+    ).toBe('removed')
     // Age-rated premiums: Alex at the premium field ($900), Blair at $950.
     expect(
       variant((c) => {
@@ -373,5 +394,85 @@ describe('migratePlanV5ToV6', () => {
       expect(b.years.find((row) => row.year === year)?.aca?.readiness).toBe('actionable')
       expect(b.years.find((row) => row.year === year)?.aca?.modeledAllowablePtc).toBeGreaterThan(0)
     }
+  })
+
+  // PR #761 review 2: a saved example whose premium, inflation or household
+  // was changed after saving holds contracts that came from the recipe but no
+  // longer match its premium. The v5 engine was leaving them out at run time
+  // (gross premium, no credit), so the migration removes them and records it,
+  // and the plan's figures do not change. The figures below were measured on
+  // the v5 engine (origin/main 5224c5d0) for these same documents, deterministic
+  // run from 2026 with this file's production tax calculator: depletion year,
+  // healthcare spending 2026-2029, and investable balances 2026-2031. Every
+  // ledger value of each document was identical between the two engines.
+  it('leaves out the contracts the v5 engine was leaving out, and the figures do not change (PR #761 review 2)', () => {
+    const healthcareOf = (raw: Record<string, unknown>) => (raw['expenses'] as { healthcare: Record<string, unknown> }).healthcare
+    const docs: Record<string, { edit: (raw: Record<string, unknown>) => void; v5: { depletion: number; healthcare: number[]; investable: number[] }; removed: number[] }> = {
+      'premium edited to $1,300': {
+        edit: (raw) => void (healthcareOf(raw)['pre65MonthlyPremiumPerPerson'] = 1_300),
+        v5: {
+          depletion: 2048,
+          healthcare: [31_200, 32_604, 29_278.94, 20_580.7],
+          investable: [857_676.8, 812_815.52, 770_810.13, 735_874.09, 698_797.04, 659_506.93],
+        },
+        removed: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033],
+      },
+      'inflation edited, one contract after 2026': {
+        edit: (raw) => {
+          healthcareOf(raw)['acaYears'] = contractsOf(raw).slice(0, 2)
+          ;(raw['assumptions'] as Record<string, number>)['inflationPct'] = 3.5
+        },
+        v5: {
+          depletion: 2046,
+          healthcare: [2_428, 22_788, 20_937.78, 15_540.85],
+          investable: [886_448.8, 850_949.89, 816_286.34, 784_953.93, 751_015.67, 714_334],
+        },
+        removed: [2027],
+      },
+      "Blair's date of birth a year earlier": {
+        edit: (raw) => void ((raw['household'] as { people: Record<string, unknown>[] }).people[1]!['dob'] = '1962-09-15'),
+        v5: {
+          depletion: 2049,
+          healthcare: [2_428, 19_658.12, 14_452.73, 15_103.11],
+          investable: [886_448.8, 855_307.31, 828_128.13, 798_669.69, 767_316.73, 734_008.28],
+        },
+        removed: [2027, 2028],
+      },
+      'a $1,150 quote for 2026': {
+        edit: (raw) => setAmount(contractsOf(raw)[0]!, 1_150),
+        v5: {
+          depletion: 2049,
+          healthcare: [21_600, 2_396, 20_542.74, 15_103.11],
+          investable: [867_276.8, 852_623.52, 819_354.33, 789_895.89, 758_542.93, 725_234.49],
+        },
+        removed: [2026],
+      },
+    }
+    for (const [name, { edit, v5, removed }] of Object.entries(docs)) {
+      const raw = rawV5(couple(), 'early-retiree-aca')
+      edit(raw)
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok, name).toBe(true)
+      if (!result.ok) continue
+      expect(result.plan.expenses.healthcare.acaYearsRemoved, name).toEqual([{ edit: 'exampleNoLongerMatched', years: removed }])
+      expect(result.repairs.find((repair) => repair.kind === 'exampleContractsLeftOut'), name).toEqual({
+        kind: 'exampleContractsLeftOut',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: removed.length,
+        firstYear: removed[0],
+        lastYear: removed.at(-1),
+      })
+      const projection = simulatePlan(result.plan, { startYear: 2026, taxCalculator: productionTaxCalculator() })
+      expect(projection.depletionYear, name).toBe(v5.depletion)
+      v5.healthcare.forEach((value, index) => expect(projection.years[index]!.expenses.healthcare, `${name} healthcare ${2026 + index}`).toBeCloseTo(value, 2))
+      v5.investable.forEach((value, index) => expect(projection.years[index]!.investableTotal, `${name} investable ${2026 + index}`).toBeCloseTo(value, 2))
+    }
+    // A contract that did not come from the recipe (a benchmark unlike its
+    // premium) is kept as it is, 'stated', whatever it holds.
+    const household = rawV5(couple(), 'early-retiree-aca')
+    healthcareOf(household)['pre65MonthlyPremiumPerPerson'] = 1_300
+    const own = contractsOf(household)[0]!
+    ;(own['coveredMembers'] as Record<string, number[]>[])[0]!['slcspBenchmarkPremiumByMonth']![0] = 950
+    expect(bases(household)).toEqual(['stated', ...new Array<string>(7).fill('removed')])
   })
 })

@@ -108,8 +108,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   document with `newer_than_app`. Migration 5 to 6 rewrites the contracts the example
   recipe wrote, on a plan that carries `exampleSourceId`, to `'premiumField'`: the
   recipe's shape and the recipe's dollars (the premium field times one growth factor per
-  plan to the power of the years since 2026, to half a cent), so a quote a household typed
-  into a saved example stays `'stated'`. It reports the new
+  plan to the power of the years since 2026, to half a cent). A contract from the recipe
+  that no longer matched the plan's premium (the premium, the inflation or the household
+  changed after saving, or a quote typed in its shape) was already left out by the v5
+  engine, so the migration removes it, records it in `healthcare.acaYearsRemoved` as
+  `'exampleNoLongerMatched'` and reports the new `exampleContractsLeftOut` repair; the
+  figures do not change (measured against the v5 engine on four such documents: every
+  ledger value identical). It reports the new
   `exampleContractsFollowPremiumField` load repair, which carries no `accountId`; the load
   notice words it differently for the library's own demo record, and restoring a v5 backup
   now says the same in the import notice. An unedited converted plan projects to the same

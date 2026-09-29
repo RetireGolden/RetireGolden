@@ -2315,8 +2315,18 @@ export const healthcareConfigSchema = z.object({
     .array(
       z.object({
         edit: z
-          .enum(['partnerAdded', 'partnerRemoved', 'peopleChanged', 'filingStatusChanged', 'householdChanged', 'premiumChanged'])
-          .describe('The edit that removed the contracts.'),
+          .enum([
+            'partnerAdded',
+            'partnerRemoved',
+            'peopleChanged',
+            'filingStatusChanged',
+            'householdChanged',
+            'premiumChanged',
+            'exampleNoLongerMatched',
+          ])
+          .describe(
+            "The edit that removed the contracts; 'exampleNoLongerMatched' is the v5 -> v6 migration removing contracts a library example wrote that no longer matched the plan's premium, which the v5 engine was already leaving out.",
+          ),
         years: z.array(calendarYear).describe('The coverage years whose contracts the edit removed.'),
       }),
     )

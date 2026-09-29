@@ -63,9 +63,27 @@ function exampleContractsMessage(
   return `This plan was saved from a library example and carried the example's premium tax credit details for ${years}, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: ${follows}`
 }
 
+/**
+ * The v5 -> v6 removal of an example's premium-credit contracts that no longer
+ * matched the plan's premium (PR #761 review 2): the v5 engine was already
+ * leaving them out, so the figures do not change, and the notice says so.
+ */
+function exampleContractsLeftOutMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsLeftOut' }>,
+  plan: Plan,
+): string {
+  const years =
+    repair.contractCount === 1
+      ? `${repair.firstYear}`
+      : `${repair.contractCount} years from ${repair.firstYear} to ${repair.lastYear}`
+  const copy = plan.origin === 'example' ? 'This copy of the library example was stored in this browser with' : 'This plan was saved from a library example and carried'
+  return `${copy} the example's premium tax credit details for ${years}, and they no longer matched the plan's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed, and none of the plan's figures change. The credit in those years is not counted until the planner has details for them.`
+}
+
 /** One repair, as a paragraph for the household. */
 export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
   if (repair.kind === 'exampleContractsFollowPremiumField') return exampleContractsMessage(repair, plan)
+  if (repair.kind === 'exampleContractsLeftOut') return exampleContractsLeftOutMessage(repair, plan)
   const account = named(repair.accountName, 'An account')
   switch (repair.kind) {
     case 'accountOwnerBackFilled':

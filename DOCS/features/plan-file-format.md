@@ -206,11 +206,19 @@ premium, the recipe's facts) and the recipe's dollars (the premium field in 2026
 the premium field times one growth factor per plan to the power of the years since
 2026 after it, to half a cent; the factor is the plan's stored rates when they fit,
 else the one at least two contracts agree on, so an inflation edit after saving does
-not hide the recipe). A quote the household typed in stays `'stated'`. The load reports the
-`exampleContractsFollowPremiumField` repair. Every other contract stays `'stated'`. An
-unedited converted plan projects to the same figures to the cent; saved scenarios that
-write the contracts are rewritten on both legs, as in v5. `exampleSourceId` is
-provenance only: the projection never reads it.
+not hide the recipe). The load reports the `exampleContractsFollowPremiumField` repair.
+A contract that came from the recipe (its facts, a family of primary and spouse members
+required to file with MAGI 0, one shared amount with benchmark equal to premium) but no
+longer matches the plan's premium, because the premium, the inflation or the household
+changed after saving or a quote was typed in its shape, was already left out by the v5
+engine at run time (gross premium, no credit): the migration removes it, records its year
+in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`, and reports the
+`exampleContractsLeftOut` repair, so the plan's figures do not change. One the v5 engine
+priced as written (the premium field at the plan's stored rates) stays `'stated'`, and so
+does every contract not in the recipe's shape. An unedited converted plan projects to the
+same figures to the cent; saved scenarios that write the contracts are rewritten on both
+legs, as in v5, and keep any contract that no longer matches as they wrote it.
+`exampleSourceId` is provenance only: the projection never reads it.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

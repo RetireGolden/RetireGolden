@@ -60,7 +60,7 @@ export function acaProjectedIncomeTaxNote(years: YearResult[]): string | null {
 }
 
 /** The report's clause for an edit that removed the credit's details (review finding M2). */
-const REMOVED_BY_PHRASE: Record<AcaContractRemovalEdit, string> = {
+const REMOVED_BY_PHRASE: Record<Exclude<AcaContractRemovalEdit, 'exampleNoLongerMatched'>, string> = {
   partnerAdded: 'adding a partner',
   partnerRemoved: 'removing a partner',
   peopleChanged: 'changing the people in the household',
@@ -83,7 +83,15 @@ function removedDetailsClause(plan: Plan, years: YearResult[]): string {
         .filter((edit): edit is AcaContractRemovalEdit => edit !== null),
     ),
   ]
-  return edits.length === 0 ? '' : `; the credit details were removed by ${edits.map((edit) => REMOVED_BY_PHRASE[edit]).join(' and ')}`
+  const byEdit = edits.filter((edit): edit is Exclude<AcaContractRemovalEdit, 'exampleNoLongerMatched'> => edit !== 'exampleNoLongerMatched')
+  const clauses = [
+    ...(byEdit.length === 0 ? [] : [`the credit details were removed by ${byEdit.map((edit) => REMOVED_BY_PHRASE[edit]).join(' and ')}`]),
+    // Removed by the v5 -> v6 migration, not an edit (PR #761 review 2).
+    ...(edits.includes('exampleNoLongerMatched')
+      ? ["the library example's credit details no longer matched the plan's premium and were already left out"]
+      : []),
+  ]
+  return clauses.length === 0 ? '' : `; ${clauses.join('; ')}`
 }
 
 export function acaReportStatus(plan: Plan, years: YearResult[]): string {
