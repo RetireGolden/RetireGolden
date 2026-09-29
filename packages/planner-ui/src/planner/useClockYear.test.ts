@@ -7,7 +7,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { msUntilNextLocalNewYear } from './useProjection'
+import { msUntilNextLocalNewYear } from '../startYear'
 
 // `process` is read off globalThis: the package tsconfig omits node types, and vitest runs in node.
 const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process!.env
