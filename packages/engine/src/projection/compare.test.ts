@@ -293,7 +293,10 @@ describe("FI figures on the household's later retirement (D-PEOPLE-ORDER, R4)", 
     plan.expenses.baseAnnual = 40_000
     plan.incomes = [
       { type: 'wages', id: 'w1', personId: 'p1', annualGross: 90_000, endAge: 40, realGrowthPct: 0 },
-      { type: 'wages', id: 'w2', personId: 'p2', annualGross: 60_000, endAge: 45, realGrowthPct: 0 },
+      // Sam's wages stop at Sam's retirement age: wages paid past it would
+      // move Sam's retirement to the year they stop (round-one review of
+      // #765, issues 1 and 3), and the tie below would not be one.
+      { type: 'wages', id: 'w2', personId: 'p2', annualGross: 60_000, endAge: secondRetirementAge ?? 45, realGrowthPct: 0 },
     ]
     plan.accounts = [{ type: 'cash', id: 'cash1', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 300_000, annualContribution: 0 }]
     const r = parsePlan(plan)
