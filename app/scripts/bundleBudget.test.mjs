@@ -13,6 +13,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CHUNK_BUDGETS,
+  CHUNK_MODULE_EXCLUSIONS,
+  chunkModuleExclusionFailures,
   chunksNamingTestFiles,
   DEFAULT_CHUNK_KIB,
   ENTRY_KIB,
@@ -448,5 +450,73 @@ describe('chunksNamingTestFiles', () => {
 
   it('is empty when the counts ship as numbers and names', () => {
     expect(chunksNamingTestFiles([{ name: 'HowTestedPage-b.js', source: 'var t={goldenSuiteCount:25}' }])).toEqual([])
+  })
+})
+
+describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes)', () => {
+  const REPORT_MODEL = 'packages/planner-ui/src/report/reportModel.ts'
+  const jsNames = ['index-a.js', 'PlanRoutes-b.js', 'downloadReport-c.js']
+  const mapWith = (planRoutesModules) => ({
+    chunks: {
+      'index-a.js': ['packages/planner-ui/src/main.tsx'],
+      'PlanRoutes-b.js': planRoutesModules,
+      'downloadReport-c.js': [REPORT_MODEL],
+    },
+  })
+
+  it('excludes the report model from the plan route group', () => {
+    const planRoutes = CHUNK_MODULE_EXCLUSIONS.find((e) => e.label === 'plan route group (PlanRoutes)')
+    expect(planRoutes?.modules).toContain(REPORT_MODEL)
+    expect(planRoutes?.match.test('PlanRoutes-BA7PFSgO.js')).toBe(true)
+  })
+
+  it('passes, and says what it checked, when the chunk does not hold the module', () => {
+    const { failures, checked } = chunkModuleExclusionFailures(
+      jsNames,
+      mapWith(['packages/planner-ui/src/routes/PlanRoutes.tsx']),
+    )
+    expect(failures).toEqual([])
+    expect(checked).toEqual([
+      { label: 'plan route group (PlanRoutes)', name: 'PlanRoutes-b.js', modules: [REPORT_MODEL] },
+    ])
+  })
+
+  it('fails, naming the chunk and the module, when an import pulls it in', () => {
+    const { failures, checked } = chunkModuleExclusionFailures(
+      jsNames,
+      mapWith(['packages/planner-ui/src/routes/PlanRoutes.tsx', REPORT_MODEL]),
+    )
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toContain('PlanRoutes-b.js contains packages/planner-ui/src/report/reportModel.ts')
+    expect(checked).toEqual([])
+  })
+
+  it('fails closed when the build wrote no module map', () => {
+    for (const map of [null, {}, { chunks: {} }]) {
+      const { failures } = chunkModuleExclusionFailures(jsNames, map)
+      expect(failures).toHaveLength(1)
+      expect(failures[0]).toMatch(/module membership is unmeasured/)
+    }
+  })
+
+  it('fails closed when the map is from a different build', () => {
+    const stale = { chunks: { ...mapWith([]).chunks, 'PlanRoutes-old.js': [REPORT_MODEL] } }
+    const { failures } = chunkModuleExclusionFailures(jsNames, stale)
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatch(/PlanRoutes-old\.js\), so it describes a different build/)
+  })
+
+  it('fails closed when the map does not describe the matching chunk', () => {
+    const { failures } = chunkModuleExclusionFailures(jsNames, {
+      chunks: { 'index-a.js': [], 'downloadReport-c.js': [REPORT_MODEL] },
+    })
+    expect(failures).toEqual([
+      'plan route group (PlanRoutes): PlanRoutes-b.js is not in the chunk module map, so its modules are unmeasured',
+    ])
+  })
+
+  it('fails closed when no chunk matches', () => {
+    const { failures } = chunkModuleExclusionFailures(['index-a.js'], { chunks: { 'index-a.js': [] } })
+    expect(failures).toEqual(['plan route group (PlanRoutes): no chunk matched, so its module exclusions are unmeasured'])
   })
 })

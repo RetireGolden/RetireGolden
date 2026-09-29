@@ -442,3 +442,19 @@ Measured and left alone: terser (+339 KiB), `target: esnext` (no change), lazy-l
 builders (moves bytes between chunks), and the second copy of the engine in the worker graph (about
 1 MiB), which only an asynchronous projection on the worker would remove. That is an architecture change,
 not a size fix.
+
+## Keeping the report model out of `PlanRoutes`
+
+On 2026-09-29 `PlanRoutes` measured 291.2 of 300 KiB, with queued branches adding about 12 KiB. The
+retirement-account editor had imported one caution string from `report/reportModel.ts`, and because a
+module lands whole in one chunk, that put the entire report model (about 17 KiB) in the chunk every plan
+visit loads. The string moved to `planner/professionalConfirmation.ts` (the report-model subpath still
+re-exports it), and `PlanRoutes` fell to 274.5 KiB with no row raised.
+
+Minified chunks no longer say which module a byte came from, so the build records it: `chunkModuleMap` in
+[`app/vite.config.ts`](../../app/vite.config.ts) writes each app chunk's modules to
+`app/node_modules/.vite/chunk-modules.json` (not `dist/`, which is deployed), and
+`CHUNK_MODULE_EXCLUSIONS` in [`bundleBudget.mjs`](../../app/scripts/bundleBudget.mjs) fails the budget
+when `PlanRoutes` holds `report/reportModel.ts`, whatever chain of imports put it there. It fails closed:
+a missing map, a map naming chunks this build did not emit, or a `PlanRoutes` chunk the map does not
+describe are all failures.

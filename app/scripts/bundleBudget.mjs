@@ -325,6 +325,87 @@ export function chunksNamingTestFiles(chunks) {
     .sort()
 }
 
+const planRoutesBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'plan route group (PlanRoutes)')
+if (planRoutesBudget === undefined) {
+  throw new Error('bundleBudget.mjs: missing CHUNK_BUDGETS row labeled "plan route group (PlanRoutes)"')
+}
+
+/**
+ * Source modules (repo-relative paths) that must not render code into a
+ * chunk class. The check reads the build's own module-to-chunk record
+ * (`chunkModuleMap` in app/vite.config.ts), so it catches a module pulled in
+ * through any chain of imports, which a grep of import statements would not.
+ */
+export const CHUNK_MODULE_EXCLUSIONS = [
+  {
+    label: planRoutesBudget.label,
+    match: planRoutesBudget.match,
+    modules: ['packages/planner-ui/src/report/reportModel.ts'],
+    // One string imported from reportModel by the retirement-account editor
+    // once put the whole report model (about 17 KiB) in PlanRoutes, which
+    // every plan visit loads. Only the Results, Report and Optimize pages
+    // build a report, and they load it from their own chunk.
+    why:
+      'only the Results, Report and Optimize pages build a report; import what a plan page needs from a ' +
+      'smaller module (the Roth five-year note lives in planner/professionalConfirmation.ts for this reason)',
+  },
+]
+
+/**
+ * Check CHUNK_MODULE_EXCLUSIONS against the build's module map.
+ *
+ * `jsNames`   every JS file name in dist/assets.
+ * `moduleMap` `{ chunks: { [chunkFileName]: string[] } }` as the build wrote
+ *             it, or `null` when it could not be read.
+ *
+ * Returns `{ failures, checked }`, where `checked` lists `{ label, name,
+ * modules }` for each chunk that was measured and found clean. Fails closed
+ * like the rest of this file: a missing map, a map from a different build
+ * (it names a chunk dist/assets does not hold), or a matching chunk the map
+ * does not describe are all failures, never a silent pass.
+ */
+export function chunkModuleExclusionFailures(jsNames, moduleMap, exclusions = CHUNK_MODULE_EXCLUSIONS) {
+  const failures = []
+  const checked = []
+  const mapped = moduleMap?.chunks
+  if (mapped === null || typeof mapped !== 'object' || Object.keys(mapped).length === 0) {
+    failures.push(
+      "could not read the build's chunk module map (written by vite build, see chunkModuleMap in " +
+        'app/vite.config.ts), so module membership is unmeasured; run a build first',
+    )
+    return { failures, checked }
+  }
+  const onDisk = new Set(jsNames)
+  const stale = Object.keys(mapped).filter((name) => !onDisk.has(name))
+  if (stale.length > 0) {
+    failures.push(
+      `the chunk module map names ${stale.length} chunk(s) not in dist/assets (${stale.slice(0, 3).join(', ')}` +
+        `${stale.length > 3 ? ', …' : ''}), so it describes a different build; rebuild`,
+    )
+    return { failures, checked }
+  }
+  for (const exclusion of exclusions) {
+    const names = jsNames.filter((name) => exclusion.match.test(name))
+    if (names.length === 0) {
+      failures.push(`${exclusion.label}: no chunk matched, so its module exclusions are unmeasured`)
+      continue
+    }
+    for (const name of names) {
+      const modules = mapped[name]
+      if (!Array.isArray(modules)) {
+        failures.push(`${exclusion.label}: ${name} is not in the chunk module map, so its modules are unmeasured`)
+        continue
+      }
+      const present = exclusion.modules.filter((module) => modules.includes(module))
+      for (const module of present) {
+        failures.push(`${exclusion.label} - ${name} contains ${module}: ${exclusion.why}`)
+      }
+      if (present.length === 0) checked.push({ label: exclusion.label, name, modules: exclusion.modules })
+    }
+  }
+  return { failures, checked }
+}
+
 /**
  * The URLs workbox lists in the generated service worker's precache manifest.
  *
