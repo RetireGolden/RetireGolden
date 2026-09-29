@@ -9,10 +9,13 @@
  * of the year the page projects from (`asOfIssues` with
  * `projectionStartYear(plan)`, decision D-2027-ROLLOVER): an elected pension
  * lump sum dated before that year. The second is checked on load, on every
- * edit and at every save, against the same year the projection uses, so the
- * page, the save and the projection can never disagree about which year has
- * passed. A stored plan always opens; a refused save lists its issues ("Fix 1
- * issue to store") and is never reported as a storage failure.
+ * edit and at every save, against the same year the projection uses, and
+ * again when that year changes with no edit: a plan left open across New Year
+ * renders again at local midnight (`useClockYear`) and, if an election has
+ * just gone stale, reads "Fix 1 issue to store" at once (PR #768 review issues
+ * 4 and 8). So the page, the save and the projection never disagree about
+ * which year has passed. A stored plan always opens; a refused save lists its
+ * issues and is never reported as a storage failure.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -22,6 +25,7 @@ import { asOfIssues } from '@retiregolden/engine/model/asOfIssues'
 import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { projectionStartYear } from '../startYear'
+import { useClockYear } from '../useClockYear'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
@@ -86,6 +90,13 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     planId,
     repairs: [],
   })
+  // The start year the as-of check last ran against, set on load. When the
+  // plan's start year differs at a render (the clock crossed New Year), the
+  // check runs again during that render; see below.
+  const [asOfCheckedYear, setAsOfCheckedYear] = useState<number | null>(null)
+  // Renders the provider, and so every page reading the start year during
+  // render, again at the next local New Year.
+  useClockYear()
   const timer = useRef<number | null>(null)
   const latestValid = useRef<Plan | null>(null)
   // Latest read-only value, read inside the debounced save. A save can be
@@ -113,7 +124,9 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       // the year the page projects from (an election year that has passed
       // since it was saved), the page says so at once and holds the next save
       // until it is fixed; nothing is changed on the household's behalf.
-      const stale = asOfIssues(loaded, projectionStartYear(loaded))
+      const loadedStartYear = projectionStartYear(loaded)
+      setAsOfCheckedYear(loadedStartYear)
+      const stale = asOfIssues(loaded, loadedStartYear)
       if (stale.length > 0) {
         latestValid.current = null
         setIssues(stale)
@@ -315,6 +328,24 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       flushPendingSave()
     }
   }, [flushPendingSave])
+
+  // The start year moved with no edit (a user plan open across local
+  // midnight on 31 December): run the as-of check again against the new year,
+  // during this render, as React's "adjust state when an input changes"
+  // pattern does. Only a plan that is currently valid is re-judged, so a
+  // parse issue already listed is never replaced; a pending autosave of it is
+  // refused at save by the same year (`runSave`).
+  const startYearNow = plan === null ? null : projectionStartYear(plan)
+  if (plan !== null && startYearNow !== null && asOfCheckedYear !== null && startYearNow !== asOfCheckedYear) {
+    setAsOfCheckedYear(startYearNow)
+    if (saveState !== 'invalid' && saveState !== 'loading') {
+      const stale = asOfIssues(plan, startYearNow)
+      if (stale.length > 0) {
+        setIssues(stale)
+        setSaveState('invalid')
+      }
+    }
+  }
 
   // An error tagged for a different plan belongs to the plan being navigated
   // away from, so it says nothing about this one.

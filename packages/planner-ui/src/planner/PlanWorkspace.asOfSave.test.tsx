@@ -204,6 +204,30 @@ describe('New Year instants: the save judges the start year, on the local calend
   })
 })
 
+describe('a plan left open across local midnight on 31 December, with no click (review issues 4 and 8)', () => {
+  it('reads "Fix 1 issue to store" once its start year becomes 2027, and holds the save', async () => {
+    const seeded = await seedSavedIn2026()
+    // 23:59:59 on 31 December in New York: the plan starts in 2026 and its
+    // 2026 election is current, so the chip reads saved.
+    clock('America/New_York', '2027-01-01T04:59:59.000Z')
+    await mount(seeded.id)
+    await waitFor(() => chip() === 'Stored on this device', { what: 'the saved chip before midnight' })
+    expect(issueText()).toBe('')
+
+    // Midnight passes. Nothing is clicked; the workspace renders again at the
+    // local New Year (useClockYear's timer) and judges the plan from 2027.
+    await act(async () => {
+      vi.setSystemTime(new Date('2027-01-01T05:00:01.000Z'))
+      await sleep(1_500)
+    })
+    await settle()
+    await waitFor(() => chip() === 'Fix 1 issue to store', { what: 'the invalid chip after midnight' })
+    expect(issueText()).toBe(ISSUE)
+    const held = await loadPlan(seeded.id)
+    expect(held.ok && held.plan.updatedAtIso).toBe('2026-10-15T12:00:00.000Z')
+  })
+})
+
 describe('a save the check refuses is surfaced, never reported as a storage failure', () => {
   it('an edit made before local midnight and saved after it lists the issue', async () => {
     const seeded = await seedSavedIn2026()

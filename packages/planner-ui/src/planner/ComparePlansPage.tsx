@@ -23,6 +23,7 @@ import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { compareStartYear, projectPlan, projectionStartYear, type ProjectionView } from './useProjection'
+import { useClockYear } from '../useClockYear'
 import { EXAMPLE_FIXED_YEAR } from './examples/exampleClock'
 import { compareExampleNote } from './compareExampleNote'
 import { ScrollRegion } from './ScrollRegion'
@@ -190,6 +191,12 @@ export function ComparePlansPage() {
   const [right, setRight] = useState<ComparedPlan | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
+  // The clock's year, re-read at the next local New Year: a comparison left
+  // open across midnight on 31 December runs again from the new year with no
+  // click (PR #768 review issue 3). The effect below reads the clock when it
+  // runs and lists this year among its inputs so it runs again then.
+  const clockYear = useClockYear()
+
   // A rejected list must not leave the skeleton up forever, and an empty list
   // must not be mistaken for "you only have one plan": one is a browser that
   // refused, the other is a library the user can act on.
@@ -251,7 +258,7 @@ export function ComparePlansPage() {
     return () => {
       cancelled = true
     }
-  }, [leftId, rightId, store])
+  }, [leftId, rightId, store, clockYear])
 
   const options = summaries ?? []
   const canCompare = left !== null && right !== null && left.plan.id !== right.plan.id
