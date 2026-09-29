@@ -168,6 +168,32 @@ describe('PlanRepairNotice', () => {
     ])
   })
 
+  it('says details changed by hand are kept as entered and Monte Carlo can move, for the plan, the demo record and a scenario (PR #761 second review)', async () => {
+    const repairs = [
+      { kind: 'exampleEditedContractsKept' as const, exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2027, lastYear: 2027 },
+      {
+        kind: 'exampleEditedContractsKept' as const,
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 2,
+        firstYear: 2026,
+        lastYear: 2027,
+        scenario: { id: 's1', name: 'Hand-edited' },
+      },
+    ]
+    await mount(repairs)
+    expect(items()).toEqual([
+      'This plan came from a library example, and some of its premium tax credit details, for 2027, were changed by hand. They are kept as entered. The year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.',
+      "The scenario \u201cHand-edited\u201d writes premium tax credit details for 2 years from 2026 to 2027 that were changed by hand from the example's. They are kept as entered. The scenario's year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.",
+    ])
+    expect(container.querySelectorAll('.plan-repair-notice p')[1]!.textContent).toBe(
+      "This plan came from a library example, and the app now handles an example's premium tax credit details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
+    )
+    await mount([repairs[0]!], () => undefined, { ...createSamplePlan(), origin: 'example' as const })
+    expect(items()).toEqual([
+      'This copy of the library example stored in this browser has premium tax credit details for 2027 that were changed by hand. They are kept as entered. The year-by-year figures stay the same. Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.',
+    ])
+  })
+
   it('renders nothing when the load repaired nothing', async () => {
     await mount([])
     expect(container.querySelector('.plan-repair-notice')).toBeNull()

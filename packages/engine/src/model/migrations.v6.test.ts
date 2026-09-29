@@ -662,4 +662,52 @@ describe('migratePlanV5ToV6', () => {
       scenario: { id: 's-priced', name: 'Own figures' },
     })
   })
+
+  it('keeps as entered, and announces, a contract changed by hand that the v5 engine priced as written (PR #761 second review)', () => {
+    // The 2027 contract's benchmark changed by hand to $1,000, its premium
+    // still the example's $940.50 (900 x 1.045): the v5 engine priced it as
+    // written, and the premium-field fill would not reproduce it (its
+    // benchmark would be the premium), so it stays 'stated'. Its Monte Carlo
+    // fate changes (the v5 engine dropped it on any path whose inflation
+    // differed; v6 counts it at its entered dollars on every path), so the
+    // load announces it.
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const contract = contractsOf(raw)[1]!
+    for (const member of contract['coveredMembers'] as Record<string, number[]>[]) {
+      member['slcspBenchmarkPremiumByMonth'] = member['slcspBenchmarkPremiumByMonth']!.map((v) => (v > 0 ? 1_000 : 0))
+    }
+    raw['scenarios'] = [{ id: 's1', name: 'Hand-edited', patch: { expenses: { healthcare: { acaYears: structuredClone(contractsOf(raw)) } } } }]
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const kept = result.plan.expenses.healthcare.acaYears?.find((entry) => entry.year === 2027)
+    expect(kept?.premiumBasis).toBeUndefined()
+    expect(kept).toEqual(contract)
+    expect(result.repairs.filter((repair) => repair.kind === 'exampleEditedContractsKept')).toEqual([
+      { kind: 'exampleEditedContractsKept', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2027, lastYear: 2027 },
+      {
+        kind: 'exampleEditedContractsKept',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 1,
+        firstYear: 2027,
+        lastYear: 2027,
+        scenario: { id: 's1', name: 'Hand-edited' },
+      },
+    ])
+    // The deterministic figures equal the v5 engine's, measured on origin/main
+    // 5224c5d0 for this document (every ledger value identical): healthcare
+    // spending, the credit and the investable balance, 2026-2028.
+    const years = simulatePlan(result.plan, { startYear: 2026, taxCalculator: productionTaxCalculator() }).years.slice(0, 3)
+    const v5 = [
+      [2_428, 19_172, 886_448.8],
+      [968, 21_604, 873_223.52],
+      [20_542.74, null, 839_954.33],
+    ]
+    v5.forEach(([healthcare, credit, investable], index) => {
+      expect(years[index]!.expenses.healthcare, `healthcare ${2026 + index}`).toBeCloseTo(healthcare!, 2)
+      if (credit === null) expect(years[index]!.aca?.modeledAllowablePtc ?? null).toBeNull()
+      else expect(years[index]!.aca?.modeledAllowablePtc, `credit ${2026 + index}`).toBeCloseTo(credit, 2)
+      expect(years[index]!.investableTotal, `investable ${2026 + index}`).toBeCloseTo(investable!, 2)
+    })
+  })
 })

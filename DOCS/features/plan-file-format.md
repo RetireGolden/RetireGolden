@@ -221,7 +221,12 @@ did, follows the premium field on every Monte Carlo path, where `'stated'` would
 nominal dollars. The rewrite repair says the year-by-year figures stay the same, except in
 the years the v5 engine was leaving out (`previouslyLeftOut`), and that Monte Carlo now
 counts the credit on every simulated market, which can move the success rate. Every other
-contract stays `'stated'`. Among those, one the v5 engine refused
+contract stays `'stated'`. Among those, one changed by hand out of the fill's shape (a
+benchmark unlike the premium, say) that the v5 engine priced as written is kept as entered
+and announced (`exampleEditedContractsKept`): the year-by-year figures stay the same, but
+Monte Carlo now counts it at its entered dollars on every simulated market, where the v5
+engine dropped it on any market whose inflation differed, which can move the success rate.
+One the v5 engine refused
 because it did not match the example's premium (a contract entered for the plan, say, with
 its own benchmark) is now priced as entered, so that year's figures change: the load reports
 `exampleEnteredContractsNowPriced` and the notice says the figures change. An unedited

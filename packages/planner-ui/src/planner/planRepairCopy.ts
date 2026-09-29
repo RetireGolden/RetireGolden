@@ -43,6 +43,7 @@ const EXAMPLE_CONTRACT_REPAIR_KINDS: ReadonlySet<PlanLoadRepair['kind']> = new S
   'exampleContractsFollowPremiumField',
   'exampleContractsLeftOut',
   'exampleEnteredContractsNowPriced',
+  'exampleEditedContractsKept',
 ])
 
 /** The notice's lead paragraph for these repairs. */
@@ -164,11 +165,34 @@ function exampleEnteredContractsMessage(
   return `${copy} premium tax credit details for ${years} that were entered for it, not written by the example. ${refused} They are now priced as entered, so the credit in those years, and your plan's figures, change.`
 }
 
+/**
+ * Premium-credit details changed by hand from the example's shape, which the
+ * v5 engine priced as written: kept as entered, with the same year-by-year
+ * figures, but Monte Carlo now counts them on every simulated market at their
+ * entered dollars, which can move the success rate (PR #761 second review).
+ */
+function exampleEditedContractsMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleEditedContractsKept' }>,
+  plan: Plan,
+): string {
+  const years = repairYears(repair)
+  const monteCarlo =
+    'Monte Carlo now counts these details on every simulated market at their entered dollars, which can move the success rate.'
+  if (repair.scenario !== undefined) {
+    return `${scenarioLabel(repair.scenario)} writes premium tax credit details for ${years} that were changed by hand from the example's. They are kept as entered. The scenario's year-by-year figures stay the same. ${monteCarlo}`
+  }
+  if (plan.origin === 'example') {
+    return `This copy of the library example stored in this browser has premium tax credit details for ${years} that were changed by hand. They are kept as entered. The year-by-year figures stay the same. ${monteCarlo}`
+  }
+  return `This plan came from a library example, and some of its premium tax credit details, for ${years}, were changed by hand. They are kept as entered. The year-by-year figures stay the same. ${monteCarlo}`
+}
+
 /** One repair, as a paragraph for the household. */
 export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
   if (repair.kind === 'exampleContractsFollowPremiumField') return exampleContractsMessage(repair, plan)
   if (repair.kind === 'exampleContractsLeftOut') return exampleContractsLeftOutMessage(repair, plan)
   if (repair.kind === 'exampleEnteredContractsNowPriced') return exampleEnteredContractsMessage(repair, plan)
+  if (repair.kind === 'exampleEditedContractsKept') return exampleEditedContractsMessage(repair, plan)
   const account = named(repair.accountName, 'An account')
   switch (repair.kind) {
     case 'accountOwnerBackFilled':

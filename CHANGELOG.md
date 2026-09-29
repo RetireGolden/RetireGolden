@@ -120,7 +120,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   and follows the premium field on every Monte Carlo path. The rewrite notice now says the
   year-by-year figures stay the same, except in the years the v5 engine was leaving out
   (the repair's new optional `previouslyLeftOut`), and that Monte Carlo now counts the
-  credit on every simulated market, which can move the success rate. A contract not in
+  credit on every simulated market, which can move the success rate. A contract changed by
+  hand out of that shape (a benchmark unlike the premium, say) that the v5 engine priced as
+  written stays `'stated'` with the same year-by-year figures, and the new
+  `exampleEditedContractsKept` repair says Monte Carlo now counts it at its entered dollars
+  on every simulated market, which can move the success rate. A contract not in
   the recipe's shape that the v5 engine refused
   (it did not match the example's premium) stays `'stated'` and is now priced as entered,
   so its year's figures change, and the new `exampleEnteredContractsNowPriced` repair says so.

@@ -1030,6 +1030,13 @@ interface SortedExampleContracts {
   readonly removedYears: number[]
   /** Kept 'stated', not the recipe's, refused by the v5 engine and priced now. */
   readonly nowPricedYears: number[]
+  /**
+   * Kept 'stated', outside the shape the premium-field fill derives, priced as
+   * written by the v5 engine: the year-by-year figures stay the same, but the
+   * v5 engine dropped them on any path whose inflation differed and v6 holds
+   * them at their entered dollars on every path (PR #761 second review).
+   */
+  readonly keptEditedYears: number[]
 }
 
 const sortedYears = (years: Iterable<number>): number[] => [...new Set(years)].sort((a, b) => a - b)
@@ -1067,6 +1074,7 @@ function sortExampleContracts(contracts: readonly unknown[], context: ExampleCon
   const rewrittenLeftOut: number[] = []
   const removed: number[] = []
   const nowPriced: number[] = []
+  const keptEdited: number[] = []
   for (const contract of contracts) {
     const record = plainObject(contract)
     const year = record?.['year']
@@ -1090,6 +1098,13 @@ function sortExampleContracts(contracts: readonly unknown[], context: ExampleCon
         continue
       }
       if (context.applyAcaCredit) nowPriced.push(year as number)
+    } else if (
+      inCoverage &&
+      context.applyAcaCredit &&
+      !Object.prototype.hasOwnProperty.call(record, 'premiumBasis') &&
+      v5PricedAsWritten(record)
+    ) {
+      keptEdited.push(year as number)
     }
     kept.push(contract)
   }
@@ -1099,6 +1114,7 @@ function sortExampleContracts(contracts: readonly unknown[], context: ExampleCon
     rewrittenLeftOutYears: sortedYears(rewrittenLeftOut),
     removedYears: sortedYears(removed),
     nowPricedYears: sortedYears(nowPriced),
+    keptEditedYears: sortedYears(keptEdited),
   }
 }
 
@@ -1108,6 +1124,7 @@ const EMPTY_SORT: SortedExampleContracts = {
   rewrittenLeftOutYears: [],
   removedYears: [],
   nowPricedYears: [],
+  keptEditedYears: [],
 }
 
 /** The removal record the step writes for `years`. */
@@ -1347,6 +1364,7 @@ function exampleMigration(raw: Record<string, unknown>): { doc: Record<string, u
       ['exampleContractsFollowPremiumField', sorted.rewrittenYears],
       ['exampleContractsLeftOut', sorted.removedYears],
       ['exampleEnteredContractsNowPriced', sorted.nowPricedYears],
+      ['exampleEditedContractsKept', sorted.keptEditedYears],
     ]
     const span = (years: readonly number[]) => ({
       contractCount: years.length,
@@ -1403,8 +1421,10 @@ function exampleMigration(raw: Record<string, unknown>): { doc: Record<string, u
  * scenario makes. A plan whose figures were the recipe's keeps the same
  * figures to the cent at a 2026 start. `migratePlanToCurrent` reports each
  * kind as a load repair: `exampleContractsFollowPremiumField`,
- * `exampleContractsLeftOut` and `exampleEnteredContractsNowPriced`, with the
- * scenario named when it is a scenario's.
+ * `exampleContractsLeftOut`, `exampleEnteredContractsNowPriced` and
+ * `exampleEditedContractsKept` (a contract changed by hand that the v5 engine
+ * priced as written stays 'stated': its Monte Carlo fate changes, so it is
+ * announced too), with the scenario named when it is a scenario's.
  */
 export const migratePlanV5ToV6: MigrationStep = (raw) => exampleMigration(raw).doc
 
@@ -1571,6 +1591,27 @@ export type PlanLoadRepair =
    */
   | {
       kind: 'exampleEnteredContractsNowPriced'
+      /** The example the plan came from. */
+      exampleSourceId: string
+      contractCount: number
+      firstYear: number
+      lastYear: number
+      /** Present when the contracts are the ones a stored scenario writes. */
+      scenario?: { id: string; name: string }
+    }
+  /**
+   * A plan saved from a library example that carries contracts changed by hand
+   * from the example's shape (a benchmark unlike the premium, say), which the
+   * v5 engine priced as written because their premiums were still the
+   * example's. They are kept 'stated', as entered: the year-by-year figures
+   * stay the same, but where the v5 engine dropped them on any Monte Carlo path
+   * whose inflation differed, v6 counts them on every path at their entered
+   * dollars, which can move the success rate (PR #761 second review). With
+   * `scenario`, the contracts a stored scenario writes. Reported by the
+   * migration only.
+   */
+  | {
+      kind: 'exampleEditedContractsKept'
       /** The example the plan came from. */
       exampleSourceId: string
       contractCount: number
