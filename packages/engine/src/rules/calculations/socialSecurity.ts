@@ -1117,7 +1117,7 @@ export const socialSecurityRecords = {
     kind: 'model',
     outputs: ['social-security-claiming-sweep-objective'],
     statement:
-      'decisions/claimAgeSweep.ts#refineClaimAgeMonthly prices, through #refineClaimMonths, for each open claim in the canonical people order (model/peopleOrder.ts, never list order), every claim from a year below the winner\'s age to a year above it (62 to 70, none below the age reached in the start year; months 0 to 11, and only 70y0m at 70), with the other claims at the running best, in whole passes repeated until one changes no claim, at most CLAIM_MONTH_REFINEMENT_MAX_PASSES (5), the windows staying around the starting whole years, and a combination priced once not priced again (decision D-PEOPLE-ORDER, rule R7), each month through decisions/evaluateCandidate.ts#evaluateCandidate against the plan as entered and ranked alone by the sweep\'s objective policy (decisions/tournament.ts#rankEvaluations, margin 0). A month replaces the incumbent only when its row is eligible under the objective\'s constraints and its primary metric is strictly greater; a greater but ineligible month is counted and rejected. It publishes estateChangeVsWinner, the refined ending after-tax estate minus the winner\'s, and primaryChangeVsWinner, the objective\'s own difference, both signed and unrounded. Units: nominal dollars of the plan\'s last year, and the objective\'s own units. Rounding: none.',
+      'decisions/claimAgeSweep.ts#refineClaimAgeMonthly prices, through #refineClaimMonths, for each open claim in the canonical people order (model/peopleOrder.ts, never list order), every claim from a year below the winner\'s age to a year above it (62 to 70, none below the age reached in the start year; months 0 to 11, and only 70y0m at 70), with the other claims at the running best, in whole passes repeated until one changes no claim, the windows staying around the starting whole years, and a combination priced once not priced again (decision D-PEOPLE-ORDER, rule R7); there is no pass cap, since a changing pass takes a strictly greater primary metric and a combination\'s row is fixed once priced, so no combination is the incumbent twice and the search always ends at a fixed point, within one more pass than the windows hold combinations, a bound kept only as a guard that throws, and it publishes passes (round-one review of #765, issue 4), each month through decisions/evaluateCandidate.ts#evaluateCandidate against the plan as entered and ranked alone by the sweep\'s objective policy (decisions/tournament.ts#rankEvaluations, margin 0). A month replaces the incumbent only when its row is eligible under the objective\'s constraints and its primary metric is strictly greater; a greater but ineligible month is counted and rejected. It publishes estateChangeVsWinner, the refined ending after-tax estate minus the winner\'s, and primaryChangeVsWinner, the objective\'s own difference, both signed and unrounded. Units: nominal dollars of the plan\'s last year, and the objective\'s own units. Rounding: none.',
     formula: {
       expression: 'take month m over incumbent i  <=>  eligible(m) and primary(m) > primary(i); estateChangeVsWinner = estate(refined) - estate(winner); primaryChangeVsWinner = primary(refined) - primary(winner)',
       variables: [
@@ -1133,7 +1133,7 @@ export const socialSecurityRecords = {
       worksheet: 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.md',
     },
     limits: [
-      'Coordinate passes to a fixed point, at most five, within a year of the whole-year winner: a month further away, or a combination that needs both claims moved at once, is not tried, and the page says "no month within a year of the whole-year pick ranks higher" rather than "optimal"',
+      'Coordinate passes to a fixed point within a year of the whole-year winner: a month further away, or a combination that needs both claims moved at once, is not tried, and the page says "no month within a year of the whole-year pick ranks higher" rather than "optimal"',
       'Bridge durability and survivor liquidity score a month that removes the bridge or survivor years on the estate change, as the sweep does, until the objective-policy change ranks them on one fixed window',
       'Runs on request, 0.2 to 0.6 seconds on the example couples',
     ],
@@ -1142,7 +1142,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/decisions/claimAgeSweep.ts#refineClaimAgeMonthly',
       'packages/engine/src/decisions/claimAgeSweep.ts#refineClaimMonths',
     ],
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-09-29',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'survivor-convert-early-lever': {
