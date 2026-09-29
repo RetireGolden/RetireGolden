@@ -643,6 +643,30 @@ describe('the workspace load path', () => {
     expect(container.querySelector('.plan-repair-notice')).toBeNull()
   })
 
+  /** The sample couple as stored before schema v7: no person named for the spending phases. */
+  function coupleSavedBeforeV7(phases: unknown[]): Record<string, unknown> {
+    const doc = JSON.parse(JSON.stringify(createSamplePlan())) as Record<string, unknown>
+    doc['id'] = 'p1'
+    doc['schemaVersion'] = 6
+    const expenses = doc['expenses'] as Record<string, unknown>
+    delete expenses['phasesAgeOf']
+    expenses['phases'] = phases
+    return doc
+  }
+
+  it('stays silent for a couple saved before v7 with no spending phases (review of #765, issue 9)', async () => {
+    // The load still names the person, so a scenario that adds phases has
+    // one, but there are no phases whose age it could change, so no notice.
+    await mountWorkspace(coupleSavedBeforeV7([]))
+    expect(container.querySelector('.plan-repair-notice')).toBeNull()
+  })
+
+  it('names whose age the spending phases follow for a couple saved before v7 with phases (review of #765, issue 9)', async () => {
+    await mountWorkspace(coupleSavedBeforeV7([{ fromAge: 75, multiplier: 0.9 }]))
+    expect(items()).toHaveLength(1)
+    expect(items()[0]).toContain("the plan now names whose: Alex's")
+  })
+
   it('closes for the rest of the visit when dismissed', async () => {
     await mountWorkspace(storedWithInheritedFundedAnnuity())
     const button = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Dismiss')!
