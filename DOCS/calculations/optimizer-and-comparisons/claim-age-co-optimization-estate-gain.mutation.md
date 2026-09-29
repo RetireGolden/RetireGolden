@@ -1,15 +1,15 @@
 # Mutation receipt: claim-change-estate-gain
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `04218ee3` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `04218ee3` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `15b1b7a5` (branch `claude/2027-rollover`, pull request #768) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index 4dc447d3..b0b8b275 100644
+index 472c466f..dda9ea86 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -3101,7 +3101,7 @@ export async function optimizePlanCoOptimizingClaimAge(
+@@ -3107,7 +3107,7 @@ export async function optimizePlanCoOptimizingClaimAge(
        winningClaimPatch: winningPatch,
        jointExactEstate: bestEstate,
        currentClaimExactEstate: baseEstate,
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The second verification's fixes on this branch (V1 to V4) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (optimizePlan.claimGain.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+The round-one review's fixes on this branch (PR #768 issues 1 and 7) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (optimizePlan.claimGain.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
- ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 321ms
+ ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 324ms
    ❯ claim-change-estate-gain — Claim-age co-optimization estate gain (3)
-     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 239ms
+     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 243ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 2 passed (3)

@@ -1,11 +1,11 @@
 # Mutation receipt: insight-irmaa-tier-edge-premium-cliff
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `15b1b7a5` (branch `claude/2027-rollover`, pull request #768) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/irmaaTierEdge.ts`
 
 ```diff
-@@ -87,10 +87,9 @@ export const irmaaTierEdge: Detector = {
+@@ -97,10 +97,9 @@ export const irmaaTierEdge: Detector = {
            )
            const annualPremiumCliff =
 -            medicarePeople *
@@ -28,14 +28,14 @@ npx vitest run src/insights/detectors/irmaaTierEdge.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (irmaaTierEdge.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The round-one review's fixes on this branch (PR #768 issues 1 and 7) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (irmaaTierEdge.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/insights/detectors/irmaaTierEdge.evidence.test.ts (1 test | 1 failed) 14ms
+ ❯ src/insights/detectors/irmaaTierEdge.evidence.test.ts (1 test | 1 failed) 15ms
    ❯ insight-irmaa-tier-edge-premium-cliff — IRMAA tier-edge household Medicare premium cliff (1)
-     × publishes a $3,600 household cliff from two enrollees × $1,800 13ms
+     × publishes a $3,600 household cliff from two enrollees × $1,800 14ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

@@ -1,11 +1,11 @@
 # Mutation receipt: insight-widows-penalty-bracket-jump
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `15b1b7a5` (branch `claude/2027-rollover`, pull request #768) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/widowsPenalty.ts`
 
 ```diff
-@@ -117,5 +117,5 @@ export const widowsPenalty: Detector = {
+@@ -114,5 +114,5 @@ export const widowsPenalty: Detector = {
              inflationScale,
            }).totalTax,
        )
@@ -24,14 +24,14 @@ npx vitest run src/insights/detectors/widowsPenalty.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (widowsPenalty.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The round-one review's fixes on this branch (PR #768 issues 1 and 7) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (widowsPenalty.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/insights/detectors/widowsPenalty.evidence.test.ts (1 test | 1 failed) 16ms
    ❯ insight-widows-penalty-bracket-jump — Rough real survivor bracket jump, single versus joint on the same MAGI (1)
-     × deflates the $10,000 nominal jump by 4/5 to $8,000 today 14ms
+     × deflates the $10,000 nominal jump by 4/5 to $8,000 today 15ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
