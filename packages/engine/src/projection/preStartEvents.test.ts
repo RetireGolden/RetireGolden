@@ -261,6 +261,38 @@ describe('events dated before the start year', () => {
     ])
   })
 
+  it('a property at $0 is not sold: its warning says only that its costs stop (review issue 9)', () => {
+    // The ledger sells a property only when it has a value, so a $0 property
+    // with a past sale year yields no sale and no proceeds; its carrying costs
+    // stop from the start year all the same.
+    const plan = household()
+    plan.accounts.push({
+      type: 'property', id: 'lot', name: 'Lot', ownerPersonId: null, annualReturnPct: 0,
+      value: 0, plannedSaleYear: 2026, expectedNetProceeds: null, propertyTaxAnnual: 1_200, insuranceAnnual: 300,
+    } as never)
+    expect(preStartEvents(plan, 2027).filter((event) => event.kind === 'propertySale')).toEqual([
+      {
+        kind: 'propertySale',
+        id: 'lot',
+        label: 'Lot',
+        year: 2026,
+        warning: 'The Lot sale is dated 2026, before this plan starts in 2027, so its property tax and insurance stop from 2027.',
+      },
+    ])
+    const from2027 = simulatePlan(validatePlan(plan), { startYear: 2027, taxCalculator: productionTaxCalculator() })
+    expect(from2027.warnings).toContain(
+      'The Lot sale is dated 2026, before this plan starts in 2027, so its property tax and insurance stop from 2027.',
+    )
+    // Nothing sold and nothing charged: the first year's costs are $0, and
+    // every account ends as it does without the lot.
+    expect(from2027.years[0]!.expenses.propertyCosts).toBe(0)
+    const withoutLot = simulatePlan(validatePlan({ ...plan, accounts: plan.accounts.filter((account) => account.id !== 'lot') }), {
+      startYear: 2027,
+      taxCalculator: productionTaxCalculator(),
+    })
+    expect(from2027.years[0]!.netWorth).toBeCloseTo(withoutLot.years[0]!.netWorth, 6)
+  })
+
   it('names a HECM line dated to open before the start, which the ledger opens in the start year', () => {
     const plan = household()
     plan.accounts.push({

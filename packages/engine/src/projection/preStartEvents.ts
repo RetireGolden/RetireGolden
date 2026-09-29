@@ -195,14 +195,22 @@ export function preStartEvents(plan: Plan, startYear: number): PreStartEvent[] {
 
   for (const account of plan.accounts) {
     if (account.type !== 'property' || account.plannedSaleYear === null || account.plannedSaleYear >= startYear) continue
+    // The ledger sells a property only when it has a value
+    // (`internal/propertyEventsAndGrowth.ts`, `internal/fixedAssetDispositions.ts`),
+    // while its carrying costs stop from the sale year either way
+    // (`internal/annualPropertyCarryingCosts.ts`). A property at $0 is not
+    // sold and yields no proceeds, so its warning says only that its costs
+    // stop (PR #768 review issue 9).
     events.push({
       kind: 'propertySale',
       id: account.id,
       label: account.name,
       year: account.plannedSaleYear,
       warning:
-        `The ${account.name} sale is dated ${account.plannedSaleYear}, ${before}, so the plan sells it in ${startYear}. ` +
-        `If it has already been sold, remove the ${account.name} and add the proceeds to an account.`,
+        account.value > 0
+          ? `The ${account.name} sale is dated ${account.plannedSaleYear}, ${before}, so the plan sells it in ${startYear}. ` +
+            `If it has already been sold, remove the ${account.name} and add the proceeds to an account.`
+          : `The ${account.name} sale is dated ${account.plannedSaleYear}, ${before}, so its property tax and insurance stop from ${startYear}.`,
     })
   }
 

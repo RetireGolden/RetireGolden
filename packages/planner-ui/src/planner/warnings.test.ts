@@ -250,7 +250,7 @@ describe("a year before the plan's start year warns (D4)", () => {
 
   it('a sale, a payoff or a conversion row dated before the first year says what the plan does (review H1, L4)', () => {
     expect(warningFor('accounts.3.plannedSaleYear', 2025, ctx)).toBe(
-      "Before this plan's first year (2026), so the plan sells it in 2026. If it has already been sold, remove the property and add the proceeds to an account. Kept as entered.",
+      "Before this plan's first year (2026), so its property tax and insurance stop from 2026, and the plan sells it then if it has a value. If it has already been sold, remove the property and add any proceeds to an account. Kept as entered.",
     )
     expect(warningFor('accounts.4.payoffYear', 2025, ctx)).toBe(
       "Before this plan's first year (2026), so the plan pays it off in 2026. If it was paid, set its balance to $0. Kept as entered.",

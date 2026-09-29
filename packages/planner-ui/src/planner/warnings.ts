@@ -307,7 +307,7 @@ export function warningFor(
     case 'pastSaleYear': {
       const startYear = ctx.startYear
       return startYear !== null && value < startYear
-        ? `Before this plan's first year (${startYear}), so the plan sells it in ${startYear}. If it has already been sold, remove the property and add the proceeds to an account. Kept as entered.`
+        ? `Before this plan's first year (${startYear}), so its property tax and insurance stop from ${startYear}, and the plan sells it then if it has a value. If it has already been sold, remove the property and add any proceeds to an account. Kept as entered.`
         : null
     }
     case 'pastPayoffYear': {
