@@ -340,10 +340,10 @@ const exampleAll401kNoBridgeBody = exampleBody(
 
 The deduction feels great every year. The problem surfaces at 52: nearly everything they own is inaccessible before 59½ without a 10% penalty (or a rigid SEPP program).
 
-Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years: $87,045 of early-withdrawal penalties from 2042 to 2045. Each withdrawal is ordinary income, so MAGI jumps. In a coverage year whose ACA figures are published and whose annual evidence is complete, that can reduce or eliminate the modeled credit. These bridge years come after the last published coverage year, so both plans budget the full marketplace premium.
+Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years: $83,312 of early-withdrawal penalties from 2042 to 2045. Each withdrawal is ordinary income, so MAGI jumps. In a coverage year whose ACA figures are published and whose annual evidence is complete, that can reduce or eliminate the modeled credit. These bridge years come after the last published coverage year, so both plans budget the full marketplace premium.
 
-The identical savings budget, placed differently, avoids the penalties and lasts one year longer: this plan runs out of money in 2067, the bridge version in 2068. That comparison is the point of the pair.`,
-  'Watch Results ages 52–59: penalties once the taxable money is gone, then compare the depletion year, 2067, with the bridge version\'s 2068.',
+The identical savings budget, placed differently, avoids the penalties and lasts one year longer: this plan runs out of money in 2068, the bridge version in 2069. That comparison is the point of the pair.`,
+  'Watch Results ages 52–59: penalties once the taxable money is gone, then compare the depletion year, 2068, with the bridge version\'s 2069.',
   {
     name: 'The Sam & Jordan household (all-401(k) version)',
     assumptions: [
@@ -363,9 +363,9 @@ const exampleBrokerageBridge401kBody = exampleBody(
 
 Because the gross budget is held constant, this plan pays more income tax during the accumulation years: the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
 
-At 52 the brokerage is large. Cash covers the first bridge years, and selling the brokerage covers the rest at low capital-gains rates, so no early-withdrawal penalties apply and MAGI stays far below the control's from 2042 to 2045. Lower MAGI could preserve premium tax credit in a coverage year whose ACA figures are published, but these bridge years come after the last published coverage year, so both plans budget the full marketplace premium. Over its lifetime this plan pays less in tax and penalties than the control ($876,459 against $950,722, of which $87,045 is the control's penalties) and lasts one year longer, to 2068 against 2067; neither reaches the end of the plan in 2078.
+At 52 the brokerage is large. Cash covers the first bridge years, and selling the brokerage covers the rest at low capital-gains rates, so no early-withdrawal penalties apply and MAGI stays far below the control's from 2042 to 2045. Lower MAGI could preserve premium tax credit in a coverage year whose ACA figures are published, but these bridge years come after the last published coverage year, so both plans budget the full marketplace premium. Over its lifetime this plan pays less in tax and penalties than the control ($865,395 against $934,907, of which $83,312 is the control's penalties) and lasts one year longer, to 2069 against 2068; neither reaches the end of the plan in 2078.
 
-The built-in scenario tests the popular "convert to Roth during the bridge" advice: each bridge year, 2038 to 2045, it sizes a conversion to the top of the 12% bracket. Only Sam holds a Roth IRA, so only his share of each year's amount converts, and Results says Jordan's share was skipped. On this plan it pays: lifetime tax falls from $876,459 to $566,785 and the money lasts to 2070 instead of 2068. The conversion tax comes out of the same bridge money, and the brokerage still lasts into 2046.`,
+The built-in scenario tests the popular "convert to Roth during the bridge" advice: each bridge year, 2038 to 2045, it sizes a conversion to the top of the 12% bracket. Only Sam holds a Roth IRA, so only his share of each year's amount converts, and Results says Jordan's share was skipped. On this plan it pays: lifetime tax falls from $865,395 to $534,028 and the money lasts to 2071 instead of 2069. The conversion tax comes out of the same bridge money, and the brokerage still lasts into 2046.`,
   'Compare bridge-year MAGI, penalties and the depletion year against the all-401(k) control; then run the conversion scenario and compare its lifetime tax and depletion year with the base plan.',
   {
     name: 'The Sam & Jordan household (bridge version)',

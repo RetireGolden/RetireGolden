@@ -626,6 +626,25 @@ describe('buildOptimizerInput', () => {
     expect(flat.years[0]!.stateRate).toBeCloseTo(0.06)
   })
 
+  it('gives Washington’s deduction a zero-rate band net of the federal deduction and its age additions', () => {
+    // Pat is 68 in 2026. With no inflation the 2028 Washington deduction is
+    // $1,000,000, and the LP's federal deduction is the $16,100 basic amount
+    // plus the $2,050 single addition at 65: the band below the 9.9% is
+    // 1,000,000 - 18,150 = 981,850. Dropping the age addition would give
+    // 983,900 and tax $2,050 of income Washington exempts.
+    const waPlan = tradHeavyPlan()
+    waPlan.household.state = 'WA'
+    const input = buildOptimizerInput(validate(waPlan), opts)
+    const y2028 = input.years.find((y) => y.year === 2028)!
+    expect(y2028.peopleAged65Plus).toBe(1)
+    const federal = y2028.pack.federalTax.standardDeduction.single + y2028.pack.federalTax.age65Addition.single
+    expect(federal).toBe(18_150)
+    expect(y2028.stateBrackets).toEqual([{ width: 1_000_000 - federal, rate: 0 }, { width: null, rate: 0.099 }])
+    expect(y2028.stateBrackets![0]!.width).toBe(981_850)
+    // Before the tax starts there are no Washington brackets at all.
+    expect(input.years.find((y) => y.year === 2027)!.stateBrackets).toBeUndefined()
+  })
+
   it('limits opening traditional to owner-convertible balances', () => {
     const plan = validate(inheritedTraditionalPlan({ ownTraditional: 50_000, inheritedTraditional: 300_000 }))
     const input = buildOptimizerInput(plan, opts)

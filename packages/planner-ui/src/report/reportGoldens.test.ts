@@ -83,6 +83,29 @@
  * row (the 2022 period table of the 2025 Trustees Report, at SSA's
  * table4c6_2022_TR2025.html), after the 2023 row, which the Assumptions card
  * cites for a planning age made on that table; nothing else changed.
+ * 2026-09-28 (decision D-2027-PUBLISHED-FIGURES, widened after the survey of
+ * every state): the parameter appendix and each model's parameter-sources
+ * block gain one row per state whose enacted figures the engine now reads
+ * (Hawaii, New York, Rhode Island, Virginia, Georgia, Delaware, Illinois,
+ * Maine, Maryland, Oregon, California, Washington); the North Carolina row
+ * links Session Law 2026-41's page; and the state income tax row names the
+ * 2026 corrections, the November 3, 2026 votes and the changes that wait on a
+ * determination. early-career-match (California) is the one golden whose
+ * figures move: California's 10.3%, 11.3% and 12.3% bands end from 2031 under
+ * Cal. Const. art. XIII, sec. 36(f)(2), so the 2060 Roth conversion year's tax
+ * falls from $102,308 to $102,107 and 2085 to 2091 fall by $128 to $2,278 a
+ * year; ending net worth rises from $17,028,288 to $17,036,797. No other
+ * golden's figures changed.
+ * 2026-09-28 (same decision, before independent review): the Washington row
+ * adds that section 316 indexes the deduction every second year from 2029.
+ * Nothing else in any golden changed.
+ * 2026-09-28 (round-three review, F6): the appendix and each model gain the
+ * "District of Columbia standard deduction, 2026 to 2029" row (D.C. Act
+ * 26-416), and the state income tax row names its congressional review; no
+ * golden's plan is in the District, so no figure changed.
+ * 2026-09-28 (merge of main into the D-2027-PUBLISHED-FIGURES branch): the
+ * goldens carry both sets of rows, main's Social Security and life table
+ * rows and the branch's HSA and state rows, regenerated together.
  */
 import { describe, expect, it } from 'vitest'
 

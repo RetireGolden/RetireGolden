@@ -19,6 +19,10 @@ note" and "Host notes" before refreshing anything.
   3% (2030 and after), with a revenue-triggered further cut of 0.2–0.3 of a
   point a year from 2031 (§27-7-5.1) and a **self-repeal of the whole individual
   income tax** if the rate ever reaches zero. **Never hold this rate forward.**
+  (2026-09-28: the enacted steps are loaded, 3.75% for 2027, 3.5% for 2028, 3.25% for
+  2029 and 3% from 2030, in `params/state/data/enacted2027.ts` to `enacted2030.ts`. The
+  H.B. 1 section 2 cuts from 2031 depend on the reserve fund and a revenue test and are
+  not loaded, so a year in which one is triggered is overstated.)
 - Taxes Social Security benefits: **no** — Social Security and Railroad
   Retirement never enter Mississippi gross income at all (§27-7-15(4)(k))
 - Long-term capital gains: **taxed as ordinary income**; the department states

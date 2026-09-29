@@ -9,7 +9,8 @@
  *   and row labels say the rows are nominal.
  * - example-couple against hsa-stealth-retirement (2059 and 2076): the rows
  *   are in 2026 dollars (R13); the estate cell reads "−$466k" in red where the
- *   retired subtraction printed "+$330k" in green (a change, asserted); both
+ *   retired subtraction printed "+$330k" in green (+$329k since the 2027 HSA
+ *   limit is the published one; a change, asserted); both
  *   plans run their full horizons, so Money lasts reads "both full plan" with
  *   no colour.
  * - The three non-money rows (Money lasts, Success % and Depletion age) on
@@ -200,12 +201,15 @@ describe('Compare page on library examples (B2-P1 slice 3)', () => {
     const l = projectPlan(a, EXAMPLE_FIXED_YEAR).summary
     const r = projectPlan(b, EXAMPLE_FIXED_YEAR).summary
     // The retired subtraction of nominal figures of 2059 and 2076.
-    expect(formatDelta(r.endingAfterTaxEstate - l.endingAfterTaxEstate, 'money')).toBe('+$330k')
+    // +$330k when the worksheet measured it; +$329k since the 2027 HSA limit is
+    // the published 4,500 (hsa-stealth-retirement's nominal estate fell $240).
+    expect(formatDelta(r.endingAfterTaxEstate - l.endingAfterTaxEstate, 'money')).toBe('+$329k')
     const estate = row('After-tax estate')
     expect(estate.label).toBe('After-tax estate (2026 $)')
     expect(estate.delta).toBe('−$466k')
     expect(estate.deltaClass).toBe('delta-neg')
-    expect(row('Ending net worth').delta).toBe('−$331k')
+    // −$331k when the worksheet measured it; the published 2027 HSA limit moves it to −$332k.
+    expect(row('Ending net worth').delta).toBe('−$332k')
     for (const label of ['Ending net worth', 'Ending investable', 'After-tax estate', 'Lifetime tax + penalties']) {
       expect(row(label).label, label).toBe(`${label} (2026 $)`)
     }

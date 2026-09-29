@@ -21,7 +21,17 @@ import {
   type StateTaxBracket,
   type StateTaxParams,
 } from '../params/state/index.js'
-import { taxableSocialSecurity } from './federalTax.js'
+import { computeFederalTax, taxableSocialSecurity } from './federalTax.js'
+import {
+  californiaMilitaryExclusions,
+  federalSeniorDeductionSubtraction,
+  marylandCapitalGainSurtax,
+  marylandPublicSafetySubtraction,
+  rhodeIslandPensionModificationAllowed,
+  rhodeIslandSocialSecurityModification,
+  statutorilyIndexedStandardDeduction,
+  virginiaPersonalExemptions,
+} from './stateEnactedLaw.js'
 import { age65StandardDeductionAddition, packForYear } from '../params/index.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxComputationResult, type TaxYearInput } from '../projection/types.js'
 import { phaseOutStandardDeduction } from './stateStandardDeduction.js'
@@ -268,6 +278,41 @@ export interface ComputeStateTaxOptions {
   qcdFacts?: StateQcdYearFacts
   /** New Jersey Worksheet C owner pools keyed for QCD reconstruction. */
   njIraOwnerPools?: readonly StateNjIraOwnerPoolFacts[]
+  /**
+   * Full-year federal AGI and senior deduction for a split-year slice, whose
+   * prorated input cannot reproduce them. Read only by the provisions that test
+   * federal AGI or carry the federal senior deduction.
+   */
+  federalOverride?: FederalFactsForState
+}
+
+/** Federal figures some state provisions read: AGI and the IRC 151(d)(5)(C) senior deduction. */
+interface FederalFactsForState {
+  agi: number
+  seniorDeduction: number
+}
+
+/**
+ * The federal AGI and senior deduction for the return: from the household
+ * facts the projection passes, else the split-year override, else computed from
+ * the same input. Computed at most once per call, and only when a provision
+ * asks.
+ */
+function federalFactsFor(input: TaxYearInput, opts: ComputeStateTaxOptions): () => FederalFactsForState {
+  let memo: FederalFactsForState | undefined
+  return () => {
+    if (memo !== undefined) return memo
+    const facts = opts.householdFacts
+    if (facts?.federalAgi !== undefined && facts.federalSeniorDeduction !== undefined) {
+      memo = { agi: facts.federalAgi, seniorDeduction: facts.federalSeniorDeduction }
+    } else if (opts.federalOverride !== undefined) {
+      memo = opts.federalOverride
+    } else {
+      const federal = computeFederalTax(input)
+      memo = { agi: facts?.federalAgi ?? federal.agi, seniorDeduction: facts?.federalSeniorDeduction ?? federal.seniorDeduction }
+    }
+    return memo
+  }
 }
 
 interface TaxableIncomeComputation {
@@ -345,6 +390,7 @@ function characterizedRetirementDelta(
   distributions: readonly StateRetirementDistributionFact[],
   agesAlive: number[],
   opts: ComputeStateTaxOptions,
+  context: { federal: () => FederalFactsForState; joint: boolean },
 ): { taxableIncomeDelta: number; taxCredit: number; warnings: StateTaxExactnessWarning[] } {
   const warnings: StateTaxExactnessWarning[] = []
   let taxableIncomeDelta = 0
@@ -439,6 +485,15 @@ function characterizedRetirementDelta(
   }
 
   if (code === 'MD') {
+    // Tax-General 10-207(mm) first; 10-209(d)(2) keeps what it subtracts out
+    // of the pension exclusion below.
+    let publicSafetyTaken: ReadonlyMap<string, number> = new Map()
+    if (params.marylandPublicSafetySubtraction) {
+      const part = marylandPublicSafetySubtraction({ config: params.marylandPublicSafetySubtraction, distributions })
+      taxableIncomeDelta += part.taxableIncomeDelta
+      warnings.push(...part.warnings)
+      publicSafetyTaken = part.subtractedByOwner
+    }
     const owners = new Map<string, StateRetirementDistributionFact[]>()
     for (const fact of distributions) {
       const rows = owners.get(fact.ownerPersonId) ?? []
@@ -467,7 +522,8 @@ function characterizedRetirementDelta(
         continue
       }
       const cap = Math.max(0, params.retirementPrivate.capPerPerson - Math.max(0, ss) - Math.max(0, rrb))
-      taxableIncomeDelta -= Math.min(cap, qualifying.reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0))
+      const qualifyingIncome = qualifying.reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
+      taxableIncomeDelta -= Math.min(cap, Math.max(0, qualifyingIncome - (publicSafetyTaken.get(owner) ?? 0)))
     }
     return { taxableIncomeDelta, taxCredit, warnings }
   }
@@ -529,7 +585,12 @@ function characterizedRetirementDelta(
       if (age60Plus) {
         const cap = params.retirementPrivate.capPerPerson
         if (cap === undefined) warnings.push({ code: 'de-pension-cap-pack-missing', ruleId: 'de-pension-exclusion-age-60', message: 'Delaware age-60 pension exclusion requires an annual cap from the published parameter set.', missingFacts: ['retirementPrivate.capPerPerson'] })
-        else taxableIncomeDelta -= Math.min(cap, ordinary + military)
+        else {
+          // From 2027, 1106(b)(3) lets a filer 60 or older take the greater of
+          // that limb and the capped U.S. military pension.
+          const militaryLimb = params.delawareMilitaryPension60Plus === undefined ? 0 : Math.min(params.delawareMilitaryPension60Plus.militaryCap, military)
+          taxableIncomeDelta -= Math.max(Math.min(cap, ordinary + military), militaryLimb)
+        }
         continue
       }
       const part = delawareUnder60PensionDeduction({ recipientAgeYears: rows[0]!.recipientAgeYears, ordinaryPensionIncluded: ordinary, militaryPensionIncluded: military, earlyDistributionDisqualifier: 'false', ordinaryCap: params.delawareUnder60Pension?.ordinaryCap, militaryCap: params.delawareUnder60Pension?.militaryCap })
@@ -791,12 +852,35 @@ function characterizedRetirementDelta(
     return { taxableIncomeDelta, taxCredit, warnings }
   }
 
+  if (code === 'CA' && params.californiaMilitaryExclusions) {
+    const part = californiaMilitaryExclusions({
+      config: params.californiaMilitaryExclusions,
+      joint: context.joint,
+      federalAgi: context.federal().agi,
+      distributions,
+    })
+    taxableIncomeDelta += part.taxableIncomeDelta
+    warnings.push(...part.warnings)
+  }
+
+  // Rhode Island 44-30-12(c)(9): no pension modification at or above the
+  // Social Security modification's AGI limit, and the Division's instructions
+  // leave IRA distributions out of it.
+  if (code === 'RI' && params.rhodeIslandSocialSecurityModification && !rhodeIslandPensionModificationAllowed({
+    config: params.rhodeIslandSocialSecurityModification,
+    joint: context.joint,
+    federalAgi: context.federal().agi,
+  })) {
+    return { taxableIncomeDelta, taxCredit, warnings }
+  }
+  const eligibleDistributions = code === 'RI' ? distributions.filter((fact) => fact.sourceKind !== 'ira') : distributions
+
   // Most default pack caps are per recipient (KY, AL, GA, ME, NY, OK,
   // RI), so another spouse's unused exclusion cannot shelter this owner's
   // conversion or withdrawal. Michigan's current maximum is instead a
   // combined qualifying-benefit limit on the joint return (MI domain note).
   const byOwner = new Map<string, StateRetirementDistributionFact[]>()
-  for (const fact of distributions) {
+  for (const fact of eligibleDistributions) {
     if (!fact.ownerPersonId?.trim()) {
       warnings.push({ code: 'state-retirement-owner-unknown', message: 'Retirement exclusion requires the recipient owner; an unused household cap cannot establish entitlement.', missingFacts: ['ownerPersonId'] })
       continue
@@ -862,12 +946,13 @@ export function computeStateTaxableIncomeResult(
 
   let taxable = ordinary - usGovInterest + qualifiedDividends
   if (taxableCapitalPct > 0) taxable += netCapital * taxableCapitalPct
+  let includedSocialSecurity = 0
   if (params.taxesSocialSecurity && ss > 0) {
     if (opts.taxableSocialSecurityOverride !== undefined) {
-      taxable += Math.max(0, opts.taxableSocialSecurityOverride)
+      includedSocialSecurity = Math.max(0, opts.taxableSocialSecurityOverride)
     } else {
       const { pack } = packForYear(input.year)
-      taxable += taxableSocialSecurity(
+      includedSocialSecurity = taxableSocialSecurity(
         pack,
         taxStatus,
         ordinary + qualifiedDividends + netCapital,
@@ -876,9 +961,25 @@ export function computeStateTaxableIncomeResult(
         input.foreignExclusionAddback,
       )
     }
+    taxable += includedSocialSecurity
   }
 
   const acc = { taxableIncomeDelta: 0, taxCredit: 0, warnings: [] as StateTaxExactnessWarning[] }
+  const federal = federalFactsFor(input, opts)
+  const joint = taxStatus === 'marriedFilingJointly'
+  if (params.rhodeIslandSocialSecurityModification && includedSocialSecurity > 0) {
+    accumulateLeaf(acc, rhodeIslandSocialSecurityModification({
+      config: params.rhodeIslandSocialSecurityModification,
+      joint,
+      federalAgi: federal().agi,
+      includedSocialSecurity,
+      claimantAges: input.agesAlive ?? [],
+      ...(opts.householdFacts?.recipientSocialSecurity ? { recipients: opts.householdFacts.recipientSocialSecurity } : {}),
+    }))
+  }
+  if (params.federalSeniorDeduction === 'subtracted' && input.peopleAged65Plus > 0) {
+    accumulateLeaf(acc, federalSeniorDeductionSubtraction({ federalSeniorDeduction: federal().seniorDeduction }))
+  }
   if (params.code === 'WV' && input.year < (params.westVirginiaSocialSecurity?.fullExclusionFrom ?? 2026)) {
     const facts = opts.householdFacts
     const config = params.westVirginiaSocialSecurity
@@ -895,12 +996,18 @@ export function computeStateTaxableIncomeResult(
   const agesAlive = input.agesAlive ?? []
   const distributions = resolvedDistributions(opts)
   if (distributions !== undefined) {
-    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts)
+    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint })
     accumulateLeaf(acc, {
       taxableIncomeDelta: characterized.taxableIncomeDelta,
       taxCredit: characterized.taxCredit,
       warnings: characterized.warnings,
     })
+  } else if (params.code === 'RI' && params.rhodeIslandSocialSecurityModification && !rhodeIslandPensionModificationAllowed({
+    config: params.rhodeIslandSocialSecurityModification,
+    joint,
+    federalAgi: federal().agi,
+  })) {
+    // Rhode Island 44-30-12(c)(9): no pension modification at or above the limit.
   } else if (params.retirementRuleShared) {
     taxable -= retirementExclusion(params.retirementPrivate, privateRetirement + publicPension, agesAlive)
   } else {
@@ -1035,6 +1142,14 @@ export function computeStateTaxableIncomeResult(
     )
   } else if (params.code === 'WI') {
     acc.warnings.push({ code: 'wi-exemption-facts-unknown', ruleId: 'wi-personal-exemptions', message: 'Wisconsin exemptions require household facts, including claimed-dependent status.', missingFacts: ['householdFacts', 'claimedAsDependent'] })
+  }
+
+  if (params.virginiaPersonalExemptions) {
+    accumulateLeaf(acc, virginiaPersonalExemptions({
+      config: params.virginiaPersonalExemptions,
+      exemptionCount: opts.householdFacts?.exemptionTaxpayerCount ?? (joint ? 2 : 1),
+      agedTaxpayerCount: derivedAge65EligibleCount(opts.householdFacts, input.year) ?? Math.max(0, input.peopleAged65Plus),
+    }))
   }
 
   if (params.code === 'WV' && opts.householdFacts) {
@@ -1281,7 +1396,9 @@ export function computeStateTaxDetailResult(
       warnings.push(...alt.warnings)
     }
 
-    if (params.code === 'OR') {
+    // An Oregon year whose figures no longer carry the credit (it cannot be
+    // claimed for tax years from 2032) prices no credit and asks for no facts.
+    if (params.code === 'OR' && params.oregonRetirementIncomeCredit) {
       const facts = opts.householdFacts
       const distributions = resolvedDistributions(opts)
       const tier1 = facts?.recipientSocialSecurity !== undefined
@@ -1384,6 +1501,17 @@ export function computeStateTaxDetailResult(
       warnings.push(...selected.warnings)
       }
     }
+  }
+
+  // Maryland's additional tax on net capital gain is state tax only; the
+  // county rate below applies to taxable income, not to it.
+  if (params.hasIncomeTax && params.marylandCapitalGainSurtax && input.capitalGains > 0) {
+    const taxablePct = (params.capitalGainsTaxablePct ?? (params.capitalGainsAsOrdinary ? 100 : 0)) / 100
+    stateTax += marylandCapitalGainSurtax({
+      config: params.marylandCapitalGainSurtax,
+      federalAgi: federalFactsFor(input, opts)().agi,
+      netCapitalGain: input.capitalGains * taxablePct,
+    })
   }
 
   // Local rate gated on hasIncomeTax (see Wyo. Stat. 39-12-101 / Tenn. Const. art. II § 28).
@@ -1539,11 +1667,12 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // this point on already hold any attached age addition, so the split-year
     // path below hands `prorateParams` a resolved pair and residency scales
     // basic and addition together instead of only the basic half.
+    // A deduction the state's own statute indexes (Washington's, from 2029) is
+    // projected on that statute's schedule at the plan's inflation.
     const { pack } = packForYear(input.year)
-    const params = conformStateStandardDeduction(
-      published,
-      pack.federalTax.age65Addition,
-      input.inflationScale ?? 1,
+    const params = statutorilyIndexedStandardDeduction(
+      conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1),
+      { year: input.year, packYear: pack.year, inflationScale: input.inflationScale ?? 1 },
     )
     return opts.mapParams ? opts.mapParams(params) : params
   }
@@ -1572,15 +1701,33 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
         input.foreignExclusionAddback,
       )
     }
+    // Federal AGI and the senior deduction are full-year figures too: derive
+    // them once, only if a segment state reads them.
+    let annualFederal: FederalFactsForState | undefined
+    const annualFederalFacts = (): FederalFactsForState => {
+      if (annualFederal === undefined) {
+        const federal = computeFederalTax(input)
+        annualFederal = { agi: federal.agi, seniorDeduction: federal.seniorDeduction }
+      }
+      return annualFederal
+    }
     return input.stateResidency.reduce((sum, segment) => {
       const months = Math.min(12, Math.max(0, segment.months))
       if (months <= 0) return sum
       const params = resolveParams(segment.state)
       if (!params) return sum
       const scale = months / 12
+      const readsFederal =
+        params.rhodeIslandSocialSecurityModification !== undefined ||
+        params.marylandCapitalGainSurtax !== undefined ||
+        params.californiaMilitaryExclusions !== undefined ||
+        params.federalSeniorDeduction !== undefined
       const segmentOpts: ComputeStateTaxOptions = {
         taxableSocialSecurityOverride: annualTaxableSs * scale,
         localRatePct,
+        ...(readsFederal
+          ? { federalOverride: { agi: annualFederalFacts().agi, seniorDeduction: annualFederalFacts().seniorDeduction * scale } }
+          : {}),
       }
       if (params.standardDeductionPhaseout) {
         const annualPreDeduction = computeStateTaxableIncome(params, input, {
@@ -1727,6 +1874,10 @@ export function computeStateTaxYearResult(
   const published = stateParamsFor(input.state, input.year)
   if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
   const { pack } = packForYear(input.year)
-  const params = opts.mapParams ? opts.mapParams(conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)) : conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)
+  const resolved = statutorilyIndexedStandardDeduction(
+    conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1),
+    { year: input.year, packYear: pack.year, inflationScale: input.inflationScale ?? 1 },
+  )
+  const params = opts.mapParams ? opts.mapParams(resolved) : resolved
   return computeStateTaxDetailResult(params, input, { ...opts, localRatePct })
 }

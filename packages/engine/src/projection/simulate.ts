@@ -55,7 +55,7 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { packForYear, EMBEDDED_REAL_YIELD_CURVE, hsaLimitsForYear, LATEST_HSA_LIMIT_YEAR } from '../params/index.js'
 import { acaParametersForCoverageYear } from '../params/acaCoverageYears.js'
 import { indexingScaleFor } from '../params/indexingScale.js'
 import type { AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
@@ -564,6 +564,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    */
   const limitScale = (pack: ParameterPack, isStandIn: boolean, year: number): number =>
     !isStandIn ? 1 : indexingScaleFor(pack.year, year, inflFactorFrom)
+  /**
+   * The HSA base limits for a year, with the scale to apply to them. The IRS
+   * publishes them each May, ahead of the income-tax figures
+   * (`params/hsaLimitYears.ts`), so they carry their own published year: a year
+   * with its own published limits reads them at a scale of exactly 1, and a
+   * later year grows from the latest published year, not from the pack's.
+   */
+  const hsaLimitsFor = (year: number) => {
+    const { params, isStandIn } = hsaLimitsForYear(year)
+    const growth = !isStandIn ? 1 : indexingScaleFor(params.year, year, inflFactorFrom, LATEST_HSA_LIMIT_YEAR)
+    return { selfOnly: params.selfOnly, family: params.family, growth }
+  }
 
   // --- mutable engine state ---------------------------------------------
   const balances: BalanceState[] = []
@@ -1786,7 +1798,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const federal = computeFederalTax(input)
       const household = buildAnnualStateHouseholdFacts({
         plan, taxYear: year, socialSecurityStreams,
-        federal: { agi: federal.agi, deductionUsed: federal.deduction,
+        federal: { agi: federal.agi, deductionUsed: federal.deduction, seniorDeduction: federal.seniorDeduction,
           taxableIncome: federal.taxableIncome, taxableSocialSecurity: federal.taxableSocialSecurity,
           taxExemptInterest: input.taxExemptInterest ?? 0 },
         railroadBenefits: deriveAnnualStateRailroadBenefits(pensionAndAnnuity),
@@ -2057,6 +2069,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       startYear,
       inflFactor,
       limitGrowth,
+      hsaLimits: hsaLimitsFor(year),
       filingStatus: filingStatusForYear,
       aliveCount,
       peopleCount: people.length,

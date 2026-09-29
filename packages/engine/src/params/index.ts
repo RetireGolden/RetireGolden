@@ -24,6 +24,13 @@ export type {
   AcaCoverageYearParameters,
   AcaPricingParameters,
 } from './acaCoverageYears.js'
+export {
+  HSA_LIMIT_YEARS,
+  EARLIEST_HSA_LIMIT_YEAR,
+  LATEST_HSA_LIMIT_YEAR,
+  hsaLimitsForYear,
+} from './hsaLimitYears.js'
+export type { HsaLimitYearLookup, HsaLimitYearParameters } from './hsaLimitYears.js'
 
 const packs: ParameterPack[] = [year2026]
 // Keep sorted ascending by year as packs are added each fall.

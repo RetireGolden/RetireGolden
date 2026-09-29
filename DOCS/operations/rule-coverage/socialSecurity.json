@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -130,7 +130,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1059,16 +1059,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2201,
+          "line": 2202,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 2209
+              "line": 2210
             },
             {
               "title": "includes a foreign exclusion in provisional income without taxing the exclusion itself",
-              "line": 2220
+              "line": 2221
             }
           ]
         }
@@ -1112,7 +1112,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1418,7 +1418,7 @@
           "functions": [
             {
               "name": "TRUSTEES_DEFAULT_SS_HAIRCUT",
-              "line": 51
+              "line": 58
             }
           ]
         }
@@ -3240,7 +3240,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -3328,7 +3328,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -4279,7 +4279,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },

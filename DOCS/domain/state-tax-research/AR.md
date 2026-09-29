@@ -19,7 +19,8 @@ dollar amount is quoted from **DFA**, which is its only publisher.
 
 ## Summary
 - Broad individual income tax: **yes** — a five-rate schedule, 0% / 2% / 3% /
-  3.4% / 3.9% (A.C.A. §26-51-201(a)(3)(A)). A separate two-rate schedule in
+  3.4% / 3.9% (A.C.A. §26-51-201(a)(3)(A)), with the top rate cut to **3.7%**
+  for tax years from January 1, 2026 (see "2026 correction" below). A separate two-rate schedule in
   §26-51-201(a)(3)(B) applies **only** above roughly $94,700 of net income; that
   is the schedule this pack used to carry for every Arkansan.
 - Bracket thresholds are **indexed annually** by the DFA Secretary and apply "in
@@ -72,6 +73,16 @@ dollar amount is quoted from **DFA**, which is its only publisher.
   `PUBLIC_PENSION_OVERRIDES` map. Absence from that map is also what sets
   `retirementRuleShared`, which is what §26-51-307(b)(1)(B)'s single
   per-taxpayer ceiling requires: one $6,000 across both buckets, never one each.
+
+## 2026 correction (2026-09-28)
+Act 1 (HB 1001) and Act 2 (SB 1) of the 2026 First Extraordinary Session, both
+approved May 6, 2026, add §26-51-201(a)(4): "For tax years beginning on or
+after January 1, 2026", 3.7% on net income from $26,400, in place of 3.9%.
+The pack carried 3.9% until the survey of 2026-09-28
+([later-years-survey-2026-09-28.md](later-years-survey-2026-09-28.md)) found the
+acts; it now carries 3.7%. The (B) table above $94,700 of net income is outside
+the rule record, as before. No statutory change for 2027 or later was found;
+DFA publishes the indexed 2027 brackets and deduction in the autumn.
 
 ## Rate structure and its base
 §26-51-201(a)(3), as amended by Act 1 of the Second Extraordinary Session of

@@ -96,6 +96,9 @@ The conditional ratchet turns on the budget agency certifying four consecutive
 years of state general fund revenue growth of at least 3.5% together with a
 forecast of the same. **Nothing lets a projection know a post-2029 rate.** Carry
 2.90% for 2027–2029 and hold it with a note; do not guess at the ratchet.
+(2026-09-28: 2.9% is loaded for 2027 in `params/state/data/enacted2027.ts` and carried
+forward; (b)(9) to (b)(15) are conditional and (b)(16) keeps the rate, so no later step is
+loaded.)
 IC 6-3-2-1(e) requires DOR to publish each determination by November 1 of every
 odd-numbered year, in Departmental Notice #1 — which is the autumn document to
 re-verify against.

@@ -6,6 +6,7 @@ import {
   type CoverageAttestationStatus,
 } from './coverageAttestations.js'
 import { TAX_RULE_REGISTRY } from './taxRuleRegistry.js'
+import { STATE_ENACTED_YEARS } from '../params/state/index.js'
 
 // Vite requires the options to be an inline object literal.
 const engineSources = import.meta.glob('../**/*.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -177,6 +178,76 @@ describe('coverage attestations', () => {
       registeredButUnnamed,
       'registered paths not named by any registry record: ' + (registeredButUnnamed.join(', ') || 'none'),
     ).toEqual([])
+  })
+})
+
+/**
+ * The enacted-year state modules. The tables are the ones stateParamsFor
+ * applies (STATE_ENACTED_YEARS, each the object its module exports), and the
+ * files on disk are listed from the source scan, so a module added later is
+ * checked the day it lands, and one written but never wired fails here. Each
+ * module's note must name every state code the module carries and every field
+ * each entry replaces: a later sweep reads the note to learn what the file
+ * holds, and a figure the note leaves out would not be re-verified (review
+ * round one of #762 found Washington's 2028 tax, among others, missing from
+ * its note).
+ */
+const ENACTED_MODULE_FILE = /\/params\/state\/data\/enacted(\d{4})\.ts$/u
+// Vite requires the options to be an inline object literal.
+const enactedSources = import.meta.glob('../params/state/data/enacted*.ts', { query: '?raw', import: 'default', eager: true })
+
+const isAlphanumeric = (char: string | undefined): boolean =>
+  char !== undefined && ((char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9'))
+
+/**
+ * True when `token` occurs in `text` with no letter or digit just before it
+ * and, unless `openEnd`, none just after. A plain scan rather than a regular
+ * expression built from the token, which the code scanner flags.
+ */
+function standsAlone(text: string, token: string, openEnd = false): boolean {
+  for (let at = text.indexOf(token); at !== -1; at = text.indexOf(token, at + 1)) {
+    if (isAlphanumeric(text[at - 1])) continue
+    if (!openEnd && isAlphanumeric(text[at + token.length])) continue
+    return true
+  }
+  return false
+}
+
+/** A code or field name standing as its own word in the note, not inside a longer name. */
+function namesToken(note: string, token: string): boolean {
+  return standsAlone(note, token)
+}
+
+describe('enacted-year state module attestations', () => {
+  const filesOnDisk = Object.entries(enactedSources)
+    .flatMap(([path, source]) => {
+      const year = ENACTED_MODULE_FILE.exec(path)?.[1]
+      return year === undefined ? [] : [{ path, year: Number(year), source }]
+    })
+    .sort((a, b) => a.year - b.year)
+
+  it('finds on disk exactly the enacted years stateParamsFor applies, each file holding its own year', () => {
+    expect(filesOnDisk.length).toBeGreaterThan(0)
+    expect(filesOnDisk.map((file) => file.year)).toEqual(STATE_ENACTED_YEARS.map((table) => table.year))
+    for (const file of filesOnDisk) {
+      expect(standsAlone(file.source, `year: ${file.year},`, true), file.path).toBe(true)
+    }
+  })
+
+  it('names in each module note every state code the module carries and every field its entries replace', () => {
+    const omissions: string[] = []
+    for (const table of STATE_ENACTED_YEARS) {
+      const attestationPath = `params/state/data/enacted${table.year}.ts`
+      const note = COVERAGE_ATTESTATIONS[attestationPath]?.note ?? ''
+      for (const [code, figures] of Object.entries(table.states)) {
+        if (!namesToken(note, code)) omissions.push(`${attestationPath}: state ${code}`)
+        for (const field of Object.keys(figures)) {
+          if (!namesToken(note, field)) omissions.push(`${attestationPath}: ${code} field ${field}`)
+        }
+      }
+    }
+    expect(omissions, 'enacted-year notes that leave out what their module carries: ' + (omissions.join('; ') || 'none'))
+      .toEqual([])
   })
 })
 

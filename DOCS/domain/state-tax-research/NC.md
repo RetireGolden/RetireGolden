@@ -7,6 +7,14 @@ Tax year: 2025. Researched 2026-06-13.
 > NC forward at refresh time. Source: Tax Foundation "State Tax Changes Taking Effect January 1, 2026"
 > (accessed 2026-07-16).
 
+> **2027 update (2026-09-28):** Session Law 2026-41 (S.B. 257, chaptered 2026-07-07), section 44.1,
+> rewrote G.S. 105-153.7(a) to 3.99% for 2026, **3.49% for 2027-2029**, 3.24% for 2030-2032 and 2.99%
+> after 2032, and moved the first (a1) revenue trigger to taxable years beginning in 2035. The engine
+> loads each unconditional step: 3.49% for 2027 (`params/state/data/enacted2027.ts`, record
+> `nc-sl-2026-41-2027-flat-rate`), 3.24% for 2030 (`enacted2030.ts`) and 2.99% from 2033 (`enacted2033.ts`,
+> record `nc-sl-2026-41-rate-steps-2030-and-after`). The (a1) cuts from 2035 depend on General Fund revenue
+> and are not loaded. The codified statute page still showed the old table on 2026-09-28; cite the session law.
+
 ## Summary
 - Broad individual income tax: **yes** (flat 4.25% for 2025)
 - Taxes Social Security benefits: no (fully exempt)

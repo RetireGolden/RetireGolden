@@ -229,6 +229,8 @@ export interface StateHouseholdTaxFactsInput {
   connecticutAgi?: number
   federalDeductionUsed?: number
   federalTaxableIncome?: number
+  /** The federal IRC 151(d)(5)(C) senior deduction on the same return. */
+  federalSeniorDeduction?: number
   exemptionTaxpayerCount?: number
   exemptionDependentCount?: number
   age65EligibleCount?: number

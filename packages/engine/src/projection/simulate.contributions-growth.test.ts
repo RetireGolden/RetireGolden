@@ -136,12 +136,12 @@ describe('contributions', () => {
   // it compounds: every projected year hands a 55-plus contributor more room
   // than the statute allows, growing with the horizon.
   //
-  // 2027 is past the latest pack year, so limits scale by one year of
-  // inflation. At 10 percent:
-  //   base indexed, catch-up flat:  4,400 x 1.10 + 1,000 = 5,840
-  //   both indexed:                (4,400 + 1,000) x 1.10 = 5,940
+  // 2028 is past the latest published HSA limits (2027's, Rev. Proc. 2026-24),
+  // so the base scales by one year of inflation from 4,500. At 10 percent:
+  //   base indexed, catch-up flat:  4,500 x 1.10 + 1,000 = 5,950
+  //   both indexed:                (4,500 + 1,000) x 1.10 = 6,050
   describeRule('irc-223-b-3-hsa-catch-up-not-indexed', {
-    readings: { onlyTheBaseIsIndexed: 5_840, bothIndexed: 5_940 },
+    readings: { onlyTheBaseIsIndexed: 5_950, bothIndexed: 6_050 },
     accepted: 'onlyTheBaseIsIndexed',
   }, ({ accepted, readings }) => {
     it('keeps the catch-up flat while the base limit grows', () => {
@@ -160,8 +160,8 @@ describe('contributions', () => {
         } as never,
       ]
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2027, taxCalculator: noTax })
-      const projected = result.years.find((y) => y.year === 2027)!
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2028, taxCalculator: noTax })
+      const projected = result.years.find((y) => y.year === 2028)!
 
       expect(projected.contributions).toBeCloseTo(accepted, 6)
       expect(projected.contributions).not.toBeCloseTo(readings.bothIndexed, 6)
@@ -669,6 +669,100 @@ describe('contributions', () => {
       expect(observed).not.toEqual(readings.unadjustedStatutoryAmounts)
       expect(familyYear.balances['hsa-p1']).toBeCloseTo(4_375, 6)
       expect(familyYear.balances['hsa-p2']).toBeCloseTo(4_375, 6)
+    })
+  })
+
+  // Rev. Proc. 2026-24 section 3.01(1) publishes the 2027 limits, 4,500
+  // self-only and 9,000 family, in May 2026, while the 2027 income-tax figures
+  // are still projected from 2026. Before the 2027 limits were loaded, the
+  // ledger priced 2027 as the 2026 limits grown by the plan's inflation:
+  //   at 2.5%: 4,400 x 1.025 = 4,510 and 8,750 x 1.025 = 8,968.75
+  //   at 4%:   4,400 x 1.04  = 4,576 and 8,750 x 1.04  = 9,100
+  // Neither is the law. The limits are read as published whatever the plan's
+  // inflation, so the same two plans are run at both rates.
+  const hsaYear = (year: number, inflationPct: number) => {
+    const selfOnly = basePlan()
+    selfOnly.assumptions.inflationPct = inflationPct
+    selfOnly.household.people[0]! = {
+      ...selfOnly.household.people[0]!,
+      dob: '1986-06-15', // under 55 throughout: no catch-up
+      retirementAge: 70,
+    }
+    selfOnly.incomes = [wages(100_000)]
+    selfOnly.accounts = [
+      cash(1_000_000),
+      {
+        id: 'hsa-solo', name: 'HSA', type: 'hsa', ownerPersonId: 'p1',
+        balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+      } as never,
+    ]
+    const family = structuredClone(selfOnly)
+    family.household.filingStatus = 'marriedFilingJointly'
+    family.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1986-06-15', sex: 'average',
+      retirementAge: 70, longevity: { planningAge: 90, source: 'manual' },
+    })
+    family.incomes = [wages(100_000, 'p1'), wages(100_000, 'p2')]
+    family.accounts = [
+      cash(1_000_000),
+      {
+        id: 'hsa-p1', name: 'HSA Pat', type: 'hsa', ownerPersonId: 'p1',
+        balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+      } as never,
+      {
+        id: 'hsa-p2', name: 'HSA Sam', type: 'hsa', ownerPersonId: 'p2',
+        balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+      } as never,
+    ]
+    const run = (plan: typeof selfOnly) => simulatePlan(validate(plan), {
+      startYear: 2026, horizonEndYear: year, taxCalculator: noTax,
+    }).years.find((row) => row.year === year)!
+    return { selfOnly: run(selfOnly).contributions, family: run(family).contributions }
+  }
+
+  describeRule('irc-223-b-2-hsa-base-limits-2027', {
+    readings: {
+      revProc2027: { selfOnly: 4_500, family: 9_000 },
+      limits2026GrownAtTwoAndAHalfPercent: { selfOnly: 4_510, family: 8_968.75 },
+      limits2026GrownAtFourPercent: { selfOnly: 4_576, family: 9_100 },
+    },
+    accepted: 'revProc2027',
+  }, ({ accepted, readings }) => {
+    it('reads the published 2027 self-only and family limits at 2.5% inflation', () => {
+      const observed = hsaYear(2027, 2.5)
+      expect(observed.selfOnly).toBeCloseTo(accepted.selfOnly, 6)
+      expect(observed.family).toBeCloseTo(accepted.family, 6)
+      expect(observed.selfOnly).not.toBeCloseTo(readings.limits2026GrownAtTwoAndAHalfPercent.selfOnly, 6)
+      expect(observed.family).not.toBeCloseTo(readings.limits2026GrownAtTwoAndAHalfPercent.family, 6)
+    })
+
+    it('reads the same published limits at 4% inflation', () => {
+      const observed = hsaYear(2027, 4)
+      expect(observed.selfOnly).toBeCloseTo(accepted.selfOnly, 6)
+      expect(observed.family).toBeCloseTo(accepted.family, 6)
+      expect(observed.selfOnly).not.toBeCloseTo(readings.limits2026GrownAtFourPercent.selfOnly, 6)
+      expect(observed.family).not.toBeCloseTo(readings.limits2026GrownAtFourPercent.family, 6)
+    })
+  })
+
+  // After 2027 the limits are projected, and they grow from the latest
+  // published year rather than from 2026. At 2.5% for 2028:
+  //   from 2027: 4,500 x 1.025 = 4,612.50 and 9,000 x 1.025 = 9,225
+  //   from 2026: 4,400 x 1.025^2 = 4,622.75 and 8,750 x 1.025^2 = 9,192.96875
+  describeRule('irc-223-b-2-hsa-base-limits-2027', {
+    note: 'a later year grows from the 2027 limits',
+    readings: {
+      grownFrom2027: { selfOnly: 4_612.5, family: 9_225 },
+      grownFrom2026: { selfOnly: 4_622.75, family: 9_192.96875 },
+    },
+    accepted: 'grownFrom2027',
+  }, ({ accepted, readings }) => {
+    it('grows the 2028 limits one year from the published 2027 limits', () => {
+      const observed = hsaYear(2028, 2.5)
+      expect(observed.selfOnly).toBeCloseTo(accepted.selfOnly, 6)
+      expect(observed.family).toBeCloseTo(accepted.family, 6)
+      expect(observed.selfOnly).not.toBeCloseTo(readings.grownFrom2026.selfOnly, 6)
+      expect(observed.family).not.toBeCloseTo(readings.grownFrom2026.family, 6)
     })
   })
 

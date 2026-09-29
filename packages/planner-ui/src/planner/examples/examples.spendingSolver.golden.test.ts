@@ -106,8 +106,11 @@ const EXPECTED: Record<string, SolverGolden> = {
   'no-annuity-brokerage': { maxBaseAnnual: 116_391, displayed: 116_300, probes: 10, acaYears: null, reasons: [] },
   'static-allocation-control': { maxBaseAnnual: 71_688, displayed: 71_600, probes: 9, acaYears: null, reasons: [] },
   'brokerage-no-hsa': { maxBaseAnnual: 28_290, displayed: 28_200, probes: 9, acaYears: span(2026, 2029), reasons: [BELOW_FPL, PARAMS] },
-  'all-401k-no-bridge': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
-  'brokerage-bridge-401k': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
+  // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES): North Carolina's enacted
+  // rates (S.L. 2026-41: 3.49% from 2027, 3.24% from 2030, 2.99% after 2032)
+  // raise both answers from 71,250 (71,200 shown) to 71,844 (71,800 shown).
+  'all-401k-no-bridge': { maxBaseAnnual: 71_844, displayed: 71_800, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
+  'brokerage-bridge-401k': { maxBaseAnnual: 71_844, displayed: 71_800, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
   'no-head-start-grad': { maxBaseAnnual: 55_000, displayed: 55_000, probes: 9, acaYears: span(2028, 2069), reasons: [PARAMS] },
   'trump-account-head-start': { maxBaseAnnual: 64_282, displayed: 64_200, probes: 9, acaYears: span(2028, 2069), reasons: [PARAMS] },
 }

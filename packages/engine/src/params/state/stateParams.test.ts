@@ -4,7 +4,15 @@ import type { FilingStatus } from '../types.js'
 import { computeStateTax } from '../../tax/stateTax.js'
 import type { TaxYearInput } from '../../projection/types.js'
 import { packForYear, LATEST_PACK_YEAR } from '../index.js'
-import { conformStateStandardDeduction, LATEST_STATE_PACK_YEAR, modeledStateCodes, stateParamsFor } from './index.js'
+import {
+  conformStateStandardDeduction,
+  LATEST_STATE_PACK_YEAR,
+  modeledStateCodes,
+  STATE_ENACTED_YEARS,
+  stateEnactedYearFor,
+  stateParamsFor,
+} from './index.js'
+import type { StateEnactedFigures } from './types.js'
 import { stateYear2026 } from './data/year2026.js'
 
 const FILINGS: FilingStatus[] = ['single', 'marriedFilingJointly']
@@ -194,6 +202,177 @@ describe('federal standard-deduction conformity tags', () => {
     // the two packs are published for the same year; if they ever diverge, the
     // scale has to be rebased before this test can be relaxed.
     expect(LATEST_STATE_PACK_YEAR).toBe(LATEST_PACK_YEAR)
+  })
+})
+
+describe('figures enacted for a year after the latest state figures', () => {
+  const enacted = STATE_ENACTED_YEARS.flatMap((year) => Object.keys(year.states).map((code) => [year.year, code] as const))
+  const entryFor = (year: number, code: string): StateEnactedFigures =>
+    STATE_ENACTED_YEARS.find((enactedYear) => enactedYear.year === year)!.states[code]!
+  const SCHEDULES = ['brackets', 'bracketsHeadOfHousehold', 'bracketsMarriedFilingSeparately'] as const
+
+  it('names only years after the latest state figures, ascending, so none is ever silently shadowed', () => {
+    const years = STATE_ENACTED_YEARS.map((year) => year.year)
+    expect(years).toEqual([...new Set(years)].sort((a, b) => a - b))
+    for (const year of years) expect(year).toBeGreaterThan(LATEST_STATE_PACK_YEAR)
+  })
+
+  it('loads the enacted figures verified from the statutes, and no Georgia or South Carolina rate', () => {
+    // What is loaded, by year and state, with the fields each entry names.
+    // This is not a claim that no other state has enacted a later figure: the
+    // survey of all 51 jurisdictions, recorded state by state in
+    // DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md, covers
+    // the rest.
+    const loaded = enacted.map(([year, code]) => `${year} ${code}: ${Object.keys(entryFor(year, code)).join(', ')}`)
+    expect(loaded).toEqual([
+      '2027 IN: brackets',
+      '2027 MS: brackets',
+      '2027 MT: brackets, bracketsHeadOfHousehold, bracketsMarriedFilingSeparately, montanaLtcg',
+      '2027 NE: brackets',
+      '2027 NC: brackets',
+      '2027 HI: brackets, bracketsHeadOfHousehold',
+      '2027 NY: brackets',
+      '2027 RI: brackets, rhodeIslandSocialSecurityModification',
+      '2027 GA: retirementPrivate, retirementPublic',
+      '2027 VA: standardDeduction',
+      '2027 MD: marylandPublicSafetySubtraction',
+      '2027 DE: delawareUnder60Pension, delawareMilitaryPension60Plus',
+      '2027 ME: standardDeduction, standardDeductionConformity, standardDeductionAge65AdditionConformity',
+      '2028 MS: brackets',
+      '2028 HI: standardDeduction',
+      '2028 RI: brackets',
+      '2028 VA: standardDeduction',
+      '2028 MD: marylandPublicSafetySubtraction',
+      '2028 WA: hasIncomeTax, taxesSocialSecurity, capitalGainsAsOrdinary, capitalGainsTaxablePct, standardDeduction, standardDeductionStatutoryIndexing, directQcdPolicy, brackets',
+      '2028 DE: delawareUnder60Pension, delawareMilitaryPension60Plus',
+      '2029 MS: brackets',
+      '2029 HI: brackets, bracketsHeadOfHousehold',
+      '2029 RI: brackets',
+      '2029 MD: marylandPublicSafetySubtraction',
+      '2029 DE: delawareUnder60Pension, delawareMilitaryPension60Plus',
+      '2029 IL: illinoisPersonalExemption',
+      '2030 MS: brackets',
+      '2030 NC: brackets',
+      '2030 HI: standardDeduction',
+      '2030 VA: standardDeduction',
+      '2030 MD: marylandPublicSafetySubtraction',
+      '2030 DC: standardDeduction, standardDeductionConformity, standardDeductionAge65AdditionConformity, standardDeductionStatutoryIndexing',
+      '2030 CA: californiaMilitaryExclusions',
+      '2031 HI: standardDeduction',
+      '2031 CA: brackets',
+      '2032 OR: oregonRetirementIncomeCredit',
+      '2033 NC: brackets',
+      '2033 NY: brackets',
+    ])
+    // Georgia's and South Carolina's rate cuts are conditional, so no year of
+    // either changes a rate schedule (Georgia's 2027 entry is its retirement
+    // exclusion only).
+    for (const code of ['GA', 'SC']) {
+      for (const year of [2027, 2030, 2035]) {
+        for (const schedule of SCHEDULES) expect(stateParamsFor(code, year)![schedule], `${code} ${year} ${schedule}`).toEqual(stateParamsFor(code, 2026)![schedule])
+      }
+    }
+    expect(stateParamsFor('GA', 2027)!.standardDeduction).toEqual(stateParamsFor('GA', 2026)!.standardDeduction)
+    expect(stateEnactedYearFor('SC', 2027)).toBeNull()
+  })
+
+  it('replaces only the fields each entry names, and only from the enacted year on', () => {
+    for (const [year, code] of enacted) {
+      const entry = entryFor(year, code)
+      const named = Object.keys(entry) as (keyof StateEnactedFigures)[]
+      expect(named.length, `${year} ${code}`).toBeGreaterThan(0)
+      const before = stateParamsFor(code, year - 1)!
+      const after = stateParamsFor(code, year)!
+      // The year before reads the state's previous enacted year, or the pack.
+      const previous = enacted.filter(([earlierYear, earlierCode]) => earlierCode === code && earlierYear < year).at(-1)?.[0] ?? null
+      expect(stateEnactedYearFor(code, year - 1)).toBe(previous)
+      expect(stateEnactedYearFor(code, year)).toBe(year)
+      // Carried forward nominally after the enacted year, as a pack's figures
+      // are, until the state's next enacted year (or for good).
+      const next = enacted.find(([laterYear, laterCode]) => laterCode === code && laterYear > year)?.[0]
+      const heldTo = next === undefined ? year + 5 : next - 1
+      expect(stateEnactedYearFor(code, heldTo)).toBe(year)
+      expect(stateParamsFor(code, heldTo)).toEqual(after)
+      // Each named field is the entry's (a field named as null has ended); at
+      // least one of them changes; every other field is what the year before had.
+      for (const key of named) {
+        if (entry[key] === null) expect(Object.hasOwn(after, key), `${year} ${code} ${key} ended`).toBe(false)
+        else expect(after[key], `${year} ${code} ${key}`).toEqual(entry[key])
+      }
+      expect(named.some((key) => JSON.stringify(after[key]) !== JSON.stringify(before[key])), `${year} ${code} changes nothing`).toBe(true)
+      const withoutNamed = (params: object): Record<string, unknown> => {
+        const copy: Record<string, unknown> = { ...params }
+        for (const key of named) delete copy[key]
+        return copy
+      }
+      expect(withoutNamed(after)).toEqual(withoutNamed(before))
+      for (const schedule of SCHEDULES) {
+        const value = after[schedule]
+        if (value === undefined) continue
+        const tables = Array.isArray(value) ? [value] : FILINGS.map((status) => value[status])
+        for (const brackets of tables) {
+          expect(brackets[0]!.lowerBound).toBe(0)
+          for (let i = 1; i < brackets.length; i++) expect(brackets[i]!.lowerBound).toBeGreaterThan(brackets[i - 1]!.lowerBound)
+        }
+      }
+    }
+  })
+
+  it('reads each field from the latest entry at or before the year that names it, else from the pack', () => {
+    const codes = [...new Set(enacted.map(([, code]) => code))]
+    const lastYear = Math.max(...enacted.map(([year]) => year)) + 2
+    for (const code of codes) {
+      for (let year = LATEST_STATE_PACK_YEAR + 1; year <= lastYear; year++) {
+        const expected: Record<string, unknown> = { ...stateYear2026.states[code]! }
+        for (const [enactedYear, enactedCode] of enacted) {
+          if (enactedCode !== code || enactedYear > year) continue
+          for (const [key, value] of Object.entries(entryFor(enactedYear, code))) {
+            if (value === null) delete expected[key]
+            else expected[key] = value
+          }
+        }
+        expect(stateParamsFor(code, year), `${code} ${year}`).toEqual(expected)
+      }
+    }
+  })
+
+  it('sets every filing status schedule its state carries whenever an entry changes a schedule', () => {
+    for (const [year, code] of enacted) {
+      const entry = entryFor(year, code)
+      if (!SCHEDULES.some((schedule) => entry[schedule] !== undefined)) continue
+      const pack = stateYear2026.states[code]!
+      // The single and joint schedules always, and the head-of-household and
+      // separate-filer schedules wherever the pack carries one, so no status
+      // is left on the old rates beside the new ones.
+      expect(entry.brackets, `${year} ${code} brackets`).toBeDefined()
+      for (const status of FILINGS) expect(entry.brackets![status].length, `${year} ${code} ${status}`).toBeGreaterThan(0)
+      for (const schedule of SCHEDULES) {
+        if (pack[schedule] !== undefined) expect(entry[schedule], `${year} ${code} ${schedule}`).toBeTruthy()
+      }
+    }
+  })
+
+  it('reads a lower-case state code as its upper-case code', () => {
+    expect(stateEnactedYearFor('nc', 2027)).toBe(2027)
+    expect(stateParamsFor('nc', 2027)).toEqual(stateParamsFor('NC', 2027))
+    expect(stateParamsFor('nc', 2027)!.brackets).not.toEqual(stateParamsFor('nc', 2026)!.brackets)
+    expect(stateEnactedYearFor('mt', 2031)).toBe(2027)
+    expect(stateParamsFor('mt', 2031)).toEqual(stateParamsFor('MT', 2031))
+  })
+
+  it('returns the pack entry itself for every state and year it does not touch', () => {
+    for (const code of modeledStateCodes()) {
+      if (stateEnactedYearFor(code, 2027) !== null) continue
+      expect(stateParamsFor(code, 2027)).toBe(stateYear2026.states[code])
+    }
+    for (const code of modeledStateCodes()) expect(stateParamsFor(code, 2026)).toBe(stateYear2026.states[code])
+  })
+
+  it('never reaches back before the year it names', () => {
+    for (const [, code] of enacted) {
+      expect(stateParamsFor(code, 2025)).toBe(stateYear2026.states[code])
+      expect(stateEnactedYearFor(code, 2025)).toBeNull()
+    }
   })
 })
 

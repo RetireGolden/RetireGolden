@@ -133,7 +133,17 @@ describe('rich annual state transport and basis', () => {
     const without = computeStateTaxYearResult(year, { retirementDistributions: [] })
     expect(without.taxableIncome - withEvents.taxableIncome).toBeCloseTo(51_392.14710019098, 8)
   })
-  it.each([['AL', 6_000], ['GA', 65_000], ['ME', 49_824], ['NY', 20_000], ['OK', 10_000], ['RI', 20_000]] as const)('%s does not transfer an unused spouse per-recipient cap', (state, cap) => {
+  it('RI does not transfer an unused spouse per-recipient cap, below its AGI limit and for a pension', () => {
+    // 44-30-12(c)(9): the modification needs federal AGI under $133,750 joint
+    // and covers pension and annuity income, not IRAs, so this case uses one
+    // owner's two employer-plan pensions on a $120,000 joint return.
+    const year = input('RI', { ordinaryIncome: 120_000, agesAlive: [70, 70], filingStatus: 'marriedFilingJointly' })
+    const options = { standardDeductionAllowedOverride: 0, retirementDistributions: [distribution({ accountId: 'one', sourceKind: 'employerPlan', recipientAgeYears: 70, federallyIncludedAmount: 40_000 }), distribution({ accountId: 'two', sourceKind: 'employerPlan', recipientAgeYears: 70.25, federallyIncludedAmount: 40_000 })] }
+    const actual = computeStateTaxYearResult(year, options)
+    const baseline = computeStateTaxYearResult(year, { ...options, retirementDistributions: [] })
+    expect(baseline.taxableIncome - actual.taxableIncome).toBe(50_000)
+  })
+  it.each([['AL', 6_000], ['GA', 65_000], ['ME', 49_824], ['NY', 20_000], ['OK', 10_000]] as const)('%s does not transfer an unused spouse per-recipient cap', (state, cap) => {
     // Each named jurisdiction's domain authority identifies a per-person cap.
     // Use the source-typed IRA path and override deduction only to isolate it.
     const year = input(state, { ordinaryIncome: 300_000, agesAlive: [70, 70], filingStatus: 'marriedFilingJointly' })

@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -47,12 +47,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 826,
+          "line": 920,
           "note": null,
           "tests": [
             {
               "title": "holds a low earner to compensation rather than to the dollar limit",
-              "line": 830
+              "line": 924
             }
           ]
         }
@@ -92,7 +92,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -101,7 +101,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -181,7 +181,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -210,12 +210,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 1004,
+          "line": 1098,
           "note": null,
           "tests": [
             {
               "title": "projects the age-50 catch-up instead of holding it flat",
-              "line": 1008
+              "line": 1102
             }
           ]
         }
@@ -258,7 +258,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         }
@@ -269,12 +269,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 844,
+          "line": 938,
           "note": null,
           "tests": [
             {
               "title": "allocates MFJ IRA contributions per owner under section 219(c)",
-              "line": 873
+              "line": 967
             }
           ]
         }
@@ -318,7 +318,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -338,12 +338,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 916,
+          "line": 1010,
           "note": null,
           "tests": [
             {
               "title": "gives a retiree living on a pension no contribution room",
-              "line": 920
+              "line": 1014
             }
           ]
         }
@@ -477,7 +477,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -563,7 +563,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -645,7 +645,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -723,7 +723,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1104,7 +1104,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1122,7 +1122,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1266,7 +1266,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1391,7 +1391,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1538,7 +1538,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1622,7 +1622,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1687,7 +1687,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -1696,7 +1696,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1817,7 +1817,7 @@
           "functions": [
             {
               "name": "annualContributionReconciliationPhase",
-              "line": 361
+              "line": 364
             }
           ]
         },
@@ -1904,7 +1904,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -1983,7 +1983,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2040,7 +2040,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -2062,7 +2062,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2256,7 +2256,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2331,7 +2331,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -2433,7 +2433,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -2442,7 +2442,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2512,7 +2512,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 17
+              "line": 19
             }
           ]
         },
@@ -2521,7 +2521,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2604,7 +2604,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -2680,7 +2680,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -3106,7 +3106,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },

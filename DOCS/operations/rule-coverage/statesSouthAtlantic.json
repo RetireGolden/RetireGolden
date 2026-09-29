@@ -4,6 +4,123 @@
   "module": "statesSouthAtlantic",
   "rules": [
     {
+      "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+      "title": "The District’s own standard deduction for 2026 to 2029 is loaded as the emergency act in force sets it, with the permanent act’s congressional review named",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Law in force is loaded, and a pending event that could change it is named, dated and revisited (decision of 2026-09-28, State income tax follows each state’s enacted law, applied as it is for Washington’s and California’s votes): congressional review of the permanent act is that event here. The plan’s general inflation stands in for the District’s consumer price index.",
+      "contraryReading": null,
+      "jurisdiction": "state:DC",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-02-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.DC",
+              "line": 63
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DC",
+              "line": 340
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 143
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "statutorilyIndexedStandardDeduction",
+              "line": 212
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1174,
+          "note": "the emergency act’s deduction loaded as the law in force",
+          "tests": [
+            {
+              "title": "prices 2026 on the emergency act’s $15,000 and $30,000, $71.50 and $187 over the federal deduction",
+              "line": 1200
+            },
+            {
+              "title": "indexes the basic amount from 2027, rounded down to $50, and returns to the federal deduction from 2030",
+              "line": 1210
+            },
+            {
+              "title": "prices the indexing vintage on a declining-inflation path: the engine reads a year later than the contrary reading",
+              "line": 1238
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
+        },
+        {
+          "kind": "statute",
+          "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
+        },
+        {
+          "kind": "statute",
+          "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
+        },
+        {
+          "kind": "statute",
+          "citation": "D.C. Act 26-416, sec. 9003",
+          "url": "https://code.dccouncil.gov/us/dc/council/acts/26-416"
+        },
+        {
+          "kind": "statute",
+          "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version",
+          "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04(Perm)"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89",
+          "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04"
+        }
+      ]
+    },
+    {
       "id": "dc-code-47-1803-03-federal-standard-and-ss",
       "title": "The District excludes federally taxable Social Security and follows the federal standard-deduction choice",
       "classification": "settled",
@@ -28,7 +145,7 @@
           "functions": [
             {
               "name": "DC",
-              "line": 320
+              "line": 340
             }
           ]
         },
@@ -37,7 +154,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -46,7 +163,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -57,12 +174,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2574,
+          "line": 2585,
           "note": null,
           "tests": [
             {
               "title": "omits the District Social Security subtraction from the taxable base",
-              "line": 2590
+              "line": 2601
             }
           ]
         }
@@ -107,7 +224,7 @@
           "functions": [
             {
               "name": "DC",
-              "line": 320
+              "line": 340
             }
           ]
         },
@@ -125,11 +242,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -184,7 +301,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 295
+              "line": 315
             }
           ]
         },
@@ -193,7 +310,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             }
           ]
         }
@@ -204,12 +321,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2927,
+          "line": 2938,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the §1102(a)(14) band schedule",
-              "line": 2938
+              "line": 2949
             }
           ]
         }
@@ -226,6 +343,114 @@
           "kind": "statute",
           "citation": "Del. Code tit. 30, §1102(a)(14) (5.55% band)",
           "url": "https://delcode.delaware.gov/title30/c011/sc01/index.html"
+        }
+      ]
+    },
+    {
+      "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
+      "title": "Delaware raises the military pension subtraction to $15,000, $20,000 and $25,000 over 2027 to 2029, and adds it at 60 and over",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/data/enacted2029.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.DE",
+              "line": 243
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.DE",
+              "line": 92
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2029.ts",
+          "functions": [
+            {
+              "name": "states.DE",
+              "line": 100
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "delawareUnder60PensionDeduction",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 939,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts $15,000, $20,000 and $25,000 of a military pension over 2027 to 2029, under 60 and at 62",
+              "line": 946
+            },
+            {
+              "title": "takes the greater limb at 60 or older, never both",
+              "line": 954
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "30 Del. C. §1106(b)(3)c. (S.B. 219, 85 Del. Laws c. 426)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "30 Del. C. §1106(b)(3)d. and e.",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "30 Del. C. §1106(b)(3)f.3. and f.4.",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
         }
       ]
     },
@@ -256,7 +481,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 295
+              "line": 315
             }
           ]
         },
@@ -274,11 +499,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -334,7 +559,7 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 408
+              "line": 415
             }
           ]
         },
@@ -343,7 +568,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 295
+              "line": 315
             }
           ]
         },
@@ -352,7 +577,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -423,7 +648,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 295
+              "line": 315
             }
           ]
         },
@@ -441,11 +666,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -504,7 +729,7 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 408
+              "line": 415
             }
           ]
         },
@@ -513,7 +738,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 295
+              "line": 315
             }
           ]
         },
@@ -531,7 +756,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -596,7 +821,7 @@
           "functions": [
             {
               "name": "FL",
-              "line": 337
+              "line": 365
             }
           ]
         },
@@ -605,7 +830,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -682,7 +907,7 @@
           "functions": [
             {
               "name": "GA",
-              "line": 344
+              "line": 372
             }
           ]
         },
@@ -700,7 +925,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -711,16 +936,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2687,
+          "line": 2698,
           "note": "age-62-through-64 retirement-income and Schedule 1 line 8 Social Security limbs",
           "tests": [
             {
               "title": "pins the missing Georgia age-63 retirement exclusion",
-              "line": 2714
+              "line": 2725
             },
             {
               "title": "subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb",
-              "line": 2721
+              "line": 2732
             }
           ]
         }
@@ -742,6 +967,94 @@
           "kind": "formInstruction",
           "citation": "Georgia Department of Revenue, 2025 Form 500 Schedule 1, line 8",
           "url": "https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download"
+        }
+      ]
+    },
+    {
+      "id": "ga-hb-463-2027-retirement-exclusion",
+      "title": "Georgia raises the retirement income exclusion at 65 or older to $70,000 from 2027",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Georgia’s Code host renders its text in the browser and yields no quote-verifiable page, so the act is quoted from the copy the Governor’s office publishes among its 2026 signed legislation, admitted by exact URL only. HB 463’s rate cut and standard deduction steps are not loaded: they turn on the Office of Planning and Budget’s determination as of December 1.",
+      "contraryReading": null,
+      "jurisdiction": "state:GA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.GA",
+              "line": 233
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 1275
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 539,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes $70,000 at 65 or older from 2027, $249.50 less tax than $65,000",
+              "line": 558
+            },
+            {
+              "title": "leaves the rate and the standard deduction at their 2026 figures",
+              "line": 571
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "HB 463 (2026), section 2-3, adding O.C.G.A. §48-7-27(a)(5)(A)(xiv)",
+          "url": "https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download"
+        },
+        {
+          "kind": "statute",
+          "citation": "HB 463 (2026), section 2-3, revising O.C.G.A. §48-7-27(a)(5)(A)(xiii)",
+          "url": "https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download"
+        },
+        {
+          "kind": "statute",
+          "citation": "HB 463 (2026), section 5-1",
+          "url": "https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download"
         }
       ]
     },
@@ -769,7 +1082,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 510
+              "line": 549
             }
           ]
         },
@@ -778,7 +1091,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -789,16 +1102,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3398,
+          "line": 3410,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 3413
+              "line": 3425
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 3419
+              "line": 3431
             }
           ]
         }
@@ -844,7 +1157,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 510
+              "line": 549
             }
           ]
         },
@@ -853,11 +1166,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -869,24 +1182,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1383,
+          "line": 1387,
           "note": "IRA eligibility and gross Social Security cap reduction",
           "tests": [
             {
               "title": "grants a 65-year-old $40,600 of IRA exclusion the statute withholds",
-              "line": 1413
+              "line": 1417
             },
             {
               "title": "reaches the statute once the cap is withheld from the IRA",
-              "line": 1419
+              "line": 1423
             },
             {
               "title": "also withholds the cap at 64, which is the age the statute names",
-              "line": 1427
+              "line": 1431
             },
             {
               "title": "does not reduce the pack pension cap when gross Social Security rises by $10,000",
-              "line": 1437
+              "line": 1441
             }
           ]
         },
@@ -918,6 +1231,516 @@
       ]
     },
     {
+      "id": "md-tg-10-105-a-3-capital-gain-surtax",
+      "title": "Maryland adds 2% on net capital gain when federal AGI exceeds $350,000; the engine also charges it on a primary-residence gain the law excludes",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "approximation": {
+        "kind": "fix"
+      },
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MD",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 549
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "marylandCapitalGainSurtax",
+              "line": 105
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1297
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 747,
+          "note": "a primary-residence gain the surtax base excludes",
+          "tests": [
+            {
+              "title": "adds 2% of the gain when federal AGI is above $350,000, and nothing below",
+              "line": 770
+            },
+            {
+              "title": "surcharges a primary-residence gain the law excludes, because it arrives as ordinary capital gain",
+              "line": 776
+            },
+            {
+              "title": "charges it as state tax only: the county rate does not reach it",
+              "line": 783
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-105(a)(3)(i)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-105(a)(4)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-105(a)(3)(ii)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-105.pdf"
+        }
+      ]
+    },
+    {
+      "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
+      "title": "Maryland subtracts the first $16,000 of public-safety retirement income at 55, rising to $20,000 by 2030",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The statute names the service, not a retirement system, so the plan states it with a marker on the pension rather than the engine inferring it from the payer, as West Virginia’s police and fire exclusion does with WV-POLICE-FIRE.",
+      "contraryReading": null,
+      "jurisdiction": "state:MD",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/data/enacted2029.ts",
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 240
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 72
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2029.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 549
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "marylandPublicSafetySubtraction",
+              "line": 121
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 794,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts $16,000 in 2026 and steps to $20,000 by 2030: $451, $403.50, $356, $261",
+              "line": 831
+            },
+            {
+              "title": "needs the marker and age 55",
+              "line": 842
+            },
+            {
+              "title": "keeps the subtracted amount out of the pension exclusion at 65 (10-209(d)(2))",
+              "line": 847
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(2)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(3)(II) to (VI)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "2026 Md. Laws ch. 686 (S.B. 607), section 2 and approval",
+          "url": "https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-209(d)(2)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-209.pdf"
+        }
+      ]
+    },
+    {
+      "id": "md-tg-10-217-2026-indexed-standard-deduction",
+      "title": "Maryland indexes its standard deduction from 2026; the engine carries $3,400 single and $6,850 joint, where the Comptroller has printed two different amounts",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "convention",
+        "reason": "the Comptroller has printed two different 2026 amounts, so the engine keeps the withholding guide and the statute rule until the 2026 Form 502 instructions settle it"
+      },
+      "conventionRationale": "The joint figure rests on the statute’s rule and the Bureau of Labor Statistics chained CPI (series SUUR0000SA0); the same adjustment reproduces the withholding guide’s $3,400 and the federal $16,100 single deduction for 2026, which uses the same base-year substitution. The record is revisited when the 2026 Form 502 instructions publish.",
+      "contraryReading": "Use the Comptroller’s 2026 estimated-tax worksheet, $3,350 single and $6,700 joint: the statute makes the adjustment the one the Comptroller determines, and the worksheet is the Comptroller’s latest print. Not taken because the Comptroller’s withholding guide prints $3,400 single, which is what the statute’s formula gives, and the worksheet’s amounts are the unindexed 2025 ones.",
+      "jurisdiction": "state:MD",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MD",
+              "line": 549
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 708,
+          "note": "the Comptroller has printed two 2026 amounts",
+          "tests": [
+            {
+              "title": "deducts $3,400 single and $6,850 joint in 2026, not the worksheet’s $3,350 and $6,700",
+              "line": 728
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-217(b)(1) and (3)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-217(c)(1) and (3)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)",
+          "url": "https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/instructions/withholding/2026/withholding-guide.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General §10-217(c)(2)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-217.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction",
+          "url": "https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/2026-pv-worksheet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "nc-sl-2026-41-2027-flat-rate",
+      "title": "North Carolina taxes TY2027 ordinary income at 3.49% under Session Law 2026-41",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The session law is quoted rather than the codified section because the codified page had not been updated when this was verified on 2026-09-28. The act strikes the fiscal year 2025-2026 trigger row, so no revenue test can move the 2027 rate. The record covers 2027 to 2029, the years the 3.49% row names.",
+      "contraryReading": null,
+      "jurisdiction": "state:NC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": 2029,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.NC",
+              "line": 149
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 130,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges the S.L. 2026-41 rate of 3.49% for 2027, $500 less than 3.99%",
+              "line": 134
+            },
+            {
+              "title": "keeps 2026 at 3.99%, the year the rewritten table still sets there",
+              "line": 142
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a)",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(b)",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "N.C. General Assembly, Senate Bill 257 / SL 2026-41, bill history",
+          "url": "https://www.ncleg.gov/BillLookUp/2025/S257"
+        }
+      ]
+    },
+    {
+      "id": "nc-sl-2026-41-rate-steps-2030-and-after",
+      "title": "North Carolina taxes TY2030 to TY2032 at 3.24% and later years at 2.99% under Session Law 2026-41",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The session law is quoted because the codified page had not been updated when this was verified on 2026-09-28. The (a1) cuts from 2035 turn on General Fund revenue that no projection can know, so the record covers 2030 to 2034, the years the unconditional rows fix.",
+      "contraryReading": null,
+      "jurisdiction": "state:NC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2030,
+      "effectiveThrough": 2034,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/data/enacted2033.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.NC",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2033.ts",
+          "functions": [
+            {
+              "name": "states.NC",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 264,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges 3.49% through 2029, 3.24% for 2030 to 2032 and 2.99% after 2032",
+              "line": 271
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a), rows for 2027 on",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), the trigger",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.L. 2026-41, section 44.1(b)",
+          "url": "https://www.ncleg.gov/Sessions/2025/Bills/Senate/HTML/S257v8.html"
+        }
+      ]
+    },
+    {
       "id": "ncgs-105-153-5-social-security-exclusion",
       "title": "North Carolina subtracts Title II Social Security benefits",
       "classification": "settled",
@@ -941,7 +1764,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 744
+              "line": 800
             }
           ]
         },
@@ -950,7 +1773,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -961,12 +1784,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3999,
+          "line": 4011,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 4008
+              "line": 4020
             }
           ]
         }
@@ -993,8 +1816,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": 2026,
-      "verifiedOn": "2026-09-12",
-      "dueOn": "2027-09-12",
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1005,7 +1828,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 744
+              "line": 800
             }
           ]
         },
@@ -1014,11 +1837,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1029,20 +1852,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3848,
+          "line": 3860,
           "note": null,
           "tests": [
             {
               "title": "prices TY2026 wages at 3.99% after the supported single standard deduction",
-              "line": 3862
-            },
-            {
-              "title": "prices TY2026 MFJ wages on the same 3.99% flat bracket",
               "line": 3874
             },
             {
+              "title": "prices TY2026 MFJ wages on the same 3.99% flat bracket",
+              "line": 3886
+            },
+            {
               "title": "leaves the North Carolina standard deduction unchanged by age",
-              "line": 3889
+              "line": 3901
             }
           ]
         }
@@ -1170,7 +1993,7 @@
           "functions": [
             {
               "name": "states.SC",
-              "line": 849
+              "line": 916
             }
           ]
         },
@@ -1179,7 +2002,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1288,7 +2111,7 @@
           "functions": [
             {
               "name": "SC",
-              "line": 849
+              "line": 916
             }
           ]
         },
@@ -1297,11 +2120,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1362,7 +2185,7 @@
           "functions": [
             {
               "name": "SC",
-              "line": 849
+              "line": 916
             }
           ]
         },
@@ -1371,11 +2194,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1446,7 +2269,7 @@
           "functions": [
             {
               "name": "SC",
-              "line": 849
+              "line": 916
             }
           ]
         },
@@ -1455,11 +2278,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1486,16 +2309,16 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4952,
+          "line": 4988,
           "note": null,
           "tests": [
             {
               "title": "deducts all federally included military retirement",
-              "line": 4959
+              "line": 4995
             },
             {
               "title": "rejects routing nonmilitary public through the military full deduction",
-              "line": 4972
+              "line": 5008
             }
           ]
         }
@@ -1588,7 +2411,7 @@
           "functions": [
             {
               "name": "SC",
-              "line": 849
+              "line": 916
             }
           ]
         },
@@ -1597,11 +2420,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -1657,7 +2480,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 971
+              "line": 1040
             }
           ]
         },
@@ -1666,11 +2489,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -1735,7 +2558,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 971
+              "line": 1040
             }
           ]
         },
@@ -1744,11 +2567,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -1813,7 +2636,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 971
+              "line": 1040
             }
           ]
         },
@@ -1822,11 +2645,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         },
@@ -1867,6 +2690,89 @@
       ]
     },
     {
+      "id": "va-code-58-1-322-03-2-personal-exemptions",
+      "title": "Virginia deducts $930 for each personal exemption and $800 more for each taxpayer 65 or older",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.VA",
+              "line": 1040
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "virginiaPersonalExemptions",
+              "line": 88
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 663,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts $1,730 for a single filer aged 65 and $3,460 for a couple both 65",
+              "line": 683
+            },
+            {
+              "title": "gives a filer under 65 the $930 exemption alone",
+              "line": 691
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(2)(a)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(2)(b)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        }
+      ]
+    },
+    {
       "id": "va-code-58-1-322-03-age-deduction-and-social-security",
       "title": "Virginia phases the age-65 deduction out against adjusted federal AGI",
       "classification": "approximated",
@@ -1892,7 +2798,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 971
+              "line": 1040
             }
           ]
         },
@@ -1901,11 +2807,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -1916,20 +2822,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4506,
+          "line": 4540,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 4537
+              "line": 4573
             },
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 4546
+              "line": 4582
             },
             {
               "title": "pins the age deduction against adjusted FAGI after Title II Social Security",
-              "line": 4552
+              "line": 4588
             }
           ]
         }
@@ -1940,6 +2846,190 @@
         {
           "kind": "statute",
           "citation": "Va. Code §58.1-322.03(5)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        }
+      ]
+    },
+    {
+      "id": "va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction",
+      "title": "The optimizer prices a state’s brackets on federal taxable income, so a state deduction smaller than the federal one and the state’s exemptions are left out of its in-solve state tax (Virginia is the pinned case)",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "fix"
+      },
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/strategies/optimizer.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.VA",
+              "line": 1040
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizePlan.ts",
+          "functions": [
+            {
+              "name": "buildOptimizerInput",
+              "line": 518
+            },
+            {
+              "name": "stateBracketSegmentsFor",
+              "line": 110
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/optimizer.ts",
+          "functions": [
+            {
+              "name": "buildOptimizerModel",
+              "line": 585
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizerStateBrackets.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/optimizerStateBrackets.rules.test.ts",
+          "line": 61,
+          "note": "the LP prices Virginia on federal taxable income",
+          "tests": [
+            {
+              "title": "lays Virginia’s brackets over the LP’s federal taxable income",
+              "line": 70
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(1)(b)(i)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(2)(a)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        }
+      ]
+    },
+    {
+      "id": "va-code-58-1-322-03-standard-deduction-steps",
+      "title": "Virginia’s standard deduction is $9,200 and $18,400 for 2027, $9,300 and $18,600 for 2028 and 2029, and $3,000 and $6,000 from 2030",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Virginia has extended its temporary amounts before; the record carries the code as it reads on 2026-09-28, and the 2030 amount is re-read at each refresh.",
+      "contraryReading": null,
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.VA",
+              "line": 237
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.VA",
+              "line": 69
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.VA",
+              "line": 54
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 1275
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 580,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts $18,400 joint for 2027, $18,600 for 2028 and 2029 and $6,000 from 2030",
+              "line": 587
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(1)(b)(vi) and (vii)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(1)(b)(i)",
           "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
         }
       ]
@@ -2027,7 +3117,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2036,11 +3126,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2096,7 +3186,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2114,11 +3204,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2178,7 +3268,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2196,11 +3286,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2260,7 +3350,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2278,11 +3368,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2338,7 +3428,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2356,11 +3446,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }
@@ -2415,7 +3505,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2424,7 +3514,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2498,7 +3588,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2507,7 +3597,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             }
           ]
         }
@@ -2580,7 +3670,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 993
+              "line": 1066
             }
           ]
         },
@@ -2598,11 +3688,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 844
+              "line": 928
             }
           ]
         }

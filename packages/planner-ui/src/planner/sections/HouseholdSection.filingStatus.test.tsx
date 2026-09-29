@@ -14,6 +14,8 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planContextCore'
 import { createSamplePlan } from '../../testSupport/samplePlan'
 import { SINGLE_WITH_PARTNER_NOTE } from '../filingStatusNotice'
+import { addHouseholdYearFactsRow } from '../stateTaxFactsActions'
+import { AssumptionsSection } from './AssumptionsSection'
 import { HouseholdSection } from './HouseholdSection'
 
 let root: Root | null = null
@@ -106,5 +108,48 @@ describe('Household: Single filing status with a partner (#555)', () => {
     plan.household.filingStatus = 'single'
     plan.household.people = [plan.household.people[0]!]
     expect(notice(mount(plan))).toBeNull()
+  })
+})
+
+// PR #762 review: the help once said no state's head-of-household figures are
+// used, but the state filing status override under Assumptions can choose
+// head of household, and Montana's and Hawaii's schedules are then priced.
+describe('Household: the filing status help says where head-of-household figures come from', () => {
+  const filingStatusHelp = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('.help-tip-text'))
+      .map((node) => node.textContent ?? '')
+      .find((text) => text.startsWith('Sets the federal and state tax brackets'))
+
+  it('names the two statuses the plan models and the one control that selects head of household', () => {
+    const help = filingStatusHelp(mount(createSamplePlan()))
+    expect(help).toBeDefined()
+    expect(help).toContain('The plan models single and married filing jointly.')
+    expect(help).toContain(
+      'Head-of-household figures are used only on a state return, and only for a year where you set the state filing status to Head of household under Assumptions, State tax worksheet facts',
+    )
+    expect(help).not.toContain('no state')
+  })
+
+  it('points at a control that exists: the State tax worksheet facts heading under Assumptions and its Head of household option', () => {
+    const plan = createSamplePlan()
+    addHouseholdYearFactsRow(plan, 2026)
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root!.render(
+        <MemoryRouter initialEntries={['/plan/x/assumptions']}>
+          <PlanCtx.Provider value={{ plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+            <AssumptionsSection />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    const headings = Array.from(container.querySelectorAll('h3')).map((node) => node.textContent)
+    expect(headings).toContain('State tax worksheet facts')
+    const label = Array.from(container.querySelectorAll('label')).find((node) => node.textContent?.trim() === 'State filing status (override)')
+    expect(label).toBeDefined()
+    const select = container.querySelector<HTMLSelectElement>(`#${CSS.escape(label!.getAttribute('for')!)}`)
+    expect(Array.from(select!.options).map((option) => option.textContent)).toContain('Head of household')
   })
 })

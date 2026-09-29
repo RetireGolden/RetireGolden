@@ -69,12 +69,30 @@ export type AnnualEmployerPriorElectiveContributions =
       readonly asOfDate: string
     }
 
+/**
+ * The IRC 223(b)(2) base limits the year's HSA contributions are held to, with
+ * the scale to apply to them. They come from `params/hsaLimitYears.ts`, not the
+ * pack: the IRS publishes them each May, so a year can have its own published
+ * limits (read at a `growth` of exactly 1) while its income-tax figures are
+ * still projected, and a later year grows them from the latest published year.
+ */
+export interface AnnualHsaBaseLimits {
+  /** IRC 223(b)(2)(A), self-only coverage, in that published year's dollars. */
+  readonly selfOnly: number
+  /** IRC 223(b)(2)(B), family coverage, in that published year's dollars. */
+  readonly family: number
+  /** Cumulative plan inflation from the published year to this year; 1 for a published year. */
+  readonly growth: number
+}
+
 export interface AnnualContributionsAndEmployerMatchInput {
   readonly balances: readonly AnnualContributionBalanceView[]
   readonly year: number
   readonly startYear: number
   readonly inflFactor: number
   readonly limitGrowth: number
+  /** The HSA base limits and their scale; the age-55 catch-up stays in `pack`. */
+  readonly hsaLimits: AnnualHsaBaseLimits
   readonly filingStatus: ProjectedFilingStatus
   readonly aliveCount: number
   readonly peopleCount: number
@@ -486,13 +504,13 @@ export function annualContributionsAndEmployerMatch(
       const dividesFamilyLimit = hasFamilyCoverage &&
         input.filingStatus === 'marriedFilingJointly' && input.aliveCount === 2
       const base = hasFamilyCoverage
-        ? input.pack.contributionLimits.hsaFamily /
+        ? input.hsaLimits.family /
           (dividesFamilyLimit ? 2 : 1)
-        : input.pack.contributionLimits.hsaSelfOnly
+        : input.hsaLimits.selfOnly
       const catchUp = age >= 55
         ? input.pack.contributionLimits.hsaCatchUp55
         : 0
-      limit = base * input.limitGrowth + catchUp
+      limit = base * input.hsaLimits.growth + catchUp
     }
     if (groupKey !== null && !isEmployerAccount) {
       const used = groupUsed.get(groupKey) ?? 0

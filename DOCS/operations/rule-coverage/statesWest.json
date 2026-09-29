@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "AK",
-              "line": 147
+              "line": 151
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -100,7 +100,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 167
+              "line": 171
             }
           ]
         },
@@ -109,7 +109,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1168
+              "line": 1283
             }
           ]
         }
@@ -120,16 +120,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1945,
+          "line": 1948,
           "note": null,
           "tests": [
             {
               "title": "charges one rate on the whole Arizona base",
-              "line": 1959
+              "line": 1962
             },
             {
               "title": "applies the same rate to a joint return, since the paragraph is status-blind",
-              "line": 1964
+              "line": 1967
             }
           ]
         }
@@ -178,7 +178,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 167
+              "line": 171
             }
           ]
         },
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -198,16 +198,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2021,
+          "line": 2029,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Arizonan’s Social Security out of the state base",
-              "line": 2036
+              "line": 2044
             },
             {
               "title": "would pull the federally taxable share in if Arizona taxed it",
-              "line": 2040
+              "line": 2048
             }
           ]
         }
@@ -254,7 +254,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "line": 68
             }
           ]
         },
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -283,16 +283,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 500,
+          "line": 501,
           "note": null,
           "tests": [
             {
               "title": "exempts an ASRS pension Arizona taxes above $2,500",
-              "line": 519
+              "line": 520
             },
             {
               "title": "reaches the statute’s figure only by capping the military exclusion too",
-              "line": 524
+              "line": 525
             }
           ]
         }
@@ -355,7 +355,7 @@
           "functions": [
             {
               "name": "AZ.capitalGainsTaxablePct",
-              "line": 181
+              "line": 185
             }
           ]
         },
@@ -373,7 +373,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -384,16 +384,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 540,
+          "line": 541,
           "note": null,
           "tests": [
             {
               "title": "subtracts a quarter of a pre-2012 gain that Arizona taxes in full",
-              "line": 560
+              "line": 561
             },
             {
               "title": "reaches the statute’s figure only for a household holding nothing bought since 2011",
-              "line": 565
+              "line": 566
             }
           ]
         }
@@ -442,7 +442,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "line": 68
             }
           ]
         },
@@ -451,11 +451,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -466,16 +466,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2050,
+          "line": 2058,
           "note": null,
           "tests": [
             {
               "title": "takes the whole military pension out of an Arizona base",
-              "line": 2064
+              "line": 2072
             },
             {
               "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
-              "line": 2069
+              "line": 2077
             }
           ]
         }
@@ -492,6 +492,90 @@
           "kind": "formInstruction",
           "citation": "2025 Arizona Form 140 instructions, Line 29b",
           "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
+      "title": "Arizona subtracts the federal senior deduction for 2025 to 2028",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The session law’s markup renders the reference to section 151 with spaces inside the parentheses, so the quote elides it.",
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2028,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 171
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "federalSeniorDeductionSubtraction",
+              "line": 157
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 894,
+          "note": null,
+          "tests": [
+            {
+              "title": "is $150 for each person 65 or older below the phase-out",
+              "line": 899
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Laws 2026, ch. 140 (H.B. 4168), section 15, adding A.R.S. 43-1022(35)",
+          "url": "https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Laws 2026, ch. 140 (H.B. 4168), section 12, A.R.S. 43-105(A)",
+          "url": "https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Laws 2026, ch. 140 (H.B. 4168), section 35(A)",
+          "url": "https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm"
         }
       ]
     },
@@ -519,7 +603,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 167
+              "line": 171
             }
           ]
         },
@@ -528,11 +612,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             },
             {
               "name": "retirementExclusion",
-              "line": 132
+              "line": 142
             }
           ]
         }
@@ -543,16 +627,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2075,
+          "line": 2083,
           "note": null,
           "tests": [
             {
               "title": "taxes an Arizona IRA or private pension distribution in full",
-              "line": 2091
+              "line": 2099
             },
             {
               "title": "does not let the public bucket’s exclusion spill onto it",
-              "line": 2096
+              "line": 2104
             }
           ]
         }
@@ -599,7 +683,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 167
+              "line": 171
             }
           ]
         },
@@ -608,7 +692,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -617,7 +701,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -628,16 +712,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 578,
+          "line": 581,
           "note": null,
           "tests": [
             {
               "title": "gives a 65-year-old Arizonan no exemption at all",
-              "line": 594
+              "line": 597
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 599
+              "line": 602
             }
           ]
         }
@@ -687,7 +771,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 167
+              "line": 171
             }
           ]
         },
@@ -696,7 +780,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -705,7 +789,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -716,16 +800,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1975,
+          "line": 1983,
           "note": null,
           "tests": [
             {
               "title": "deducts Arizona’s published amount and adds no federal age-65 amount",
-              "line": 1993
+              "line": 2001
             },
             {
               "title": "would take the federal figure and the federal age-65 addition if it were tagged",
-              "line": 2001
+              "line": 2009
             }
           ]
         }
@@ -756,6 +840,90 @@
       ]
     },
     {
+      "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
+      "title": "California’s 10.3%, 11.3% and 12.3% bands end from 2031, unless Proposition 3 passes on November 3, 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Enacted law with a vote pending is loaded as current law, with the vote named and dated (decision of 2026-09-28, State income tax follows each state’s enacted law). Proposition 3’s text was not read; its title, from the Secretary of State’s list, is what is quoted.",
+      "contraryReading": null,
+      "jurisdiction": "state:CA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2031,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2031.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2031.ts",
+          "functions": [
+            {
+              "name": "states.CA",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1065,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes $1,000,000 at $103,836.61 through 2030 and $89,438.64 from 2031",
+              "line": 1078
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Cal. Const. art. XIII, §36(f)(2)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII"
+        },
+        {
+          "kind": "statute",
+          "citation": "Cal. Const. art. XIII, §36(f)(2)(D)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "California Secretary of State, Qualified Statewide Ballot Measures, November 3, 2026",
+          "url": "https://www.sos.ca.gov/elections/ballot-measures/qualified-ballot-measures"
+        }
+      ]
+    },
+    {
       "id": "ca-ftb-2026-540-es-standard-deduction",
       "title": "California's 2026 estimated-tax worksheet lists $5,706/$11,412 standard deductions",
       "classification": "settled",
@@ -779,7 +947,7 @@
           "functions": [
             {
               "name": "CA",
-              "line": 235
+              "line": 246
             }
           ]
         },
@@ -788,7 +956,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -799,12 +967,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2437,
+          "line": 2445,
           "note": null,
           "tests": [
             {
               "title": "maps the supported single and MFJ deduction cells to California taxable income",
-              "line": 2446
+              "line": 2454
             }
           ]
         }
@@ -844,7 +1012,7 @@
           "functions": [
             {
               "name": "states.CA",
-              "line": 235
+              "line": 246
             }
           ]
         },
@@ -866,7 +1034,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -929,7 +1097,7 @@
           "functions": [
             {
               "name": "CA",
-              "line": 235
+              "line": 246
             }
           ]
         },
@@ -938,7 +1106,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -949,12 +1117,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2463,
+          "line": 2471,
           "note": null,
           "tests": [
             {
               "title": "omits California Social Security from the taxable base",
-              "line": 2479
+              "line": 2487
             }
           ]
         }
@@ -966,6 +1134,100 @@
           "kind": "statute",
           "citation": "Cal. Rev. & Tax. Code 17087(a)",
           "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17087."
+        }
+      ]
+    },
+    {
+      "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
+      "title": "California excludes up to $20,000 of military retirement pay and $20,000 of Survivor Benefit Plan annuities for 2025 to 2029",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CA",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2029,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-02-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.CA",
+              "line": 69
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.CA",
+              "line": 246
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "californiaMilitaryExclusions",
+              "line": 167
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1095,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes up to $20,000 at federal AGI up to $125,000 through 2029",
+              "line": 1109
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Cal. Rev. & Tax. Code §17132.9(a)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.9."
+        },
+        {
+          "kind": "statute",
+          "citation": "Cal. Rev. & Tax. Code §17132.9(b)(1)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.9."
+        },
+        {
+          "kind": "statute",
+          "citation": "Cal. Rev. & Tax. Code §17132.10(a)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.10."
         }
       ]
     },
@@ -994,7 +1256,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 259
+              "line": 275
             }
           ]
         },
@@ -1012,7 +1274,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -1068,7 +1330,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 259
+              "line": 275
             }
           ]
         },
@@ -1086,7 +1348,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -1128,6 +1390,85 @@
       ]
     },
     {
+      "id": "co-crs-39-22-104-federal-taxable-income-senior-deduction",
+      "title": "Colorado taxes federal taxable income, so the federal senior deduction reduces Colorado tax for 2025 to 2028",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2028,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.CO",
+              "line": 275
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "federalSeniorDeductionSubtraction",
+              "line": 157
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 902,
+          "note": null,
+          "tests": [
+            {
+              "title": "is $264 for each person 65 or older below the phase-out",
+              "line": 907
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(1.7)(c)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "co-crs-39-22-104-social-security-inclusion",
       "title": "Colorado raises the combined cap to eligible taxable Social Security",
       "classification": "settled",
@@ -1152,7 +1493,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 259
+              "line": 275
             }
           ]
         },
@@ -1170,7 +1511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -1202,6 +1543,146 @@
       ]
     },
     {
+      "id": "hi-act-24-2026-rate-schedules",
+      "title": "Hawaii taxes from 2027 on the Act 24 tables: lower second and third rates and a 13% top band",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The act is quoted from the conference draft its status page names as the enacted version, and its approval from the Governor’s message; the unofficial HRS compilation, current to December 31, 2025, still prints the Act 46 tables that Act 24 struck. The printed whole-dollar bases differ from a continuous marginal computation by less than a dollar; the enacted-year tables carry the printed bases.",
+      "contraryReading": null,
+      "jurisdiction": "state:HI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/data/enacted2029.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 152
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2029.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "hawaiiTaxForStatus",
+              "line": 54
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 331,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices $100,000 at the 2027 tables: $4,579 joint, $5,890 single, $5,234 head of household",
+              "line": 360
+            },
+            {
+              "title": "charges $803.40 joint, $601.20 single and $702.80 head of household less than the 2026 tables held forward",
+              "line": 374
+            },
+            {
+              "title": "uses the printed base: 40 cents over the continuous sum single, 20 cents joint",
+              "line": 384
+            },
+            {
+              "title": "taxes 13% above $500,000 single: $135,365 on $1,200,000 for 2027, against $122,216.20 on the 2026 tables",
+              "line": 396
+            },
+            {
+              "title": "keeps the 2027 tables for 2028 and moves to the 2029 tables from 2029",
+              "line": 404
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "Act 24, SLH 2026, section 9(2)",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24",
+          "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1124_.PDF"
+        }
+      ]
+    },
+    {
       "id": "hi-direct-qcd-conformity",
       "title": "Hawaii 2026 adopts direct QCD exclusion with the 2025 federal Code",
       "classification": "settled",
@@ -1226,7 +1707,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 353
+              "line": 384
             }
           ]
         },
@@ -1244,7 +1725,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -1286,7 +1767,7 @@
       "jurisdiction": "state:HI",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
-      "effectiveThrough": null,
+      "effectiveThrough": 2026,
       "verifiedOn": "2026-09-12",
       "dueOn": "2027-09-12",
       "implementedBy": [
@@ -1300,7 +1781,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 353
+              "line": 384
             }
           ]
         },
@@ -1309,7 +1790,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -1377,7 +1858,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 353
+              "line": 384
             }
           ]
         },
@@ -1386,7 +1867,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1397,16 +1878,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3070,
+          "line": 3081,
           "note": null,
           "tests": [
             {
               "title": "holds Hawaii taxable income unchanged when federally included Social Security is added",
-              "line": 3089
+              "line": 3100
             },
             {
               "title": "would raise the base by the IRC 86 inclusion if Social Security were taxed",
-              "line": 3097
+              "line": 3108
             }
           ]
         }
@@ -1427,7 +1908,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027 (from the §235-2.4(a)(2)(G) phase beginning 2028) are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.",
+      "conventionRationale": "The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027, from the §235-2.4(a)(2)(G) phase beginning 2028, are the record hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.",
       "contraryReading": null,
       "jurisdiction": "state:HI",
       "volatility": "sunsetting",
@@ -1445,7 +1926,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 353
+              "line": 384
             }
           ]
         },
@@ -1454,7 +1935,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1465,12 +1946,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3018,
+          "line": 3029,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 3030
+              "line": 3041
             }
           ]
         }
@@ -1486,6 +1967,110 @@
         {
           "kind": "statute",
           "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        }
+      ]
+    },
+    {
+      "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
+      "title": "Hawaii raises its standard deduction for taxable years after 2027, 2029 and 2030",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The Department of Taxation’s HRS compilation is unofficial and current to December 31, 2025; its history note applies the 2024 amendment to taxable years beginning after December 31, 2023, with no condition, and Act 35, SLH 2026, section 3 reprints subparagraphs (F) to (I) with the same amounts and years. The 2026 and 2027 amount is the record hi-hrs-235-2-4-a-2-f-2026-standard-deduction.",
+      "contraryReading": null,
+      "jurisdiction": "state:HI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2028,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/data/enacted2030.ts",
+        "packages/engine/src/params/state/data/enacted2031.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 54
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2030.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 51
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/enacted2031.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 1275
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 421,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts $18,000 joint from 2028, $20,000 from 2030 and $24,000 from 2031",
+              "line": 440
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(H)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(I)",
           "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
         }
       ]
@@ -1517,11 +2102,11 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "line": 68
             },
             {
               "name": "states.HI",
-              "line": 353
+              "line": 384
             }
           ]
         },
@@ -1539,7 +2124,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1550,12 +2135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3105,
+          "line": 3116,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 3120
+              "line": 3131
             }
           ]
         }
@@ -1604,7 +2189,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 386
+              "line": 420
             }
           ]
         },
@@ -1613,7 +2198,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1624,12 +2209,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3131,
+          "line": 3142,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 3147
+              "line": 3158
             }
           ]
         }
@@ -1669,7 +2254,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 386
+              "line": 420
             }
           ]
         },
@@ -1678,7 +2263,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -1723,6 +2308,90 @@
       ]
     },
     {
+      "id": "id-h559-2026-conformity-senior-deduction",
+      "title": "Idaho adopts the Internal Revenue Code as of January 1, 2026, so the federal senior deduction applies for 2025 to 2028",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The session law prints the amended conformity date with the stricken year beside the new one, so the conformity is quoted from the Tax Commission’s release and the act’s effective clause.",
+      "contraryReading": null,
+      "jurisdiction": "state:ID",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2028,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.ID",
+              "line": 420
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "federalSeniorDeductionSubtraction",
+              "line": 157
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 910,
+          "note": null,
+          "tests": [
+            {
+              "title": "is $318 for each person 65 or older below the phase-out",
+              "line": 915
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "H.B. 559 (2026), section 4",
+          "url": "https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2026/legislation/H0559.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Idaho State Tax Commission, press release of March 3, 2026, File now to get your conformity deductions",
+          "url": "https://tax.idaho.gov/pressrelease/file-now-to-get-your-conformity-deductions/"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "mt-hb337-2026-ordinary-rate-schedule",
       "title": "Montana HB 337 publishes TY2026 ordinary two-bracket rates for supported single and MFJ filers",
       "classification": "settled",
@@ -1746,7 +2415,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 638
+              "line": 691
             }
           ]
         },
@@ -1755,11 +2424,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1770,20 +2439,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3932,
+          "line": 3944,
           "note": null,
           "tests": [
             {
               "title": "prices MFJ ordinary income on the $95,000 TY2026 breakpoint",
-              "line": 3968
+              "line": 3980
             },
             {
               "title": "prices single ordinary income on the $47,500 TY2026 breakpoint",
-              "line": 3977
+              "line": 3989
             },
             {
               "title": "prices single and joint filers below their respective TY2026 thresholds",
-              "line": 3984
+              "line": 3996
             }
           ]
         }
@@ -1833,7 +2502,7 @@
           "functions": [
             {
               "name": "states.MT",
-              "line": 638
+              "line": 691
             }
           ]
         },
@@ -1842,7 +2511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -1887,6 +2556,156 @@
       ]
     },
     {
+      "id": "mt-mca-15-30-2103-2027-rate-schedule",
+      "title": "Montana taxes TY2027 income at 4.7% and 5.4%, with breaks at $65,000, $97,500 and $130,000",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The 2027 version indexes its breaks from a June 2026 base, so its first adjustment is for 2028 and the 2027 breaks are the ones printed in the statute. Later years hold the 2027 breaks rather than index them, as every state schedule does after its latest published year.",
+      "contraryReading": null,
+      "jurisdiction": "state:MT",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2027,
+      "effectiveThrough": 2027,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2027.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2027.ts",
+          "functions": [
+            {
+              "name": "states.MT",
+              "line": 124
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 124
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "montanaLtcgTax",
+              "line": 117
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 152,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges 4.7% to $130,000 and 5.4% above for a joint return, $382.50 less on $150,000",
+              "line": 176
+            },
+            {
+              "title": "breaks at $65,000 for a single filer",
+              "line": 185
+            },
+            {
+              "title": "breaks at $97,500 for a head of household and $65,000 for a married individual filing separately",
+              "line": 192
+            },
+            {
+              "title": "taxes long-term gains at 3.0% up to the same $65,000 break and 4.1% above",
+              "line": 204
+            },
+            {
+              "title": "taxes a head of household’s gains at 3.0% up to the $97,500 break: $627.50 on $20,000 above $80,000 of ordinary income",
+              "line": 213
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103 (effective January 1, 2027), heading",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(1)(a) (effective January 1, 2027), joint return and surviving spouse",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(1)(b) (effective January 1, 2027), head of household",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(1)(c) (effective January 1, 2027), single",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(1)(d) (effective January 1, 2027), married filing separately",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(2)(a) (effective January 1, 2027), joint net long-term capital gains",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(2)(b) (effective January 1, 2027), head of household net long-term capital gains",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(2)(c) (effective January 1, 2027), single net long-term capital gains",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(3) (effective January 1, 2027), indexing",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2103(4)(a) (effective January 1, 2027), modified inflation factor",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2101(12), inflation factor",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0010/0150-0300-0210-0010.html"
+        }
+      ]
+    },
+    {
       "id": "mt-mca-15-30-2120-3-g-age-65-subtraction",
       "title": "Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the state tax parameters have no such knob",
       "classification": "approximated",
@@ -1912,7 +2731,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 638
+              "line": 691
             }
           ]
         },
@@ -1921,7 +2740,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -1932,27 +2751,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3544,
+          "line": 3556,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3564
+              "line": 3576
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3569
+              "line": 3581
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3587,
+          "line": 3599,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3605
+              "line": 3617
             }
           ]
         }
@@ -2002,7 +2821,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 638
+              "line": 691
             }
           ]
         },
@@ -2011,7 +2830,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -2020,7 +2839,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2031,20 +2850,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3500,
+          "line": 3512,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3519
+              "line": 3531
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3525
+              "line": 3537
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3531
+              "line": 3543
             }
           ]
         }
@@ -2103,7 +2922,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 708
+              "line": 764
             }
           ]
         },
@@ -2112,11 +2931,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             },
             {
               "name": "computeStateTaxDetail",
-              "line": 1168
+              "line": 1283
             }
           ]
         }
@@ -2127,16 +2946,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3790,
+          "line": 3802,
           "note": null,
           "tests": [
             {
               "title": "prices single filers at the Schedule B top bracket threshold and first marginal dollar",
-              "line": 3821
+              "line": 3833
             },
             {
               "title": "prices joint filers at the Schedule A top bracket threshold and first marginal dollar",
-              "line": 3829
+              "line": 3841
             }
           ]
         }
@@ -2188,7 +3007,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 708
+              "line": 764
             }
           ]
         },
@@ -2197,7 +3016,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 77
+              "line": 143
             }
           ]
         },
@@ -2206,7 +3025,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2217,12 +3036,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3762,
+          "line": 3774,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3777
+              "line": 3789
             }
           ]
         }
@@ -2261,7 +3080,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 673
+              "line": 729
             }
           ]
         },
@@ -2270,7 +3089,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2316,7 +3135,7 @@
       "jurisdiction": "state:OR",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
-      "effectiveThrough": null,
+      "effectiveThrough": 2031,
       "verifiedOn": "2026-09-12",
       "dueOn": "2027-09-12",
       "implementedBy": [
@@ -2330,7 +3149,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 806
+              "line": 865
             }
           ]
         },
@@ -2339,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -2392,6 +3211,80 @@
       ]
     },
     {
+      "id": "or-laws-2009-c913-s36-retirement-credit-ends-2032",
+      "title": "Oregon’s retirement income credit cannot be claimed for tax years from 2032",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2032,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2032.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2032.ts",
+          "functions": [
+            {
+              "name": "states.OR",
+              "line": 20
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1297
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1034,
+          "note": null,
+          "tests": [
+            {
+              "title": "allows the $675 credit through 2031 and none from 2032, with no missing-fact warning",
+              "line": 1049
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Or. Laws 2009, ch. 913, §36, as amended by Or. Laws 2025, ch. 562, §5 (note to ORS 316.157)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        }
+      ]
+    },
+    {
       "id": "or-lro-2026-rate-schedule-and-standard-deduction",
       "title": "Oregon publishes TY2026 indexed brackets and basic deductions represented by continuous marginal breakpoints",
       "classification": "approximated",
@@ -2417,7 +3310,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 806
+              "line": 865
             }
           ]
         },
@@ -2426,11 +3319,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2579,7 +3472,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 806
+              "line": 865
             }
           ]
         },
@@ -2588,7 +3481,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -2599,12 +3492,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4278,
+          "line": 4290,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 4291
+              "line": 4303
             }
           ]
         }
@@ -2644,7 +3537,7 @@
           "functions": [
             {
               "name": "states.AR",
-              "line": 192
+              "line": 200
             }
           ]
         },
@@ -2662,7 +3555,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -2727,7 +3620,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -2736,7 +3629,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -2805,7 +3698,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -2814,7 +3707,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 114
+              "line": 124
             }
           ]
         }
@@ -2825,12 +3718,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4244,
+          "line": 4256,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 4252
+              "line": 4264
             }
           ]
         }
@@ -2880,7 +3773,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -2889,7 +3782,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -2962,7 +3855,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -2971,7 +3864,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -3041,7 +3934,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -3050,7 +3943,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         },
@@ -3114,7 +4007,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 897
+              "line": 966
             }
           ]
         },
@@ -3123,7 +4016,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1182
+              "line": 1297
             }
           ]
         }
@@ -3150,12 +4043,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4261,
+          "line": 4273,
           "note": null,
           "tests": [
             {
               "title": "applies the statutory Social Security credit through the annual state resolver",
-              "line": 4267
+              "line": 4279
             }
           ]
         }
@@ -3191,7 +4084,7 @@
       "jurisdiction": "state:WA",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
-      "effectiveThrough": null,
+      "effectiveThrough": 2027,
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
@@ -3204,7 +4097,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 987
+              "line": 1060
             }
           ]
         },
@@ -3213,7 +4106,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1160
+              "line": 1275
             }
           ]
         }
@@ -3224,12 +4117,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4561,
+          "line": 4597,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 4580
+              "line": 4616
             }
           ]
         }
@@ -3246,6 +4139,280 @@
           "kind": "statute",
           "citation": "Wash. Rev. Code §82.87.040(1)",
           "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040"
+        }
+      ]
+    },
+    {
+      "id": "wa-essb-6346-2028-income-tax",
+      "title": "Washington taxes income above a $1,000,000 deduction at 9.9% from 2028, unless Initiative 645 passes on November 3, 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Enacted law with a vote pending is loaded as current law, with the vote named and dated (decision of 2026-09-28, State income tax follows each state’s enacted law). The Secretary of State’s scan of Initiative 645’s text has no text layer; its title, which names chapter 238, Laws of 2026 as the chapter it repeals, was read on the page image, and the certification is quoted from the signature statistics page. The session law carries line numbers, so each quote stops at a line end and resumes after an elision.",
+      "contraryReading": null,
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2028,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.WA",
+              "line": 75
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateParamsFor",
+              "line": 97
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1297
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1124,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges 9.9% above $1,000,000 from 2028, the same deduction for a couple",
+              "line": 1142
+            },
+            {
+              "title": "includes the federally taxable share of Social Security",
+              "line": 1151
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(3)",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, approval",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645",
+          "url": "https://www.sos.wa.gov/elections/initiatives-referenda/submitted-signature-statistics"
+        }
+      ]
+    },
+    {
+      "id": "wa-essb-6346-s301-direct-qcd-conformity",
+      "title": "Washington excludes a qualified charitable distribution from its 2028 income tax because the federal return excludes it",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The session law carries line numbers, so the quote stops at a line end and resumes after an elision.",
+      "contraryReading": null,
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2028,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2027-09-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/tax/stateQcdHsa.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.WA",
+              "line": 75
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateQcdHsa.ts",
+          "functions": [
+            {
+              "name": "stateDirectQcdCollectionAdjustment",
+              "line": 263
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1297
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1378,
+          "note": "the federal QCD exclusion carried into Washington from 2028",
+          "tests": [
+            {
+              "title": "keeps a direct QCD excluded and the year complete",
+              "line": 1410
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 301",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        }
+      ]
+    },
+    {
+      "id": "wa-essb-6346-s316-standard-deduction-indexing",
+      "title": "Washington indexes its $1,000,000 deduction every second October from 2029, by one year’s inflation, for that year’s own tax year",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The act uses the same words for the tax year whose return is due the next year: sections 204 and 205 begin in tax year 2028 with taxes due in 2029. The Department applies the identical wording of the capital gains tax (RCW 82.87.150) to the tax year in which each adjustment is made: its page lists the deduction for 2025, set after the 2025 adjustment, as the latest, with none yet for 2026. The plan’s general inflation stands in for the consumer price index the section names. The session law carries line numbers, so each quote stops at a line end and resumes after an elision.",
+      "contraryReading": "The adjustment made each October applies to the next tax year, so the first change is for 2030: taxes due in the following calendar year read as the following tax year. The deduction would then be $1,000,000 for 2029 and a year behind after, the same in even years and one step lower in odd ones. At 2.5% a year a single filer with $1,500,000 of Washington base income would owe $2,475 more for 2029 ($49,500 against $47,025), $2,574 more for 2031 ($47,025 against $44,451) and $2,673 more for 2035 ($41,877 against $39,204).",
+      "jurisdiction": "state:WA",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2029,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-28",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2028.ts",
+        "packages/engine/src/tax/stateEnactedLaw.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2028.ts",
+          "functions": [
+            {
+              "name": "states.WA",
+              "line": 75
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateEnactedLaw.ts",
+          "functions": [
+            {
+              "name": "statutorilyIndexedStandardDeduction",
+              "line": 212
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxYearResult",
+              "line": 1852
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateEnacted2027.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+          "line": 1271,
+          "note": "the deduction indexed every second year from 2029 at the plan inflation",
+          "tests": [
+            {
+              "title": "adjusts the deduction for 2029 and every second year after, rounded to $1,000",
+              "line": 1295
+            },
+            {
+              "title": "prices the indexed deduction through the annual state calculation",
+              "line": 1310
+            },
+            {
+              "title": "never reduces the deduction, and leaves it alone with no projected inflation",
+              "line": 1317
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "ESSB 6346, ch. 238, Laws of 2026, section 205(1), the act’s usage of taxes due",
+          "url": "https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Washington Department of Revenue, Capital gains tax, deductions",
+          "url": "https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax"
         }
       ]
     },
@@ -3284,7 +4451,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 987
+              "line": 1060
             }
           ]
         },
@@ -3302,7 +4469,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1168
+              "line": 1283
             }
           ]
         }
@@ -3358,7 +4525,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 1056
+              "line": 1129
             }
           ]
         },
@@ -3367,7 +4534,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1168
+              "line": 1283
             }
           ]
         }

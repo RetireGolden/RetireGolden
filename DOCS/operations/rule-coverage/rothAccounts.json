@@ -370,7 +370,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -390,12 +390,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 937,
+          "line": 1031,
           "note": null,
           "tests": [
             {
               "title": "does not give a second ceiling to someone holding both IRA flavours",
-              "line": 944
+              "line": 1038
             }
           ]
         }
@@ -446,7 +446,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 213
+              "line": 231
             }
           ]
         },
@@ -529,7 +529,7 @@
           "functions": [
             {
               "name": "annualContributionReconciliationPhase",
-              "line": 361
+              "line": 364
             }
           ]
         },

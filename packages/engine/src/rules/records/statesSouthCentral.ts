@@ -267,7 +267,7 @@ export const southCentralStateRecords = {
   'aca-26-51-201-published-indexed-rate-schedule': {
     title: 'Arkansas’s operative brackets are the Secretary’s published indexed schedule',
     statement:
-      'Arkansas taxes net taxable income on a five-rate schedule — 0%, 2%, 3%, 3.4% and 3.9% — but the dollar thresholds those rates turn on are never the ones printed in the Code. A.C.A. 26-51-201(d)(1) directs the Secretary of the Department of Finance and Administration to prescribe tables annually that apply in lieu of the statutory ones, increasing each bracket’s minimum and maximum by the cost-of-living adjustment, rounded to the nearest $100, without changing any rate. The operative schedule for a year is therefore whatever the department published for it, and for 2026 that is 0% below $5,599, 2% from $5,600, 3% from $11,200, 3.4% from $16,000 and 3.9% from $26,400 — the same thresholds the department published for 2025, because that year’s adjustment rounded to zero. The pack carries those. What it carried before was the un-indexed two-rate schedule 26-51-201(a)(3)(B) prints, which by its own terms reaches only a filer whose net income exceeds the statutory threshold — above about $94,700, where the published schedule hands off to it — so every modelled Arkansas retiree below that was priced on a schedule Arkansas does not apply to them.',
+      'Arkansas taxes net taxable income on a five-rate schedule — 0%, 2%, 3%, 3.4% and, for 2026, 3.7% — but the dollar thresholds those rates turn on are never the ones printed in the Code. Act 1 and Act 2 of the 2026 First Extraordinary Session (approved May 6, 2026) rewrote 26-51-201(a)(4) for tax years beginning on or after January 1, 2026: the same thresholds, with the top rate cut from 3.9% to 3.7%, so the department’s 2026 schedule, printed before the session at 3.9%, is superseded for that rate. Above $94,700 of net income the act’s (B) table (2% to $4,700, 3.7% above) and (C) bracket adjustment apply instead; the pack prices every filer on the (A) table, which understates tax by about $287 above $97,600 of net income (less between $94,700 and $97,600); that range is outside this record. A.C.A. 26-51-201(d)(1) directs the Secretary of the Department of Finance and Administration to prescribe tables annually that apply in lieu of the statutory ones, increasing each bracket’s minimum and maximum by the cost-of-living adjustment, rounded to the nearest $100, without changing any rate. The operative schedule for a year is therefore whatever the department published for it, and for 2026 that is 0% below $5,599, 2% from $5,600, 3% from $11,200, 3.4% from $16,000 and 3.7% from $26,400 — the same thresholds the department published for 2025, because that year’s adjustment rounded to zero. The pack carries those. What it carried before was the un-indexed two-rate schedule 26-51-201(a)(3)(B) prints, which by its own terms reaches only a filer whose net income exceeds the statutory threshold — above about $94,700, where the published schedule hands off to it — so every modelled Arkansas retiree below that was priced on a schedule Arkansas does not apply to them.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -301,6 +301,17 @@ export const southCentralStateRecords = {
       quotedText: 'From $0 $5,600 $11,200 $16,000 $26,400 $94,701',
     }, {
       kind: 'statute',
+      citation: '2026 Ark. Acts (1st Ex. Sess.), Act 1, § 1, Ark. Code Ann. 26-51-201(a)(4)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2026S1%2FPublic%2FACT1.pdf',
+      quotedText:
+        '(4) For tax years beginning on or after January 1, 2026: … $26,400 $94,700 3.7% … $4,701 and above 3.7%',
+    }, {
+      kind: 'statute',
+      citation: '2026 Ark. Acts (1st Ex. Sess.), Act 1, approval',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2026S1%2FPublic%2FACT1.pdf',
+      quotedText: 'AN ACT TO REDUCE INCOME TAXES; TO REDUCE THE INCOME … APPROVED: 5/6/26',
+    }, {
+      kind: 'statute',
       citation: 'Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)',
       url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT532.pdf',
       quotedText:
@@ -318,7 +329,7 @@ export const southCentralStateRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2024,
     effectiveThrough: null,
-    verifiedOn: '2026-08-05',
+    verifiedOn: '2026-09-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -743,7 +754,7 @@ export const southCentralStateRecords = {
   'ms-27-7-5-rate-ramp': {
     title: 'Mississippi’s zero band and its legislated rate ramp',
     statement:
-      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. The pack models that zero band as a 0% bracket below $10,000. The rate above the band is 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
+      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. The pack models that zero band as a 0% bracket below $10,000. The rate above the band is 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The 2026 pack holds 4% for both filing statuses, and the enacted-year figures hold each later step as enacted rather than projected from 2026: 3.75% for 2027 (params/state/data/enacted2027.ts), 3.5% for 2028, 3.25% for 2029 and 3% from 2030 (enacted2028.ts, enacted2029.ts, enacted2030.ts). Section 2 of H.B. 1 cuts the rate further, by 0.2, 0.25 or 0.3 of a point, for calendar year 2031 or later only when the Working Cash-Stabilization Reserve Fund is fully funded and adjusted General Fund revenue exceeds the following year’s appropriations by the stated share of the cost of a one percent cut; those cuts are not loaded, so from 2031 the engine holds 3% and overstates the rate in any year a cut is triggered. The next refreshes each have a published figure waiting, so carrying one forward is wrong by construction.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -788,6 +799,16 @@ export const southCentralStateRecords = {
       quotedText:
         'If the revised tax rates provided for in this subparagraph (ii) are further decreased for calendar years after calendar year 2026 to the extent that there is no tax levied on the taxable income of individuals under this subparagraph (ii), the individual income tax shall stand repealed.',
     }, {
+      // The conditional cuts after 2030: what the 3% clause's "except as
+      // otherwise provided in Section 2 of this act" points at. They turn on a
+      // fund balance and a revenue test no projection can know, so they are
+      // named here and not loaded.
+      kind: 'statute',
+      citation: '2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'For calendar year 2031 and any calendar year thereafter, if the Working Cash-Stabilization Reserve Fund is fully funded as provided in Section 27-103-213, the tax imposed under Section 27-7-5(b)(ii) on all taxable income of individuals in excess of Ten Thousand Dollars ($10,000.00) shall be reduced by a percentage as indicated below,',
+    }, {
       // The 2026 figure itself, and the reason it is quoted from the department
       // rather than the bill: H.B. 1 amended subparagraph 3 by STRIKING "and
       // all calendar years thereafter" from it, so the bill's text for 2026 is
@@ -810,16 +831,27 @@ export const southCentralStateRecords = {
         'Sections 1 through 13 and Sections 25 through 29 of this act shall take effect and be in force from and after July 1, 2025, and Sections 15 through 24 of this act shall take effect and be in force from and after March 1, 2026.',
     }],
     volatility: 'staticStatute',
-    // Deliberate, exactly as for Indiana: the rate moves on January 1, 2027.
+    // Deliberate, exactly as for Indiana: from 2031 the rate turns on the
+    // section 2 triggers, which no projection can know.
     effectiveFrom: 2026,
-    effectiveThrough: 2026,
-    verifiedOn: '2026-08-05',
+    effectiveThrough: 2030,
+    verifiedOn: '2026-09-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#MS',
+      'packages/engine/src/params/state/data/enacted2027.ts#states.MS',
+      'packages/engine/src/params/state/data/enacted2028.ts#states.MS',
+      'packages/engine/src/params/state/data/enacted2029.ts#states.MS',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.MS',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },

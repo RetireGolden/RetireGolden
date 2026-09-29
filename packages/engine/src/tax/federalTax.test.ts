@@ -1592,6 +1592,7 @@ describe('calculators', () => {
       federalAgi: federal.agi,
       federalDeductionUsed: federal.deduction,
       federalTaxableIncome: federal.taxableIncome,
+      federalSeniorDeduction: federal.seniorDeduction,
       federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
     })
     expect(spy).toHaveBeenCalledTimes(1)

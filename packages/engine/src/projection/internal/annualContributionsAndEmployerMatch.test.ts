@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account } from '../../model/plan.js'
-import { packForYear } from '../../params/index.js'
+import { hsaLimitsForYear, packForYear } from '../../params/index.js'
 import {
   annualContributionsAndEmployerMatch,
   type AnnualContributionBalanceView,
@@ -19,6 +19,7 @@ import {
 
 const YEAR = 2026
 const { pack } = packForYear(YEAR)
+const HSA_LIMITS = { ...hsaLimitsForYear(YEAR).params, growth: 1 }
 
 function balance(
   account: Account,
@@ -69,6 +70,7 @@ function call(
     startYear: YEAR,
     inflFactor: 1,
     limitGrowth: 1,
+    hsaLimits: HSA_LIMITS,
     filingStatus: 'single',
     aliveCount: 1,
     peopleCount: 1,
@@ -256,7 +258,7 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
   it.each([
     ['traditional' as const, pack.contributionLimits.ira],
     ['roth' as const, pack.contributionLimits.ira],
-    ['hsa' as const, pack.contributionLimits.hsaSelfOnly],
+    ['hsa' as const, HSA_LIMITS.selfOnly],
   ])('keeps same-owner %s limit and basis rows in exact left-fold order', (
     type,
     limit,

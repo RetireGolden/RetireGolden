@@ -570,6 +570,51 @@ export const westStateRecords = {
   // 40 booklet and the DOR individual-income-tax page (verified 2026-08-28).
   // ---------------------------------------------------------------------------
 
+  'ars-43-1022-35-federal-senior-deduction-subtraction': {
+    title: 'Arizona subtracts the federal senior deduction for 2025 to 2028',
+    statement:
+      'Laws 2026, ch. 140 (H.B. 4168, signed June 13, 2026) adds A.R.S. 43-1022(35): for taxable years beginning from and after December 31, 2024, Arizona subtracts, to the extent not already excluded, the amount deducted for a qualified individual under IRC 151(d)(5)(C), the federal senior deduction of $6,000 for each person 65 or older, reduced by 6% of modified AGI above $75,000 ($150,000 joint). Section 35(A) makes the change retroactive to 2025, and 43-105 now adopts the Internal Revenue Code as in effect on January 1, 2026, under which the federal deduction is allowed only for taxable years beginning before 2029, so the subtraction ends after 2028. The 2026 figures (params/state/data/year2026.ts) mark Arizona as subtracting the federal senior deduction, and the engine subtracts the same federal figure it computes for the return (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out), which is zero from 2029. Before the survey of 2026-09-28 it did not, overstating Arizona tax by $150 for each person 65 or older below the phase-out. Settled for the subtraction; Arizona’s own $2,100 age-65 exemption is the separate record ars-43-1023-e-age-65-exemption.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The session law’s markup renders the reference to section 151 with spaces inside the parentheses, so the quote elides it.',
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'Laws 2026, ch. 140 (H.B. 4168), section 15, adding A.R.S. 43-1022(35)',
+      url: 'https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm',
+      quotedText:
+        '35. For taxable years beginning from and after December 31, 2024, to the extent not already excluded from Arizona gross income under the internal revenue code, the amount deducted for a qualified individual under section 151 … of the internal revenue code. 36. For taxable years beginning from and after December 31, 2024 through December 31, 2025',
+    }, {
+      kind: 'statute',
+      citation: 'Laws 2026, ch. 140 (H.B. 4168), section 12, A.R.S. 43-105(A)',
+      url: 'https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm',
+      quotedText:
+        'For the purposes of computing income tax pursuant to this title, for taxable years beginning from and after December 31, 2025, "internal revenue code" means the United States internal revenue code of 1986, as amended, in effect on January 1, 2026',
+    }, {
+      kind: 'statute',
+      citation: 'Laws 2026, ch. 140 (H.B. 4168), section 35(A)',
+      url: 'https://www.azleg.gov/legtext/57leg/2R/laws/0140.htm',
+      quotedText:
+        'Sec. 35. Retroactivity A. Sections 42-1001, 43-105, 43-1022, 43-1041, 43-1121 and 43-1122, Arizona Revised Statutes, as amended by this act, apply retroactively to taxable years beginning from and after December 31, 2024.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: 2028,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#federalSeniorDeductionSubtraction',
+    ],
+  },
+
   'ca-ftb-2026-540-es-standard-deduction': {
     title: 'California\'s 2026 estimated-tax worksheet lists $5,706/$11,412 standard deductions',
     statement:
@@ -598,6 +643,97 @@ export const westStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#CA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'ca-const-art-13-sec-36-f-2-top-bands-end-2031': {
+    title: 'California’s 10.3%, 11.3% and 12.3% bands end from 2031, unless Proposition 3 passes on November 3, 2026',
+    statement:
+      'Cal. Const. art. XIII, sec. 36(f)(2), added by Proposition 30 and extended by Proposition 55, modifies the 9.3% bracket of RTC 17041(a) for taxable years beginning on or after January 1, 2012 and before January 1, 2031, taxing income above three higher thresholds at 10.3%, 11.3% and 12.3%; paragraph (D) makes it inoperative on December 1, 2031. From 2031, taxable income above the 9.3% threshold is taxed at 9.3%. The 1% Mental Health Services Tax of RTC 17043 has no end date and is not modeled. The figures enacted for 2031 (params/state/data/enacted2031.ts) carry the schedule without the three bands, at the thresholds the 2026 figures carry. On $1,000,000 of single taxable income that is $89,438.64 against $103,836.61. A vote is pending: Proposition 3, an initiative constitutional amendment the Secretary of State lists for the November 3, 2026 ballot, would make the higher rates permanent. The enacted law is loaded as current law, and this record and the 2031 figures are revisited when the vote is decided. Settled for the law in force on 2026-09-28.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Enacted law with a vote pending is loaded as current law, with the vote named and dated (decision of 2026-09-28, State income tax follows each state’s enacted law). Proposition 3’s text was not read; its title, from the Secretary of State’s list, is what is quoted.',
+    jurisdiction: 'state:CA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Cal. Const. art. XIII, §36(f)(2)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII',
+      quotedText:
+        '(2) For any taxable year beginning on or after January 1, 2012, and before January 1, 2031, with respect to the tax imposed pursuant to Section 17041 of the Revenue and Taxation Code, the income tax bracket and the rate of 9.3 percent set forth in paragraph (1) of subdivision (a) of Section 17041 of the Revenue and Taxation Code shall be modified by each of the following:',
+    }, {
+      kind: 'statute',
+      citation: 'Cal. Const. art. XIII, §36(f)(2)(D)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII',
+      quotedText:
+        'the modified tax brackets and tax rates established and imposed by this paragraph shall be deemed to be established and imposed under Section 17041 of the Revenue and Taxation Code. (D) This paragraph shall become inoperative on December 1, 2031.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'California Secretary of State, Qualified Statewide Ballot Measures, November 3, 2026',
+      url: 'https://www.sos.ca.gov/elections/ballot-measures/qualified-ballot-measures',
+      quotedText:
+        'Proposition 3 Provides Permanent Funding for Schools and Health Care by Extending Existing Tax on High Incomes. Initiative Constitutional Amendment.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2031,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2031.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2031.ts#states.CA',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'ca-rtc-17132-9-10-military-retirement-exclusions': {
+    title: 'California excludes up to $20,000 of military retirement pay and $20,000 of Survivor Benefit Plan annuities for 2025 to 2029',
+    statement:
+      'RTC 17132.9 excludes from gross income, for taxable years beginning on or after January 1, 2025 and before January 1, 2030, up to $20,000 of retirement pay a qualified taxpayer receives from the federal government for service in the uniformed services; 17132.10 excludes up to $20,000 of annuity payments under a Department of Defense Survivor Benefit Plan. A qualified taxpayer has federal AGI not above $250,000 for spouses filing jointly or a surviving spouse, or $125,000 otherwise. Both sections are repealed on December 1, 2030. The 2026 figures (params/state/data/year2026.ts) carry the caps and limits, the figures enacted for 2030 (enacted2030.ts) end them, and the engine excludes a pension the plan marks as military retirement or military survivor benefit. Each cap is read per return, because the statute defines spouses filing a joint return as one qualified taxpayer; if the cap is per spouse, the engine understates the exclusion for a couple who both receive military retirement. Before the survey of 2026-09-28 California taxed both in full, overstating tax by up to $1,860 at 9.3% for each. Settled for the caps and AGI limits; whole-return accuracy is outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:CA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Cal. Rev. & Tax. Code §17132.9(a)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.9.',
+      quotedText:
+        '(a) For taxable years beginning on or after January 1, 2025, and before January 1, 2030, gross income shall not include retirement pay received by a qualified taxpayer during the taxable year, not to exceed twenty thousand dollars ($20,000), from the federal government for service in the uniformed services.',
+    }, {
+      kind: 'statute',
+      citation: 'Cal. Rev. & Tax. Code §17132.9(b)(1)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.9.',
+      quotedText:
+        '(A) In the case of a surviving spouse or spouses filing a joint return, adjusted gross income, as required to be shown on the federal tax return for the same taxable year, does not exceed two hundred fifty thousand dollars ($250,000). (B) In the case of any other individual, adjusted gross income, as required to be shown on the federal tax return for the same taxable year, does not exceed one hundred twenty-five thousand dollars ($125,000).',
+    }, {
+      kind: 'statute',
+      citation: 'Cal. Rev. & Tax. Code §17132.10(a)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17132.10.',
+      quotedText:
+        '(a) For taxable years beginning on or after January 1, 2025, and before January 1, 2030, gross income shall not include annuity payments received by a qualified taxpayer during the taxable year, not to exceed twenty thousand dollars ($20,000), pursuant to a United States Department of Defense Survivor Benefit Plan.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: 2029,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.CA',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.CA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#californiaMilitaryExclusions',
     ],
   },
 
@@ -704,6 +840,44 @@ export const westStateRecords = {
     ],
   },
 
+  'co-crs-39-22-104-federal-taxable-income-senior-deduction': {
+    title: 'Colorado taxes federal taxable income, so the federal senior deduction reduces Colorado tax for 2025 to 2028',
+    statement:
+      'C.R.S. 39-22-104(1.7)(c) imposes 4.40% on federal taxable income as determined under IRC 63, before the Colorado modifications in subsections (3) and (4). Federal taxable income is AGI less the deductions IRC 63 allows, which include the section 151(d)(5)(C) senior deduction of $6,000 for each person 65 or older, reduced by 6% of modified AGI above $75,000 ($150,000 joint), for taxable years beginning before 2029; Colorado’s additions for 2026 do not add it back. The 2026 figures (params/state/data/year2026.ts) mark Colorado as carrying the federal senior deduction, and the engine subtracts the same federal figure it computes for the return (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out), which is zero from 2029. Before the survey of 2026-09-28 it did not, overstating Colorado tax by $264 for each person 65 or older below the phase-out. Settled for the deduction inside federal taxable income; the high-AGI addback and the pension subtraction are their own records.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:CO',
+    authority: [{
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(1.7)(c)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'with respect to taxable years commencing on or after January 1, 2022, a tax of four and forty one-hundredths percent is imposed on the federal taxable income, as determined pursuant to section 63 of the internal revenue code, of every individual, estate, and trust.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to $6,000 for each qualified individual with respect to the taxpayer.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: 2028,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.CO',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#federalSeniorDeductionSubtraction',
+    ],
+  },
+
   'hi-hrs-235-2-4-a-2-f-2026-standard-deduction': {
     title: 'Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint',
     statement:
@@ -712,7 +886,7 @@ export const westStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027 (from the §235-2.4(a)(2)(G) phase beginning 2028) are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.',
+      'The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027, from the §235-2.4(a)(2)(G) phase beginning 2028, are the record hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.',
     jurisdiction: 'state:HI',
     authority: [{
       kind: 'statute',
@@ -843,6 +1017,51 @@ export const westStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#ID',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'id-h559-2026-conformity-senior-deduction': {
+    title: 'Idaho adopts the Internal Revenue Code as of January 1, 2026, so the federal senior deduction applies for 2025 to 2028',
+    statement:
+      'H.B. 559 (2026, signed February 10, 2026, retroactive to January 1, 2025) amends Idaho Code 63-3004 so that the Internal Revenue Code means the Code as in effect on January 1, 2026, with exceptions for section 85 and research expenditures only. Idaho taxable income starts from federal taxable income, so it takes the section 151(d)(5)(C) senior deduction of $6,000 for each person 65 or older, reduced by 6% of modified AGI above $75,000 ($150,000 joint), which the adopted Code allows for taxable years beginning before 2029; the State Tax Commission’s instructions show how to claim it. The 2026 figures (params/state/data/year2026.ts) mark Idaho as carrying the federal senior deduction, and the engine subtracts the same federal figure it computes for the return (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out), which is zero from 2029. Before the survey of 2026-09-28 it did not, overstating Idaho tax by $318 for each person 65 or older below the phase-out and above the zero band. Settled for the deduction; the retirement benefits deduction is its own record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The session law prints the amended conformity date with the stricken year beside the new one, so the conformity is quoted from the Tax Commission’s release and the act’s effective clause.',
+    jurisdiction: 'state:ID',
+    authority: [{
+      kind: 'statute',
+      citation: 'H.B. 559 (2026), section 4',
+      url: 'https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2026/legislation/H0559.pdf',
+      quotedText:
+        'An emergency existing therefor, which emergency is hereby … declared to exist, this act shall be in full force and effect on and after its … passage and approval, and retroactively to January 1, 2025.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Idaho State Tax Commission, press release of March 3, 2026, File now to get your conformity deductions',
+      url: 'https://tax.idaho.gov/pressrelease/file-now-to-get-your-conformity-deductions/',
+      quotedText:
+        'show how to claim the enhanced senior deduction and the deductions for tips from wages, car loan interest, and overtime compensation.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to $6,000 for each qualified individual with respect to the taxpayer.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: 2028,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.ID',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#federalSeniorDeductionSubtraction',
     ],
   },
 
@@ -1406,7 +1625,7 @@ export const westStateRecords = {
   'wa-dor-no-broad-individual-income-tax': {
     title: 'Washington has no broad individual income-tax figure in the per-state tax data',
     statement:
-      'Washington\'s staged Department of Revenue page describes a capital-gains excise that applies only to individuals and only on sales or exchanges of long-term capital assets under RCW 82.87, not a broad tax on wages, pensions, IRA distributions, or Social Security. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert on that path. The separate capital-gains excise levy itself is registered at `wa-rcw-82-87-capital-gains-excise` and is not settled by this record.',
+      'Washington\'s staged Department of Revenue page describes a capital-gains excise that applies only to individuals and only on sales or exchanges of long-term capital assets under RCW 82.87, not a broad tax on wages, pensions, IRA distributions, or Social Security. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert on that path. The separate capital-gains excise levy itself is registered at `wa-rcw-82-87-capital-gains-excise` and is not settled by this record. Through 2027 only: ESSB 6346 imposes a broad tax from 2028 (wa-essb-6346-2028-income-tax).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1427,7 +1646,7 @@ export const westStateRecords = {
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
-    effectiveThrough: null,
+    effectiveThrough: 2027,
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
@@ -1439,6 +1658,149 @@ export const westStateRecords = {
     ],
   },
 
+  'wa-essb-6346-2028-income-tax': {
+    title: 'Washington taxes income above a $1,000,000 deduction at 9.9% from 2028, unless Initiative 645 passes on November 3, 2026',
+    statement:
+      'ESSB 6346 (chapter 238, Laws of 2026, approved March 30, 2026) imposes from January 1, 2028 a tax on individuals of 9.90% of Washington taxable income (section 201). Washington base income is federal adjusted gross income as modified (section 101(11)); long-term capital gains are deducted from it (section 302(1)); and Washington taxable income is base income less a standard deduction of $1,000,000 per individual, or $1,000,000 combined for spouses or registered domestic partners however they file (section 314), indexed from October 2029 (section 316). Taxable Social Security and retirement distributions are in federal AGI, and the act allows no subtraction for them. The figures enacted for 2028 (params/state/data/enacted2028.ts) switch Washington’s income tax on: 9.9% above a $1,000,000 deduction for a single filer or a couple, the federally taxable share of Social Security included, capital gains outside the base, and the deduction indexed as section 316 provides from 2029 (wa-essb-6346-s316-standard-deduction-indexing). On $1,500,000 of ordinary income in 2028 that is $49,500 a year; a couple with $3,000,000 owes $198,000. A vote is pending: Initiative 645, certified by the Secretary of State and on the November 3, 2026 ballot, repeals chapter 238, Laws of 2026; and section 1202 voids the act if a court of final jurisdiction invalidates section 201. The enacted law is loaded as current law, and this record and the 2028 figures are revisited when the vote is decided. Short-term capital gains, which the act keeps in the base, fall outside it in the engine along with long-term gains. Section 302(3) adds back, for a filer who owes the RCW 82.87 capital gains tax that year, the Washington capital gains taxed under it plus the amount deducted under RCW 82.87.060(1), and section 205 credits the capital gains tax against the income tax; the engine models neither, nor the RCW 82.87 excise itself (wa-rcw-82-87-capital-gains-excise), so it leaves every long-term gain out of the Washington base, which understates the income tax of such a filer before the credit. Settled for the law in force on 2026-09-28, with section 302(3) a stated limit.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Enacted law with a vote pending is loaded as current law, with the vote named and dated (decision of 2026-09-28, State income tax follows each state’s enacted law). The Secretary of State’s scan of Initiative 645’s text has no text layer; its title, which names chapter 238, Laws of 2026 as the chapter it repeals, was read on the page image, and the certification is quoted from the signature statistics page. The session law carries line numbers, so each quote stops at a line end and resumes after an elision.',
+    jurisdiction: 'state:WA',
+    authority: [{
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 201',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'Sec. 201. TAX IMPOSED—RATES. (1) Beginning January … 1, 2028, a tax is imposed on the receipt of Washington taxable … income. Only individuals are subject to payment of the tax, which … equals 9.90 percent multiplied by an individual’s Washington taxable',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 314',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'Sec. 314. ONE MILLION DOLLAR STANDARD DEDUCTION. … deduction of $1,000,000 per individual, or in the case of spouses or … state registered domestic partners, their combined standard deduction … is $1,000,000, regardless of whether they file joint or separate',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 302(1)',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'Sec. 302. LONG-TERM CAPITAL GAINS AND LOSSES. (1) … In computing a taxpayer’s Washington base income, the taxpayer must … term capital gains that have been included in computing federal',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 302(3)',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'income, a taxpayer must add to the taxpayer’s federal adjusted gross … income the amount of Washington capital gains subject to tax under … chapter 82.87 RCW for the same taxable year, plus the amount deducted … under RCW 82.87.060(1).',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, approval',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText: 'Approved by the Governor March 30, 2026. Filed in Office of Secretary of State March 31, 2026.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Washington Secretary of State, Submitted Signature Statistics, Initiative 645',
+      url: 'https://www.sos.wa.gov/elections/initiatives-referenda/submitted-signature-statistics',
+      quotedText: 'IP26-645 33,244 509,365 Certified 15,281 --- 12,936 --- … IP26-645 concerns state and local taxes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2028,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2028.ts#states.WA',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+    ],
+  },
+  'wa-essb-6346-s316-standard-deduction-indexing': {
+    title: 'Washington indexes its $1,000,000 deduction every second October from 2029, by one year’s inflation, for that year’s own tax year',
+    statement:
+      'ESSB 6346 (chapter 238, Laws of 2026), section 316(1): beginning October 2029 and each October of an odd-numbered year after, the Department of Revenue multiplies the current standard deduction by one plus the percentage by which the most current consumer price index available on October 1 exceeds the index for the prior 12-month period (the index for urban wage earners and clerical workers, section 316(2)), rounds the result to the nearest $1,000, makes no adjustment that would reduce it, and the adjusted amount takes effect for taxes due in the following calendar year. The engine reads that as the tax year in which the adjustment is made, whose tax is due the following April, so the deduction changes for 2029 and every second year after (2031, 2033 and on), each time by one 12-month change, and grows at about half the rate of inflation. The figures enacted for 2028 (params/state/data/enacted2028.ts) mark the deduction with that schedule, and tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction projects it at the plan’s inflation: the yearly rate that compounds to the year’s cumulative inflation factor, which is the plan’s rate when its inflation is constant and the path’s average rate along a Monte Carlo series. At 2.5% a year the deduction is $1,025,000 for 2029 and 2030, $1,051,000 for 2031 and 2032, $1,077,000 for 2033 and 2034, and $1,104,000 for 2035; a single filer with $1,500,000 of Washington base income owes $47,025 for 2029 and $44,451 for 2031, where the deduction held at $1,000,000 gave $49,500. Unsettled because the Department has published no income-tax deduction yet; the reading taken is the act’s own usage and the Department’s under the same words for the capital gains tax.',
+    classification: 'unsettled',
+    contraryReading:
+      'The adjustment made each October applies to the next tax year, so the first change is for 2030: taxes due in the following calendar year read as the following tax year. The deduction would then be $1,000,000 for 2029 and a year behind after, the same in even years and one step lower in odd ones. At 2.5% a year a single filer with $1,500,000 of Washington base income would owe $2,475 more for 2029 ($49,500 against $47,025), $2,574 more for 2031 ($47,025 against $44,451) and $2,673 more for 2035 ($41,877 against $39,204).',
+    errorDirection: null,
+    conventionRationale:
+      'The act uses the same words for the tax year whose return is due the next year: sections 204 and 205 begin in tax year 2028 with taxes due in 2029. The Department applies the identical wording of the capital gains tax (RCW 82.87.150) to the tax year in which each adjustment is made: its page lists the deduction for 2025, set after the 2025 adjustment, as the latest, with none yet for 2026. The plan’s general inflation stands in for the consumer price index the section names. The session law carries line numbers, so each quote stops at a line end and resumes after an elision.',
+    jurisdiction: 'state:WA',
+    authority: [{
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 316(1)',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'Sec. 316. INDEX FOR INFLATION. (1) Beginning … October 2029 and each October of an odd-numbered year thereafter, the … department must adjust the standard deduction under section 314 of … this act by multiplying the current standard deduction amount by one … plus the percentage by which the most current consumer price index … available on October 1st of the current year exceeds the consumer … price index for the prior 12-month period, and rounding the result to … the nearest $1,000',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'If an adjustment under this subsection (1) would … reduce the standard deduction amount, the department must not adjust … calculated under this subsection (1) takes effect for taxes due in … the following calendar year',
+    }, {
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 205(1), the act’s usage of taxes due',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'TAXES. (1) Beginning in tax year 2028 with taxes due in 2029, a … nonrefundable credit is allowed against taxes due under this chapter',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Washington Department of Revenue, Capital gains tax, deductions',
+      url: 'https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax',
+      quotedText:
+        'The standard deduction for 2025 is $278,000. In 2024 the standard deduction was $270,000 per year per individual, married couple, or domestic partnership.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2029,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2028.ts#states.WA',
+      'packages/engine/src/tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult',
+    ],
+  },
+  'wa-essb-6346-s301-direct-qcd-conformity': {
+    title: 'Washington excludes a qualified charitable distribution from its 2028 income tax because the federal return excludes it',
+    statement:
+      'ESSB 6346 (chapter 238, Laws of 2026), section 301: Washington base income starts from federal adjusted gross income, and an item of income excluded from federal adjusted gross income is excluded from the tax unless sections 302 through 309 include it. None of those sections includes a qualified charitable distribution, so the IRC 408(d)(8) exclusion carries into Washington from 2028, the first year of the tax. The figures enacted for 2028 (params/state/data/enacted2028.ts) mark Washington’s direct-QCD policy as conforming from 2028, so a Washington year with a direct QCD is priced exactly rather than marked incomplete. Before this record the policy was unset, so from 2028 every Washington plan with a QCD was marked incomplete and the optimizer set its recommendations aside. Unknown direct-transfer eligibility and split-interest transfers still do not silently conform.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The session law carries line numbers, so the quote stops at a line end and resumes after an elision.',
+    jurisdiction: 'state:WA',
+    authority: [{
+      kind: 'statute',
+      citation: 'ESSB 6346, ch. 238, Laws of 2026, section 301',
+      url: 'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
+      quotedText:
+        'deduction. If an item of income is excluded from federal adjusted … gross income, it is excluded from the tax under this chapter unless … specifically included as provided in sections 302 through 309 of this',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2028,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateQcdHsa.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2028.ts#states.WA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
+    ],
+  },
   'wa-rcw-82-87-capital-gains-excise': {
     title: 'Washington’s long-term capital-gains excise is absent from the state-tax surface',
     statement:
@@ -1592,9 +1954,103 @@ export const westStateRecords = {
       'packages/engine/src/tax/stateWestExtras.ts#montanaLtcgTax',
     ],
   },
+  'mt-mca-15-30-2103-2027-rate-schedule': {
+    title: 'Montana taxes TY2027 income at 4.7% and 5.4%, with breaks at $65,000, $97,500 and $130,000',
+    statement:
+      'MCA 15-30-2103, in the version effective January 1, 2027 (HB 337, Ch. 227, L. 2025), taxes Montana taxable income at 4.7% on the first $130,000 for a joint return or surviving spouse, $97,500 for a head of household, and $65,000 for a single filer and for a married individual filing separately, and at 5.4% above. Net long-term capital gains are taxed at 3.0% up to the same break less nonqualified taxable income and 4.1% above. Subsection (3) indexes the breaks by the modified inflation factor, which divides the June CPI of the year before the tax year by the June 2026 CPI under (4)(a) and 15-30-2101(12); for 2027 that factor is exactly 1, so the statutory breaks are the 2027 breaks and the first indexed ones are 2028\'s. The rates enacted for 2027 (params/state/data/enacted2027.ts) carry these ordinary brackets for all four filing statuses and the capital-gain schedule, read as enacted rather than projected from 2026, and hold them nominally for later years, so the 2028 indexing is not applied. Settled for the 2027 schedule. The standard deduction is not a figure of this schedule: Montana adopts the federal standard deduction, which follows the federal figure and the projection’s inflation scale, and the other fields are the 2026 figures; later years are outside this record. The plan models single and married filing jointly: head of household needs a dependent, which the plan does not collect, so the head-of-household figures here are used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The 2027 version indexes its breaks from a June 2026 base, so its first adjustment is for 2028 and the 2027 breaks are the ones printed in the statute. Later years hold the 2027 breaks rather than index them, as every state schedule does after its latest published year.',
+    jurisdiction: 'state:MT',
+    authority: [{
+      kind: 'statute',
+      citation: 'MCA 15-30-2103 (effective January 1, 2027), heading',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(Effective January 1, 2027) Rate of tax -- net long-term capital gains -- definitions.',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(1)(a) (effective January 1, 2027), joint return and surviving spouse',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(i) on the first $130,000 of Montana taxable income or any part of that income, 4.7%; (ii) on any Montana taxable income in excess of $130,000 or any part of that income, 5.4%;',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(1)(b) (effective January 1, 2027), head of household',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(i) on the first $97,500 of Montana taxable income or any part of that income, 4.7%; (ii) on any Montana taxable income in excess of $97,500 or any part of that income, 5.4%;',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(1)(c) (effective January 1, 2027), single',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(c) for every individual other than a surviving spouse or head of household who is not a married individual: (i) on the first $65,000 of Montana taxable income or any part of that income, 4.7%; (ii) on any Montana taxable income in excess of $65,000 or any part of that income, 5.4%;',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(1)(d) (effective January 1, 2027), married filing separately',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(d) for every married individual who does not make a joint return and for every estate or trust not exempt from taxation under the Internal Revenue Code: (i) on the first $65,000 of Montana taxable income or any part of that income, 4.7%; (ii) on any Montana taxable income in excess of $65,000 or any part of that income, 5.4%.',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(2)(a) (effective January 1, 2027), joint net long-term capital gains',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(i) on the first $130,000 less nonqualified taxable income of net long-term capital gains, 3.0%; (ii) on net long-term capital gains that exceed $130,000 less nonqualified taxable income or any part of that income, 4.1%,',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(2)(b) (effective January 1, 2027), head of household net long-term capital gains',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(i) on the first $97,500 less nonqualified taxable income of net long-term capital gains, 3.0%;',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(2)(c) (effective January 1, 2027), single net long-term capital gains',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(i) on the first $65,000 less nonqualified taxable income of net long-term capital gains, 3.0%;',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(3) (effective January 1, 2027), indexing',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(3) By November 1 of each year, the department shall multiply the bracket amounts contained in subsections (1) and (2) by the modified inflation factor for the following tax year and round the cumulative brackets to the nearest $100.',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2103(4)(a) (effective January 1, 2027), modified inflation factor',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html',
+      quotedText:
+        '(a) "Modified inflation factor" has the same meaning as "inflation factor" as defined in 15-30-2101, except that the consumer price index for June 2026 is substituted for the consumer price index for June 2023.',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2101(12), inflation factor',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0010/0150-0300-0210-0010.html',
+      quotedText:
+        '"Inflation factor" means a number determined for each tax year by dividing the consumer price index for June of the previous tax year by the consumer price index for June 2023.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: 2027,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateWestExtras.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.MT',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+      'packages/engine/src/tax/stateWestExtras.ts#montanaLtcgTax',
+    ],
+  },
   'or-316-157-retirement-income-credit': {
     title: 'Oregon caps the age-62 retirement credit by net pension and liability',
-    statement: 'An eligible recipient age 62 or older receives 9% of net qualifying pension income, capped by remaining Oregon liability. Net pension is capped at $7,500 nonjoint/$15,000 joint, reduced by household Social Security/Tier-I benefits and household income above $15,000/$30,000. Only qualifying pension included in Oregon taxable income enters; a gross pension amount alone does not establish the credit.',
+    statement: 'An eligible recipient age 62 or older receives 9% of net qualifying pension income, capped by remaining Oregon liability. Net pension is capped at $7,500 nonjoint/$15,000 joint, reduced by household Social Security/Tier-I benefits and household income above $15,000/$30,000. Only qualifying pension included in Oregon taxable income enters; a gross pension amount alone does not establish the credit. The credit cannot be claimed for tax years from 2032 (or-laws-2009-c913-s36-retirement-credit-ends-2032).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1610,7 +2066,7 @@ export const westStateRecords = {
     ],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
-    effectiveThrough: null,
+    effectiveThrough: 2031,
     verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
@@ -1623,6 +2079,38 @@ export const westStateRecords = {
       'packages/engine/src/tax/stateWestExtras.ts#oregonRetirementIncomeCredit',
     ],
   },
+  'or-laws-2009-c913-s36-retirement-credit-ends-2032': {
+    title: 'Oregon’s retirement income credit cannot be claimed for tax years from 2032',
+    statement:
+      'Oregon Laws 2009, chapter 913, section 36, as last amended by Oregon Laws 2025, chapter 562, section 5 and printed as a note to ORS 316.157, provides that the retirement income credit may not be claimed for tax years beginning on or after January 1, 2032. The 2026 session did not change it. The figures enacted for 2032 (params/state/data/enacted2032.ts) end the credit’s block, and the engine prices no credit, and asks for none of its facts, from 2032. Before the survey of 2026-09-28 the engine kept the credit in every year, understating tax by up to the credit, $675 for a single filer at 65 with a $10,000 pension and $15,000 of household income. Settled for the end date.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:OR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Or. Laws 2009, ch. 913, §36, as amended by Or. Laws 2025, ch. 562, §5 (note to ORS 316.157)',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText:
+        'Sec. 36. A credit may not be claimed under ORS 316.157 for tax years beginning on or after January 1, 2032. [2009 c.913 §36; 2013 c.750 §9; 2019 c.579 §27; 2025 c.562 §5]',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2032,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2032.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2032.ts#states.OR',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+    ],
+  },
+
   'ut-code-59-10-1043-military-retirement-credit': {
     title: 'Utah credits taxable military retirement at the current state rate',
     statement: 'The military credit equals 4.45% for TY2026 of qualifying military retirement, including qualifying survivor pay, included in federal AGI. Social Security, IRA/401(k) withdrawals and nonmilitary federal pensions are excluded. The return may combine military with Social Security credit, or elect general retirement credit instead. Nonrefundable liability and residency apportionment limits apply; no carryforward is created.',
@@ -1689,7 +2177,7 @@ export const westStateRecords = {
   },
   'hi-head-of-household-rate-schedule': {
     title: 'Hawaii uses the head-of-household schedule',
-    statement: 'HRS 235-51 supplies a distinct head-of-household schedule. Its first band ends at $14,400 and is taxed at 1.4%, then 3.2% through $21,600, 5.5% through $28,800, with the remaining statutory bands in the versioned pack. HOH does not borrow single or joint bands. This record concerns the rate schedule on an established taxable-income base, not all Hawaii credits or filing eligibility.',
+    statement: 'HRS 235-51 supplies a distinct head-of-household schedule. Its first band ends at $14,400 and is taxed at 1.4%, then 3.2% through $21,600, 5.5% through $28,800, with the remaining statutory bands in the versioned pack. HOH does not borrow single or joint bands. This record concerns the rate schedule on an established taxable-income base, not all Hawaii credits or filing eligibility. These bands are the table for taxable years beginning after December 31, 2024, through 2026; the tables from 2027 and from 2029, as Act 24, SLH 2026 set them, are the record hi-act-24-2026-rate-schedules. The plan models single and married filing jointly: head of household needs a dependent, which the plan does not collect, so the head-of-household figures here are used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1705,7 +2193,7 @@ export const westStateRecords = {
     ],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
-    effectiveThrough: null,
+    effectiveThrough: 2026,
     verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
@@ -1716,6 +2204,126 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.HI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateWestExtras.ts#hawaiiTaxForStatus',
+    ],
+  },
+  'hi-act-24-2026-rate-schedules': {
+    title: 'Hawaii taxes from 2027 on the Act 24 tables: lower second and third rates and a 13% top band',
+    statement:
+      'Act 24, SLH 2026 (S.B. 3125 S.D. 1 H.D. 1 C.D. 2, approved May 21, 2026), section 2, amends HRS 235-51. It strikes the tables Act 46, SLH 2024 had set for any taxable year beginning after December 31, 2026 and after December 31, 2028, before either took effect, and inserts new ones for (a) a joint return or surviving spouse, (b) a head of household and (c) an unmarried individual or a married individual filing separately. For 2027 and 2028 the second and third rates fall to 2.50% and 5.00%, the 7.90% band goes, the 11.00% band runs to $1,000,000 joint, $750,000 head of household and $500,000 single, and 13.00% applies above those amounts. The joint table taxes 1.40% to $28,800, then 2.50% to $38,400, 5.00% to $48,000, 6.40% to $72,000, 6.80% to $96,000, 7.20% to $250,000, 7.60% to $350,000, 8.25% to $450,000, 9.00% to $550,000, 10.00% to $650,000, 11.00% to $1,000,000 and 13.00% above (base $88,729.00); the single table breaks at half the joint amounts and the head-of-household table at three quarters. From 2029 the bands up to 7.20% widen again (joint 1.40% to $38,400, 2.50% to $48,000, 5.00% to $72,000, 6.40% to $96,000, 6.80% to $250,000 and 7.20% to $350,000), the 7.60% band goes, and the bands from 8.25% and the 13.00% thresholds stay (joint base $86,936.00 at $1,000,000). Section 9(2) applies section 2 to taxable years beginning after December 31, 2026, with no condition. The figures enacted for 2027 and 2029 (params/state/data/enacted2027.ts and enacted2029.ts) carry all three tables with the whole-dollar base tax the statute prints on each band and hold the 2029 tables for later years. On $100,000 of taxable income that is $5,890.00 single, $4,579.00 joint and $5,234.00 head of household for 2027 and 2028, and $5,293.00, $3,786.00 and $4,539.00 from 2029, against $6,491.20, $5,382.40 and $5,936.80 on the 2026 tables; on $1,200,000 single the 13.00% band makes 2027 $135,365.00 against $122,216.20. Settled for the rate tables on an established taxable income; the standard deduction steps are the record hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps, and credits and whole-return accuracy are outside this record. The plan models single and married filing jointly: head of household needs a dependent, which the plan does not collect, so the head-of-household figures here are used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The act is quoted from the conference draft its status page names as the enacted version, and its approval from the Governor’s message; the unofficial HRS compilation, current to December 31, 2025, still prints the Act 46 tables that Act 24 struck. The printed whole-dollar bases differ from a continuous marginal computation by less than a dollar; the enacted-year tables carry the printed bases.',
+    jurisdiction: 'state:HI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'Over $28,800 but $403.00 plus 2.50% of not over $38,400 excess over $28,800 Over $38,400 but $643.00 plus 5.00% of not over $48,000 excess over $38,400',
+    }, {
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'Over $650,000 but $50,229.00 plus 11.00% of not over $1,000,000 excess over $650,000 Over $1,000,000 $88,729.00 plus 13.00% of excess over $1,000,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'Not over $38,400 1.40% of taxable income Over $38,400 but $538.00 plus 2.50% of not over $48,000 excess over $38,400 … Over $650,000 but $48,436.00 plus 11.00% of not over $1,000,000 excess over $650,000 Over $1,000,000 $86,936.00 plus 13.00% of excess over $1,000,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'Over $487,500 but $37,672.00 plus 11.00% of not over $750,000 excess over $487,500 Over $750,000 $66,547.00 plus 13.00% of excess over $750,000. … Over $487,500 but $36,327.00 plus 11.00% of not over $750,000 excess over $487,500 Over $750,000 $65,202.00 plus 13.00% of excess over $750,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'Over $325,000 but $25,115.00 plus 11.00% of not over $500,000 excess over $325,000 Over $500,000 $44,365.00 plus 13.00% of excess over $500,000. … Over $125,000 but $6,993.00 plus 7.20% of not over $175,000 excess over $125,000 Over $175,000 but $10,593.00 plus 8.25% of not over $225,000 excess over $175,000',
+    }, {
+      kind: 'statute',
+      citation: 'Act 24, SLH 2026, section 9(2)',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM',
+      quotedText:
+        'SECTION 9. This Act shall take effect upon its approval; provided that: … (2) Sections 2, 3, and 4 shall apply to taxable years beginning after December 31, 2026;',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24',
+      url: 'https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1124_.PDF',
+      quotedText:
+        'This is to inform you that on May 21,2026, the following bill was signed into law:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateWestExtras.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.HI',
+      'packages/engine/src/params/state/data/enacted2029.ts#states.HI',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+      'packages/engine/src/tax/stateWestExtras.ts#hawaiiTaxForStatus',
+    ],
+  },
+  'hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps': {
+    title: 'Hawaii raises its standard deduction for taxable years after 2027, 2029 and 2030',
+    statement:
+      'HRS 235-2.4(a)(2), as amended by Act 46, SLH 2024, sets the Hawaii standard deduction for a joint return or surviving spouse, a head of household, and a single filer or a married individual filing separately at $18,000, $13,500 and $9,000 for taxable years beginning after December 31, 2027 ((G)); $20,000, $15,000 and $10,000 after December 31, 2029 ((H)); and $24,000, $18,000 and $12,000 after December 31, 2030 ((I)), the last step. The figures enacted for 2028, 2030 and 2031 (params/state/data/enacted2028.ts, enacted2030.ts and enacted2031.ts) carry the single and joint amounts and hold the 2031 amounts for later years. The state figures carry no separate head-of-household deduction, so a head of household is priced on the single amount, as in 2026. Settled for the single and joint amounts; the head-of-household amount, itemized deductions and whole-return accuracy are outside this record. The plan models single and married filing jointly: head of household needs a dependent, which the plan does not collect, so the head-of-household figures here are used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The Department of Taxation’s HRS compilation is unofficial and current to December 31, 2025; its history note applies the 2024 amendment to taxable years beginning after December 31, 2023, with no condition, and Act 35, SLH 2026, section 3 reprints subparagraphs (F) to (I) with the same amounts and years. The 2026 and 2027 amount is the record hi-hrs-235-2-4-a-2-f-2026-standard-deduction.',
+    jurisdiction: 'state:HI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.4(a)(2)(G)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(G) For taxable years beginning after December 31, 2027: (i) $18,000 in the case of a joint return as provided by section 235-93 or a surviving spouse (as defined in section 2(a) of the Internal Revenue Code); (ii) $13,500 in the case of a head of household (as defined in section 2(b) of the Internal Revenue Code); (iii) $9,000 in the case of an individual who is not married and who is not a surviving spouse or head of household; or (iv) $9,000 in the case of a married individual filing a separate return;',
+    }, {
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.4(a)(2)(H)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(H) For taxable years beginning after December 31, 2029: (i) $20,000 in the case of a joint return as provided by section 235-93 or a surviving spouse … (iii) $10,000 in the case of an individual who is not married and who is not a surviving spouse or head of household; or',
+    }, {
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.4(a)(2)(I)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(I) For taxable years beginning after December 31, 2030: (i) $24,000 in the case of a joint return as provided by section 235-93 or a surviving spouse (as defined in section 2(a) of the Internal Revenue Code); (ii) $18,000 in the case of a head of household (as defined in section 2(b) of the Internal Revenue Code); (iii) $12,000 in the case of an individual who is not married and who is not a surviving spouse or head of household; or',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2028,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2030.ts',
+      'packages/engine/src/params/state/data/enacted2031.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2028.ts#states.HI',
+      'packages/engine/src/params/state/data/enacted2030.ts#states.HI',
+      'packages/engine/src/params/state/data/enacted2031.ts#states.HI',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
   'state-direct-qcd-conformity-policies': {

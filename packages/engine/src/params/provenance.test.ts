@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
-import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
+import { acaParametersForCoverageYear, hsaLimitsForYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
 import { KNOWN_LIFE_TABLE_EDITIONS, LAST_TABLE_AGE, LIFE_TABLE_EDITION_BEFORE_THE_FIELD, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
 import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
 import { FIRST_QUARTER_OF_COVERAGE_AMOUNT_YEAR, QUARTER_OF_COVERAGE_AMOUNT_BY_YEAR } from '../socialSecurity/ssaWageData.js'
-import { stateParamsFor } from './state/index.js'
+import { stateEnactedYearFor, stateParamsFor } from './state/index.js'
 import type { StateTaxParams } from './state/types.js'
 
 const pack = packForYear(2026).pack
@@ -283,6 +283,237 @@ function contributionLimitsClauses(): FigureClause[] {
       label: 'HSA self/family and catch-up amounts',
       clause: `HSA ${usd(pack.contributionLimits.hsaSelfOnly)} self / ${usd(pack.contributionLimits.hsaFamily)} family (+${usd(pack.contributionLimits.hsaCatchUp55)} at 55+)`,
     },
+  ]
+}
+
+function hsa2027Clauses(): FigureClause[] {
+  const lookup = hsaLimitsForYear(2027)
+  expect(lookup.isStandIn, 'the 2027 HSA limits are published').toBe(false)
+  return [
+    {
+      label: '2027 self-only and family limits',
+      clause: `${usd(lookup.params.selfOnly)} self-only / ${usd(lookup.params.family)} family for 2027 (${lookup.params.source}`,
+    },
+    {
+      label: 'statutory catch-up',
+      clause: `The ${usd(pack.contributionLimits.hsaCatchUp55)} catch-up at 55+ is set by statute`,
+    },
+  ]
+}
+
+/** The rate above the lowest band of a state's enacted schedule for a year, with the year it comes from asserted. */
+function enactedTopRate(code: string, year: number, enactedYear: number): number {
+  expect(stateEnactedYearFor(code, year), `${code} ${year} enacted year`).toBe(enactedYear)
+  return stateParamsFor(code, year)!.brackets.single.at(-1)!.ratePct
+}
+
+function stateEnactedInClauses(): FigureClause[] {
+  return [
+    {
+      label: 'Indiana 2027 through 2029 rate',
+      clause: `${enactedTopRate('IN', 2027, 2027)}% flat for 2027 through 2029`,
+    },
+  ]
+}
+
+function stateEnactedMsClauses(): FigureClause[] {
+  const band = stateParamsFor('MS', 2027)!.brackets.single[1]!.lowerBound
+  return [
+    { label: 'Mississippi zero band', clause: `No tax on the first ${usd(band)}` },
+    {
+      label: 'Mississippi 2027 to 2030 steps',
+      clause: `above it ${enactedTopRate('MS', 2027, 2027)}% for 2027, ${enactedTopRate('MS', 2028, 2028)}% for 2028, ${enactedTopRate('MS', 2029, 2029)}% for 2029 and ${enactedTopRate('MS', 2030, 2030)}% from 2030`,
+    },
+  ]
+}
+
+function stateEnactedMtClauses(): FigureClause[] {
+  const mt = stateParamsFor('MT', 2027)!
+  expect(stateEnactedYearFor('MT', 2027)).toBe(2027)
+  return [
+    {
+      label: 'Montana ordinary breaks',
+      clause: `${mt.brackets.single[0]!.ratePct}% up to ${usd(mt.brackets.single[1]!.lowerBound)} single or married filing separately, ${usd(mt.bracketsHeadOfHousehold![1]!.lowerBound)} head of household and ${usd(mt.brackets.marriedFilingJointly[1]!.lowerBound)} joint, then ${mt.brackets.single[1]!.ratePct}%`,
+    },
+    {
+      label: 'Montana long-term gain rates',
+      clause: `long-term capital gains ${mt.montanaLtcg!.lowerRate * 100}% / ${Math.round(mt.montanaLtcg!.upperRate * 1000) / 10}% at the same breaks`,
+    },
+  ]
+}
+
+function stateEnactedNeClauses(): FigureClause[] {
+  const rates = stateParamsFor('NE', 2027)!.brackets.single.map((band) => band.ratePct)
+  expect(stateEnactedYearFor('NE', 2027)).toBe(2027)
+  return [
+    { label: 'Nebraska 2027 rates', clause: `${rates[0]}%, ${rates[1]}% and ${rates[2]}% (rates three and four) from 2027` },
+  ]
+}
+
+function stateEnactedNcClauses(): FigureClause[] {
+  return [
+    {
+      label: 'North Carolina steps',
+      clause: `${enactedTopRate('NC', 2027, 2027)}% for 2027 through 2029, ${enactedTopRate('NC', 2030, 2030)}% for 2030 through 2032 and ${enactedTopRate('NC', 2033, 2033)}% after 2032`,
+    },
+  ]
+}
+
+/** A rate or amount a state's enacted figures carry for a year, with the enacted year it comes from asserted. */
+function enactedParams(code: string, year: number, enactedYear: number) {
+  expect(stateEnactedYearFor(code, year), `${code} ${year} enacted year`).toBe(enactedYear)
+  return stateParamsFor(code, year)!
+}
+
+function stateEnactedHiClauses(): FigureClause[] {
+  const hi2027 = enactedParams('HI', 2027, 2027)
+  const deductions = [2028, 2030, 2031].map((year) => enactedParams('HI', year, year).standardDeduction)
+  return [
+    {
+      label: 'Hawaii 2027 second and third rates',
+      clause: `${hi2027.brackets.single[1]!.ratePct}% and ${hi2027.brackets.single[2]!.ratePct}% in the second and third bands`,
+    },
+    {
+      label: 'Hawaii 13% band thresholds',
+      clause: `${hi2027.brackets.single.at(-1)!.ratePct}% above ${usd(hi2027.brackets.single.at(-1)!.lowerBound)} single, ${usd(hi2027.brackets.marriedFilingJointly.at(-1)!.lowerBound)} joint and ${usd(hi2027.bracketsHeadOfHousehold!.at(-1)!.lowerBound)} head of household`,
+    },
+    {
+      label: 'Hawaii standard deduction steps',
+      clause: `Standard deduction ${usd(deductions[0]!.single)} / ${usd(deductions[0]!.marriedFilingJointly)} from 2028, ${usd(deductions[1]!.single)} / ${usd(deductions[1]!.marriedFilingJointly)} from 2030 and ${usd(deductions[2]!.single)} / ${usd(deductions[2]!.marriedFilingJointly)} from 2031`,
+    },
+  ]
+}
+
+function stateEnactedNyClauses(): FigureClause[] {
+  const ny2027 = enactedParams('NY', 2027, 2027)
+  const ny2033 = enactedParams('NY', 2033, 2033)
+  const lowest = ny2027.brackets.single.slice(0, 5).map((band) => `${band.ratePct}%`)
+  return [
+    {
+      label: 'New York five lowest rates 2027-2032',
+      clause: `The five lowest rates ${lowest.slice(0, 4).join(', ')} and ${lowest[4]} for 2027 through 2032`,
+    },
+    {
+      label: 'New York top rate from 2033',
+      clause: `${ny2033.brackets.single.at(-1)!.ratePct}% above ${usd(ny2033.brackets.marriedFilingJointly.at(-1)!.lowerBound)} joint and ${usd(ny2033.brackets.single.at(-1)!.lowerBound)} single from 2033`,
+    },
+  ]
+}
+
+function stateEnactedRiClauses(): FigureClause[] {
+  const surtax = (year: number) => {
+    const bands = enactedParams('RI', year, year).brackets.single
+    return Math.round((bands.at(-1)!.ratePct - bands.at(-2)!.ratePct) * 100) / 100
+  }
+  const threshold = enactedParams('RI', 2027, 2027).brackets.single.at(-1)!.lowerBound
+  return [
+    {
+      label: 'Rhode Island surtax steps and threshold',
+      clause: `A surtax of ${surtax(2027)}% for 2027, ${surtax(2028)}% for 2028 and ${surtax(2029)}% from 2029 on Rhode Island taxable income over ${usd(threshold)}`,
+    },
+  ]
+}
+
+function stateEnactedVaClauses(): FigureClause[] {
+  const deductions = [2027, 2028, 2030].map((year) => enactedParams('VA', year, year).standardDeduction)
+  const exemptions = stateParamsFor('VA', START_YEAR)!.virginiaPersonalExemptions!
+  return [
+    {
+      label: 'Virginia standard deduction steps',
+      clause: `Standard deduction ${usd(deductions[0]!.single)} / ${usd(deductions[0]!.marriedFilingJointly)} for 2027, ${usd(deductions[1]!.single)} / ${usd(deductions[1]!.marriedFilingJointly)} for 2028 and 2029, and ${usd(deductions[2]!.single)} / ${usd(deductions[2]!.marriedFilingJointly)} from 2030`,
+    },
+    {
+      label: 'Virginia personal exemptions',
+      clause: `personal exemptions of ${usd(exemptions.perExemption)}, plus ${usd(exemptions.perAgedTaxpayer)} at 65`,
+    },
+  ]
+}
+
+function stateEnactedGaClauses(): FigureClause[] {
+  const ga = enactedParams('GA', 2027, 2027)
+  return [
+    {
+      label: 'Georgia 2027 retirement exclusion',
+      clause: `Retirement income exclusion ${usd(ga.retirementPrivate.capPerPerson!)} at ${ga.retirementPrivate.minAge} or older from 2027`,
+    },
+  ]
+}
+
+function stateEnactedDeClauses(): FigureClause[] {
+  const caps = [2027, 2028, 2029].map((year) => enactedParams('DE', year, year).delawareMilitaryPension60Plus!.militaryCap)
+  return [
+    {
+      label: 'Delaware military pension steps',
+      clause: `Military pension subtraction ${usd(caps[0]!)} for 2027, ${usd(caps[1]!)} for 2028 and ${usd(caps[2]!)} from 2029`,
+    },
+  ]
+}
+
+function stateEnactedIlClauses(): FigureClause[] {
+  const il = enactedParams('IL', 2029, 2029)
+  return [
+    { label: 'Illinois 2029 basic exemption', clause: `Basic exemption ${usd(il.illinoisPersonalExemption!.basicAllowance)} from 2029` },
+  ]
+}
+
+function stateEnactedMeClauses(): FigureClause[] {
+  const me = enactedParams('ME', 2027, 2027)
+  expect(me.standardDeductionConformity).toBe('federal')
+  return [
+    { label: 'Maine federal standard deduction from 2027', clause: 'Standard deduction equal to the federal standard deduction from 2027' },
+  ]
+}
+
+function stateEnactedMdClauses(): FigureClause[] {
+  const amount = (year: number) => stateParamsFor('MD', year)!.marylandPublicSafetySubtraction!.amount
+  return [
+    {
+      label: 'Maryland public-safety subtraction steps',
+      clause: `${usd(amount(2026))} for 2026, ${usd(amount(2027))} for 2027, ${usd(amount(2028))} for 2028, ${usd(amount(2029))} for 2029 and ${usd(amount(2030))} from 2030`,
+    },
+  ]
+}
+
+function stateEnactedOrClauses(): FigureClause[] {
+  expect(stateParamsFor('OR', 2031)!.oregonRetirementIncomeCredit).toBeDefined()
+  expect(enactedParams('OR', 2032, 2032).oregonRetirementIncomeCredit).toBeUndefined()
+  return [
+    { label: 'Oregon credit end year', clause: 'cannot be claimed for tax years from 2032' },
+  ]
+}
+
+function stateEnactedCaClauses(): FigureClause[] {
+  const before = stateParamsFor('CA', 2030)!.brackets.single.slice(-3).map((band) => `${band.ratePct}%`)
+  expect(enactedParams('CA', 2031, 2031).brackets.single.at(-1)!.ratePct).toBe(9.3)
+  const military = stateParamsFor('CA', START_YEAR)!.californiaMilitaryExclusions!
+  expect(stateParamsFor('CA', 2030)!.californiaMilitaryExclusions).toBeUndefined()
+  return [
+    { label: 'California bands that end from 2031', clause: `The ${before[0]}, ${before[1]} and ${before[2]} bands end from 2031` },
+    { label: 'California military exclusions', clause: `exclusions of ${usd(military.retirementCap)} each end from 2030` },
+  ]
+}
+
+function stateEnactedWaClauses(): FigureClause[] {
+  const wa = enactedParams('WA', 2028, 2028)
+  expect(wa.hasIncomeTax).toBe(true)
+  return [
+    {
+      label: 'Washington rate and deduction',
+      clause: `${wa.brackets.single[0]!.ratePct}% of federal AGI less long-term capital gains less a ${usd(wa.standardDeduction.single)} deduction per individual or couple, from 2028`,
+    },
+  ]
+}
+
+function stateEnactedDcClauses(): FigureClause[] {
+  const dc = stateParamsFor('DC', START_YEAR)!
+  expect(stateParamsFor('DC', 2030)!.standardDeductionConformity).toBe('federal')
+  expect(dc.standardDeductionStatutoryIndexing).toMatchObject({ firstIndexedYear: 2027, roundToNearest: 50, rounding: 'down' })
+  return [
+    {
+      label: 'District of Columbia basic standard deduction for 2026',
+      clause: `Basic standard deduction ${usd(dc.standardDeduction.single)} single and ${usd(dc.standardDeduction.marriedFilingJointly)} joint for 2026`,
+    },
+    { label: 'District of Columbia indexing and 2030 return to the federal deduction', clause: 'indexed from 2027 and rounded down to $50, and the federal standard deduction from 2030' },
   ]
 }
 
@@ -611,6 +842,7 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'section-121-exclusion': section121ExclusionClauses,
   'ss-benefit-taxation': ssBenefitTaxationClauses,
   'contribution-limits': contributionLimitsClauses,
+  'hsa-2027': hsa2027Clauses,
   'rmd-qcd': rmdQcdClauses,
   'annuity-purchase': annuityPurchaseClauses,
   'hecm-plf': hecmPlfClauses,
@@ -626,6 +858,24 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'aca-ptc-2027': acaPtc2027Clauses,
   'real-yield-curve': realYieldCurveClauses,
   'state-income-tax': stateIncomeTaxClauses,
+  'state-enacted-in': stateEnactedInClauses,
+  'state-enacted-ms': stateEnactedMsClauses,
+  'state-enacted-mt': stateEnactedMtClauses,
+  'state-enacted-ne': stateEnactedNeClauses,
+  'state-enacted-nc': stateEnactedNcClauses,
+  'state-enacted-hi': stateEnactedHiClauses,
+  'state-enacted-ny': stateEnactedNyClauses,
+  'state-enacted-ri': stateEnactedRiClauses,
+  'state-enacted-va': stateEnactedVaClauses,
+  'state-enacted-ga': stateEnactedGaClauses,
+  'state-enacted-de': stateEnactedDeClauses,
+  'state-enacted-il': stateEnactedIlClauses,
+  'state-enacted-me': stateEnactedMeClauses,
+  'state-enacted-md': stateEnactedMdClauses,
+  'state-enacted-or': stateEnactedOrClauses,
+  'state-enacted-ca': stateEnactedCaClauses,
+  'state-enacted-wa': stateEnactedWaClauses,
+  'state-enacted-dc': stateEnactedDcClauses,
 }
 
 /**
@@ -766,6 +1016,39 @@ describe('parameter provenance', () => {
     expect(byId('aca-ptc').figures).not.toContain('2026-26')
     expect(byId('aca-ptc-2027').url).toBe('https://www.irs.gov/pub/irs-drop/rp-26-26.pdf')
     expect(byId('aca-ptc-2027').figures).not.toContain('2025-25')
+  })
+
+  it('links the 2027 HSA limits and each state\'s enacted figures to the document that sets them', () => {
+    expect(byId('hsa-2027').url).toBe('https://www.irs.gov/pub/irs-drop/rp-26-24.pdf')
+    expect(byId('hsa-2027').figures).toContain('Rev. Proc. 2026-24')
+    expect(byId('state-enacted-in').url).toBe('https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf')
+    expect(byId('state-enacted-ms').url).toBe('https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm')
+    expect(byId('state-enacted-mt').url).toBe('https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0030/0150-0300-0210-0030.html')
+    expect(byId('state-enacted-ne').url).toBe('https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03')
+    expect(byId('state-enacted-nc').url).toBe('https://www.ncleg.gov/EnactedLegislation/SessionLaws/HTML/2025-2026/SL2026-41.html')
+    expect(byId('state-enacted-hi').url).toBe('https://data.capitol.hawaii.gov/sessions/session2026/bills/SB3125_CD2_.HTM')
+    expect(byId('state-enacted-ny').url).toBe('https://www.nysenate.gov/legislation/laws/TAX/601')
+    expect(byId('state-enacted-ri').url).toBe('https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf')
+    expect(byId('state-enacted-va').url).toBe('https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/')
+    expect(byId('state-enacted-ga').url).toBe('https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download')
+    expect(byId('state-enacted-de').url).toBe('https://delcode.delaware.gov/title30/c011/sc02/index.html')
+    expect(byId('state-enacted-il').url).toBe('https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm')
+    expect(byId('state-enacted-me').url).toBe('https://legislature.maine.gov/legis/bills/getPDF.asp?paper=HP1491&item=37&snum=132')
+    expect(byId('state-enacted-md').url).toBe('https://mgaleg.maryland.gov/2026RS/Chapters_noln/CH_686_sb0607T.pdf')
+    expect(byId('state-enacted-or').url).toBe('https://www.oregonlegislature.gov/bills_laws/ors/ors316.html')
+    expect(byId('state-enacted-ca').url).toBe('https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII')
+    expect(byId('state-enacted-wa').url).toBe('https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf')
+    expect(byId('state-enacted-dc').url).toBe('https://code.dccouncil.gov/us/dc/council/acts/26-416')
+    expect(byId('state-enacted-dc').figures).toContain('congressional review with a projected law date of about November 20, 2026')
+    // What is loaded is not claimed complete; the survey is named for the
+    // rest, and the conditional and vote-pending changes are named with dates.
+    const stateRow = byId('state-income-tax').figures
+    expect(stateRow).toContain('the survey of all 51 jurisdictions')
+    expect(stateRow).toContain('Georgia and South Carolina 2027 rates await determinations')
+    expect(stateRow).toContain('Initiative 645, Proposition 3')
+    expect(stateRow).not.toMatch(/Indiana, Mississippi, Montana, Nebraska and North Carolina are listed/)
+    expect(byId('state-enacted-wa').figures).toContain('Initiative 645 on the November 3, 2026 ballot')
+    expect(byId('state-enacted-ca').figures).toContain('Proposition 3 on the November 3, 2026 ballot')
   })
 
   it('links the life table to the page the engine read it from', () => {

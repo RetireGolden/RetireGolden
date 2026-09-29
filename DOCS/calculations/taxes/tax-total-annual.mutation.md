@@ -1,11 +1,11 @@
 # Mutation receipt: tax-total-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `77d80a89` (branch `claude/2027-published-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/federalTax.ts`
 
 ```diff
-@@ -744,7 +744,7 @@
+@@ -745,7 +745,7 @@
    return {
      compute: (input) => {
        const { enriched, federal } = deriveFederalEnrichment(input)
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/federal
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the hunk's lines moved down one line in tax/federalTax.ts, which now also passes the federal senior deduction to the state household facts. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine18/packages/engine
 
- ❯ src/tax/federalTax.evidence.test.ts (15 tests | 1 failed) 8ms
+ ❯ src/tax/federalTax.evidence.test.ts (15 tests | 1 failed) 12ms
    ❯ tax-total-annual — Annual composed tax (2)
-     × composes 12000 of federal and 3000 of state into 15000 and excludes penalties 3ms
+     × composes 12000 of federal and 3000 of state into 15000 and excludes penalties 4ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 14 passed (15)

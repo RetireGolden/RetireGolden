@@ -681,6 +681,9 @@
       "projection-summary-fi-age": [
         "projection-summary-fi-number"
       ],
+      "relocation-lifetime-state-local-tax": [
+        "state-enacted-tax-year-figures"
+      ],
       "risk-based-guardrail-solved-balance-thresholds": [
         "monte-carlo-default-seed"
       ],
@@ -882,6 +885,7 @@
         "parameter-provenance-catalog",
         "qcd-income-offset-qualified-slice",
         "qcd-limit-and-age-proxy",
+        "state-enacted-tax-year-figures",
         "tax-realized-gains-annual",
         "year-result-tax-exempt-interest"
       ],
@@ -894,20 +898,23 @@
         "inherited-distribution-forced-annual",
         "inherited-distribution-voluntary-annual",
         "withdrawals-by-category-annual"
+      ],
+      "year-result-contributions": [
+        "hsa-contribution-limit-years"
       ]
     }
   },
   "records": {
-    "total": 264,
+    "total": 266,
     "byKind": {
       "composition": 85,
-      "data": 21,
+      "data": 23,
       "formula": 93,
       "model": 65
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 259
+      "derivation": 261
     }
   },
   "oracleExamples": [
@@ -1083,7 +1090,7 @@
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 56
+      "recordCount": 57
     },
     {
       "group": "insights",
@@ -1138,7 +1145,7 @@
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 20
+      "recordCount": 21
     }
   ]
 }

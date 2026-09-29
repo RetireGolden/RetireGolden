@@ -327,10 +327,101 @@ export const northeastStateRecords = {
     ],
   },
 
+  'ny-tax-601-2027-rate-cuts-and-2033-top-rate': {
+    title: 'New York cuts its five lowest rates for 2027 to 2032 and its top rate to 8.82% from 2033',
+    statement:
+      'New York Tax Law 601(a), for a joint return or a surviving spouse, and 601(c), for an unmarried individual or a married individual filing separately, set in paragraph (viii) of each the tables for taxable years beginning after 2026 and before 2033. The five lowest rates fall by 0.1 point from 2026, to 3.80%, 4.30%, 5.05%, 5.30% and 5.80%, over the same bands: joint breaks at $17,150, $23,600, $27,900 and $161,550, single at $8,500, $11,700, $13,900 and $80,650. 6.85% applies over $323,200 joint and $215,400 single, and 9.65% over $2,155,350 joint and $1,077,550 single, as in 2026. Paragraph (ix) of each, for taxable years beginning after 2032, keeps those rates and bands but replaces 9.65% with 8.82% as the top rate, with no band above it. The figures enacted for 2027 and 2033 (params/state/data/enacted2027.ts and enacted2033.ts) carry the joint and single tables with the base tax the statute prints on each band. As for 2026, the 10.30% and 10.90% bands over $5,000,000 and $25,000,000 in paragraph (viii) are not carried, so the engine understates tax on New York taxable income over $5,000,000 from 2027 to 2032. Settled for the joint and single tables up to $5,000,000; the head-of-household table in 601(b), the supplemental tax in 601(d-1) that recaptures the benefit of the lower bands at higher incomes, credits and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'nysenate.gov refuses scripted requests (HTTP 403), so each quote was checked against the page as read in a browser on 2026-09-28, the revision of 2025-07-11, and the ledger records the source as unfetchable. The statute prints a whole-dollar base on each band; the enacted-year tables carry the printed bases.',
+    jurisdiction: 'state:NY',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.Y. Tax Law §601(a)(1)(B)(viii), joint table for taxable years after 2026 and before 2033',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/601',
+      quotedText:
+        '(viii) For taxable years beginning after two thousand twenty-six and before two thousand thirty-three the following rates shall apply: If the New York taxable income is: The tax is: Not over $17,150 3.80% of the New York taxable income Over $17,150 but not over $23,600 $652 plus 4.30% of excess over $17,150',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law §601(a)(1)(B)(viii), joint table, fourth band',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/601',
+      quotedText:
+        'Over $27,900 but not over $161,550 $1,146 plus 5.30% of excess over $27,900 Over $161,550 but not over $323,200 $8,229 plus 5.80% of excess over $161,550',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law §601(a)(1)(B)(ix), joint table for taxable years after 2032, top band',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/601',
+      quotedText:
+        'Over $2,155,350 $143,107 plus 8.82% of excess over $2,155,350',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law §601(c)(1)(B)(viii), single table for taxable years after 2026 and before 2033',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/601',
+      quotedText:
+        'Not over $8,500 3.80% of the New York taxable income Over $8,500 but not over $11,700 $323 plus 4.30% of excess over $8,500',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law §601(c)(1)(B)(ix), single table for taxable years after 2032, top band',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/601',
+      quotedText:
+        '(ix) For taxable years beginning after two thousand thirty-two the following rates shall apply: If the New York taxable income is: The tax is: Not over $8,500 3.80% of the New York taxable income … Over $1,077,550 $70,983 plus 8.82% of excess over $1,077,550',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2033.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.NY',
+      'packages/engine/src/params/state/data/enacted2033.ts#states.NY',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'me-pl-2025-c650-k-15-federal-standard-deduction-from-2027': {
+    title: 'Maine’s standard deduction equals the federal standard deduction from 2027',
+    statement:
+      'P.L. 2025, c. 650, Part K, section K-15 (L.D. 2212, approved April 10, 2026) enacts 36 M.R.S. 5124-C(1-D): for tax years beginning on or after January 1, 2027, a resident individual’s standard deduction is equal to the federal standard deduction, subject to the phase-out under subsection 2. The same Part sets 2026 at Maine’s own $15,700 single and $31,400 joint plus the IRC 63(c)(3) additional amount. The figures enacted for 2027 (params/state/data/enacted2027.ts) tag Maine’s deduction as the federal one, so it is the federal basic amount moved by the projection’s inflation scale, $16,100 and $32,200 at the 2026 federal figures, and the federal age-65 addition attaches with it as it did in 2026; the phase-out still applies. Reading the federal standard deduction to include the IRC 63(c)(3) additional amount is the reading Maine Revenue Services applied to the same words in subsection 1-A for 2020 to 2024; Maine law does not define the term. The Revisor’s statute page had not been updated with subsection 1-D when this was verified. Settled for the basic amount; the age-65 reading is stated here, and the phase-out is the record mrs-36-5124-c-2-standard-deduction-phaseout.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'statute',
+      citation: 'P.L. 2025, c. 650, Pt. K, §K-15, enacting 36 M.R.S. §5124-C(1-D)',
+      url: 'https://legislature.maine.gov/legis/bills/getPDF.asp?paper=HP1491&item=37&snum=132',
+      quotedText:
+        '1-D. Amount; on or after January 1, 2027. For tax years beginning on or after January 1, 2027, the standard deduction of a resident individual is equal to the federal standard deduction, subject to the phase-out under subsection 2.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.ME',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+    ],
+  },
+
   'mrs-36-5124-c-1-b-decoupled-standard-deduction': {
     title: 'Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition',
     statement:
-      'For tax years beginning on or after January 1, 2026, and for Maine adjusted gross income below the §5124-C(2) phase-out, a Maine resident\'s standard deduction uses Maine\'s published basic standard deduction amount plus the IRC 63(f)(1) age additional amount incorporated through IRC 63(c)(3) for a taxpayer — and, on a joint return, an eligible spouse — who has attained age 65 before the close of the taxable year, and is no longer the whole federal standard deduction that subsection 1-A carried through 2025. This settled component is age-only and filing-status-scoped to the single and married amounts the engine models; it does not settle blindness under IRC 63(f)(2) or head-of-household basic amounts.',
+      'For tax years beginning on or after January 1, 2026, and for Maine adjusted gross income below the §5124-C(2) phase-out, a Maine resident\'s standard deduction uses Maine\'s published basic standard deduction amount plus the IRC 63(f)(1) age additional amount incorporated through IRC 63(c)(3) for a taxpayer — and, on a joint return, an eligible spouse — who has attained age 65 before the close of the taxable year, and is no longer the whole federal standard deduction that subsection 1-A carried through 2025. This settled component is age-only and filing-status-scoped to the single and married amounts the engine models; it does not settle blindness under IRC 63(f)(2) or head-of-household basic amounts. From 2027 the deduction equals the federal one (me-pl-2025-c650-k-15-federal-standard-deduction-from-2027).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -394,7 +485,7 @@ export const northeastStateRecords = {
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
-    effectiveThrough: null,
+    effectiveThrough: 2026,
     verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
@@ -854,13 +945,74 @@ export const northeastStateRecords = {
     ],
   },
 
-  'ri-gen-laws-44-30-12-social-security-and-pension-modification': {
-    title: 'Rhode Island limits Social Security and pension modifications by age, AGI, and year',
+  'ri-44-30-2-6-high-income-surtax': {
+    title: 'Rhode Island adds a surtax on taxable income over $1,000,000: 1% for 2027, 2% for 2028, 3% from 2029',
     statement:
-      'Rhode Island allows an age-qualified Social Security modification only below its federal-AGI thresholds: the statute starts at $80,000 for an unmarried, head-of-household, or married-separate filer and $100,000 for a joint filer or qualifying widow(er), then requires annual inflation adjustment. It also allows a pension or annuity modification subject to the same AGI test, with a statutory ceiling of $50,000 beginning in tax years after 2025. The pack instead taxes the federally taxable Social Security share for everyone and applies a $20,000 age-67 retirement cap without the AGI test. Those omissions can move taxpayer exposure in both directions: the blanket Social Security inclusion overstates tax below the threshold, while applying a retirement cap above the threshold understates tax; the $20,000 ceiling also overstates tax for eligible pensions now reaching $50,000.',
-    classification: 'approximated',
+      'The FY 2027 budget, H 7127 Sub A as amended, Article 6, section 5, adds 44-30-2.6(c)(3)(A)(I)(2): a high-income surtax on the Rhode Island taxable income of married individuals filing jointly, a qualifying widow(er), a head of household, an unmarried individual and a married individual filing separately, at 1% of Rhode Island taxable income over $1,000,000 for tax years beginning in 2027, 2% for 2028 and 3% from 2029. The threshold is the same for every filing status. Subparagraph (E)(III) indexes it for inflation from 2028 on a 2026 base year. Article 6 took effect upon passage, and the Division of Taxation’s summary of July 22, 2026 describes the surtax as enacted. The figures enacted for 2027, 2028 and 2029 (params/state/data/enacted2027.ts to enacted2029.ts) carry it as a band over $1,000,000 at 6.99%, 7.99% and 8.99%, the 5.99% top rate plus the surtax, and hold the threshold at $1,000,000, which overstates the surtax slightly from 2028 until the indexed threshold is published. The lower bands are the 2026 indexed amounts, standing in until 2027’s are published. Settled for the surtax rates and the 2027 threshold; the estate and trust surtax, the indexed threshold from 2028 and whole-return accuracy are outside this record.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
+    conventionRationale:
+      'The enrolled budget article is quoted because the codified section on the General Assembly site returned no page when this was verified on 2026-09-28. The bill text carries line numbers, so each quote stops at a line end and resumes after an elision.',
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-2.6(c)(3)(A)(I)(2)(i)',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        '(2) High-income surtax. (i) For tax years beginning on or after January 1, 2027, until the … a tax at one percent … (1%) of Rhode Island taxable income over one million dollars ($1,000,000).',
+    }, {
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(A)(I)(2)(ii) and (iii)',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        'separate returns and bankruptcy estates, a tax at two percent (2%) of Rhode Island taxable income … estates, a tax at three percent (3%) of Rhode Island taxable income over one million dollars',
+    }, {
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(E)(III)',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        'and 44-30-2.6(c)(3)(A)(II)(2), the base tax year and the base year shall be 2026.',
+    }, {
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 6',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        'SECTION 6. This article shall take effect upon passage.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, High-Income Surtax',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-07/2026_summary_of_legislative_changes.pdf',
+      quotedText:
+        'imposes a surtax of 1% on personal income over $1 million for the tax year beginning January 1, 2027. For the tax year beginning January 1, 2028, the surtax will increase to 2%. For the tax year beginning January 1, 2029, the surtax will increase to 3%, where it will remain.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/data/enacted2028.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.RI',
+      'packages/engine/src/params/state/data/enacted2028.ts#states.RI',
+      'packages/engine/src/params/state/data/enacted2029.ts#states.RI',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
+  'ri-gen-laws-44-30-12-social-security-and-pension-modification': {
+    title: 'Rhode Island allows the pension modification only below its federal-AGI limits, and not for IRA distributions',
+    statement:
+      'Rhode Island’s pension and annuity modification, 44-30-12(c)(9), up to $50,000 of taxable pension and annuity income from tax year 2025, is allowed only to a filer at full retirement age whose federal AGI is less than the amount the Social Security modification uses in (c)(8)(i)(A) for an unmarried, head-of-household or married-separate filer and (c)(8)(i)(B) for a joint filer or qualifying widow(er): the statute starts at $80,000 and $100,000 and indexes them, and the Division of Taxation prints $107,000 and $133,750 for tax year 2025, the latest it has published. The Division’s 2025 RI-1040 instructions add that the modification does not include IRA distributions. The engine applies both: at or above the limit for the filing status the modification is zero (tax/stateEnactedLaw.ts#rhodeIslandPensionModificationAllowed, reading the limits the figures carry for the Social Security modification), and a characterized IRA distribution does not count toward it. A single filer at 67 with $150,000 of federal AGI including a $60,000 pension pays $5,772.50 for 2026; with the $50,000 cap and no AGI test the engine charged $3,397.50, and at the earlier $20,000 cap $4,822.50. Before the round-three review of 2026-09-28 this record was approximated. Settled for the AGI test and the IRA exclusion on characterized distributions; the aggregate retirement income a caller supplies without characterized distributions cannot tell a pension from an IRA and still counts both, the limits for years after 2025 are held at the 2025 amounts, and military pensions, which (c)(11) subtracts separately, are the record ri-code-44-30-12-c-11-military-pension-not-modeled.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:RI',
     authority: [{
@@ -899,19 +1051,138 @@ export const northeastStateRecords = {
       url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
       quotedText:
         '(B) For a married individual filing jointly or individual filing qualifying widow(er) who has attained the age used for calculating full or unreduced Social Security retirement benefits whose joint federal adjusted gross income for such taxable year is less than the amount used for the modification contained in subsection (c)(8)(i)(B) of this section an amount not to exceed $15,000 for tax years beginning on or after January 1, 2017, until the tax year beginning January 1, 2022, and an amount not to exceed twenty thousand dollars ($20,000) for tax years beginning on or after January 1, 2023, until the tax year beginning January 1, 2024, and an amount not to exceed fifty thousand dollars ($50,000) for tax years beginning on or after January 1, 2025, of taxable pension and/or annuity income includible in federal adjusted gross income.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI-1040 resident instructions, Schedule M line 1t',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',
+      quotedText:
+        'This decreasing modification amount should NOT include any amounts for … IRAs listed on line 4b of your Federal Form 1040 or Federal Form 1040-SR.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#RI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/tax/stateEnactedLaw.ts#rhodeIslandPensionModificationAllowed',
+    ],
+  },
+
+  'ri-gen-laws-44-30-12-c-8-c-9-2026-modifications': {
+    title: 'Rhode Island subtracts Social Security below its AGI limits at full retirement age, and up to $50,000 of pension from 2025',
+    statement:
+      'R.I. Gen. Laws 44-30-12(c)(8) subtracts the Social Security benefits included in federal AGI for a filer who has reached full retirement age and whose federal AGI is below $80,000 (unmarried, head of household or married filing separately) or $100,000 (joint or qualifying widow(er)), each indexed from 2000; the Division of Taxation prints $107,000 and $133,750 for tax year 2025, the latest it has published. 44-30-12(c)(9) allows a modification of up to $50,000 of taxable pension and annuity income from tax year 2025, up from $20,000 in 2023 and 2024; the ceiling is flat, and only the AGI test is indexed. The 2026 figures (params/state/data/year2026.ts) carry the Social Security modification at those limits for a filer, or on a joint return either spouse, aged 67 or older at the end of the year, which is full retirement age for everyone reaching it from 2026, and the $50,000 pension cap at the same age. The 2025 limits stand in for 2026, which overstates tax for a filer between them and the 2026 limits. On a joint return where only one spouse has reached full retirement age, the Division’s modification worksheet subtracts only that spouse’s share, the included benefits times that spouse’s gross benefits over the couple’s; the engine does the same when the plan knows each person’s benefits (tax/stateEnactedLaw.ts#rhodeIslandSocialSecurityModification), and without them subtracts the whole. Before the survey of 2026-09-28 the engine taxed the Social Security of every Rhode Island filer and capped the pension modification at $20,000. Settled for the modifications at the latest published limits; the pension modification’s own AGI test and its exclusion of IRA distributions are the record ri-gen-laws-44-30-12-social-security-and-pension-modification, and from 2027 the Social Security modification drops the age test (ri-h7127-2027-social-security-modification-without-age-test).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Full retirement age is 67 for anyone born in 1960 or later and 66 and 10 months for anyone born in 1959, so every filer who reaches it in 2026 or later is 67 by the end of that year; the age at year end is the test the engine reads.',
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(8)(i)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(8) Modification for taxable Social Security income. (i) For tax years beginning on or after January 1, 2016: (A) For a person who has attained the age used for calculating full or unreduced Social Security retirement benefits who files a return as an unmarried individual, head of household, or married filing separate whose federal adjusted gross income for the taxable year is less than eighty thousand dollars ($80,000); or',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        'and for tax years beginning on or after January 1, 2025, a modification shall be allowed for up to fifty thousand dollars ($50,000), of taxable pension and/or annuity income that is included in federal adjusted gross income for the taxable year:',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Filing status 2024 2025 Single $104,200 $107,000 Married filing jointly* $130,250 $133,750',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Starting with Tax Year 2025, if the taxpayer meets all requirements, he or she may reduce federal AGI, for Rhode Island tax purposes, by up to $50,000 of federally taxable pension/401(k)/403(b)/annuity income (via the Rhode Island modification).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/Social%20Security%20Worksheet_b.pdf',
+      quotedText:
+        'If you AND your spouse, if applicable, were born on or before 03/01/1959, enter 1.0000 on line 12 and skip lines 8 through 10.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#RI',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/tax/stateEnactedLaw.ts#rhodeIslandSocialSecurityModification',
+    ],
+  },
+
+  'ri-h7127-2027-social-security-modification-without-age-test': {
+    title: 'Rhode Island drops the full-retirement-age test from its Social Security modification from 2027',
+    statement:
+      'The FY 2027 budget, H 7127 Sub A as amended, Article 6, section 5, ends 44-30-12(c)(8)(i) with tax year 2026 and adds (c)(8)(ii): for tax years beginning on or after January 1, 2027, an unmarried individual, head of household or married individual filing separately whose federal AGI is less than $80,000, or a joint filer or qualifying widow(er) whose joint federal AGI is less than $100,000, subtracts the Social Security benefits included in federal AGI, with no full-retirement-age test; both amounts are indexed from a 2000 base year under the renumbered (c)(8)(iii). Article 6 took effect upon passage, and the Division of Taxation’s summary of July 22, 2026 describes the change as enacted. The pension modification in (c)(9) keeps its full-retirement-age test. The figures enacted for 2027 (params/state/data/enacted2027.ts) carry the modification without the age test, at the latest limits the Division has published, $107,000 and $133,750 for tax year 2025, held until later ones are published, which slightly overstates tax for a filer between those and the indexed limits. Settled for dropping the age test; the indexed limits for later years, the pension modification’s AGI test and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The enrolled budget article is quoted because the codified section on the General Assembly site had not been updated when this was verified on 2026-09-28. The bill text carries line numbers, so each quote stops at a line end and resumes after an elision.',
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 5, R.I. Gen. Laws §44-30-12(c)(8)(i), as amended to end with tax year 2026',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        '(8) Modification for taxable Social Security income. … (i) For tax years beginning on or after January 1, 2016, until the tax year beginning January',
+    }, {
+      kind: 'statute',
+      citation: '2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-12(c)(8)(ii)',
+      url: 'https://webserver.rilegislature.gov/BillText/BillText26/HouseText26/H7127Aaa.pdf',
+      quotedText:
+        '(ii) For the tax years beginning on or after January 1, 2027: … (A) For a person who files a return as an unmarried individual, head of household, or … (B) A married individual filing jointly or individual filing qualifying widow(er) whose joint … ($100,000), an amount equal to the Social Security benefits includible in federal adjusted gross',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, Social Security Relief',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-07/2026_summary_of_legislative_changes.pdf',
+      quotedText:
+        'eliminates the age threshold requirement for tax years beginning on or after January 1, 2027 (while keeping the income threshold).',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Filing status 2024 2025 Single $104,200 $107,000 Married filing jointly* $130,250 $133,750',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateEnactedLaw.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/enacted2027.ts#states.RI',
+      'packages/engine/src/params/state/index.ts#stateParamsFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateEnactedLaw.ts#rhodeIslandSocialSecurityModification',
     ],
   },
 

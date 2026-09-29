@@ -355,10 +355,11 @@ describeRule('sc-code-12-6-1170-retirement-income-deduction', {
   })
 })
 
-// Arkansas, DFA's published 2026 schedule: 0% to 5,600, 2% to 11,200, 3% to
-// 16,000, 3.4% to 26,400, 3.9% above. Deduction 2,470 per taxpayer.
+// Arkansas's 2026 schedule: 0% to 5,600, 2% to 11,200, 3% to 16,000, 3.4% to
+// 26,400, 3.7% above (Act 1 of the 2026 First Extraordinary Session cut the
+// 3.9% DFA printed). Deduction 2,470 per taxpayer.
 const arkansasTax = (taxable: number) => bandedTax(
-  [[0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.9]],
+  [[0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.7]],
   taxable,
 )
 const AR_DEDUCTION = 2_470
@@ -572,7 +573,9 @@ describeRule('ars-43-1022-22-long-term-capital-gain-subtraction', {
   })
 })
 
-const AZ_AGE65_INCOME = 120_000
+// Above $175,000 of AGI the federal senior deduction Arizona subtracts has
+// phased out entirely, so the two readings differ only by the exemption.
+const AZ_AGE65_INCOME = 200_000
 const AZ_AGE65_EXEMPTION = 2_100
 
 describeRule('ars-43-1023-e-age-65-exemption', {
@@ -1372,7 +1375,8 @@ const mdSingleTax = (taxable: number) => bandedTax(
   ],
   taxable,
 )
-const MD_DEDUCTION = 3350
+// Tax-General 10-217(c): the $3,350 deduction indexed for 2026.
+const MD_DEDUCTION = 3400
 const MD_IRA = 80_000
 const MD_PACK_CAP = 40_600
 const MD_PUBLIC_PENSION = 80_000
