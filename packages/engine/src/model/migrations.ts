@@ -699,16 +699,20 @@ function recipePeople(household: unknown): RecipePerson[] | null {
  * benchmark in every month and is one positive amount shared by every covered
  * member in its covered months, and 0 after; and the assertions, tax-exempt
  * interest and foreign exclusion are the recipe's. The dollars are compared
- * separately (`fitsRecipeDollars`).
+ * separately (`fitsRecipeDollars`). With `compareFacts` false the facts are
+ * not compared: the shape is then exactly what a 'premiumField' contract
+ * derives on each run, and the facts are the ones it keeps.
  */
-function exampleRecipeAmount(contract: unknown, people: readonly RecipePerson[]): number | null {
+function exampleRecipeAmount(contract: unknown, people: readonly RecipePerson[], compareFacts = true): number | null {
   if (typeof contract !== 'object' || contract === null || Array.isArray(contract)) return null
   const record = contract as Record<string, unknown>
   if (Object.prototype.hasOwnProperty.call(record, 'premiumBasis')) return null
   const year = record['year']
   if (typeof year !== 'number' || !Number.isInteger(year)) return null
-  for (const [key, value] of Object.entries(EXAMPLE_RECIPE_CONTRACT_FACTS)) {
-    if (canonicalJson(record[key]) !== canonicalJson(value)) return null
+  if (compareFacts) {
+    for (const [key, value] of Object.entries(EXAMPLE_RECIPE_CONTRACT_FACTS)) {
+      if (canonicalJson(record[key]) !== canonicalJson(value)) return null
+    }
   }
   const living = people.filter((person) => year - person.birthYear <= person.planningAge)
   const family = record['taxFamilyMembers']
@@ -1016,6 +1020,12 @@ interface SortedExampleContracts {
   readonly contracts: unknown[]
   /** Rewritten to 'premiumField'. */
   readonly rewrittenYears: number[]
+  /**
+   * Among them, the years the v5 engine left out (the example's amounts no
+   * longer matched the plan's rates or state) and the credit is counted from
+   * now on, where it can be priced; only while the credit is applied.
+   */
+  readonly rewrittenLeftOutYears: number[]
   /** Removed: from the recipe, no longer matching, left out by the v5 engine. */
   readonly removedYears: number[]
   /** Kept 'stated', not the recipe's, refused by the v5 engine and priced now. */
@@ -1026,8 +1036,13 @@ const sortedYears = (years: Iterable<number>): number[] => [...new Set(years)].s
 
 /**
  * A saved example's contracts sorted for v6, judged in the plan they belong to
- * (PR #761 review 2 and the follow-up):
- * - the ones the recipe wrote are rewritten to 'premiumField';
+ * (PR #761 review 2 and the follow-ups):
+ * - the ones the recipe wrote are rewritten to 'premiumField', and so is one
+ *   the v5 engine priced as written (the premium field grown at the plan's
+ *   stored rates, to half a cent) whose shape is exactly what the premium-field
+ *   fill derives: it matches the v5 engine in the deterministic run and, like
+ *   the v5 engine's check, follows the premium field on every path, where
+ *   'stated' would hold it in nominal dollars (PR #761 second review);
  * - the ones that came from the recipe but that the v5 engine did not price as
  *   written (they no longer matched the premium) are removed, as the v5 engine
  *   left them out, so the figures do not change;
@@ -1041,45 +1056,59 @@ function sortExampleContracts(contracts: readonly unknown[], context: ExampleCon
   const isRecipe = exampleRecipeMatcher(context.premium, context.planGrowth, contracts, context.people)
   const premium = context.premium
   const growth = context.planGrowth
-  const v5Priced = (contract: Record<string, unknown>) =>
-    typeof premium !== 'number' || growth === null || v5PricedExampleContract(contract, context.household, context.people, premium, growth)
+  // Whether the v5 engine priced a contract as written, and whether it left it
+  // out; neither when the plan's premium or rates cannot be read.
+  const v5PricedAsWritten = (contract: Record<string, unknown>) =>
+    typeof premium === 'number' && growth !== null && v5PricedExampleContract(contract, context.household, context.people, premium, growth)
+  const v5LeftOut = (contract: Record<string, unknown>) =>
+    typeof premium === 'number' && growth !== null && !v5PricedExampleContract(contract, context.household, context.people, premium, growth)
   const kept: unknown[] = []
   const rewritten: number[] = []
+  const rewrittenLeftOut: number[] = []
   const removed: number[] = []
   const nowPriced: number[] = []
   for (const contract of contracts) {
-    if (isRecipe(contract)) {
-      kept.push(premiumFieldContract(contract as Record<string, unknown>))
-      rewritten.push((contract as Record<string, number>)['year']!)
-      continue
-    }
     const record = plainObject(contract)
     const year = record?.['year']
+    const inCoverage = record !== null && typeof year === 'number' && Number.isInteger(year) && year >= EXAMPLE_RECIPE_FIRST_YEAR
     if (
-      record !== null &&
+      isRecipe(contract) ||
+      (inCoverage && exampleRecipeAmount(contract, context.people, false) !== null && v5PricedAsWritten(record))
+    ) {
+      kept.push(premiumFieldContract(record!))
+      rewritten.push(year as number)
+      if (inCoverage && context.applyAcaCredit && v5LeftOut(record)) rewrittenLeftOut.push(year as number)
+      continue
+    }
+    if (
+      inCoverage &&
       !Object.prototype.hasOwnProperty.call(record, 'premiumBasis') &&
-      typeof year === 'number' &&
-      Number.isInteger(year) &&
-      year >= EXAMPLE_RECIPE_FIRST_YEAR &&
-      !v5Priced(record)
+      v5LeftOut(record)
     ) {
       if (cameFromExampleRecipe(record)) {
-        removed.push(year)
+        removed.push(year as number)
         continue
       }
-      if (context.applyAcaCredit) nowPriced.push(year)
+      if (context.applyAcaCredit) nowPriced.push(year as number)
     }
     kept.push(contract)
   }
   return {
     contracts: kept,
     rewrittenYears: sortedYears(rewritten),
+    rewrittenLeftOutYears: sortedYears(rewrittenLeftOut),
     removedYears: sortedYears(removed),
     nowPricedYears: sortedYears(nowPriced),
   }
 }
 
-const EMPTY_SORT: SortedExampleContracts = { contracts: [], rewrittenYears: [], removedYears: [], nowPricedYears: [] }
+const EMPTY_SORT: SortedExampleContracts = {
+  contracts: [],
+  rewrittenYears: [],
+  rewrittenLeftOutYears: [],
+  removedYears: [],
+  nowPricedYears: [],
+}
 
 /** The removal record the step writes for `years`. */
 const exampleRemovalRecord = (years: readonly number[]) => ({ edit: 'exampleNoLongerMatched', years: [...years] })
@@ -1319,14 +1348,19 @@ function exampleMigration(raw: Record<string, unknown>): { doc: Record<string, u
       ['exampleContractsLeftOut', sorted.removedYears],
       ['exampleEnteredContractsNowPriced', sorted.nowPricedYears],
     ]
+    const span = (years: readonly number[]) => ({
+      contractCount: years.length,
+      firstYear: years[0]!,
+      lastYear: years[years.length - 1]!,
+    })
     for (const [kind, years] of entries) {
       if (years.length === 0) continue
+      const leftOut = kind === 'exampleContractsFollowPremiumField' ? sorted.rewrittenLeftOutYears : []
       repairs.push({
         kind,
         exampleSourceId,
-        contractCount: years.length,
-        firstYear: years[0]!,
-        lastYear: years[years.length - 1]!,
+        ...span(years),
+        ...(leftOut.length === 0 ? {} : { previouslyLeftOut: span(leftOut) }),
         ...(scenario === undefined ? {} : { scenario }),
       } as PlanLoadRepair)
     }
@@ -1497,6 +1531,14 @@ export type PlanLoadRepair =
       contractCount: number
       firstYear: number
       lastYear: number
+      /**
+       * Among them, the ones the v5 engine left out (the example's amounts no
+       * longer matched the plan's rates or state), whose credit is counted from
+       * now on where it can be priced, so those years' figures can change.
+       * Absent when the v5 engine priced every one of them as written, so the
+       * year-by-year figures stay the same.
+       */
+      previouslyLeftOut?: { contractCount: number; firstYear: number; lastYear: number }
       /** Present when the contracts are the ones a stored scenario writes. */
       scenario?: { id: string; name: string }
     }

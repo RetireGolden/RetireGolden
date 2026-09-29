@@ -86,20 +86,45 @@ function scenarioLabel(scenario: { name: string }): string {
   return scenario.name.trim().length > 0 ? `The scenario “${scenario.name}”` : 'A saved scenario'
 }
 
+/**
+ * What the rewrite does to the figures (PR #761 second review): the
+ * year-by-year figures stay the same where the v5 engine priced the contracts
+ * as written, and can change in the years it was leaving out; Monte Carlo now
+ * counts the credit on every simulated market, which can move the success
+ * rate, since the v5 engine dropped these contracts on any market whose
+ * inflation differed.
+ */
+function exampleRewriteEffect(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsFollowPremiumField' }>,
+  whose: string,
+): string {
+  const monteCarlo =
+    'Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate.'
+  const leftOut = repair.previouslyLeftOut
+  if (leftOut === undefined) return `The year-by-year figures stay the same. ${monteCarlo}`
+  const leftOutYears = repairYears(leftOut)
+  const reason = `because the example's amounts no longer matched ${whose} inflation or state`
+  if (leftOut.contractCount === repair.contractCount) {
+    return `The planner had been leaving these details out, ${reason}, so the credit is now counted where it can be priced, and the year-by-year figures of those years can change. ${monteCarlo}`
+  }
+  return `The year-by-year figures stay the same except in ${leftOutYears}, which the planner had been leaving out ${reason}: the credit there is now counted where it can be priced, so those figures can change. ${monteCarlo}`
+}
+
 function exampleContractsMessage(
   repair: Extract<PlanLoadRepair, { kind: 'exampleContractsFollowPremiumField' }>,
   plan: Plan,
 ): string {
   const years = repairYears(repair)
-  const follows =
-    "each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium."
+  const grown =
+    "each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo."
+  const editing = 'Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.'
   if (repair.scenario !== undefined) {
-    return `${scenarioLabel(repair.scenario)} wrote the example's premium tax credit details for ${years} as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo.`
+    return `${scenarioLabel(repair.scenario)} wrote the example's premium tax credit details for ${years} as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: ${grown} ${exampleRewriteEffect(repair, "the scenario's")}`
   }
   if (plan.origin === 'example') {
-    return `This copy of the library example was stored in this browser with its premium tax credit details for ${years} written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: ${follows}`
+    return `This copy of the library example was stored in this browser with its premium tax credit details for ${years} written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: ${grown} ${exampleRewriteEffect(repair, "the example's")} ${editing}`
   }
-  return `This plan was saved from a library example and carried the example's premium tax credit details for ${years}, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: ${follows}`
+  return `This plan was saved from a library example and carried the example's premium tax credit details for ${years}, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: ${grown} ${exampleRewriteEffect(repair, "the plan's")} ${editing}`
 }
 
 /**

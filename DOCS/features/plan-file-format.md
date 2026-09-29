@@ -214,8 +214,14 @@ changed after saving or a quote was typed in its shape, was already left out by 
 engine at run time (gross premium, no credit): the migration removes it, records its year
 in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`, and reports the
 `exampleContractsLeftOut` repair, so the plan's figures do not change. One the v5 engine
-priced as written (the premium field at the plan's stored rates) stays `'stated'`, and so
-does every contract not in the recipe's shape. Among those, one the v5 engine refused
+priced as written (the premium field grown at the plan's stored rates, to half a cent) whose
+shape is exactly what the premium-field fill derives also becomes `'premiumField'`, even when
+another factor fits more contracts: it keeps the deterministic figures and, as the v5 check
+did, follows the premium field on every Monte Carlo path, where `'stated'` would hold it in
+nominal dollars. The rewrite repair says the year-by-year figures stay the same, except in
+the years the v5 engine was leaving out (`previouslyLeftOut`), and that Monte Carlo now
+counts the credit on every simulated market, which can move the success rate. Every other
+contract stays `'stated'`. Among those, one the v5 engine refused
 because it did not match the example's premium (a contract entered for the plan, say, with
 its own benchmark) is now priced as entered, so that year's figures change: the load reports
 `exampleEnteredContractsNowPriced` and the notice says the figures change. An unedited

@@ -167,18 +167,15 @@ describe('migratePlanV5ToV6', () => {
     // The premium field edited to $1,300 after saving, and one later contract
     // that happens to be $1,300 grown one year at the plan's rates (1.045):
     // $1,358.50 in 2027. It is the only later contract the stored rates fit,
-    // and six others do not, so the rates do not qualify and the match is not
-    // taken for the recipe: the 2027 contract is not rewritten.
+    // and six others do not, so the rates do not qualify as the recipe's
+    // factor. The v5 engine priced that contract as written (it is the premium
+    // field grown at the stored rates), so it becomes 'premiumField' all the
+    // same (PR #761 second review); the others no longer matched and are
+    // removed.
     const coincidence = rawV5(couple(), 'early-retiree-aca')
     ;(coincidence['expenses'] as { healthcare: Record<string, number> }).healthcare['pre65MonthlyPremiumPerPerson'] = 1_300
     setAmount(contractsOf(coincidence)[1]!, 1_300 * 1.045)
-    // The v5 engine priced it as written (it is the premium field grown at the
-    // stored rates), so it stays 'stated', as written; the others no longer
-    // matched and are removed.
-    const stored2027 = structuredClone(contractsOf(coincidence)[1]!)
-    const migrated2027 = contractsOf(migratePlanV5ToV6(coincidence)).find((contract) => contract['year'] === 2027)
-    expect(migrated2027).toEqual(stored2027)
-    expect(bases(coincidence)).toEqual(['removed', 'stated', ...new Array<string>(6).fill('removed')])
+    expect(bases(coincidence)).toEqual(['removed', 'premiumField', ...new Array<string>(6).fill('removed')])
     // With a single contract after 2026 the stored rates alone qualify, by
     // fitting it: a saved example covered in 2026 and 2027 only.
     const twoYears = rawV5(couple(), 'early-retiree-aca')
@@ -277,23 +274,70 @@ describe('migratePlanV5ToV6', () => {
     ).toBe(true)
   })
 
-  it('leaves a plan without exampleSourceId, and any contract without the recipe shape, stated', () => {
+  it('leaves a plan without exampleSourceId alone, and keeps stated a contract the premium-field fill would not reproduce', () => {
     const noSource = rawV5(couple(), null)
     expect(migratePlanV5ToV6(noSource)).toBe(noSource)
 
     const raw = rawV5(couple(), 'early-retiree-aca')
     const contracts = contractsOf(raw)
-    // Four ways off the recipe's shape: a benchmark that differs from the
-    // premium, known tax-exempt interest, a family that is not the people
-    // alive, and two covered members at different premiums.
+    // Three ways off the shape the fill derives: a benchmark that differs from
+    // the premium, a family that is not the people alive in order, and a
+    // premium where the fill has none. They stay as written.
     ;(contracts[0]!['coveredMembers'] as Record<string, number[]>[])[0]!['slcspBenchmarkPremiumByMonth']![0] = 950
-    contracts[1]!['taxExemptInterest'] = { state: 'known', amount: 1_000 }
     ;(contracts[2]!['taxFamilyMembers'] as unknown[]).reverse()
     ;(contracts[3]!['coveredMembers'] as Record<string, number[]>[])[0]!['enrollmentPremiumByMonth']![5] = 1
+    // Known tax-exempt interest is not the recipe's, but the v5 engine priced
+    // the contract as written and the fill keeps that fact, so it becomes
+    // 'premiumField' with its interest (PR #761 second review): the same
+    // figures in the deterministic run, the premium field on every path.
+    contracts[1]!['taxExemptInterest'] = { state: 'known', amount: 1_000 }
     const migrated = contractsOf(migratePlanV5ToV6(raw))
-    expect(migrated.slice(0, 4).every((c) => c['premiumBasis'] === undefined)).toBe(true)
-    expect(migrated.slice(0, 4)).toEqual(contracts.slice(0, 4))
+    expect([0, 2, 3].map((index) => migrated[index])).toEqual([0, 2, 3].map((index) => contracts[index]))
+    expect(migrated[1]).toEqual({ year: 2027, premiumBasis: 'premiumField', ...FACTS, taxExemptInterest: { state: 'known', amount: 1_000 } })
     expect(migrated.slice(4).every((c) => c['premiumBasis'] === 'premiumField')).toBe(true)
+  })
+
+  it('rewrites a contract the v5 engine priced as written even when another factor fits more (PR #761 second review)', () => {
+    // Inflation raised from 2.5 to 3.5 percent after saving, so the stored
+    // rates are 1.055, and the 2027 contract happens to be $900 x 1.055 =
+    // $949.50: the stored rates fit it alone, while 1.045 fits the six later
+    // ones. The recipe's factor is 1.045; the 2027 contract is not the
+    // recipe's by it, but the v5 engine priced it as written (it is the
+    // premium field grown at the stored rates), so it becomes 'premiumField'
+    // and is reported with the rewrite. The v5 engine left out 2028 to 2033
+    // (their amounts are 1.045's): the repair says so.
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    ;(raw['assumptions'] as Record<string, number>)['inflationPct'] = 3.5
+    setAmount(contractsOf(raw)[1]!, 900 * 1.055)
+    expect(bases(raw).every((basis) => basis === 'premiumField')).toBe(true)
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.repairs).toEqual([
+      {
+        kind: 'exampleContractsFollowPremiumField',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 8,
+        firstYear: 2026,
+        lastYear: 2033,
+        previouslyLeftOut: { contractCount: 6, firstYear: 2028, lastYear: 2033 },
+      },
+    ])
+    // The deterministic figures equal the v5 engine's, measured on origin/main
+    // 5224c5d0 for this document (every ledger value within 4e-12 dollars):
+    // healthcare spending, the credit and the investable balance, 2026-2028.
+    const years = simulatePlan(result.plan, { startYear: 2026, taxCalculator: productionTaxCalculator() }).years.slice(0, 3)
+    const v5 = [
+      [2_428, 19_172, 886_448.8],
+      [2_396, 20_392, 871_341.89],
+      [20_937.78, null, 836_678.34],
+    ]
+    v5.forEach(([healthcare, credit, investable], index) => {
+      expect(years[index]!.expenses.healthcare, `healthcare ${2026 + index}`).toBeCloseTo(healthcare!, 2)
+      if (credit === null) expect(years[index]!.aca?.modeledAllowablePtc ?? null).toBeNull()
+      else expect(years[index]!.aca?.modeledAllowablePtc, `credit ${2026 + index}`).toBeCloseTo(credit, 2)
+      expect(years[index]!.investableTotal, `investable ${2026 + index}`).toBeCloseTo(investable!, 2)
+    })
   })
 
   it('reports the rewrite as a load repair, and only on the way from v5', () => {

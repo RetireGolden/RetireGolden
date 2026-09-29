@@ -100,7 +100,8 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
   the factor fitting at least two contracts) picks the contracts the example wrote and rewrites them to
   `premiumBasis: 'premiumField'`, which the engine prices from the premium field on every run; a contract
   from the recipe that no longer matched the plan's premium, which the v5 engine was already leaving out,
-  is removed and recorded in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`; every other
+  is removed and recorded in `healthcare.acaYearsRemoved` as `'exampleNoLongerMatched'`; one the v5
+  engine priced as written, in the shape the premium-field fill derives, is rewritten too; every other
   contract stays `'stated'`, and one of those the v5 engine refused is now priced as entered. The
   contracts a stored scenario writes are sorted by the same rule in the plan the scenario makes. The
   migration reports each as a load repair (`exampleContractsFollowPremiumField`,

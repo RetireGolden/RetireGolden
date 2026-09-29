@@ -71,8 +71,8 @@ describe('PlanRepairNotice', () => {
       { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'under-saved-single', contractCount: 1, firstYear: 2026, lastYear: 2026 },
     ])
     expect(items()).toEqual([
-      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
-      "This plan was saved from a library example and carried the example's premium tax credit details for 2026, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 2026, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
     ])
   })
 
@@ -84,7 +84,7 @@ describe('PlanRepairNotice', () => {
       demo,
     )
     expect(items()).toEqual([
-      "This copy of the library example was stored in this browser with its premium tax credit details for 3 years from 2026 to 2028 written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This copy of the library example was stored in this browser with its premium tax credit details for 3 years from 2026 to 2028 written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
     ])
     expect(items()[0]).not.toContain('saved from a library example')
   })
@@ -139,7 +139,32 @@ describe('PlanRepairNotice', () => {
       "This plan was saved from a library example and carries premium tax credit details for 2027 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the credit in those years, and your plan's figures, change.",
       "The scenario \u201cOwn figures\u201d writes premium tax credit details for 2026 that were entered for it, not written by the example. They did not match the example's pre-65 premium, so the planner was leaving them out and counting no credit in those years. They are now priced as entered, so the scenario's figures change.",
       "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 2026, and they no longer matched the scenario's pre-65 premium, so the planner was already leaving them out and counting no credit in those years. They have been removed from the scenario, and none of its figures change.",
-      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 7 years from 2027 to 2033 as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo.",
+      "The scenario \u201cOwn figures\u201d wrote the example's premium tax credit details for 7 years from 2027 to 2033 as fixed amounts. Those years now follow the scenario's pre-65 premium, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate.",
+    ])
+  })
+
+  it('says which years the planner had been leaving out, and that Monte Carlo can move (PR #761 second review)', async () => {
+    await mount([
+      {
+        kind: 'exampleContractsFollowPremiumField',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 8,
+        firstYear: 2026,
+        lastYear: 2033,
+        previouslyLeftOut: { contractCount: 6, firstYear: 2028, lastYear: 2033 },
+      },
+      {
+        kind: 'exampleContractsFollowPremiumField',
+        exampleSourceId: 'early-retiree-aca',
+        contractCount: 2,
+        firstYear: 2027,
+        lastYear: 2028,
+        previouslyLeftOut: { contractCount: 2, firstYear: 2027, lastYear: 2028 },
+      },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same except in 6 years from 2028 to 2033, which the planner had been leaving out because the example's amounts no longer matched the plan's inflation or state: the credit there is now counted where it can be priced, so those figures can change. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 2 years from 2027 to 2028, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The planner had been leaving these details out, because the example's amounts no longer matched the plan's inflation or state, so the credit is now counted where it can be priced, and the year-by-year figures of those years can change. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
     ])
   })
 

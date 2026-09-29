@@ -114,7 +114,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   engine, so the migration removes it, records it in `healthcare.acaYearsRemoved` as
   `'exampleNoLongerMatched'` and reports the new `exampleContractsLeftOut` repair; the
   figures do not change (measured against the v5 engine on four such documents: every
-  ledger value identical). A contract not in the recipe's shape that the v5 engine refused
+  ledger value identical). A contract the v5 engine priced as written (the premium field
+  at the stored rates) in the shape the premium-field fill derives becomes `'premiumField'`
+  too, even when another factor fits more contracts, so it keeps the deterministic figures
+  and follows the premium field on every Monte Carlo path. The rewrite notice now says the
+  year-by-year figures stay the same, except in the years the v5 engine was leaving out
+  (the repair's new optional `previouslyLeftOut`), and that Monte Carlo now counts the
+  credit on every simulated market, which can move the success rate. A contract not in
+  the recipe's shape that the v5 engine refused
   (it did not match the example's premium) stays `'stated'` and is now priced as entered,
   so its year's figures change, and the new `exampleEnteredContractsNowPriced` repair says so.
   The contracts a stored scenario writes are sorted by the same rule in the plan the

@@ -443,7 +443,7 @@ describe('planner home restore from backup', () => {
     await act(async () => api().handleImportFile(backupFile([v5 as unknown as Plan])))
 
     expect(notice()).toBe(
-      "Imported 1 plan. \"Saved example\": This plan was saved from a library example and carried the example's premium tax credit details for 2 years from 2026 to 2027, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "Imported 1 plan. \"Saved example\": This plan was saved from a library example and carried the example's premium tax credit details for 2 years from 2026 to 2027, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. The year-by-year figures stay the same. Monte Carlo now counts the credit on every simulated market wherever it can be priced, which can move the success rate. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
     )
   })
 
