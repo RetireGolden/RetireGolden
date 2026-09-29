@@ -4,10 +4,10 @@ import { useState } from 'react'
 
 import type { Account, InheritedBeneficiary } from '@retiregolden/engine/model/plan'
 
-import { ROTH_FIVE_YEAR_INCOMPLETE_NOTE } from '../../report/reportModel'
 import { CheckboxField, DateField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
+import { ROTH_FIVE_YEAR_INCOMPLETE_NOTE } from '../professionalConfirmation'
 import { currentStartYear } from '../useProjection'
 import type { CommitAccountFieldFor } from './AccountEditorTypes'
 import { localCalendarDateIso } from './sectionHelpers'

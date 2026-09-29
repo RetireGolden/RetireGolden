@@ -56,6 +56,7 @@ import { isPlanIncomplete } from '../planner/planCompleteness'
 import {
   needsProfessionalConfirmation,
   ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE,
+  ROTH_FIVE_YEAR_INCOMPLETE_NOTE,
 } from '../planner/professionalConfirmation'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
@@ -752,9 +753,8 @@ export const INHERITED_REQUIREMENT_KIND_LABELS: Record<
   legacy: 'Planning estimate',
 }
 
-/** UI-side earnings-taxability caution when the Roth five-year window may still be open. */
-export const ROTH_FIVE_YEAR_INCOMPLETE_NOTE =
-  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
+/** UI-side earnings-taxability caution; defined beside its disclosure id. */
+export { ROTH_FIVE_YEAR_INCOMPLETE_NOTE }
 
 const DISCLOSURE_NOTE_LABELS: Record<string, string> = {
   'prop-reg-spouse-as-employee':
