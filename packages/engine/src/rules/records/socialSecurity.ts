@@ -317,14 +317,14 @@ export const socialSecurityRecords = {
   },
 
   'usc-42-403-f-3-retirement-earnings-test': {
-    title: 'The earnings test withholds half the excess, a third in the FRA year',
+    title: 'The earnings test withholds half the excess, and in the FRA year a third of the excess of the months before FRA',
     statement:
-      'Benefits are reduced by 50 percent of earnings above the exempt amount for a beneficiary who is under full retirement age throughout the year, and by 33 and one-third percent of earnings above a higher exempt amount in the year full retirement age is attained. Both the rate and the exempt amount change in that year, so the two cases cannot be collapsed. The rate fixes the size of the deduction, not the amount paid out: section 403(b) makes the deduction from the payments the beneficiary is entitled to, so it stops at the benefits payable and never runs negative or reaches beyond the year’s benefit.',
+      'Benefits are reduced by 50 percent of earnings above the lower exempt amount for a beneficiary who is under full retirement age throughout the year. In the year full retirement age is attained, only the earnings of the months before the month it is attained count, the excess is a third of those earnings above the higher exempt amount, and only those months are charged. The excess earnings are reduced to the next lower multiple of one dollar. The rate fixes the size of the deduction, not the amount paid out: section 403(b) makes the deduction from the payments the beneficiary is entitled to, so it stops at the benefits payable and never runs negative or reaches beyond the months that can be charged. socialSecurity/earningsTest.ts#excessEarnings computes the excess and #earningsTestYear charges it, for the projection and for the Social Security analysis models alike (socialSecurity/householdYear.ts#socialSecurityYear).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention (it is section 403(b)), but it is worth naming here because it means a test whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.',
+      'The plan holds a year of wages, not the wages of each month, so the engine spreads each year of wages evenly over its months: in the year full retirement age is reached, the earnings counted are the year\'s wages times the months before the FRA month over twelve, against the full higher exempt amount (20 CFR 404.430(a)(1) applies the full annual amount to the months before FRA). A plan whose wages stop in the year the full retirement age is reached still counts the months of that year before the FRA month, since the plan does not say in which month the work stopped; the grace year that month would open is recorded at cfr-20-404-435-grace-year-monthly-earnings-test. The month-by-month charging is usc-42-403-f-1-earnings-test-month-charging, the family charge usc-42-403-b-1-worker-excess-charged-to-family, and the FRA-year months usc-42-403-f-3-fra-year-months-before-fra. Until 2026-09-29 the engine applied one annual amount, tested the whole year\'s wages in the FRA year, and did not reduce the excess to the dollar. The companion test withholds 7,760 dollars from a benefit claimed at 62 on 40,000 dollars of 2026 wages, and 3,280 dollars in a 2027 FRA year (FRA month June) on 180,000 dollars of wages, five months of which, 75,000 dollars, exceed the higher amount by 9,840.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -332,6 +332,12 @@ export const socialSecurityRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/42/403',
       quotedText:
         'For purposes of paragraph (1) and subsection (h), an individual\u2019s excess earnings for a taxable year shall be 33\u2153 percent of his earnings for such year in excess of the product of the applicable exempt amount as determined under paragraph (8) in the case of an individual who has attained (or, but for the individual\u2019s death, would have attained) retirement age (as defined in section 416(l) of this title) before the close of such taxable year, or 50 percent of his earnings for such year in excess of such product in the case of any other individual, multiplied by the number of months in such year ...',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'The excess earnings as derived under the first sentence of this paragraph, if not a multiple of $1, shall be reduced to the next lower multiple of $1.',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 403(b)(1)',
@@ -342,18 +348,23 @@ export const socialSecurityRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-29',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
       'packages/engine/src/socialSecurity/earningsTest.ts',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestWithheldAnnual',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/earningsTest.ts#excessEarnings',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts#householdPathYear',
     ],
   },
 
@@ -811,12 +822,12 @@ export const socialSecurityRecords = {
   'usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month': {
     title: 'A widow(er) benefit is reduced from its own first month of entitlement, not from an earlier own claim',
     statement:
-      'annualSocialSecurity.ts reduces a current spouse’s widow(er) benefit for the months from the first month of widow(er) entitlement to the survivor’s full retirement age. Under the plan’s one claim age that month is the later of the survivor’s own configured claim month and January of the year after the worker died, the first month the projection pays the survivor (it keeps the worker alive through the last year of the life age); survivorBenefit.ts#widowEntitlementAgeMonths computes the survivor’s age in that month, and survivorReductionFactor adds the age-60 floor. Section 402(q)(6)(A)(iii) starts the widow(er) reduction period with the first month of entitlement or the month of age 60, whichever is later; section 402(q)(3)(E) keeps an old-age benefit claimed earlier from carrying its own reduction months into the widow(er) benefit; and 20 CFR 404.621(a)(4)(ii) lets a widow(er) choose entitlement from the month of death, while the month after it is equally lawful. At the survivor’s full retirement age the reduction months are cut by the months in which the widow(er) benefit itself was withheld under the earnings test (section 402(q)(7)(A)), which the projection counts separately from months withheld from the survivor’s own benefit before the death.',
+      'annualSocialSecurity.ts reduces a current spouse’s widow(er) benefit for the months from the first month of widow(er) entitlement to the survivor’s full retirement age. Under the plan’s one claim age that month is the later of the survivor’s own configured claim month and January of the year after the worker died, the first month the projection pays the survivor (it keeps the worker alive through the last year of the life age); survivorBenefit.ts#widowEntitlementAgeMonths computes the survivor’s age in that month, and survivorReductionFactor adds the age-60 floor. A widow(er) benefit on a former spouse who died starts with the claimant’s own claim, since the plan holds no date of that death, unless a remarriage before 60 bars it until the current spouse’s death ends the later marriage: entitlement can then begin only with the month that marriage ended (POMS RS 00207.003 A), so the reduction runs from the January after the death, the first month the claimant is unmarried and the projection pays the benefit; householdYear.ts#socialSecurityYear takes that month from maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths. A remarriage at 60 or later is disregarded (42 U.S.C. 402(e)(3)(A); cfr-20-404-335-ordinary-widow-eligibility), so it bars nothing and the reduction runs from the own claim. Section 402(q)(6)(A)(iii) starts the widow(er) reduction period with the first month of entitlement or the month of age 60, whichever is later; section 402(q)(3)(E) keeps an old-age benefit claimed earlier from carrying its own reduction months into the widow(er) benefit; and 20 CFR 404.621(a)(4)(ii) lets a widow(er) choose entitlement from the month of death, while the month after it is equally lawful. From the survivor’s full-retirement-age month the reduction months are cut by the months of the widow(er) reduction period in which the widow(er) benefit itself was withheld under the earnings test (section 402(q)(7)(A)), which the projection counts separately from months withheld from the survivor’s own benefit before the death. The reduction period ends before the survivor full-retirement-age month, so a month withheld after it, while the survivor is still under the old-age full retirement age that governs the earnings test, is not credited to the widow(er) benefit.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that nine months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,765.29. The earnings-test months are counted in whole months per year by the same annual approximation as the own benefit (poms-rs-00615-482-arf-crediting-months). For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim. The own old-age benefit’s reduction is credited with every withheld month, including the months in which the widow(er) benefit was the one paid: a widow(er) entitled to both is paid the own benefit plus the widow(er) excess (402(k)(3)(A)), which the projection pays as the larger of the two, and the earnings test makes its deductions from every payment to which she is entitled (403(b)(1)), so in such a month the old-age benefit, too, was subject to deductions (402(q)(7)(A); 20 CFR 404.412(a)(1)). A second companion test prices a widow born in June 1965 with a 2,000 dollar PIA who claims at 62 in 2027, widowed in 2026 by a worker with a 2,400 dollar PIA who claimed at 62: 60 months withheld from her widow(er) benefit through 2031 take her own benefit to 2,000 dollars in 2032, above the 1,980 dollar limit, so she is paid 24,000 dollars, where crediting only months in which her own benefit was the one paid would keep it at 1,400 and pay 23,760. The widow(er) and spouse counts are kept for each record the benefit is paid on, the current spouse or each former-spouse entry (annualSocialSecurity.ts#auxiliaryBenefitSourceKey), because 402(q)(7)(A) excludes only the months in which “such benefit” was withheld: a third companion test gives the same widow a 1,000 dollar PIA and a former spouse with a 2,200 dollar PIA who died after claiming at full retirement age; the 60 months withheld from her current husband’s widow(er) benefit take it to the 1,980 dollar limit in 2032 and leave the former spouse’s at 1,752.14, so she is paid 23,760 dollars, where crediting them to both records would pay 26,400.',
+      'The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that ten months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,871.14. The crediting months are the months of each benefit\'s reduction period with a deduction (poms-rs-00615-482-arf-crediting-months), and they take effect in the survivor full-retirement-age month (cfr-20-404-412-b-arf-effective-fra-month). A third test takes a widow born in January 1960, whose survivor full retirement age of 66 and 8 months falls in September 2026 and whose old-age full retirement age in January 2027: of the eleven months her 2026 wages withhold, only January to August are in the widow(er) reduction period, so from 2027 her widow(er) benefit is priced 48 months early, 19,896 dollars a year, where crediting all eleven paid 20,152.50. For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim, or, when a remarriage before 60 bars it until the current spouse’s death, with the January after that death (POMS RS 00207.003 A: “Entitlement can begin with the month the subsequent marriage terminated”; the projection pays no survivor benefit for the months of the death year, as above). Until the implementation review of D-SS-ANALYSIS-EARNINGS-TEST the engine reduced that benefit from the claimant’s own claim as well. Another companion test (the review’s case B) takes a claimant born in February 1964 who claims at 62 and remarried at 55 to a husband who dies in December 2030: from January 2031, at 803 months, one month before her survivor full retirement age, the benefit on her first husband, whose PIA was 3,000 dollars, pays 3,000 times (1 minus 0.285 over 84), 35,877.86 dollars a year, where the reduction from her own claim at 744 months pays 28,671.43. A further test holds the age-60 boundary: with the same first husband, a 1,200 dollar PIA of her own and a current husband with a 2,200 dollar PIA who dies in December 2032, a remarriage at exactly 60 is disregarded, so the benefit is reduced from her own claim and pays 28,671.43 dollars in 2033, while a remarriage at 59 bars it until the death and pays the unreduced 36,000 from January 2033, past her survivor full retirement age. The own old-age benefit’s reduction is credited with every withheld month of its own reduction period, including the months in which the widow(er) benefit was the one paid: a widow(er) entitled to both is paid the own benefit plus the widow(er) excess (402(k)(3)(A)), which the projection pays as the larger of the two, and the earnings test makes its deductions from every payment to which she is entitled (403(b)(1)), so in such a month the old-age benefit, too, was subject to deductions (402(q)(7)(A); 20 CFR 404.412(a)(1)). A second companion test prices a widow born in January 1965 with a 2,000 dollar PIA who claims at 62 in January 2027, widowed in 2026 by a worker with a 2,400 dollar PIA who claimed at 62: 60 months withheld from her widow(er) benefit through 2031 take her own benefit to 2,000 dollars in 2032, above the 1,980 dollar limit, so she is paid 24,000 dollars, where crediting only months in which her own benefit was the one paid would keep it at 1,400 and pay 23,760. The widow(er) and spouse counts are kept for each record the benefit is paid on, the current spouse or each former-spouse entry (householdYear.ts#auxiliaryBenefitSourceKey), because 402(q)(7)(A) excludes only the months in which “such benefit” was withheld: a third companion test gives the same widow a 1,000 dollar PIA and a former spouse with a 2,200 dollar PIA who died after claiming at full retirement age; the 60 months withheld from her current husband’s widow(er) benefit take it to the 1,980 dollar limit in 2032 and leave the former spouse’s at 1,752.14, so she is paid 23,760 dollars, where crediting them to both records would pay 26,400.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -860,22 +871,31 @@ export const socialSecurityRecords = {
       url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412',
       quotedText:
         'The following months are not counted for purposes of reducing benefits in accordance with § 404.410; (1) Months subject to deduction under § 404.415 or § 404.417;',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00207.003 A',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300207003',
+      quotedText: 'Entitlement can begin with the month the subsequent marriage terminated regardless if the marriage ended by death or divorce.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-27',
+    verifiedOn: '2026-09-29',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/nra.ts',
       'packages/engine/src/socialSecurity/survivorBenefit.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/nra.ts#attainedAgeMonthsInMonth',
       'packages/engine/src/socialSecurity/survivorBenefit.ts#widowEntitlementAgeMonths',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths',
     ],
   },
 
@@ -997,7 +1017,7 @@ export const socialSecurityRecords = {
   'usc-42-402-e-1-a-current-survivor-remarriage-before-60': {
     title: 'A current-spouse survivor’s later remarriage is outside the Plan',
     statement:
-      'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge` and rejects a deceased former-spouse survivor claim below 60; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
+      'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge`, and bars a deceased former spouse\'s survivor benefit after a remarriage below 60 while the claimant is married; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -1374,16 +1394,22 @@ export const socialSecurityRecords = {
   },
 
   'poms-rs-00615-482-arf-crediting-months': {
-    title: 'ARF credits every full or partial work-deduction month',
+    title: 'Each month of a reduction period with a full or partial earnings-test deduction is a crediting month',
     statement:
-      'annualSocialSecurity.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year — for example when the annual test withholds the whole year the engine credits all payable months while POMS credits only work-deduction months (six work months, full withholding: engine +12, POMS +6, benefit overstated). Whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
-    classification: 'approximated',
+      'The adjustment of the reduction factor removes from a benefit\'s reduction period every month in which that benefit was subject to an earnings-test deduction (42 U.S.C. 402(q)(7)(A)). POMS RS 00615.482 counts a month with either a full or a partial work deduction, and for a spouse benefit also a month in which the worker\'s excess was charged to it even when her prorated share of a partial month is her whole benefit. socialSecurity/earningsTest.ts#earningsTestYear reports each such month by benefit and by record: the own benefit, each spouse or divorced-spouse benefit and each widow(er) benefit keeps its own count, and only months of that benefit\'s own reduction period count, from its first month of entitlement to the month before its full retirement age (the survivor full retirement age for a widow(er) benefit).',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion test withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
+      'The ledger pays a claim at a whole age for the whole calendar year it is attained, which for most birthdays includes months before the claim\'s first month of entitlement (the claim-year convention, social-security-payable-months). Those months are paid in full and never charged, since 403(f)(1)(A) charges no month for which the person was not entitled to a benefit (usc-42-403-f-1-earnings-test-month-charging), so every month charged is a month of entitlement, and every one before full retirement age is credited. The companion test gives a person born in January 1964, entitled from January 2026, a 2,000 dollar excess in each of five working years, charged 1,400 dollars to January and 600 to February: ten crediting months take the 60 months of reduction to 50 and pay 17,800 dollars a year after full retirement age, where the annual ratio the engine used until 2026-09-29 rounded to one month a year and paid 17,300. The same plan for a person born in June, entitled from June 2026, charges June and July, credits the same ten months and pays 17,800; this decision\'s first implementation charged January and February 2026, before entitlement, credited neither, and paid 17,600, until the implementation review.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(A) any month in which such benefit was subject to deductions under section 403(b), 403(c)(1), 403(d)(1), or 422(b) of this title,',
+    }, {
       kind: 'statute',
       citation: '42 U.S.C. 403(f)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
@@ -1407,32 +1433,42 @@ export const socialSecurityRecords = {
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
       quotedText:
         'Proration of work deductions has no effect on the adjustment of the reduction factor, as stated under RS 02501.120B.3.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.482, § B.2',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
+      quotedText:
+        'is subject to a full or partial work deduction based on the NH\u2019s work (including months for which the NH worked in which the full spouse\u2019s benefit is paid after the benefits for a partial month are prorated);',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-07',
+    verifiedOn: '2026-09-29',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/earningsTest.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#creditedAgeMonths',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
     ],
   },
 
   'usc-42-403-f-1-earnings-test-month-charging': {
-    title: 'Excess earnings are charged to calendar months, not annual benefit fractions',
+    title: 'Excess earnings are charged to calendar months, first to last, and never to a month from full retirement age on',
     statement:
-      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. annualSocialSecurity.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
-    classification: 'approximated',
+      'Section 403(f)(1) charges excess earnings to the first month\'s benefits and then to each succeeding month until the excess is charged, and never to a month for which the person was not entitled to a benefit or in which the person was at or above full retirement age; an excess not charged by December lapses. socialSecurity/earningsTest.ts#earningsTestYear charges each person\'s excess this way, month by month from January, against the benefits the person is entitled to that month, and reports each month with a full or partial deduction. The survivor switching model (socialSecurity/analysis/survivorSwitching.ts#strategyStreamWithEarningsTest) charges a widow(er)\'s excess the same way: in a month the claim-year convention pays the own benefit before its first month of entitlement, only the survivor benefit, to which the widow(er) is then entitled, is charged.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion test each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their tests intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable; reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
+      'Under the claim-year convention a claim at a whole age pays the whole calendar year it is attained (social-security-payable-months), so the months of that year before the claim\'s first month of entitlement are paid, though the person is not entitled then. They are paid in full and never charged (403(f)(1)(A): "no part of the excess earnings of an individual shall be charged to any month (A) for which such individual was not entitled to a benefit"); the convention itself is the recorded departure. A benefit on another record that the convention pays before its own first month of entitlement (a spouse benefit that starts with the worker\'s later claim) is likewise not charged in those months, while the own benefit already entitled is. This decision\'s first implementation charged those months and credited none of them, until the implementation review. Until 2026-09-29 the engine withheld one annual amount and converted its ratio to the year\'s benefit into a rounded count of months. The companion test, which shares its observable with poms-rs-00615-482-arf-crediting-months, charges each year\'s 2,000 dollar excess to a 1,400 dollar January and 600 dollars of February: two deduction months a year, 17,800 dollars a year after full retirement age, where the annual ratio gave one and 17,300.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1440,25 +1476,316 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
       quotedText:
         'There shall be charged to the first month of such taxable year an amount of his excess earnings equal to the sum of the payments to which he and all other persons (excluding divorced spouses referred to in subsection (b)(2)) are entitled for such month under section 402 of this title on the basis of his wages and self-employment income (or the total of his excess earnings if such excess earnings are less than such sum), and the balance, if any, of such excess earnings shall be charged to each succeeding month in such year to the extent, in the case of each such month, of the sum of the payments to which such individual and all such other persons are entitled for such month under section 402 of this title on the basis of his wages and self-employment income, until the total of such excess has been so charged.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'no part of the excess earnings of an individual shall be charged to any month (A) for which such individual was not entitled to a benefit under this subchapter, (B) in which such individual was at or above retirement age',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 02501.095, § B',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0302501095',
+      quotedText:
+        'Withhold the excess earnings of the NH from the total family benefit. Therefore, suspensions or deductions apply to both the NH and the auxiliaries until the excess is charged or if the excess amount is greater than the total family benefit for the year, the entire year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-29',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/earningsTest.ts',
+      'packages/engine/src/socialSecurity/analysis/survivorSwitching.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
+      'packages/engine/src/socialSecurity/analysis/survivorSwitching.ts#strategyStreamWithEarningsTest',
+    ],
+  },
+
+  'usc-42-403-b-1-worker-excess-charged-to-family': {
+    title: 'A worker\'s excess earnings are charged first against the family benefit on his record',
+    statement:
+      'A worker\'s excess earnings reduce his own benefits and the benefits of everyone paid on his record: section 403(b)(1)(B) makes the deductions from the benefits of all other persons based on his wages, and 20 CFR 404.434(b)(3) charges his excess first against the total family benefits on his record, and only then each auxiliary\'s own excess against what is left of her benefits. Where the excess left in a month is less than the month\'s family benefit, the rest is paid to each person in proportion to the benefit each was originally entitled to, before the family maximum, the dual-entitlement reduction and the age reduction (404.439): for a worker and a spouse, his PIA to half of it, two to one; and a share above what a person is due goes to the other (404.440). A spouse month is a crediting month whenever his excess was charged to it (POMS RS 00615.482 B.2). A beneficiary entitled on her own record too is charged her own excess against her own old-age benefit in a month his excess took her whole spouse benefit (403(b)(1), "remaining after such earlier deductions"; POMS RS 02501.150 A.1).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'In a couple the worker is the one a spouse benefit is paid on, the higher PIA, as the ledger chooses the lower earner\'s spouse benefit; the spouse benefit on his record is her total less her own old-age benefit, after the family maximum and the reductions (404.437). A living former spouse\'s record carries no plan earnings, and a divorced spouse of two years or more is independent of the ex\'s earnings (403(b)(2)); the plan has no divorce date, so two years or more is taken. Benefits and the partial-month shares are not rounded (404.304(f) rounds a benefit to the dollar; the engine does not, and 404.439 prorates before that rounding). Until 2026-09-29 the engine charged a worker\'s wages against his own benefit only. The companion tests give a worker with a 2,000 dollar PIA, claiming at 62 with 60,000 dollars of 2026 wages, and a spouse with a 400 dollar PIA, also claiming at 62: his 17,760 dollar excess takes their 1,790 dollar family benefit for nine months and 1,650 dollars of October, whose other 140 dollars are shared 93.33 and 46.67, so he is paid 2,893.33 dollars and she 4,186.67 in 2026, where the engine paid 0 and 8,040; with 36,000 dollars of her own wages too, her 5,760 dollar excess takes what is left of her benefits, and she is paid nothing, where charging her own old-age benefit only in months her spouse benefit was paid would pay 2,520.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        'Deductions, in such amounts and at such time or times as the Commissioner of Social Security shall determine, shall be made from any payment or payments under this subchapter to which an individual is entitled, and from any payment or payments to which any other persons are entitled on the basis of such individual\u2019s wages and self-employment income, until the total of such deductions equals\u2014 (A) such individual\u2019s benefit or benefits under section 402 of this title for any month, and (B) if such individual was entitled to old-age insurance benefits under section 402(a) of this title for such month, the benefit or benefits of all other persons for such month under section 402 of this title based on such individual\u2019s wages and self-employment income, if for such month he is charged with excess earnings, under the provisions of subsection (f) of this section, equal to the total of benefits referred to in clauses (A) and (B).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'If a deduction has already been made under this subsection with respect to a person\'s benefit or benefits under section 402 of this title for a month, he shall be deemed entitled to payments under such section for such month for purposes of further deductions under this subsection, and for purposes of charging of each person\'s excess earnings under subsection (f), only to the extent of the total of his benefits remaining after such earlier deductions have been made.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.434(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434',
+      quotedText:
+        '(1) Insured individual\'s excess earnings. For each $1 of your excess earnings we will decrease by $1 the benefits to which you and all others are entitled (or deemed entitled\u2014see § 404.420) on your earnings record.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.434(b)(3)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434',
+      quotedText:
+        'your excess earnings are charged first against the total family benefits payable (or deemed payable) on your earnings record, as described in paragraph (b)(1) of this section. Next, the excess earnings of a person entitled on your earnings record are charged against his or her own benefits remaining after part of your excess earnings have been charged against his/her benefits',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.439',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.439',
+      quotedText:
+        'The difference between the total benefits payable and the deductions made under the annual earnings test for such month is paid (if otherwise payable under title II of the Act) to each person in the proportion that the benefit to which each is entitled (before the application of the reductions described in § 404.403 for the family maximum, § 404.407 for entitlement to more than one type of benefit, and section 202(q) of the Act for entitlement to benefits before retirement age) and before the application of § 404.304(f) to round to the next lower dollar bears to the total of the benefits to which all of them are entitled',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.440',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.440',
+      quotedText:
+        'Where, under the apportionment described in § 404.439, a person\'s prorated share of the partial benefit exceeds the benefit rate to which he was entitled before excess earnings of the insured individual were charged, such person\'s share of the partial benefit is reduced to the amount he would have been paid had there been no deduction for excess earnings (see example).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 02501.150, § A.1',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0302501150',
+      quotedText:
+        'When a beneficiary has entitlement to both auxiliary benefits and retirement insurance benefits (RIB), charge the excess earnings against their auxiliary benefit to the extent that the auxiliary benefit is not subject to deductions because of the other NH\'s work. Charge the excess earnings to the RIB without regard to the other NH\'s excess earnings.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.482, § B.2',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
+      quotedText:
+        'is subject to a full or partial work deduction based on the NH\u2019s work (including months for which the NH worked in which the full spouse\u2019s benefit is paid after the benefits for a partial month are prorated);',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/earningsTest.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
+    ],
+  },
+
+  'usc-42-403-f-3-fra-year-months-before-fra': {
+    title: 'In the year full retirement age is reached, only the months before the FRA month are tested',
+    statement:
+      'In the taxable year a person attains full retirement age, the earnings of the month it is attained and of every later month are left out of the excess earnings (42 U.S.C. 403(f)(3)), and no month from that month on is charged (403(f)(1)(B)); 20 CFR 404.434(c) applies the annual test to the earnings of the months before the FRA month. The year is the calendar year of the FRA month: for births from 2 April to 31 December 1959 that is the year after the one in which the FRA\'s whole years are reached, with months before the FRA month to test. A person whose FRA month is January has no month before it and no FRA-year test.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan has a year of wages; the months before the FRA month earn the year\'s wages times their number over twelve (usc-42-403-f-3-retirement-earnings-test). Until 2026-09-29 the engine tested the whole year\'s wages in the calendar year of the FRA\'s whole years and charged the whole year\'s benefit. The companion tests take a person born 15 July 1960, full retirement age in July 2027, who claimed at 62 and earns 100,000 dollars in 2026 and 2027: January to June earn 50,000, under the 65,160 dollar higher amount, so nothing is withheld in 2027 and she is paid 17,400 dollars, where the whole year\'s wages withheld 11,613.33 and paid 6,386.67; with 150,000 dollars the excess is 3,280 and she is paid 14,270 dollars, where the engine paid nothing; born 15 January 1960 (FRA month January 2027) she is paid 18,000 dollars, where the engine paid 6,386.67.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        "in determining an individual's excess earnings for the taxable year in which he attains retirement age (as defined in section 416(l) of this title), there shall be excluded any earnings of such individual for the month in which he attains such age and any subsequent month",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'no part of the excess earnings of an individual shall be charged to any month (A) for which such individual was not entitled to a benefit under this subchapter, (B) in which such individual was at or above retirement age',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.434(c)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434',
+      quotedText:
+        'In the year that you reach full retirement age, the annual earnings test amount is applied to the earnings amounts of the months that precede your month of full retirement age.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/earningsTest.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/earningsTest.ts#excessEarnings',
+      'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
+    ],
+  },
+
+  'cfr-20-404-412-b-arf-effective-fra-month': {
+    title: 'The adjustment of the reduction factor takes effect in the month full retirement age is reached',
+    statement:
+      'A benefit reduced for an early claim is recomputed at full retirement age without its crediting months, and the increase is effective with the month of attainment of full retirement age (20 CFR 404.412(b)), not in January of that year. The months of that year before the FRA month are paid at the unadjusted rate; from the FRA month on the rate counts every crediting month so far, including months withheld earlier in the same year. A widow(er) benefit is adjusted from the survivor full-retirement-age month, and also in the month of 62 for the months withheld before 62 (404.412(b): "In the case of widow\'s or widower\'s benefits, this adjustment is made in the month of attainment of age 62 as well as the month of attainment of full retirement age"); the benefit of a deceased worker that prices the widow\'s limit is adjusted from the month he attained, or would have attained, full retirement age (POMS RS 00615.320 B.2.c).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'socialSecurity/claimFactor.ts#creditedAgeMonths takes the month priced and the benefit\'s FRA month; the year function prices the months before and after that month separately. Until 2026-09-29 the engine applied the adjustment from January of the year the FRA\'s whole years were reached. The ledger\'s widow(er) benefits start at 62 or later (a claim age is at least 62), so only the survivor switching model (socialSecurity/analysis/survivorSwitching.ts), whose survivor claims start from 60, has months withheld before 62. The companion test takes a person born 10 March 1964 who claims at 62 in 2026 with 40,000 dollars of wages: entitled from March, she cannot be charged in January or February, so 7,760 dollars are charged from March to July and 760 of August, six crediting months; from March 2031 she is paid 54 months early, 1,450 dollars a month, so 2031 pays 2 times 1,400 plus 10 times 1,450, 17,300 dollars, where the adjustment from January pays 17,400. The switching evidence (survivor-switching-expected-value, case E) takes a widow of 60 whose 16 months withheld before 62 raise her survivor benefit from 1,787.50 to 1,923.21 dollars a month from March 2028.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.412(b)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412',
+      quotedText:
+        'Increases in benefit amounts based upon this adjustment are effective with the month of attainment of full retirement age. In the case of widow\'s or widower\'s benefits, this adjustment is made in the month of attainment of age 62 as well as the month of attainment of full retirement age.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(7)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the "adjusted reduction period" for an individual\'s old-age, wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit is the reduction period prescribed in paragraph (6) for such benefit, excluding- (A) any month in which such benefit was subject to deductions under section 403(b), 403(c)(1), 403(d)(1), or 422(b) of this title,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
+      'packages/engine/src/socialSecurity/analysis/survivorSwitching.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/claimFactor.ts#creditedAgeMonths',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
+      'packages/engine/src/socialSecurity/analysis/survivorSwitching.ts#strategyStreamWithEarningsTest',
+    ],
+  },
+
+  'poms-rs-00615-320-b-2-c-deceased-crediting-months': {
+    title: 'The widow\'s limit uses the deceased\'s benefit with his own crediting months, from his FRA month',
+    statement:
+      'The widow\'s limit holds a widow(er) benefit to the larger of 82.5 percent of the deceased\'s PIA and the reduced benefit he would have been entitled to if he had lived (42 U.S.C. 402(e)(2)(D)). That benefit carries the adjustment of the reduction factor for the months his own benefit was withheld under the earnings test while he was alive, effective with the month he attained, or would have attained, full retirement age (POMS RS 00615.320 B.2.c, RS 00615.598). The projection keeps a deceased\'s crediting months after his death, and the year function prices his benefit with them from his FRA month, in the ledger and on each path the analysis models weight.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Months from the month of death on are never credited, since no earnings test is charged after the death. Until 2026-09-29 the ledger applied the deceased\'s months from January of the year of his full retirement age and the analysis models ignored them. The companion test takes a worker born in January 1964 with a 2,000 dollar PIA who claims at 62 and earns 60,000 dollars a year from 2026 to 2028, so all 36 months are withheld and credited, and dies in December 2032; his widow, with a 1,200 dollar PIA of her own claimed at 67, is paid the limit on his credited benefit, 24 months early, 1,733.33 dollars a month, 20,800 dollars in 2033, where his benefit as claimed would hold her at 82.5 percent of his PIA, 19,800.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § B.2.c',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText:
+        "Apply the ARF based on deductions to a deceased NH's RIB for months in which they were alive. Any resulting rate change in the RIB is effective or would be effective with the month the deceased NH actually attained or would have attained FRA.",
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.598, § A',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615598',
+      quotedText:
+        "DNH's are eligible for an ARF if deductions were made for at least one month prior to FRA or death, if earlier. An ARF for NH's who died before FRA can be given no earlier than the month they would have attained FRA.",
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.598, § B',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615598',
+      quotedText: 'Consider as crediting months only months NH was alive.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+  },
+
+  'usc-42-403-f-5-earnings-counted': {
+    title: 'Only wages count as earnings for the earnings test',
+    statement:
+      'Section 403(f)(5)(A) counts as earnings the wages for services rendered in the year plus net earnings from self-employment, less a net loss. The engine counts a person\'s wage streams, gross, in the year they are paid. It does not count a recurring income, which names no person even when its label says it is part-time work; equity-compensation vesting, whose years of service the plan does not record (20 CFR 404.428(d) counts wages in the year the services were rendered); or self-employment income, which the plan has no input for. A person with such income is tested on less than the law counts, so the engine pays more before full retirement age and credits fewer months back, and the effect on tax runs both ways.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The plan\'s recurring income has a label but no person, so it cannot be charged to anyone\'s benefit, and whether it is pay for work is not recorded; one answerable question, whose work the income is, would settle it, and it also bears on payroll tax and earned-income rules, so it is left to its own decision. The companion test enters a person\'s 40,000 dollars of 2026 work as a recurring income: her benefit claimed at 62 is paid in full, 16,800 dollars, where the same amount entered as wages withholds 7,760 and pays 9,040.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        "An individual's earnings for a taxable year shall be (i) the sum of his wages for services rendered in such year and his net earnings from self-employment for such year, minus (ii) any net loss from self-employment for such year.",
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/wageIncomeStreams.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#recurringIncomeSchema',
+      'packages/engine/src/projection/internal/wageIncomeStreams.ts#wageIncomeStreams',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts#planWages',
+    ],
+  },
+
+  'usc-42-402-b-1-C-divorced-spouse-after-widowhood': {
+    title: 'A couple member widowed by the current spouse can be paid on a living ex\'s record',
+    statement:
+      'A divorced spouse is entitled only while not married (42 U.S.C. 402(b)(1)(C); 20 CFR 404.331(c)). A person in a couple is married while the current spouse lives; the current spouse\'s death ends that marriage, and the divorced-spouse benefit on a living ex\'s record can begin with the month after the month of death (POMS RS 00202.046), deemed filed with the old-age benefit the person is entitled to (402(r)(1)). The year function treats a couple member as unmarried from January after the current spouse\'s death, the first month the ledger pays a survivor, and reduces the divorced-spouse benefit for the person\'s age in the later of the own claim, the first month the ex is 62 throughout and that January.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan states a life age, not a date of death, so the ledger\'s month of death is December and a survivor is first paid in January; a claimant at or past full retirement age in the month of death could be entitled from that month (RS 00202.010 A.2), which the ledger does not pay. Until 2026-09-29 the engine priced a living ex\'s record only for a one-person household, even after the current spouse\'s death. The companion test takes a woman born in February 1962 with a 400 dollar PIA, claimed at 64, whose husband dies in December 2027, and a living ex with a 4,000 dollar PIA after a 12-year marriage: from 2028 she is paid 320 dollars plus 1,600 dollars reduced for her 791 months, 1,775.56 a month, 21,306.67 dollars, where the widow benefit alone paid 7,920.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(b)(1)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText: '(C) in the case of a divorced wife, is not married, and',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00202.046',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300202046',
+      quotedText:
+        'However, if the subsequent marriage ended because of death, there is no equivalent deeming provision and the \u201cthroughout the month\u201d provision applies. Therefore, the first month of entitlement or re-entitlement would be the month after the month of death unless the claimant attains FRA in or before the month of death',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
     ],
   },
 
   'cfr-20-404-435-grace-year-monthly-earnings-test': {
     title: 'The grace-year monthly earnings test preserves non-service-month benefits',
     statement:
-      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; annualSocialSecurity.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; the year function (socialSecurity/householdYear.ts, which the projection and the analysis models share) spreads the year\'s wages evenly over its months and charges the excess over every month it pays. Spread evenly, a month earns more than the monthly exempt amount whenever the year has any excess, so no non-service month can arise from the plan\'s inputs. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',

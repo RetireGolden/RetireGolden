@@ -35,19 +35,23 @@ export function claimFactor(dobYear: number, dobMonth: number, dobDay: number, c
 
 /**
  * A reduction age after the earnings-test credit (the adjustment of the
- * reduction factor, 42 U.S.C. 402(q)(7)): from the year the person reaches
- * `capMonths`, the full retirement age of the benefit, the months withheld from
- * that benefit are added back to the age it was reduced at, up to that age.
- * Before that year, or for an age already at or past it, the age is unchanged.
- * All ages are total months.
+ * reduction factor, 42 U.S.C. 402(q)(7)): from `fraMonthIndex`, the month the
+ * benefit's full retirement age `capMonths` is attained (the old-age FRA for an
+ * own or spouse benefit, the survivor FRA for a widow(er) benefit), the
+ * crediting months are added back to the age the benefit was reduced at, up to
+ * that age. The increase is "effective with the month of attainment of full
+ * retirement age" (20 CFR 404.412(b)), so a month before it, or an age already
+ * at or past it, keeps the age unchanged. Ages are total months; month indexes
+ * are `year * 12 + (month - 1)`.
  */
 export function creditedAgeMonths(
   ageMonths: number,
   withheldMonths: number,
-  ageAttained: number,
+  monthIndex: number,
+  fraMonthIndex: number,
   capMonths: number,
 ): number {
-  if (ageMonths >= capMonths || ageAttained < Math.floor(capMonths / 12)) return ageMonths
+  if (ageMonths >= capMonths || monthIndex < fraMonthIndex) return ageMonths
   return Math.min(capMonths, ageMonths + withheldMonths)
 }
 

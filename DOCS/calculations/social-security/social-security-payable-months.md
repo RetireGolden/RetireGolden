@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: formula. `projection/internal/annualSocialSecurity.ts#annualSocialSecurityPayableMonths` returns 0 before the claim year, 12 after it, and `max(0, 12 - claimAge.months)` when `ageAttained` equals `claimAge.years`; there is no calendar payment lag.
+Kind: formula. `socialSecurity/householdYear.ts#annualSocialSecurityPayableMonths` (re-exported by `projection/internal/annualSocialSecurity.ts`, where it was until 2026-09-29) returns 0 before the claim year, 12 after it, and `max(0, 12 - claimAge.months)` when `ageAttained` equals `claimAge.years`; there is no calendar payment lag.
 
 ## Justification
 

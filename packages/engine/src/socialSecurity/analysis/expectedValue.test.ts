@@ -41,7 +41,7 @@ describe('disabilityReplacesClaimAge', () => {
 })
 
 describe('benefitsOnlyRanking', () => {
-  it('prices a lone claimant in a two-person household without a divorced-spouse benefit (the ledger\'s single-household gate)', () => {
+  it('prices a lone claimant in a two-person household with the divorced-spouse benefit only after the spouse\'s death (the ledger\'s unmarried gate)', () => {
     const ex: FormerSpouse = { id: 'ex', relationship: 'divorced', dob: '1962-01-10', piaMonthly: 3_000, marriageYears: 15, remarriedAtAge: null }
     const plan = couplePlan({ p1Dob: '1964-06-15', p2Dob: '1965-03-01' })
     plan.household.people[0] = { ...plan.household.people[0]!, sex: 'female' }
@@ -49,8 +49,10 @@ describe('benefitsOnlyRanking', () => {
     plan.assumptions = { ...plan.assumptions, ...options.assumptions }
     const ranking = benefitsOnlyRanking(validatePlan(plan), 0.02, 2026)
     const at67 = ranking.rows.find((row) => row.claimByPersonId.p1 === 67)!
-    const claimant: ExpectedValueClaimant = { dob: { year: 1964, month: 6, day: 15 }, sex: 'female', piaMonthly: 800, claimAge: { years: 67, months: 0 }, formerSpouses: [ex] }
-    expect(at67.expectedPv).toBe(expectedPvSingle(claimant, { single: false }, options))
+    const claimant: ExpectedValueClaimant = { id: 'p1', dob: { year: 1964, month: 6, day: 15 }, sex: 'female', piaMonthly: 800, claimAge: { years: 67, months: 0 }, formerSpouses: [ex] }
+    const spouse = plan.household.people[1]!
+    expect(at67.expectedPv).toBeCloseTo(expectedPvSingle(claimant, { single: false, spouse: { id: spouse.id, sex: spouse.sex, dob: { year: 1965, month: 3, day: 1 } } }, options), 6)
+    expect(at67.expectedPv).toBeGreaterThan(expectedPvSingle(claimant, { single: false }, options))
     expect(at67.expectedPv).toBeLessThan(expectedPvSingle(claimant, { single: true }, options))
   })
 })

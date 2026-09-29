@@ -96,9 +96,10 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
   // Vector:
   //   [0] 9-month ordinary marriage, no remarriage, currently single → 2,400.
   //   [1] 8-month marriage, no duration exception → null.
-  //   [2] 9-month, remarried at 59, now currently single → authority 2,400
-  //       (currently unmarried after the intervening marriage ended); engine
-  //       null (unconditional historical remarriage-before-60 refusal).
+  //   [2] 9-month, remarried at 59, now currently single → 2,400 (currently
+  //       unmarried after the intervening marriage ended; POMS RS 00207.003 A).
+  //       The engine paid nothing here until 2026-09-29 (an unconditional
+  //       historical remarriage-before-60 refusal).
   //   [3] 9-month, remarried at 60, still married → 2,400 (404.335(e)(1)).
   //   [4] 9-month, no remarriage, claimant age 59 → null (ordinary 404.335(c)).
   //   [5] 9-month, no remarriage, claimant age 60 → 1,716.
@@ -114,12 +115,13 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
   // cells are unchanged.
   readings: {
     statutoryOrdinaryWidow: [2_400, null, 2_400, 2_400, null, 1_716, null],
-    engineIgnoresClaimantIsSingleAndUnconditionalPre60Remarriage: [2_400, null, null, 2_400, null, 1_716, 2_400],
+    engineReadsABlankRemarriageAgeInACoupleAsNoRemarriage: [2_400, null, 2_400, 2_400, null, 1_716, 2_400],
+    unconditionalPre60RemarriageForfeiture: [2_400, null, null, 2_400, null, 1_716, 2_400],
     survivingDivorcedTenYearDuration: [null, null, null, null, null, null, null],
     importingWorkerOldAgeMinimum62: [2_400, null, 2_400, 2_400, null, null, null],
   },
   accepted: 'statutoryOrdinaryWidow',
-  produced: 'engineIgnoresClaimantIsSingleAndUnconditionalPre60Remarriage',
+  produced: 'engineReadsABlankRemarriageAgeInACoupleAsNoRemarriage',
 }, ({ accepted, produced, readings }) => {
   it('pins the ordinary nine-month widow path, including currently-single after a pre-60 intervening marriage and coupled null remarriage timing', () => {
     const widow: FormerSpouse = {
@@ -163,6 +165,7 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
 
     expect(amounts).toEqual(produced)
     expect(amounts).not.toEqual(accepted)
+    expect(amounts).not.toEqual(readings.unconditionalPre60RemarriageForfeiture)
     expect(amounts).not.toEqual(readings.survivingDivorcedTenYearDuration)
     expect(amounts).not.toEqual(readings.importingWorkerOldAgeMinimum62)
   })
@@ -214,20 +217,24 @@ describeRule('cfr-20-404-336-e-surviving-divorced-remarriage', {
   //
   // Vector:
   //   [0] remarriedAtAge 55, currently single → 404.336(e) currently unmarried
-  //       pays 2,400; engine null (unconditional pre-60 historical remarriage
-  //       refusal).
-  //   [1] remarriedAtAge 60, currently married → 404.336(e)(1) pays 2,400;
-  //       engine 2,400.
-  // claimantIsSingle is not read on this path; current marital status and
+  //       pays 2,400 (the later marriage has ended; POMS RS 00207.003 A). The
+  //       engine paid nothing here until 2026-09-29.
+  //   [1] remarriedAtAge 60, currently married → 404.336(e)(1) pays 2,400.
+  //   [2] remarriedAtAge 55, currently married → the later marriage lasts: null.
+  //   [3] remarriedAtAge null, currently married → the current marriage has no
+  //       stated start, and a marriage before 60 still in effect bars the
+  //       benefit: null. The engine reads the blank as no remarriage and pays
+  //       2,400, the limit that remains.
   // (e)(2)–(3) remain separate residuals.
   readings: {
-    statutory404336UnmarriedOrRemarriedAfter60: [2_400, 2_400],
-    engineUnconditionalPre60RemarriageForfeiture: [null, 2_400],
+    statutory404336UnmarriedOrRemarriedAfter60: [2_400, 2_400, null, null],
+    engineReadsABlankRemarriageAgeInACoupleAsNoRemarriage: [2_400, 2_400, null, 2_400],
+    unconditionalPre60RemarriageForfeiture: [null, 2_400, null, 2_400],
   },
   accepted: 'statutory404336UnmarriedOrRemarriedAfter60',
-  produced: 'engineUnconditionalPre60RemarriageForfeiture',
-}, ({ accepted, produced }) => {
-  it('pins the historical remarriedAtAge gate against currently unmarried and (e)(1) preservation', () => {
+  produced: 'engineReadsABlankRemarriageAgeInACoupleAsNoRemarriage',
+}, ({ accepted, produced, readings }) => {
+  it('pins the remarriage gate: unmarried or remarried at 60 pays, a later marriage that lasts bars, a blank age in a couple pays', () => {
     const base: FormerSpouse = {
       id: 'former',
       relationship: 'surviving-divorced',
@@ -239,9 +246,12 @@ describeRule('cfr-20-404-336-e-surviving-divorced-remarriage', {
     const amounts = [
       monthlyOf({ ...base, remarriedAtAge: 55 }),
       monthlyOf({ ...base, remarriedAtAge: 60 }, { ...ctx, claimantIsSingle: false }),
+      monthlyOf({ ...base, remarriedAtAge: 55 }, { ...ctx, claimantIsSingle: false }),
+      monthlyOf(base, { ...ctx, claimantIsSingle: false }),
     ]
 
     expect(amounts).toEqual(produced)
     expect(amounts).not.toEqual(accepted)
+    expect(amounts).not.toEqual(readings.unconditionalPre60RemarriageForfeiture)
   })
 })

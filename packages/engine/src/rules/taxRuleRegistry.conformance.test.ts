@@ -2599,7 +2599,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-28')
+    expect(latestDueOn).toBe('2027-09-29')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

@@ -124,6 +124,47 @@ describeCalculation(
       expect(Math.min(...ownAges)).toBe(65)
     })
 
+    // Case D: case B's widow with $40,000 of wages at 60 to 62 and no inflation.
+    it('case D: her wages withhold part of each benefit before 67 and the months withheld raise it from 67, so survivor at 60 then own at 70 never switches', () => {
+      const caseD: SwitchingInput = { ...caseB, wagesInYear: (year) => (year <= 2028 ? 40_000 : 0) }
+      const atD: SwitchingOptions = { discountRate: 0.02, assumptions: { inflationPct: 0, ssCola: { mode: 'matchInflation' }, ssHaircut: null } }
+      expectRanking('D', caseD, atD)
+      const alone = expectedPvSwitch(caseD, { survivorClaimAge: 60, ownClaimAge: null }, atD)
+      for (const ownClaimAge of [62, 67, 70]) {
+        expect(expectedPvSwitch(caseD, { survivorClaimAge: 60, ownClaimAge }, atD)).toBe(alone)
+      }
+      // Paid in full, as before D-SS-ANALYSIS-EARNINGS-TEST: seven strategies, the switch to own at 70 second.
+      const unwithheld = rankSwitchStrategies(caseB, { discountRate: 0.02, assumptions: matchInflation })
+      expect(unwithheld).toHaveLength(7)
+      expect(label(unwithheld[1]!.strategy)).toBe('Survivor at 60, switch to own at 70')
+    })
+
+    // Case E, the implementation review's case: a widow of 60 whose wages withhold
+    // part of the survivor benefit in 2026 and 2027, all before 62.
+    it('case E: the months withheld before 62 raise the survivor benefit from 62 (20 CFR 404.412(b)), and the value does not depend on the plan\'s inflation', () => {
+      const caseE: SwitchingInput = {
+        dob: { year: 1966, month: 3, day: 15 },
+        sex: 'average',
+        currentAge: 60,
+        ownPiaMonthly: 1_000,
+        deceasedPiaMonthly: 2_500,
+        deceasedActualMonthly: 2_500,
+        deceasedEverReduced: false,
+        wagesInYear: (year) => (year <= 2027 ? 50_000 : 0),
+      }
+      const atE = (inflationPct: number): SwitchingOptions => ({ discountRate: 0, assumptions: { inflationPct, ssCola: { mode: 'matchInflation' }, ssHaircut: null } })
+      expectRanking('E', caseE, atE(0))
+      const survivorAt60 = expectedPvSwitch(caseE, { survivorClaimAge: 60, ownClaimAge: 70 }, atE(0))
+      expect(survivorAt60).toBe(expectedPvSwitch(caseE, { survivorClaimAge: 60, ownClaimAge: null }, atE(0)))
+      // Without the adjustment at 62 (and with the claim-year months charged) the review's reading: 508,288.15.
+      expect(withinTolerance(survivorAt60, 508_288.15496707853, { rel: 1e-6 })).toBe(false)
+      expect(withinTolerance(survivorAt60, 515_104.7009261964, { rel: 1e-6 })).toBe(false)
+      // At 2.5% inflation, with the COLA matching it and the wages growing with it,
+      // the excess in each year's dollars is charged against that year's benefit.
+      const inflated: SwitchingInput = { ...caseE, wagesInYear: (year) => (year <= 2027 ? 50_000 * 1.025 ** (year - 2026) : 0) }
+      expect(withinTolerance(expectedPvSwitch(inflated, { survivorClaimAge: 60, ownClaimAge: 70 }, atE(2.5)), survivorAt60, { rel: 1e-12 })).toBe(true)
+    })
+
     it('strategies that pay the same stream are one: survivor at 62 then own at 62, 67 or 70 is survivor at 62 alone', () => {
       const alone = expectedPvSwitch(caseA, { survivorClaimAge: 62, ownClaimAge: null }, atA)
       for (const ownClaimAge of [62, 67, 70]) {

@@ -9920,6 +9920,16 @@
     "reasonKind": "runtime-diagnostic"
   },
   {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenResult",
+    "field": "withheldClaimAges",
+    "tsType": "readonly number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The compared claim ages at which the person's wages have the earnings test hold back part of the benefit, printed in the sentence that names the person.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
     "source": "engine/src/socialSecurity/analysis/expectedValue.ts",
     "owner": "BenefitsPvRow",
     "field": "expectedPv",

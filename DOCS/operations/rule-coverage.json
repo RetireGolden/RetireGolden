@@ -2,26 +2,26 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 575,
+    "total": 581,
     "byClassification": {
-      "approximated": 123,
+      "approximated": 122,
       "outOfScope": 88,
-      "settled": 357,
+      "settled": 364,
       "unsettled": 7
     },
     "approximatedByKind": {
       "convention": 23,
-      "fix": 76,
-      "needs-fact": 24
+      "fix": 74,
+      "needs-fact": 25
     },
     "byVolatility": {
       "annuallyIndexed": 96,
       "awaitingGuidance": 13,
-      "staticStatute": 457,
+      "staticStatute": 463,
       "sunsetting": 9
     },
     "byJurisdiction": {
-      "federal": 354,
+      "federal": 360,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 480,
+    "totalFiles": 481,
     "byStatus": {
       "partial": 94,
-      "registered": 130,
-      "rule-free": 256,
+      "registered": 134,
+      "rule-free": 253,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -337,11 +337,6 @@
       "note": "the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan"
     },
     {
-      "path": "projection/internal/annualSocialSecurity.ts",
-      "sweptOn": "2026-09-27",
-      "note": "current-spouse dual entitlement delegates to the registered dualEntitlement helpers, the widow(er) entitlement month to survivorBenefit#widowEntitlementAgeMonths, and the widow(er) limit to survivorBenefitMonthly. This caller retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and the ARF bookkeeping of own, spouse and widow(er) months. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records"
-    },
-    {
       "path": "projection/internal/annualStateHouseholdFacts.ts",
       "sweptOn": "2026-09-12",
       "note": "Recipient section 86/RRB attribution and state claimant/election mapping preserve unknowns; candidate-specific allocation and state household completeness claims remain unregistered."
@@ -467,9 +462,14 @@
       "note": "the covered-work credit estimate (covered-work-credit-estimate). Residual: the quarter-of-coverage counting of 42 U.S.C. 413(a)(2)(A) and 20 CFR 404.143(a), the annual amount from 1978 and $50 a quarter before, has no rule record; the calculation record states and cites it"
     },
     {
+      "path": "socialSecurity/householdYear.ts",
+      "sweptOn": "2026-09-29",
+      "note": "one year of a household's Social Security, month by month where a month can differ, then the earnings test: the one year function the projection and the analysis models share; named by social-security-benefit-annual and the earnings-test, crediting, FRA-month, deceased-crediting, divorced-after-widowhood and widow(er)-reduction records; current-spouse dual entitlement delegates to the registered dualEntitlement helpers, the widow(er) entitlement month to survivorBenefit#widowEntitlementAgeMonths (for a former spouse, maritalBenefits#formerSpouseSurvivorEntitlementAgeMonths) and the widow(er) limit to survivorBenefitMonthly. Residual, as it was on annualSocialSecurity.ts: person and stream selection, candidate ordering, COLA, haircut and publication are ledger conventions with no rule record"
+    },
+    {
       "path": "socialSecurity/maritalBenefits.ts",
-      "sweptOn": "2026-09-27",
-      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
+      "sweptOn": "2026-09-29",
+      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the first month of a former spouse's survivor benefit freed by the end of a remarriage before 60 (formerSpouseSurvivorEntitlementAgeMonths) is named by usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
     },
     {
       "path": "socialSecurity/openClaims.ts",
@@ -658,9 +658,9 @@
       "directory": "projection",
       "files": 131,
       "byStatus": {
-        "partial": 43,
-        "registered": 21,
-        "rule-free": 67
+        "partial": 42,
+        "registered": 23,
+        "rule-free": 66
       }
     },
     {
@@ -696,11 +696,11 @@
     },
     {
       "directory": "socialSecurity",
-      "files": 23,
+      "files": 24,
       "byStatus": {
-        "partial": 4,
-        "registered": 11,
-        "rule-free": 8
+        "partial": 5,
+        "registered": 13,
+        "rule-free": 6
       }
     },
     {
@@ -801,7 +801,7 @@
     {
       "module": "socialSecurity",
       "path": "rule-coverage/socialSecurity.json",
-      "ruleCount": 53
+      "ruleCount": 59
     },
     {
       "module": "socialSecurityEarnings",
@@ -846,13 +846,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1740,
+    "entryCount": 1765,
     "fetched": 0,
     "cached": 433,
     "counts": {
       "ELISION-EXACT": 142,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1176,
+      "EXACT": 1201,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 406,
       "PUNCTUATION": 4,
@@ -2182,6 +2182,188 @@
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
             "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-29",
+        "note": "Decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the earnings-test records restated with the family charge, the months before the full-retirement-age month, reduction-period crediting and the adjustment from the full-retirement-age month, and four records added (the worker's excess charged to the family, the adjustment's effective month, the deceased's crediting months, a couple member's former-spouse record after widowhood). Each row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+        "entries": [
+          {
+            "id": "usc-42-403-f-3-retirement-earnings-test",
+            "citation": "42 U.S.C. 403(f)(3)"
+          },
+          {
+            "id": "usc-42-403-f-3-retirement-earnings-test",
+            "citation": "42 U.S.C. 403(f)(3)"
+          },
+          {
+            "id": "usc-42-403-f-3-retirement-earnings-test",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "42 U.S.C. 402(q)(7)(A)"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "42 U.S.C. 403(f)(1)"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "20 CFR 404.415(a)"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "SSA POMS RS 00615.482, § B.1"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "SSA POMS RS 00615.482, § B.1 note"
+          },
+          {
+            "id": "poms-rs-00615-482-arf-crediting-months",
+            "citation": "SSA POMS RS 00615.482, § B.2"
+          },
+          {
+            "id": "usc-42-403-f-1-earnings-test-month-charging",
+            "citation": "42 U.S.C. 403(f)(1)"
+          },
+          {
+            "id": "usc-42-403-f-1-earnings-test-month-charging",
+            "citation": "42 U.S.C. 403(f)(1)"
+          },
+          {
+            "id": "usc-42-403-f-1-earnings-test-month-charging",
+            "citation": "SSA POMS RS 02501.095, § B"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "20 CFR 404.434(b)(1)"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "20 CFR 404.434(b)(3)"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "20 CFR 404.439"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "20 CFR 404.440"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "SSA POMS RS 02501.150, § A.1"
+          },
+          {
+            "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+            "citation": "SSA POMS RS 00615.482, § B.2"
+          },
+          {
+            "id": "usc-42-403-f-3-fra-year-months-before-fra",
+            "citation": "42 U.S.C. 403(f)(3)"
+          },
+          {
+            "id": "usc-42-403-f-3-fra-year-months-before-fra",
+            "citation": "42 U.S.C. 403(f)(1)"
+          },
+          {
+            "id": "usc-42-403-f-3-fra-year-months-before-fra",
+            "citation": "20 CFR 404.434(c)"
+          },
+          {
+            "id": "cfr-20-404-412-b-arf-effective-fra-month",
+            "citation": "20 CFR 404.412(b)"
+          },
+          {
+            "id": "cfr-20-404-412-b-arf-effective-fra-month",
+            "citation": "42 U.S.C. 402(q)(7)"
+          },
+          {
+            "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+            "citation": "SSA POMS RS 00615.320, § B.2.c"
+          },
+          {
+            "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+            "citation": "SSA POMS RS 00615.598, § A"
+          },
+          {
+            "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+            "citation": "SSA POMS RS 00615.598, § B"
+          },
+          {
+            "id": "usc-42-403-f-5-earnings-counted",
+            "citation": "42 U.S.C. 403(f)(5)(A)"
+          },
+          {
+            "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+            "citation": "42 U.S.C. 402(b)(1)(C)"
+          },
+          {
+            "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+            "citation": "SSA POMS RS 00202.046"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-29",
+        "note": "After the implementation review of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the 20 CFR 404.412(b) quotation on cfr-20-404-412-b-arf-effective-fra-month now includes the sentence on the widow(er) adjustment at 62. The row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+        "entries": [
+          {
+            "id": "cfr-20-404-412-b-arf-effective-fra-month",
+            "citation": "20 CFR 404.412(b)"
+          },
+          {
+            "id": "cfr-20-404-412-b-arf-effective-fra-month",
+            "citation": "42 U.S.C. 402(q)(7)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-29",
+        "note": "After the second verification of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month now cites POMS RS 00207.003 A, the month a survivor benefit barred by a remarriage before 60 can begin. Its rows were verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(3)(E)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(7)(A)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.410(c)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.621(a)(4)(ii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.412(a)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "SSA POMS RS 00207.003 A"
           }
         ]
       }

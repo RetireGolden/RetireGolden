@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 
-import type { FormerSpouse } from '../../model/plan.js'
+import type { FormerSpouse, IncomeStream } from '../../model/plan.js'
 import {
   describeCalculation,
   withinTolerance,
@@ -145,6 +145,70 @@ describeCalculation(
     // his benefit with delayed credits (1,240) and paid 260.
     it('C-E: the family maximum counts the worker\'s PIA, so one spouse\'s 400 excess is paid in full', () => {
       expectPv(expectedPvCouple(cases.cEW, cases.cEH, options), 'C-E (20 CFR 404.404)')
+    })
+
+    // C-F, example-couple's Social Security: both work before full retirement
+    // age, so the earnings test withholds, the months withheld are credited
+    // from the full-retirement-age month (only months of the reduction period),
+    // and after a death the widow's limit is on the deceased's credited benefit.
+    it('C-F: example-couple, the earnings test on both people\'s wages and the widow\'s limit on the deceased\'s credited benefit', () => {
+      const plan = couplePlan({ p1Dob: '1962-04-15', p2Dob: '1964-09-02', p1PlanningAge: 92, p2PlanningAge: 95, p1RetirementAge: 66, p2RetirementAge: 64 })
+      plan.household.people[0]!.sex = 'male'
+      plan.household.people[1]!.sex = 'female'
+      plan.assumptions = { ...plan.assumptions, ...matchInflation }
+      plan.incomes = [
+        { type: 'wages', id: 'wages-alex', personId: 'p1', annualGross: 140_000, endAge: null, realGrowthPct: 0 },
+        { type: 'wages', id: 'wages-sam', personId: 'p2', annualGross: 85_000, endAge: null, realGrowthPct: 0 },
+        socialSecurityIncome('ss-alex', 2_900, 70, 'p1'),
+        socialSecurityIncome('ss-sam', 1_950, 67, 'p2'),
+      ]
+      const ranking = benefitsOnlyRanking(validatePlan(plan), 0.02, 2026)
+      const pv = (alex: number, sam: number): number =>
+        ranking.rows.find((row) => row.claimByPersonId.p1 === alex && row.claimByPersonId.p2 === sam)!.expectedPv
+      expectPv(pv(70, 63), 'C-F 70/63')
+      expectPv(pv(70, 64), 'C-F 70/64')
+      expectPv(pv(70, 62), 'C-F 70/62')
+      for (const alex of [64, 65]) {
+        for (let sam = 62; sam <= 70; sam++) expectPv(pv(alex, sam), `C-F ${alex}/${sam}`)
+      }
+      // The highest value is 70/63 at 2% and 69/63 at 4%: the months of the claim
+      // year before entitlement are paid and never charged (403(f)(1)(A)).
+      expect(ranking.ranked[0]!.claimByPersonId).toEqual({ p1: 70, p2: 63 })
+      const atFour = benefitsOnlyRanking(validatePlan(plan), 0.04, 2026)
+      expect(atFour.ranked[0]!.claimByPersonId).toEqual({ p1: 69, p2: 63 })
+      const pv4 = (alex: number, sam: number): number =>
+        atFour.rows.find((row) => row.claimByPersonId.p1 === alex && row.claimByPersonId.p2 === sam)!.expectedPv
+      expectPv(pv4(69, 63), 'C-F 69/63 at 4%')
+      expectPv(pv4(69, 64), 'C-F 69/64 at 4%')
+      expect(ranking.rows.find((row) => row.claimByPersonId.p1 === 70 && row.claimByPersonId.p2 === 62)!.withheldBy).toEqual(['p2'])
+      expect(ranking.rows.find((row) => row.claimByPersonId.p1 === 70 && row.claimByPersonId.p2 === 63)!.withheldBy).toEqual(['p2'])
+      expect(ranking.rows.find((row) => row.claimByPersonId.p1 === 70 && row.claimByPersonId.p2 === 64)!.withheldBy).toEqual([])
+      // Paid in full, as the value was until D-SS-ANALYSIS-EARNINGS-TEST, 70/62
+      // ranked first at 864,531.25.
+      expect(pv(70, 62)).toBeLessThan(864_531.25)
+    })
+
+    // C-G: a couple member's deceased first husband. Her remarriage at 61 is
+    // deemed not to have occurred, so the widow(er) benefit on his record is
+    // paid while her current husband lives, as the ledger pays it.
+    it('C-G: a couple member is paid on a deceased former spouse\'s record (3,000 a month from her claim at 67)', () => {
+      const plan = couplePlan({ p1Dob: '1962-03-20', p2Dob: '1964-02-10', p1PlanningAge: 95, p2PlanningAge: 95 })
+      plan.household.people[0]!.sex = 'male'
+      plan.household.people[1]!.sex = 'female'
+      plan.assumptions = { ...plan.assumptions, ...matchInflation }
+      const firstHusband: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 61 }
+      plan.incomes = [
+        socialSecurityIncome('ss-h', 2_200, 67, 'p1'),
+        { ...socialSecurityIncome('ss-j', 1_200, 67, 'p2'), formerSpouses: [firstHusband] } as IncomeStream,
+      ]
+      const ranking = benefitsOnlyRanking(validatePlan(plan), 0.02, 2026)
+      const pv = (h: number, j: number): number =>
+        ranking.rows.find((row) => row.claimByPersonId.p1 === h && row.claimByPersonId.p2 === j)!.expectedPv
+      expectPv(pv(67, 67), 'C-G 67/67')
+      expectPv(pv(70, 62), 'C-G 70/62')
+      expect(ranking.ranked[0]!.claimByPersonId).toEqual({ p1: 70, p2: 62 })
+      // Her first husband's record unpriced, as the value was until D-SS-ANALYSIS-EARNINGS-TEST: 594,699.99.
+      expect(pv(67, 67)).toBeGreaterThan(594_699.99 + 200_000)
     })
 
     it('ranks every claim-age pair for a couple and names a disability claimant instead of ranking', () => {

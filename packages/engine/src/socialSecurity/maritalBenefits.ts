@@ -18,10 +18,11 @@
  *    years since divorce are unmodeled
  *    (`cfr-20-404-331-living-divorced-spouse-eligibility`).
  *  - Ordinary survivor (deceased spouse): marriage lasted ≥9 months, the
- *    claimant is ≥60, and remarriage before 60 is treated as an unconditional
- *    historical forfeiture even when the claimant is now single; at/after 60
- *    preserves it. Ordinary-widow 20 CFR 404.335
- *    (`cfr-20-404-335-ordinary-widow-eligibility`).
+ *    claimant is ≥60, and a remarriage before 60 bars the benefit only while
+ *    the claimant is married: a household of one, or a couple member from
+ *    January after the current spouse's death, is unmarried, and the benefit
+ *    is payable again (POMS RS 00207.003 A); at/after 60 preserves it.
+ *    Ordinary-widow 20 CFR 404.335 (`cfr-20-404-335-ordinary-widow-eligibility`).
  *  - Surviving-divorced survivor: marriage lasted ≥10 years before divorce, with
  *    the same age-60 and remarriage gates on the non-disabled path. 20 CFR
  *    404.336 (`cfr-20-404-336-surviving-divorced-spouse-eligibility`). Survivor
@@ -46,7 +47,7 @@ import {
   spouseEntitlementAgeMonths,
   spouseReductionFactorAtAgeMonths,
 } from './dualEntitlement.js'
-import { ageToTotalMonths, effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from './nra.js'
+import { ageToTotalMonths, attainedAgeZeroMonthIndex, effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from './nra.js'
 import { survivorBenefitMonthly } from './survivorBenefit.js'
 
 export const DIVORCED_MIN_MARRIAGE_YEARS = 10
@@ -66,9 +67,9 @@ export interface MaritalBenefitContext {
   /** The claimant's own old-age benefit as paid (after the claim factor), or 0. */
   claimantOwnActualMonthly: number
   /**
-   * Months withheld under the earnings test while a spouse benefit was paid,
-   * credited to the divorced-spouse reduction from the claimant's FRA year
-   * (402(q)(7)); 0 when omitted.
+   * Crediting months of the divorced-spouse benefit under the earnings test,
+   * added to its reduction age from the claimant's full-retirement-age month
+   * (402(q)(7); 20 CFR 404.412(b)); 0 when omitted.
    */
   claimantSpouseWithheldMonths?: number
   /** Claim age for survivor factors; defaults to claimantClaimAge for direct helper callers. */
@@ -77,8 +78,26 @@ export interface MaritalBenefitContext {
   claimantAge: number
   /** Calendar year being evaluated (to derive the ex-spouse's current age). */
   year: number
-  /** True when the claimant has no current spouse (single household). */
+  /**
+   * The calendar month priced, as `year * 12 + (month - 1)`: a crediting month
+   * adjusts a reduction from the full-retirement-age month on. Omitted, December
+   * of `year`, so the adjustment applies in any year that holds that month.
+   */
+  monthIndex?: number
+  /**
+   * True when the claimant is unmarried: a household of one, or a couple member
+   * from January after the current spouse's death. It admits a living ex's
+   * divorced-spouse benefit (402(b)(1)(C)) and lifts the bar of a remarriage
+   * before 60 on a survivor benefit (POMS RS 00207.003 A).
+   */
   claimantIsSingle: boolean
+  /**
+   * For a couple member widowed by the current spouse, the month the claimant
+   * became unmarried: January after the death (POMS RS 00202.046). A divorced-
+   * spouse benefit starts no earlier and is reduced for the claimant's age then.
+   * Omitted for a household of one, who was unmarried throughout.
+   */
+  claimantUnmarriedFromMonthIndex?: number
 }
 
 export interface MaritalBenefitCandidate {
@@ -113,21 +132,57 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
   return true
 }
 
-/** Historical remarriage before 60 is an unconditional forfeiture; at/after 60 is preserved. */
-export function passesSurvivorRemarriageGate(record: FormerSpouse): boolean {
-  return record.remarriedAtAge === null || record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE
+/**
+ * The remarriage gate on a survivor benefit. A remarriage at or after 60 is
+ * disregarded (42 U.S.C. 402(e)(3)(A); 20 CFR 404.335(e)(1), 404.336(e)(1)). A
+ * remarriage before 60 bars the benefit while that later marriage lasts, and
+ * no longer once it has ended, by death or divorce (POMS RS 00207.003 A): the
+ * claimant is then unmarried (`claimantUnmarried`), a household of one, or a
+ * couple member after the current spouse's death. The plan records no other end
+ * to a later marriage, so a couple member whose spouse is alive is taken to be
+ * married to the spouse the remarriage age records.
+ */
+export function passesSurvivorRemarriageGate(record: FormerSpouse, claimantUnmarried = false): boolean {
+  return record.remarriedAtAge === null || record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE || claimantUnmarried
+}
+
+/**
+ * The claimant's age in months in the first month of entitlement to a
+ * survivor benefit on a former spouse's record, which the widow(er) reduction
+ * is measured from (42 U.S.C. 402(q)(6)(A)(iii): "the first day of the first
+ * month for which such individual is entitled to such benefit"). A former
+ * spouse's death date is not in the plan, so it is the claimant's own claim;
+ * but when a remarriage before 60 bars the benefit while that later marriage
+ * lasts and the plan ends it, with the current spouse's death, entitlement can
+ * begin only with the first month the claimant is unmarried (POMS RS 00207.003
+ * A: "Entitlement can begin with the month the subsequent marriage
+ * terminated"; in the plan, January after the death), so it is the later of
+ * the two. A household of one is taken to be unmarried throughout: the plan
+ * does not say when that later marriage ended, so it is taken to have ended
+ * before the claim.
+ */
+export function formerSpouseSurvivorEntitlementAgeMonths(
+  record: FormerSpouse,
+  claimantZeroMonthIndex: number,
+  ownClaimMonths: number,
+  claimantUnmarriedFromMonthIndex: number | null,
+): number {
+  const barredWhileMarried = record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE
+  if (!barredWhileMarried || claimantUnmarriedFromMonthIndex === null || !Number.isFinite(claimantUnmarriedFromMonthIndex)) return ownClaimMonths
+  return Math.max(ownClaimMonths, claimantUnmarriedFromMonthIndex - claimantZeroMonthIndex)
 }
 
 /**
  * Modeled ordinary-widow record gates on a deceased-spouse record:
- * relationship, 9-month duration, and historical remarriage before 60. Does not
- * test current marital status, statutory duration/remarriage exceptions, or
- * complete claimant eligibility; isWidowEligible owns the age-60 gate.
+ * relationship, 9-month duration, and the remarriage gate for a claimant
+ * married or unmarried (#passesSurvivorRemarriageGate). Does not test the
+ * statutory duration exceptions or complete claimant eligibility;
+ * isWidowEligible owns the age-60 gate.
  */
-export function passesModeledOrdinaryWidowRecordGates(record: FormerSpouse): boolean {
+export function passesModeledOrdinaryWidowRecordGates(record: FormerSpouse, claimantUnmarried = false): boolean {
   if (record.relationship !== 'deceased') return false
   if (record.marriageYears < SURVIVOR_MIN_MARRIAGE_YEARS) return false
-  if (!passesSurvivorRemarriageGate(record)) return false
+  if (!passesSurvivorRemarriageGate(record, claimantUnmarried)) return false
   return true
 }
 
@@ -144,27 +199,28 @@ export function passesModeledSurvivingDivorcedDurationGates(record: FormerSpouse
 }
 
 /**
- * Modeled surviving-divorced record gates: (a)(2) duration and the historical
- * remarriage gate. Does not test valid marriage, application, own-benefit,
- * disability, or complete claimant eligibility; isSurvivingDivorcedEligible owns
- * the age-60 gate.
+ * Modeled surviving-divorced record gates: (a)(2) duration and the remarriage
+ * gate for a claimant married or unmarried (#passesSurvivorRemarriageGate).
+ * Does not test valid marriage, application, own-benefit, disability, or
+ * complete claimant eligibility; isSurvivingDivorcedEligible owns the age-60
+ * gate.
  */
-export function passesModeledSurvivingDivorcedRecordGates(record: FormerSpouse): boolean {
+export function passesModeledSurvivingDivorcedRecordGates(record: FormerSpouse, claimantUnmarried = false): boolean {
   if (!passesModeledSurvivingDivorcedDurationGates(record)) return false
-  if (!passesSurvivorRemarriageGate(record)) return false
+  if (!passesSurvivorRemarriageGate(record, claimantUnmarried)) return false
   return true
 }
 
 /** Ordinary-widow gates actually applied here; fully-insured and application facts are absent. */
 function isWidowEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
-  if (!passesModeledOrdinaryWidowRecordGates(record)) return false
+  if (!passesModeledOrdinaryWidowRecordGates(record, ctx.claimantIsSingle)) return false
   if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
   return true
 }
 
 /** Surviving-divorced gates actually applied here; fully-insured and application facts are absent. */
 function isSurvivingDivorcedEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
-  if (!passesModeledSurvivingDivorcedRecordGates(record)) return false
+  if (!passesModeledSurvivingDivorcedRecordGates(record, ctx.claimantIsSingle)) return false
   if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
   return true
 }
@@ -200,9 +256,10 @@ export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitConte
   if (record.relationship === 'divorced') {
     if (!isDivorcedSpouseEligible(record, ctx)) return null
     // The ex need not have filed: the divorced-spouse benefit starts in the later
-    // of the claimant's own claim and the first month the ex is 62 throughout
-    // (POMS RS 00202.005 B.2.a), and is reduced for the claimant's age then
-    // (deemed filing, 402(r); 402(q)(6)(A)(ii)).
+    // of the claimant's own claim, the first month the ex is 62 throughout
+    // (POMS RS 00202.005 B.2.a) and, for a couple member widowed by the current
+    // spouse, the month after that death (POMS RS 00202.046), and is reduced for
+    // the claimant's age then (deemed filing, 402(r); 402(q)(6)(A)(ii)).
     const exDob = {
       year: birthYear(record.dob),
       month: Number(record.dob.slice(5, 7)),
@@ -215,10 +272,11 @@ export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitConte
       spouseEntitlementAgeMonths(
         ctx.claimantDob,
         ageToTotalMonths(ctx.claimantClaimAge.years, ctx.claimantClaimAge.months),
-        divorcedExFirstMonthIndex(exDob),
+        Math.max(divorcedExFirstMonthIndex(exDob), ctx.claimantUnmarriedFromMonthIndex ?? -Infinity),
       ),
       ctx.claimantSpouseWithheldMonths ?? 0,
-      ctx.claimantAge,
+      ctx.monthIndex ?? ctx.year * 12 + 11,
+      attainedAgeZeroMonthIndex(ctx.claimantDob) + claimantFraMonths,
       claimantFraMonths,
     )
     return {

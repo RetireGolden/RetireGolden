@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 
-import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../../rules/describeCalculation.js'
 import type { IncomeStream, Plan } from '../../model/plan.js'
 import {
   cashAccount,
@@ -12,6 +12,16 @@ import {
 } from '../../testing/planFixtures.js'
 import { simulatePlan } from '../simulate.js'
 import type { YearResult } from '../types.js'
+
+const WORKSHEET = 'DOCS/calculations/social-security/social-security-benefit-annual.md'
+
+// The Expected table's values, read from the worksheet.
+const rows = worksheetExpectedRows(WORKSHEET)
+const value = (label: string): number => {
+  const row = rows.get(label)
+  if (row === undefined) throw new RangeError(`the worksheet has no Expected row "${label}"`)
+  return worksheetNumber(row[0]!)
+}
 
 function run(plan: Plan, startYear: number, horizonEndYear: number): YearResult[] {
   return simulatePlan(validatePlan(plan), {
@@ -64,7 +74,7 @@ describeCalculation(
       },
       tolerance: { abs: 0.005 },
     },
-    worksheet: 'DOCS/calculations/social-security/social-security-benefit-annual.md',
+    worksheet: WORKSHEET,
     mutation: 'DOCS/calculations/social-security/social-security-benefit-annual.mutation.md',
   },
   ({ example }) => {
@@ -217,6 +227,85 @@ describeCalculation(
       expect(
         withinTolerance(row.ssEarningsTestWithheld, expected.divideByThreeWithheldWrongReading!, { abs: 0.01 }),
       ).toBe(false)
+    })
+
+    it('takes its first five figures from the worksheet\'s Expected table', () => {
+      expect(expected.ownClaimYear).toBe(value('Own claim year, 2024'))
+      expect(expected.laterYear).toBe(value('Later year, 2025'))
+      expect(expected.twoPersonCase).toBe(value('Two-person case, 2027'))
+      expect(expected.belowFraPaid).toBe(value('Below-FRA paid, 2026'))
+      expect(expected.belowFraWithheld).toBe(value('Below-FRA withheld, 2026'))
+    })
+
+    /**
+     * Each person's published Social Security by year, to the cent, for a plan
+     * starting in 2026 with no inflation (a COLA factor of 1 and the 2026
+     * exempt amounts every year) and no haircut.
+     */
+    function paidByPerson(people: readonly { id: string; dob: string }[], incomes: IncomeStream[], endYear: number): (personId: string, year: number) => number {
+      const plan = people.length === 2
+        ? couplePlan({ p1Dob: people[0]!.dob, p2Dob: people[1]!.dob, p1PlanningAge: 95, p2PlanningAge: 95 })
+        : singlePersonPlan({ dob: people[0]!.dob, planningAge: 95 })
+      plan.accounts = [cashAccount('cash', 5_000_000)]
+      plan.incomes = incomes
+      const years = run(plan, 2026, endYear)
+      return (personId, year) => {
+        const streams = years.find((y) => y.year === year)!.socialSecurityStreams ?? []
+        const paid = streams.filter((stream) => stream.personId === personId).reduce((sum, stream) => sum + stream.annualAmount, 0)
+        return Math.round(paid * 100) / 100
+      }
+    }
+
+    function wagesOf(personId: string, annualGross: number, endAge: number): IncomeStream {
+      return { type: 'wages', id: `wages-${personId}`, personId, annualGross, realGrowthPct: 0, endAge }
+    }
+
+    it('charges a worker\'s excess against the spouse benefit on his record, the partial month two to one (E5)', () => {
+      const paid = paidByPerson(
+        [{ id: 'p1', dob: '1964-01-15' }, { id: 'p2', dob: '1964-01-20' }],
+        [socialSecurityIncome('ss-w', 2_000, 62, 'p1'), socialSecurityIncome('ss-s', 400, 62, 'p2'), wagesOf('p1', 60_000, 63)],
+        2031,
+      )
+      expect(paid('p1', 2026)).toBe(value('E5 W paid, 2026'))
+      expect(paid('p2', 2026)).toBe(value('E5 S paid, 2026'))
+      expect(paid('p1', 2031)).toBe(value('E5 W paid, 2031'))
+      expect(paid('p2', 2031)).toBe(value('E5 S paid, 2031'))
+      // The first wrong reading of the family charge: his excess against his own benefit only.
+      expect(paid('p2', 2026)).not.toBe(8_040)
+    })
+
+    it('charges her own excess against what is left of her benefits after his (E7b)', () => {
+      const paid = paidByPerson(
+        [{ id: 'p1', dob: '1964-01-15' }, { id: 'p2', dob: '1964-01-20' }],
+        [
+          socialSecurityIncome('ss-w', 2_000, 62, 'p1'),
+          socialSecurityIncome('ss-s', 400, 62, 'p2'),
+          wagesOf('p1', 60_000, 63),
+          wagesOf('p2', 36_000, 63),
+        ],
+        2031,
+      )
+      expect(paid('p1', 2026)).toBe(value('E7b W paid, 2026'))
+      expect(paid('p2', 2026)).toBe(value('E7b S paid, 2026'))
+      expect(paid('p2', 2031)).toBe(value('E7b S paid, 2031'))
+      // Her own benefit spared while his excess took her spouse benefit, or his charge left out.
+      expect(paid('p2', 2026)).not.toBe(2_520)
+      expect(paid('p2', 2026)).not.toBe(2_280)
+    })
+
+    it('charges no month before entitlement and credits every month charged, from the full-retirement-age month (E1)', () => {
+      const paid = paidByPerson(
+        [{ id: 'p1', dob: '1964-03-10' }],
+        [socialSecurityIncome('ss', 2_000, 62), wagesOf('p1', 40_000, 63)],
+        2032,
+      )
+      expect(paid('p1', 2026)).toBe(value('E1 paid, 2026'))
+      expect(paid('p1', 2031)).toBe(value('E1 paid, 2031'))
+      expect(paid('p1', 2032)).toBe(value('E1 paid, 2032'))
+      // From January of the full-retirement-age year; or charging January and
+      // February, before entitlement, and crediting neither.
+      expect(paid('p1', 2031)).not.toBe(17_400)
+      expect(paid('p1', 2031)).not.toBe(17_133.33)
     })
   },
 )

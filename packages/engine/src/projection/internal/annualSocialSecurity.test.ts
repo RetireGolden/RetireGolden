@@ -337,7 +337,11 @@ describe('annualSocialSecurity — explicit effects', () => {
       (wages - pack.socialSecurity.earningsTestBelowFraAnnual) / 2,
       preWithholding,
     )
-    const months = Math.min(12, Math.round((withheld / preWithholding) * 12))
+    // The 12,760 excess is charged month by month against 1,416.67: January-
+    // September (12,750) and 10 of October, 10 deduction months, every one in the
+    // reduction period (the claim at 62y0m started in December 2025).
+    const months = Math.ceil(withheld / (preWithholding / 12))
+    expect(months).toBe(10)
 
     const result = call({
       incomes: [stream],
@@ -353,7 +357,7 @@ describe('annualSocialSecurity — explicit effects', () => {
     expect(result.socialSecurity).toBe(preWithholding - withheld)
     expect(result.withheldMonthWrites).toEqual([{ personId: person.id, value: 2 + months }])
     expect(result.warnings).toEqual([
-      'The earnings test withheld benefits for working early claimants; withheld months are credited back at full retirement age (annual approximation).',
+      'The earnings test withheld benefits for working early claimants; the months withheld are credited back from full retirement age.',
     ])
     expect([...withheldMonths]).toEqual([[person.id, 2]])
   })

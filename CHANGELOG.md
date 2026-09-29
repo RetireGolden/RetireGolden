@@ -4,6 +4,51 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the Social Security earnings test is charged month by month, as the law
+  charges it, by one year function the projection and the Social Security analysis page
+  share; the analysis page now counts it (example-couple's benefits-only headline at 2%
+  moves from claim at 70 / 62, $865k, to 70 / 63, $860k; no projection figure of the 29
+  examples moves)** (decision D-SS-ANALYSIS-EARNINGS-TEST, 2026-09-29; derivation and
+  independent check in RetireGolden-Docs `evidence/ss-earnings-test-*.md`). The ledger
+  tested one annual amount against each person's own benefit. It now follows 42 U.S.C.
+  403(b) and (f) and 20 CFR 404.415 to 404.440: a worker's excess is charged first against
+  the family benefit on his record, the spouse benefit included, with the rest of a partial
+  month shared two to one; in the year of full retirement age only the wages of the months
+  before the full-retirement-age month count, and that month comes from the birth date;
+  the excess is floored to the dollar; no month before a benefit's first month of
+  entitlement is charged (403(f)(1)(A)), so the months of a claim year the plan pays
+  before the claim month are paid in full; each month with a deduction in a benefit's
+  reduction period is one crediting month, and the adjustment takes effect in the
+  full-retirement-age month, not in January; a widow(er) benefit is credited only before
+  the survivor full retirement age; the deceased's own crediting months raise the widow's
+  limit; a couple member is paid on a living ex's record from the January after the
+  spouse's death; and a former spouse's survivor benefit that a remarriage before 60
+  barred until the current spouse's death is reduced from that January, not from the
+  claimant's earlier claim (POMS RS 00207.003 A). A worker earning $60,000 at 62 whose spouse claims at 62 on his record
+  (worksheet case E5) is now paid $2,893.33 in 2026 and the spouse $4,186.67, where the
+  ledger paid $0 and $8,040. The analysis page's break-even chart, benefits-only ranking,
+  survivor switching and paid-in panel price every year with the same function and the
+  plan's wages, and name each person whose wages hold part of a benefit back at the claim
+  ages shown; survivor switching also adjusts a widow(er) benefit started before 62 at 62
+  for the months withheld before it (20 CFR 404.412(b)). On the 29 examples no projection year moves (every year array is
+  bit-identical) and no Monte Carlo rate moves; on the analysis page only example-couple
+  changes: 28 of its 63 benefits-only rows (Alex at 64 or 65, Sam at 62 or 63), the headline
+  at 15 of the 17 slider steps (4%: 69 / 62 to 69 / 63), and Sam's break-even chart, whose
+  claim at 62 is withheld while she works from September 2026 (62 against 67 now crosses at
+  75.2 rather than 75.7 at a 0% return, 62 against 70 at 77.4 rather than 77.5). The five
+  other couple examples' benefits-only rows differ by at most 2e-15 of their value, a
+  floating-point effect of summing the paths in a different order; no displayed figure,
+  rank or headline moves. Stated limits: wages are whole years
+  spread evenly over their months (no grace year), income entered as other income is not
+  tested (new record `usc-42-403-f-5-earnings-counted`), a couple member's remarriage before
+  60 is read as the current marriage and a person living alone's as ended before the claim,
+  and benefits are not floored to the dollar as
+  20 CFR 404.304(f) floors them. New records `usc-42-403-b-1-worker-excess-charged-to-family`,
+  `usc-42-403-f-3-fra-year-months-before-fra`, `cfr-20-404-412-b-arf-effective-fra-month`,
+  `poms-rs-00615-320-b-2-c-deceased-crediting-months`, `usc-42-403-f-5-earnings-counted` and
+  `usc-42-402-b-1-C-divorced-spouse-after-widowhood`; the earnings-test, crediting and
+  analysis records restated, all unreviewed.
+
 - **Fixed: what 1 January 2027 would have changed without a word, now held or said (decision
   D-2027-ROLLOVER; derivation and independent check in the validation program's staging,
   `rollover-2027/{derivation,check}.md`).** Measured by `rollover-2027/impl` on this branch against

@@ -27,9 +27,9 @@ import { inheritedRothFactsToOwnerRothBasis } from './internal/inheritedRothTaxC
  * - SS COLA compounds from the projection start, and first-year benefits are
  *   prorated by claim months only (no birthday-month precision). PIA comes
  *   from the stream directly or from its earnings history (AIME → bend
- *   points). The earnings test withholds own, spousal, and survivor benefits
- *   annually ($1/$2 below FRA, $1/$3 in the FRA year) and credits the withheld
- *   months back at FRA (ARF, annual approximation). Spousal benefits apply the
+ *   points). The earnings test charges excess earnings month by month ($1/$2
+ *   below FRA, $1/$3 of the months before the FRA month) and credits them from
+ *   the FRA month (socialSecurity/householdYear.ts). Spousal benefits apply the
  *   retirement/survivor family maximum; survivors step up to the deceased's
  *   benefit with the early-claim widow(er) reduction and RIB-LIM widow's-limit cap.
  * - RMDs are forced from traditional accounts at SECURE 2.0 start ages
@@ -1170,16 +1170,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     preProjectionQcdOffsetUnprovable.add(request.donorPersonId)
   }
 
-  // Earnings-test FRA credit: months of benefit fully withheld before FRA are
-  // credited back at FRA by recomputing the benefit as if claimed that many
-  // months later. Accumulated across the pre-FRA years (persists across the loop).
+  // Earnings-test crediting months: each month of the own benefit's reduction
+  // period with a deduction adjusts its reduction from the FRA month, as if
+  // claimed that many months later. Accumulated across years (and kept after a
+  // death, for the widow's limit).
   const withheldMonthsByPerson = new Map<string, number>()
-  // The part of those months withheld while a widow(er) benefit was paid, by
-  // the record it was paid on, which alone adjusts that widow(er) reduction
-  // (42 U.S.C. 402(q)(7); annualSocialSecurity.ts#auxiliaryBenefitSourceKey).
+  // The crediting months of each widow(er) benefit, by the record it is paid
+  // on (42 U.S.C. 402(q)(7); householdYear.ts#auxiliaryBenefitSourceKey).
   const withheldSurvivorMonthsBySource = new Map<string, number>()
-  // And the part withheld while a spouse benefit was paid, by record, which
-  // alone adjusts that spouse reduction.
+  // And of each spouse or divorced-spouse benefit, by the record it is paid
+  // on.
   const withheldSpouseMonthsBySource = new Map<string, number>()
   // WS4 inherited-IRA regime cache: classify each inherited account ONCE per
   // simulation. Regime law lives only in strategies/inheritedIra.ts — simulate
@@ -1748,9 +1748,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // larger of her own benefit and the widow(er) benefit (the deceased's
     // larger of PIA and actual benefit, reduced for her age in the first month
     // the ledger pays it and held to the widow's limit for an early claimant,
-    // survivorBenefit.ts), and then the earnings test withholds from living
-    // workers' resulting benefit, counting withheld widow(er) and spouse months
-    // apart for their own reductions.
+    // survivorBenefit.ts), and then the earnings test charges each working
+    // person's excess month by month (householdYear.ts), counting widow(er)
+    // and spouse crediting months apart for their own reductions.
     const ssColaFactor = socialSecurityColaFactor(plan.assumptions.ssCola, inflFactorFrom, startYear, year)
     const ssHaircutFactor = socialSecurityHaircutFactor(plan.assumptions.ssHaircut, year)
     const socialSecurity = annualSocialSecurity({

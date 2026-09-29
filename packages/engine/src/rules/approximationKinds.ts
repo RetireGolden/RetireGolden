@@ -64,9 +64,16 @@
  *   annual withholding and benefit the statutory month count needs are both
  *   in hand where the engine rounds its ratio instead; months in a first
  *   (grace) year stay with cfr-20-404-435-grace-year-monthly-earnings-test.
+ *   Fixed on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the test is
+ *   charged month by month and every deduction month of a reduction period is
+ *   credited; both records are settled and have left this list.
  *
  * Registered as approximated after the triage, with the kind chosen in the
  * same change:
+ * - usc-42-403-f-5-earnings-counted, needs-fact: registered with decision
+ *   D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29). The earnings test counts only a
+ *   person's wage streams; a recurring income names no person and may or may
+ *   not be pay for work, so the plan cannot say whose benefit it would reduce.
  * - usc-42-402-e-survivor-of-worker-who-died-before-claiming, fix: the plan
  *   already holds both birth dates, the worker's age at death, the PIA and
  *   both claim ages, which is what the statutory start and base need under
@@ -260,7 +267,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'or-lro-2026-rate-schedule-and-standard-deduction': { kind: 'fix' },
   'pa-pit-retirement-benefits-not-compensation': { kind: 'needs-fact', missingInput: 'plan age or service requirement and satisfaction at separation' },
   'pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary': { kind: 'fix' },
-  'poms-rs-00615-482-arf-crediting-months': { kind: 'fix' },
   'sc-code-12-6-1170-retirement-income-deduction': { kind: 'fix' },
   'treas-reg-1-1012-1-c-lot-basis-and-holding-period': { kind: 'convention', reason: 'specific-lot selection decades ahead is unknowable where the plan stores aggregate basis' },
   'treas-reg-1-1275-7-f-1-deflation-adjustment-income': { kind: 'fix' },
@@ -276,7 +282,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
   'usc-42-403-a-2-D-family-maximum-eligibility-after-disability': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
-  'usc-42-403-f-1-earnings-test-month-charging': { kind: 'fix' },
+  'usc-42-403-f-5-earnings-counted': { kind: 'needs-fact', missingInput: 'whose work a recurring income pays for, if any: the person it is earned by' },
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },

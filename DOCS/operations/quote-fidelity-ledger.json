@@ -4,9 +4,9 @@
   "urlCount": 433,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1740,
+  "entryCount": 1765,
   "counts": {
-    "EXACT": 1176,
+    "EXACT": 1201,
     "PDF-WORD-LEVEL": 406,
     "ELISION-EXACT": 142,
     "PUNCTUATION": 4,
@@ -6799,6 +6799,16 @@
     },
     {
       "id": "usc-42-403-f-3-retirement-earnings-test",
+      "citation": "42 U.S.C. 403(f)(3)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "c40d28780aff7c1a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-3-retirement-earnings-test",
       "citation": "42 U.S.C. 403(b)(1)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/42/403",
@@ -7561,6 +7571,16 @@
     },
     {
       "id": "poms-rs-00615-482-arf-crediting-months",
+      "citation": "42 U.S.C. 402(q)(7)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "7b54de49d9229363",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-482-arf-crediting-months",
       "citation": "42 U.S.C. 403(f)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
@@ -7600,11 +7620,41 @@
       "diagnosis": null
     },
     {
+      "id": "poms-rs-00615-482-arf-crediting-months",
+      "citation": "SSA POMS RS 00615.482, § B.2",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
+      "quoteSha256": "187359c346e84da5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-403-f-1-earnings-test-month-charging",
       "citation": "42 U.S.C. 403(f)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
       "quoteSha256": "ce0ed23159c962f4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-1-earnings-test-month-charging",
+      "citation": "42 U.S.C. 403(f)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "ab8b0e79bf957727",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-1-earnings-test-month-charging",
+      "citation": "SSA POMS RS 02501.095, § B",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501095",
+      "quoteSha256": "8099369b12de973e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -16786,6 +16836,16 @@
       "diagnosis": null
     },
     {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "SSA POMS RS 00207.003 A",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300207003",
+      "quoteSha256": "d4ab7a0060bd4f33",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
       "citation": "42 U.S.C. 415(e)(1)",
       "host": "uscode.house.gov",
@@ -17483,6 +17543,196 @@
       "quoteSha256": "792ed70c2166b41b",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "42 U.S.C. 403(b)(1)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/uscode/text/42/403",
+      "quoteSha256": "7a4ea0d5608b779f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "42 U.S.C. 403(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "fc7ee54c177908d2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "20 CFR 404.434(b)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434",
+      "quoteSha256": "4b68b887057cb5d6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "20 CFR 404.434(b)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434",
+      "quoteSha256": "8729e95c165a5125",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "20 CFR 404.439",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.439",
+      "quoteSha256": "38e3ab0c72d62b60",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "20 CFR 404.440",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.440",
+      "quoteSha256": "583956987d789724",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "SSA POMS RS 02501.150, § A.1",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501150",
+      "quoteSha256": "58ccafd23a621e7d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "SSA POMS RS 00615.482, § B.2",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
+      "quoteSha256": "187359c346e84da5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-3-fra-year-months-before-fra",
+      "citation": "42 U.S.C. 403(f)(3)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "4ba1eba0bffb3ede",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-3-fra-year-months-before-fra",
+      "citation": "42 U.S.C. 403(f)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "ab8b0e79bf957727",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-3-fra-year-months-before-fra",
+      "citation": "20 CFR 404.434(c)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434",
+      "quoteSha256": "acdeabc794600a24",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-412-b-arf-effective-fra-month",
+      "citation": "20 CFR 404.412(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412",
+      "quoteSha256": "f823effc7ca23ccf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-412-b-arf-effective-fra-month",
+      "citation": "42 U.S.C. 402(q)(7)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "d315ac2b0ec4405e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+      "citation": "SSA POMS RS 00615.320, § B.2.c",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320",
+      "quoteSha256": "56b9a7d62c76e29c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+      "citation": "SSA POMS RS 00615.598, § A",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615598",
+      "quoteSha256": "829108d6d0d85011",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+      "citation": "SSA POMS RS 00615.598, § B",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615598",
+      "quoteSha256": "f1b4d50b941fdc06",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-f-5-earnings-counted",
+      "citation": "42 U.S.C. 403(f)(5)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "806a32b3e48c940f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+      "citation": "42 U.S.C. 402(b)(1)(C)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "9d34fe9d662bd0f3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+      "citation": "SSA POMS RS 00202.046",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300202046",
+      "quoteSha256": "3f458d8037bc1881",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     }
   ],
@@ -18944,6 +19194,188 @@
         {
           "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
           "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-29",
+      "note": "Decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the earnings-test records restated with the family charge, the months before the full-retirement-age month, reduction-period crediting and the adjustment from the full-retirement-age month, and four records added (the worker's excess charged to the family, the adjustment's effective month, the deceased's crediting months, a couple member's former-spouse record after widowhood). Each row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+      "entries": [
+        {
+          "id": "usc-42-403-f-3-retirement-earnings-test",
+          "citation": "42 U.S.C. 403(f)(3)"
+        },
+        {
+          "id": "usc-42-403-f-3-retirement-earnings-test",
+          "citation": "42 U.S.C. 403(f)(3)"
+        },
+        {
+          "id": "usc-42-403-f-3-retirement-earnings-test",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "42 U.S.C. 402(q)(7)(A)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "42 U.S.C. 403(f)(1)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "20 CFR 404.415(a)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.1"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.1 note"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.2"
+        },
+        {
+          "id": "usc-42-403-f-1-earnings-test-month-charging",
+          "citation": "42 U.S.C. 403(f)(1)"
+        },
+        {
+          "id": "usc-42-403-f-1-earnings-test-month-charging",
+          "citation": "42 U.S.C. 403(f)(1)"
+        },
+        {
+          "id": "usc-42-403-f-1-earnings-test-month-charging",
+          "citation": "SSA POMS RS 02501.095, § B"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.434(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.434(b)(3)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.439"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.440"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 02501.150, § A.1"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 00615.482, § B.2"
+        },
+        {
+          "id": "usc-42-403-f-3-fra-year-months-before-fra",
+          "citation": "42 U.S.C. 403(f)(3)"
+        },
+        {
+          "id": "usc-42-403-f-3-fra-year-months-before-fra",
+          "citation": "42 U.S.C. 403(f)(1)"
+        },
+        {
+          "id": "usc-42-403-f-3-fra-year-months-before-fra",
+          "citation": "20 CFR 404.434(c)"
+        },
+        {
+          "id": "cfr-20-404-412-b-arf-effective-fra-month",
+          "citation": "20 CFR 404.412(b)"
+        },
+        {
+          "id": "cfr-20-404-412-b-arf-effective-fra-month",
+          "citation": "42 U.S.C. 402(q)(7)"
+        },
+        {
+          "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+          "citation": "SSA POMS RS 00615.320, § B.2.c"
+        },
+        {
+          "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+          "citation": "SSA POMS RS 00615.598, § A"
+        },
+        {
+          "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+          "citation": "SSA POMS RS 00615.598, § B"
+        },
+        {
+          "id": "usc-42-403-f-5-earnings-counted",
+          "citation": "42 U.S.C. 403(f)(5)(A)"
+        },
+        {
+          "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+          "citation": "42 U.S.C. 402(b)(1)(C)"
+        },
+        {
+          "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+          "citation": "SSA POMS RS 00202.046"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-29",
+      "note": "After the implementation review of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the 20 CFR 404.412(b) quotation on cfr-20-404-412-b-arf-effective-fra-month now includes the sentence on the widow(er) adjustment at 62. The row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+      "entries": [
+        {
+          "id": "cfr-20-404-412-b-arf-effective-fra-month",
+          "citation": "20 CFR 404.412(b)"
+        },
+        {
+          "id": "cfr-20-404-412-b-arf-effective-fra-month",
+          "citation": "42 U.S.C. 402(q)(7)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-29",
+      "note": "After the second verification of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month now cites POMS RS 00207.003 A, the month a survivor benefit barred by a remarriage before 60 can begin. Its rows were verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+      "entries": [
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(3)(E)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(7)(A)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "20 CFR 404.410(c)(1)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "20 CFR 404.621(a)(4)(ii)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "20 CFR 404.412(a)(1)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "SSA POMS RS 00207.003 A"
         }
       ]
     }

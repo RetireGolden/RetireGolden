@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: model. `projection/internal/annualSocialSecurity.ts#annualSocialSecurity` receives an `ssColaFactor` that compounds from the projection start, with factor 1 in the first year, using either the plan's general inflation rate or its fixed `ssCola` rate. The implied fixed-rate formula for year offset `n` is `(1 + rate)^n`.
+Kind: model. `projection/internal/annualSocialSecurity.ts#annualSocialSecurity`, and through it `socialSecurity/householdYear.ts#socialSecurityYear`, receives an `ssColaFactor` that compounds from the projection start, with factor 1 in the first year, using either the plan's general inflation rate or its fixed `ssCola` rate. The implied fixed-rate formula for year offset `n` is `(1 + rate)^n`.
 
 ## Justification
 

@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden runs wages before Social Security in each projection year, applies the annual earnings-test limits from the parameter set, withholds benefits when needed, and credits whole withheld months back at full retirement age. This is an annual planning approximation, not a month-by-month SSA filing model.',
+    md: 'RetireGolden charges the earnings test month by month, as SSA does: from January, or from the month your benefit starts if you claim partway through the year. The plan pays a claim for the whole calendar year you reach your claim age, but the months of that year before your claim month are never held back, because SSA doesn\'t charge a month you weren\'t yet entitled to. A working spouse\'s wages can hold back the other spouse\'s benefit on the worker\'s record too, and in the year you reach full retirement age only the wages of the months before your full-retirement-age month count. Each month held back before full retirement age raises that benefit from the month you reach it; for a survivor benefit, only the months before the survivor full retirement age count. The plan holds a year of wages, not each month\'s, so it spreads the year\'s wages evenly over its months and has no grace year for a job that ends partway through a year. The Social Security analysis page uses the same rules.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {
@@ -65,7 +65,7 @@ export const blocks: ArticleBlock[] = [
       'Thinking the earnings test applies after full retirement age.',
       'Applying it to investment income, IRA withdrawals, pensions, or Roth conversions instead of wages.',
       'Ignoring the cash-flow strain in the years when benefits are withheld.',
-      'Assuming the RetireGolden annual approximation will match SSA month-by-month administration exactly.',
+      'Assuming a plan\'s yearly wages will match SSA\'s month-by-month count exactly: a job that ends partway through a year is tested as if it ran all year.',
     ],
   },
   { type: 'heading', text: 'Where to use this in the app' },

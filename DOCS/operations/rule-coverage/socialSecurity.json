@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -199,7 +199,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -492,7 +492,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -571,7 +571,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -737,6 +737,95 @@
       ]
     },
     {
+      "id": "cfr-20-404-412-b-arf-effective-fra-month",
+      "title": "The adjustment of the reduction factor takes effect in the month full retirement age is reached",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "socialSecurity/claimFactor.ts#creditedAgeMonths takes the month priced and the benefit's FRA month; the year function prices the months before and after that month separately. Until 2026-09-29 the engine applied the adjustment from January of the year the FRA's whole years were reached. The ledger's widow(er) benefits start at 62 or later (a claim age is at least 62), so only the survivor switching model (socialSecurity/analysis/survivorSwitching.ts), whose survivor claims start from 60, has months withheld before 62. The companion test takes a person born 10 March 1964 who claims at 62 in 2026 with 40,000 dollars of wages: entitled from March, she cannot be charged in January or February, so 7,760 dollars are charged from March to July and 760 of August, six crediting months; from March 2031 she is paid 54 months early, 1,450 dollars a month, so 2031 pays 2 times 1,400 plus 10 times 1,450, 17,300 dollars, where the adjustment from January pays 17,400. The switching evidence (survivor-switching-expected-value, case E) takes a widow of 60 whose 16 months withheld before 62 raise her survivor benefit from 1,787.50 to 1,923.21 dollars a month from March 2028.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/analysis/survivorSwitching.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/survivorSwitching.ts",
+          "functions": [
+            {
+              "name": "strategyStreamWithEarningsTest",
+              "line": 201
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "creditedAgeMonths",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "maritalBenefitFor",
+              "line": 252
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 139,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays the months before the FRA month at the unadjusted rate (E1, 2031)",
+              "line": 146
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.412(b)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(7)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "cfr-20-404-435-grace-year-monthly-earnings-test",
       "title": "The grace-year monthly earnings test preserves non-service-month benefits",
       "classification": "approximated",
@@ -777,7 +866,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -797,12 +886,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1110,
+          "line": 1167,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 1124
+              "line": 1181
             }
           ]
         }
@@ -916,7 +1005,7 @@
           "functions": [
             {
               "name": "oasdiPaidIn",
-              "line": 129
+              "line": 132
             }
           ]
         },
@@ -1207,6 +1296,80 @@
       ]
     },
     {
+      "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
+      "title": "The widow's limit uses the deceased's benefit with his own crediting months, from his FRA month",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Months from the month of death on are never credited, since no earnings test is charged after the death. Until 2026-09-29 the ledger applied the deceased's months from January of the year of his full retirement age and the analysis models ignored them. The companion test takes a worker born in January 1964 with a 2,000 dollar PIA who claims at 62 and earns 60,000 dollars a year from 2026 to 2028, so all 36 months are withheld and credited, and dies in December 2032; his widow, with a 1,200 dollar PIA of her own claimed at 67, is paid the limit on his credited benefit, 24 months early, 1,733.33 dollars a month, 20,800 dollars in 2033, where his benefit as claimed would hold her at 82.5 percent of his PIA, 19,800.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 423
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 163,
+          "note": null,
+          "tests": [
+            {
+              "title": "holds the widow to the limit on the deceased's credited benefit",
+              "line": 170
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.320, § B.2.c",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.598, § A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615598"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.598, § B",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615598"
+        }
+      ]
+    },
+    {
       "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
       "title": "RIB-LIM is tested after the widow(er) age reduction",
       "classification": "settled",
@@ -1231,7 +1394,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -1240,7 +1403,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 196
+              "line": 252
             }
           ]
         },
@@ -1306,24 +1469,24 @@
     },
     {
       "id": "poms-rs-00615-482-arf-crediting-months",
-      "title": "ARF credits every full or partial work-deduction month",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year's payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion test withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine's annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.",
+      "title": "Each month of a reduction period with a full or partial earnings-test deduction is a crediting month",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The ledger pays a claim at a whole age for the whole calendar year it is attained, which for most birthdays includes months before the claim's first month of entitlement (the claim-year convention, social-security-payable-months). Those months are paid in full and never charged, since 403(f)(1)(A) charges no month for which the person was not entitled to a benefit (usc-42-403-f-1-earnings-test-month-charging), so every month charged is a month of entitlement, and every one before full retirement age is credited. The companion test gives a person born in January 1964, entitled from January 2026, a 2,000 dollar excess in each of five working years, charged 1,400 dollars to January and 600 to February: ten crediting months take the 60 months of reduction to 50 and pay 17,800 dollars a year after full retirement age, where the annual ratio the engine used until 2026-09-29 rounded to one month a year and paid 17,300. The same plan for a person born in June, entitled from June 2026, charges June and July, credits the same ten months and pays 17,800; this decision's first implementation charged January and February 2026, before entitlement, credited neither, and paid 17,600, until the implementation review.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-07",
-      "dueOn": "2027-09-07",
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/claimFactor.ts"
+        "packages/engine/src/socialSecurity/claimFactor.ts",
+        "packages/engine/src/socialSecurity/earningsTest.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
         {
@@ -1331,7 +1494,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -1348,24 +1511,69 @@
           "path": "packages/engine/src/socialSecurity/claimFactor.ts",
           "functions": [
             {
-              "name": "claimFactor",
-              "line": 22
+              "name": "creditedAgeMonths",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/earningsTest.ts",
+          "functions": [
+            {
+              "name": "earningsTestYear",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.social-security.test.ts"
+        "packages/engine/src/projection/simulate.social-security.test.ts",
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1045,
+          "line": 1092,
           "note": null,
           "tests": [
             {
-              "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 1053
+              "title": "credits the full and the partial deduction month of each working year",
+              "line": 1099
+            },
+            {
+              "title": "charges from the first month of entitlement: a June birth's January-May 2026 are paid under the claim-year convention and not charged, so June and July are the deduction months",
+              "line": 1105
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 345,
+          "note": "a spouse month the worker's excess was charged to, her prorated share paid in full",
+          "tests": [
+            {
+              "title": "credits the spouse benefit in a partial month whose prorated share is her whole benefit (RS 00615.482 B.2)",
+              "line": 353
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 370,
+          "note": "a former spouse's widow(er) benefit, from its first month of entitlement",
+          "tests": [
+            {
+              "title": "charges and credits a former spouse's widow(er) benefit only from its first month of entitlement",
+              "line": 378
             }
           ]
         }
@@ -1373,6 +1581,11 @@
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
         {
           "kind": "statute",
           "citation": "42 U.S.C. 403(f)(1)",
@@ -1391,6 +1604,11 @@
         {
           "kind": "agencyGuidance",
           "citation": "SSA POMS RS 00615.482, § B.1 note",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.482, § B.2",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
         }
       ]
@@ -1508,6 +1726,75 @@
       ]
     },
     {
+      "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
+      "title": "A couple member widowed by the current spouse can be paid on a living ex's record",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The plan states a life age, not a date of death, so the ledger's month of death is December and a survivor is first paid in January; a claimant at or past full retirement age in the month of death could be entitled from that month (RS 00202.010 A.2), which the ledger does not pay. Until 2026-09-29 the engine priced a living ex's record only for a one-person household, even after the current spouse's death. The companion test takes a woman born in February 1962 with a 400 dollar PIA, claimed at 64, whose husband dies in December 2027, and a living ex with a 4,000 dollar PIA after a 12-year marriage: from 2028 she is paid 320 dollars plus 1,600 dollars reduced for her 791 months, 1,775.56 a month, 21,306.67 dollars, where the widow benefit alone paid 7,920.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/householdYear.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "maritalBenefitFor",
+              "line": 252
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 271,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays a widowed couple member on a living ex's record from January after the death",
+              "line": 278
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(b)(1)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00202.046",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300202046"
+        }
+      ]
+    },
+    {
       "id": "usc-42-402-b-2-spousal-half-of-pia",
       "title": "A spousal benefit is half the PIA and earns no delayed credits",
       "classification": "settled",
@@ -1543,7 +1830,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -1561,7 +1848,7 @@
           "functions": [
             {
               "name": "spousalBenefitFactor",
-              "line": 70
+              "line": 74
             }
           ]
         },
@@ -1570,7 +1857,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 196
+              "line": 252
             }
           ]
         }
@@ -1633,7 +1920,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2038,7 +2325,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2261,7 +2548,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2281,16 +2568,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1248,
+          "line": 1305,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1256
+              "line": 1313
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1283
+              "line": 1340
             }
           ]
         }
@@ -2440,7 +2727,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2462,7 +2749,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 196
+              "line": 252
             }
           ]
         }
@@ -2551,17 +2838,19 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that nine months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,765.29. The earnings-test months are counted in whole months per year by the same annual approximation as the own benefit (poms-rs-00615-482-arf-crediting-months). For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim. The own old-age benefit’s reduction is credited with every withheld month, including the months in which the widow(er) benefit was the one paid: a widow(er) entitled to both is paid the own benefit plus the widow(er) excess (402(k)(3)(A)), which the projection pays as the larger of the two, and the earnings test makes its deductions from every payment to which she is entitled (403(b)(1)), so in such a month the old-age benefit, too, was subject to deductions (402(q)(7)(A); 20 CFR 404.412(a)(1)). A second companion test prices a widow born in June 1965 with a 2,000 dollar PIA who claims at 62 in 2027, widowed in 2026 by a worker with a 2,400 dollar PIA who claimed at 62: 60 months withheld from her widow(er) benefit through 2031 take her own benefit to 2,000 dollars in 2032, above the 1,980 dollar limit, so she is paid 24,000 dollars, where crediting only months in which her own benefit was the one paid would keep it at 1,400 and pay 23,760. The widow(er) and spouse counts are kept for each record the benefit is paid on, the current spouse or each former-spouse entry (annualSocialSecurity.ts#auxiliaryBenefitSourceKey), because 402(q)(7)(A) excludes only the months in which “such benefit” was withheld: a third companion test gives the same widow a 1,000 dollar PIA and a former spouse with a 2,200 dollar PIA who died after claiming at full retirement age; the 60 months withheld from her current husband’s widow(er) benefit take it to the 1,980 dollar limit in 2032 and leave the former spouse’s at 1,752.14, so she is paid 23,760 dollars, where crediting them to both records would pay 26,400.",
+      "conventionRationale": "The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that ten months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,871.14. The crediting months are the months of each benefit's reduction period with a deduction (poms-rs-00615-482-arf-crediting-months), and they take effect in the survivor full-retirement-age month (cfr-20-404-412-b-arf-effective-fra-month). A third test takes a widow born in January 1960, whose survivor full retirement age of 66 and 8 months falls in September 2026 and whose old-age full retirement age in January 2027: of the eleven months her 2026 wages withhold, only January to August are in the widow(er) reduction period, so from 2027 her widow(er) benefit is priced 48 months early, 19,896 dollars a year, where crediting all eleven paid 20,152.50. For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim, or, when a remarriage before 60 bars it until the current spouse’s death, with the January after that death (POMS RS 00207.003 A: “Entitlement can begin with the month the subsequent marriage terminated”; the projection pays no survivor benefit for the months of the death year, as above). Until the implementation review of D-SS-ANALYSIS-EARNINGS-TEST the engine reduced that benefit from the claimant’s own claim as well. Another companion test (the review’s case B) takes a claimant born in February 1964 who claims at 62 and remarried at 55 to a husband who dies in December 2030: from January 2031, at 803 months, one month before her survivor full retirement age, the benefit on her first husband, whose PIA was 3,000 dollars, pays 3,000 times (1 minus 0.285 over 84), 35,877.86 dollars a year, where the reduction from her own claim at 744 months pays 28,671.43. A further test holds the age-60 boundary: with the same first husband, a 1,200 dollar PIA of her own and a current husband with a 2,200 dollar PIA who dies in December 2032, a remarriage at exactly 60 is disregarded, so the benefit is reduced from her own claim and pays 28,671.43 dollars in 2033, while a remarriage at 59 bars it until the death and pays the unreduced 36,000 from January 2033, past her survivor full retirement age. The own old-age benefit’s reduction is credited with every withheld month of its own reduction period, including the months in which the widow(er) benefit was the one paid: a widow(er) entitled to both is paid the own benefit plus the widow(er) excess (402(k)(3)(A)), which the projection pays as the larger of the two, and the earnings test makes its deductions from every payment to which she is entitled (403(b)(1)), so in such a month the old-age benefit, too, was subject to deductions (402(q)(7)(A); 20 CFR 404.412(a)(1)). A second companion test prices a widow born in January 1965 with a 2,000 dollar PIA who claims at 62 in January 2027, widowed in 2026 by a worker with a 2,400 dollar PIA who claimed at 62: 60 months withheld from her widow(er) benefit through 2031 take her own benefit to 2,000 dollars in 2032, above the 1,980 dollar limit, so she is paid 24,000 dollars, where crediting only months in which her own benefit was the one paid would keep it at 1,400 and pay 23,760. The widow(er) and spouse counts are kept for each record the benefit is paid on, the current spouse or each former-spouse entry (householdYear.ts#auxiliaryBenefitSourceKey), because 402(q)(7)(A) excludes only the months in which “such benefit” was withheld: a third companion test gives the same widow a 1,000 dollar PIA and a former spouse with a 2,200 dollar PIA who died after claiming at full retirement age; the 60 months withheld from her current husband’s widow(er) benefit take it to the 1,980 dollar limit in 2032 and leave the former spouse’s at 1,752.14, so she is paid 23,760 dollars, where crediting them to both records would pay 26,400.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-27",
-      "dueOn": "2027-09-27",
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts",
         "packages/engine/src/socialSecurity/nra.ts",
         "packages/engine/src/socialSecurity/survivorBenefit.ts"
       ],
@@ -2571,7 +2860,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2581,6 +2870,24 @@
             {
               "name": "simulatePlan",
               "line": 423
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "formerSpouseSurvivorEntitlementAgeMonths",
+              "line": 164
             }
           ]
         },
@@ -2605,28 +2912,29 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
-        "packages/engine/src/projection/simulate.widowEntitlement.test.ts"
+        "packages/engine/src/projection/simulate.widowEntitlement.test.ts",
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
-          "line": 178,
+          "line": 203,
           "note": "months withheld from a paid widow(er) benefit credit the own old-age reduction too",
           "tests": [
             {
               "title": "credits months withheld while the widow(er) benefit was paid to the own reduction (24,000 in 2032, not 23,760)",
-              "line": 186
+              "line": 211
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
-          "line": 224,
+          "line": 249,
           "note": "months withheld from one widow(er) benefit do not credit a widow(er) benefit on another record",
           "tests": [
             {
               "title": "keeps the months withheld from one widow(er) benefit off another record's reduction (23,760 in 2032, not 26,400)",
-              "line": 232
+              "line": 257
             }
           ]
         },
@@ -2649,6 +2957,39 @@
             {
               "title": "credits at the survivor FRA only the months the widow(er) benefit itself was withheld",
               "line": 69
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 214,
+          "note": "a remarriage before 60 that ends with the current spouse's death",
+          "tests": [
+            {
+              "title": "reduces the benefit freed by the end of a pre-60 remarriage from its own first month of entitlement (case B)",
+              "line": 223
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 248,
+          "note": "a remarriage at exactly 60 does not bar the benefit, so its reduction runs from the own claim",
+          "tests": [
+            {
+              "title": "reduces from the own claim when the remarriage was at 60, and from the January after the death when it was at 59",
+              "line": 256
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 295,
+          "note": "months withheld after the survivor full-retirement-age month are not credited",
+          "tests": [
+            {
+              "title": "credits the widow(er) benefit only with months before the survivor FRA month (E9)",
+              "line": 303
             }
           ]
         }
@@ -2690,6 +3031,11 @@
           "kind": "regulation",
           "citation": "20 CFR 404.412(a)(1)",
           "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00207.003 A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300207003"
         }
       ]
     },
@@ -2727,7 +3073,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -2820,7 +3166,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -3095,7 +3441,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -3149,24 +3495,23 @@
       ]
     },
     {
-      "id": "usc-42-403-f-1-earnings-test-month-charging",
-      "title": "Excess earnings are charged to calendar months, not annual benefit fractions",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion test each below-FRA working year's 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their tests intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable; reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).",
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "title": "A worker's excess earnings are charged first against the family benefit on his record",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "In a couple the worker is the one a spouse benefit is paid on, the higher PIA, as the ledger chooses the lower earner's spouse benefit; the spouse benefit on his record is her total less her own old-age benefit, after the family maximum and the reductions (404.437). A living former spouse's record carries no plan earnings, and a divorced spouse of two years or more is independent of the ex's earnings (403(b)(2)); the plan has no divorce date, so two years or more is taken. Benefits and the partial-month shares are not rounded (404.304(f) rounds a benefit to the dollar; the engine does not, and 404.439 prorates before that rounding). Until 2026-09-29 the engine charged a worker's wages against his own benefit only. The companion tests give a worker with a 2,000 dollar PIA, claiming at 62 with 60,000 dollars of 2026 wages, and a spouse with a 400 dollar PIA, also claiming at 62: his 17,760 dollar excess takes their 1,790 dollar family benefit for nine months and 1,650 dollars of October, whose other 140 dollars are shared 93.33 and 46.67, so he is paid 2,893.33 dollars and she 4,186.67 in 2026, where the engine paid 0 and 8,040; with 36,000 dollars of her own wages too, her 5,760 dollar excess takes what is left of her benefits, and she is paid nothing, where charging her own old-age benefit only in months her spouse benefit was paid would pay 2,520.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
-        "packages/engine/src/projection/simulate.ts"
+        "packages/engine/src/socialSecurity/earningsTest.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
         {
@@ -3174,7 +3519,140 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/earningsTest.ts",
+          "functions": [
+            {
+              "name": "earningsTestYear",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 61,
+          "note": "the family charge and the two-to-one partial month",
+          "tests": [
+            {
+              "title": "charges the worker's excess against his benefit and the spouse benefit on his record (E5)",
+              "line": 69
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 85,
+          "note": "her own excess against her own benefit after his",
+          "tests": [
+            {
+              "title": "charges her excess against her own old-age benefit in months his excess took her spouse benefit (E7b)",
+              "line": 94
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 322,
+          "note": "the worker's share of a partial month held to his own benefit",
+          "tests": [
+            {
+              "title": "gives the other the part of the worker's share above his own benefit (404.440)",
+              "line": 330
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/403"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.434(b)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.434(b)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.439",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.439"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.440",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.440"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.150, § A.1",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501150"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.482, § B.2",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-1-earnings-test-month-charging",
+      "title": "Excess earnings are charged to calendar months, first to last, and never to a month from full retirement age on",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Under the claim-year convention a claim at a whole age pays the whole calendar year it is attained (social-security-payable-months), so the months of that year before the claim's first month of entitlement are paid, though the person is not entitled then. They are paid in full and never charged (403(f)(1)(A): \"no part of the excess earnings of an individual shall be charged to any month (A) for which such individual was not entitled to a benefit\"); the convention itself is the recorded departure. A benefit on another record that the convention pays before its own first month of entitlement (a spouse benefit that starts with the worker's later claim) is likewise not charged in those months, while the own benefit already entitled is. This decision's first implementation charged those months and credited none of them, until the implementation review. Until 2026-09-29 the engine withheld one annual amount and converted its ratio to the year's benefit into a rounded count of months. The companion test, which shares its observable with poms-rs-00615-482-arf-crediting-months, charges each year's 2,000 dollar excess to a 1,400 dollar January and 600 dollars of February: two deduction months a year, 17,800 dollars a year after full retirement age, where the annual ratio gave one and 17,300.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/analysis/survivorSwitching.ts",
+        "packages/engine/src/socialSecurity/earningsTest.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 44
             }
           ]
         },
@@ -3186,6 +3664,33 @@
               "line": 423
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/survivorSwitching.ts",
+          "functions": [
+            {
+              "name": "strategyStreamWithEarningsTest",
+              "line": 201
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/earningsTest.ts",
+          "functions": [
+            {
+              "name": "earningsTestYear",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
         }
       ],
       "fixtureFiles": [
@@ -3194,12 +3699,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1062,
+          "line": 1118,
           "note": "shares the ARF observable",
           "tests": [
             {
-              "title": "collapses the charging sequence into the annual ratio",
-              "line": 1071
+              "title": "charges the first month and then the next, each a deduction month",
+              "line": 1126
             }
           ]
         }
@@ -3211,28 +3716,125 @@
           "kind": "statute",
           "citation": "42 U.S.C. 403(f)(1)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.095, § B",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501095"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-3-fra-year-months-before-fra",
+      "title": "In the year full retirement age is reached, only the months before the FRA month are tested",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The plan has a year of wages; the months before the FRA month earn the year's wages times their number over twelve (usc-42-403-f-3-retirement-earnings-test). Until 2026-09-29 the engine tested the whole year's wages in the calendar year of the FRA's whole years and charged the whole year's benefit. The companion tests take a person born 15 July 1960, full retirement age in July 2027, who claimed at 62 and earns 100,000 dollars in 2026 and 2027: January to June earn 50,000, under the 65,160 dollar higher amount, so nothing is withheld in 2027 and she is paid 17,400 dollars, where the whole year's wages withheld 11,613.33 and paid 6,386.67; with 150,000 dollars the excess is 3,280 and she is paid 14,270 dollars, where the engine paid nothing; born 15 January 1960 (FRA month January 2027) she is paid 18,000 dollars, where the engine paid 6,386.67.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/earningsTest.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/earningsTest.ts",
+          "functions": [
+            {
+              "name": "earningsTestYear",
+              "line": 186
+            },
+            {
+              "name": "excessEarnings",
+              "line": 86
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
+          "line": 65,
+          "note": "a path whose only wages fall in the year full retirement age is reached",
+          "tests": [
+            {
+              "title": "tests a path whose only wages before full retirement age fall in the FRA year",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 116,
+          "note": null,
+          "tests": [
+            {
+              "title": "tests only the earnings of the months before the FRA month in its year (E2, E2b, E2c)",
+              "line": 123
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.434(c)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.434"
         }
       ]
     },
     {
       "id": "usc-42-403-f-3-retirement-earnings-test",
-      "title": "The earnings test withholds half the excess, a third in the FRA year",
+      "title": "The earnings test withholds half the excess, and in the FRA year a third of the excess of the months before FRA",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention (it is section 403(b)), but it is worth naming here because it means a test whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.",
+      "conventionRationale": "The plan holds a year of wages, not the wages of each month, so the engine spreads each year of wages evenly over its months: in the year full retirement age is reached, the earnings counted are the year's wages times the months before the FRA month over twelve, against the full higher exempt amount (20 CFR 404.430(a)(1) applies the full annual amount to the months before FRA). A plan whose wages stop in the year the full retirement age is reached still counts the months of that year before the FRA month, since the plan does not say in which month the work stopped; the grace year that month would open is recorded at cfr-20-404-435-grace-year-monthly-earnings-test. The month-by-month charging is usc-42-403-f-1-earnings-test-month-charging, the family charge usc-42-403-b-1-worker-excess-charged-to-family, and the FRA-year months usc-42-403-f-3-fra-year-months-before-fra. Until 2026-09-29 the engine applied one annual amount, tested the whole year's wages in the FRA year, and did not reduce the excess to the dollar. The companion test withholds 7,760 dollars from a benefit claimed at 62 on 40,000 dollars of 2026 wages, and 3,280 dollars in a 2027 FRA year (FRA month June) on 180,000 dollars of wages, five months of which, 75,000 dollars, exceed the higher amount by 9,840.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-01-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/earningsTest.ts"
+        "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+        "packages/engine/src/socialSecurity/earningsTest.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
         {
@@ -3249,7 +3851,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -3263,11 +3865,33 @@
           ]
         },
         {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+          "functions": [
+            {
+              "name": "householdPathYear",
+              "line": 176
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/socialSecurity/earningsTest.ts",
           "functions": [
             {
-              "name": "earningsTestWithheldAnnual",
-              "line": 36
+              "name": "earningsTestYear",
+              "line": 186
+            },
+            {
+              "name": "excessEarnings",
+              "line": 86
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
             }
           ]
         }
@@ -3278,12 +3902,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 858,
+          "line": 878,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 867
+              "line": 888
             }
           ]
         }
@@ -3298,8 +3922,100 @@
         },
         {
           "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
           "citation": "42 U.S.C. 403(b)(1)",
           "url": "https://www.law.cornell.edu/uscode/text/42/403"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-5-earnings-counted",
+      "title": "Only wages count as earnings for the earnings test",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "whose work a recurring income pays for, if any: the person it is earned by"
+      },
+      "conventionRationale": "The plan's recurring income has a label but no person, so it cannot be charged to anyone's benefit, and whether it is pay for work is not recorded; one answerable question, whose work the income is, would settle it, and it also bears on payroll tax and earned-income rules, so it is left to its own decision. The companion test enters a person's 40,000 dollars of 2026 work as a recurring income: her benefit claimed at 62 is paid in full, 16,800 dollars, where the same amount entered as wages withholds 7,760 and pays 9,040.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-09-29",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/wageIncomeStreams.ts",
+        "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "recurringIncomeSchema",
+              "line": 2027
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/wageIncomeStreams.ts",
+          "functions": [
+            {
+              "name": "wageIncomeStreams",
+              "line": 258
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+          "functions": [
+            {
+              "name": "planWages",
+              "line": 429
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 267
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 184,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not test a recurring income, which names no person",
+              "line": 192
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
         }
       ]
     },
@@ -3337,7 +4053,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -3352,7 +4068,9 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/params/params.test.ts"
+        "packages/engine/src/params/params.test.ts",
+        "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
+        "packages/engine/src/socialSecurity/householdYear.test.ts"
       ],
       "fixtures": [
         {
@@ -3367,6 +4085,28 @@
             {
               "title": "derives the higher exempt amount from its own base and reference year",
               "line": 575
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
+          "line": 41,
+          "note": "carried past the latest published year at the plan's inflation, in the models",
+          "tests": [
+            {
+              "title": "prices a path's 2027 against the exempt amounts grown at the plan's inflation",
+              "line": 49
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 398,
+          "note": "carried past the latest published year at the plan's inflation, in the ledger",
+          "tests": [
+            {
+              "title": "tests 2027 against the 2026 amounts grown at the plan's inflation",
+              "line": 406
             }
           ]
         }
@@ -3612,12 +4352,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1227,
+          "line": 1284,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1235
+              "line": 1292
             }
           ]
         }
@@ -3875,7 +4615,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -3950,7 +4690,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },
@@ -4058,7 +4798,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 132
+              "line": 44
             }
           ]
         },

@@ -501,7 +501,7 @@
       "engineSourceTree": "b63271eaed9a0e5cc36db5b525c834b830f5b16d"
     },
     "inputs": {
-      "corpusSourceBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
+      "corpusSourceBlob": "364ec5545916b126cd9c8219612efc72f8d329d2",
       "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
       "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
@@ -516,17 +516,17 @@
     },
     "corpus": {
       "name": "blocks",
-      "members": 121,
-      "membersSha256": "66cff52e468b50043e6b4b1b0e96c5c5c61b1e269b65bb5b4e836f91c443d3a0",
-      "entries": 484
+      "members": 127,
+      "membersSha256": "cd492058d9eaf05e7ab4df120037b197a4474917d11c2dd6e2461eb7b9083d79",
+      "entries": 508
     },
     "capture": {
-      "baseDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
-      "headDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
-      "baseOverallSha256": "bff301c5551a91002abc608b0d060ea8fb4a9d3e246cfab7831cc8b22355b1b9",
-      "headOverallSha256": "bff301c5551a91002abc608b0d060ea8fb4a9d3e246cfab7831cc8b22355b1b9",
+      "baseDumpSha256": "3b3a766f2fb9207ec9ccc37f3b8a9c79eb8a446da91f75ea64b5578ac1a479de",
+      "headDumpSha256": "3b3a766f2fb9207ec9ccc37f3b8a9c79eb8a446da91f75ea64b5578ac1a479de",
+      "baseOverallSha256": "b3abcaba57f1d1c46bfbe2333a0a3d867e72827b9e8bbe5fca5f35c9bb7e3150",
+      "headOverallSha256": "b3abcaba57f1d1c46bfbe2333a0a3d867e72827b9e8bbe5fca5f35c9bb7e3150",
       "entriesMoved": 0,
-      "entriesIdentical": 484,
+      "entriesIdentical": 508,
       "result": "IDENTICAL"
     },
     "allowedMovedEntries": [],
@@ -552,6 +552,13 @@
         "measuredWithBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
         "pinnedBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
         "reason": "After main at c2d61967 (plan schema v7, #765) was merged into the D-2027-ROLLOVER branch, two block members no longer parsed under the current tree: j1 (spending phases in a couple) now names phasesAgeOf p1, the person listed first, whose age its phases followed and whom the v7 migration names, and which a tree before v7 drops; and v3 (three qualified contracts) names p1 as each annuitant instead of no owner, the primary the ownerless fallback resolved to. No other member changed. Re-measured by the procedure the D-SS-ANALYSIS-EARNINGS-TEST branch used for the same change: run with the blob this record was measured with (7a1507c9bbf8e42f2e465195628bd389951c8025, the last entry's measuredWithBlob; the blob it pinned, df82d4ee7fbeeaa41c43b1811f05ddb161b01268, was never measured) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: the member hash 1613a1fc1616 to 66cff52e468b and the dump hashes; members stay 121 and entries 484. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
+      },
+      {
+        "date": "2026-09-29",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "364ec5545916b126cd9c8219612efc72f8d329d2",
+        "pinnedBlob": "364ec5545916b126cd9c8219612efc72f8d329d2",
+        "reason": "Main at 6f668e06 merged into the D-SS-ANALYSIS-EARNINGS-TEST branch. The corpus is main's (whose j1 and v3 v7 edits are the branch's, byte for byte) plus the branch's six block-L members, l10 to l15: the worker's excess charged to the family and both partial-month caps (l15's spouse born in January, so her spouse benefit is entitled, and charged, from the worker's first month), a couple member on a living ex's record after the spouse's death, a spouse who died before his claim, and an SSDI onset at full retirement age. No existing member changed. Re-measured by the same procedure as the entries above: run with the blob the last entry pinned (6332be9dcb1ae7b1038d70e5096708192c59ce5a) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: members 121 to 127, entries 484 to 508, the member hash 66cff52e468b to cd492058d9ea and the dump hashes. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
       }
     ],
     "historicalRecord": {

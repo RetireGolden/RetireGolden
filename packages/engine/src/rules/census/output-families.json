@@ -1255,11 +1255,11 @@
       }
     ],
     "transformations": [
-      "socialSecurity/analysis/breakEven.ts#claimBreakEven: for each compared claim age, accumulate PIA × claim factor × 12 × the ledger's COLA factor and haircut for each calendar year (compounded at the chosen return), and report each pair's crossing age by linear interpolation of the unrounded annual totals; the page rounds the age to a tenth and the dollars to whole dollars."
+      "socialSecurity/analysis/breakEven.ts#claimBreakEven: for each compared claim age, each calendar year's own benefit is priced by the ledger's year function (socialSecurity/householdYear.ts#socialSecurityYear) for that benefit alone: PIA × claim factor × 12 × the ledger's COLA factor and haircut, with the retirement earnings test on the person's wage rows withholding part of it before full retirement age (never in a month before the claim's first month of entitlement) and the months withheld raising it from that age; the totals are compounded at the chosen return, and each pair's crossing age is found by linear interpolation of the unrounded annual totals. The page rounds the age to a tenth and the dollars to whole dollars, and names the person at the claim ages where wages hold part of the benefit back (withheldClaimAges)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/socialSecurity/breakEven.ts#computeBreakEven (COLA compounded from age 62 on a today's-dollar PIA; crossings on whole-dollar-rounded totals) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven on the ledger's COLA factor and haircut (owner decision R6), which BreakEvenTab reads.",
+    "notes": "Computed in planner-ui/src/socialSecurity/breakEven.ts#computeBreakEven (COLA compounded from age 62 on a today's-dollar PIA; crossings on whole-dollar-rounded totals) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven on the ledger's COLA factor and haircut (owner decision R6), which BreakEvenTab reads. Since D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) each year is priced by the ledger's year function, with the earnings test on the person's wages, where the chart had paid the whole benefit.",
     "relocation": {
       "status": "done",
       "target": "engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven"
@@ -1425,11 +1425,11 @@
       }
     ],
     "transformations": [
-      "socialSecurity/analysis/expectedValue.ts#expectedPvSingle and #expectedPvCouple, ranked by #benefitsOnlyRanking: weight each year's benefit (priced by the ledger's rules: claim factor with months and payable months, dual entitlement from the spouse benefit's first month, the widow(er) benefit on the deceased's actual or never-claimed benefit reduced at the first month of widow(er) entitlement and then held to the widow's limit, the former-spouse benefits a single claimant is paid) by survival from the engine's curve, scale it by the real COLA drift and haircut, and discount at the real rate; couples sum over the year of the first death."
+      "socialSecurity/analysis/expectedValue.ts#expectedPvSingle and #expectedPvCouple, ranked by #benefitsOnlyRanking: each path the value weights (both spouses alive, and each survivor after each year of the first death; analysis/householdPaths.ts) is priced year by year by the ledger's year function (socialSecurity/householdYear.ts#socialSecurityYear): the claim factor with months and payable months, dual entitlement from the spouse benefit's first month, the widow(er) benefit on the deceased's actual or never-claimed benefit reduced at the first month of widow(er) entitlement and then held to the widow's limit, the former-spouse benefits the ledger would pay (for a couple member, from the January after the spouse's death), and the retirement earnings test on the plan's wage rows, which withholds benefits before full retirement age, never in a month before a benefit's first month of entitlement, and credits the months back from it. Each year is weighted by survival from the engine's curve, scaled by the real COLA drift and haircut, and discounted at the real rate; couples sum over the year of the first death. Each ranking row names the people whose wages hold part of a benefit back (withheldBy)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/socialSecurity/expectedPv.ts (#expectedPvSingle, #expectedPvCouple, and ssAnalysis.ts#benefitsOnlyRanking with the divorced floor) until B2-P1 slice 4, with a simplified spouse floor, the survivor keeping the larger own benefit and its own survival curve; now engine engine/src/socialSecurity/analysis/expectedValue.ts on the ledger's spouse, divorced and widow(er) rules and the engine's survival curve (owner decision R7), which BenefitsOnlyTab and FicaReturnPanel read.",
+    "notes": "Computed in planner-ui/src/socialSecurity/expectedPv.ts (#expectedPvSingle, #expectedPvCouple, and ssAnalysis.ts#benefitsOnlyRanking with the divorced floor) until B2-P1 slice 4, with a simplified spouse floor, the survivor keeping the larger own benefit and its own survival curve; now engine engine/src/socialSecurity/analysis/expectedValue.ts on the ledger's spouse, divorced and widow(er) rules and the engine's survival curve (owner decision R7), which BenefitsOnlyTab and FicaReturnPanel read. Since D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) the value prices each path with the ledger's year function, so the earnings test and a couple member's former-spouse benefits after the spouse's death are counted, where the value had paid every benefit in full and priced former-spouse benefits for single claimants only.",
     "relocation": {
       "status": "done",
       "target": "engine/src/socialSecurity/analysis/expectedValue.ts#expectedPvCouple"
@@ -1437,11 +1437,11 @@
   },
   {
     "transformations": [
-      "socialSecurity/analysis/oasdiReturn.ts#oasdiReturnForPerson: (the expected PV at the person's claim age, with months and the former-spouse benefits the ledger would pay, a divorced spouse's only in a single household, plus the benefits received from the claim year to the year before the start at the start-year amount) / (the OASDI paid in so far plus the OASDI on the projected work the PIA counts), in today's dollars (#benefitsToContributionsRatio); no ratio when nothing is paid in, and no comparison for a disability benefit from its onset."
+      "socialSecurity/analysis/oasdiReturn.ts#oasdiReturnForPerson: (the expected PV at the person's claim age, with months, the former-spouse benefits the ledger would pay (in a couple, from the January after the spouse's death) and the retirement earnings test on the person's wage rows, plus the benefits received from the claim year to the year before the start at the start-year amount, paid in full) / (the OASDI paid in so far plus the OASDI on the projected work the PIA counts), in today's dollars (#benefitsToContributionsRatio); no ratio when nothing is paid in, and no comparison for a disability benefit from its onset."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/planner/SsAnalysisPage.tsx#FicaReturnPanel (expectedPvSingle over a nominal one-rate sum) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/oasdiReturn.ts (owner decision R8), which FicaReturnPanel reads. The benefits already received are counted since this slice.",
+    "notes": "Computed in planner-ui/src/planner/SsAnalysisPage.tsx#FicaReturnPanel (expectedPvSingle over a nominal one-rate sum) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/oasdiReturn.ts (owner decision R8), which FicaReturnPanel reads. The benefits already received are counted since this slice. Since D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) the get-back counts the earnings test on the person's wages and, in a couple, the former-spouse benefits the ledger pays after the spouse's death.",
     "dimensions": [],
     "basis": "n/a",
     "id": "social-security-fica-return-ratio",
@@ -1553,11 +1553,11 @@
       }
     ],
     "transformations": [
-      "socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies: for each strategy, weight the larger claimed yearly benefit (the survivor benefit from the ledger's helper, the widow's limit after the age reduction) by survival from the engine's curve, scale it by the plan's COLA drift and haircut (expectedValue.ts#realBenefitScale, as the ranking) and discount it; strategies with the same yearly stream collapse to the one with fewer claims, then earlier ages; no input for a disability benefit from its onset."
+      "socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies: for each strategy, weight the larger claimed yearly benefit (the survivor benefit from the ledger's helper, the widow's limit after the age reduction) by survival from the engine's curve, scale it by the plan's COLA drift and haircut (expectedValue.ts#realBenefitScale, as the ranking) and discount it; with the widow(er)'s wage rows, the retirement earnings test is charged month by month against the larger claimed benefit before full retirement age by the ledger's earnings-test year (socialSecurity/earningsTest.ts#earningsTestYear), never against a benefit before its first month of entitlement, and its crediting months raise each benefit from that benefit's own full retirement age, counting only months of its own reduction period, and the survivor benefit also from 62 for the months withheld before 62 (20 CFR 404.412(b)). Strategies with the same yearly stream collapse to the one with fewer claims, then earlier ages; no input for a disability benefit from its onset."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/socialSecurity/survivorSwitching.ts#expectedPvSwitch (with the page's own best-record selection) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/survivorSwitching.ts (#survivorSwitchingInputs picks the record), with identical streams collapsed, which SurvivorSwitchingPanel reads and labels.",
+    "notes": "Computed in planner-ui/src/socialSecurity/survivorSwitching.ts#expectedPvSwitch (with the page's own best-record selection) until B2-P1 slice 4; now engine engine/src/socialSecurity/analysis/survivorSwitching.ts (#survivorSwitchingInputs picks the record), with identical streams collapsed, which SurvivorSwitchingPanel reads and labels. Since D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) the widow(er)'s wages are charged by the earnings test, where every strategy had been paid in full.",
     "relocation": {
       "status": "done",
       "target": "engine/src/socialSecurity/analysis/survivorSwitching.ts#rankSwitchStrategies"

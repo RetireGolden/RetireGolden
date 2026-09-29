@@ -5,12 +5,16 @@
  * with each earlier one's. A teaching lens on one person's own benefit; the
  * whole-plan claim-age sweep is the complete answer.
  *
- * Each year's benefit is the ledger's: the PIA the projection pays from (the
- * resolved start-year PIA), times the claim factor, times twelve (a whole year
- * in the claim-age year, as the ledger pays a claim at a whole age), times the
- * ledger's cost-of-living factor and trust-fund haircut for that calendar year
- * (socialSecurity/colaFactor.ts), so the chart's dollars are the plan's
- * (owner decision R6).
+ * Each year's benefit is the ledger's, priced by the ledger's year function
+ * (socialSecurity/householdYear.ts#socialSecurityYear) for the person's own
+ * benefit alone: the PIA the projection pays from (the resolved start-year
+ * PIA) times the claim factor, for a whole year in the claim-age year (as the
+ * ledger pays a claim at a whole age), times the ledger's cost-of-living factor
+ * and trust-fund haircut for that calendar year (socialSecurity/colaFactor.ts),
+ * so the chart's dollars are the plan's (owner decision R6). With the person's
+ * wages the earnings test withholds part of the benefit before full retirement
+ * age and the months withheld raise it from that age, as the ledger does for
+ * the person's own benefit; nothing else paid on the record is charged here.
  *
  * @see DOCS/calculations/social-security/social-security-claim-break-even.md
  */
@@ -19,6 +23,7 @@ import { inflationFactor, planDollarBasis } from '../../projection/dollarBasis.j
 import { claimFactor } from '../claimFactor.js'
 import { socialSecurityColaFactor, socialSecurityHaircutFactor } from '../colaFactor.js'
 import { effectiveBirthYear, fraForBirthYear, type DobParts } from '../nra.js'
+import { householdPathYear, NO_CREDITS, type PathCredits, type PathHousehold } from './householdPaths.js'
 
 /** The first age on the chart: the earliest age an own retirement benefit can start. */
 export const BREAK_EVEN_FIRST_AGE = 62
@@ -66,6 +71,12 @@ export interface ClaimBreakEvenInput {
   readonly growthPct: number
   /** The last age charted, usually the person's planning age. */
   readonly throughAge: number
+  /**
+   * The person's wages in a year, in that year's dollars (the plan's wage rows,
+   * analysis/expectedValue.ts#personWagesInYear), for the earnings test; none
+   * when omitted.
+   */
+  readonly wagesInYear?: (year: number) => number
 }
 
 export interface ClaimBreakEvenPoint {
@@ -87,19 +98,25 @@ export interface ClaimBreakEvenResult {
   readonly crossings: readonly ClaimBreakEvenCrossing[]
   /** The claim factor, as a fraction of the PIA, by claim age. */
   readonly factors: Readonly<Record<number, number>>
+  /** The claim ages at which the earnings test withholds part of the benefit, in order; empty with no wages. */
+  readonly withheldClaimAges: readonly number[]
 }
 
 /**
  * Cumulative own benefits by age for each claim age, and each pair's crossing.
  *
  * For each age a from 62 through `throughAge`, in calendar year y = birth year
- * + a, and each claim age c: benefit_c(a) = 0 before c, otherwise PIA ×
- * claimFactor(c years, 0 months) × 12 × the ledger's COLA factor for y × its
- * haircut for y; the running total is B_c(a) = B_c(a − 1) × (1 + g) +
- * benefit_c(a). For each pair e < l, walking the ages at which B_e is
- * positive, the crossing is the first age a with D(a) = B_l(a) − B_e(a) ≥ 0,
- * at a − 1 + (−D(a − 1)) / (D(a) − D(a − 1)) when the previous difference was
- * negative, else at a. Nothing is rounded here; the page rounds for display.
+ * + a, and each claim age c: benefit_c(a) is the own benefit the ledger's year
+ * function pays the person in y with the claim at c years and 0 months and no
+ * other benefit on the record: 0 before c, otherwise PIA × claimFactor × 12 ×
+ * the ledger's COLA factor for y × its haircut for y, less what the earnings
+ * test withholds from it on the person's wages, and from the full-retirement-
+ * age month at the claim age raised by the months withheld; the running total
+ * is B_c(a) = B_c(a − 1) × (1 + g) + benefit_c(a). For each pair e < l,
+ * walking the ages at which B_e is positive, the crossing is the first age a
+ * with D(a) = B_l(a) − B_e(a) ≥ 0, at a − 1 + (−D(a − 1)) / (D(a) − D(a − 1))
+ * when the previous difference was negative, else at a. Nothing is rounded
+ * here; the page rounds for display.
  */
 export function claimBreakEven(input: ClaimBreakEvenInput): ClaimBreakEvenResult {
   const { dob, piaMonthly, claimAges, startYear, assumptions, growthPct, throughAge } = input
@@ -114,6 +131,26 @@ export function claimBreakEven(input: ClaimBreakEvenInput): ClaimBreakEvenResult
   }
   const g = growthPct / 100
   const inflationFrom = planInflationFactorFrom(assumptions.inflationPct, startYear, dob.year + throughAge)
+  const isoDob = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`
+  const wagesInYear = input.wagesInYear
+  // The person alone with the own benefit at each claim age: one path each,
+  // carrying the months the earnings test credits from year to year.
+  const households = new Map<number, PathHousehold>()
+  const credits = new Map<number, PathCredits>()
+  for (const claimAge of claimAges) {
+    households.set(claimAge, {
+      people: [{
+        person: { id: 'person', name: 'person', dob: isoDob },
+        stream: { type: 'socialSecurity', id: 'own', personId: 'person', piaMonthly, earnings: null, claimAge: { years: claimAge, months: 0 } },
+        piaMonthly,
+      }],
+      startYear,
+      assumptions,
+      wages: (_personId, year) => (wagesInYear === undefined ? 0 : wagesInYear(year)),
+    })
+    credits.set(claimAge, NO_CREDITS)
+  }
+  const withheldAt = new Set<number>()
 
   const series: ClaimBreakEvenPoint[] = []
   const balance: Record<number, number> = {}
@@ -122,14 +159,25 @@ export function claimBreakEven(input: ClaimBreakEvenInput): ClaimBreakEvenResult
     const year = dob.year + age
     const cumulative: Record<number, number> = {}
     for (const claimAge of claimAges) {
-      const benefit =
-        age < claimAge
-          ? 0
-          : piaMonthly *
-            factors[claimAge]! *
-            12 *
-            socialSecurityColaFactor(assumptions.ssCola, inflationFrom, startYear, year) *
-            socialSecurityHaircutFactor(assumptions.ssHaircut, year)
+      let benefit = 0
+      if (age >= claimAge && year >= startYear) {
+        const pathCredits = credits.get(claimAge)!
+        const result = householdPathYear(households.get(claimAge)!, {
+          year,
+          deaths: new Map(),
+          credits: pathCredits,
+          withWages: wagesInYear !== undefined,
+          cola: socialSecurityColaFactor(assumptions.ssCola, inflationFrom, startYear, year),
+          haircut: socialSecurityHaircutFactor(assumptions.ssHaircut, year),
+        })
+        benefit = result.paidByPerson.get('person') ?? 0
+        if ((result.withheldByPerson.get('person') ?? 0) > 0) withheldAt.add(claimAge)
+        if (result.withheldMonthWrites.length > 0) {
+          const own = new Map(pathCredits.own)
+          for (const write of result.withheldMonthWrites) own.set(write.personId, write.value)
+          credits.set(claimAge, { ...pathCredits, own })
+        }
+      }
       balance[claimAge] = balance[claimAge]! * (1 + g) + benefit
       cumulative[claimAge] = balance[claimAge]
     }
@@ -158,5 +206,5 @@ export function claimBreakEven(input: ClaimBreakEvenInput): ClaimBreakEvenResult
       crossings.push({ early, late, age: crossAge })
     }
   }
-  return { series, crossings, factors }
+  return { series, crossings, factors, withheldClaimAges: [...withheldAt].sort((a, b) => a - b) }
 }

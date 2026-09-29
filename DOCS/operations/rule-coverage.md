@@ -11,19 +11,19 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 575 |
-| Classification: approximated | 123 |
+| Total rules | 581 |
+| Classification: approximated | 122 |
 | Classification: outOfScope | 88 |
-| Classification: settled | 357 |
+| Classification: settled | 364 |
 | Classification: unsettled | 7 |
 | Approximated kind: convention | 23 |
-| Approximated kind: fix | 76 |
-| Approximated kind: needs-fact | 24 |
+| Approximated kind: fix | 74 |
+| Approximated kind: needs-fact | 25 |
 | Volatility: annuallyIndexed | 96 |
 | Volatility: awaitingGuidance | 13 |
-| Volatility: staticStatute | 457 |
+| Volatility: staticStatute | 463 |
 | Volatility: sunsetting | 9 |
-| Federal jurisdiction | 354 |
+| Federal jurisdiction | 360 |
 | State jurisdiction total | 221 |
 
 | State jurisdiction | Count |
@@ -84,12 +84,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 480 |
+| Engine source files | 481 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 94 |
-| registered | 130 |
-| rule-free | 256 |
+| registered | 134 |
+| rule-free | 253 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -107,12 +107,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 12 | 6 | 0 | 6 | 0 |
 | montecarlo | 13 | 2 | 0 | 11 | 0 |
 | params | 19 | 2 | 14 | 3 | 0 |
-| projection | 131 | 43 | 21 | 67 | 0 |
+| projection | 131 | 42 | 23 | 66 | 0 |
 | rmd | 6 | 1 | 4 | 1 | 0 |
 | rules | 68 | 0 | 22 | 46 | 0 |
 | scenarios | 11 | 0 | 0 | 11 | 0 |
 | schema | 11 | 0 | 0 | 11 | 0 |
-| socialSecurity | 23 | 4 | 11 | 8 | 0 |
+| socialSecurity | 24 | 5 | 13 | 6 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 9 | 3 | 5 | 1 | 0 |
 | tax | 20 | 12 | 7 | 1 | 0 |
@@ -175,7 +175,6 @@ None.
 | projection/internal/annualPropertyAndInsuranceClosePhase.ts | 2026-09-29 | the property-events and permanent-life close sub-phase, extracted from annualFundingApplicationAndClosePhase. The property growth, legacy tax-free sale and HECM line accrual stay in independently attested propertyEventsAndGrowth.ts, and cash-value/death-benefit rules stay in annualPermanentLifeTransitions.ts. This sub-phase owns the application order - close the line, deposit, publish, write the value back, then compound what remains - plus HUD split-state commit: a complete servicing ledger replaces only observedServicingBaseline, modeledDebt is conserved, and its annual timing estimate publishes a distinct incomplete issue. The deliberate gating of the legacy-sale payload on the array it feeds and the death-benefit destination assertion remain unchanged. It mutates caller property values, HECM line states and insurance cash values in place; this is not a verbatim move because the HUD component commit and incompleteness publication are calculation behavior. It now passes the projection start year to propertyEventsAndGrowth for the effective sale year (decision D-2027-ROLLOVER, review H1) |
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
 | projection/internal/annualRothConversionExecutionInput.ts | 2026-09-02 | the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan |
-| projection/internal/annualSocialSecurity.ts | 2026-09-27 | current-spouse dual entitlement delegates to the registered dualEntitlement helpers, the widow(er) entitlement month to survivorBenefit#widowEntitlementAgeMonths, and the widow(er) limit to survivorBenefitMonthly. This caller retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and the ARF bookkeeping of own, spouse and widow(er) months. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records |
 | projection/internal/annualStateHouseholdFacts.ts | 2026-09-12 | Recipient section 86/RRB attribution and state claimant/election mapping preserve unknowns; candidate-specific allocation and state household completeness claims remain unregistered. |
 | projection/internal/annualStateRailroadFacts.ts | 2026-09-12 | Derives RRA source-kind, gross and federal-inclusion facts from the pension producer or disjoint additional events; producer-specific gross equality, source attribution and missing-gross refusal remain unregistered adapter contracts. |
 | projection/internal/annualStateRetirementEvents.ts | 2026-09-12 | Actual federally included distribution events are mapped by account and recipient; IRA versus employer-plan and inherited source identity mapping require rule-trail reconciliation. |
@@ -201,7 +200,8 @@ None.
 | projection/simulate.ts | 2026-09-06 | ordered annual projection orchestration. It keeps the earnings-test month counts (all months, and those withheld from a spouse or a widow(er) benefit) across years for annualSocialSecurity. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution (with the analysis-only additionalBracketFill option that the survivor page lever sets), accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly |
 | rmd/applicableAge.ts | 2026-09-05 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (adding deriveRbdComparison only; applicableAgeAttainYears sibling listings on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/analysis/credits.ts | 2026-09-27 | the covered-work credit estimate (covered-work-credit-estimate). Residual: the quarter-of-coverage counting of 42 U.S.C. 413(a)(2)(A) and 20 CFR 404.143(a), the annual amount from 1978 and $50 a quarter before, has no rule record; the calculation record states and cites it |
-| socialSecurity/maritalBenefits.ts | 2026-09-27 | Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
+| socialSecurity/householdYear.ts | 2026-09-29 | one year of a household's Social Security, month by month where a month can differ, then the earnings test: the one year function the projection and the analysis models share; named by social-security-benefit-annual and the earnings-test, crediting, FRA-month, deceased-crediting, divorced-after-widowhood and widow(er)-reduction records; current-spouse dual entitlement delegates to the registered dualEntitlement helpers, the widow(er) entitlement month to survivorBenefit#widowEntitlementAgeMonths (for a former spouse, maritalBenefits#formerSpouseSurvivorEntitlementAgeMonths) and the widow(er) limit to survivorBenefitMonthly. Residual, as it was on annualSocialSecurity.ts: person and stream selection, candidate ordering, COLA, haircut and publication are ledger conventions with no rule record |
+| socialSecurity/maritalBenefits.ts | 2026-09-29 | Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the first month of a former spouse's survivor benefit freed by the end of a remarriage before 60 (formerSpouseSurvivorEntitlementAgeMonths) is named by usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/openClaims.ts | 2026-09-28 | the whole-year claim-age grid, registered under usc-42-402-worker-claim-window-62-to-70 (gridClaimAges). Residual: the already-claimed test (a claim whose year is before the plan's start year is fixed: 42 U.S.C. 402(a), 20 CFR 404.621(a)(3), withdrawal under 404.640(b)(4) and suspension under 402(z) not modeled) has no rule record; the social-security-claim-age-sweep calculation record states and cites it |
 | socialSecurity/piaFromEarnings.ts | 2026-09-27 | Initial-computation base window and annual indexed-earnings penny rounding registered as approximations on records/socialSecurityEarnings.ts; the computation-year count with the 1951 floor, the contribution and benefit base cap and the cost-of-living increases since eligibility are settled there. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | The isTreatAsOwnEffective pre-2020 helper cutoff is registered narrowly as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary (helper only; classifyInheritedRegime and spouseTreatAsOwnCatchUp cutoffs are independent). The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch. |
@@ -239,7 +239,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/medicareAndHealthCoverage.json | 24 |
 | rule-coverage/requiredMinimumDistributions.json | 47 |
 | rule-coverage/rothAccounts.json | 14 |
-| rule-coverage/socialSecurity.json | 53 |
+| rule-coverage/socialSecurity.json | 59 |
 | rule-coverage/socialSecurityEarnings.json | 5 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 6 |
 | rule-coverage/statesMidwest.json | 46 |
@@ -251,7 +251,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (575 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (581 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -276,10 +276,10 @@ The 25 earliest due dates are shown below (575 rules total). Comparing dueOn to 
 | irc-55-d-exemption-phase-out-rate | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-a-2-family-maximum-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| usc-42-403-f-3-retirement-earnings-test | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-415-a-1-pia-bend-point-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | aca-26-51-430-c-published-indexed-standard-deduction | annuallyIndexed | 2026-08-05 | 2026-12-03 |
 | ic-6-3-6-2-2-county-income-tax-shares-the-state-base | annuallyIndexed | 2026-08-05 | 2026-12-03 |
+| irc-408-d-8-A-named-qcd-limit-after-the-pack-year | annuallyIndexed | 2026-08-05 | 2026-12-03 |
 
 ## Manifest contract
 
@@ -293,7 +293,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1740 authority entries.
+Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1765 authority entries.
 Amended on 2026-09-26: 2 entries verified individually after that run (cfr-20-404-313-delayed-retirement-credit, 20 CFR 404.313(a), (b)(2); usc-42-402-e-survivor-of-worker-who-died-before-claiming, 42 U.S.C. 402(w)(2)(A)). Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.
 Amended on 2026-09-26: 16 entries verified individually after that run (rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.01; rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.02; irc-36B-d-3-B-poverty-line-for-coverage-year, IRC 36B(d)(3)(B); irc-36B-d-3-B-poverty-line-for-coverage-year, 26 CFR 1.36B-1(h); irc-36B-d-3-B-poverty-line-for-coverage-year, 45 CFR 155.410(e)(5)(i); hhs-2026-poverty-guidelines-2027-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Alaska; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Hawaii; hhs-2025-poverty-guidelines-2026-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Alaska; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Hawaii; irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e); irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e); irc-36B-c-1-A-applicable-taxpayer-range, IRC 36B(c)(1)(E)). Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.
 Amended on 2026-09-26: 3 entries verified individually after that run (cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(1); cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(3), Example 1; cfr-26-1-36B-3-g-1-applicable-percentage-rounding, Instructions for Form 8962 (2025), Worksheet 2, line 4). Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.
@@ -337,15 +337,18 @@ Amended on 2026-09-28: 6 entries verified individually after that run (dc-code-4
 Amended on 2026-09-28: 6 entries verified individually after that run (wa-essb-6346-2028-income-tax, ESSB 6346, ch. 238, Laws of 2026, section 201; wa-essb-6346-2028-income-tax, ESSB 6346, ch. 238, Laws of 2026, section 314; wa-essb-6346-2028-income-tax, ESSB 6346, ch. 238, Laws of 2026, section 302(1); wa-essb-6346-2028-income-tax, ESSB 6346, ch. 238, Laws of 2026, section 302(3); wa-essb-6346-2028-income-tax, ESSB 6346, ch. 238, Laws of 2026, approval; wa-essb-6346-2028-income-tax, Washington Secretary of State, Submitted Signature Statistics, Initiative 645). D-2027-PUBLISHED-FIGURES, round-three review F9 (2026-09-28): wa-essb-6346-2028-income-tax names section 302(3), the add-back of Washington capital gains for a filer who owes the RCW 82.87 tax, as a stated limit, and quotes it from the session law PDF (elided at the line numbers). All six quotes checked by a live verify-quotes --refresh run on 2026-09-28; the section 201 quote stays PDF-NOT-VERIFIABLE (advisory) for its em dash.
 Amended on 2026-09-28: 5 entries verified individually after that run (ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, R.I. Gen. Laws §44-30-12(c)(8)(i); ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025; ri-gen-laws-44-30-12-c-8-c-9-2026-modifications, Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2). D-2027-PUBLISHED-FIGURES, round-three review F8 (2026-09-28): ri-gen-laws-44-30-12-c-8-c-9-2026-modifications quotes the Division of Taxation's 2025 Modification Worksheet for taxable Social Security (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the link was found by reading the forms page in the in-app browser), whose Step 2 prorates the modification when only one spouse has reached full retirement age. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.
 Amended on 2026-09-28: 6 entries verified individually after that run (dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I); dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi); dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Act 26-416, sec. 9003; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Code 47-1801.04(44)(A)(iv), permanent version; dc-code-47-1801-04-3a-standard-deduction-2026-2029, D.C. Code 47-1801.04, code site note on D.C. Law 26-89). D-2027-PUBLISHED-FIGURES, verification pass L3 (2026-09-28): the District of Columbia record, settled since the round-three review, is renamed to dc-code-47-1801-04-3a-standard-deduction-2026-2029, so its id no longer ends in "pending"; its six rows are unchanged apart from the id.
+Amended on 2026-09-29: 31 entries verified individually after that run (usc-42-403-f-3-retirement-earnings-test, 42 U.S.C. 403(f)(3); usc-42-403-f-3-retirement-earnings-test, 42 U.S.C. 403(f)(3); usc-42-403-f-3-retirement-earnings-test, 42 U.S.C. 403(b)(1); poms-rs-00615-482-arf-crediting-months, 42 U.S.C. 402(q)(7)(A); poms-rs-00615-482-arf-crediting-months, 42 U.S.C. 403(f)(1); poms-rs-00615-482-arf-crediting-months, 20 CFR 404.415(a); poms-rs-00615-482-arf-crediting-months, SSA POMS RS 00615.482, § B.1; poms-rs-00615-482-arf-crediting-months, SSA POMS RS 00615.482, § B.1 note; poms-rs-00615-482-arf-crediting-months, SSA POMS RS 00615.482, § B.2; usc-42-403-f-1-earnings-test-month-charging, 42 U.S.C. 403(f)(1); usc-42-403-f-1-earnings-test-month-charging, 42 U.S.C. 403(f)(1); usc-42-403-f-1-earnings-test-month-charging, SSA POMS RS 02501.095, § B; usc-42-403-b-1-worker-excess-charged-to-family, 42 U.S.C. 403(b)(1); usc-42-403-b-1-worker-excess-charged-to-family, 42 U.S.C. 403(b)(1); usc-42-403-b-1-worker-excess-charged-to-family, 20 CFR 404.434(b)(1); usc-42-403-b-1-worker-excess-charged-to-family, 20 CFR 404.434(b)(3); usc-42-403-b-1-worker-excess-charged-to-family, 20 CFR 404.439; usc-42-403-b-1-worker-excess-charged-to-family, 20 CFR 404.440; usc-42-403-b-1-worker-excess-charged-to-family, SSA POMS RS 02501.150, § A.1; usc-42-403-b-1-worker-excess-charged-to-family, SSA POMS RS 00615.482, § B.2; usc-42-403-f-3-fra-year-months-before-fra, 42 U.S.C. 403(f)(3); usc-42-403-f-3-fra-year-months-before-fra, 42 U.S.C. 403(f)(1); usc-42-403-f-3-fra-year-months-before-fra, 20 CFR 404.434(c); cfr-20-404-412-b-arf-effective-fra-month, 20 CFR 404.412(b); cfr-20-404-412-b-arf-effective-fra-month, 42 U.S.C. 402(q)(7); poms-rs-00615-320-b-2-c-deceased-crediting-months, SSA POMS RS 00615.320, § B.2.c; poms-rs-00615-320-b-2-c-deceased-crediting-months, SSA POMS RS 00615.598, § A; poms-rs-00615-320-b-2-c-deceased-crediting-months, SSA POMS RS 00615.598, § B; usc-42-403-f-5-earnings-counted, 42 U.S.C. 403(f)(5)(A); usc-42-402-b-1-C-divorced-spouse-after-widowhood, 42 U.S.C. 402(b)(1)(C); usc-42-402-b-1-C-divorced-spouse-after-widowhood, SSA POMS RS 00202.046). Decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the earnings-test records restated with the family charge, the months before the full-retirement-age month, reduction-period crediting and the adjustment from the full-retirement-age month, and four records added (the worker's excess charged to the family, the adjustment's effective month, the deceased's crediting months, a couple member's former-spouse record after widowhood). Each row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.
+Amended on 2026-09-29: 2 entries verified individually after that run (cfr-20-404-412-b-arf-effective-fra-month, 20 CFR 404.412(b); cfr-20-404-412-b-arf-effective-fra-month, 42 U.S.C. 402(q)(7)). After the implementation review of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): the 20 CFR 404.412(b) quotation on cfr-20-404-412-b-arf-effective-fra-month now includes the sentence on the widow(er) adjustment at 62. The row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.
+Amended on 2026-09-29: 8 entries verified individually after that run (usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 42 U.S.C. 402(q)(6)(A)(iii); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 42 U.S.C. 402(q)(3)(E); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 42 U.S.C. 402(q)(7)(A); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 20 CFR 404.410(c)(1); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 20 CFR 404.621(a)(4)(ii); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 42 U.S.C. 403(b)(1); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, 20 CFR 404.412(a)(1); usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month, SSA POMS RS 00207.003 A). After the second verification of D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month now cites POMS RS 00207.003 A, the month a survivor benefit barred by a remarriage before 60 can begin. Its rows were verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.
 
-10 serious, 6 advisory, 1724 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+10 serious, 6 advisory, 1749 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 142 |
 | ELISION-PUNCTUATION | advisory | 1 |
-| EXACT | ok | 1176 |
+| EXACT | ok | 1201 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |
 | PDF-WORD-LEVEL | ok | 406 |
 | PUNCTUATION | advisory | 4 |

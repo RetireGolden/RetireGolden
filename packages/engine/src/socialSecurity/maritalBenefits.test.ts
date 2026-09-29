@@ -119,8 +119,10 @@ describe('survivor eligibility', () => {
     expect(maritalBenefitFor({ ...deceased, marriageYears: 0.5 }, baseCtx)).toBeNull()
   })
 
-  it('forfeits survivor when the claimant remarried before 60', () => {
-    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 55 }, baseCtx)).toBeNull()
+  it('bars survivor after a remarriage before 60 only while the claimant is married (POMS RS 00207.003 A)', () => {
+    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 55 }, { ...baseCtx, claimantIsSingle: false })).toBeNull()
+    // Unmarried now, the later marriage has ended: the benefit is payable again.
+    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 55 }, baseCtx)).not.toBeNull()
   })
 
   it('preserves survivor when the claimant remarried at or after 60', () => {

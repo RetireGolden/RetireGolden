@@ -1,6 +1,6 @@
 # Mutation receipt: survivor-reduction-entitlement-month
 
-Executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/survivorBenefit.ts`
 
@@ -30,18 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for B2-P1 slice 4 because a comment above its hunk or in its test file changed (the planner-ui copy of the survival curve is deleted, and the survivor helper names its two analysis callers); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.survivorEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The Social Security year moved into one function the ledger and the analysis models share, with the earnings test charged month by month (decision D-SS-ANALYSIS-EARNINGS-TEST), so the mutation is re-executed on that code. The baseline is green (annualSocialSecurity.survivorEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts (6 tests | 5 failed) 80ms
+ ❯ src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts (6 tests | 5 failed) 92ms
    ❯ survivor-reduction-entitlement-month — Widow(er) reduction from the first month of widow(er) entitlement (6)
      × entitlement ages: the later of the own claim and the January after the year of death (775, 772, 792) 4ms
-     × case A: the survivor is reduced at her age in January 2029, then held to the limit (19,800, not 15,769.29) 39ms
-     × case B: first paid as a widow at 772 months, the survivor is paid the 2,145 limit (25,740, not 20,500.07) 9ms
-     × case D: months withheld from her own benefit before the death are not credited to the widow(er) benefit 10ms
-     × case E: months withheld from the widow(er) benefit are credited at the survivor full retirement age 9ms
+     × case A: the survivor is reduced at her age in January 2029, then held to the limit (19,800, not 15,769.29) 45ms
+     × case B: first paid as a widow at 772 months, the survivor is paid the 2,145 limit (25,740, not 20,500.07) 11ms
+     × case D: months withheld from her own benefit before the death are not credited to the widow(er) benefit 11ms
+     × case E: months withheld from the widow(er) benefit are credited from the survivor full-retirement-age month 10ms
 
  Test Files  1 failed (1)
       Tests  5 failed | 1 passed (6)
@@ -131,8 +131,8 @@ AssertionError: caseD 2027 24848.571428571428 is not within 0.005 of the workshe
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
 
- FAIL  src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts > survivor-reduction-entitlement-month — Widow(er) reduction from the first month of widow(er) entitlement > case E: months withheld from the widow(er) benefit are credited at the survivor full retirement age
-AssertionError: caseE 25272 is not within 0.005 of the worksheet's 28130.14: expected false to be true // Object.is equality
+ FAIL  src/projection/internal/annualSocialSecurity.survivorEntitlement.evidence.test.ts > survivor-reduction-entitlement-month — Widow(er) reduction from the first month of widow(er) entitlement > case E: months withheld from the widow(er) benefit are credited from the survivor full-retirement-age month
+AssertionError: caseE 25272 is not within 0.005 of the worksheet's 28236: expected false to be true // Object.is equality
 
 - Expected
 + Received

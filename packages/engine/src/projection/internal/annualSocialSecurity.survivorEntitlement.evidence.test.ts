@@ -61,7 +61,7 @@ describeCalculation(
         caseB: { survivorDob: '1962-09-20', workerDob: '1961-03-05', workerLifeAge: 65, survivorPia: 1_200, workerPia: 2_600, survivorClaim: '62y0m', workerClaim: '63y0m', year: 2027 },
         caseC: { survivorClaim: '66y0m', year: 2028 },
         caseD: { workerClaim: '67y0m', survivorWagesThroughAge: 64, year: 2029 },
-        caseE: { workerClaim: '67y0m', survivorWagesThroughAge: 65, year: 2029 },
+        caseE: { workerClaim: '67y0m', survivorWagesThroughAge: 65, year: 2030 },
       },
       expected: {
         entitlementMonthsA: 775,
@@ -71,11 +71,11 @@ describeCalculation(
         caseB: after('B, 2027'),
         caseC: after('C, 2028'),
         caseD: after('D, 2029'),
-        caseE: after('E, 2029'),
+        caseE: after('E, 2030'),
         beforeA: before('A, 2029'),
         beforeB: before('B, 2027'),
         beforeD: before('D, 2029'),
-        beforeE: before('E, 2029'),
+        beforeE: before('E, 2030'),
       },
       tolerance: { abs: 0.005 },
     },
@@ -122,10 +122,12 @@ describeCalculation(
       expect(withinTolerance(ss(2029), expected.beforeD!, example.tolerance)).toBe(false)
     })
 
-    it('case E: months withheld from the widow(er) benefit are credited at the survivor full retirement age', () => {
+    it('case E: months withheld from the widow(er) benefit are credited from the survivor full-retirement-age month', () => {
       const ss = couple(survivorB, workerB, { years: 62, months: 0 }, { years: 67, months: 0 }, 1_200, 2_600, 66)
-      expectWithin(ss(2029), expected.caseE!, 'caseE')
-      expect(withinTolerance(ss(2029), expected.beforeE!, example.tolerance)).toBe(false)
+      expectWithin(ss(2030), expected.caseE!, 'caseE')
+      expect(withinTolerance(ss(2030), expected.beforeE!, example.tolerance)).toBe(false)
+      // January-August 2029 at the unadjusted 2,317.71, September-December at 2,353.
+      expectWithin(ss(2029), 27_953.714285714286, 'caseE 2029')
     })
   },
 )
