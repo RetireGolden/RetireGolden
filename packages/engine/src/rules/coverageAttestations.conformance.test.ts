@@ -196,10 +196,26 @@ const ENACTED_MODULE_FILE = /\/params\/state\/data\/enacted(\d{4})\.ts$/u
 // Vite requires the options to be an inline object literal.
 const enactedSources = import.meta.glob('../params/state/data/enacted*.ts', { query: '?raw', import: 'default', eager: true })
 
+const isAlphanumeric = (char: string | undefined): boolean =>
+  char !== undefined && ((char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9'))
+
+/**
+ * True when `token` occurs in `text` with no letter or digit just before it
+ * and, unless `openEnd`, none just after. A plain scan rather than a regular
+ * expression built from the token, which the code scanner flags.
+ */
+function standsAlone(text: string, token: string, openEnd = false): boolean {
+  for (let at = text.indexOf(token); at !== -1; at = text.indexOf(token, at + 1)) {
+    if (isAlphanumeric(text[at - 1])) continue
+    if (!openEnd && isAlphanumeric(text[at + token.length])) continue
+    return true
+  }
+  return false
+}
+
 /** A code or field name standing as its own word in the note, not inside a longer name. */
 function namesToken(note: string, token: string): boolean {
-  const escaped = token.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
-  return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`, 'u').test(note)
+  return standsAlone(note, token)
 }
 
 describe('enacted-year state module attestations', () => {
@@ -214,7 +230,7 @@ describe('enacted-year state module attestations', () => {
     expect(filesOnDisk.length).toBeGreaterThan(0)
     expect(filesOnDisk.map((file) => file.year)).toEqual(STATE_ENACTED_YEARS.map((table) => table.year))
     for (const file of filesOnDisk) {
-      expect(file.source, file.path).toMatch(new RegExp(`\\byear: ${file.year},`, 'u'))
+      expect(standsAlone(file.source, `year: ${file.year},`, true), file.path).toBe(true)
     }
   })
 
