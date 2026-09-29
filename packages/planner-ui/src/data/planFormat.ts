@@ -24,7 +24,7 @@
  * - Envelope `kind`s from before the RetireGolden rebrand are still accepted.
  */
 
-import { migratePlanToCurrent } from '@retiregolden/engine/model/migrations'
+import { migratePlanToCurrent, type PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { CURRENT_PLAN_SCHEMA_VERSION, type Plan } from '@retiregolden/engine/model/plan'
 import { ENGINE_VERSION } from '@retiregolden/engine/version'
 
@@ -109,8 +109,14 @@ export function serializeSinglePlan(plan: Plan, startYear: number): string {
   return JSON.stringify(payload, null, 2)
 }
 
+/** A restored plan the migration changed on the way in, with what it changed (the load notice's facts). */
+export interface RestoredPlanRepairs {
+  readonly plan: Plan
+  readonly repairs: readonly PlanLoadRepair[]
+}
+
 export type ParseV2BackupResult =
-  | { ok: true; plans: Plan[]; warnings: string[] }
+  | { ok: true; plans: Plan[]; warnings: string[]; repairs: RestoredPlanRepairs[] }
   | { ok: false; reason: 'too_large' | 'not_json' | 'wrong_kind' | 'unsupported_version' | 'no_valid_plans' }
 
 export function parseV2Backup(json: string): ParseV2BackupResult {
@@ -136,14 +142,19 @@ export function parseV2Backup(json: string): ParseV2BackupResult {
 
   const plans: Plan[] = []
   const warnings: string[] = []
+  // What the migration changed in each restored plan, so the import can say
+  // so as the load notice would (review finding L1): the restored plan is
+  // saved at the current version and never loads through the migration again.
+  const repairs: RestoredPlanRepairs[] = []
   env.plans.forEach((rawPlan, i) => {
     const result = migratePlanToCurrent(rawPlan)
     if (result.ok) {
       plans.push(result.plan)
+      if (result.repairs.length > 0) repairs.push({ plan: result.plan, repairs: result.repairs })
     } else {
       warnings.push(`plan ${i + 1}: skipped (${result.reason})`)
     }
   })
   if (plans.length === 0) return { ok: false, reason: 'no_valid_plans' }
-  return { ok: true, plans, warnings }
+  return { ok: true, plans, warnings, repairs }
 }

@@ -483,7 +483,7 @@ export function SpendingSection() {
             onCommit={(v) =>
               update((d) => {
                 d.expenses.healthcare.pre65MonthlyPremiumPerPerson = v ?? 0
-                invalidateAcaEvidence(d)
+                invalidateAcaEvidence(d, 'premiumChanged')
               })
             }
           />

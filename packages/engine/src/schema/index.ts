@@ -12,7 +12,7 @@
  * means importing it evaluates every generated schema module. New consumers
  * should import the common-case constant and metadata from
  * `@retiregolden/engine/schema/current`, or one historical schema from the
- * explicit `@retiregolden/engine/schema/v1` through `/v5` entry points. The
+ * explicit `@retiregolden/engine/schema/v1` through `/v6` entry points. The
  * zod-backed generator remains isolated at
  * `@retiregolden/engine/schema/generate`.
  *
@@ -32,4 +32,5 @@ export { planJsonSchema as planV1JsonSchema } from './plan.v1.generated.js'
 export { planJsonSchema as planV2JsonSchema } from './plan.v2.generated.js'
 export { planJsonSchema as planV3JsonSchema } from './plan.v3.generated.js'
 export { planJsonSchema as planV4JsonSchema } from './plan.v4.generated.js'
+export { planJsonSchema as planV5JsonSchema } from './plan.v5.generated.js'
 export { planJsonSchema } from './current.js'

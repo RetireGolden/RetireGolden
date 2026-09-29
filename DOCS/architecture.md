@@ -86,7 +86,7 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
-  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **5**.
+  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **6**.
 - **Migrations** are a pure `migratePlanToCurrent` step chain (`engine/model/migrations.ts`); the harness
   exists and is tested. The v1 -> v2 step adds the retirement-action schedule and deterministic IDs to
   already-present typed legacy actions. The v2 -> v3 step advances to the optional durable IRA

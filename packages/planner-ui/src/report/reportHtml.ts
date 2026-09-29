@@ -332,6 +332,12 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null, st
             },
             personName,
             startYear,
+            // The edit that removed a year's contract, as the model recorded it (review finding M2).
+            {
+              acaYearsRemoved: (claim.unpricedAca ?? []).flatMap((year) =>
+                year.removedBy === undefined ? [] : [{ edit: year.removedBy, years: [year.year] }],
+              ),
+            },
           )
     if (refusal !== null) {
       summaryRows.push(['Social Security claim age', escapeHtml(refusal)])

@@ -38,18 +38,24 @@ Year-level `federalTaxSupport` is the worse of broad and NIIT support. NIIT nume
 continuity from broad carries no directional guarantee; consumers must gate on support.
 
 **ACA general-tax compatibility eligibility** is independent of structural PTC support
-codes only. All four conditions must hold:
+codes only. All three conditions must hold:
 
 1. `healthcare.applyAcaCredit === true` (dormant when false)
 2. Exactly one `acaYears` contract for the year (duplicate contracts or legacy premium
-   fallback without a contract → ineligible)
-3. That contract passes the runtime example-input comparison (mismatch → ineligible)
-4. Gross enrollment premium from that contract is greater than zero (zero gross →
+   fallback without a contract → ineligible), read as the run prices it: a
+   `premiumField` contract is filled from the premium field for the run, and a
+   `stated` one charges nothing for a member who has died (rule 08)
+3. Gross enrollment premium from that contract is greater than zero (zero gross →
    ineligible)
+
+Until decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) a fourth condition refused an
+example plan's contract whose premiums differed from the premium field at the run's
+inflation (`example-contract-input-mismatch`); that check, and every read of
+`exampleSourceId` by the projection, are deleted.
 
 Structural codes such as `tax-family-structure-unsupported` or
 `covered-member-duplicate` affect ACA/PTC readiness separately and do not flip
-compatibility eligibility when the four conditions hold. `acaActive` reflects gross
+compatibility eligibility when the three conditions hold. `acaActive` reflects gross
 premium presence under `applyAcaCredit`; it is not the compatibility predicate. A
 characterized broad leaf from a compatible contract does not certify the full ACA/PTC
 contract.

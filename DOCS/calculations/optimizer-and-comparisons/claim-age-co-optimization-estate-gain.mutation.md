@@ -1,15 +1,15 @@
 # Mutation receipt: claim-change-estate-gain
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index ee8744f4..be0d9341 100644
+index 65e5e29c..2aba8001 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -3058,7 +3058,7 @@ export async function optimizePlanCoOptimizingClaimAge(
+@@ -3059,7 +3059,7 @@ export async function optimizePlanCoOptimizingClaimAge(
        winningClaimPatch: winningPatch,
        jointExactEstate: bestEstate,
        currentClaimExactEstate: baseEstate,
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-the merge of slice 4's final head (slice 3 #754, #755, #756, the claimants split) moved the production lines and test titles these receipts quote The baseline is green (optimizePlan.claimGain.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging origin/main 4d2d9d67 into this branch, which moved the hunk. The baseline is green (optimizePlan.claimGain.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 349ms
+ ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 473ms
    ❯ claim-change-estate-gain — Claim-age co-optimization estate gain (3)
-     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 260ms
+     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 373ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 2 passed (3)

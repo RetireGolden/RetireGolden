@@ -19,7 +19,6 @@ export type AcaSupportCode =
   | 'medicare-overlap-unsupported'
   | 'slcsp-benchmark-missing'
   | 'benchmark-only-coverage-unsupported'
-  | 'example-contract-input-mismatch'
   | 'dependent-filing-status-unknown'
   | 'dependent-modeled-person-overlap'
   | 'tax-exempt-interest-unknown'
@@ -85,6 +84,14 @@ export interface YearAcaResult {
     foreignExclusionAddback: number
     requiredFilerDependentMagi: number
   }
+  /**
+   * Where the year's contract premiums came from: 'stated', the coverage
+   * year's actual figures held as written; 'premiumField', filled on this run
+   * from the plan's pre-65 premium grown by the run's healthcare inflation,
+   * for the people alive and under Medicare age. Null without exactly one
+   * contract for the year (the plain premium field is budgeted).
+   */
+  premiumBasis: 'stated' | 'premiumField' | null
   fplRegion: 'contiguous' | 'alaska' | 'hawaii' | null
   /**
    * The poverty line for the contract's tax family and region, published
@@ -117,8 +124,7 @@ export interface YearAcaResult {
   /**
    * Σ over the 12 months of each covered member's SLCSP benchmark premium,
    * counting a month only when that member's enrollment premium for it is
-   * above 0; null without an ACA contract or when the example contract's
-   * inputs mismatch.
+   * above 0; null without exactly one ACA contract for the year.
    */
   applicableSlcspPremium: number | null
   /** Current-year planning result; not actual APTC cash/refund/balance-due reconciliation. */

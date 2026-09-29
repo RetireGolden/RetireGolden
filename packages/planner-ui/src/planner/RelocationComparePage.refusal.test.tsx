@@ -21,6 +21,7 @@ import { PlanCtx, type PlanContextValue } from './planContextCore'
 vi.mock('../relocation/runner', () => ({ runRelocationCompare: vi.fn() }))
 
 import { runRelocationCompare } from '../relocation/runner'
+import { buildLognormalModelConfigForPlan } from '@retiregolden/engine/montecarlo/marketModels'
 import { RelocationComparePage } from './RelocationComparePage'
 
 const BANNED = ['NaN', 'Infinity', 'YYYY-MM-DD', 'baseline', 'proposal', 'finite number', 'inflationScale']
@@ -85,6 +86,14 @@ describe('relocation compare errors in plain words (PR #754)', () => {
       for (const banned of BANNED) expect(text, banned).not.toContain(banned)
     })
   }
+
+  it('runs the success rates on the engine default seed with the headline model (D-MC-DEFAULT-SEED)', async () => {
+    vi.mocked(runRelocationCompare).mockRejectedValueOnce(new Error('stop after the request'))
+    await runCompare()
+    const request = vi.mocked(runRelocationCompare).mock.calls.at(-1)![0]
+    expect(request.monteCarlo?.seed).toBe(6_221_293)
+    expect(request.monteCarlo?.model).toStrictEqual(buildLognormalModelConfigForPlan(appExamplePlanById('example-couple'), 12))
+  })
 
   it('states any other failure in a plain sentence that keeps its text as a detail', async () => {
     vi.mocked(runRelocationCompare).mockRejectedValueOnce(new Error('Relocation compare worker failed'))

@@ -73,10 +73,18 @@ export function createExamplePlan({
 }
 
 /**
- * Curated examples that advertise ACA credits carry complete planning-year
- * contracts even though the standard editor does not yet expose those facts.
- * The SLCSP equals the example's stated enrollment premium; both are explicit
- * example assumptions rather than Marketplace estimates.
+ * Curated examples that advertise ACA credits carry one premium-credit
+ * contract for each year from EXAMPLE_FIXED_YEAR in which someone alive by
+ * planning age has Marketplace months before Medicare, even though the
+ * standard editor does not yet expose those facts. Each is a 'premiumField'
+ * contract (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28): it states only the
+ * year and the facts the example asserts (no tax-exempt interest, no foreign
+ * exclusion, every filing assertion ruled out), and the engine fills the rest
+ * on every run: the region from the state, the tax family from who is alive,
+ * and each covered month's enrollment premium and SLCSP benchmark from the
+ * example's pre-65 premium grown by that run's healthcare inflation. The SLCSP
+ * equals the enrollment premium, an explicit example assumption rather than a
+ * Marketplace estimate, and editing the premium re-prices the credit.
  */
 export function parseExamplePlan(plan: Plan): ReturnType<typeof parsePlan> {
   const healthcare = plan.expenses.healthcare
@@ -90,52 +98,17 @@ export function parseExamplePlan(plan: Plan): ReturnType<typeof parsePlan> {
         (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
       ),
     )
-    const healthInflation =
-      (plan.assumptions.inflationPct + plan.assumptions.healthcareExtraInflationPct) / 100
-    const fplRegion =
-      plan.household.state === 'AK'
-        ? 'alaska' as const
-        : plan.household.state === 'HI'
-          ? 'hawaii' as const
-          : 'contiguous' as const
-
     healthcare.acaYears = []
     for (let year = EXAMPLE_FIXED_YEAR; year <= endYear; year++) {
-      const livingPeople = plan.household.people.filter(
-        (person) =>
-          year - Number(person.dob.slice(0, 4)) <= person.longevity.planningAge,
-      )
-      const coveredPeople = livingPeople
-        .map((person) => {
-          const age = year - Number(person.dob.slice(0, 4))
-          const birthMonth = Number(person.dob.slice(5, 7))
-          const coveredMonths = age < 65 ? 12 : age === 65 ? birthMonth - 1 : 0
-          return { person, coveredMonths }
-        })
-        .filter(({ coveredMonths }) => coveredMonths > 0)
-      if (coveredPeople.length === 0) continue
-
-      const monthlyPremium =
-        healthcare.pre65MonthlyPremiumPerPerson *
-        Math.pow(1 + healthInflation, year - EXAMPLE_FIXED_YEAR)
+      const covered = plan.household.people.some((person) => {
+        const age = year - Number(person.dob.slice(0, 4))
+        const coveredMonths = age < 65 ? 12 : age === 65 ? Number(person.dob.slice(5, 7)) - 1 : 0
+        return age <= person.longevity.planningAge && coveredMonths > 0
+      })
+      if (!covered) continue
       healthcare.acaYears.push({
         year,
-        fplRegion,
-        taxFamilyMembers: livingPeople.map((person, index) => ({
-          personId: person.id,
-          relationship: index === 0 ? 'primary' as const : 'spouse' as const,
-          requiredToFile: 'required' as const,
-          magi: 0,
-        })),
-        coveredMembers: coveredPeople.map(({ person, coveredMonths }) => ({
-          personId: person.id,
-          enrollmentPremiumByMonth: Array.from({ length: 12 }, (_, month) =>
-            month < coveredMonths ? monthlyPremium : 0,
-          ),
-          slcspBenchmarkPremiumByMonth: Array.from({ length: 12 }, (_, month) =>
-            month < coveredMonths ? monthlyPremium : 0,
-          ),
-        })),
+        premiumBasis: 'premiumField',
         taxExemptInterest: { state: 'notApplicable', amount: null },
         foreignExclusionAddback: { state: 'notApplicable', amount: null },
         assertions: {

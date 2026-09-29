@@ -9,7 +9,7 @@
  * `useThresholdSolve.ts` and the card wires both halves to it.
  */
 
-import { guardrailThresholdDollars } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { guardrailThresholdDollars, guardrailThresholdSeedBasis } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 
 import { usePlan } from '../planContextCore'
 import { CheckboxField, PercentField } from '../fields'
@@ -66,6 +66,7 @@ export function RiskBasedGuardrailFields({
             policy.targetSuccessLowerPct = v ?? 70
             delete policy.lowerBalanceThresholdPct
             delete policy.upperBalanceThresholdPct
+            delete policy.balanceThresholdSeed
           })
         }}
       />
@@ -85,6 +86,7 @@ export function RiskBasedGuardrailFields({
             policy.targetSuccessUpperPct = v ?? 95
             delete policy.lowerBalanceThresholdPct
             delete policy.upperBalanceThresholdPct
+            delete policy.balanceThresholdSeed
           })
         }}
       />
@@ -116,9 +118,25 @@ export function RiskBasedThresholdsCallout({ thresholds }: { thresholds: Thresho
   // The thresholds in today's dollars, as the engine publishes them on the
   // base the ledger acts on.
   const published = guardrailThresholdDollars(plan)
+  // Thresholds saved before every plan shared one market draw were solved on
+  // a draw taken from the plan's id (D-MC-DEFAULT-SEED): say so, and the
+  // button below offers to solve them again.
+  const seedBasis = guardrailThresholdSeedBasis(plan)
   if (e.spendingPolicy?.mode !== 'riskBasedGuardrails' || published === null) return null
   return (
     <div className="callout callout--info">
+      {seedBasis?.basis === 'plan-id' ? (
+        <p className="card-hint">
+          <strong>Found with an older draw.</strong> These thresholds were found with the old per-plan random draw;
+          solve again to use the standard draw, the one the Monte Carlo page uses. The thresholds may move slightly.
+        </p>
+      ) : seedBasis?.basis === 'other' ? (
+        <p className="card-hint">
+          <strong>Found with a different draw.</strong> These thresholds were found with a different random draw
+          (seed {seedBasis.seed}); solve again to use the standard draw, the one the Monte Carlo page uses. The
+          thresholds may move slightly.
+        </p>
+      ) : null}
       {published.status === 'anchored' ? (
         <p className="card-hint">
           Solved dollar guardrails for the {e.spendingPolicy.targetSuccessLowerPct ?? 70}–

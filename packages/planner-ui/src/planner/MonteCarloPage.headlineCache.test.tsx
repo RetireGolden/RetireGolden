@@ -17,7 +17,8 @@ import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor } from '../testSupport/settle'
 import { MonteCarloPage } from './MonteCarloPage'
 import { buildModel } from './marketModelPicker'
-import { currentStartYear, seedFromPlanId } from './useProjection'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
+import { currentStartYear } from './useProjection'
 import { HEADLINE_MC_MODEL, publishMcHeadline } from './useMcSuccessRate'
 
 vi.mock('../mc/pool', async (importOriginal) => {
@@ -69,7 +70,7 @@ describe('MonteCarloPage adopts the published headline run (#497)', () => {
     const plan = createSamplePlan()
     // A real, tiny summary under the headline configuration stands in for a 10,000-path run.
     const model = buildModel(HEADLINE_MC_MODEL.kind, plan.assumptions.inflationPct, HEADLINE_MC_MODEL.returnVolPct, HEADLINE_MC_MODEL.equityWeightPct, plan)
-    const published = await actualPool.runMonteCarlo(plan, { startYear: currentStartYear(), pathCount: 8, seed: seedFromPlanId(plan.id), model })
+    const published = await actualPool.runMonteCarlo(plan, { startYear: currentStartYear(), pathCount: 8, seed: DEFAULT_MONTE_CARLO_SEED, model })
     publishMcHeadline(plan, published, currentStartYear())
     mockedRunMc.mockClear()
 

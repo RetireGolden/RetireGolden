@@ -7,6 +7,7 @@ import {
 } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { simulatePlan } from './simulate.js'
+import { statedAcaYears } from '../testing/planFixtures.js'
 import {
   basePlan,
   cash,
@@ -119,7 +120,7 @@ describe('healthcare and penalties', () => {
       plan.assumptions.inflationPct = 2.5
       currentYearAca(plan)
       for (const year of [2027, 2028]) {
-        const next = structuredClone(plan.expenses.healthcare.acaYears![0]!)
+        const next = structuredClone(statedAcaYears(plan)[0]!)
         next.year = year
         plan.expenses.healthcare.acaYears!.push(next)
       }
@@ -319,7 +320,7 @@ describe('healthcare and penalties', () => {
     }).years[0]!
     expect(overlapping.aca?.supportCodes).toContain('medicare-overlap-unsupported')
 
-    const spouse = plan.expenses.healthcare.acaYears![0]!.coveredMembers.find(
+    const spouse = statedAcaYears(plan)[0]!.coveredMembers.find(
       (member) => member.personId === 'p2',
     )!
     spouse.enrollmentPremiumByMonth.fill(0, 8)
@@ -336,9 +337,9 @@ describe('healthcare and penalties', () => {
   it('preserves known gross premiums when same-year contracts conflict', () => {
     const plan = basePlan()
     currentYearAca(plan)
-    const original = plan.expenses.healthcare.acaYears![0]!
+    const original = statedAcaYears(plan)[0]!
     original.coveredMembers[0]!.enrollmentPremiumByMonth.fill(0, 6)
-    const duplicate = structuredClone(plan.expenses.healthcare.acaYears![0]!)
+    const duplicate = structuredClone(statedAcaYears(plan)[0]!)
     duplicate.coveredMembers[0]!.enrollmentPremiumByMonth.fill(0, 0, 6)
     duplicate.coveredMembers[0]!.enrollmentPremiumByMonth.fill(800, 6)
     plan.expenses.healthcare.acaYears!.push(duplicate)
@@ -358,7 +359,7 @@ describe('healthcare and penalties', () => {
   it('treats benchmark-only months as unsupported and excludes them from coverage evidence', () => {
     const plan = basePlan()
     currentYearAca(plan, { coveredMonths: 1 })
-    plan.expenses.healthcare.acaYears![0]!.coveredMembers[0]!.slcspBenchmarkPremiumByMonth.fill(1_000)
+    statedAcaYears(plan)[0]!.coveredMembers[0]!.slcspBenchmarkPremiumByMonth.fill(1_000)
     plan.accounts = [cash(200_000)]
     const year = simulatePlan(validate(plan), {
       startYear: 2026,
@@ -405,7 +406,7 @@ describe('healthcare and penalties', () => {
       longevity: { planningAge: 60, source: 'manual' },
     })
     currentYearAca(plan, { coveredPersonIds: ['p1'] })
-    const contract = plan.expenses.healthcare.acaYears![0]!
+    const contract = statedAcaYears(plan)[0]!
     contract.taxFamilyMembers = [contract.taxFamilyMembers[0]!]
     plan.incomes = [
       { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 40_000, taxTreatment: 'ordinary' },
@@ -460,8 +461,8 @@ describe('healthcare and penalties', () => {
     expect(joint.aca?.supportCodes).toEqual(['actionable'])
 
     plan.household.filingStatus = 'single'
-    plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers =
-      plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers.filter(
+    statedAcaYears(plan)[0]!.taxFamilyMembers =
+      statedAcaYears(plan)[0]!.taxFamilyMembers.filter(
         (member) => member.relationship === 'primary',
       )
     const incomplete = simulatePlan(validate(plan), {
@@ -477,7 +478,7 @@ describe('healthcare and penalties', () => {
   it('fails closed when the annual primary does not exist in the modeled household', () => {
     const plan = basePlan()
     currentYearAca(plan)
-    const contract = plan.expenses.healthcare.acaYears![0]!
+    const contract = statedAcaYears(plan)[0]!
     contract.taxFamilyMembers[0]!.personId = 'external-primary'
     contract.coveredMembers[0]!.personId = 'external-primary'
     plan.accounts = [cash(200_000)]
@@ -664,7 +665,7 @@ describe('healthcare and penalties', () => {
     const plan = basePlan()
     plan.household.people[0]!.dob = '1964-01-01'
     currentYearAca(plan)
-    const contract = plan.expenses.healthcare.acaYears![0]!
+    const contract = statedAcaYears(plan)[0]!
     contract.taxExemptInterest = { state: 'known', amount: 5_000 }
     contract.foreignExclusionAddback = { state: 'known', amount: 3_000 }
     contract.taxFamilyMembers.push({
@@ -707,7 +708,7 @@ describe('healthcare and penalties', () => {
     const plan = basePlan()
     currentYearAca(plan)
     plan.household.capitalLossCarryforward = 10_000
-    plan.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+    statedAcaYears(plan)[0]!.foreignExclusionAddback = {
       state: 'known',
       amount: 20_000,
     }
@@ -730,11 +731,11 @@ describe('healthcare and penalties', () => {
       const plan = basePlan()
       plan.household.people[0]!.dob = '1964-01-01'
       currentYearAca(plan)
-      plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      statedAcaYears(plan)[0]!.taxExemptInterest = {
         state: 'known',
         amount: taxExemptInterest,
       }
-      plan.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+      statedAcaYears(plan)[0]!.foreignExclusionAddback = {
         state: 'known',
         amount: foreignExclusionAddback,
       }
@@ -831,14 +832,14 @@ describe('healthcare and penalties', () => {
       { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     requiredPlan.accounts = [cash(100_000)]
-    requiredPlan.expenses.healthcare.acaYears![0]!.taxFamilyMembers.push({
+    statedAcaYears(requiredPlan)[0]!.taxFamilyMembers.push({
       personId: 'dep',
       relationship: 'dependent',
       requiredToFile: 'required',
       magi: 10_000,
     })
     const notRequiredPlan = structuredClone(requiredPlan)
-    notRequiredPlan.expenses.healthcare.acaYears![0]!.taxFamilyMembers[1]!.requiredToFile = 'notRequired'
+    statedAcaYears(notRequiredPlan)[0]!.taxFamilyMembers[1]!.requiredToFile = 'notRequired'
 
     const required = simulatePlan(validate(requiredPlan), {
       startYear: 2026,
@@ -869,7 +870,7 @@ describe('healthcare and penalties', () => {
       longevity: { planningAge: 90, source: 'manual' },
     })
     currentYearAca(plan, { coveredPersonIds: ['p1'] })
-    const dependent = plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers[1]!
+    const dependent = statedAcaYears(plan)[0]!.taxFamilyMembers[1]!
     dependent.relationship = 'dependent'
     dependent.requiredToFile = 'required'
     dependent.magi = 30_000
@@ -917,7 +918,7 @@ describe('healthcare and penalties', () => {
       startYear: 2026,
       endYear: 2026,
     }
-    const contract = plan.expenses.healthcare.acaYears![0]!
+    const contract = statedAcaYears(plan)[0]!
     contract.taxExemptInterest = { state: 'unknown', amount: null }
     contract.foreignExclusionAddback = { state: 'unknown', amount: null }
     contract.taxFamilyMembers.push({
@@ -1014,7 +1015,7 @@ describe('healthcare and penalties', () => {
     const disabledWithContract = structuredClone(disabled)
     currentYearAca(disabledWithContract)
     disabledWithContract.expenses.healthcare.applyAcaCredit = false
-    disabledWithContract.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+    statedAcaYears(disabledWithContract)[0]!.taxExemptInterest = {
       state: 'known',
       amount: 5_000,
     }
@@ -1171,7 +1172,7 @@ describe('healthcare and penalties', () => {
       withInterest.household.people[0]!.dob = '1961-06-15'
       withInterest.household.people[0]!.retirementAge = null
       currentYearAca(withInterest, { coveredMonths: 5 })
-      withInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      statedAcaYears(withInterest)[0]!.taxExemptInterest = {
         state: 'known',
         amount: 5_000,
       }
@@ -1180,7 +1181,7 @@ describe('healthcare and penalties', () => {
       ]
       withInterest.accounts = [cash(500_000)]
       const withoutInterest = structuredClone(withInterest)
-      withoutInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      statedAcaYears(withoutInterest)[0]!.taxExemptInterest = {
         state: 'notApplicable',
         amount: null,
       }
@@ -1230,13 +1231,13 @@ describe('healthcare and penalties', () => {
       const withAddback = basePlan()
       withAddback.expenses.baseAnnual = 0
       currentYearAca(withAddback)
-      withAddback.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+      statedAcaYears(withAddback)[0]!.foreignExclusionAddback = {
         state: 'known',
         amount: FOREIGN,
       }
       withAddback.accounts = [cash(500_000)]
       const withoutAddback = structuredClone(withAddback)
-      withoutAddback.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+      statedAcaYears(withoutAddback)[0]!.foreignExclusionAddback = {
         state: 'notApplicable',
         amount: null,
       }

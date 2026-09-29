@@ -48,7 +48,7 @@ export function HouseholdSection() {
             onCommit={(v) =>
               update((d) => {
                 d.household.filingStatus = v
-                invalidateAcaEvidence(d)
+                invalidateAcaEvidence(d, 'filingStatusChanged')
               })
             }
           />
@@ -72,7 +72,7 @@ export function HouseholdSection() {
             onCommit={(v) =>
               update((d) => {
                 d.household.state = v
-                invalidateAcaEvidence(d)
+                invalidateAcaEvidence(d, 'householdChanged')
               })
             }
           />
@@ -133,7 +133,7 @@ export function HouseholdSection() {
                 onCommit={(v) =>
                   update((d) => {
                     updatePersonDob(d, i, v)
-                    invalidateAcaEvidence(d)
+                    invalidateAcaEvidence(d, 'householdChanged')
                   })
                 }
               />
@@ -241,7 +241,7 @@ export function HouseholdSection() {
                     longevity: { planningAge: 95, source: 'manual' },
                   })
                   d.household.filingStatus = 'marriedFilingJointly'
-                  invalidateAcaEvidence(d)
+                  invalidateAcaEvidence(d, 'partnerAdded')
                 })
               }
             >
@@ -266,7 +266,7 @@ export function HouseholdSection() {
                 onClick={() =>
                   update((d) => {
                     d.household.stateMoves.splice(i, 1)
-                    invalidateAcaEvidence(d)
+                    invalidateAcaEvidence(d, 'householdChanged')
                   })
                 }
               >
@@ -282,7 +282,7 @@ export function HouseholdSection() {
                 onCommit={(v) =>
                   update((d) => {
                     d.household.stateMoves[i]!.fromYear = Math.round(v ?? move.fromYear)
-                    invalidateAcaEvidence(d)
+                    invalidateAcaEvidence(d, 'householdChanged')
                   })
                 }
               />
@@ -293,7 +293,7 @@ export function HouseholdSection() {
                 onCommit={(v) =>
                   update((d) => {
                     d.household.stateMoves[i]!.fromMonth = Number(v)
-                    invalidateAcaEvidence(d)
+                    invalidateAcaEvidence(d, 'householdChanged')
                   })
                 }
               />
@@ -304,7 +304,7 @@ export function HouseholdSection() {
                 onCommit={(v) =>
                   update((d) => {
                     d.household.stateMoves[i]!.state = v
-                    invalidateAcaEvidence(d)
+                    invalidateAcaEvidence(d, 'householdChanged')
                   })
                 }
               />
@@ -319,7 +319,7 @@ export function HouseholdSection() {
               update((d) => {
                 const lastYear = d.household.stateMoves[d.household.stateMoves.length - 1]?.fromYear
                 d.household.stateMoves.push({ fromYear: (lastYear ?? new Date().getFullYear()) + 1, fromMonth: 7, state: d.household.state })
-                invalidateAcaEvidence(d)
+                invalidateAcaEvidence(d, 'householdChanged')
               })
             }
           >

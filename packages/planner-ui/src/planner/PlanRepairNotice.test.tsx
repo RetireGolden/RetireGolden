@@ -65,6 +65,30 @@ async function mount(repairs: readonly PlanLoadRepair[], dismiss: () => void = (
 const items = () => [...container.querySelectorAll('li')].map((li) => li.textContent)
 
 describe('PlanRepairNotice', () => {
+  it('says the credit details of a saved example now follow the premium field', async () => {
+    await mount([
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 8, firstYear: 2026, lastYear: 2033 },
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'under-saved-single', contractCount: 1, firstYear: 2026, lastYear: 2026 },
+    ])
+    expect(items()).toEqual([
+      "This plan was saved from a library example and carried the example's premium tax credit details for 8 years from 2026 to 2033, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+      "This plan was saved from a library example and carried the example's premium tax credit details for 2026, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    ])
+  })
+
+  it('describes the library demo record itself as the example, not as a saved plan (review finding L8)', async () => {
+    const demo = { ...createSamplePlan(), origin: 'example' as const }
+    await mount(
+      [{ kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 3, firstYear: 2026, lastYear: 2028 }],
+      () => undefined,
+      demo,
+    )
+    expect(items()).toEqual([
+      "This copy of the library example was stored in this browser with its premium tax credit details for 3 years from 2026 to 2028 written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium.",
+    ])
+    expect(items()[0]).not.toContain('saved from a library example')
+  })
+
   it('renders nothing when the load repaired nothing', async () => {
     await mount([])
     expect(container.querySelector('.plan-repair-notice')).toBeNull()

@@ -56,6 +56,7 @@ import {
   expectSeamRan,
 } from './simulate.seamGuard.test-support.js'
 import {
+  statedAcaYears,
   cashAccount,
   setAcaYearContract,
   singlePersonPlan,
@@ -133,7 +134,7 @@ describe('simulatePlan delegates annual ACA result publication', () => {
     expect(Object.isFrozen(call.input.marketplaceMonthsByPersonPosition)).toBe(true)
     expect(Object.isFrozen(call.input.slcspBenchmarkPremiums)).toBe(true)
 
-    const sourceContract = plan.expenses.healthcare.acaYears?.[0]
+    const sourceContract = statedAcaYears(plan)[0]
     expect(call.input.contract).not.toBe(sourceContract)
     expect(call.input.contract?.taxFamilyMembers).not.toBe(
       sourceContract?.taxFamilyMembers,

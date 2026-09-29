@@ -856,7 +856,7 @@
     }
   ],
   "plan": {
-    "schemaVersion": 5,
+    "schemaVersion": 6,
     "id": "bracket-fill-roth--seq-1",
     "name": "Bracket-fill Roth conversions",
     "origin": "user",

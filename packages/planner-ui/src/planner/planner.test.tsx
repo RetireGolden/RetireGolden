@@ -352,8 +352,58 @@ describe('ACA annual evidence invalidation', () => {
   it('clears exact annual evidence after a topology, region, or premium edit', () => {
     const plan = createSamplePlan()
     plan.expenses.healthcare.acaYears = []
-    invalidateAcaEvidence(plan)
+    invalidateAcaEvidence(plan, 'filingStatusChanged')
     expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+
+  it('keeps premium-field contracts through a premium or household edit, and records what each edit removed', () => {
+    // Decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28) and review finding M2: a
+    // premiumField contract is derived from the premium field and the
+    // household on every run, so a premium, state, move, date-of-birth or
+    // planning-age edit keeps it; a stated contract's written figures are
+    // stale. A partner added or removed, or a new filing status, removes both.
+    const facts = {
+      taxExemptInterest: { state: 'notApplicable' as const, amount: null },
+      foreignExclusionAddback: { state: 'notApplicable' as const, amount: null },
+      assertions: {
+        coverageEligibility: 'supported' as const,
+        form8814: 'notApplicable' as const,
+        specialAllocation: 'notApplicable' as const,
+        marriedFilingSeparatelyException: 'notApplicable' as const,
+        selfEmployedHealthInsuranceDeduction: 'notApplicable' as const,
+        otherMaterialFacts: 'none' as const,
+      },
+    }
+    const plan = createSamplePlan()
+    const person = plan.household.people[0]!.id
+    const row = new Array<number>(12).fill(900)
+    plan.expenses.healthcare.acaYears = [
+      {
+        year: 2026,
+        fplRegion: 'contiguous',
+        taxFamilyMembers: [{ personId: person, relationship: 'primary', requiredToFile: 'required', magi: 0 }],
+        coveredMembers: [{ personId: person, enrollmentPremiumByMonth: row, slcspBenchmarkPremiumByMonth: row }],
+        ...facts,
+      },
+      { year: 2027, premiumBasis: 'premiumField', ...facts },
+    ]
+    invalidateAcaEvidence(plan, 'premiumChanged')
+    expect(plan.expenses.healthcare.acaYears).toEqual([{ year: 2027, premiumBasis: 'premiumField', ...facts }])
+    invalidateAcaEvidence(plan, 'householdChanged')
+    expect(plan.expenses.healthcare.acaYears).toHaveLength(1)
+    expect(plan.expenses.healthcare.acaYearsRemoved).toEqual([{ edit: 'premiumChanged', years: [2026] }])
+    // A partner added removes every contract, and says so.
+    invalidateAcaEvidence(plan, 'partnerAdded')
+    expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+    expect(plan.expenses.healthcare.acaYearsRemoved).toEqual([
+      { edit: 'premiumChanged', years: [2026] },
+      { edit: 'partnerAdded', years: [2027] },
+    ])
+    // Only stated contracts: the key goes, as before.
+    const statedOnly = createSamplePlan()
+    statedOnly.expenses.healthcare.acaYears = []
+    invalidateAcaEvidence(statedOnly, 'premiumChanged')
+    expect(statedOnly.expenses.healthcare.acaYears).toBeUndefined()
   })
 
   it('clears exact annual evidence after a planning-age change', () => {

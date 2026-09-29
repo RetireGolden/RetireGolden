@@ -3,6 +3,7 @@ import { asAccountId, asPersonId, asPlanId } from '../actions/identity.js'
 import {
   createEmptyPlan,
   parsePlan,
+  type AcaStatedYearContract,
   type Account,
   type IncomeStream,
   type Plan,
@@ -222,6 +223,20 @@ export function setAcaYearContract(
       },
     ],
   }
+}
+
+/**
+ * A plan's premium-credit contracts, each asserted to be a 'stated' contract
+ * (the shape `setAcaYearContract` writes), for tests that read or edit the
+ * stated roster and premiums. Throws on a 'premiumField' contract.
+ */
+export function statedAcaYears(plan: Plan): AcaStatedYearContract[] {
+  return (plan.expenses.healthcare.acaYears ?? []).map((contract) => {
+    if (contract.premiumBasis === 'premiumField') {
+      throw new Error(`the ${contract.year} contract is a premiumField contract, not a stated one`)
+    }
+    return contract
+  })
 }
 
 export function cashAccount(id: string, balance: number): Account {

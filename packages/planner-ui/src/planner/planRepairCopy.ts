@@ -39,8 +39,33 @@ function ownerName(plan: Plan, personId: string): string {
   return person ? person.name : 'the first person in your household'
 }
 
+/**
+ * The v5 -> v6 rewrite of an example's premium-credit contracts (decision
+ * D-EXAMPLE-SOURCE-SWITCH): what the plan carried, what it carries now, and
+ * what that changes. A plan saved from an example (Save to My Plans,
+ * Duplicate, an import) is the household's copy; the library's own demo
+ * record (`origin: 'example'`, review finding L8) is the example itself,
+ * stored in this browser before the change, and is described as that.
+ */
+function exampleContractsMessage(
+  repair: Extract<PlanLoadRepair, { kind: 'exampleContractsFollowPremiumField' }>,
+  plan: Plan,
+): string {
+  const years =
+    repair.contractCount === 1
+      ? `${repair.firstYear}`
+      : `${repair.contractCount} years from ${repair.firstYear} to ${repair.lastYear}`
+  const follows =
+    "each year's premium is that amount grown with healthcare inflation, worked out again on every run, including each simulated market in Monte Carlo. Changing the premium now reprices the credit rather than removing it. Open Spending to see the premium."
+  if (plan.origin === 'example') {
+    return `This copy of the library example was stored in this browser with its premium tax credit details for ${years} written in as fixed amounts. Those years now follow the example's pre-65 premium, as the library's current version does: ${follows}`
+  }
+  return `This plan was saved from a library example and carried the example's premium tax credit details for ${years}, with each year's Marketplace premium written in as a fixed amount. Those years now follow the plan's pre-65 premium instead, as the example itself does: ${follows}`
+}
+
 /** One repair, as a paragraph for the household. */
 export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
+  if (repair.kind === 'exampleContractsFollowPremiumField') return exampleContractsMessage(repair, plan)
   const account = named(repair.accountName, 'An account')
   switch (repair.kind) {
     case 'accountOwnerBackFilled':

@@ -13,6 +13,7 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { LtcShockParams } from '@retiregolden/engine/montecarlo/ltcShock'
 import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
+import { HEADLINE_MONTE_CARLO_PATH_COUNT } from '@retiregolden/engine/montecarlo/headline'
 import {
   aggregateMonteCarlo,
   mergePathResults,
@@ -60,7 +61,8 @@ export interface MonteCarloRunOptions {
   onProgress?: (completedPaths: number, totalPaths: number) => void
 }
 
-export const DEFAULT_PATH_COUNT = 1000
+/** The headline run's path count, as the engine publishes it for every host. */
+export const DEFAULT_PATH_COUNT = HEADLINE_MONTE_CARLO_PATH_COUNT
 export const ON_DEMAND_PATH_COUNT = 10_000
 
 function defaultWorkerCount(): number {

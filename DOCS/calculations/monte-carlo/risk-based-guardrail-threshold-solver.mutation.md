@@ -1,15 +1,15 @@
 # Mutation receipt: risk-based-guardrail-threshold-solver
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/riskBasedGuardrails.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/riskBasedGuardrails.ts b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
-index a0e0bc3b..d2c56a98 100644
+index 5672cb3e..4f67a3c7 100644
 --- a/packages/engine/src/montecarlo/riskBasedGuardrails.ts
 +++ b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
-@@ -275,7 +275,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
+@@ -276,7 +276,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
        else lo = mid
      }
      return {
@@ -30,12 +30,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after merging RetireGolden #751 into B2-P1 slice 2: the drift check #751 adds flagged this receipt against the slice's code (a hunk header naming a line the code has moved from, a context line the slice changed, a header naming no line, or a stated test count the slice's evidence file no longer has), so the diff header, capture, blob hash and revert note are refreshed against this head. The baseline is green (riskBasedGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (riskBasedGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/montecarlo/riskBasedGuardrails.evidence.test.ts (5 tests | 3 failed) 17ms
+ ❯ src/montecarlo/riskBasedGuardrails.evidence.test.ts (5 tests | 3 failed) 19ms
    ❯ risk-based-guardrail-threshold-solver — Risk-based guardrail thresholds and suggested adjustments by bisection (4)
      × edges at k = 356 and 484 on 0.02 + k · 3.98/1024: 1.403671875 and 1.901171875, persisted as 140.37 and 190.12 percent 4ms
      × cut 0.849609375 ($501.3020833333333 a month) and raise 1.1484375 ($494.7916666666667 a month) 1ms

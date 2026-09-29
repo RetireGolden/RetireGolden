@@ -22,6 +22,7 @@ import {
   type Plan,
 } from './plan.js'
 import {
+  statedAcaYears,
   ownedNonRothIraAnnualFilingSourceRecord,
   setAcaYearContract,
   traditionalAccount,
@@ -105,24 +106,59 @@ describe('createEmptyPlan', () => {
 })
 
 describe('parsePlan', () => {
+  it('reads an ACA contract without a premiumBasis as stated, and refuses a roster or premium on a premiumField contract', () => {
+    // Decision D-EXAMPLE-SOURCE-SWITCH (2026-09-28): a 'premiumField' contract
+    // stores only its year and asserted facts; a stored region, roster or
+    // premium would be a field the engine never reads, so it is refused.
+    const plan = validCouplePlan()
+    setAcaYearContract(plan)
+    const stated = statedAcaYears(plan)[0]!
+    expect(stated.premiumBasis).toBeUndefined()
+    expect(parsePlan(plan).ok).toBe(true)
+
+    const derived = {
+      year: 2027,
+      premiumBasis: 'premiumField' as const,
+      taxExemptInterest: stated.taxExemptInterest,
+      foreignExclusionAddback: stated.foreignExclusionAddback,
+      assertions: stated.assertions,
+    }
+    plan.expenses.healthcare.acaYears!.push(derived)
+    expect(parsePlan(plan).ok).toBe(true)
+    for (const extra of [
+      { fplRegion: 'contiguous' },
+      { taxFamilyMembers: stated.taxFamilyMembers },
+      { coveredMembers: stated.coveredMembers },
+    ]) {
+      const withExtra = structuredClone(plan)
+      withExtra.expenses.healthcare.acaYears![1] = { ...derived, ...extra } as typeof derived
+      const parsed = parsePlan(withExtra)
+      expect(parsed.ok, JSON.stringify(Object.keys(extra))).toBe(false)
+    }
+    // A stated contract without its roster is refused, not read as derived.
+    const noRoster = structuredClone(plan)
+    noRoster.expenses.healthcare.acaYears![1] = { ...derived, premiumBasis: 'stated' } as unknown as typeof derived
+    expect(parsePlan(noRoster).ok).toBe(false)
+  })
+
   it('rejects malformed ACA family and coverage identity structure', () => {
     const duplicateFamily = validCouplePlan()
     setAcaYearContract(duplicateFamily)
-    duplicateFamily.expenses.healthcare.acaYears![0]!.taxFamilyMembers[1]!.personId = 'p1'
+    statedAcaYears(duplicateFamily)[0]!.taxFamilyMembers[1]!.personId = 'p1'
     let parsed = parsePlan(duplicateFamily)
     expect(parsed.ok).toBe(false)
     if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('tax-family member ids must be unique')
 
     const noPrimary = validCouplePlan()
     setAcaYearContract(noPrimary)
-    noPrimary.expenses.healthcare.acaYears![0]!.taxFamilyMembers[0]!.relationship = 'dependent'
+    statedAcaYears(noPrimary)[0]!.taxFamilyMembers[0]!.relationship = 'dependent'
     parsed = parsePlan(noPrimary)
     expect(parsed.ok).toBe(false)
     if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('exactly one primary')
 
     const duplicateCovered = validCouplePlan()
     setAcaYearContract(duplicateCovered)
-    duplicateCovered.expenses.healthcare.acaYears![0]!.coveredMembers[1]!.personId = 'p1'
+    statedAcaYears(duplicateCovered)[0]!.coveredMembers[1]!.personId = 'p1'
     parsed = parsePlan(duplicateCovered)
     expect(parsed.ok).toBe(false)
     if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('covered member ids must be unique')
@@ -132,7 +168,7 @@ describe('parsePlan', () => {
   it('allows a covered external dependent only when that id belongs to the tax family', () => {
     const plan = validCouplePlan()
     setAcaYearContract(plan)
-    const contract = plan.expenses.healthcare.acaYears![0]!
+    const contract = statedAcaYears(plan)[0]!
     contract.taxFamilyMembers.push({
       personId: 'dependent',
       relationship: 'dependent',
@@ -3246,7 +3282,7 @@ describe('benefit provenance schema vocabulary', () => {
       const parsed = parsePlan(plan)
       expect(parsed.ok).toBe(true)
       if (!parsed.ok) return
-      expect(parsed.plan.schemaVersion).toBe(5)
+      expect(parsed.plan.schemaVersion).toBe(6)
       const pension = parsed.plan.accounts.find((a) => a.id === 'mil1')
       expect(pension).toMatchObject({
         type: 'pension',

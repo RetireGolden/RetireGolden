@@ -1,0 +1,357 @@
+/**
+ * Plan schema v5 -> v6 (decision D-EXAMPLE-SOURCE-SWITCH, 2026-09-28): a plan
+ * saved from a library example carries the example recipe's premium-credit
+ * contracts as fixed dollars; v6 rewrites the ones with the recipe's shape to
+ * 'premiumField' and reports it. Only a v5 document with `exampleSourceId` is
+ * touched, dollars are not compared, and an unedited converted plan projects
+ * to the same figures to the cent.
+ */
+import { describe, expect, it } from 'vitest'
+
+import { createEmptyPlan, CURRENT_PLAN_SCHEMA_VERSION, type Plan } from './plan.js'
+import { simulatePlan } from '../projection/simulate.js'
+import { cashAccount, productionTaxCalculator, recurringOrdinaryIncome } from '../testing/planFixtures.js'
+import { migratePlanToCurrent, migratePlanV5ToV6 } from './migrations.js'
+
+const fixedNow = () => new Date('2026-06-29T12:00:00.000Z')
+let counter = 0
+const ids = () => `v6-${++counter}`
+
+const FACTS = {
+  taxExemptInterest: { state: 'notApplicable', amount: null },
+  foreignExclusionAddback: { state: 'notApplicable', amount: null },
+  assertions: {
+    coverageEligibility: 'supported',
+    form8814: 'notApplicable',
+    specialAllocation: 'notApplicable',
+    marriedFilingSeparatelyException: 'notApplicable',
+    selfEmployedHealthInsuranceDeduction: 'notApplicable',
+    otherMaterialFacts: 'none',
+  },
+}
+
+/**
+ * The example recipe as the planner wrote it before v6 (buildContext.ts
+ * parseExamplePlan at origin/main d6d61e3d): one contract per year from 2026
+ * with someone covered, premium = premium field x (1 + inflation +
+ * extra)^(year - 2026), for the people alive by planning age.
+ */
+function recipeContracts(plan: Plan): Record<string, unknown>[] {
+  const g = (plan.assumptions.inflationPct + plan.assumptions.healthcareExtraInflationPct) / 100
+  const end = Math.max(...plan.household.people.map((p) => Number(p.dob.slice(0, 4)) + p.longevity.planningAge))
+  const out: Record<string, unknown>[] = []
+  for (let year = 2026; year <= end; year++) {
+    const living = plan.household.people.filter((p) => year - Number(p.dob.slice(0, 4)) <= p.longevity.planningAge)
+    const covered = living
+      .map((p) => {
+        const age = year - Number(p.dob.slice(0, 4))
+        return { p, months: age < 65 ? 12 : age === 65 ? Number(p.dob.slice(5, 7)) - 1 : 0 }
+      })
+      .filter((c) => c.months > 0)
+    if (covered.length === 0) continue
+    const premium = plan.expenses.healthcare.pre65MonthlyPremiumPerPerson * Math.pow(1 + g, year - 2026)
+    const row = (months: number) => Array.from({ length: 12 }, (_, m) => (m < months ? premium : 0))
+    out.push({
+      year,
+      fplRegion: 'contiguous',
+      taxFamilyMembers: living.map((p, i) => ({ personId: p.id, relationship: i === 0 ? 'primary' : 'spouse', requiredToFile: 'required', magi: 0 })),
+      coveredMembers: covered.map(({ p, months }) => ({ personId: p.id, enrollmentPremiumByMonth: row(months), slcspBenchmarkPremiumByMonth: row(months) })),
+      ...structuredClone(FACTS),
+    })
+  }
+  return out
+}
+
+/** A couple retiring early on Marketplace coverage, as an example would be saved at v5. */
+function couple(): Plan {
+  const plan = createEmptyPlan({ newId: ids, now: fixedNow })
+  plan.household.state = 'CO'
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people = [
+    { id: 'a', name: 'Alex', dob: '1968-04-02', sex: 'average', retirementAge: 58, longevity: { planningAge: 90, source: 'manual' } },
+    { id: 'b', name: 'Blair', dob: '1963-09-15', sex: 'average', retirementAge: 58, longevity: { planningAge: 90, source: 'manual' } },
+  ]
+  plan.assumptions.inflationPct = 2.5
+  plan.assumptions.healthcareExtraInflationPct = 2
+  plan.accounts = [cashAccount('cash', 900_000)]
+  plan.incomes = [recurringOrdinaryIncome('consulting', 40_000)]
+  plan.expenses.baseAnnual = 50_000
+  plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 900, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 }
+  return plan
+}
+
+function rawV5(plan: Plan, exampleSourceId: string | null): Record<string, unknown> {
+  const raw = JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+  raw['schemaVersion'] = 5
+  if (exampleSourceId === null) delete raw['exampleSourceId']
+  else raw['exampleSourceId'] = exampleSourceId
+  ;(raw['expenses'] as { healthcare: Record<string, unknown> }).healthcare['acaYears'] = recipeContracts(plan)
+  return raw
+}
+
+const contractsOf = (raw: Record<string, unknown>) =>
+  (raw['expenses'] as { healthcare: { acaYears: Record<string, unknown>[] } }).healthcare.acaYears
+
+describe('migratePlanV5ToV6', () => {
+  it('rewrites every recipe-shaped contract of a saved example to premiumField, keeping only its year and facts', () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const before = contractsOf(raw)
+    // Alex (1968) is covered 2026-2033, Blair (1963) 2026-2028 (8 months in
+    // 2028, the year of 65 with a September birthday): 8 contract years.
+    expect(before.map((c) => c['year'])).toEqual([2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033])
+    const migrated = contractsOf(migratePlanV5ToV6(raw))
+    expect(migrated).toEqual(before.map((c) => ({ year: c['year'], premiumBasis: 'premiumField', ...FACTS })))
+  })
+
+  // Review finding M1: the dollars are compared. A contract is the recipe's
+  // only when its amount is the premium field x g^(year - 2026) to half a
+  // cent, for one growth factor g per plan.
+  const setAmount = (contract: Record<string, unknown>, amount: number) => {
+    for (const member of contract['coveredMembers'] as Record<string, number[]>[]) {
+      member['enrollmentPremiumByMonth'] = member['enrollmentPremiumByMonth']!.map((v) => (v > 0 ? amount : 0))
+      member['slcspBenchmarkPremiumByMonth'] = member['slcspBenchmarkPremiumByMonth']!.map((v) => (v > 0 ? amount : 0))
+    }
+  }
+  const bases = (raw: Record<string, unknown>) => contractsOf(migratePlanV5ToV6(raw)).map((c) => c['premiumBasis'] ?? 'stated')
+
+  it('keeps a quote the household typed in, in the shape of the recipe, stated', () => {
+    // A real quote of $1,150 a month for both members in 2026, benchmark
+    // equal to enrollment: the recipe's shape, not its dollars ($900).
+    const quote = rawV5(couple(), 'early-retiree-aca')
+    setAmount(contractsOf(quote)[0]!, 1_150)
+    expect(bases(quote)).toEqual(['stated', ...new Array<string>(7).fill('premiumField')])
+    expect(contractsOf(migratePlanV5ToV6(quote))[0]).toEqual(contractsOf(quote)[0])
+    // A later year at a real $1,400: the factor read off it alone
+    // ((1,400 / 900)^(1/1)) fits no other year, so it is not the plan's.
+    const later = rawV5(couple(), 'early-retiree-aca')
+    setAmount(contractsOf(later)[1]!, 1_400)
+    expect(bases(later)).toEqual(['premiumField', 'stated', ...new Array<string>(6).fill('premiumField')])
+  })
+
+  it('recognises the recipe after an inflation edit, but not after a premium edit', () => {
+    // Inflation raised from 2.5 to 3.5 percent after saving: the stored rates
+    // no longer fit, but every contract after 2026 agrees on 1.045.
+    const inflation = rawV5(couple(), 'early-retiree-aca')
+    ;(inflation['assumptions'] as Record<string, number>)['inflationPct'] = 3.5
+    expect(bases(inflation).every((basis) => basis === 'premiumField')).toBe(true)
+    // The premium field edited to $1,300 in the file after saving: the 2026
+    // contract is not $1,300, and no one factor takes $1,300 to the later
+    // years' amounts, so none of them is the recipe's.
+    const premium = rawV5(couple(), 'early-retiree-aca')
+    ;(premium['expenses'] as { healthcare: Record<string, number> }).healthcare['pre65MonthlyPremiumPerPerson'] = 1_300
+    expect(bases(premium).every((basis) => basis === 'stated')).toBe(true)
+  })
+
+  it('compares the dollars to half a cent', () => {
+    // 2026 must equal the premium field, $900: $900.004 is the recipe's,
+    // $900.006 is not.
+    const within = rawV5(couple(), 'early-retiree-aca')
+    setAmount(contractsOf(within)[0]!, 900.004)
+    expect(bases(within)[0]).toBe('premiumField')
+    const outside = rawV5(couple(), 'early-retiree-aca')
+    setAmount(contractsOf(outside)[0]!, 900.006)
+    expect(bases(outside)[0]).toBe('stated')
+    // 2027 at the plan's factor: 900 x 1.045 = 940.5.
+    const later = rawV5(couple(), 'early-retiree-aca')
+    setAmount(contractsOf(later)[1]!, 940.5 + 0.006)
+    expect(bases(later)[1]).toBe('stated')
+    // A zero premium in the covered months is not the recipe's, even in every
+    // year after 2026, where the one factor that fits them all would be 0.
+    const zero = rawV5(couple(), 'early-retiree-aca')
+    for (const contract of contractsOf(zero).slice(1)) setAmount(contract, 0)
+    expect(bases(zero)).toEqual(['premiumField', ...new Array<string>(7).fill('stated')])
+    // The recipe wrote no year before 2026: a 2025 contract with its shape at
+    // the premium field deflated by the plan's factor (900 / 1.045) is stated.
+    const earlier = rawV5(couple(), 'early-retiree-aca')
+    contractsOf(earlier).unshift({ ...structuredClone(contractsOf(earlier)[0]!), year: 2025 })
+    setAmount(contractsOf(earlier)[0]!, 900 / 1.045)
+    expect(bases(earlier)).toEqual(['stated', ...new Array<string>(8).fill('premiumField')])
+  })
+
+  it('checks each part of the shape of the recipe', () => {
+    const variant = (edit: (contracts: Record<string, unknown>[]) => void, planEdit?: (plan: Plan) => void) => {
+      const plan = couple()
+      planEdit?.(plan)
+      const raw = rawV5(plan, 'early-retiree-aca')
+      edit(contractsOf(raw))
+      return bases(raw)
+    }
+    const member = (contract: Record<string, unknown>, index: number) =>
+      (contract['coveredMembers'] as Record<string, unknown>[])[index]!
+    // A contract that already names a basis is the household's, not the recipe's.
+    expect(variant((c) => void (c[0]!['premiumBasis'] = 'stated'))[0]).toBe('stated')
+    // Roles swapped with the order kept: Alex spouse, Blair primary.
+    expect(
+      variant((c) => {
+        const family = c[0]!['taxFamilyMembers'] as Record<string, string>[]
+        family[0]!['relationship'] = 'spouse'
+        family[1]!['relationship'] = 'primary'
+      })[0],
+    ).toBe('stated')
+    // A covered member with a field the recipe never wrote.
+    expect(variant((c) => void (member(c[0]!, 0)['note'] = 'quote from the broker'))[0]).toBe('stated')
+    // A premium in a Medicare month: Blair turns 65 in September 2028, so
+    // January to August are covered and November is not.
+    expect(
+      variant((c) => {
+        const blair = member(c[2]!, 1) as Record<string, number[]>
+        const amount = blair['enrollmentPremiumByMonth']![0]!
+        blair['enrollmentPremiumByMonth']![10] = amount
+        blair['slcspBenchmarkPremiumByMonth']![10] = amount
+      })[2],
+    ).toBe('stated')
+    // Age-rated premiums: Alex at the premium field ($900), Blair at $950.
+    expect(
+      variant((c) => {
+        const blair = member(c[0]!, 1) as Record<string, number[]>
+        blair['enrollmentPremiumByMonth'] = blair['enrollmentPremiumByMonth']!.map((v) => (v > 0 ? 950 : 0))
+        blair['slcspBenchmarkPremiumByMonth'] = blair['slcspBenchmarkPremiumByMonth']!.map((v) => (v > 0 ? 950 : 0))
+      })[0],
+    ).toBe('stated')
+    // A contract for a year nobody is covered (2040: both past 65) with no
+    // covered member is not the recipe's (it never wrote one).
+    expect(
+      variant((c) =>
+        void c.push({
+          ...structuredClone(c[0]!),
+          year: 2040,
+          coveredMembers: [],
+        }),
+      ).at(-1),
+    ).toBe('stated')
+    // The planning-age boundary: Blair's planning age is 64, so she is alive
+    // through 2027, the year she is 64, and the recipe put her in that year's
+    // family and coverage; every contract is still the recipe's.
+    expect(
+      variant(
+        () => {},
+        (plan) => void (plan.household.people[1]!.longevity.planningAge = 64),
+      ).every((basis) => basis === 'premiumField'),
+    ).toBe(true)
+  })
+
+  it('leaves a plan without exampleSourceId, and any contract without the recipe shape, stated', () => {
+    const noSource = rawV5(couple(), null)
+    expect(migratePlanV5ToV6(noSource)).toBe(noSource)
+
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const contracts = contractsOf(raw)
+    // Four ways off the recipe's shape: a benchmark that differs from the
+    // premium, known tax-exempt interest, a family that is not the people
+    // alive, and two covered members at different premiums.
+    ;(contracts[0]!['coveredMembers'] as Record<string, number[]>[])[0]!['slcspBenchmarkPremiumByMonth']![0] = 950
+    contracts[1]!['taxExemptInterest'] = { state: 'known', amount: 1_000 }
+    ;(contracts[2]!['taxFamilyMembers'] as unknown[]).reverse()
+    ;(contracts[3]!['coveredMembers'] as Record<string, number[]>[])[0]!['enrollmentPremiumByMonth']![5] = 1
+    const migrated = contractsOf(migratePlanV5ToV6(raw))
+    expect(migrated.slice(0, 4).every((c) => c['premiumBasis'] === undefined)).toBe(true)
+    expect(migrated.slice(0, 4)).toEqual(contracts.slice(0, 4))
+    expect(migrated.slice(4).every((c) => c['premiumBasis'] === 'premiumField')).toBe(true)
+  })
+
+  it('reports the rewrite as a load repair, and only on the way from v5', () => {
+    const result = migratePlanToCurrent(rawV5(couple(), 'early-retiree-aca'))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.plan.schemaVersion).toBe(CURRENT_PLAN_SCHEMA_VERSION)
+    expect(result.repairs).toEqual([
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 8, firstYear: 2026, lastYear: 2033 },
+    ])
+    // A v6 document is never rewritten, whatever it carries: its stated
+    // contracts are the household's figures.
+    const v6 = rawV5(couple(), 'early-retiree-aca')
+    v6['schemaVersion'] = CURRENT_PLAN_SCHEMA_VERSION
+    const current = migratePlanToCurrent(v6)
+    expect(current.ok).toBe(true)
+    if (!current.ok) return
+    expect(current.repairs).toEqual([])
+    expect(current.plan.expenses.healthcare.acaYears?.every((c) => c.premiumBasis === undefined)).toBe(true)
+  })
+
+  it("keeps a v5 survival-percentile pick's life-table edition", () => {
+    // v5 gained the optional longevity.percentile.tableEdition (decision
+    // D-LIFE-TABLE-2023); v6 carries it and the migration leaves it as it is,
+    // with or without an example source, and a pick without one stays without.
+    for (const source of ['early-retiree-aca', null]) {
+      const plan = couple()
+      plan.household.people[0]!.longevity = {
+        planningAge: 94,
+        source: 'percentile',
+        percentile: { pct: 25, joint: false, tableEdition: { periodYear: 2023, trusteesReportYear: 2026 } },
+      }
+      plan.household.people[1]!.longevity = { planningAge: 92, source: 'percentile', percentile: { pct: 25, joint: false } }
+      const result = migratePlanToCurrent(rawV5(plan, source))
+      expect(result.ok, String(source)).toBe(true)
+      if (!result.ok) continue
+      expect(result.plan.household.people[0]!.longevity).toEqual(plan.household.people[0]!.longevity)
+      expect(result.plan.household.people[1]!.longevity.percentile).toEqual({ pct: 25, joint: false })
+    }
+  })
+
+  it('rewrites a stored scenario that writes the contracts, on both legs', () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const stored = structuredClone(contractsOf(raw))
+    raw['scenarios'] = [
+      {
+        id: 's1',
+        name: 'Contracts',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          operations: [
+            { op: 'set', path: '/expenses/healthcare/acaYears', before: { present: true, value: stored }, value: stored },
+            { op: 'set', path: '/expenses/healthcare/acaYears/0', before: { present: true, value: stored[0] }, value: stored[0] },
+          ],
+        },
+      },
+      { id: 's2', name: 'Loose', patch: { expenses: { healthcare: { acaYears: stored } } } },
+    ]
+    const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
+    const ops = migrated[0]!['patch']!['operations'] as Record<string, unknown>[]
+    const derived = stored.map((c) => ({ year: c['year'], premiumBasis: 'premiumField', ...FACTS }))
+    expect(ops[0]!['value']).toEqual(derived)
+    expect((ops[0]!['before'] as Record<string, unknown>)['value']).toEqual(derived)
+    expect(ops[1]!['value']).toEqual(derived[0])
+    expect(((migrated[1]!['patch'] as Record<string, Record<string, Record<string, unknown>>>)['expenses']!['healthcare']!)['acaYears']).toEqual(derived)
+  })
+
+  it('keeps an unedited converted plan\'s figures to the cent at a 2026 start', () => {
+    // Before v6 the engine priced these stated recipe contracts as written (on
+    // the deterministic run each equals the premium field grown at the plan's
+    // rate, so the old example check passed). After v6 the same years are
+    // derived from the premium field by the ledger's running product instead
+    // of Math.pow: equal to within a fraction of a cent, not bit for bit.
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const statedDoc = structuredClone(raw)
+    statedDoc['schemaVersion'] = CURRENT_PLAN_SCHEMA_VERSION
+    delete statedDoc['exampleSourceId']
+    const stated = migratePlanToCurrent(statedDoc)
+    const converted = migratePlanToCurrent(raw)
+    if (!stated.ok || !converted.ok) throw new Error('did not load')
+    expect(converted.plan.expenses.healthcare.acaYears?.every((c) => c.premiumBasis === 'premiumField')).toBe(true)
+    const project = (plan: Plan) => simulatePlan(plan, { startYear: 2026, taxCalculator: productionTaxCalculator() })
+    const a = project(stated.plan)
+    const b = project(converted.plan)
+    expect(b.depletionYear).toBe(a.depletionYear)
+    const leaves: [string, number, number][] = []
+    const walk = (x: unknown, y: unknown, path: string) => {
+      if (typeof x === 'number' && typeof y === 'number') leaves.push([path, x, y])
+      else if (x !== null && typeof x === 'object' && y !== null && typeof y === 'object') {
+        for (const key of Object.keys(x)) {
+          if (key === 'premiumBasis') continue
+          walk((x as Record<string, unknown>)[key], (y as Record<string, unknown>)[key], `${path}.${key}`)
+        }
+      }
+    }
+    walk(a.years, b.years, 'years')
+    expect(leaves.length).toBeGreaterThan(1_000)
+    const offByACent = leaves.filter(([, x, y]) => !(Math.abs(x - y) < 0.005))
+    expect(offByACent).toEqual([])
+    // The credit is priced in 2026 and 2027 on both.
+    for (const year of [2026, 2027]) {
+      expect(a.years.find((row) => row.year === year)?.aca?.readiness).toBe('actionable')
+      expect(b.years.find((row) => row.year === year)?.aca?.readiness).toBe('actionable')
+      expect(b.years.find((row) => row.year === year)?.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    }
+  })
+})

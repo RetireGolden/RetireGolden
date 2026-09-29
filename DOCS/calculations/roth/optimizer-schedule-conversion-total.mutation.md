@@ -1,15 +1,15 @@
 # Mutation receipt: conversion-schedule-total
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index ee8744f4..e1219552 100644
+index 65e5e29c..cc1dc52c 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -2239,7 +2239,6 @@ function scheduleWithConversions(schedule: OptimizedSchedule, conversions: { yea
+@@ -2240,7 +2240,6 @@ function scheduleWithConversions(schedule: OptimizedSchedule, conversions: { yea
    return {
      ...schedule,
      conversions,
@@ -29,14 +29,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/strategies/
 
 ## Captured failing output
 
-the merge of slice 4's final head (slice 3 #754, #755, #756, the claimants split) moved the production lines and test titles these receipts quote The baseline is green (optimizer.conversionTotal.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging origin/main 4d2d9d67 into this branch, which moved the hunk. The baseline is green (optimizer.conversionTotal.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/strategies/optimizer.conversionTotal.evidence.test.ts (6 tests | 1 failed) 75ms
+ ❯ src/strategies/optimizer.conversionTotal.evidence.test.ts (6 tests | 1 failed) 70ms
    ❯ conversion-schedule-total — Conversion schedule total (6)
-     × a cleaned schedule publishes its own total, not the raw schedule's carried through a spread 56ms
+     × a cleaned schedule publishes its own total, not the raw schedule's carried through a spread 52ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 5 passed (6)

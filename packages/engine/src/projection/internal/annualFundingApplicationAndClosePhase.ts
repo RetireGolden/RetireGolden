@@ -117,6 +117,7 @@ import type {
 import type { GuardrailAction } from '../../spending/guardrails.js'
 import type { AcaSupportCode } from './types/aca.js'
 import type { IrmaaLookbackMagiSource } from './annualHealthcareExpenses.js'
+import type { EffectiveAcaYearContract } from './effectiveAcaYearContract.js'
 import type { AnnualIncomeSetupResult } from './annualIncomeSetup.js'
 import { resolveAssetClassParams } from '../../allocation/assetClasses.js'
 
@@ -127,9 +128,7 @@ type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   : never
   : never
 
-type AcaContractYear = NonNullable<
-  NonNullable<Plan['expenses']['healthcare']['acaYears']>[number]
->
+type AcaContractYear = EffectiveAcaYearContract
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]
 type RothAccount = Extract<Account, { type: 'roth' }>
@@ -175,7 +174,6 @@ interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly healthcareExcludingMarketplacePremium: number
   readonly netCare: number
   readonly hsaReimburseLaterActive: boolean
-  readonly exampleContractInputMismatch: boolean
   readonly acaContractsForYear: readonly AcaContractYear[]
   readonly marketplaceMonthsByPersonPosition: readonly number[]
   readonly pre65MonthlyPremiumPerPerson: number
@@ -486,7 +484,6 @@ export function annualFundingApplicationAndClosePhase(
     healthcareExcludingMarketplacePremium,
     netCare,
     hsaReimburseLaterActive,
-    exampleContractInputMismatch,
     acaContractsForYear,
     marketplaceMonthsByPersonPosition,
     pre65MonthlyPremiumPerPerson,
@@ -1381,6 +1378,7 @@ export function annualFundingApplicationAndClosePhase(
     if (acaActive) {
       const acaContractSnapshot = acaContract
         ? Object.freeze({
+            premiumBasis: acaContract.premiumBasis,
             fplRegion: acaContract.fplRegion,
             taxFamilyMembers: Object.freeze(
               acaContract.taxFamilyMembers.map((member) => Object.freeze({
@@ -1432,7 +1430,6 @@ export function annualFundingApplicationAndClosePhase(
         maxEvaluationCount,
         contract: acaContractSnapshot,
         contractCount: acaContractsForYear.length,
-        exampleContractInputMismatch,
         acaParametersStandIn,
         people: Object.freeze(
           peopleStates.map((person) => Object.freeze({

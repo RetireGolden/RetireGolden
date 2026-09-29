@@ -1,15 +1,15 @@
 # Mutation receipt: rng-derived-path-seed
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/rng.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/rng.ts b/packages/engine/src/montecarlo/rng.ts
-index a0cefd29..8476d8d8 100644
+index 05f0e183..e0c5aeb1 100644
 --- a/packages/engine/src/montecarlo/rng.ts
 +++ b/packages/engine/src/montecarlo/rng.ts
-@@ -59,7 +59,7 @@ export function createRng(seed: number): Rng {
+@@ -74,7 +74,7 @@ export function createRng(seed: number): Rng {
   * result is the seed handed to createRng for that path.
   */
  export function derivePathSeed(seed: number, pathIndex: number): number {
@@ -30,12 +30,12 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/rng.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (rng.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (rng.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/montecarlo/rng.evidence.test.ts (5 tests | 3 failed) 6ms
+ ❯ src/montecarlo/rng.evidence.test.ts (5 tests | 3 failed) 7ms
    ❯ rng-derived-path-seed — SplitMix32-style per-path seed (4)
      × hashes (42, 7) to 1351098177 4ms
      × hashes (42, 8) to 2450979136 0ms

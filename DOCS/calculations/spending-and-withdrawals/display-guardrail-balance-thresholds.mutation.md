@@ -1,15 +1,15 @@
 # Mutation receipt: guardrail-threshold-dollars
 
-Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/riskBasedGuardrails.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/riskBasedGuardrails.ts b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
-index a0e0bc3b..81c4c245 100644
+index 5672cb3e..ca92a270 100644
 --- a/packages/engine/src/montecarlo/riskBasedGuardrails.ts
 +++ b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
-@@ -379,5 +379,5 @@
+@@ -380,5 +380,5 @@
    const lower = lowerPct === null ? null : (lowerPct / 100) * base
    const upper = upperPct === null ? null : (upperPct / 100) * base
 -  return { status: 'anchored', base, lower, upper, acts: !(lower !== null && upper !== null && lower >= upper) }
@@ -28,14 +28,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after the independent review of B2-P1 slice 2 changed this receipt's evidence file or moved the lines it mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (riskBasedGuardrails.thresholdDollars.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (riskBasedGuardrails.thresholdDollars.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 C:/rgwt/engine17/packages/engine
 
- ❯ src/montecarlo/riskBasedGuardrails.thresholdDollars.evidence.test.ts (7 tests | 1 failed) 50ms
+ ❯ src/montecarlo/riskBasedGuardrails.thresholdDollars.evidence.test.ts (7 tests | 1 failed) 55ms
    ❯ guardrail-threshold-dollars — Risk-based guardrail thresholds in dollars (7)
-     × cases E, F and G: unsolved, an inverted pair that never acts, and a policy that is not risk-based 4ms
+     × cases E, F and G: unsolved, an inverted pair that never acts, and a policy that is not risk-based 5ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 6 passed (7)

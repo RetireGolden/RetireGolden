@@ -264,15 +264,23 @@
     ],
     "relocationPending": [],
     "fedBy": {
+      "aca-applicable-slcsp-premium-annual": [
+        "aca-contract-premium-basis"
+      ],
       "aca-economic-net-premium-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
+        "aca-contract-premium-basis",
         "aca-coverage-year-parameters",
         "aca-expected-contribution",
         "aca-household-magi-composition"
       ],
+      "aca-gross-enrollment-premium-annual": [
+        "aca-contract-premium-basis"
+      ],
       "aca-modeled-allowable-ptc-annual": [
         "aca-400-percent-cliff",
+        "aca-contract-premium-basis",
         "aca-coverage-year-parameters",
         "aca-expected-contribution",
         "aca-household-magi-composition"
@@ -454,6 +462,9 @@
       "insight-impact-ending-after-tax-estate-delta": [
         "insight-irmaa-tier-edge-premium-cliff"
       ],
+      "insight-monte-carlo-success-delta": [
+        "monte-carlo-default-seed"
+      ],
       "insight-spending-headroom-rough-annual": [
         "projection-summary-ending-after-tax-estate"
       ],
@@ -527,6 +538,7 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
+        "monte-carlo-default-seed",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -548,6 +560,7 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
+        "monte-carlo-default-seed",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -570,6 +583,7 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
+        "monte-carlo-default-seed",
         "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "rng-derived-path-seed",
@@ -599,6 +613,7 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
+        "monte-carlo-default-seed",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
@@ -625,6 +640,7 @@
         "market-model-stationary-bootstrap",
         "market-model-student-t-draw",
         "market-model-user-shock",
+        "monte-carlo-default-seed",
         "mortality-published-death-probability",
         "mortality-sampled-death-age",
         "risk-based-starting-investable",
@@ -664,6 +680,9 @@
       ],
       "projection-summary-fi-age": [
         "projection-summary-fi-number"
+      ],
+      "risk-based-guardrail-solved-balance-thresholds": [
+        "monte-carlo-default-seed"
       ],
       "rmd-required-annual": [
         "rmd-applicable-age-attain-year"
@@ -762,6 +781,7 @@
       "spending-healthcare-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
+        "aca-contract-premium-basis",
         "aca-coverage-year-parameters",
         "aca-economic-net-premium",
         "medicare-base-part-b-premium",
@@ -878,16 +898,16 @@
     }
   },
   "records": {
-    "total": 262,
+    "total": 264,
     "byKind": {
       "composition": 85,
-      "data": 20,
+      "data": 21,
       "formula": 93,
-      "model": 64
+      "model": 65
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 257
+      "derivation": 259
     }
   },
   "oracleExamples": [
@@ -1050,9 +1070,9 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 78,
+    "catalogued": 79,
     "excludedWithReason": 0,
-    "notYetReviewed": 167
+    "notYetReviewed": 169
   },
   "shards": [
     {
@@ -1083,12 +1103,12 @@
     {
       "group": "medicareAndAca",
       "path": "calculation-coverage/medicareAndAca.json",
-      "recordCount": 15
+      "recordCount": 16
     },
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 38
+      "recordCount": 39
     },
     {
       "group": "optimizerAndComparisons",

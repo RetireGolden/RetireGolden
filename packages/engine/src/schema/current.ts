@@ -13,4 +13,4 @@ export {
   type JsonSchemaDocument,
 } from './planSchemaMeta.js'
 
-export { planJsonSchema } from './plan.v5.generated.js'
+export { planJsonSchema } from './plan.v6.generated.js'

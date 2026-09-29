@@ -48,6 +48,7 @@ import type { FilingStatus } from '../../params/types.js'
 import type { AnnualForcedDistributionQcdAndRetirementActionsPhaseResult }
   from './annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualRothBasisPoolKey } from './annualRothBasisPoolKey.js'
+import type { EffectiveAcaYearContract } from './effectiveAcaYearContract.js'
 
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
@@ -56,9 +57,7 @@ type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   : never
   : never
 
-type AcaContractYear = NonNullable<
-  NonNullable<Plan['expenses']['healthcare']['acaYears']>[number]
->
+type AcaContractYear = EffectiveAcaYearContract
 
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 

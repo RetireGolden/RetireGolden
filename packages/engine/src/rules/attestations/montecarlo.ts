@@ -11,6 +11,7 @@ import type { CoverageAttestation } from '../coverageAttestations.js'
 export const montecarloAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
   'montecarlo/deathProbability.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-27', note: 'Reads SSA\'s published q(x) from the period life table registered at longevity/ssaPeriodLifeTable.ts (ssa-table-4c6-period-life-table-vintage), cataloged as calculation record mortality-published-death-probability; the closed last row is an engine convention stated in that record, with no separate statutory claim, and this consumer is deliberately not pinned' }),
   'montecarlo/frontiers.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'montecarlo/headline.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-28', note: null }),
   'montecarlo/historicalReturns.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'montecarlo/historicalSuites.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'montecarlo/ltcShock.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

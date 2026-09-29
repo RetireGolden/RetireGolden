@@ -123,6 +123,47 @@ describe('the report prints the claim-age search the Optimize card prints', () =
     expect(page).toContain(`${alex!.name} claimed at 62 in 2025, before the plan starts, so that claim was held as it is.`)
   })
 
+  it('names the edit that removed the contract of a year, as the Optimize card does, and keeps it in a saved model (review finding M2)', () => {
+    const edited = structuredClone(plan)
+    edited.expenses.healthcare.acaYearsRemoved = [{ edit: 'filingStatusChanged', years: [2026] }]
+    const claimAge: ReportClaimAgeEvidence = {
+      ...base,
+      outcome: 'aca-unpriced',
+      unpricedAca: [
+        { year: 2026, reasons: ['missing-year-contract'] },
+        { year: 2028, reasons: ['tax-year-parameters-unsupported'] },
+      ],
+      alreadyClaimed: [],
+    }
+    const findings = {
+      objectiveId: 'max-after-tax-estate' as const,
+      objectiveLabel: 'Maximize after-tax estate',
+      recommendationState: 'neutral' as const,
+      winnerLabel: 'Current plan',
+      winnerSource: 'incumbent' as const,
+      validation: null,
+      candidates: [],
+      claimAge,
+    }
+    const input = { plan: edited, result: view.result, summary: view.summary, startYear: EXAMPLE_FIXED_YEAR }
+    const page = buildStandaloneReportHtml({ ...input, recommendationEvidence: findings })
+    const card = claimAgeSearchRefusal(
+      { outcome: 'aca-unpriced', unpricedAca: [{ year: 2026, reasons: ['missing-year-contract'] }, { year: 2028, reasons: ['tax-year-parameters-unsupported'] }], alreadyClaimed: [] },
+      (id) => id,
+      EXAMPLE_FIXED_YEAR,
+      edited.expenses.healthcare,
+    )!
+    expect(card).toContain('2026 (the details the credit needs were removed when the filing status was changed)')
+    expect(page).toContain(`<td>Social Security claim age</td><td>${card}</td>`)
+    const model = buildReportModel({ ...input, modeledFindings: findings })
+    expect(model.blocks['modeled-findings']?.claimAge?.unpricedAca).toEqual([
+      { year: 2026, reasons: ['missing-year-contract'], removedBy: 'filingStatusChanged' },
+      { year: 2028, reasons: ['tax-year-parameters-unsupported'] },
+    ])
+    const parsed = parseReportModel(serializeReportModel(model))
+    expect(parsed.ok).toBe(true)
+  })
+
   it('renders a version-3 model saved before the outcome existed as a search that ran', () => {
     const legacy: ReportClaimAgeEvidence = { ...base }
     const model = buildReportModel({

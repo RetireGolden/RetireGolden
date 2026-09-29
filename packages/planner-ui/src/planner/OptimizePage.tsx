@@ -75,7 +75,8 @@ import {
   PromotionWithheldPanel,
 } from './retirementActionPromotionPanels'
 import { promotedScheduleApplyHint } from './retirementActionPromotionCopy'
-import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
+import { currentStartYear, projectPlan } from './useProjection'
+import { headlineMcRunOptions } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 
 function DeltaStat({
@@ -366,18 +367,16 @@ export function OptimizePage() {
   useEffect(() => {
     if (!optimizedPlan) return
     let cancelled = false
-    void runMonteCarlo(optimizedPlan, {
-      startYear,
-      pathCount: DEFAULT_PATH_COUNT,
-      seed: seedFromPlanId(plan.id),
-      model: { type: 'lognormal', inflationMeanPct: plan.assumptions.inflationPct, returnVolPct: 12 },
-    }).then((s) => {
+    // The headline configuration built from the base plan (the engine's
+    // default seed and the plan's own model, class shocks included), so the
+    // proposed schedule's rate is comparable with the headline rate.
+    void runMonteCarlo(optimizedPlan, headlineMcRunOptions(plan, DEFAULT_PATH_COUNT, startYear)).then((s) => {
       if (!cancelled) setMcRate(s.successRate)
     })
     return () => {
       cancelled = true
     }
-  }, [optimizedPlan, startYear, plan.id, plan.assumptions.inflationPct])
+  }, [optimizedPlan, startYear, plan])
 
   const estateDelta = validation?.afterTaxEstateDelta ?? 0
   const taxDelta = validation?.lifetimeTaxDelta ?? 0
@@ -689,7 +688,7 @@ export function OptimizePage() {
           // The same sentence the downloadable report prints (claimAgeCopy.ts#claimAgeSearchRefusal).
           <div className="card">
             <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome={claimAge.outcome}>
-              {claimAgeSearchRefusal(claimAge, personName, startYear)}
+              {claimAgeSearchRefusal(claimAge, personName, startYear, plan.expenses.healthcare)}
             </p>
           </div>
         ) : (

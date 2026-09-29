@@ -14,9 +14,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { currentStartYear, seedFromPlanId } from './useProjection'
+import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
+import { currentStartYear } from './useProjection'
 import {
   headlineMcRun,
+  headlineMcRunOptions,
   isHeadlineMcConfig,
   publishMcHeadline,
   publishedMcSummary,
@@ -139,22 +141,29 @@ describe('Monte Carlo headline (#497)', () => {
     }
   })
 
-  it('only the headline configuration may publish: same model, vol, weight, seed, no shocks', () => {
-    const plan = createSamplePlan()
+  it('only the headline configuration may publish: same model, vol, weight, the default seed, no shocks', () => {
     const headline = {
       modelKind: 'lognormal' as const,
       returnVolPct: 12,
       equityWeightPct: 60,
-      seed: seedFromPlanId(plan.id),
+      // Every plan's headline seed is the engine's default (D-MC-DEFAULT-SEED),
+      // 0x5eeded = 6,221,293, whatever the plan's id.
+      seed: 6_221_293,
       stochasticLongevity: false,
       ltcShock: false,
     }
-    expect(isHeadlineMcConfig(plan, headline)).toBe(true)
-    expect(isHeadlineMcConfig(plan, { ...headline, modelKind: 'hist-iid' })).toBe(false)
-    expect(isHeadlineMcConfig(plan, { ...headline, returnVolPct: 15 })).toBe(false)
-    expect(isHeadlineMcConfig(plan, { ...headline, equityWeightPct: 80 })).toBe(false)
-    expect(isHeadlineMcConfig(plan, { ...headline, seed: headline.seed + 1 })).toBe(false)
-    expect(isHeadlineMcConfig(plan, { ...headline, stochasticLongevity: true })).toBe(false)
-    expect(isHeadlineMcConfig(plan, { ...headline, ltcShock: true })).toBe(false)
+    expect(DEFAULT_MONTE_CARLO_SEED).toBe(headline.seed)
+    // One seed for every plan: a copy under a new id draws the same markets.
+    const plan = createSamplePlan()
+    const copy = { ...plan, id: `${plan.id}-copy` }
+    expect(headlineMcRunOptions(copy, 1_000, 2026)).toEqual(headlineMcRunOptions(plan, 1_000, 2026))
+    expect(headlineMcRunOptions(plan, 1_000, 2026).seed).toBe(6_221_293)
+    expect(isHeadlineMcConfig(headline)).toBe(true)
+    expect(isHeadlineMcConfig({ ...headline, modelKind: 'hist-iid' })).toBe(false)
+    expect(isHeadlineMcConfig({ ...headline, returnVolPct: 15 })).toBe(false)
+    expect(isHeadlineMcConfig({ ...headline, equityWeightPct: 80 })).toBe(false)
+    expect(isHeadlineMcConfig({ ...headline, seed: headline.seed + 1 })).toBe(false)
+    expect(isHeadlineMcConfig({ ...headline, stochasticLongevity: true })).toBe(false)
+    expect(isHeadlineMcConfig({ ...headline, ltcShock: true })).toBe(false)
   })
 })

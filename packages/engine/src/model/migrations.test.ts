@@ -641,10 +641,11 @@ describe('migratePlanToCurrent', () => {
     })
     const step3to4: MigrationStep = (raw) => raw
     const step4to5: MigrationStep = (raw) => raw
+    const step5to6: MigrationStep = (raw) => raw
     const result = migratePlanToCurrent(
       old,
-      { 1: step1to2, 2: step2to3, 3: step3to4, 4: step4to5 },
-      5,
+      { 1: step1to2, 2: step2to3, 3: step3to4, 4: step4to5, 5: step5to6 },
+      6,
     )
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.plan.name).toBe('Renamed plan plan')
@@ -1347,7 +1348,7 @@ describe('v1 -> v2 retirement-action migration', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(5)
+      expect(result.plan.schemaVersion).toBe(6)
       expect(result.plan.strategies.retirementActions).toEqual([])
       expect(result.plan.strategies.withdrawalOrder).toEqual(scalarSnapshot['withdrawalOrder'])
       expect(result.plan.strategies.rothConversion).toEqual(scalarSnapshot['rothConversion'])
@@ -1393,7 +1394,7 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 5,
+      planSchemaVersion: 6,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
 
@@ -2113,7 +2114,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     const result = migratePlanToCurrent(raw)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(5)
+      expect(result.plan.schemaVersion).toBe(6)
       expect(result.plan).not.toHaveProperty('retirementActionEligibilityFacts')
     }
   })
@@ -2140,7 +2141,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.plan.schemaVersion).toBe(5)
+        expect(result.plan.schemaVersion).toBe(6)
         expect(result.plan).not.toHaveProperty(
           'retirementActionEligibilityFacts',
         )
@@ -2185,7 +2186,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 5,
+      planSchemaVersion: 6,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
     const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
@@ -2212,7 +2213,7 @@ describe('v3 -> v4 retirement-action annual tax facts migration', () => {
     const result = migratePlanToCurrent(raw)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(5)
+      expect(result.plan.schemaVersion).toBe(6)
       expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
     }
   })
@@ -2235,7 +2236,7 @@ describe('v3 -> v4 retirement-action annual tax facts migration', () => {
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.plan.schemaVersion).toBe(5)
+        expect(result.plan.schemaVersion).toBe(6)
         expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
       }
     },
@@ -2286,11 +2287,11 @@ describe('v4 -> v5 one-time income inflation election', () => {
     expect(migratePlanV4ToV5(raw)).toBe(raw)
   })
 
-  it('lands a v4 document on version 5 and parses', () => {
+  it('lands a v4 document on the current version and parses', () => {
     const result = migratePlanToCurrent(rawV4Plan())
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.plan.schemaVersion).toBe(5)
+    expect(result.plan.schemaVersion).toBe(6)
     const stream = result.plan.incomes.find((i) => i.type === 'oneTime')!
     expect(stream.type === 'oneTime' && stream.inflationAdjusted).toBe(false)
   })

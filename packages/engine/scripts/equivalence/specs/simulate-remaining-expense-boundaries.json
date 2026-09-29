@@ -55,24 +55,24 @@
       "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
       "lines": [
-        84,
-        177
+        81,
+        187
       ],
       "anchors": [
         {
-          "line": 84,
+          "line": 81,
           "text": "const hc = input.plan.expenses.healthcare"
         },
         {
-          "line": 98,
+          "line": 91,
           "text": "const lookbackPrimary = input.resolveMagiFor(input.year - 2)"
         },
         {
-          "line": 137,
+          "line": 130,
           "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>"
         },
         {
-          "line": 177,
+          "line": 187,
           "text": "if (medicare.partDSurchargeUnverified) {"
         }
       ],
@@ -80,51 +80,51 @@
     },
     {
       "id": "R.healthcare.helperContract",
-      "label": "IRMAA threshold, example validation, contract folds and ACA support through duplicate gate",
+      "label": "IRMAA threshold, contract folds and ACA support through duplicate gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
       "lines": [
-        182,
-        335
+        192,
+        313
       ],
       "anchors": [
         {
-          "line": 182,
+          "line": 192,
           "text": "const premium ="
         },
         {
-          "line": 207,
-          "text": "const exampleContractInputMismatch ="
+          "line": 217,
+          "text": "if (hc.applyAcaCredit && acaContract) {"
         },
         {
-          "line": 335,
+          "line": 313,
           "text": "if (coveredIds.size !== acaContract.coveredMembers.length) {"
         }
       ],
-      "note": "The duplicate-covered-member condition is pinned at line 328. Its body at lines 329-330 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
+      "note": "The duplicate-covered-member condition is pinned at line 313. Its body at lines 314-315 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
     },
     {
       "id": "R.healthcare.helperSupport",
       "label": "covered-member, tax-family, evidence and assertion support with complete result",
       "file": "projection/internal/annualHealthcareExpenses.ts",
       "lines": [
-        338,
-        474
+        316,
+        449
       ],
       "anchors": [
         {
-          "line": 338,
+          "line": 316,
           "text": "if ("
         },
         {
-          "line": 345,
+          "line": 323,
           "text": "const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!"
         },
         {
-          "line": 450,
+          "line": 425,
           "text": "return {"
         },
         {
-          "line": 474,
+          "line": 449,
           "text": "}"
         }
       ]
@@ -181,21 +181,21 @@
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        270,
-        283
+        269,
+        282
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 270,
+          "line": 269,
           "text": "let debtService = 0"
         },
         {
-          "line": 271,
+          "line": 270,
           "text": "for (const row of annualDebtServiceRows({"
         },
         {
-          "line": 283,
+          "line": 282,
           "text": "}"
         }
       ]
@@ -205,25 +205,25 @@
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        284,
-        341
+        283,
+        338
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 284,
+          "line": 283,
           "text": "const healthcarePlan = annualHealthcareExpenses({"
         },
         {
-          "line": 336,
+          "line": 333,
           "text": "const marketplaceMonthsByPersonPosition ="
         },
         {
-          "line": 338,
+          "line": 335,
           "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')"
         },
         {
-          "line": 341,
+          "line": 338,
           "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)"
         }
       ]
@@ -233,20 +233,20 @@
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        167,
-        186
+        168,
+        187
       ],
       "anchors": [
         {
-          "line": 167,
+          "line": 168,
           "text": ": input.people"
         },
         {
-          "line": 170,
+          "line": 171,
           "text": "months: input.marketplaceMonthsByPersonPosition[position]!,"
         },
         {
-          "line": 186,
+          "line": 187,
           "text": "})"
         }
       ]
@@ -256,25 +256,25 @@
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        357,
-        374
+        354,
+        371
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 357,
+          "line": 354,
           "text": "const longTermCare = annualLongTermCarePlan({"
         },
         {
-          "line": 369,
+          "line": 366,
           "text": "for (const write of longTermCare.benefitYearWrites) {"
         },
         {
-          "line": 371,
+          "line": 368,
           "text": "}"
         },
         {
-          "line": 374,
+          "line": 371,
           "text": "}"
         }
       ]
@@ -284,21 +284,21 @@
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        410,
-        440
+        407,
+        437
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 410,
+          "line": 407,
           "text": "const guardrailFunding = annualGuardrailFundingPlan({"
         },
         {
-          "line": 431,
+          "line": 428,
           "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier"
         },
         {
-          "line": 440,
+          "line": 437,
           "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals"
         }
       ]

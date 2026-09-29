@@ -4,6 +4,141 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: every plan's Monte Carlo draws from one default seed, so every Monte Carlo
+  figure moves once, by sampling noise (the headline success rate moves on 20 of the 29
+  examples; the mean change across all 29 is 0.7 points, and the largest is 2.3 apart
+  from early-retiree-aca, whose 6.2 include the fix below)** (decision D-MC-DEFAULT-SEED, 2026-09-28; diagnosis and
+  independent check in RetireGolden-Docs `evidence/mc-example-source-*.md`). The seed was
+  a hash of the plan's id, so Save to My Plans, Duplicate and an import drew new markets
+  and moved the same plan's rate by about 1.3 points (up to about 4), and two example
+  plans meant as an A-B pair ran on different markets (domain rule 12). The engine now
+  publishes `DEFAULT_MONTE_CARLO_SEED` (0x5eeded, the Optimize tournament's seed before,
+  kept for that reason and not chosen by any outcome) and the headline run's options,
+  `headlineMonteCarloOptions` (1,000 paths, the plan's lognormal model at 12 percent), and
+  the app uses them everywhere a plan-id seed was: the headline rate, the Monte Carlo page,
+  the Insight preview, Scenarios, Social Security, relocation, Optimize and the guardrail
+  threshold solve. The page keeps its visible seed and page-local Re-roll. What moves,
+  measured on all 29 examples at a 2026 start (1,000 paths): the headline rate on 20
+  (the other 9 are at 0% or 100% on both seeds); the ending-balance percentiles, fan,
+  histogram and depletion probabilities on every example whose paths differ; the Insight
+  preview's Monte Carlo line on bracket-fill-roth (+25.1 to +22.5 points; the retired
+  historical preview +30.8 to +25.2), rmd-irmaa (+17.5 to +15.2) and no-annuity-brokerage
+  (+0.1 to +0.4); the Social Security page's robustness check (500 paths) on 5 of the 6
+  examples it ranks and its bridge comparison on 18 of the 23 it offers, by up to 3.6
+  points; and the examples whose 1,000 paths all end at $0 go from five to three
+  (brokerage-no-hsa and fixed-target-spending now keep one path each). Measured against
+  origin/main at 4d2d9d67, the longevity draws on SSA's 2023 period table. A-B pairs now share
+  one draw; an allocated plan still shares only its first year's draws with a
+  single-return one, which the example copy and domain rule 12 now say. The Optimize
+  page's rate for a proposed schedule runs the headline model (class shocks included)
+  instead of a plain lognormal. Risk-based guardrail thresholds store the seed they were
+  solved on (`spendingPolicy.balanceThresholdSeed`); thresholds saved before this change
+  carry none, and the Spending card says in plain words that they were solved on an older
+  draw and offers to solve again. New record `monte-carlo-default-seed`; restated
+  `risk-based-guardrail-threshold-solver`, `monte-carlo-success-rate-comparison` and the
+  census note for the solved thresholds.
+
+- **Fixed: a plan's provenance no longer changes its numbers; example premium-credit
+  contracts follow the premium field on every run (Monte Carlo on early-retiree-aca 60.1%
+  to 61.7% on the old seed; no deterministic figure moves at a 2026 start)** (decision
+  D-EXAMPLE-SOURCE-SWITCH). The engine read `exampleSourceId` as a switch: it kept an
+  example's contract only while its premiums equalled the premium field grown at the
+  run's inflation. On a Monte Carlo path the inflation differs, so the contract was
+  dropped and the published-year credit refused, on every path from the second year:
+  early-retiree-aca's 2027 credit of about $11,000 was missing from its Monte Carlo (10,000
+  paths: 60.81% to 62.42%, 161 paths up and none down; with longevity 78.22% to 79.19%).
+  Each ACA year contract now carries `premiumBasis`: `'stated'` (the default) is the
+  coverage year's actual figures; `'premiumField'` stores only the year and the asserted
+  facts, and each run fills the region from the state, the tax family from the people
+  alive, the covered members alive and under Medicare age, and each covered month's
+  premium and benchmark from the premium field at that run's healthcare inflation. The
+  examples carry `'premiumField'` contracts; the switch, its
+  `example-contract-input-mismatch` code and the "example's inputs were edited" copy are
+  deleted, and a test proves projections and Monte Carlo paths do not depend on the
+  field. Editing the premium, or patching it in a scenario, keeps these contracts, so the
+  credit is re-priced instead of removed (early-retiree-aca's Learn page now says so, and
+  its copy test checks the credit moves by the premium's change to the cent). So do a
+  change of state, a move, a date of birth and a planning age, on the Household form and
+  in a scenario, because everything but the stored assertions is derived on each run:
+  early-retiree-aca moved from Florida to Georgia keeps its 2026 and 2027 credits, where
+  the edit used to remove them and the page blamed the planner. A partner added or
+  removed, or a new filing status, still removes the contracts (the assertions are facts
+  about who is on the return), and every removal is now recorded on the plan
+  (`healthcare.acaYearsRemoved`), so the unpriced-credit notes, the Insight preview's
+  refusal, the claim-age refusals of the Social Security and Optimize pages and the
+  report name the edit ("the details the credit needs were removed when a partner was
+  added") instead of saying the planner does not collect them. All 29
+  examples at a 2026 start: 230,649 ledger values compared, 13 examples bit-identical, 16
+  differing in floating-point last bits only (at most 1.9e-9 dollars), none at the cent;
+  every golden holds. Only early-retiree-aca's Monte Carlo moves (and hsa-property-depth
+  with longevity on, 20.3% to 20.7%, 4 paths). New record `aca-contract-premium-basis`;
+  restated `aca-enrollment-and-applicable-slcsp-premium-annual`, `spending-healthcare-annual`,
+  domain rules 01 and 08 and the early-retiree-aca walkthrough.
+
+- **Fixed: the 1 January 2027 clock no longer breaks example contracts (22 of the 29
+  examples, from a 2027 start)** (same decision). The stored contracts were written in
+  2026 dollars, so from a 2027 start every one of them failed the switch with no
+  randomness at all and the page said the example's inputs were edited. From a 2027
+  start the 22 examples' 2027 year is now priced (or refused only for its own reason:
+  below 100% of the poverty line on four, guardrail spending on one), and
+  early-retiree-aca gets its 2027 credit back ($10,265; ending net worth $558,920 to
+  $595,129). The example copy's other 2027 problems are a separate derivation
+  (D-2027-ROLLOVER).
+
+- **Fixed: a member who has died is no longer charged a stated premium-credit
+  contract's premium (Monte Carlo with longevity on a real-contract plan: +1.77 points
+  at 10,000 paths)** (decision D-ACA-CONTRACT-PATHS). A plan with real contracts (an
+  import, RetireGolden-MCP) kept charging a covered member's premium on every path after
+  that member died on it. Coverage ends at death (26 U.S.C. 36B(c)(2)(A)): a covered
+  member who is not alive in a year is charged nothing from 1 January of the year after
+  the death, the ledger's annual convention (the rest of the death year is a stated
+  limit), and the stated tax family that still names that member leaves the year
+  unpriced with `tax-family-member-unknown`. Enrollment ends on the date of death (45 CFR
+  155.430(d)(7)); charging the rest of the death year is a stated limit worth about 5.5
+  months of premium and about 0.15 points of success rate (at most 0.23), measured by the
+  independent review on the 2022 period life table. Measured on all-401k-no-bridge with its
+  contracts written as stated figures: 28.91% to 30.68% (177 paths up, none down,
+  paired SE 0.13); longevity off, no change. Stated premiums stay in nominal dollars on
+  every path: they are a coverage year's actual figures, and an estimate belongs in
+  `'premiumField'`. The contract fields now carry schema descriptions saying so, which
+  MCP callers read from `describe_plan_schema`.
+
+- **Breaking (engine and planner-ui).** Plan schema v6 (`schema/plan.v6.json`,
+  `@retiregolden/engine/schema/v6`; v1 to v5 unchanged): an older engine refuses a v6
+  document with `newer_than_app`. Migration 5 to 6 rewrites the contracts the example
+  recipe wrote, on a plan that carries `exampleSourceId`, to `'premiumField'`: the
+  recipe's shape and the recipe's dollars (the premium field times one growth factor per
+  plan to the power of the years since 2026, to half a cent), so a quote a household typed
+  into a saved example stays `'stated'`. It reports the new
+  `exampleContractsFollowPremiumField` load repair, which carries no `accountId`; the load
+  notice words it differently for the library's own demo record, and restoring a v5 backup
+  now says the same in the import notice. An unedited converted plan projects to the same
+  figures to the cent.
+  `AcaYearContract` is now a union discriminated by `premiumBasis` (new
+  `AcaStatedYearContract` and `AcaPremiumFieldYearContract`); code that reads a contract's
+  roster or premiums must narrow it, and `acaYearContractSchema` is a Zod discriminated
+  union, so a caller of its `.shape` or `.extend` breaks. `healthcare.acaYearsRemoved` is
+  new (the record of edits that removed contracts; the projection does not read it), and
+  so is `YearAcaResult.premiumBasis`. The `example-contract-input-mismatch` support code
+  and its user copy are removed.
+  `spendingPolicy.balanceThresholdSeed` is new. In planner-ui, `seedFromPlanId` is
+  deleted from `planner/useProjection` (nothing needs it), `isHeadlineMcConfig` no
+  longer takes the plan, `invalidateAcaEvidence` takes the edit that removes contracts,
+  and `unpricedCreditSpendingNote` and `guardrailPreviewUnpricedCreditRefusal` take the
+  plan's removal record, as do `unpricedCreditYearsText`,
+  `claimAgeUnpricedCreditReason` and `claimAgeSearchRefusal`; the report model's
+  `ReportUnpricedCreditYear` gains the optional `removedBy` (report model version 3
+  unchanged). `ParseV2BackupResult` carries the restored plans' repairs.
+
+- **Follow-ups.** RetireGolden-Pro's meeting view (seed 20,260,725, 250 paths, plain
+  lognormal) and RetireGolden-MCP (seed 42, 200 paths, plain lognormal) should adopt
+  `DEFAULT_MONTE_CARLO_SEED` and `headlineMonteCarloOptions` so every host shows one rate
+  for one plan, and MCP's `run_monte_carlo` description and protocol baseline move with
+  them; both need the new engine (and Pro the new planner-ui). MCP's documentation of
+  premium-credit contracts should explain `premiumBasis` and the stated-figures rule.
+  The engine's copy of the output census carries an edited note for the solved
+  thresholds, which the Docs census should take on its next import.
+
 - **Changed (build): six reductions take 251.0 KiB out of the app's JavaScript and 278.1 KiB
   out of its PWA precache, with no budget cap moved and no computed figure changed.** Measured
   in raw KiB against 4d2d9d67 (with the 2023 life table): all JS 5,096.6 → 4,845.6 of 5,100,

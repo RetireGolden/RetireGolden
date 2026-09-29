@@ -1218,6 +1218,14 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(currentCalculate!.disabled).toBe(false)
   })
 
+  it('pairs baseline and scenario on the engine default seed (D-MC-DEFAULT-SEED)', async () => {
+    await mount()
+    await advanceComparison()
+    const stochastic = mockedComparePlans.mock.calls[0]![2].stochastic
+    expect(stochastic?.seed).toBe(6_221_293)
+    expect(stochastic?.pathCount).toBe(200)
+  })
+
   it('uses per-plan taxes and discards capacity results after the detail request changes', async () => {
     const baselineSolve = deferred<SpendingSolveResult>()
     const proposalSolve = deferred<SpendingSolveResult>()

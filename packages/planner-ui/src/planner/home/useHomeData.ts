@@ -241,13 +241,34 @@ export function useHomeData() {
     // loop would have told the user nothing happened at all. A REJECTED write
     // and a REFUSED one are different problems with different fixes, so they
     // are counted apart rather than pooled into one storage complaint.
+    // A restored plan the migration changed says so here, in the words the
+    // load notice uses, because it is saved at the current version and will
+    // not show that notice when it opens (review finding L1). Each is named
+    // as it was imported (normalization keeps the order and the name). The
+    // copy is the workspace's, loaded only when a restored plan needs it, so
+    // the home page's entry chunk does not carry it (the app's bundle budget);
+    // if it cannot load, the plan is still named as changed.
+    const repairCopy = r.repairs.length > 0 ? await import('../planRepairCopy').catch(() => null) : null
+    const written = new Set<Plan>()
+    const changed = () =>
+      r.repairs
+        .flatMap(({ plan, repairs }) => {
+          const imported = normalized[r.plans.indexOf(plan)]
+          if (imported === undefined || !written.has(imported)) return []
+          if (repairCopy === null) return [` "${imported.name}" was changed by this version of the app when it was restored.`]
+          return repairs.map((repair) => ` "${imported.name}": ${repairCopy.planRepairMessage(repair, imported)}`)
+        })
+        .join('')
     let saved = 0
     const unwritable: string[] = []
     const invalid: string[] = []
     for (const p of normalized) {
       try {
         const result = await savePlanVia(store, p)
-        if (result.ok) saved++
+        if (result.ok) {
+          saved++
+          written.add(p)
+        }
         else invalid.push(p.name)
       } catch {
         unwritable.push(p.name)
@@ -261,10 +282,10 @@ export function useHomeData() {
       (invalid.length > 0 ? ` ${invalid.length} could not be read as a valid plan: ${namedPlans(invalid)}.` : '')
     setNotice(
       failed === 0
-        ? `Imported ${saved} plan${saved === 1 ? '' : 's'}.${skipped}`
+        ? `Imported ${saved} plan${saved === 1 ? '' : 's'}.${skipped}${changed()}`
         : saved === 0
           ? `No plans were imported.${detail}${skipped}`
-          : `Imported ${saved} of ${normalized.length} plans.${detail}${skipped}`,
+          : `Imported ${saved} of ${normalized.length} plans.${detail}${skipped}${changed()}`,
     )
     refresh()
   }

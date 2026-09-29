@@ -131,14 +131,30 @@ describe('example copy figures', () => {
     expect(example(id).lookFor).toContain('raise the conversion bracket to 12%')
     expect(body(id)).toContain('raise the conversion bracket to 12% on Strategy')
 
-    // A different premium no longer matches the example's coverage details.
+    // A different premium re-prices the credit (decision
+    // D-EXAMPLE-SOURCE-SWITCH, 2026-09-28): the example's contracts follow the
+    // premium field, so the benchmark moves with the premium. Below the cliff
+    // the household pays its required contribution, the applicable
+    // percentage of MAGI (26 U.S.C. 36B(b)(2)), which the premium does not
+    // enter, so the credit moves by exactly the premium's change and the net
+    // premium stays put. Before the decision the edit left the year unpriced.
     const edited = structuredClone(plan)
     edited.expenses.healthcare.pre65MonthlyPremiumPerPerson = premium + 100
     const editedView = run(edited)
     for (const year of pricedYears) {
-      expect(yearOf(editedView, year).aca!.supportCodes, String(year)).toContain('example-contract-input-mismatch')
+      const before = yearOf(view, year).aca!
+      const after = yearOf(editedView, year).aca!
+      expect(after.readiness, String(year)).toBe('actionable')
+      expect(after.premiumBasis, String(year)).toBe('premiumField')
+      expect(after.applicableSlcspPremium, String(year)).toBe(after.grossEnrollmentPremium)
+      expect(after.grossEnrollmentPremium - before.grossEnrollmentPremium, String(year)).toBeGreaterThan(0)
+      expect(after.modeledAllowablePtc! - before.modeledAllowablePtc!, String(year)).toBeCloseTo(
+        after.grossEnrollmentPremium - before.grossEnrollmentPremium,
+        2,
+      )
+      expect(after.economicNetPremium, String(year)).toBeCloseTo(before.economicNetPremium, 2)
     }
-    expect(body(id)).toContain('change the premium and the credit is no longer priced')
+    expect(body(id)).toContain('change the premium and the benchmark moves with it, so the credit rises or falls by the same amount and what she pays stays her expected share')
   })
 
   it('401(k) plus brokerage bridge and its all-401(k) control: penalties, depletion, lifetime tax and the conversion scenario', () => {

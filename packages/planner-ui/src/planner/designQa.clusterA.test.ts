@@ -226,7 +226,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
     expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
-    expect(mc).toMatch(/isHeadlineMcConfig\(plan, \{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
+    expect(mc).toMatch(/isHeadlineMcConfig\(\{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
     // The page's controls start on the one constant that defines the headline
     // configuration: no second copy of lognormal / 12 / 60 to drift.
     expect(mc).toContain('useState<ModelKind>(HEADLINE_MC_MODEL.kind)')

@@ -36,7 +36,9 @@ export function PlanRepairNotice() {
           // Repairs carry no id of their own and a plan can hold two of the same
           // kind on different accounts, so the position in the engine's ordered
           // list is the key. The list is fixed for the life of the notice.
-          <li key={`${repair.kind}:${repair.accountId}:${index}`}>{planRepairMessage(repair, plan)}</li>
+          <li key={`${repair.kind}:${'accountId' in repair ? repair.accountId : repair.exampleSourceId}:${index}`}>
+            {planRepairMessage(repair, plan)}
+          </li>
         ))}
       </ul>
       {/* Spacing lives in planner.css (`.plan-repair-notice .picker-actions`);

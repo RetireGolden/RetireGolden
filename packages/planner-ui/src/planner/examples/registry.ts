@@ -279,10 +279,10 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     id: 'fixed-target-spending',
     title: 'Fixed target spending (no guardrails)',
     summary: 'Control version of the guardrails example: same balances and target lifestyle but classic fixed spending (no required floor or guardrail policy).',
-    teaches: 'A-B comparison: load both this and "Guardrails and flexible goals", then use Compare Plans to see how guardrails affect required success rate, depletion, and goal funding.',
+    teaches: 'A-B comparison: load both this and "Guardrails and flexible goals", then use Compare Plans to see how guardrails affect depletion and goal funding, and the Monte Carlo page of each to see the required-floor success rate.',
     themeTags: ['guardrails', 'shortfall'],
     learnSlug: 'example-fixed-target-spending',
-    lookFor: 'Compare depletion year and MC success rates (especially requiredFloorSuccessRate) against the guardrails version.',
+    lookFor: 'Compare the depletion year against the guardrails version in Compare Plans, and the Monte Carlo success rates (especially the required-floor rate) on each plan\'s Monte Carlo page. Every plan starts from the same market draw, so the two rates come from the same simulated markets.',
     build: buildFixedTargetSpending,
   },
   {
@@ -302,7 +302,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     teaches: 'A-B comparison with "Glidepath allocation and rebalancing". Same starting balances. See the impact of glide + rebalancing + class-correlated MC on risk metrics and outcomes.',
     themeTags: ['allocation', 'rmd-irmaa'],
     learnSlug: 'example-static-allocation-control',
-    lookFor: 'Run Monte Carlo on both and compare 10th-percentile estate, success curves, and depletion probability in the Compare view.',
+    lookFor: 'Run Monte Carlo on both and compare the 10th-percentile estate, success curves, and depletion probability. Both start from the same market draw, but the glidepath version also draws a shock for each asset class, so after the first year the two see different markets and a gap of a point or two in success can be sampling noise.',
     build: buildStaticAllocationControl,
   },
   {
