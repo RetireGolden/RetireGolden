@@ -96,6 +96,37 @@ describe('PlanRepairNotice', () => {
     ])
   })
 
+  it('leads with the example sentence when every repair is about example credit details, the stored-details one otherwise (PR #761 review 8)', async () => {
+    const lead = () => container.querySelectorAll('.plan-repair-notice p')[1]!.textContent
+    await mount([
+      { kind: 'exampleContractsFollowPremiumField', exampleSourceId: 'early-retiree-aca', contractCount: 2, firstYear: 2026, lastYear: 2027 },
+      { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2028, lastYear: 2028 },
+    ])
+    expect(lead()).toBe(
+      "This plan's premium tax credit details came from a library example, and the app now stores an example's details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed.",
+    )
+    const plan = createSamplePlan()
+    await mount(
+      [
+        { kind: 'exampleContractsLeftOut', exampleSourceId: 'early-retiree-aca', contractCount: 1, firstYear: 2028, lastYear: 2028 },
+        { kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: plan.household.people[0]!.id },
+      ],
+      () => undefined,
+      plan,
+    )
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts, and its premium tax credit details came from a library example, which the app now stores differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+    await mount(
+      [{ kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: plan.household.people[0]!.id }],
+      () => undefined,
+      plan,
+    )
+    expect(lead()).toBe(
+      'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.',
+    )
+  })
+
   it('renders nothing when the load repaired nothing', async () => {
     await mount([])
     expect(container.querySelector('.plan-repair-notice')).toBeNull()

@@ -15,9 +15,9 @@ import { usePlan } from './planContextCore'
 import { usePlanRepairs } from './planRepairContext'
 import {
   PLAN_REPAIR_NOTICE_DISMISS,
-  PLAN_REPAIR_NOTICE_INTRO,
   PLAN_REPAIR_NOTICE_TITLE,
   planRepairMessage,
+  planRepairNoticeIntro,
 } from './planRepairCopy'
 
 export function PlanRepairNotice() {
@@ -30,7 +30,7 @@ export function PlanRepairNotice() {
       <p>
         <strong>{PLAN_REPAIR_NOTICE_TITLE}</strong>
       </p>
-      <p>{PLAN_REPAIR_NOTICE_INTRO}</p>
+      <p>{planRepairNoticeIntro(repairs)}</p>
       <ul>
         {repairs.map((repair, index) => (
           // Repairs carry no id of their own and a plan can hold two of the same

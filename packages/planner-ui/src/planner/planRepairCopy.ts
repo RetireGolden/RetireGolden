@@ -21,9 +21,35 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 /** Heading on the workspace notice. */
 export const PLAN_REPAIR_NOTICE_TITLE = 'This plan changed when it opened'
 
-/** Lead paragraph above the per-repair list. */
+/** Lead paragraph above the per-repair list, for repairs of details the app no longer accepts. */
 export const PLAN_REPAIR_NOTICE_INTRO =
   'This plan was stored with details the app no longer accepts. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed.'
+
+/**
+ * Lead paragraph when every repair is the v5 -> v6 handling of a library
+ * example's premium tax credit details. Those details were not refused: the
+ * app stores an example's credit details differently now, and the plan
+ * opened in the new form (PR #761 review 8).
+ */
+export const PLAN_REPAIR_NOTICE_EXAMPLE_INTRO =
+  "This plan's premium tax credit details came from a library example, and the app now stores an example's details differently. The plan opened in the new form, as described below. Nothing else in your plan was changed."
+
+/** Lead paragraph when a plan has both kinds of repair. */
+export const PLAN_REPAIR_NOTICE_MIXED_INTRO =
+  "This plan was stored with details the app no longer accepts, and its premium tax credit details came from a library example, which the app now stores differently. It opened with the changes below so you can see what is different and decide what to do. Nothing else in your plan was changed."
+
+/** The repairs that are the v5 -> v6 handling of an example's credit details, not a refusal. */
+const EXAMPLE_CONTRACT_REPAIR_KINDS: ReadonlySet<PlanLoadRepair['kind']> = new Set<PlanLoadRepair['kind']>([
+  'exampleContractsFollowPremiumField',
+  'exampleContractsLeftOut',
+])
+
+/** The notice's lead paragraph for these repairs. */
+export function planRepairNoticeIntro(repairs: readonly PlanLoadRepair[]): string {
+  const example = repairs.filter((repair) => EXAMPLE_CONTRACT_REPAIR_KINDS.has(repair.kind)).length
+  if (example === 0) return PLAN_REPAIR_NOTICE_INTRO
+  return example === repairs.length ? PLAN_REPAIR_NOTICE_EXAMPLE_INTRO : PLAN_REPAIR_NOTICE_MIXED_INTRO
+}
 
 /** Label on the control that closes the notice. */
 export const PLAN_REPAIR_NOTICE_DISMISS = 'Dismiss'
