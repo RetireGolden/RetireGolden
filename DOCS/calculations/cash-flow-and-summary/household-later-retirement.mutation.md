@@ -1,15 +1,15 @@
 # Mutation receipt: household-later-retirement
 
-Executed 2026-09-29 on branch `claude/people-order-and-scenarios` at base `6905169c` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-29 on branch `claude/people-order-and-scenarios` at base `6905169c` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/householdRetirement.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/householdRetirement.ts b/packages/engine/src/projection/householdRetirement.ts
-index 00000000..00000000 100644
+index ac755bec..5f35401c 100644
 --- a/packages/engine/src/projection/householdRetirement.ts
 +++ b/packages/engine/src/projection/householdRetirement.ts
-@@ -1 +1 @@
+@@ -96,3 +96,2 @@
      const retirementYear = birthYear + person.retirementAge
 -    if (lastWageYear !== null && lastWageYear + 1 > retirementYear) return result(lastWageYear + 1, 'wagesPastRetirementAge')
      return result(retirementYear, 'retirementAge')
@@ -25,102 +25,76 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-derived for the independent review's N3: the mutation restores, on the rewritten line, the rule N3 replaced. The baseline is green (householdRetirement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-derived for the round-one review of #765 (issues 1 and 3): the mutation drops the new branch for wages paid past a retirement age. The baseline is green (householdRetirement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/householdRetirement.evidence.test.ts (4 tests | 3 failed) 57ms
-   ❯ household-later-retirement — The household's later retirement, one rule for FI and the funded ratio (4)
+ ❯ src/projection/householdRetirement.evidence.test.ts (5 tests | 2 failed) 77ms
+   ❯ household-later-retirement — The household's later retirement, one rule for FI and the funded ratio (5)
      × gives each case its year, person and rule, and who works through the plan 5ms
-     × names the same person and year on the FI figures and the funded ratio, and who works through the plan 41ms
-     × prices no FI figure and counts no funded ratio when nobody retires in the plan 11ms
+     × prices the first year without wages paid past a retirement age on the FI figures and the funded ratio, and says why 14ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 1 passed (4)
+      Tests  2 failed | 3 passed (5)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/householdRetirement.evidence.test.ts > household-later-retirement — The household's later retirement, one rule for FI and the funded ratio > gives each case its year, person and rule, and who works through the plan
-AssertionError: Case 3: expected [ 2059, 'sam', 'wagesEnd' ] to deeply equal [ 2028, 'alex', 'retirementAge' ]
+AssertionError: Case 11: expected [ 2032, 'hal', 'retirementAge' ] to deeply equal [ 2041, 'gus', …(1) ]
 
 - Expected
 + Received
 
   [
--   2028,
--   "alex",
--   "retirementAge",
-+   2059,
-+   "sam",
-+   "wagesEnd",
+-   2041,
+-   "gus",
+-   "wagesPastRetirementAge",
++   2032,
++   "hal",
++   "retirementAge",
   ]
 
- ❯ src/projection/householdRetirement.evidence.test.ts:74:12
-     72|         const { retirement, notRetiring: left } = householdRetirement(…
-     73|         expect([retirement?.year ?? null, retirement?.personId ?? null…
-     74|           .toEqual([expectedYear(label), name?.toLowerCase() ?? null, …
+ ❯ src/projection/householdRetirement.evidence.test.ts:79:12
+     77|         const { retirement, notRetiring: left } = householdRetirement(…
+     78|         expect([retirement?.year ?? null, retirement?.personId ?? null…
+     79|           .toEqual([expectedYear(label), name?.toLowerCase() ?? null, …
        |            ^
-     75|         expect(left.map((p) => p.personId), label).toEqual(notRetiring)
-     76|       }
+     80|         expect(left.map((p) => p.personId), label).toEqual(notRetiring)
+     81|       }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
- FAIL  src/projection/householdRetirement.evidence.test.ts > household-later-retirement — The household's later retirement, one rule for FI and the funded ratio > names the same person and year on the FI figures and the funded ratio, and who works through the plan
-AssertionError: expected [ 'sam', 2059, 'wagesEnd' ] to deeply equal [ 'alex', 2028, 'retirementAge' ]
-
-- Expected
-+ Received
-
-  [
--   "alex",
--   2028,
--   "retirementAge",
-+   "sam",
-+   2059,
-+   "wagesEnd",
-  ]
-
- ❯ src/projection/householdRetirement.evidence.test.ts:91:67
-     89|       const fi = summarizeProjection(plan, result, { conversionFreeRun…
-     90|       const funded = fundedRatioStart(plan, START)
-     91|       expect([fi.personId, fi.retirementYear, fi.retirementRule]).toEq…
-       |                                                                   ^
-     92|       expect([funded.personId, funded.retirementYear, funded.rule]).to…
-     93|       expect(fi.notRetiring.map((p) => p.personId)).toEqual(['sam'])
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
-
- FAIL  src/projection/householdRetirement.evidence.test.ts > household-later-retirement — The household's later retirement, one rule for FI and the funded ratio > prices no FI figure and counts no funded ratio when nobody retires in the plan
-AssertionError: expected [ 153221.0088378507, 2026, 58, …(1) ] to deeply equal [ null, null, null, null ]
+ FAIL  src/projection/householdRetirement.evidence.test.ts > household-later-retirement — The household's later retirement, one rule for FI and the funded ratio > prices the first year without wages paid past a retirement age on the FI figures and the funded ratio, and says why
+AssertionError: expected [ 'hal', 2032, 'retirementAge', 2032 ] to deeply equal [ 'gus', 2041, …(2) ]
 
 - Expected
 + Received
 
   [
--   null,
--   null,
--   null,
--   null,
-+   153221.0088378507,
-+   2026,
-+   58,
-+   59501.392139564676,
+-   "gus",
+-   2041,
+-   "wagesPastRetirementAge",
+-   2041,
++   "hal",
++   2032,
++   "retirementAge",
++   2032,
   ]
 
- ❯ src/projection/householdRetirement.evidence.test.ts:104:90
-    102|       const result = simulatePlan(plan, { startYear: START, taxCalcula…
-    103|       const summary = summarizeProjection(plan, result, { conversionFr…
-    104|       expect([summary.fiNumber, summary.fiYear, summary.fiAge, summary…
-       |                                                                                          ^
-    105|       expect(summary.fiBasis).toMatchObject({ spendingYear: null, spen…
-    106|       expect(summary.fiBasis.notRetiring.map((p) => p.personId)).toEqu…
+ ❯ src/projection/householdRetirement.evidence.test.ts:113:10
+    111|       const summary = summarizeProjection(plan, result, { conversionFr…
+    112|       expect([summary.fiBasis.personId, summary.fiBasis.retirementYear…
+    113|         .toEqual(['gus', expectedYear('Case 11'), 'wagesPastRetirement…
+       |          ^
+    114|       const funded = fundedRatioStart(plan, START)
+    115|       expect([funded.personId, funded.fromYear, funded.rule]).toEqual(…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
 ## Revert

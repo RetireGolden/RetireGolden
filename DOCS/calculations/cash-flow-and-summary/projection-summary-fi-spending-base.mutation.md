@@ -1,15 +1,15 @@
 # Mutation receipt: projection-summary-fi-spending-base
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index 6b4a9cfc..07988c94 100644
+index f552286d..1aab0174 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
-@@ -523,3 +523,3 @@
+@@ -531,3 +531,3 @@
    let pricedYear: ProjectionResult['years'][number] | undefined = targetResult
 -  if (targetResult !== undefined && result.years.some(yearConverts)) {
 +  if (targetResult !== undefined && result.years.some((year) => year.rothConversionActionExecution !== undefined)) {
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because the verification's fixes (N1 to N4) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the round-one review of #765 moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 2 failed) 28ms
+ ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 2 failed) 25ms
    ❯ projection-summary-fi-spending-base — Which year and which outflows the FI figures price (3)
-     × prices 2032, Robin’s later retirement, from the conversion-free run: 1,842,465.36 6ms
+     × prices 2032, Robin’s later retirement, from the conversion-free run: 1,842,465.36 5ms
      × keeps the conversion tax only when no conversion-free run is supplied, and says so 1ms
 
  Test Files  1 failed (1)

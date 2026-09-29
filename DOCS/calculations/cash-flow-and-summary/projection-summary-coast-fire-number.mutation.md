@@ -1,15 +1,15 @@
 # Mutation receipt: projection-summary-coast-fire-number
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `85e2fdb8` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8f562339` (branch `claude/people-order-and-scenarios`, pull request #765) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index 6b4a9cfc..12bf1dd4 100644
+index f552286d..e19f043b 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
-@@ -558,2 +558,2 @@
+@@ -566,2 +566,2 @@
      ? null
 -    : fiNumber / Math.pow(1 + realReturn, Math.max(0, targetYear - startYear))
 +    : fiNumber / Math.pow(1 + realReturn, Math.max(0, isoYear(plan.household.people[0]!.dob) + (plan.household.people[0]!.retirementAge ?? 65) - startYear))
@@ -25,14 +25,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-derived for the independent review's N3: the mutation keeps its reading on the line N3 made null-aware. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the round-one review of #765 moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 3 failed) 25ms
+ ❯ src/projection/compareSummary.evidence.test.ts (23 tests | 3 failed) 27ms
    ❯ projection-summary-coast-fire-number — Projection summary coast fire number (3)
-     × discounts a couple over the household's later retirement, 6 years to Robin's 2032, whoever is listed first 5ms
+     × discounts a couple over the household's later retirement, 6 years to Robin's 2032, whoever is listed first 4ms
    ❯ projection-summary-fi-spending-base — Which year and which outflows the FI figures price (3)
      × prices 2032, Robin’s later retirement, from the conversion-free run: 1,842,465.36 1ms
      × gives the same figures with the people listed the other way round 1ms
