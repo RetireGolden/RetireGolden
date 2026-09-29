@@ -383,8 +383,11 @@ const rawStateYear2026 = {
     },
     HI: {
       // Haw. Rev. Stat. § 235-2.4(a)(2)(F): $8,000 single / $16,000 MFJ for tax
-      // years beginning after 2025 through 2027; phase (G) starts after 2027 and
-      // later phases are unimplemented. https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf
+      // years beginning after 2025 through 2027. The later steps are loaded as
+      // enacted: (G) $9,000 / $18,000 in ./enacted2028.ts, (H) $10,000 / $20,000
+      // in ./enacted2030.ts and (I) $12,000 / $24,000 in ./enacted2031.ts
+      // (hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps).
+      // https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf
       code: 'HI', name: 'Hawaii', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 8000, marriedFilingJointly: 16000 },
       brackets: {
@@ -896,7 +899,8 @@ const rawStateYear2026 = {
       // https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf
       // Pension modification, 44-30-12(c)(9): up to $50,000 from tax year 2025
       // (flat; only its AGI test is indexed), at full retirement age, 67 for
-      // everyone reaching it from 2026. Its AGI test is not modeled.
+      // everyone reaching it from 2026, and only below the (c)(8) AGI limits
+      // (ri-gen-laws-44-30-12-social-security-and-pension-modification).
       // Social Security modification, 44-30-12(c)(8): subtracted below the
       // AGI limits at full retirement age; the limits are the TY2025 figures
       // ADV 2025-22 prints, the latest published, standing in for 2026.

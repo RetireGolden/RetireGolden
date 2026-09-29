@@ -54,7 +54,7 @@ eligible recipients with income. A spouse's unused cap or older age cannot
 establish the other recipient's exclusion. Missing ownership or missing or
 conflicting age eligibility produces an incomplete disclosure and no exclusion
 for the affected recipient. Legacy aggregate inputs do not prove recipient
-attribution. The income-test and full-retirement-age approximations remain.
+attribution.
 
 - The pension modification is allowed only below the federal-AGI limit, and the engine applies that test; aggregate retirement income supplied without characterized distributions cannot tell a pension from an IRA and still counts both. The Social Security modification's limits are held at the 2025 amounts, which slightly overstates tax for a filer between them and the indexed 2026 limits.
 - Standard deduction phases out at high income ($261,000–$290,800 for 2026); not modeled.
