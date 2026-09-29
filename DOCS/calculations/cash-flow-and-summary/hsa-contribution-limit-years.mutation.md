@@ -1,15 +1,15 @@
 # Mutation receipt: hsa-contribution-limit-years
 
-Executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `e68144d7` (branch `claude/2027-published-figures`, pull request #762) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/params/hsaLimitYears.ts`
 
 ```diff
 diff --git a/packages/engine/src/params/hsaLimitYears.ts b/packages/engine/src/params/hsaLimitYears.ts
-index b07f0b17..f2731528 100644
+index cd0d5065..85c7155a 100644
 --- a/packages/engine/src/params/hsaLimitYears.ts
 +++ b/packages/engine/src/params/hsaLimitYears.ts
-@@ -57,5 +57,5 @@
+@@ -62,5 +62,5 @@
  
  // Keep sorted ascending by year as each May's revenue procedure is added.
 -const limitYears: readonly HsaLimitYearParameters[] = [hsaLimitYear2026, hsaLimitYear2027]
@@ -28,7 +28,7 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/params/hsaL
 
 ## Captured failing output
 
-Executed for the new calculation record against its evidence test. The baseline is green (hsaLimitYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The module doc of hsaLimitYears.ts gained a paragraph on the years before the earliest published one (review round one of #762, issue 9), moving the mutated lines down five. The baseline is green (hsaLimitYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine18/packages/engine
@@ -36,8 +36,8 @@ RUN  v5.0.0 C:/rgwt/engine18/packages/engine
  ❯ src/params/hsaLimitYears.evidence.test.ts (3 tests | 3 failed) 42ms
    ❯ hsa-contribution-limit-years — HSA contribution limits by year (3)
      × publishes 2027 and stands 2028 in on 2027 5ms
-     × credits the published 2027 limits through the ledger, whatever the plan inflation 29ms
-     × grows 2028 one year from the 2027 limits, and adds the catch-up unscaled 7ms
+     × credits the published 2027 limits through the ledger, whatever the plan inflation 28ms
+     × grows 2028 one year from the 2027 limits, and adds the catch-up unscaled 8ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
