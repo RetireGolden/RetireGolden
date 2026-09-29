@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 
+import { startYearDollarsWord, startYearDollarsWordCapitalized } from '../startYear'
 import { parseIssues, type ParsedIssue } from './validationIssues'
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'dirty' | 'invalid' | 'error'
@@ -58,4 +59,20 @@ export function useParsedIssues(): ParsedIssues | null {
   const plan = useContext(PlanCtx)
   if (parsed) return parsed
   return plan ? parsedIssuesOf(plan.issues, plan.plan) : null
+}
+
+/**
+ * The word before "dollars" for the plan in context (`startYearDollarsWord`):
+ * "today's" for a user plan, "2026" for a library example. "today's" outside
+ * a plan, where amounts are entered as of today.
+ */
+export function usePlanDollarsWord(): string {
+  const plan = useContext(PlanCtx)
+  return plan ? startYearDollarsWord(plan.plan) : "today's"
+}
+
+/** The same word, capitalized for the start of a label: "Today's" or "2026". */
+export function usePlanDollarsWordCapitalized(): string {
+  const plan = useContext(PlanCtx)
+  return plan ? startYearDollarsWordCapitalized(plan.plan) : "Today's"
 }

@@ -3411,6 +3411,16 @@ html:has(.kpi-bar) {
 .year-table td.year-table-year {
   font-weight: 600;
 }
+
+/* A year whose tax, limit and benefit figures are partly projected
+   (D-2027-ROLLOVER): an asterisk after the year, drawn here so the cell's text
+   stays the year; the cell's aria-describedby points at the note under the
+   table that says which figures and from when. */
+.year-table td.year-table-year--projected::after {
+  content: '*';
+  color: var(--muted);
+  font-weight: 400;
+}
 /* On paper the appendix regions are plain tables: no scroll, cap, or cue. */
 @media print {
   .report .year-table-wrap {

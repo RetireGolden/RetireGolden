@@ -127,7 +127,7 @@ const exampleEarlyCareerMatchBody = exampleBody(
 )
 
 const exampleAggressiveSaverBody = exampleBody(
-  'Taylor saves 50% of their gross wages. By maxing out pre-tax and Roth options and scheduling aggressive taxable contributions, they build a portfolio to support their retirement expenses.',
+  'Taylor saves 50% of their gross wages. By putting $23,000 a year into a pre-tax 401(k) and $7,000 into a Roth IRA, and scheduling aggressive taxable contributions, they build a portfolio to support their retirement expenses.',
   'Open Results to inspect the savings rate, FI Target, and the year they cross the FI threshold.',
 )
 
@@ -143,7 +143,7 @@ const exampleBaristaFireBody = exampleBody(
 
 const exampleBridgeEarlyRetirementBody = exampleBody(
   'Jordan retires early and sets up a Substantially Equal Periodic Payment (SEPP) series from their traditional IRA. This unlocks early cash flow without the 10% penalty.',
-  'Check the SEPP column in Results and traditional account balance drawdown starting at age 45.',
+  'Check the SEPP column in Results and traditional account balance drawdown starting at age 45, in 2026.',
 )
 
 const exampleLeanFatFireBody = exampleBody(
@@ -162,7 +162,7 @@ const exampleSalaryGrowthEscalationBody = exampleBody(
 )
 
 const exampleGuardrailsFlexBody = exampleBody(
-  `Riley plans on $58,000 of annual spending in today's dollars.
+  `Riley plans on $58,000 of annual spending in 2026 dollars.
 
 She sets a required floor of $34,000 that must be protected no matter what the markets do. The remaining spending is discretionary and can be cut or increased.
 
@@ -230,7 +230,7 @@ In the taxable account, bonds generate more interest (taxed every year) while st
 )
 
 const exampleHsaPropertyDepthBody = exampleBody(
-  `Harper contributes the maximum to an HSA and invests it for growth.
+  `Harper puts $4,150 a year into an HSA and invests it for growth.
 
 She sets the HSA to cap qualified medical withdrawals by actual modeled healthcare costs plus any accumulated "reimburse later" balance.
 
@@ -425,7 +425,7 @@ The built-in scenario, "Bracket-fill Roth conversions (Form 8606 basis)", fills 
     {
       type: 'callout',
       tone: 'note',
-      md: 'This household is **illustrative by design**. The example library\'s clock is fixed at 2026, and a 22-year-old in 2026 (born 2004) could not actually have had a Trump account: contributions only began July 4, 2026. The plan shows what a child born under the program will experience at 22. The account itself needs no special modeling: after 18 it is an ordinary traditional IRA.',
+      md: 'This household is **illustrative by design**. Every library example is set in 2026, and a 22-year-old in 2026 (born 2004) could not actually have had a Trump account: contributions only began July 4, 2026. The plan shows what a child born under the program will experience at 22. The account itself needs no special modeling: after 18 it is an ordinary traditional IRA.',
     },
     { type: 'heading', text: 'Trump Account Rules (verified 2026-07-16)' },
     {

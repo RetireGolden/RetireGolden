@@ -1,9 +1,8 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { usePlan } from '../planContextCore'
-import { useProjection } from '../useProjection'
-import { packForYear } from '@retiregolden/engine/params'
-import { detectorProjection } from '@retiregolden/engine/insights/detectorProjection'
+import { projectionStartYear, useProjection } from '../useProjection'
+import { insightDetectorContext } from './insightContext'
 import { runScreen } from '@retiregolden/engine/insights/runInsights'
 import type { InsightCard, InsightCategory } from '@retiregolden/engine/insights/types'
 import { readLocal, STORAGE_KEYS, writeLocal } from '../../data/localStore'
@@ -41,7 +40,7 @@ function readDismissedInsights(): Record<string, string[]> {
 
 export function InsightsPage() {
   const { plan } = usePlan()
-  const projectionView = useProjection(plan)
+  const projectionView = useProjection(plan, projectionStartYear(plan))
 
   // Manage dismissed cards state loaded from localStorage
   const [dismissedMap, setDismissedMap] = useState<Record<string, string[]>>(readDismissedInsights)
@@ -122,15 +121,7 @@ export function InsightsPage() {
 
   // Run detectors synchronously
   const allCards = useMemo(() => {
-    const paramsLookup = packForYear(projectionView.startYear)
-    const ctx = {
-      plan,
-      // The engine's own projection view: today's dollars divide by the
-      // run's published inflation factor, not a converter built here.
-      projection: detectorProjection(projectionView.result, projectionView.summary),
-      params: paramsLookup.pack,
-    }
-    return runScreen(ctx)
+    return runScreen(insightDetectorContext(plan, projectionView))
   }, [plan, projectionView])
 
   // Filter out dismissed cards

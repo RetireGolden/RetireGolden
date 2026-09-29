@@ -30,7 +30,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { fmtMoney } from './format'
 import { LEARN } from './learnLinks'
-import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { projectionStartYear, taxCalculatorFor, startYearDollarsWord } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
 
 function makeScenarioId(): string {
@@ -92,7 +92,7 @@ export function SpendingSolverPage() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
 
   // The solve's answer, with the one fact about the plan it was solved on that
   // the copy needs (whether it spends under guardrails): the plan can change
@@ -275,7 +275,7 @@ export function SpendingSolverPage() {
       <div className="card">
         <h2>How much can I spend?</h2>
         <p className="card-hint">
-          Finds the highest annual base spending (today's dollars) your exact projection ledger can sustain: the plan
+          Finds the highest annual base spending ({startYearDollarsWord(plan)} dollars) your exact projection ledger can sustain: the plan
           must never run out of investable money through the full horizon, and the ending after-tax estate must stay at
           or above your bequest target. Every probed level re-runs the whole ledger: taxes, ACA and IRMAA cliffs,
           withdrawal order, healthcare, debts, and survivor years all price in. Phases and one-time goals stay as
@@ -296,7 +296,7 @@ export function SpendingSolverPage() {
           <p className="field-hint">
             {result && result.estateFloorTodayDollars > 0 ? (
               <>
-                Enforcing your {fmtMoney(result.estateFloorTodayDollars)} bequest target (today's dollars) from{' '}
+                Enforcing your {fmtMoney(result.estateFloorTodayDollars)} bequest target ({startYearDollarsWord(plan)} dollars) from{' '}
                 <Link to={`/plan/${plan.id}/spending`}>Spending</Link>.
               </>
             ) : (
@@ -355,9 +355,9 @@ export function SpendingSolverPage() {
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
                   {headroomUnderHundred
-                    ? `That covers your current ${fmtMoney(result.currentBaseAnnual)} baseline with less than $100 a year to spare (today's dollars).${exactPublished ? '' : ' The figure above is rounded down to the nearest $100.'}`
+                    ? `That covers your current ${fmtMoney(result.currentBaseAnnual)} baseline with less than $100 a year to spare (${startYearDollarsWord(plan)} dollars).${exactPublished ? '' : ' The figure above is rounded down to the nearest $100.'}`
                     : sustainsCurrent
-                      ? `That is ${fmtMoney(slack ?? 0)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (today's dollars).`
+                      ? `That is ${fmtMoney(slack ?? 0)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (${startYearDollarsWord(plan)} dollars).`
                       : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline. ${
                           result.limitingConstraint === 'estate-floor'
                             ? "Your projection cannot sustain today's spending and still leave your bequest target."
@@ -385,7 +385,7 @@ export function SpendingSolverPage() {
                 label="Max sustainable spending"
                 value={`${fmtMoney(published ?? 0)}/yr`}
                 tone="neutral"
-                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then rounded down to the nearest $100, the figure Apply and scenarios use too. Under guardrail spending that rounded figure is used only if a run at it passes; otherwise this is the exact amount that passed."
+                help={`Highest annual baseline spending (${startYearDollarsWord(plan)} dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then rounded down to the nearest $100, the figure Apply and scenarios use too. Under guardrail spending that rounded figure is used only if a run at it passes; otherwise this is the exact amount that passed.`}
               />
               <Stat
                 label="Spending slack"
@@ -429,7 +429,7 @@ export function SpendingSolverPage() {
                     Ending after-tax estate:{' '}
                     {evidenceEstateToday !== null ? (
                       <>
-                        <strong>{fmtMoney(evidenceEstateToday)}</strong> today's dollars (
+                        <strong>{fmtMoney(evidenceEstateToday)}</strong> {startYearDollarsWord(plan)} dollars (
                         {fmtMoney(result.evidence.endingAfterTaxEstate)} nominal)
                       </>
                     ) : (
@@ -549,8 +549,8 @@ export function SpendingSolverPage() {
               </table>
             </ScrollRegion>
             <p className="field-hint mt-sm">
-              Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in today&apos;s
-              dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
+              Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in{' '}
+              {startYearDollarsWord(plan)} dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
               your own later-life spending might behave.
               {shapeAcaYears.length > 0
                 ? ` In these solves the premium tax credit isn't counted in ${formatYearRuns(shapeAcaYears)}, so they pay the full Marketplace premium then; ${
@@ -585,7 +585,7 @@ export function SpendingSolverPage() {
                     header says so: it is not the plan's own path, which the KPI
                     bar's "Money lasts" already reports (#510). */}
                 <th scope="col" className="year-table-text">If your plan spent only this</th>
-                <th scope="col" style={{ textAlign: 'right' }}>Ending estate (today&apos;s $)</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Ending estate ({startYearDollarsWord(plan)} $)</th>
               </tr>
             </thead>
             <tbody>

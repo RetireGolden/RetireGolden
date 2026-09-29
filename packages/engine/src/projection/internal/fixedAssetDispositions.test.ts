@@ -52,6 +52,8 @@ function input(over: Partial<FixedAssetDispositionYearInput> = {}): FixedAssetDi
   return {
     accounts: [property('home')],
     year: YEAR,
+    // A projection that started well before YEAR: planned sale years read as entered.
+    startYear: YEAR - 10,
     propertyValues: new Map([['home', 500_000]]),
     inflRateAt: () => 0,
     filingStatus: 'single',

@@ -122,8 +122,8 @@ describe('D1, D2, D3, D7, D4 (#495): the soft warning is a note, never a fault',
 
   it('the field renders it as a status, and the control never goes aria-invalid for it', () => {
     const fields = sheet('./fields.tsx')
-    expect(fields).toContain("import { warningFor } from './warnings'")
-    expect(fields).toContain('const warning = warningFor(path, value)')
+    expect(fields).toContain("import { warningContextFor, warningFor, type WarningContext } from './warnings'")
+    expect(fields).toContain('const warning = warningFor(path, value, warningContext)')
     expect(fields).toMatch(/\{!error && !note && warning \? \(/)
     expect(fields).toMatch(/className="field-warning" id=\{`\$\{id\}-warning`\} role="status"/)
     // aria-invalid is set from `error` alone; the warning only describes.

@@ -1,6 +1,6 @@
 # Mutation receipt: income-tips-ladder-and-ladder-value-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `aea4dac1` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -30,18 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after merging RetireGolden #751 into B2-P1 slice 2: the drift check #751 adds flagged this receipt against the slice's code (a hunk header naming a line the code has moved from, a context line the slice changed, a header naming no line, or a stated test count the slice's evidence file no longer has), so the diff header, capture, blob hash and revert note are refreshed against this head. The baseline is green (tipsLadderAnnualCashFlow.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Decision D-2027-ROLLOVER moved the lines these receipts quote (the per-publisher parameter split and the pre-start warnings in projection/simulate.ts and its annual phases, imports added to evidence files) and restated six of the records; the mutations are unchanged. The baseline is green (tipsLadderAnnualCashFlow.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts (4 tests | 2 failed) 31ms
+ ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts (6 tests | 2 failed) 42ms
    ❯ income-tips-ladder-and-ladder-value-annual — TIPS ladder annual cash and remaining ladder value (4)
-     × pays 8820 at offset 1 and leaves 16800 of unmatured face 3ms
-     × publishes the same purchase-year branch on a real projection 26ms
+     × pays 8820 at offset 1 and leaves 16800 of unmatured face 4ms
+     × publishes the same purchase-year branch on a real projection 29ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 2 passed (4)
+      Tests  2 failed | 4 passed (6)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -58,19 +58,19 @@ AssertionError: offset-1 ladderValue 25200 is not within {"abs":0.005} of 16800:
 - true
 + false
 
- ❯ expectWithin src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:98:9
-     96|         withinTolerance(actual, target, example.tolerance),
-     97|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
-     98|       ).toBe(true)
+ ❯ expectWithin src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:100:9
+     98|         withinTolerance(actual, target, example.tolerance),
+     99|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
+    100|       ).toBe(true)
        |         ^
-     99|     }
-    100|
- ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:116:7
+    101|     }
+    102|
+ ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:118:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts > income-tips-ladder-and-ladder-value-annual — TIPS ladder annual cash and remaining ladder value > publishes the same purchase-year branch on a real projection
-AssertionError: offset-1 published ladderValue 9818.360333824252 is not within {"abs":0.005} of 0: expected false to be true // Object.is equality
+AssertionError: offset-1 published ladderValue 9810.654370646522 is not within {"abs":0.005} of 0: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -78,14 +78,14 @@ AssertionError: offset-1 published ladderValue 9818.360333824252 is not within {
 - true
 + false
 
- ❯ expectWithin src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:98:9
-     96|         withinTolerance(actual, target, example.tolerance),
-     97|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
-     98|       ).toBe(true)
+ ❯ expectWithin src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:100:9
+     98|         withinTolerance(actual, target, example.tolerance),
+     99|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
+    100|       ).toBe(true)
        |         ^
-     99|     }
-    100|
- ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:165:7
+    101|     }
+    102|
+ ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:167:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

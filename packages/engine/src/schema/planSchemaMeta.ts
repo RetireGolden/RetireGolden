@@ -82,7 +82,7 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Annuity funding / form
   'a qualified annuity purchase must be funded from an owned (non-inherited) traditional account owned by the annuity’s own owner; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.',
   // Pension election
-  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account of the pension’s own owner; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.',
+  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account of the pension’s own owner. parsePlan does not judge its year; a host checks it at save against the year the plan starts (asOfIssues).',
   // Insurance
   "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
   // TIPS ladder

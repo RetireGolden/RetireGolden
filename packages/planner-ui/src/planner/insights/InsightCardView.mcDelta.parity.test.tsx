@@ -39,6 +39,7 @@ import { EXAMPLE_FIXED_YEAR } from '../examples/buildContext'
 import { PlanCtx, type PlanContextValue } from '../planContextCore'
 import { headlineMcRun, headlineMcRunOptions, publishMcHeadline } from '../useMcSuccessRate'
 import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
+import { projectionStartYear } from '../useProjection'
 import { InsightCardView } from './InsightCardView'
 import { formatMcDelta } from './mcDeltaFormat'
 
@@ -73,7 +74,7 @@ describe('the Insight preview Monte Carlo line on bracket-fill-roth (B2-P1 slice
   it('splitting the paths across workers gives the same delta, bit for bit', () => {
     const plan = appExamplePlanById('bracket-fill-roth')
     const previewed = previewedPlan(plan, guardrailsCard(plan))
-    const options = headlineMcRunOptions(plan, 200)
+    const options = headlineMcRunOptions(plan, 200, projectionStartYear(plan))
     const run = (p: Plan, slices: [number, number][]) => ({
       startYear: options.startYear,
       ...aggregateMonteCarlo(

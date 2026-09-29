@@ -33,7 +33,7 @@ function mount(who: Person, applied: Person['longevity'][], partner: Person | nu
   root = createRoot(container)
   act(() => {
     root!.render(
-      <SurvivalPercentileModal person={who} personIndex={0} partner={partner} onApply={(l) => applied.push(l)} onClose={() => undefined} />,
+      <SurvivalPercentileModal person={who} personIndex={0} partner={partner} startYear={new Date().getFullYear()} onApply={(l) => applied.push(l)} onClose={() => undefined} />,
     )
   })
   return container

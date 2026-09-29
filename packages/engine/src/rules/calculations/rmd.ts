@@ -63,7 +63,7 @@ export const rmdRecords = {
         'eligible(p) = alive(p) and (age(p) >= 71 or (age(p) = 70 and birthMonth(p) <= 6)); cap = qcdAnnualLimit x limitGrowth; requested = min(qcdAnnual x inflFactor, cap x donorCount)',
       variables: [
         { symbol: 'qcdAnnualLimit', meaning: 'year2026.rmd.qcdAnnualLimit', unit: 'usd/donor/year', domain: 'positive' },
-        { symbol: 'limitGrowth', meaning: 'Limit-growth factor to the projection year; 1 in the year of the published parameters', unit: '1', domain: 'positive' },
+        { symbol: 'limitGrowth', meaning: 'Limit-growth factor to the projection year: 1 in a year whose QCD limit the IRS has published in its notice of retirement-plan limits, otherwise the inflation path from that limit\'s latest published year', unit: '1', domain: 'positive' },
         { symbol: 'age(p)', meaning: 'Attained age of person p this year', unit: 'years', domain: 'integer >= 0' },
         { symbol: 'birthMonth(p)', meaning: 'Birth month of person p', unit: 'month', domain: 'integer 1..12' },
       ],
@@ -78,17 +78,22 @@ export const rmdRecords = {
       'The age gate is an annual proxy for 70.5, not a dated test: a July-born donor attaining 70 is refused for the whole year even though the statute would admit the second half of it',
       'The cap is per donor, not per household: a two-donor plan carries twice the capacity, and the scalar arm never pools one donor\'s unused capacity into another',
       'The evidence exercises the scalar arm (no named QCD request); a named request returns an empty plan from this helper and is a different path',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER: the growth factor and the named arm read the QCD limit\'s own publication (params/index.ts#componentScale, actions/annualQcdTaxCharacterPostPass.ts#qcdLimitPublishedFor), not the whole set of published figures. The named arm executes only in a tax year whose limit is published, so a gift dated in a year whose November notice has landed executes even while that year\'s brackets are projected; every year through 2026 reads exactly as before',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/result.ts#YearResult.qcd',
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
+      'packages/engine/src/params/index.ts#componentScale',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#qcdLimitPublishedFor',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'rmd-applicable-age-attain-year': {
     title: 'RMD applicable age and attain year',

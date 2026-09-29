@@ -62,11 +62,11 @@
           "functions": [
             {
               "name": "hecmLineOpeningsWithHudValidation",
-              "line": 77
+              "line": 80
             },
             {
               "name": "priceHecmHudMipAssessmentYear",
-              "line": 228
+              "line": 231
             }
           ]
         },
@@ -84,7 +84,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 415
+              "line": 423
             }
           ]
         }
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 415
+              "line": 423
             }
           ]
         }

@@ -4,8 +4,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { TypeChip } from '../TypeChip'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
-import { useProjection, taxCalculatorFor } from '../useProjection'
-import { packForYear } from '@retiregolden/engine/params'
+import { projectionStartYear, useProjection, taxCalculatorFor } from '../useProjection'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import {
   compareMonteCarloSuccessRates,
@@ -15,7 +14,7 @@ import {
 import { runMonteCarlo } from '../../mc/pool'
 import { guardrailPreviewUnpricedCreditRefusal } from '../acaVetoCopy'
 import { headlineMcRun, headlineMcRunOptions } from '../useMcSuccessRate'
-import { detectorProjection } from '@retiregolden/engine/insights/detectorProjection'
+import { insightDetectorContext } from './insightContext'
 import { registry } from '@retiregolden/engine/insights/registry'
 import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/engine/insights/types'
 import { LearnLink } from '../../learn/LearnLink'
@@ -34,7 +33,7 @@ function makeScenarioId(): string {
 export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDismiss: () => void }) {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
-  const projectionView = useProjection(plan)
+  const projectionView = useProjection(plan, projectionStartYear(plan))
   const navigate = useNavigate()
 
   // Whether Preview also runs the Monte Carlo pair is the detector's property,
@@ -75,14 +74,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           return
         }
 
-        const paramsLookup = packForYear(projectionView.startYear)
-        const ctx = {
-          plan,
-          // The engine's own projection view, deflating by the run's own
-          // published inflation factor.
-          projection: detectorProjection(projectionView.result, projectionView.summary),
-          params: paramsLookup.pack,
-        }
+        const ctx = insightDetectorContext(plan, projectionView)
 
         const evalResult = detector.evaluate(ctx)
         if (evalResult.action.kind === 'preview-scenario') {

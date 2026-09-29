@@ -14,7 +14,7 @@ export const blocks: ArticleBlock[] = [
       'Healthcare cost guidance changes every year, so use current quotes and treat national averages as a check, not a quote.',
     ],
   },
-  { type: 'heading', text: 'The current numbers to anchor on' },
+  { type: 'heading', text: 'The 2026 numbers to anchor on' },
   {
     type: 'prose',
     md: 'For 2026, CMS set the standard Medicare Part B premium at **$202.90 per month** and the annual Part B deductible at **$283**. Medicare.gov lists the same Part B premium and notes that Part D, Medicare Advantage, and Medigap costs vary by plan.\n\nFor pre-65 marketplace coverage, KFF reports a **$625 monthly national average benchmark premium for 2026** for a 40-year-old second-lowest-cost Silver plan, weighted by county selections. Older early retirees usually cost more than a 40-year-old, and premiums vary by state and county, so use a quote for your household when you can.',

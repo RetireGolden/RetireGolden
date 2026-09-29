@@ -50,7 +50,7 @@ describe('resolvePia / claimingPeople', () => {
     const plan = singlePlan()
     const stream = ssStreamFor(plan, 'p1')!
     expect(resolvePia(plan.household.people[0]!, stream, piaAsOfPlan(plan, 2026)).piaMonthly).toBe(2_500)
-    expect(claimingPeople(plan)).toHaveLength(1)
+    expect(claimingPeople(plan, 2026)).toHaveLength(1)
   })
 
   it('derives a PIA from an earnings history', () => {
@@ -114,7 +114,7 @@ describe('resolvePia / claimingPeople', () => {
   it('excludes people with no benefit', () => {
     const plan = singlePlan()
     plan.incomes = []
-    expect(claimingPeople(parsePlanOk(plan))).toHaveLength(0)
+    expect(claimingPeople(parsePlanOk(plan), 2026)).toHaveLength(0)
   })
 })
 

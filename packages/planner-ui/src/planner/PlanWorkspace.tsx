@@ -26,7 +26,7 @@ import { usePrivacy } from './privacyContextCore'
 import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
-import { useProjection } from './useProjection'
+import { projectionStartYear, useProjection, startYearDollarsWord } from './useProjection'
 import { duplicateNameDefault, duplicateNameFor, PLAN_NAME_MAX_LENGTH, planNameForTitle } from './planName'
 import { SECTION_TITLES } from './sectionTitles'
 import { firstIssue, focusIssueTarget, retryFocus, routeForIssues, workspaceRoot } from './issueJump'
@@ -146,7 +146,7 @@ function SaveIndicator() {
 
 function KpiBar() {
   const { plan } = usePlan()
-  const { result, summary, basis } = useProjection(plan)
+  const { result, summary, basis } = useProjection(plan, projectionStartYear(plan))
   // The path count rides with the rate: after a 10,000-path run on the Monte
   // Carlo page, the KPI quotes that count, not the default one (#497).
   const {
@@ -192,7 +192,7 @@ function KpiBar() {
         <span className="kpi-label">Ending net worth</span>
         <span className="kpi-value">{money(result.endingNetWorth)}</span>
         <span className="kpi-sub">
-          {hideAmounts ? 'amounts hidden' : endingToday !== null ? <>{fmtMoneyCompact(endingToday)} today's $ · {endYear}</> : <>nominal $ · {endYear}</>}
+          {hideAmounts ? 'amounts hidden' : endingToday !== null ? <>{fmtMoneyCompact(endingToday)} {startYearDollarsWord(plan)} $ · {endYear}</> : <>nominal $ · {endYear}</>}
         </span>
       </div>
       <div className="kpi">

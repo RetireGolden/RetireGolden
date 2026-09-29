@@ -37,6 +37,12 @@ outputs: `medicare-premiums-annual`; `irmaa-surcharge-annual`.
 
 feeds: `spending-healthcare-annual`.
 
+## Whose publication the premium scale reads (D-2027-ROLLOVER)
+
+`premiumScale` runs from the year of CMS's latest publication of the Part B premium and IRMAA amounts (`params/index.ts#componentPackView` with the `cmsMedicare` component), no longer from the year of the whole set of published figures. Today CMS's latest year is 2026, so the scale and every premium are unchanged: from a 2028 view the Medicare figures are still 2026's `202.90` a month, read at year 2026. The evidence file asserts it. When CMS publishes 2027, a 2027 premium is read at a scale of 1 while that year's other figures may still be projected.
+
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.

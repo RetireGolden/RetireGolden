@@ -1,9 +1,10 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 2,
+  "version": 3,
   "id": "early-retiree-aca",
   "title": "Early retiree and the ACA cliff",
   "exampleId": "early-retiree-aca",
+  "startYear": 2026,
   "derivation": "DOCS/walkthroughs/early-retiree-aca.md",
   "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
   "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/early-retiree-aca.test.ts",
@@ -515,7 +516,7 @@
           "engine": "2026 parameter set standing in",
           "tolerance": 0.005,
           "unit": "text",
-          "derivation": "no 2027 parameter set is published, so the 2026 figures are carried at the plan’s 2.5%: projections, not the IRS’s 2027 figures",
+          "derivation": "no 2027 income-tax figures are loaded (as of the 2026 examples), so the 2026 figures are carried at the plan’s 2.5%: projections, not the IRS’s 2027 figures",
           "contract": "FederalTaxDetail.usesStandInPack; params/index.ts#packForYear"
         },
         {
@@ -899,7 +900,7 @@
     "schemaVersion": 7,
     "id": "early-retiree-aca--seq-1",
     "name": "Early retiree & the ACA cliff",
-    "origin": "user",
+    "origin": "example",
     "createdAtIso": "2026-06-29T12:00:00.000Z",
     "updatedAtIso": "2026-06-29T12:00:00.000Z",
     "household": {
@@ -1077,6 +1078,7 @@
     },
     "inheritedRothTaxCharacterPools": [],
     "employerElectiveDeferralHistory": [],
-    "scenarios": []
+    "scenarios": [],
+    "exampleSourceId": "early-retiree-aca"
   }
 }

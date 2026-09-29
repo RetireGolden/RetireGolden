@@ -37,15 +37,15 @@
           "functions": [
             {
               "name": "bracketSegments",
-              "line": 557
+              "line": 563
             },
             {
               "name": "buildOptimizerModel",
-              "line": 585
+              "line": 591
             },
             {
               "name": "federalTaxOn",
-              "line": 1201
+              "line": 1207
             }
           ]
         },
@@ -125,7 +125,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 120
+              "line": 226
             }
           ]
         },
@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "indexingScaleFor",
-              "line": 49
+              "line": 47
             }
           ]
         },
@@ -143,7 +143,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 415
+              "line": 423
             }
           ]
         }
@@ -251,7 +251,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 585
+              "line": 591
             }
           ]
         },
@@ -349,7 +349,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 120
+              "line": 226
             }
           ]
         },
@@ -1322,7 +1322,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 120
+              "line": 226
             }
           ]
         },
@@ -1377,7 +1377,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1275
+              "line": 1276
             }
           ]
         }
@@ -1466,11 +1466,11 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 415
+              "line": 521
             },
             {
               "name": "standardDeduction",
-              "line": 423
+              "line": 529
             }
           ]
         },
@@ -1605,7 +1605,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 585
+              "line": 591
             }
           ]
         }

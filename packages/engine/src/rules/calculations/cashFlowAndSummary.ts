@@ -716,17 +716,21 @@ export const cashFlowAndSummaryRecords = {
       'Asserted on a real simulatePlan run over 2028-2029. Plan assumptions beyond the worksheet\'s inputs: a two-person household filing jointly in KY with a zero state rate, zero inflation and zero account returns, the owner\'s planning age set to 65 so the run makes them dead from 2029, the joint annuitant\'s planning age set to 95, and an already-owned contract with no purchase event so no exclusion ratio is derived',
       'taxablePct is the contract\'s tax character, not its cash amount; the published income field is the same under any character',
       'Period-certain and life-only are the other two forms and are not this record\'s claim',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER. A PURCHASE DATED BEFORE THE START, a registered limit of the convention and not corrected: a contract whose purchase year is before the projection start year is treated as already paid, so the projection pays its annuity and takes no premium from the funding account, whose entered balance is read as already net of it. That is right when the household entered the balance after buying; when the balance was entered before the purchase and not updated (a plan saved in the purchase year and reopened the next), the premium is counted twice, once in the balance and once as the contract it bought. Measured by the derivation on its U1 household (a $100,000 non-qualified contract bought in 2026 from the brokerage, $550 a month from 67): at a 2026 start the purchase lowers ending net worth by $147,623; at a 2027 start it raises it by $454,837 (+$455,165.79 since main\'s #761, pinned below). The independent check measured every tax qualification the same way. The projection cannot tell which case it has, so it does not deduct the premium (which would double-deduct it for every household that did update the balance); it names each such purchase in a warning with the premium and the funding account, and says to lower that balance by the premium if it still includes it (projection/preStartEvents.ts#preStartEvents)',
+      'The U1 sizes are pinned to the cent in a repository test (2026-09-29, review L7): packages/planner-ui/src/planner/preStartEvents.figures.test.ts builds the household from the example couple and asserts -$147,622.51 from a 2026 start and +$455,165.79 from a 2027 start. The review measured +$454,836.90 from 2027 before main\'s #761 (D-EXAMPLE-SOURCE-SWITCH) priced a saved example\'s 2027 premium tax credit from a 2027 start; the same test on main at 9676392f gives +$455,165.79',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
       'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/preStartEvents.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
       'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+      'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'guaranteed-income-owner': {
     title: 'Whose age and life a pension or annuity is paid on',
@@ -831,17 +835,20 @@ export const cashFlowAndSummaryRecords = {
       'Asserted on a real simulatePlan run over 2028-2032. Plan assumptions beyond the worksheet\'s inputs: a single person filing single in KY with a zero state rate, no accounts, and the worksheet\'s 1.12 cumulative inflation factor supplied as a per-year inflation path of 12 percent in the first projection year and 0 afterwards, so that every year from 2029 on carries exactly that factor',
       'The neighbouring years are asserted too, because "pays only in its year" is half the claim',
       'taxTreatment "capitalGain" is the row\'s character, not an exclusion from cash income',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER: a stream whose year is before the projection start year pays nothing in the projection, as before, and the projection now names it in a warning (projection/preStartEvents.ts#preStartEvents): the income is dated before the plan starts, so it is not counted, and if it has not arrived the household moves it to the start year or later. From a 2027 start the derivation\'s U1 household\'s $50,000 inheritance dated 2026 dropped out with only an editor note to say so',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/otherIncomeStreams.ts',
       'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/preStartEvents.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/otherIncomeStreams.ts#otherIncomeStreams',
       'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+      'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'income-taxable-interest-annual': {
     title: 'Annual taxable interest distributed by a taxable account',
@@ -1350,17 +1357,20 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted twice: at the exported phase helper with the worksheet\'s two debts verbatim, and as the published expenses.debtService of a real simulatePlan 2030 row carrying the same two debts. Plan assumptions beyond the worksheet\'s inputs for that ledger row: a single 60-year-old filing single in KY at a zero state rate, zero general inflation, zero account returns, and one 500,000 cash account large enough that the payments are funded without a portfolio sale',
       'The worksheet\'s third wrong reading (ignoring payoffYear) coincides with the right answer at these inputs, so the test discriminates the first two numerically and states the third as a rule',
+      'Restated 2026-09-29 under decision D-2027-ROLLOVER (review L4): a payoff year before the projection start year is reached in the first year, so the ledger pays the whole grown balance then, as it always did; nothing moves. The projection now names it (projection/preStartEvents.ts#preStartEvents) with the amount paid, the balance with a year of interest, and says to set the balance to $0 if the debt was paid. From a 2027 start the reviewer\'s mortgage with a 2026 payoff moved ending net worth by -$189,695.85 with nothing said',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
       'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts',
+      'packages/engine/src/projection/preStartEvents.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.debtService',
       'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts#annualDebtServiceRows',
+      'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'spending-property-costs-annual': {
     title: 'Annual property carrying costs on owned properties',
@@ -1369,7 +1379,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['spending-property-costs-annual'],
     feeds: ['spending-total-annual'],
     statement:
-      'projection/internal/types/yearLedger.ts#YearExpenses.propertyCosts, produced by projection/internal/annualPropertyCarryingCosts.ts#annualPropertyCarryingCosts, is the sum over property accounts that the household still owns of (propertyTaxAnnual + insuranceAnnual) x the cumulative general-inflation factor. A property contributes nothing from its planned sale year onward, the charge continues after any mortgage is paid off, and no row is produced at all when nobody in the household is alive. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/types/yearLedger.ts#YearExpenses.propertyCosts, produced by projection/internal/annualPropertyCarryingCosts.ts#annualPropertyCarryingCosts, is the sum over property accounts that the household still owns of (propertyTaxAnnual + insuranceAnnual) x the cumulative general-inflation factor. A property contributes nothing from the year the ledger sells it onward: its planned sale year, or the projection start year when the planned year is earlier (projection/propertySaleYear.ts#effectivePropertySaleYear), the same year the sale itself runs. The charge continues after any mortgage is paid off, and no row is produced at all when nobody in the household is alive. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'propertyCosts = sum over owned p of (tax_p + insurance_p) x f',
       variables: [
@@ -1386,18 +1396,21 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the exported phase helper with the worksheet\'s two properties, current year, inflation factor and alive flag verbatim; the helper receives the caller\'s already-resolved inflation factor, so the 1.10 is supplied rather than compounded from plan assumptions. Plan assumptions beyond the worksheet\'s inputs: each property carries a 400,000 value and no HECM, neither of which the carrying-cost formula reads',
-      'Ownership is decided by plannedSaleYear alone; a property with no sale year is owned for the whole horizon',
+      'Ownership is decided by the effective sale year alone (the planned sale year, or the start year when that is earlier); a property with no sale year is owned for the whole horizon',
+      'Restated 2026-09-29 under decision D-2027-ROLLOVER (review H1). No source governs a sale date that has passed; the decision reads a property still on the plan with a past sale year as a sale not yet reflected, so the ledger sells it in the first year (when it has a value; a property at $0 is not sold) and the carrying costs stop from that same year. Before, the costs stopped from the planned year while the sale ran only in a year equal to it, which a later start never reaches: the reviewer\'s case (the example couple\'s $420,000 home, $6,000 of property tax and $1,800 of insurance, sale dated 2026, run from 2027) kept the home to the end and dropped its costs, adding $1,017,839 to ending net worth. The projection names the sale (projection/preStartEvents.ts#preStartEvents; for a property at $0 it says only that the costs stop) and the editor notes the field',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
       'packages/engine/src/projection/internal/annualPropertyCarryingCosts.ts',
+      'packages/engine/src/projection/propertySaleYear.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.propertyCosts',
       'packages/engine/src/projection/internal/annualPropertyCarryingCosts.ts#annualPropertyCarryingCosts',
+      'packages/engine/src/projection/propertySaleYear.ts#effectivePropertySaleYear',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'spending-insurance-premiums-annual': {
     title: 'Annual level insurance premiums',
@@ -1500,17 +1513,20 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted at the exported phase helper with the worksheet\'s three goals, target years, amounts, current year, null scheduler and alive flag verbatim; the helper receives the caller\'s already-resolved inflation factor, so the 1.10 is supplied rather than compounded from plan assumptions',
       'The worksheet\'s third wrong reading is a guardrail case: with no scheduler the phase reports four exact zero skip accumulators, which the test asserts, so no skipped amount can reach this field here',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER: a goal whose target year (and, for a movable or skippable goal, whose whole window) is before the projection start year funds nothing, as before, and the projection now names it in a warning (projection/preStartEvents.ts#preStartEvents): the goal is dated before the plan starts, so it is not counted, and if it has not happened the household moves it to the start year or later. From a 2027 start the derivation\'s U1 household\'s $30,000 car goal dated 2026 dropped out with only an editor note to say so',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
       'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts',
+      'packages/engine/src/projection/preStartEvents.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.oneTimeGoals',
       'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts#annualOneTimeGoalFundingPhase',
+      'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'year-result-contributions': {
     title: 'Annual contributions credited after limit trimming',

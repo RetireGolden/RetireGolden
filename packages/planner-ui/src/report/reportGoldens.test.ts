@@ -125,6 +125,14 @@
  * 2026-09-29 (merge of main, after #762, into the people-order branch): the
  * goldens are regenerated with both changes, main's state rows and figures
  * and this branch's FI figures and notes; neither moves the other's figures.
+ * 2026-09-29 (D-2027-ROLLOVER, second verification V2): the projected-figures
+ * sentence says the two standard deductions that are not held (one that
+ * follows the federal deduction, and the District of Columbia's and
+ * Washington's, which their statutes index). Wording only; no figure changed.
+ * 2026-09-29 (merge of main c2d61967, #765, into the D-2027-ROLLOVER
+ * branch): the goldens are regenerated with both, main's FI figures and
+ * notes and this branch's projected-figures sentence; neither moves the
+ * other's figures.
  */
 import { describe, expect, it } from 'vitest'
 

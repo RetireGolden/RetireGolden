@@ -217,7 +217,13 @@ export interface OptimizerYear {
   traditionalWithdrawalTaxableFraction?: number
   /** Taxable share of gross Roth conversions (default 1). */
   rothConversionTaxableFraction?: number
-  /** Scales IRMAA thresholds for years beyond the published pack. */
+  /**
+   * Scales the IRMAA thresholds for a year past the latest one CMS's Medicare
+   * figures are loaded for: the `cmsMedicare` component's projection factor
+   * (`componentScale`), which the ledger's own Medicare view grows by. It is
+   * not the income-tax factor, which is 1 once the IRS's figures for the year
+   * are loaded while CMS's may still be projected (decision D-2027-ROLLOVER).
+   */
   inflationScale: number
   /** Nominal growth applied to end-of-year balances this year, e.g. 0.05. */
   growth: number

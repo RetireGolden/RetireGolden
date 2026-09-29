@@ -14,7 +14,7 @@ import { type RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo
 import { runRiskBasedGuardrailSolve } from '../../mc/pool'
 import { usePlan } from '../planContextCore'
 import { headlineMcRunOptions } from '../useMcSuccessRate'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear } from '../useProjection'
 
 /** Solver budget for the on-demand threshold solve (worker; ~40 probes). */
 const THRESHOLD_SOLVE_PATH_COUNT = 200
@@ -51,9 +51,10 @@ export function useThresholdSolve(): ThresholdSolve {
     setError(null)
     const solvedBand = { ...committedBandRef.current }
     // The headline model on the engine's default seed, at the solver's
-    // bounded path count; the seed is stored with the thresholds so a later
-    // read can tell which markets solved them (D-MC-DEFAULT-SEED).
-    const options = headlineMcRunOptions(plan, THRESHOLD_SOLVE_PATH_COUNT, currentStartYear())
+    // bounded path count, from the plan's own start year; the seed is stored
+    // with the thresholds so a later read can tell which markets solved them
+    // (D-MC-DEFAULT-SEED).
+    const options = headlineMcRunOptions(plan, THRESHOLD_SOLVE_PATH_COUNT, projectionStartYear(plan))
     void runRiskBasedGuardrailSolve(plan, options)
       .then((solved) => {
         const current = committedBandRef.current

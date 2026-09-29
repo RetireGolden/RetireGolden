@@ -2364,7 +2364,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
   {
     slug: 'example-couple',
     title: 'Example couple: the full retirement picture',
-    description: 'A married household two years from retirement: accounts, Social Security, Roth strategy, insurance, and scenarios.',
+    description: 'A married household two years from retirement in 2026: accounts, Social Security, Roth strategy, insurance, and scenarios.',
     category: 'example-plans',
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     status: 'ready',
@@ -2532,7 +2532,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
   {
     slug: 'example-aggressive-saver',
     title: 'Aggressive saver to early retirement (Taylor)',
-    description: 'A high savings rate and time-phased contribution schedules support retirement in 15 years.',
+    description: 'A high savings rate and time-phased contribution schedules support retirement in 15 years, from 2026.',
     category: 'early-investing-fire',
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     status: 'ready',
@@ -2779,7 +2779,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
   {
     slug: 'example-no-head-start-grad',
     title: 'Starting from zero control (Nova)',
-    description: 'Control half of the head-start pair: a 22-year-old starting the retirement journey with no seeded accounts.',
+    description: 'Control half of the head-start pair: a 22-year-old in 2026 starting the retirement journey with no seeded accounts.',
     category: 'early-investing-fire',
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     status: 'ready',

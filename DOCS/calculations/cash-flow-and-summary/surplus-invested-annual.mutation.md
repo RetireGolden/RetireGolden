@@ -1,11 +1,11 @@
 # Mutation receipt: surplus-invested-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -1195,7 +1195,7 @@
+@@ -1205,7 +1205,7 @@
      // The caller retains observable live line/map mutation, coordinated-then-
      // backstop accumulation, capture gating, and downstream residual use.
      // Those effects make this application loop orchestration, not HECM policy.
@@ -26,15 +26,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The second verification's fixes on this branch (V1 to V4) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/simulate.evidence.test.ts (9 tests | 2 failed) 69ms
+ ❯ src/projection/simulate.evidence.test.ts (9 tests | 2 failed) 58ms
    ❯ surplus-invested-annual — Annual surplus invested, floored at zero (2)
-     × publishes 30000 of residual cash and credits it to the lowest-id cash account 10ms
-     × floors a 5000 negative residual at zero instead of publishing it 3ms
+     × publishes 30000 of residual cash and credits it to the lowest-id cash account 8ms
+     × floors a 5000 negative residual at zero instead of publishing it 2ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 7 passed (9)

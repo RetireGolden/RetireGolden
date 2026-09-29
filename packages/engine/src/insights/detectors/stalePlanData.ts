@@ -7,8 +7,11 @@ export const stalePlanData: Detector = {
   category: 'accounts-contributions',
   version: 1,
   screen(ctx): InsightCard | null {
-    const stamped = parsePlanUpdatedAtIso(ctx.plan.updatedAtIso)
-    if (stamped === null) return null
+    // The save stamp on the start year's calendar when the host gives it
+    // (DetectorContext.planSavedOn), else the stamp's UTC year and month.
+    const utc = parsePlanUpdatedAtIso(ctx.plan.updatedAtIso)
+    if (utc === null) return null
+    const stamped = ctx.planSavedOn ?? utc
 
     const currentYear = Math.max(ctx.params.year, ctx.projection.startYear)
     const gapYears = currentYear - stamped.year

@@ -1,6 +1,6 @@
 # Mutation receipt: income-pension-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts`
 
@@ -26,17 +26,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annualPensionAndAnnuityIncome.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of main (c2d61967: #764, #765) into this branch moved the lines these receipts quote or the tests they capture; the mutations are unchanged. The baseline is green (annualPensionAndAnnuityIncome.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/internal/annualPensionAndAnnuityIncome.evidence.test.ts (4 tests | 1 failed) 38ms
+ ❯ src/projection/internal/annualPensionAndAnnuityIncome.evidence.test.ts (6 tests | 1 failed) 64ms
    ❯ income-pension-annual — Annual pension income, with COLA and survivor continuation (2)
-     × continues 50 percent of a twice-COLAd pension to the survivor: 12730.80 29ms
+     × continues 50 percent of a twice-COLAd pension to the survivor: 12730.80 32ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 3 passed (4)
+      Tests  1 failed | 5 passed (6)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

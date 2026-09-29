@@ -199,6 +199,9 @@ function fixture(): Plan {
     monthlyAmount: 2_000,
     colaPct: 2,
     survivorPct: 50,
+    // An offer on record (not elected), so the election-year field's path is
+    // a field of the fixture (D-2027-ROLLOVER gave that field its path).
+    lumpSumOffer: { amount: 250_000, electionYear: year + 2 },
   }
   const annuityBase = {
     type: 'annuity',

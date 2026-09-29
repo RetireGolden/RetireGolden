@@ -42,8 +42,11 @@ function caseYearFromAccount(
 function limitsMapForCaseYear(
   caseYear: number,
 ): ReadonlyMap<number, HecmCaseYearLimits> | null {
-  const { pack, isStandIn } = packForYear(caseYear)
-  if (isStandIn) return null
+  // HUD's own publication of the maximum claim amount decides it, not the
+  // whole parameter set (decision D-2027-ROLLOVER).
+  const lookup = packForYear(caseYear)
+  const pack = lookup.pack
+  if (lookup.components.hudHecm.standIn) return null
   const hecm = pack.hecm as ParameterPack['hecm'] & {
     maximumClaimAmount?: number
     initialMipPct?: number

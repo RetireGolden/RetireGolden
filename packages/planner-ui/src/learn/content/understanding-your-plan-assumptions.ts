@@ -3,7 +3,7 @@ import type { ArticleBlock } from '../learningRegistry'
 export const blocks: ArticleBlock[] = [
   {
     type: 'prose',
-    md: "A retirement plan is a model of the future. While some numbers in your plan are **facts** (like your current age or account balances) and others are **rules** (like the 2026 tax brackets), the engine also needs **forward-looking assumptions** to project how your money will grow and what it will buy decades from now.",
+    md: "A retirement plan is a model of the future. While some numbers in your plan are **facts** (like your current age or account balances) and others are **rules** (like the tax brackets the IRS published for 2026), the engine also needs **forward-looking assumptions** to project how your money will grow and what it will buy decades from now.",
   },
   { type: 'heading', text: 'Quick takeaways' },
   {

@@ -9,12 +9,14 @@
  * Date fields cap the year segment at 4 digits.
  */
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, shiftBounds, type SchemaBounds } from './schemaBounds'
 import { useFieldIssue } from './useFieldIssue'
+import { projectionStartYear } from '../startYear'
+import { PlanCtx } from './planContextCore'
 import { offsetAdvice } from './validationIssues'
-import { warningFor } from './warnings'
+import { warningContextFor, warningFor, type WarningContext } from './warnings'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
 import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
@@ -43,6 +45,16 @@ interface BaseProps {
   learn?: LearnHook
   /** Optional citation to the authority behind the parameter (Rev. Proc. / statute / agency figure). */
   source?: SourceLink
+}
+
+/**
+ * What a field's note reads against (`warningFor`): the plan's first year
+ * (`projectionStartYear`) and, for the Roth window, its last year. Both null
+ * outside a plan (the import wizard, the lever editors).
+ */
+function usePlanWarningContext(): WarningContext {
+  const context = useContext(PlanCtx)
+  return warningContextFor(context ? context.plan : null, context ? projectionStartYear(context.plan) : null)
 }
 
 /**
@@ -355,11 +367,12 @@ export function MoneyField({
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [notKept, setNotKept] = useState<string | null>(null)
   const issue = useFieldIssue(path)
+  const warningContext = usePlanWarningContext()
   const error = rangeError ?? issue?.advice ?? null
   // Read from the value the plan holds, not the text being typed, so the note
   // is about what was stored rather than a keystroke on the way there. A
   // cross-field caution from the card fills in where this path has none.
-  const warning = warningFor(path, value) ?? crossFieldWarning ?? null
+  const warning = warningFor(path, value, warningContext) ?? crossFieldWarning ?? null
   const formatted = value === null ? '' : fractionDigits === 2 ? fmtMoneyCents(value) : fmtMoney(value)
   const { text, setText, focused, setFocused } = useLocalText(formatted)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -496,11 +509,12 @@ export function NumberField({
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
   const issue = useFieldIssue(path)
+  const warningContext = usePlanWarningContext()
   const error = rangeError ?? (issue ? offsetAdvice(issue.advice, offset) : null)
   // Read from the value the plan holds, not the text being typed, so the note
   // is about what was stored rather than a keystroke on the way there. A
   // cross-field caution from the card fills in where this path has none.
-  const warning = warningFor(path, value) ?? crossFieldWarning ?? null
+  const warning = warningFor(path, value, warningContext) ?? crossFieldWarning ?? null
   const outOfRange = (n: number): 'low' | 'high' | null => checkRange(n, bounds).side
   // Clearing a required field commits 0 when 0 is a value the engine allows
   // here, which is the documented "off" state for the rate overrides and every

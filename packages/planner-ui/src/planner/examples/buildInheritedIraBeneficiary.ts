@@ -1,9 +1,14 @@
 /** Inherited IRA beneficiary details — contrasts a classified spouse schedule with a legacy account. */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
+import { EXAMPLE_FIXED_NOW_ISO, EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'inherited-ira-beneficiary'
+/**
+ * The owner died two years before the example's year (2024 for 2026), written
+ * relative to EXAMPLE_FIXED_YEAR so a yearly re-date keeps the same schedule.
+ */
+const OWNER_DEATH_YEAR = EXAMPLE_FIXED_YEAR - 2
 
 export function buildInheritedIraBeneficiary(): Plan {
   const spouse = exampleEntityId(EXAMPLE_ID, 'spouse')
@@ -53,7 +58,7 @@ export function buildInheritedIraBeneficiary(): Plan {
       balance: 300_000,
       annualContribution: 0,
       inherited: {
-        ownerDeathYear: 2024,
+        ownerDeathYear: OWNER_DEATH_YEAR,
         decedentHadStartedRmds: true,
         beneficiary: {
           beneficiaryClass: 'designated-individual',
@@ -63,7 +68,7 @@ export function buildInheritedIraBeneficiary(): Plan {
           election: 'remain-beneficiary',
           ownerBirthYear: 1945,
           ownerYearOfDeathRmdSatisfied: true,
-          provenance: { source: 'example household', asOf: '2026-06-29' },
+          provenance: { source: 'example household', asOf: EXAMPLE_FIXED_NOW_ISO.slice(0, 10) },
         },
       },
     },
@@ -76,7 +81,7 @@ export function buildInheritedIraBeneficiary(): Plan {
       kind: 'ira',
       balance: 150_000,
       annualContribution: 0,
-      inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: true },
+      inherited: { ownerDeathYear: OWNER_DEATH_YEAR, decedentHadStartedRmds: true },
     },
   ]
   plan.expenses = {

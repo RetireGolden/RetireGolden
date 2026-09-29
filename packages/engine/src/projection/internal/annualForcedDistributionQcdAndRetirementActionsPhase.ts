@@ -110,7 +110,12 @@ interface AnnualForcedDistributionQcdAndRetirementActionsPhaseFacts {
     readonly distributionCalendarYear: number
     readonly applicablePlan: RmdApplicablePlan
   }>[]
-  readonly isStandIn: boolean
+  /**
+   * True when the year's QCD limit has no publication of its own (the IRS
+   * retirement-plan notice's component, not the whole parameter set: decision
+   * D-2027-ROLLOVER). A named QCD refused for that reason gets its warning.
+   */
+  readonly qcdLimitStandIn: boolean
   readonly qcdSection219ByDonor: ReadonlyMap<string, number>
   readonly preProjectionQcdOffsetUnprovable: ReadonlySet<string>
 }
@@ -365,7 +370,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     limitGrowth,
     birthMonthByPerson,
     rmdFirstYearDeferrals,
-    isStandIn,
+    qcdLimitStandIn,
     qcdSection219ByDonor,
     preProjectionQcdOffsetUnprovable,
   } = facts
@@ -2121,11 +2126,11 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       // published figure so that day forces the statutory-cap decision.
       namedQcdIncomeOffset = namedQcdRmdSatisfied
       qcd += namedQcdExecuted
-    } else if (isStandIn && qcdActionExecution.issues.some((issue) =>
+    } else if (qcdLimitStandIn && qcdActionExecution.issues.some((issue) =>
       issue.kind === 'postPassBlocked')) {
       // Keyed off the structural condition rather than the refusal's message
       // text: in a stand-in year the post-pass refuses before any other
-      // question is reached, so `isStandIn` plus a post-pass block IS the
+      // question is reached, so `qcdLimitStandIn` plus a post-pass block IS the
       // missing-limit case, and a wording change in the executor cannot
       // silently drop the warning.
       // The QCD block's first user-visible warning. The aggregate arm may

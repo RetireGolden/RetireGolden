@@ -104,6 +104,18 @@ export interface DetectorContext {
   plan: Plan
   projection: DetectorProjection  // engine-native shape built from the memoized useProjection result
   params: ParameterPack           // active parameter pack (brackets, IRMAA tiers, FPL, limits)
+  /**
+   * The year and month the plan was last saved, read on the SAME calendar as
+   * the projection's start year (decision D-2027-ROLLOVER). A save stamp is
+   * written in UTC, and a planner starts its projection on the local
+   * calendar, so east of UTC a plan saved just after local midnight on
+   * 1 January carries the old year's UTC date and would read "Plan last saved
+   * in 2026" beside a 2027 start. A host that starts on the local calendar
+   * passes the stamp's local year and month here. Absent, the stale-plan and
+   * law-pack detectors read the stamp's UTC year (`parsePlanUpdatedAtIso`),
+   * which is the right calendar for a host that starts on UTC.
+   */
+  planSavedOn?: { year: number; month: string }
 }
 
 export interface Detector {

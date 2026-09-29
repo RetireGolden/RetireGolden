@@ -115,6 +115,7 @@ import {
   type HecmLineStateWithComponents,
 } from './hecmLineState.js'
 import type { YearCashFlowTransferEndpoint } from './types/cashFlow.js'
+import { effectivePropertySaleYear } from '../propertySaleYear.js'
 
 /** The numbers an open HECM line carries into this phase. */
 export type PropertyEventHecmLine = HecmLineStateWithComponents
@@ -136,6 +137,11 @@ export interface PropertyEventYearInput {
   readonly accounts: readonly Readonly<Account>[]
   /** The projected calendar year. */
   readonly year: number
+  /**
+   * The projection's first year. A sale dated before it runs in it
+   * (`projection/propertySaleYear.ts#effectivePropertySaleYear`).
+   */
+  readonly startYear: number
   /** This year's property values before growth. ReadonlyMap; see the shadow rule. */
   readonly propertyValues: ReadonlyMap<string, number>
   /**
@@ -205,7 +211,7 @@ function seedShadowLine(live: PropertyEventHecmLine): MutableHecmLine {
 export function propertyEventsAndGrowth(
   input: PropertyEventYearInput,
 ): readonly PropertyEventRow[] {
-  const { accounts, year, propertyValues, inflRateAt, hecmStates, surplusDestination } = input
+  const { accounts, year, startYear, propertyValues, inflRateAt, hecmStates, surplusDestination } = input
   const rows: PropertyEventRow[] = []
   // The numeric shadows. See the module header: a membership shadow is not
   // enough here, because the line's NUMBERS are read back across iterations.
@@ -234,7 +240,7 @@ export function propertyEventsAndGrowth(
     let deposit: number | null = null
     let closesHecmForAccountId: string | null = null
     let record: LegacyPropertySaleDeposit | null = null
-    if (account.plannedSaleYear === year && value > 0) {
+    if (effectivePropertySaleYear(account, startYear) === year && value > 0) {
       if (account.costBasis === undefined) {
         const proceeds = account.expectedNetProceeds ?? value
         const line = lineFor(accountId)

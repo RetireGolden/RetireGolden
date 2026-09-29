@@ -1,6 +1,6 @@
 # Mutation receipt: spending-debt-service-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `0f51ee73` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts`
 
@@ -25,24 +25,25 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualDebtAndLongTermCare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The independent review's fixes to D-2027-ROLLOVER moved the lines these receipts quote (the effective property sale year threaded through the property phases, the pre-start events for a sale and a debt payoff, the parameter test seam, and evidence cases added to the restated records); the mutations are unchanged. The baseline is green (annualDebtAndLongTermCare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts (3 tests | 2 failed) 28ms
-   ❯ spending-debt-service-annual — Annual debt service under the grow-then-pay convention (2)
-     × grows each balance before paying, and pays Debt B out at its payoff year 4ms
-     × publishes the same 7120 as expenses.debtService on a real 2030 ledger row 23ms
+ ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts (4 tests | 3 failed) 45ms
+   ❯ spending-debt-service-annual — Annual debt service under the grow-then-pay convention (3)
+     × grows each balance before paying, and pays Debt B out at its payoff year 5ms
+     × publishes the same 7120 as expenses.debtService on a real 2030 ledger row 27ms
+     × names a payoff dated before the start with what the ledger pays in the first year (restated 2026-09-29) 11ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 1 passed (3)
+      Tests  3 failed | 1 passed (4)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts > spending-debt-service-annual — Annual debt service under the grow-then-pay convention > grows each balance before paying, and pays Debt B out at its payoff year
 AssertionError: Debt B payment 1000 is not within {"abs":0.005} of the worksheet's 1120: expected false to be true // Object.is equality
@@ -53,16 +54,16 @@ AssertionError: Debt B payment 1000 is not within {"abs":0.005} of the worksheet
 - true
 + false
 
- ❯ expectWithin src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:29:5
-     27|     withinTolerance(actual, target, tolerance),
-     28|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     29|   ).toBe(true)
+ ❯ expectWithin src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:30:5
+     28|     withinTolerance(actual, target, tolerance),
+     29|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     30|   ).toBe(true)
        |     ^
-     30| }
-     31|
- ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:92:7
+     31| }
+     32|
+ ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:93:7
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
  FAIL  src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts > spending-debt-service-annual — Annual debt service under the grow-then-pay convention > publishes the same 7120 as expenses.debtService on a real 2030 ledger row
 AssertionError: expenses.debtService 7000 is not within {"abs":0.005} of the worksheet's 7120: expected false to be true // Object.is equality
@@ -73,16 +74,36 @@ AssertionError: expenses.debtService 7000 is not within {"abs":0.005} of the wor
 - true
 + false
 
- ❯ expectWithin src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:29:5
-     27|     withinTolerance(actual, target, tolerance),
-     28|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     29|   ).toBe(true)
+ ❯ expectWithin src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:30:5
+     28|     withinTolerance(actual, target, tolerance),
+     29|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     30|   ).toBe(true)
        |     ^
-     30| }
-     31|
- ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:124:7
+     31| }
+     32|
+ ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:125:7
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts > spending-debt-service-annual — Annual debt service under the grow-then-pay convention > names a payoff dated before the start with what the ledger pays in the first year (restated 2026-09-29)
+AssertionError: expenses.debtService 1000 is not within {"abs":0.005} of the worksheet's 1120: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectWithin src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:30:5
+     28|     withinTolerance(actual, target, tolerance),
+     29|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     30|   ).toBe(true)
+       |     ^
+     31| }
+     32|
+ ❯ src/projection/internal/annualDebtAndLongTermCare.evidence.test.ts:153:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```
 
 ## Revert

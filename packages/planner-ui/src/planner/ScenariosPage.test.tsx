@@ -905,7 +905,9 @@ describe('ScenariosPage comparison lifecycle', () => {
   })
 
   it('starts a fresh comparison with the new calendar year after a rerender', async () => {
-    vi.setSystemTime(new Date('2026-12-31T17:00:00Z'))
+    // Local-noon instants (D-2027-ROLLOVER): '2026-12-31T17:00Z' is already
+    // 1 January east of UTC+7, and the start year reads the local calendar.
+    vi.setSystemTime(new Date(2026, 11, 31, 12))
     const plan = await mount()
     const leverSelect = container.querySelector<HTMLSelectElement>('select')!
     await act(async () => {
@@ -931,7 +933,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     await advanceComparison()
     expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2026)
 
-    vi.setSystemTime(new Date('2027-01-02T17:00:00Z'))
+    vi.setSystemTime(new Date(2027, 0, 2, 12))
     await rerenderWithPlan(plan)
     await advanceComparison()
 

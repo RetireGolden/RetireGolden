@@ -1,9 +1,10 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 2,
+  "version": 3,
   "id": "rmd-irmaa",
   "title": "High balances: RMDs and IRMAA",
   "exampleId": "rmd-irmaa",
+  "startYear": 2026,
   "derivation": "DOCS/walkthroughs/rmd-irmaa.md",
   "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
   "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/rmd-irmaa.test.ts",
@@ -706,7 +707,7 @@
     "schemaVersion": 7,
     "id": "rmd-irmaa--seq-1",
     "name": "High balances: RMDs & IRMAA",
-    "origin": "user",
+    "origin": "example",
     "createdAtIso": "2026-06-29T12:00:00.000Z",
     "updatedAtIso": "2026-06-29T12:00:00.000Z",
     "household": {
@@ -819,6 +820,7 @@
     },
     "inheritedRothTaxCharacterPools": [],
     "employerElectiveDeferralHistory": [],
-    "scenarios": []
+    "scenarios": [],
+    "exampleSourceId": "rmd-irmaa"
   }
 }

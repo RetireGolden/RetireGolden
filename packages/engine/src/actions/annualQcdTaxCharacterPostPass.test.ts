@@ -17,7 +17,8 @@ import {
   stageAnnualQcdTaxCharacterPostPass,
   type StageAnnualQcdTaxCharacterPostPassInput,
 } from './annualQcdTaxCharacterPostPass.js'
-import { PARAMETER_PROVENANCE } from '../params/index.js'
+import { PARAMETER_PROVENANCE, withParameterComponents } from '../params/index.js'
+import { landedComponents } from '../testing/parameterLanding.js'
 import { RMD_QCD_PARAMETER_SOURCE } from '../params/provenance.js'
 import { irc408d8APriorReductionsAreProvable } from './qcdDeductibleContributionOffset.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
@@ -683,6 +684,22 @@ describeRefusal('irc-408-d-8-A-named-qcd-limit-after-the-pack-year', {
     expect(result.personalLimitEvidence).toMatchObject({
       taxYear: 2026,
       parameterPackYear: 2026,
+      parameterSource: { id: 'rmd-qcd' },
+    })
+  })
+
+  it('cites the retirement-plan limits’ own year and figure once that notice lands (review L10: H04, H07)', () => {
+    // An illustrative 2027 notice (the 2026 limits copied, the QCD limit
+    // raised to $114,000) while the income-tax figures are still projected:
+    // the gate and its evidence read the notice's own year.
+    const result = withParameterComponents(
+      landedComponents(['irsRetirementPlanLimits'], 2027, { 'rmd.qcdAnnualLimit': 114_000 }),
+      () => staged(fixture(undefined, { year: 2027 })),
+    )
+    expect(result.personalLimitEvidence).toMatchObject({
+      taxYear: 2027,
+      personalLimitAmount: 11_400_000,
+      parameterPackYear: 2027,
       parameterSource: { id: 'rmd-qcd' },
     })
   })

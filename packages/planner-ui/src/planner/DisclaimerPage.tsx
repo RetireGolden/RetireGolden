@@ -56,9 +56,15 @@ export function DisclaimerPage() {
         healthcare.gov).
       </p>
       <p>
-        <strong>Tax data as of {PARAMETER_DATA_AS_OF}</strong>, reflecting {PARAMETER_DATA_BASIS}. Figures for later
-        years carry these rules forward (so bracket creep is modeled, but scheduled future rate changes are not) until
-        the next refresh.
+        <strong>Tax data as of {PARAMETER_DATA_AS_OF}</strong>, reflecting {PARAMETER_DATA_BASIS}. A later year uses
+        an agency&apos;s figures once RetireGolden has loaded them (the table below lists the years loaded), which
+        can be months after the agency publishes them. Until then federal figures grow from the latest loaded year at
+        the plan&apos;s inflation assumption, and Medicare premiums at its healthcare inflation. State income tax uses
+        each state&apos;s enacted schedules where RetireGolden has loaded them (listed below); otherwise a
+        state&apos;s latest loaded brackets and rates are held without growth, so a scheduled change not yet loaded
+        is not modeled. A state standard deduction that follows the federal one moves with it, and one the
+        state&apos;s own statute indexes (the District of Columbia&apos;s, Washington&apos;s) grows at the plan&apos;s
+        inflation assumption. Amounts a statute fixes without indexing stay as the statute sets them.
       </p>
 
       <h2>Where the numbers come from</h2>

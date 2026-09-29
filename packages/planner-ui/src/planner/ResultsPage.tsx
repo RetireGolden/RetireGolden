@@ -4,7 +4,7 @@
  * with a nominal / today's-dollars toggle and CSV export.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router'
 import {
   Area,
@@ -53,7 +53,7 @@ import {
 } from '../report/reportModel'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { coastFireHorizonYear, fiReachedPhrase, fiTargetBasisFacts, fiTargetBasisSentence } from './fiTargetCopy'
-import { useProjection } from './useProjection'
+import { projectionStartYear, useProjection, startYearDollarsWord, startYearDollarsWordCapitalized } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
 import { FundedRatioCard } from './sections/IncomeFloorSection'
 import { chartTooltipStyle } from './chartStyle'
@@ -70,6 +70,7 @@ import { citationHref } from './provenanceLinks'
 import { formatYearList } from './acaVetoCopy'
 import { buildYearCashFlowSankey, type YearCashFlowSankeyViewId } from './yearCashFlow'
 import { YearCashFlowDialog } from './yearCashFlow/YearCashFlowDialog'
+import { isParameterYearProjected, projectedParametersSentence } from './projectedParameters'
 
 type Dollars = 'nominal' | 'today'
 
@@ -286,7 +287,7 @@ function InheritedAccountSchedule({
         </li>
         {thisYear ? (
           <li>
-            <strong>This year ({thisYear.year})</strong>: {thisYear.kindLabel}, required{' '}
+            <strong>First year ({thisYear.year})</strong>: {thisYear.kindLabel}, required{' '}
             {fmtMoney(adj(thisYear.year, thisYear.requiredAmount))}, executed{' '}
             {fmtMoney(adj(thisYear.year, thisYear.executedRequiredAmount))}, voluntary{' '}
             {fmtMoney(adj(thisYear.year, thisYear.voluntaryAmount))}.
@@ -369,11 +370,11 @@ function InheritedAccountSchedule({
   )
 }
 
-function DollarsToggle({ value, onChange }: { value: Dollars; onChange: (v: Dollars) => void }) {
+function DollarsToggle({ value, onChange, startYearLabel }: { value: Dollars; onChange: (v: Dollars) => void; startYearLabel: string }) {
   return (
     <div className="seg" role="group" aria-label="Dollar display">
       <button type="button" aria-pressed={value === 'today'} onClick={() => onChange('today')}>
-        Today's $
+        {startYearLabel} $
       </button>
       <button type="button" aria-pressed={value === 'nominal'} onClick={() => onChange('nominal')}>
         Nominal $
@@ -541,6 +542,12 @@ export function YearByYearLedger({
     () => figuresProp ?? projectionDisplayFigures(plan, { years: [...years] }),
     [figuresProp, plan, years],
   )
+  // Which years' figures are projected rather than published, and from what
+  // (D-2027-ROLLOVER): the rows carry a mark and the note says what it means.
+  const projectedNote = years.length === 0
+    ? null
+    : projectedParametersSentence(years[0]!.year, plan.assumptions)
+  const projectedNoteId = useId()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showAllFlowYear, setShowAllFlowYear] = useState<number | null>(null)
@@ -654,7 +661,21 @@ export function YearByYearLedger({
               const roomShown = room === null ? null : Math.floor(adj(y.year, room))
               return (
               <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
-                <td className="year-table-year">{y.year}</td>
+                {/* A year whose tax, limit and benefit figures are partly projected
+                    carries a mark (drawn by CSS, so the cell's text stays the
+                    year) and points at the note under the table that says
+                    which figures and from when (D-2027-ROLLOVER). */}
+                {isParameterYearProjected(y.year) && projectedNote !== null ? (
+                  <td
+                    className="year-table-year year-table-year--projected"
+                    title="Some tax, limit and benefit figures in this year are projected"
+                    aria-describedby={projectedNoteId}
+                  >
+                    {y.year}
+                  </td>
+                ) : (
+                  <td className="year-table-year">{y.year}</td>
+                )}
                 <td>{y.people.map((p) => (p.alive ? p.ageAttained : '—')).join(' / ')}</td>
                 <td>{fmtMoney(adj(y.year, y.incomes.total))}</td>
                 <td>{fmtMoney(adj(y.year, y.expenses.total))}</td>
@@ -734,6 +755,12 @@ export function YearByYearLedger({
           </tbody>
         </table>
       </ScrollRegion>
+      {projectedNote !== null ? (
+        <p className="field-hint results-projected-parameters" id={projectedNoteId}>
+          <span aria-hidden="true">* </span>
+          {projectedNote}
+        </p>
+      ) : null}
       {selectedYear !== undefined && model !== null ? (
         <YearCashFlowDialog
           model={model}
@@ -755,9 +782,9 @@ export function YearByYearLedger({
 export function ResultsPage() {
   const { plan } = usePlan()
   const reportBranding = useReportBranding()
-  const view = useProjection(plan, { captureAnnualCashFlow: true })
+  const view = useProjection(plan, projectionStartYear(plan), { captureAnnualCashFlow: true })
   const [dollars, setDollars] = useState<Dollars>('today')
-  const dollarLabel = dollars === 'today' ? 'today\'s $' : 'nominal $'
+  const dollarLabel = dollars === 'today' ? `${startYearDollarsWord(plan)} $` : 'nominal $'
   // The page's dollar adjuster, on the projection's own published inflation
   // factors (the engine's dollar basis); also the cash-flow dialog's
   // displayAmount, so the Sankey and the table can never disagree.
@@ -882,7 +909,7 @@ export function ResultsPage() {
                     {' '}
                     Income doesn't stop: about{' '}
                     {fmtMoneyCompact(toTodayDollars(view.basis, floorYear.year, floorYear.incomes.total))}
-                    /yr (today's dollars) of Social Security, pensions, and other income keeps arriving
+                    /yr ({startYearDollarsWord(plan)} dollars) of Social Security, pensions, and other income keeps arriving
                     {floorYear.shortfall > 0.5 ? (
                       <>
                         , leaving an uncovered spending gap of about{' '}
@@ -904,7 +931,7 @@ export function ResultsPage() {
             ) : (
               <>
                 In steady markets, ending net worth is {fmtMoneyCompact(view.result.endingNetWorth)}
-                {endingToday !== null ? <> ({fmtMoneyCompact(endingToday)} in today's dollars)</> : null}.
+                {endingToday !== null ? <> ({fmtMoneyCompact(endingToday)} in {startYearDollarsWord(plan)} dollars)</> : null}.
                 {mcRate !== null ? (
                   <>
                     {' '}
@@ -920,7 +947,7 @@ export function ResultsPage() {
       ) : null}
 
       <div className="results-toolbar">
-        <DollarsToggle value={dollars} onChange={setDollars} />
+        <DollarsToggle value={dollars} onChange={setDollars} startYearLabel={startYearDollarsWordCapitalized(plan)} />
         <button type="button" className="btn btn-secondary btn-small" onClick={handleCsv}>
           Download CSV
         </button>
@@ -972,7 +999,7 @@ export function ResultsPage() {
           {riskThresholds.status === 'anchored' ? (
             <p>
               Solved for the {plan.expenses.spendingPolicy.targetSuccessLowerPct ?? 70}–
-              {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band (today's dollars):{' '}
+              {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band ({startYearDollarsWord(plan)} dollars):{' '}
               {riskThresholds.lower !== null ? (
                 <>
                   if the portfolio falls below <strong>{fmtMoney(riskThresholds.lower)}</strong>, flexible spending is

@@ -5,7 +5,7 @@ import { reviewAndReplaceRetirementActionManually } from
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
-import { currentStartYear, taxCalculatorFor } from '../useProjection'
+import { projectionStartYear, taxCalculatorFor } from '../useProjection'
 import { retirementActionsCardParts } from '../retirementActionsCardVisibility'
 import { RetirementActionEligibilityFactsEditor } from './RetirementActionEligibilityFactsEditor'
 import { RetirementActionQcdAuthoringSection } from './RetirementActionQcdAuthoringSection'
@@ -177,7 +177,7 @@ function ManualReviewRow({
     const executionIssue = retirementActionManualExecutionIssue(
       result.plan,
       result.replacement.actionId,
-      currentStartYear(),
+      projectionStartYear(plan),
       taxCalculatorFor(result.plan),
     )
     if (executionIssue !== null) {
@@ -437,7 +437,7 @@ export function RetirementActionsEditor() {
   const { plan } = usePlan()
   // One predicate, shared with the Strategy screen's charitable-giving copy,
   // so nothing points at this card while it is not mounted (#518).
-  const { actions, hasFacts, hasGifts, mounts } = retirementActionsCardParts(plan, currentStartYear())
+  const { actions, hasFacts, hasGifts, mounts } = retirementActionsCardParts(plan, projectionStartYear(plan))
   if (!mounts) return null
 
   return (

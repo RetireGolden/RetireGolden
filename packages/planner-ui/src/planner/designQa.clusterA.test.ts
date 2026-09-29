@@ -207,7 +207,7 @@ describe('Design-QA cluster A: source pins', () => {
     // The page subscribes to the store (any publisher re-renders it), shares
     // its in-flight run with the hook, and stands its auto-run down when the
     // reader has already started one. The count-less wrapper is gone.
-    expect(mc).toContain('const publishedHeadline = useMcHeadline(plan)')
+    expect(mc).toContain('const publishedHeadline = useMcHeadline(plan, projectionStartYear(plan))')
     expect(mc).not.toContain('publishedMcSummary(plan)')
     expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
@@ -225,7 +225,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
-    expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
+    expect(hook).toContain('export function useMcHeadline(plan: Plan, startYear: number): MonteCarloSummary | undefined')
     expect(mc).toMatch(/isHeadlineMcConfig\(\{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
     // The page's controls start on the one constant that defines the headline
     // configuration: no second copy of lognormal / 12 / 60 to drift.
@@ -293,7 +293,7 @@ describe('Design-QA cluster A: source pins', () => {
 
   it('the Strategy screen never points at a Retirement actions card that is not mounted (#518)', () => {
     const strategy = sheet('./sections/StrategySection.tsx')
-    expect(strategy).toContain('retirementActionsCardParts(plan, currentStartYear()).mounts')
+    expect(strategy).toContain('retirementActionsCardParts(plan, projectionStartYear(plan)).mounts')
     expect(strategy).toMatch(/\{retirementActionsCardShown \? \(/)
     // The fallback names every trigger the shared predicate mounts on.
     for (const trigger of ['owned', 'traditional IRA', 'recording IRA contributions', 'a scheduled gift', 'carried in from an', 'older plan']) {
@@ -302,7 +302,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(strategy).toContain('placeholder="No floor"')
     expect(strategy).toContain('placeholder="No reserve"')
     const editor = sheet('./sections/RetirementActionsEditor.tsx')
-    expect(editor).toContain('retirementActionsCardParts(plan, currentStartYear())')
+    expect(editor).toContain('retirementActionsCardParts(plan, projectionStartYear(plan))')
     expect(editor).toContain('if (!mounts) return null')
     const fields = sheet('./fields.tsx')
     expect(fields).toContain('placeholder={placeholder}')

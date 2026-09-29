@@ -12,7 +12,8 @@ import { useDialogs } from '../dialogs'
 import { usePlan } from '../planContextCore'
 import { getExampleById } from './registry'
 import { saveExampleToMyPlans } from './loadExample'
-import { exampleBannerPersistence } from './exampleCopy'
+import { exampleBannerLaterYear, exampleBannerPersistence, exampleBannerYear } from './exampleCopy'
+import { currentStartYear } from '../../startYear'
 import { usePlannerEdition } from '../editionContext'
 
 export function ExamplePreviewBanner() {
@@ -25,6 +26,7 @@ export function ExamplePreviewBanner() {
   const { homeLabel } = usePlannerEdition()
 
   if (plan.origin !== 'example') return null
+  const laterYear = exampleBannerLaterYear(currentStartYear())
 
   const example = plan.exampleSourceId ? getExampleById(plan.exampleSourceId) : undefined
   const learnHook = example
@@ -46,7 +48,8 @@ export function ExamplePreviewBanner() {
   return (
     <div className="callout callout--info example-preview-banner" role="status">
       <p>
-        <strong>You&apos;re viewing an example.</strong> {exampleBannerPersistence(homeLabel)}
+        <strong>You&apos;re viewing an example.</strong> {exampleBannerYear()}
+        {laterYear === null ? '' : ` ${laterYear}`} {exampleBannerPersistence(homeLabel)}
         {example?.lookFor ? ` ${example.lookFor}` : ''}
       </p>
       <div className="picker-actions" style={{ margin: 0 }}>

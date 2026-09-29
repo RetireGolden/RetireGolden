@@ -1,6 +1,6 @@
 # Mutation receipt: medicare-base-part-b-premium
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `aea4dac1` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/medicare.ts`
 
@@ -26,14 +26,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/medicar
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Decision D-2027-ROLLOVER moved the lines these receipts quote (the per-publisher parameter split and the pre-start warnings in projection/simulate.ts and its annual phases, imports added to evidence files) and restated six of the records; the mutations are unchanged. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/tax/medicare.evidence.test.ts (7 tests | 5 failed) 7ms
+ ❯ src/tax/medicare.evidence.test.ts (8 tests | 5 failed) 8ms
    ❯ medicare-base-part-b-premium — Medicare base Part B premium (2)
-     × annualizes the 202.90 standard monthly premium into 2,434.80 at tier 0 4ms
+     × annualizes the 202.90 standard monthly premium into 2,434.80 at tier 0 5ms
      × charges twelve months, not one 0ms
    ❯ medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary (3)
      × keeps 109,000 itself in tier 0: the test is strictly greater than 0ms
@@ -41,7 +41,10 @@ RUN  v5.0.0 C:/rgwt/engine9/packages/engine
      × reads the applicable percentage as a share of program cost, not a surcharge 0ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 2 passed (7)
+      Tests  5 failed | 3 passed (8)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
@@ -55,14 +58,14 @@ AssertionError: partBAnnual 202.9 is not within {"abs":0.005} of the worksheet's
 - true
 + false
 
- ❯ expectWithin src/tax/medicare.evidence.test.ts:18:5
-     16|     withinTolerance(actual, expected, tolerance),
-     17|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     18|   ).toBe(true)
+ ❯ expectWithin src/tax/medicare.evidence.test.ts:19:5
+     17|     withinTolerance(actual, expected, tolerance),
+     18|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     19|   ).toBe(true)
        |     ^
-     19| }
-     20|
- ❯ src/tax/medicare.evidence.test.ts:40:7
+     20| }
+     21|
+ ❯ src/tax/medicare.evidence.test.ts:41:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
 
@@ -75,14 +78,14 @@ AssertionError: partBAnnual 202.9 is not within {"abs":0.005} of the worksheet's
 - true
 + false
 
- ❯ expectWithin src/tax/medicare.evidence.test.ts:18:5
-     16|     withinTolerance(actual, expected, tolerance),
-     17|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     18|   ).toBe(true)
+ ❯ expectWithin src/tax/medicare.evidence.test.ts:19:5
+     17|     withinTolerance(actual, expected, tolerance),
+     18|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     19|   ).toBe(true)
        |     ^
-     19| }
-     20|
- ❯ src/tax/medicare.evidence.test.ts:48:7
+     20| }
+     21|
+ ❯ src/tax/medicare.evidence.test.ts:49:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
 
@@ -95,14 +98,14 @@ AssertionError: partBAnnual 202.9 is not within {"abs":0.005} of the worksheet's
 - true
 + false
 
- ❯ expectWithin src/tax/medicare.evidence.test.ts:18:5
-     16|     withinTolerance(actual, expected, tolerance),
-     17|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     18|   ).toBe(true)
+ ❯ expectWithin src/tax/medicare.evidence.test.ts:19:5
+     17|     withinTolerance(actual, expected, tolerance),
+     18|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     19|   ).toBe(true)
        |     ^
-     19| }
-     20|
- ❯ src/tax/medicare.evidence.test.ts:94:7
+     20| }
+     21|
+ ❯ src/tax/medicare.evidence.test.ts:95:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
 
@@ -115,26 +118,26 @@ AssertionError: partBAnnual 284.06 is not within {"abs":0.005} of the worksheet'
 - true
 + false
 
- ❯ expectWithin src/tax/medicare.evidence.test.ts:18:5
-     16|     withinTolerance(actual, expected, tolerance),
-     17|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     18|   ).toBe(true)
+ ❯ expectWithin src/tax/medicare.evidence.test.ts:19:5
+     17|     withinTolerance(actual, expected, tolerance),
+     18|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     19|   ).toBe(true)
        |     ^
-     19| }
-     20|
- ❯ src/tax/medicare.evidence.test.ts:106:9
+     20| }
+     21|
+ ❯ src/tax/medicare.evidence.test.ts:107:9
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
 
  FAIL  src/tax/medicare.evidence.test.ts > medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary > reads the applicable percentage as a share of program cost, not a surcharge
 AssertionError: expected 284.06 to be greater than 3286.9800000000005
- ❯ src/tax/medicare.evidence.test.ts:115:34
-    113|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
-    114|       const surchargeReadingAnnual = pack.medicare.partBStandardMonthl…
-    115|       expect(result.partBAnnual).toBeGreaterThan(surchargeReadingAnnua…
+ ❯ src/tax/medicare.evidence.test.ts:116:34
+    114|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
+    115|       const surchargeReadingAnnual = pack.medicare.partBStandardMonthl…
+    116|       expect(result.partBAnnual).toBeGreaterThan(surchargeReadingAnnua…
        |                                  ^
-    116|     })
-    117|   },
+    117|     })
+    118|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
 ```

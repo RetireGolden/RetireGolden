@@ -24,7 +24,6 @@ import { lifeTableName } from '../longevity/constants'
 import { loadLongevity, loadLongevityPartner } from '../longevity/storage'
 import { CheckboxField, SelectField } from './fields'
 import { Modal } from './Modal'
-import { currentStartYear } from './useProjection'
 
 export interface SurvivalPercentileModalProps {
   person: Person
@@ -32,18 +31,20 @@ export interface SurvivalPercentileModalProps {
   personIndex: number
   /** The other household member, when this is a couple plan. */
   partner: Person | null
+  /** The year the plan's projection starts (`projectionStartYear(plan)`): ages are read as of it. */
+  startYear: number
   onApply: (longevity: Person['longevity']) => void
   onClose: () => void
 }
 
 /**
- * Plan-year age: current year − birth year, the same convention the ledger
+ * Plan-year age: the plan's start year − birth year, the same convention the ledger
  * (and ABW's survival25/survival10 horizon) uses — so a percentile picked here
  * and the engine's survival horizon quote the same SSA age, never off by one
  * from birth-month rounding.
  */
-function planYearAge(dob: string): number {
-  const age = currentStartYear() - Number(dob.slice(0, 4))
+function planYearAge(dob: string, startYear: number): number {
+  const age = startYear - Number(dob.slice(0, 4))
   return Math.min(110, Math.max(18, age))
 }
 
@@ -53,7 +54,7 @@ const PCT_OPTIONS = [
   { value: '10', label: '10%: conservative' },
 ]
 
-export function SurvivalPercentileModal({ person, personIndex, partner, onApply, onClose }: SurvivalPercentileModalProps) {
+export function SurvivalPercentileModal({ person, personIndex, partner, startYear, onApply, onClose }: SurvivalPercentileModalProps) {
   const [pct, setPct] = useState<'50' | '25' | '10'>('25')
   const [joint, setJoint] = useState(partner !== null)
   const [useHealth, setUseHealth] = useState(false)
@@ -68,11 +69,11 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
 
   const computed = useMemo(() => {
     const pctNum = Number(pct)
-    const selfAge = planYearAge(person.dob)
+    const selfAge = planYearAge(person.dob, startYear)
     const selfMultiplier = useHealth && savedSelf ? savedSelf.result.appliedMultiplier : null
     const selfHazard = selfMultiplier !== null ? hazardForExpectancyMultiplier(selfAge, person.sex, selfMultiplier) : 1
     if (joint && partner) {
-      const partnerAge = planYearAge(partner.dob)
+      const partnerAge = planYearAge(partner.dob, startYear)
       const partnerMultiplier = useHealth && savedPartner ? savedPartner.result.appliedMultiplier : null
       const partnerHazard =
         partnerMultiplier !== null ? hazardForExpectancyMultiplier(partnerAge, partner.sex, partnerMultiplier) : 1
@@ -83,7 +84,7 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
       )
     }
     return survivalPercentileAge(selfAge, person.sex, pctNum, selfHazard)
-  }, [pct, joint, useHealth, person, partner, savedSelf, savedPartner])
+  }, [pct, joint, useHealth, person, partner, savedSelf, savedPartner, startYear])
 
   const clampedAge = Math.min(120, Math.max(60, computed))
   const healthAvailable = savedSelf !== null || (joint && savedPartner !== null)

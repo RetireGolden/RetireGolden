@@ -1474,9 +1474,21 @@ const defaultRegistry: Record<number, MigrationStep> = {
 export type PlanLoadRepair =
   /** An individually-owned account stored with no owner, assigned to the first person in the household. */
   | { kind: 'accountOwnerBackFilled'; accountId: string; accountName: string; ownerPersonId: string }
-  /** A lump-sum election whose election year is already behind the plan's own save stamp. */
+  /**
+   * A lump-sum election whose election year is already behind the plan's own
+   * save stamp. NO LONGER PRODUCED since decision D-2027-ROLLOVER (2026-09-28):
+   * a past election is kept as stored and refused at save by
+   * `asOfIssues`, against the year the projection starts, because dropping it
+   * guessed that the lump sum was never taken. The kind stays in the union so
+   * a host that names it still compiles.
+   */
   | { kind: 'lumpSumElectionDroppedElectionYearPassed'; accountId: string; accountName: string; electionYear: number }
-  /** A lump-sum election on a document whose save stamp could not be read, so staleness could not be judged. */
+  /**
+   * A lump-sum election on a document whose save stamp could not be read.
+   * NO LONGER PRODUCED since D-2027-ROLLOVER: the stamp decided whether an
+   * election year had passed, and it no longer does, so an unreadable stamp
+   * says nothing about the election. Kept in the union for hosts that name it.
+   */
   | { kind: 'lumpSumElectionDroppedUnreadableSaveDate'; accountId: string; accountName: string }
   /** A lump-sum election whose rollover target is an inherited account. */
   | { kind: 'lumpSumElectionDroppedInheritedTarget'; accountId: string; accountName: string; targetAccountId: string; targetAccountName: string }
@@ -2499,9 +2511,6 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   )
   const namedPeople = nameAccountPeople(storedAccounts, personIds, primaryId, twoPeople, lastYearAliveById)
   const accounts = namedPeople.accounts
-
-  const stamped = typeof raw['updatedAtIso'] === 'string' ? /^(\d{4})-/.exec(raw['updatedAtIso']) : null
-  const planAsOfYear = stamped === null ? null : Number(stamped[1])
   const inheritedAccountIds = new Set(
     accounts
       .filter(isInheritedTraditionalRecord)
@@ -2622,40 +2631,31 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       return { ...accountRecord, ownerPersonId: primaryId }
     }
 
-    // A pension lump-sum election a stored document may hold but parse refuses.
+    // A pension lump-sum election a stored document may hold but parse refuses:
+    // one whose rollover target is not a single owned traditional account.
     //
-    // Both refused shapes resolve the same way: drop the ELECTION, keep the
-    // OFFER. The Plan has no field anywhere that records a lump sum already
-    // taken — an executed one is representable only as a balance with no pension
-    // — so `lumpSumElection` can only ever mean "model the rollover in the
-    // election year", which the schema states outright and the editor's own
-    // wording repeats ("Take the lump sum (rollover)" against "Keep the annuity
-    // (undecided)"). An election naming a year already gone, or naming a target
-    // no beneficiary may use, therefore cannot mean the household did it; it can
-    // only be a modelled election that never happened. Undecided-with-the-offer-
-    // on-record is the state the model can actually express, and it is the state
-    // the editor would put them in.
+    // It resolves by dropping the ELECTION and keeping the OFFER: an election
+    // naming a target no beneficiary may use cannot have been carried out, so
+    // undecided-with-the-offer-on-record is the state the model can express and
+    // the state the editor would put them in.
+    //
+    // An election whose YEAR has passed is not repaired here, and neither is one
+    // on a document whose save stamp cannot be read (decision D-2027-ROLLOVER,
+    // 2026-09-28). The migration is a pure function of the document, and whether
+    // a year has passed depends on the year the projection starts, which the
+    // document does not carry; the stamp that stood in for it lags the clock and
+    // is written in UTC. More to the point, dropping a past election guesses
+    // that the lump sum was never taken: a plan saved in its election year and
+    // reopened the next year most likely records a lump sum that WAS taken, and
+    // the repaired plan would then pay a pension the household gave up. The
+    // election is kept as stored, the plan opens, and `asOfIssues` refuses its
+    // save against the start year, naming both restatements.
     if (accountRecord['type'] === 'pension' && accountRecord['lumpSumElection'] !== undefined && accountRecord['lumpSumElection'] !== null) {
       const election = accountRecord['lumpSumElection']
-      const offer = accountRecord['lumpSumOffer']
       const target =
         typeof election === 'object' && election !== null && !Array.isArray(election)
           ? (election as Record<string, unknown>)['rolloverAccountId']
           : undefined
-      const electionYear =
-        typeof offer === 'object' && offer !== null && !Array.isArray(offer)
-          ? (offer as Record<string, unknown>)['electionYear']
-          : undefined
-      // Kept as the year itself, not a boolean, so the repair record can name it.
-      const staleElectionYear =
-        planAsOfYear !== null && typeof electionYear === 'number' && electionYear < planAsOfYear
-          ? electionYear
-          : null
-      const yearAlreadyGone = staleElectionYear !== null
-      // A stamp the staleness rule cannot read fails closed at parse, so a
-      // stored document carrying one must shed the election here or it cannot
-      // load at all; re-saving rewrites the stamp and the field stays editable.
-      const stampUnreadable = planAsOfYear === null
       const targetNotOwnedTraditional =
         typeof target !== 'string' || !ownedTraditionalIds.includes(target)
       // An IRA is an individual account (IRC 408(a)): a lump sum rolls into
@@ -2670,25 +2670,11 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
         typeof pensionOwnerId === 'string' &&
         targetOwnerId !== null &&
         targetOwnerId !== pensionOwnerId
-      if (yearAlreadyGone || stampUnreadable || targetNotOwnedTraditional || targetOwnedBySpouse) {
+      if (targetNotOwnedTraditional || targetOwnedBySpouse) {
         changed = true
-        // One record per repaired account, and the causes are reported in the
-        // order they are tested. An unreadable stamp and a refused target can
-        // both be true of the same election; the stamp is reported because it is
-        // the fault that would have to be fixed first anyway (a re-save is what
-        // makes the year judgeable at all).
         const accountId = stringField(accountRecord, 'id')
         const accountName = stringField(accountRecord, 'name')
-        if (staleElectionYear !== null) {
-          repairs.push({
-            kind: 'lumpSumElectionDroppedElectionYearPassed',
-            accountId,
-            accountName,
-            electionYear: staleElectionYear,
-          })
-        } else if (stampUnreadable) {
-          repairs.push({ kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId, accountName })
-        } else if (targetOwnedBySpouse && typeof target === 'string') {
+        if (targetOwnedBySpouse && typeof target === 'string') {
           repairs.push({
             kind: 'lumpSumElectionDroppedSpouseTarget',
             accountId,

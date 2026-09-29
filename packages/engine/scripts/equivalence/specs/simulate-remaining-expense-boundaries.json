@@ -284,21 +284,21 @@
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        408,
-        438
+        409,
+        439
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 408,
+          "line": 409,
           "text": "const guardrailFunding = annualGuardrailFundingPlan({"
         },
         {
-          "line": 429,
+          "line": 430,
           "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier"
         },
         {
-          "line": 438,
+          "line": 439,
           "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals"
         }
       ]

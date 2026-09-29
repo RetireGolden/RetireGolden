@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto'
 import { act, useState, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { parseRetirementActionRequest } from '@retiregolden/engine/actions/contract'
 import { createActionReason } from '@retiregolden/engine/actions/reasons'
@@ -31,7 +31,25 @@ import { RetirementActionsEditor } from './RetirementActionsEditor'
 import { StrategySection } from './StrategySection'
 import { waitForText } from '../../testSupport/settle'
 
-const THIS_YEAR = new Date().getFullYear()
+/**
+ * The clock every test in this file reads, pinned to a local instant in the
+ * fixture's tax year (decision D-2027-ROLLOVER, 2026-09-28). The rows project
+ * from the clock's year, and the engine fixture below is a 2026 fixture, so on
+ * a 2027 clock one test failed (a gift drafted then is dated 2027, not the
+ * fixture's 2026) and another returned early and asserted nothing. Only `Date`
+ * is faked, so the rows' timers still run.
+ */
+const PINNED_NOW = new Date(2026, 8, 28, 12)
+const THIS_YEAR = PINNED_NOW.getFullYear()
+
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(PINNED_NOW)
+})
+
+afterAll(() => {
+  vi.useRealTimers()
+})
 
 /**
  * The engine's end-to-end fixture, restated here so the two can be compared.
@@ -445,9 +463,9 @@ describe('named-QCD authoring', () => {
   })
 
   it('reports an executing gift and the donor’s age-70½ date in the row', async () => {
-    // The row's own projection starts at the current year, so this assertion
-    // is only meaningful in a year the gift can be projected from.
-    if (THIS_YEAR > FIXTURE_TAX_YEAR) return
+    // The row's own projection starts at the clock's year, pinned above to the
+    // fixture's tax year, so the gift is projected and this always asserts.
+    expect(THIS_YEAR).toBe(FIXTURE_TAX_YEAR)
     const mounted = await mount(giftPlan())
     const draft = await openDraft(mounted.container)
     await answerGift(draft)

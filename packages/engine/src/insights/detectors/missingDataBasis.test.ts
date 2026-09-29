@@ -701,7 +701,7 @@ describe('missing data basis detector', () => {
     ])
   })
 
-  it.each([2025, 2030])('stays silent for a sale outside the projection window (%i)', (plannedSaleYear) => {
+  it.each([2030])('stays silent for a sale after the projection window (%i)', (plannedSaleYear) => {
     const ctx = context()
     ctx.plan.accounts = [{
       id: 'home',
@@ -714,6 +714,30 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags a sale dated before the projection, which the ledger runs in its first year', () => {
+    // Decision D-2027-ROLLOVER, review H1: a sale dated before the start runs
+    // in the start year (projection/propertySaleYear.ts), down the legacy path
+    // when no cost basis is entered, so the basis gap is as real as for a sale
+    // dated in the window. The evidence keeps the entered year as the value
+    // and stamps the year the ledger sells it.
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Lake home',
+      type: 'property',
+      value: 500_000,
+      plannedSaleYear: 2025,
+      costBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    const card = missingDataBasis.screen(ctx)
+    expect(card).not.toBeNull()
+    expect(card!.evidence).toContainEqual(
+      expect.objectContaining({ label: expect.stringContaining('Lake home planned sale year'), value: '2025', year: 2026 }),
+    )
   })
 
   it('stays silent for open-ended wages with no annual pay', () => {

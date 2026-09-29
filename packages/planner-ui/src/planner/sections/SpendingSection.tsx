@@ -14,6 +14,7 @@ import { LEARN } from '../learnLinks'
 import { SpendingPolicyCard } from './SpendingPolicyCard'
 import { Issues } from './shared'
 import { namePhasesPerson, newId, spendingPhasesPerson } from './sectionHelpers'
+import { projectionStartYear, startYearDollarsWord, startYearDollarsWordCapitalized } from '../useProjection'
 
 // Named spending shapes compile to ordinary `expenses.phases` rows (visible
 // and editable afterwards) — never a parallel model. Calibrations and sources
@@ -43,13 +44,13 @@ export function SpendingSection() {
       <div className="card">
         <h2>Spending</h2>
         <p className="card-hint">
-          Today's dollars; the engine inflates everything. Healthcare is separate: enter full (unsubsidized) premiums pre-65
+          {startYearDollarsWordCapitalized(plan)} dollars; the engine inflates everything. Healthcare is separate: enter full (unsubsidized) premiums pre-65
           and optionally apply the modeled ACA premium credit; Medicare + IRMAA from 65. <LearnLink {...LEARN.retirementHealthcareCosts} />
         </p>
         <div className="form-grid">
           <MoneyField
             label="Baseline annual spending"
-            help="Everyday living costs in today's dollars: food, utilities, transportation, clothing, entertainment, routine travel, auto insurance, and out-of-pocket medical (copays, deductibles, dental, vision). The costs with no separate input. Leave OUT anything modeled elsewhere: mortgage/loan payments (debt accounts); property tax & homeowner's insurance (enter those on the home/property account, where they correctly continue after the mortgage is paid off); health-insurance premiums (Healthcare below); and long-term-care or life-insurance premiums (Insurance). The Results page breaks all of these out in a Spending-by-category chart."
+            help={`Everyday living costs in ${startYearDollarsWord(plan)} dollars: food, utilities, transportation, clothing, entertainment, routine travel, auto insurance, and out-of-pocket medical (copays, deductibles, dental, vision). The costs with no separate input. Leave OUT anything modeled elsewhere: mortgage/loan payments (debt accounts); property tax & homeowner's insurance (enter those on the home/property account, where they correctly continue after the mortgage is paid off); health-insurance premiums (Healthcare below); and long-term-care or life-insurance premiums (Insurance). The Results page breaks all of these out in a Spending-by-category chart.`}
             learn={LEARN.spendingBudget}
             hint="Living costs incl. auto insurance & out-of-pocket medical; exclude mortgage, property tax, premiums."
             path="expenses.baseAnnual"
@@ -63,7 +64,7 @@ export function SpendingSection() {
             onCommit={(v) => update((d) => void (d.expenses.baseAnnual = v ?? 0))}
           />
           <MoneyField
-            label="Required floor (today's $)"
+            label={`Required floor (${startYearDollarsWord(plan)} $)`}
             help="The must-fund slice of baseline spending. The least you could live on in a bad market, before any discretionary lifestyle. Only matters when Spending guardrails (below) are on: the guardrail rations the gap between baseline and this floor but never cuts below it. Leave 0 (or equal to baseline) to treat all spending as required, which is today's behavior."
             learn={LEARN.spendingBudget}
             hint="Guardrails never cut below this. 0 = all spending is required."
@@ -123,8 +124,8 @@ export function SpendingSection() {
             />
           ) : null}
           <MoneyField
-            label="Bequest target (today's $)"
-            help="The after-tax estate you want the plan to still leave at the end, in today's dollars. Used as the estate floor by the sustainable-spending solver ('How much can I spend?') and by the estate-floor optimizer objective. It does not change the projection itself. Leave 0 for no target."
+            label={`Bequest target (${startYearDollarsWord(plan)} $)`}
+            help={`The after-tax estate you want the plan to still leave at the end, in ${startYearDollarsWord(plan)} dollars. Used as the estate floor by the sustainable-spending solver ('How much can I spend?') and by the estate-floor optimizer objective. It does not change the projection itself. Leave 0 for no target.`}
             learn={LEARN.sustainableSpending}
             hint="Estate floor for the spending solver and optimizer objectives; 0 = none."
             value={e.bequestTargetDollars ?? 0}
@@ -263,7 +264,7 @@ export function SpendingSection() {
             className="btn btn-secondary btn-small"
             onClick={() =>
               update((d) => {
-                const targetYear = new Date().getFullYear() + 3
+                const targetYear = projectionStartYear(plan) + 3
                 d.expenses.oneTimeGoals.push({
                   id: newId(),
                   label: 'Car replacement',
@@ -284,7 +285,7 @@ export function SpendingSection() {
             className="btn btn-secondary btn-small"
             onClick={() =>
               update((d) => {
-                const targetYear = new Date().getFullYear() + 2
+                const targetYear = projectionStartYear(plan) + 2
                 d.expenses.oneTimeGoals.push({
                   id: newId(),
                   label: 'Home improvement',
@@ -307,7 +308,7 @@ export function SpendingSection() {
             className="btn btn-secondary btn-small"
             onClick={() =>
               update((d) => {
-                const targetYear = new Date().getFullYear() + 1
+                const targetYear = projectionStartYear(plan) + 1
                 d.expenses.oneTimeGoals.push({
                   id: newId(),
                   label: 'Big trip',
@@ -341,7 +342,7 @@ export function SpendingSection() {
               />
               <NumberField
                 label="Year"
-                help="The calendar year the goal is funded. The amount is inflated from today's dollars to that year."
+                help={`The calendar year the goal is funded. The amount is inflated from ${startYearDollarsWord(plan)} dollars to that year.`}
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.year`}
                 value={g.year}
@@ -353,8 +354,8 @@ export function SpendingSection() {
                 onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.year = Math.round(v ?? g.year)))}
               />
               <MoneyField
-                label="Amount (today's $)"
-                help="The one-time cost in today's dollars. Keep recurring lifestyle costs in baseline spending instead."
+                label={`Amount (${startYearDollarsWord(plan)} $)`}
+                help={`The one-time cost in ${startYearDollarsWord(plan)} dollars. Keep recurring lifestyle costs in baseline spending instead.`}
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.amount`}
                 value={g.amount}
@@ -495,7 +496,7 @@ export function SpendingSection() {
           <button
             type="button"
             className="btn btn-secondary btn-small"
-            onClick={() => update((d) => void d.expenses.oneTimeGoals.push({ id: newId(), label: 'New goal', year: new Date().getFullYear() + 2, amount: 10_000 }))}
+            onClick={() => update((d) => void d.expenses.oneTimeGoals.push({ id: newId(), label: 'New goal', year: projectionStartYear(plan) + 2, amount: 10_000 }))}
           >
             + Goal
           </button>
@@ -519,7 +520,7 @@ export function SpendingSection() {
           />
           <MoneyField
             label="Medicare extras / person / month"
-            help="Enter recurring post-65 coverage costs beyond standard Part B: Part D, Medigap, Medicare Advantage, dental, vision, or similar premiums. RetireGolden adds the 2026 Part B base premium ($202.90/month) and IRMAA separately."
+            help="Enter recurring post-65 coverage costs beyond standard Part B: Part D, Medigap, Medicare Advantage, dental, vision, or similar premiums. RetireGolden adds the Part B base premium ($202.90/month in 2026, grown at healthcare inflation after) and IRMAA separately."
             learn={LEARN.healthcareAfter65}
             hint="Part D, Medigap/Advantage; Part B + IRMAA added automatically."
             path="expenses.healthcare.medicareExtrasMonthlyPerPerson"

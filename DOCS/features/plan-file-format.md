@@ -56,7 +56,8 @@ assistant", and an assistant's tool takes a single plan, not a library:
   deliberately no second, drifting representation of a plan.
 - `startYear` — the calendar year the projection on screen was run from. **Load-bearing.** A reader
   that has to guess will guess wrong: the RetireGolden MCP's `build_plan` defaults to the literal
-  2026, while the planner projects from the current year, so an unstamped payload would agree with
+  2026, while the planner projects a user plan from the current year (a library example always from
+  2026), so an unstamped payload would agree with
   the app throughout 2026 and silently diverge on 2027-01-01.
 - `schemaVersion` — the plan-schema version this build writes (equal to the `schemaVersion` inside
   `plan`).
@@ -323,12 +324,17 @@ See [Monte Carlo and scenarios](monte-carlo-and-scenarios.md#scenarios).
    schema defines and only that.
 7. **Plain data, no code.** The file is inert JSON. Strings are stored and re-exported as data —
    the import path never evaluates or renders them as markup (adversarially tested).
-8. **A repaired document says so.** A stored shape that current validation refuses (a stale
-   lump-sum election, an inherited rollover target or annuity funding source, a missing account
-   owner) is repaired on load rather than refused, following one rule — never richer than the
-   stored facts support — and every repair is reported: `migratePlanToCurrent` returns a typed
-   repair list and the planner shows each repair once, on load, in plain terms
-   (`packages/engine/src/model/migrations.ts`, the load-repair records and their fixtures).
+8. **A repaired document says so.** A stored shape that current validation refuses (an inherited
+   rollover target or annuity funding source, a missing account owner) is repaired on load rather
+   than refused, following one rule — never richer than the stored facts support — and every repair
+   is reported: `migratePlanToCurrent` returns a typed repair list and the planner shows each repair
+   once, on load, in plain terms (`packages/engine/src/model/migrations.ts`, the load-repair records
+   and their fixtures).
+9. **What is wrong only as of the start year is checked at save, not load** (decision
+   D-2027-ROLLOVER). An elected pension lump sum dated before the year the plan starts opens as
+   stored; the planner shows "Fix 1 issue to store" with both restatements (the lump sum taken, or
+   not) and holds the save until it is fixed (`packages/engine/src/model/asOfIssues.ts`). Nothing is
+   repaired: dropping the election would guess that the lump sum was never taken.
 
 ## What the file is not
 

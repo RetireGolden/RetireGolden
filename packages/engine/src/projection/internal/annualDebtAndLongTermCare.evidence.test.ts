@@ -5,6 +5,7 @@ import { describeCalculation, withinTolerance } from '../../rules/describeCalcul
 import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import { simulatePlan } from '../simulate.js'
+import { preStartEvents } from '../preStartEvents.js'
 import type { PersonYearState } from '../types.js'
 import {
   annualDebtServiceRows,
@@ -127,6 +128,35 @@ describeCalculation(
         example.tolerance,
         'expenses.debtService',
       )
+    })
+
+    it('names a payoff dated before the start with what the ledger pays in the first year (restated 2026-09-29)', () => {
+      // Decision D-2027-ROLLOVER, review L4. Debt B's payoff moved one year
+      // earlier, to the year before a projection that starts in YEAR: the
+      // ledger pays the whole grown balance in YEAR, as for a payoff dated
+      // YEAR, and the projection names it with that same amount.
+      const plan = singlePersonPlan({ dob: `${YEAR - 60}-06-15`, planningAge: 95 })
+      plan.accounts = [
+        {
+          type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0,
+          balance: 500_000, annualContribution: 0,
+        },
+        debtAccount('debt-b', { ...debtB, payoffYear: YEAR - 1 }),
+      ]
+      const result = simulatePlan(validated(plan), {
+        startYear: YEAR,
+        horizonEndYear: YEAR,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const row = result.years.find((entry) => entry.year === YEAR)
+      if (row === undefined) throw new Error(`missing projection year ${YEAR}`)
+      expectWithin(row.expenses.debtService, expected.debtBPayment!, example.tolerance, 'expenses.debtService')
+      const [event] = preStartEvents(plan, YEAR).filter((entry) => entry.kind === 'debtPayoff')
+      expect(event?.warning).toBe(
+        `The debt-b payoff is dated ${YEAR - 1}, before this plan starts in ${YEAR}, so the plan pays it off in ${YEAR}: ` +
+          '$1,120, its $1,000 balance with a year of interest. If it was paid, set its balance to $0.',
+      )
+      expect(result.warnings).toContain(event!.warning)
     })
   },
 )

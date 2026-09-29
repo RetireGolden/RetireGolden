@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path'
 // @ts-expect-error -- node builtin in a node-env test; the package tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
+import { EXAMPLE_FIXED_YEAR } from './exampleClock'
 import { WALKTHROUGHS, runWalkthrough, type Walkthrough } from './walkthroughs'
 
 /**
@@ -28,8 +29,15 @@ export const WALKTHROUGH_EVIDENCE_KIND = 'retiregolden.walkthrough-evidence'
  * (held exactly; the row keeps the unit the figure would have had). A
  * version-1 reader types figures as numbers or strings, so it must refuse
  * version 2 rather than format an absence as a figure.
+ *
+ * Version 3 (D-2027-ROLLOVER, 2026-09-28) adds `startYear`, the year every
+ * table's run starts in (EXAMPLE_FIXED_YEAR), and embeds the plan as the
+ * library example it is (`origin: 'example'`, `exampleSourceId`), so a pasted
+ * copy reruns from the year the tables were computed for rather than the
+ * reader's clock. A version-2 reader has no start year to read, so it must
+ * refuse version 3 rather than rerun from its own year.
  */
-export const WALKTHROUGH_EVIDENCE_VERSION = 2
+export const WALKTHROUGH_EVIDENCE_VERSION = 3
 
 const here: string = dirname(fileURLToPath(import.meta.url))
 const repoRoot: string = resolve(here, '../../../../..')
@@ -51,6 +59,7 @@ export function walkthroughEvidenceOf(walkthrough: Walkthrough, testName: string
     id: walkthrough.id,
     title: walkthrough.title,
     exampleId: walkthrough.exampleId,
+    startYear: EXAMPLE_FIXED_YEAR,
     derivation: `DOCS/walkthroughs/${walkthrough.id}.md`,
     review: walkthrough.review,
     testFile: `packages/planner-ui/src/planner/examples/walkthroughs/${walkthrough.id}.test.ts`,
@@ -58,7 +67,7 @@ export function walkthroughEvidenceOf(walkthrough: Walkthrough, testName: string
     inputs: walkthrough.inputs,
     contractNotes: walkthrough.contractNotes,
     tables,
-    plan,
+    plan: { ...plan, origin: 'example' as const, exampleSourceId: walkthrough.exampleId },
   }
 }
 

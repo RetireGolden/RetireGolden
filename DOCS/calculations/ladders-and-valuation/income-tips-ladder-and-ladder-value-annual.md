@@ -42,6 +42,16 @@ outputs: `income-tips-ladder-annual`; `ladder-value-annual`.
 
 feeds: none.
 
+## A purchase dated before the start year (D-2027-ROLLOVER): a registered limit
+
+A ladder whose purchase year is before the start is treated as already paid, anchored at its purchase year: its rungs pay and no cost leaves the funding account. When the balance was entered before the purchase and not updated, the cost is counted twice. The check measured a $30,000-a-year real bridge ladder for 2028 to 2031 bought in 2026: it costs $14,873 of ending net worth from a 2026 start and adds $702,171 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins the same ladder to the cent: -$14,872.97 from a 2026 start and +$702,077.21 from a 2027 start (main's #761 moved the 2027 figure from the check's, by pricing a saved example's 2027 premium tax credit from a 2027 start). The figure is not corrected, for the reason the annuity record gives; the projection names each such purchase with the cost the ledger prices for a purchase in its own year (`ladder/ladderMath.ts#quotePlanLadder`, `projection/preStartEvents.ts#preStartEvents`):
+
+> The Bridge TIPS ladder purchase is dated 2026, before this plan starts in 2027, so it is treated as already paid: its $114,426 cost is not taken from Joint brokerage. If that balance still includes the cost, lower it by $114,426.
+
+Worked case for the evidence file: the check's ladder on a $700,000 brokerage, zero returns, inflation and spending. From a 2026 start more than $100,000 leaves the brokerage in 2026 and no warning is added. From a 2027 start the 2027 brokerage row is the no-ladder row plus that year's coupons (no cost taken), and the warning above is added.
+
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.

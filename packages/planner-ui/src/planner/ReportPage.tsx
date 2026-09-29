@@ -49,10 +49,11 @@ import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
 import { coastFireHorizonYear, fiTargetBasisFacts, fiTargetBasisSentence } from './fiTargetCopy'
-import { useProjection } from './useProjection'
+import { projectionStartYear, useProjection, startYearDollarsWord } from './useProjection'
 import { US_STATES } from './usStates'
 import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
+import { projectedParametersSentence } from './projectedParameters'
 
 
 const ACCOUNT_LABEL: Record<Account['type'], string> = {
@@ -94,7 +95,7 @@ const td: React.CSSProperties = { padding: '0.3rem 0.6rem', borderBottom: '1px s
 function ReportBody() {
   const { plan } = usePlan()
   const reportBranding = useReportBranding()
-  const view = useProjection(plan)
+  const view = useProjection(plan, projectionStartYear(plan))
   const { result, summary } = view
   const fiFacts = fiTargetBasisFacts(summary, plan)
   // The report route sits outside the workspace shell, so it names its own
@@ -334,7 +335,7 @@ function ReportBody() {
         <table className="report-table">
           <caption className="sr-only">Spending and strategy</caption>
           <tbody>
-            <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} (today's $)</td></tr>
+            <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} ({startYearDollarsWord(plan)} $)</td></tr>
             <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
             <tr><td style={td}>One-time goals</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.oneTimeGoals.length}</td></tr>
             <tr><td style={td}>Pre-65 premium / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
@@ -395,6 +396,9 @@ function ReportBody() {
         <p className="muted small">
           Federal tax brackets, contribution limits, RMD tables, Medicare/IRMAA, and FPL come from dated parameter
           sets; values beyond the latest published year are indexed forward at the assumed inflation rate.
+          {projectedParametersSentence(view.startYear, plan.assumptions) === null
+            ? null
+            : ` ${projectedParametersSentence(view.startYear, plan.assumptions)}`}
         </p>
       </section>
 

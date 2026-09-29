@@ -5,6 +5,7 @@ import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
+import { asOfIssues } from '@retiregolden/engine/model/asOfIssues'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 
 import {
@@ -1356,7 +1357,7 @@ describe('AccountFields extracted editor commit wiring', () => {
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 
-  it('revives a historical pension offer year when the lump sum is elected (parse-valid)', () => {
+  it('revives a historical pension offer year to the plan start year when the lump sum is elected, not the save stamp year (D-2027-ROLLOVER)', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
     const pension: Extract<Account, { type: 'pension' }> = {
@@ -1387,9 +1388,12 @@ describe('AccountFields extracted editor commit wiring', () => {
     const account = mounted.plan.accounts[0]
     expect(account?.type).toBe('pension')
     if (account?.type !== 'pension') throw new Error('expected pension')
-    expect(account.lumpSumOffer?.electionYear).toBe(2030)
+    // The floor is the year the plan starts (projectionStartYear: the clock's
+    // 2026 for a user plan), not the stored stamp's 2030 or the UTC year.
+    expect(account.lumpSumOffer?.electionYear).toBe(2026)
     expect(account.lumpSumElection?.rolloverAccountId).toBe('rollover')
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+    expect(asOfIssues(structuredClone(mounted.plan), 2026)).toEqual([])
   })
 
   it('clamps a qualified annuity start age when its owner changes', () => {

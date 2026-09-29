@@ -69,7 +69,7 @@ import { LEARN } from './learnLinks'
 import { LearnLink } from '../learn/LearnLink'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { currentStartYear, projectPlan, taxCalculatorFor, useProjection } from './useProjection'
+import { projectionStartYear, projectPlan, taxCalculatorFor, useProjection, startYearDollarsWord } from './useProjection'
 import { claimingPeople, dobParts, piaAsOfPlan, planWithClaimAges } from './ssAnalysis'
 import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
@@ -106,7 +106,7 @@ function EmptyState({ plan }: { plan: Plan }) {
   // An earnings history that gives no benefit estimate is said by name, with the resolver's reason.
   const unresolved = plan.household.people.flatMap((person) => {
     const stream = socialSecurityStreamFor(plan, person.id)
-    return stream?.earnings && stream.earnings.length > 0 ? [noBenefitEstimateReason(person, stream, piaAsOfPlan(plan))] : []
+    return stream?.earnings && stream.earnings.length > 0 ? [noBenefitEstimateReason(person, stream, piaAsOfPlan(plan, projectionStartYear(plan)))] : []
   })
   return (
     <div className="empty-state">
@@ -133,7 +133,10 @@ function EmptyState({ plan }: { plan: Plan }) {
 export function SsAnalysisPage() {
   const { plan, update } = usePlan()
   const [tab, setTab] = useState<Tab>('plan')
-  const people = useMemo(() => claimingPeople(plan), [plan])
+  // Keyed on the start year as well as the plan object: a user plan left open
+  // across New Year reads the new year on its next render (review L8).
+  const startYear = projectionStartYear(plan)
+  const people = useMemo(() => claimingPeople(plan, startYear), [plan, startYear])
 
   if (people.length === 0) {
     return (
@@ -210,7 +213,7 @@ interface BridgeComparisonRow {
 function BridgePanel() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const people = useMemo(() => claimingPeople(plan, startYear), [plan, startYear])
 
   const existingLadders = plan.incomeFloor?.ladders
@@ -369,7 +372,7 @@ function BridgePanel() {
               <th scope="col">Person</th>
               <th scope="col">Bridge pays</th>
               <th scope="col">Years</th>
-              <th scope="col">TIPS ladder cost (today's $)</th>
+              <th scope="col">TIPS ladder cost ({startYearDollarsWord(plan)} $)</th>
             </tr>
           </thead>
           <tbody>
@@ -493,8 +496,8 @@ function fallbackYearsNoun(objectiveId: ObjectivePolicyId): string {
 function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'>) {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
-  const startYear = currentStartYear()
-  const { result: baselineProjection } = useProjection(plan)
+  const startYear = projectionStartYear(plan)
+  const { result: baselineProjection } = useProjection(plan, startYear)
   // Survivor liquidity ranks on the years exactly one spouse is alive; a plan
   // with none (one adult, or both people reaching the plan's end) would be
   // ranked by it on the estate alone, so it is not offered under its name.
@@ -885,7 +888,7 @@ function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'
  */
 function CoupleStrategyPanel({ personName, best }: { personName: (id: string) => string; best?: ClaimAgeSweepRow }) {
   const { plan } = usePlan()
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, projectionStartYear(plan))
   if (people.length !== 2) return null
   const [higher, lower] = [...people].sort((a, b) => b.pia - a.pia)
   if (!higher || !lower) return null
@@ -1086,7 +1089,7 @@ function CoupleHeatmap({
  */
 function BreakEvenTab({ personIds, personName }: { personIds: string[]; personName: (id: string) => string }) {
   const { plan } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const people = claimingPeople(plan, startYear)
   const [selectedId, setSelectedId] = useState(personIds[0]!)
   const [growthPct, setGrowthPct] = useState(0)
@@ -1268,7 +1271,7 @@ function EarningsTestNotice({
   personName: (id: string) => string
 }) {
   const { plan } = usePlan()
-  const reach = earningsTestReach(plan, claimAgesByPersonId, currentStartYear())
+  const reach = earningsTestReach(plan, claimAgesByPersonId, projectionStartYear(plan))
   if (reach.length === 0) return null
   return (
     <div className="callout callout--note" role="note">
@@ -1300,7 +1303,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const readOnly = useWorkspaceReadOnly()
   const [discountPct, setDiscountPct] = useState(2)
   const ranking = useMemo(
-    () => benefitsOnlyRanking(plan, discountPct / 100, currentStartYear()),
+    () => benefitsOnlyRanking(plan, discountPct / 100, projectionStartYear(plan)),
     [plan, discountPct],
   )
   // The ranking's own people: its open claims (a claim already made is held
@@ -1362,7 +1365,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         claimAgesByPersonId={Object.fromEntries(
           plan.household.people
             .filter((person) => personIds.includes(person.id))
-            .map((person) => [person.id, benefitsOnlyClaimAges(person, currentStartYear())]),
+            .map((person) => [person.id, benefitsOnlyClaimAges(person, projectionStartYear(plan))]),
         )}
         personName={personName}
       />
@@ -1385,7 +1388,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       {ranking.alreadyClaimed.length > 0 && ranking.disabilityPersonIds.length === 0 ? (
         <div className="callout callout--note" role="note">
           {rankedIds.length === 0 ? <strong>Every claim here is already made. </strong> : null}
-          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {currentStartYear()}
+          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {projectionStartYear(plan)}
           {rankedIds.length === 0
             ? `, so there is no claim age left to compare. ${ALREADY_CLAIMED_LIMITS}`
             : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is held as it is' : 'those claims are held as they are'} below.`}
@@ -1458,7 +1461,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
   const [selfEmployed, setSelfEmployed] = useState(false)
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const discountRate = discountPct / 100
   // Everyone with an earnings history, whether or not it gives a benefit
   // estimate: the tax paid so far needs only the rows, the rates and CPI-U.
@@ -1472,7 +1475,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
       <summary>What you paid in vs. what you get back</summary>
       <p className="card-hint">
         An illustrative "return on your Social Security taxes": the OASDI payroll tax you paid over your earnings
-        history and the tax your projected work will pay, in today's dollars, beside the benefits you are paid (on your
+        history and the tax your projected work will pay, in {startYearDollarsWord(plan)} dollars, beside the benefits you are paid (on your
         record, or a former spouse's when larger): those already received and the survival-weighted expected value of
         the rest at your current claim age. This is an individual-level illustration,
         not the program's actuarial return, and it excludes the insurance value of disability and survivor benefits,
@@ -1622,7 +1625,7 @@ function switchStrategyLabel(strategy: SwitchStrategy): string {
  */
 function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const people = claimingPeople(plan, startYear)
   if (plan.household.people.length !== 1 || people.length !== 1) return null
   const input = survivorSwitchingInputs(plan, people[0]!.person.id, startYear)
@@ -1635,7 +1638,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
       <p className="card-hint">
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
         growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value in
-        today's dollars at {discountPct}%, with the plan's cost-of-living increases and any benefit cut{' '}
+        {startYearDollarsWord(plan)} dollars at {discountPct}%, with the plan's cost-of-living increases and any benefit cut{' '}
         <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed, and strategies that pay the same benefits are shown once." />.
       </p>
       <ScrollRegion label="Survivor vs. personal timing" style={{ border: 'none' }}>

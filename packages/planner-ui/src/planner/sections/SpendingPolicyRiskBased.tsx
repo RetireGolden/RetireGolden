@@ -16,6 +16,7 @@ import { CheckboxField, PercentField } from '../fields'
 import { fmtMoney } from '../format'
 import { LEARN } from '../learnLinks'
 import type { ThresholdSolve } from './useThresholdSolve'
+import { startYearDollarsWord } from '../useProjection'
 
 export function RiskBasedGuardrailFields({
   hasEarlyPullFlexibleGoals,
@@ -156,7 +157,7 @@ export function RiskBasedThresholdsCallout({ thresholds }: { thresholds: Thresho
           ) : (
             <>no raise threshold was solved for this band</>
           )}
-          . Thresholds are in today's dollars, solved under the standard smooth-randomness market model
+          . Thresholds are in {startYearDollarsWord(plan)} dollars, solved under the standard smooth-randomness market model
           (12% return volatility, 60/40 weighting) with your plan's inflation, custom Monte Carlo page
           model settings are not reflected here. Re-solve after meaningful plan changes.
           {published.acts

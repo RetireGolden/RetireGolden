@@ -1,15 +1,15 @@
 # Mutation receipt: longevity-depletion-year
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-index 6d1926fa..da3abb62 100644
+index 17f2ff2a..ca07e105 100644
 --- a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
 +++ b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-@@ -1932,7 +1932,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1943,7 +1943,7 @@ export function annualFundingApplicationAndClosePhase(
      }
      deposit(surplus)
  
@@ -30,16 +30,16 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The second verification's fixes on this branch (V1 to V4) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 47ms
+ ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 38ms
    ❯ longevity-depletion-year — Depletion year: the first projection year whose shortfall clears the funding tolerance (3)
-     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 37ms
-     × reports null when every year is funded 4ms
-     × does not call a year that closes at exactly zero depletion 4ms
+     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 31ms
+     × reports null when every year is funded 3ms
+     × does not call a year that closes at exactly zero depletion 3ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)

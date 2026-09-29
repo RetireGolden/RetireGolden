@@ -1,0 +1,79 @@
+name: Rollover (next 1 January)
+
+# Decision D-2027-ROLLOVER (2026-09-28): what changes on 1 January is seen
+# ahead of it, every week of the year. The engine, planner-ui and app suites
+# run with every Date shifted to three instants (time still moves, so timers
+# and debounces behave as usual; a test that installs its own fake clock still
+# pins its own instant):
+#   - 15 January of next year, 12:00 UTC: the first weeks of the new year;
+#   - 1 January of next year, 03:00 UTC, in America/New_York: 22:00 on New
+#     Year's Eve locally, where the start year is still this year and the UTC
+#     save stamp is already next year's;
+#   - 31 December of this year, 20:00 UTC, in Asia/Tokyo: 05:00 on New Year's
+#     morning locally, where the start year is next year's and the UTC save
+#     stamp is still this year's.
+# The zone is applied at runtime (process.env.TZ), which Node honours.
+on:
+  schedule:
+    # Mondays, 06:17 UTC.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rollover-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rollover:
+    name: ${{ matrix.suite }} at ${{ matrix.instant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [engine, planner-ui, web]
+        instant: [next-jan-15-utc, new-years-eve-new-york, new-years-morning-tokyo]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-toolchain
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve the instant
+        id: clock
+        env:
+          INSTANT: ${{ matrix.instant }}
+        run: |
+          this_year="$(date -u +%Y)"
+          next_year="$((this_year + 1))"
+          case "$INSTANT" in
+            next-jan-15-utc)
+              clock="${next_year}-01-15T12:00:00.000Z"; zone="UTC" ;;
+            new-years-eve-new-york)
+              clock="${next_year}-01-01T03:00:00.000Z"; zone="America/New_York" ;;
+            new-years-morning-tokyo)
+              clock="${this_year}-12-31T20:00:00.000Z"; zone="Asia/Tokyo" ;;
+            *)
+              echo "unknown instant: $INSTANT" >&2; exit 2 ;;
+          esac
+          echo "clock=$clock" >> "$GITHUB_OUTPUT"
+          echo "zone=$zone" >> "$GITHUB_OUTPUT"
+          echo "Running at $clock in $zone"
+
+      - name: Run the suite at that instant
+        env:
+          SUITE: ${{ matrix.suite }}
+          RG_ROLLOVER_CLOCK: ${{ steps.clock.outputs.clock }}
+          RG_ROLLOVER_TZ: ${{ steps.clock.outputs.zone }}
+        run: |
+          case "$SUITE" in
+            engine) pnpm --filter @retiregolden/engine exec vitest run ;;
+            planner-ui) pnpm --filter @retiregolden/planner-ui exec vitest run ;;
+            web) pnpm --filter retiregolden-web exec vitest run ;;
+            *) echo "unknown suite: $SUITE" >&2; exit 2 ;;
+          esac

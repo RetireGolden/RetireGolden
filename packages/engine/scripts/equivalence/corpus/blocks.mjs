@@ -1289,6 +1289,10 @@ function blockJ() {
       { fromAge: 60, multiplier: 1.375 },
       { fromAge: 60, multiplier: 1.0625 },
     ]
+    // Schema v7 requires a two-person plan with phases to name the person they
+    // follow. p1 is the person listed first, whose age they followed before v7
+    // and whom the v7 migration names; a tree before v7 drops the field.
+    plan.expenses.phasesAgeOf = 'p1'
     out.push(
       member(
         'j1-fixedLifestylePhasesAndDeaths',
@@ -3445,7 +3449,10 @@ function blockV() {
     // The first QLAC proves the cap changes funding, while the second emits a
     // cap warning and then a funding shortfall. All three contracts use
     // qualified sources, so three runtime debits must precede three contract
-    // credits; ownerless account fallback resolves each to primary.
+    // credits. Until schema v7 the contracts had no owner and the ownerless
+    // account fallback resolved each to primary; v7 requires an annuity to
+    // name its annuitant, so each names p1, the primary that fallback resolved
+    // to and whom the v7 migration names.
     const plan = singlePersonPlan({ dob: '1970-12-15', planningAge: 90 })
     plan.assumptions.defaultReturnPct = 0
     plan.accounts = [
@@ -3453,24 +3460,21 @@ function blockV() {
       qualified('traditional', 'v3-qlac-shortfall-source', 150_000, { annualReturnPct: 0 }),
       qualified('traditional', 'v3-qualified-source', 100, { annualReturnPct: 0 }),
       purchasedAnnuity('v3-qlac-cap', 'v3-qlac-cap-source', 300_000, {
-        ownerPersonId: null,
         startAge: 85,
         purchase: { taxQualification: 'qualified', qlac: true },
       }),
       purchasedAnnuity('v3-qlac-shortfall', 'v3-qlac-shortfall-source', 300_000, {
-        ownerPersonId: null,
         startAge: 85,
         purchase: { taxQualification: 'qualified', qlac: true },
       }),
       purchasedAnnuity('v3-qualified', 'v3-qualified-source', 13, {
-        ownerPersonId: null,
         startAge: 60,
         purchase: { taxQualification: 'qualified' },
       }),
     ]
     out.push(member(
       'v3-qlacCapShortfallAndQualifiedRuntime',
-      'V: qualified owner fallback, effective QLAC cap and cap-before-shortfall warnings, three ordered runtime debits followed by three contract credits',
+      'V: qualified contracts on the primary (the owner fallback before schema v7), effective QLAC cap and cap-before-shortfall warnings, three ordered runtime debits followed by three contract credits',
       plan,
       { horizonEndYear: START_YEAR },
     ))

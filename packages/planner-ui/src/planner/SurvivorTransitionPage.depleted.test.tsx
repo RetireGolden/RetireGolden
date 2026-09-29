@@ -17,7 +17,7 @@ import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor } from '../testSupport/settle'
 import { SurvivorTransitionPage } from './SurvivorTransitionPage'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
-import { projectPlan } from './useProjection'
+import { projectPlan, projectionStartYear } from './useProjection'
 
 let container: HTMLDivElement
 let root: Root
@@ -80,7 +80,7 @@ function depletedCoupleWithSocialSecurity(): Plan {
 describe('SurvivorTransitionPage empty state (#513)', () => {
   it('shows an empty state per person when every timing has nothing on either side, naming the depletion year', async () => {
     const plan = bareCouple()
-    const depletionYear = projectPlan(plan).summary.depletionYear
+    const depletionYear = projectPlan(plan, projectionStartYear(plan)).summary.depletionYear
     expect(depletionYear, 'fixture depletes').not.toBeNull()
     await mount(plan)
 
@@ -99,7 +99,7 @@ describe('SurvivorTransitionPage empty state (#513)', () => {
   it('keeps every row for a plan that runs short of money but still has Social Security', async () => {
     const plan = depletedCoupleWithSocialSecurity()
     expect(plan.incomes.length).toBeGreaterThan(0)
-    expect(projectPlan(plan).summary.depletionYear, 'fixture depletes').not.toBeNull()
+    expect(projectPlan(plan, projectionStartYear(plan)).summary.depletionYear, 'fixture depletes').not.toBeNull()
     await mount(plan)
 
     expect(container.querySelector('[data-survivor-empty]')).toBeNull()
@@ -116,7 +116,7 @@ describe('SurvivorTransitionPage empty state (#513)', () => {
 
   it('keeps every timing row on a plan that never depletes', async () => {
     const plan = shortHorizon(createSamplePlan())
-    expect(projectPlan(plan).summary.depletionYear).toBeNull()
+    expect(projectPlan(plan, projectionStartYear(plan)).summary.depletionYear).toBeNull()
     await mount(plan)
     expect(container.querySelector('[data-survivor-empty]')).toBeNull()
     expect(container.querySelectorAll('.survivor-table').length).toBe(2)

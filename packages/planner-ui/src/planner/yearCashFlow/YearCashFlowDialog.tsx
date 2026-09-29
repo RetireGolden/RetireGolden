@@ -26,6 +26,7 @@ import {
   type YearCashFlowDisplayAmount,
 } from './YearCashFlowSankey'
 import { ScrollRegion } from '../ScrollRegion'
+import { usePlanDollarsWord } from '../planContextCore'
 
 export type YearCashFlowDollarMode = 'nominal' | 'today'
 
@@ -181,7 +182,8 @@ function DetailTable({
   displayAmount: YearCashFlowDisplayAmount
   dollarMode: YearCashFlowDollarMode
 }) {
-  const mode = dollarMode === 'today' ? "today's dollars" : 'nominal dollars'
+  const dollarsWord = usePlanDollarsWord()
+  const mode = dollarMode === 'today' ? `${dollarsWord} dollars` : 'nominal dollars'
   return (
     <ScrollRegion label={`Cash-flow lines for ${year}`} className="year-cash-flow-table-wrap">
       <table className="year-table year-cash-flow-table">
@@ -254,7 +256,8 @@ export function YearCashFlowDialog({
     onViewChange?.(next)
     if (viewIdProp === undefined) setUncontrolledViewId(next)
   }
-  const modeLabel = dollarMode === 'today' ? "Amounts in today's dollars" : 'Amounts in nominal dollars'
+  const dollarsWord = usePlanDollarsWord()
+  const modeLabel = dollarMode === 'today' ? `Amounts in ${dollarsWord} dollars` : 'Amounts in nominal dollars'
 
   if (model.kind === 'unavailable') {
     return (

@@ -8,8 +8,10 @@ import { TypeChip } from '../TypeChip'
 import { Issues } from './shared'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 import { removeAccount } from '../eligibilityFactActions'
+import { projectionStartYear } from '../useProjection'
+import { startYearAsOf } from '../../startYear'
 
-function makeAccount(type: Account['type'], primaryPersonId: string): Account {
+function makeAccount(type: Account['type'], primaryPersonId: string, startYear: number): Account {
   const base = { id: newId(), ownerPersonId: isIndividuallyOwnedAccount(type) ? primaryPersonId : null, annualReturnPct: null }
   switch (type) {
     case 'cash':
@@ -28,7 +30,7 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
         annualContribution: 0,
       }
     case 'equityComp':
-      return { ...base, type, name: 'RSU / ESPP', balance: 0, costBasis: 0, annualContribution: 0, vestingMode: 'cliff', vestDate: `${new Date().getFullYear()}-12-31` }
+      return { ...base, type, name: 'RSU / ESPP', balance: 0, costBasis: 0, annualContribution: 0, vestingMode: 'cliff', vestDate: `${startYear}-12-31` }
     case 'traditional':
       return { ...base, type, name: '401(k)', kind: 'employer', balance: 0, annualContribution: 0 }
     case 'roth':
@@ -56,7 +58,7 @@ export function AccountsSection() {
     <section>
       <div className="card">
         <h2>Accounts</h2>
-        <p className="card-hint">Balances as of today. Investable accounts grow at their expected return (or the default assumption) and are drained per your withdrawal strategy.</p>
+        <p className="card-hint">Balances as of {startYearAsOf(plan)}. Investable accounts grow at their expected return (or the default assumption) and are drained per your withdrawal strategy.</p>
         {plan.accounts.length === 0 ? <div className="empty-state"><p>No accounts yet. Add your first below.</p></div> : null}
         {plan.accounts.map((a, i) => (
           <div className="item-row" key={a.id} data-testid="account-row" data-account-type={a.type} data-account-name={a.name}>
@@ -79,7 +81,7 @@ export function AccountsSection() {
         ))}
         <div className="add-row">
           {(Object.keys(ACCOUNT_LABEL) as Account['type'][]).map((t) => (
-            <button key={t} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.accounts.push(makeAccount(t, primaryPersonId)))}>
+            <button key={t} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.accounts.push(makeAccount(t, primaryPersonId, projectionStartYear(plan))))}>
               + {ACCOUNT_LABEL[t]}
             </button>
           ))}

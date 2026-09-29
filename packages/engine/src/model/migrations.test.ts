@@ -89,37 +89,33 @@ describe('migratePlanToCurrent', () => {
       return raw
     }
 
-    it('carries a legacy stale election back as an undecided offer, not a refusal', () => {
-      // Stamped 2026 (fixedNow), elected for 2025: saveable before this rule
-      // existed, and refused by `parsePlan` now.
+    it('keeps an election dated before its save stamp as stored: no repair, no guess (D-2027-ROLLOVER)', () => {
+      // Stamped 2026 (fixedNow), elected for 2025. Until 2026-09-28 the load
+      // dropped the election here. That guessed the lump sum was never taken:
+      // a plan saved in its election year and reopened later most likely
+      // records one that WAS taken, and dropping the election would pay a
+      // pension the household gave up. The plan opens as stored, and
+      // model/asOfIssues.ts refuses its save against the start year, naming
+      // both restatements.
       const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2025 }, 'ira'))
       expect(result.ok).toBe(true)
       if (!result.ok) return
       const pension = result.plan.accounts.find((a) => a.id === 'pen')!
       expect(pension.type).toBe('pension')
       if (pension.type !== 'pension') return
-      // The election goes; the offer stays, so the decision record survives and
-      // the household can re-elect it against a year that has not passed.
-      expect(pension.lumpSumElection).toBeUndefined()
+      expect(pension.lumpSumElection).toEqual({ rolloverAccountId: 'ira' })
       expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2025 })
-      expect(result.repairs).toEqual([
-        {
-          kind: 'lumpSumElectionDroppedElectionYearPassed',
-          accountId: 'pen',
-          accountName: 'Pension',
-          electionYear: 2025,
-        },
-      ])
+      expect(result.repairs).toEqual([])
     })
 
-    it('repairs a legacy stale election stored at an older schema version too', () => {
+    it('keeps it as stored at an older schema version too', () => {
       const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2025 }, 'ira', 3))
       expect(result.ok).toBe(true)
       if (!result.ok) return
       const pension = result.plan.accounts.find((a) => a.id === 'pen')!
       if (pension.type !== 'pension') throw new Error('expected the pension back')
-      expect(pension.lumpSumElection).toBeUndefined()
-      expect(result.repairs.map((r) => r.kind)).toEqual(['lumpSumElectionDroppedElectionYearPassed'])
+      expect(pension.lumpSumElection).toEqual({ rolloverAccountId: 'ira' })
+      expect(result.repairs.map((r) => r.kind)).toEqual([])
     })
 
     it('sheds an election whose rollover target id is duplicated, instead of locking out', () => {
@@ -168,11 +164,11 @@ describe('migratePlanToCurrent', () => {
       ])
     })
 
-    it('sheds the election when the stored stamp is unreadable, instead of refusing the load', () => {
-      // The staleness rule fails closed at parse when the stamp is not ISO, so
-      // a stored document with a damaged or hand-crafted stamp must lose the
-      // election here or it could not load at all. Re-saving restores the
-      // stamp, and the offer survives for re-electing.
+    it('keeps the election when the stored stamp is unreadable: the stamp no longer judges it', () => {
+      // Until D-2027-ROLLOVER the staleness rule read the stamp and failed
+      // closed when it could not, so the load shed the election. The rule now
+      // reads the start year the host names, so a damaged stamp says nothing
+      // about the election and nothing is dropped.
       const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'ira')
       raw['updatedAtIso'] = 'not-a-timestamp'
       const result = migratePlanToCurrent(raw)
@@ -180,22 +176,18 @@ describe('migratePlanToCurrent', () => {
       if (!result.ok) return
       const pension = result.plan.accounts.find((a) => a.id === 'pen')!
       if (pension.type !== 'pension') throw new Error('expected the pension back')
-      expect(pension.lumpSumElection).toBeUndefined()
-      expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
-      expect(result.repairs).toEqual([
-        { kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId: 'pen', accountName: 'Pension' },
-      ])
+      expect(pension.lumpSumElection).toEqual({ rolloverAccountId: 'ira' })
+      expect(result.repairs).toEqual([])
     })
 
-    it('reports the unreadable stamp, not the target, when both would refuse the election', () => {
-      // A re-save is what makes the election year judgeable again, so the fault
-      // that has to be fixed first is the one reported.
+    it('reports the refused target when the stamp is also unreadable', () => {
+      // The target is the one fault the load still repairs.
       const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'inh')
       raw['updatedAtIso'] = 'not-a-timestamp'
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (!result.ok) return
-      expect(result.repairs.map((r) => r.kind)).toEqual(['lumpSumElectionDroppedUnreadableSaveDate'])
+      expect(result.repairs.map((r) => r.kind)).toEqual(['lumpSumElectionDroppedInheritedTarget'])
     })
 
     it('carries a legacy inherited-IRA rollover target back the same way', () => {
@@ -576,7 +568,7 @@ describe('migratePlanToCurrent', () => {
           inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
         { type: 'roth', id: 'roth', name: 'Roth IRA', ownerPersonId: null, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
         { type: 'pension', id: 'pen', name: 'Pension', ownerPersonId: primaryId, annualReturnPct: null, startAge: 65, monthlyAmount: 2_000, colaPct: 0, survivorPct: 0,
-          lumpSumOffer: { amount: 400_000, electionYear: 2025 }, lumpSumElection: { rolloverAccountId: 'ira' } },
+          lumpSumOffer: { amount: 400_000, electionYear: 2030 }, lumpSumElection: { rolloverAccountId: 'inh' } },
         { type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: primaryId, annualReturnPct: null, startAge: 70, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
           purchase: { year: 2030, premium: 100_000, fundingAccountId: 'inh', taxQualification: 'qualified' } },
       ] as never
@@ -584,7 +576,13 @@ describe('migratePlanToCurrent', () => {
 
       const expected = [
         { kind: 'accountOwnerBackFilled', accountId: 'roth', accountName: 'Roth IRA', ownerPersonId: primaryId },
-        { kind: 'lumpSumElectionDroppedElectionYearPassed', accountId: 'pen', accountName: 'Pension', electionYear: 2025 },
+        {
+          kind: 'lumpSumElectionDroppedInheritedTarget',
+          accountId: 'pen',
+          accountName: 'Pension',
+          targetAccountId: 'inh',
+          targetAccountName: 'Inherited',
+        },
         {
           kind: 'annuityPremiumRetargeted',
           accountId: 'ann',

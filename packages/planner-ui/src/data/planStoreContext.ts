@@ -39,6 +39,7 @@ import {
   putPlanRecord,
   savePlan,
   type DuplicatePlanOptions,
+  type SaveCheckOptions,
   type SavePlanResult,
 } from './planStore'
 
@@ -105,10 +106,18 @@ export async function loadPlanVia(store: PlanStore, id: string): Promise<Migrate
   return migratePlanToCurrent(raw)
 }
 
-/** Validates and writes a plan, bumping `updatedAtIso`. */
-export async function savePlanVia(store: PlanStore, plan: Plan, now: () => Date = () => new Date()): Promise<SavePlanResult> {
-  if (isExamplePlanId(plan.id)) return savePlan(plan, now)
-  const checked = checkPlanForSave(plan, now)
+/**
+ * Validates and writes a plan, bumping `updatedAtIso`. `opts.asOfYear` adds
+ * the start-year check the workspace's autosave runs (`SaveCheckOptions`).
+ */
+export async function savePlanVia(
+  store: PlanStore,
+  plan: Plan,
+  now: () => Date = () => new Date(),
+  opts: SaveCheckOptions = {},
+): Promise<SavePlanResult> {
+  if (isExamplePlanId(plan.id)) return savePlan(plan, now, opts)
+  const checked = checkPlanForSave(plan, now, opts)
   if (!checked.ok) return checked
   await store.savePlan(checked.plan)
   return checked

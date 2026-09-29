@@ -8,6 +8,7 @@
 import { openDB, type IDBPDatabase } from 'idb'
 
 import { isUserPlan, planOriginFromRaw } from './planOrigin'
+import { asOfIssues } from '@retiregolden/engine/model/asOfIssues'
 import { migratePlanToCurrent, type MigrateResult } from '@retiregolden/engine/model/migrations'
 import {
   discardRetirementActionAnnualTaxFacts,
@@ -130,20 +131,47 @@ export async function loadPlan(id: string): Promise<MigrateResult> {
 export type SavePlanResult = { ok: true; plan: Plan } | { ok: false; issues: string[] }
 
 /**
+ * What a save checks beyond the document's shape. `asOfYear` is the year the
+ * plan's projection starts (`projectionStartYear(plan)`): when given, the
+ * save also refuses what is wrong only as of that year (the engine's
+ * `asOfIssues`, today an elected pension lump sum dated before it). The
+ * workspace's autosave passes it, so an edit is judged against the year the
+ * page projects from, never the save stamp (decision D-2027-ROLLOVER). Paths
+ * that store a document as it arrives (import, restore, duplicate, the
+ * example convert) leave it out: the plan opens, and the workspace shows the
+ * issue and holds the next save until it is fixed.
+ */
+export interface SaveCheckOptions {
+  asOfYear?: number
+}
+
+/**
  * The pure half of a save: bump `updatedAtIso` and re-validate. Every store
  * that persists plans (this one and any host-provided `PlanStore`) writes
  * through this so validation cannot drift between implementations.
  */
-export function checkPlanForSave(plan: Plan, now: () => Date = () => new Date()): SavePlanResult {
+export function checkPlanForSave(
+  plan: Plan,
+  now: () => Date = () => new Date(),
+  opts: SaveCheckOptions = {},
+): SavePlanResult {
   const stamped: Plan = { ...plan, updatedAtIso: now().toISOString() }
   const checked = parsePlan(stamped)
   if (!checked.ok) return { ok: false, issues: checked.issues }
+  if (opts.asOfYear !== undefined) {
+    const issues = asOfIssues(checked.plan, opts.asOfYear)
+    if (issues.length > 0) return { ok: false, issues }
+  }
   return { ok: true, plan: checked.plan }
 }
 
 /** Validates and writes a plan, bumping `updatedAtIso`. */
-export async function savePlan(plan: Plan, now: () => Date = () => new Date()): Promise<SavePlanResult> {
-  const checked = checkPlanForSave(plan, now)
+export async function savePlan(
+  plan: Plan,
+  now: () => Date = () => new Date(),
+  opts: SaveCheckOptions = {},
+): Promise<SavePlanResult> {
+  const checked = checkPlanForSave(plan, now, opts)
   if (!checked.ok) return checked
   await (await db()).put(PLANS_STORE, checked.plan)
   return checked

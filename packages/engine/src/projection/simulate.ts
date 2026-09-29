@@ -1,4 +1,5 @@
 import type { InheritedAccountYearEvidence } from './types.js'
+import { preStartEvents } from './preStartEvents.js'
 import { deriveAnnualStateRailroadBenefits } from './internal/annualStateRailroadFacts.js'
 import { applyAcceptedPensionBasisToYearFacts, commitAcceptedPensionBasis, type AcceptedStatePensionBasisSnapshot } from './internal/statePensionBasisLifecycle.js'
 import { applyAcceptedNjIraBasisToYearFacts, commitAcceptedNjIraBasis, type AcceptedStateNjIraBasisSnapshot } from './internal/stateNjIraBasisLifecycle.js'
@@ -55,9 +56,17 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, EMBEDDED_REAL_YIELD_CURVE, hsaLimitsForYear, LATEST_HSA_LIMIT_YEAR } from '../params/index.js'
-import { acaParametersForCoverageYear } from '../params/acaCoverageYears.js'
+import {
+  componentPackView,
+  componentScale,
+  packForYear,
+  EMBEDDED_REAL_YIELD_CURVE,
+  hsaLimitsForYear,
+  LATEST_HSA_LIMIT_YEAR,
+} from '../params/index.js'
 import { indexingScaleFor } from '../params/indexingScale.js'
+import { acaParametersForCoverageYear } from '../params/acaCoverageYears.js'
+import { LATEST_STATE_PACK_YEAR } from '../params/state/index.js'
 import type { AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -105,7 +114,6 @@ import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tips
 import { tipsLadderPurchaseFunding } from './internal/tipsLadderPurchaseFunding.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
-import type { ParameterPack } from '../params/types.js'
 import {
   type RmdApplicablePlan,
   type RmdShortfallReliefElection,
@@ -555,15 +563,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   /** Same for healthcare (general inflation + the healthcare premium). */
   const healthInflFactorFrom = (fromYear: number, toYear: number) =>
     factorFrom(cumHealthInfl, inflation + healthExtra, fromYear, toYear)
-  /**
-   * Statutory limits are indexed; project them past the latest pack at the
-   * inflation path. The rule lives in `params/indexingScale.ts`, shared with the
-   * optimizer's LP and the widow's-penalty detector; the ledger's contribution
-   * is the path, which follows a Monte Carlo `market.inflationPct` series where
-   * one is supplied. A year the pack prices exactly needs no projection at all.
-   */
-  const limitScale = (pack: ParameterPack, isStandIn: boolean, year: number): number =>
-    !isStandIn ? 1 : indexingScaleFor(pack.year, year, inflFactorFrom)
+  // Statutory limits are indexed: each publisher's figures are projected past
+  // that publisher's latest published year at the inflation path
+  // (`params/index.ts#componentScale`, over the rule in
+  // `params/indexingScale.ts` shared with the optimizer's LP and the
+  // widow's-penalty detector). The ledger's contribution is the path, which
+  // follows a Monte Carlo `market.inflationPct` series where one is supplied.
+  // A year a publisher prices exactly needs no projection at all.
   /**
    * The HSA base limits for a year, with the scale to apply to them. The IRS
    * publishes them each May, ahead of the income-tax figures
@@ -659,13 +665,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // decided by nothing but the start year: a 400,000 dollar QLAC seeded at
       // 400,000 pre-start where the same purchase inside the projection was
       // reduced to the cap.
-      const { pack: purchasePack, isStandIn: purchaseStandIn } =
-        packForYear(contract.purchase!.year)
+      const purchaseParameters = packForYear(contract.purchase!.year)
       const cappedPremium = contract.purchase!.qlac === true
         ? Math.min(
           contract.purchase!.premium,
-          purchasePack.annuities.qlacPremiumCap *
-            limitScale(purchasePack, purchaseStandIn, contract.purchase!.year),
+          purchaseParameters.pack.annuities.qlacPremiumCap *
+            componentScale(purchaseParameters, 'irsRetirementPlanLimits', contract.purchase!.year, inflFactorFrom),
         )
         : contract.purchase!.premium
       annuityContractValue.set(
@@ -679,10 +684,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
   // The same pre-start reading, said out loud for the one event that cannot
   // apply it silently. An elected pension lump sum dated before the projection
-  // start is a shape `parsePlan` now refuses ("an elected pension lump sum
-  // cannot have an election year in the past"), but a plan saved under an
-  // earlier build, or reopened in a later calendar year without being edited,
-  // still reaches the ledger carrying it. The ledger cannot tell whether the
+  // start is refused at save against the start year (`model/asOfIssues.ts`,
+  // decision D-2027-ROLLOVER), but a plan reopened in a later calendar year
+  // still opens carrying it, and a host that projects without that check
+  // reaches the ledger with it. The ledger cannot tell whether the
   // rollover already happened: it skips the pension for every
   // `year >= electionYear` and credits the offer in no projected year, which is
   // the right answer only when the household already folded those dollars into
@@ -697,15 +702,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       continue
     }
-    // The visible trace for the load-time repair in `model/migrations.ts`. A
-    // stored document whose election could not be modelled comes back undecided
-    // with its offer intact, so the pension pays again; this says why, in the
-    // same breath as the identical state a household reaches by simply letting
-    // an offer's deadline go by.
+    // An unelected offer whose election year has passed: the pension pays, and
+    // this says why (the state a household reaches by letting an offer's
+    // deadline go by, or by clearing an election the save check refused).
     warnings.add(
       'A pension lump-sum offer on record has an election year that has already passed, so no rollover is modeled and the pension pays its annuity. Update the election year to compare taking the lump sum again.',
     )
   }
+  // Every other event dated before the start, named one by one with what the
+  // projection assumed (decision D-2027-ROLLOVER): a purchase is treated as
+  // already paid and a goal, income or named action as outside the
+  // projection. Said, not changed: the engine cannot tell whether a typed
+  // balance already reflects the event (projection/preStartEvents.ts).
+  for (const event of preStartEvents(plan, startYear)) warnings.add(event.warning)
   // HECM lines of credit (annuity-pension-and-home-equity, step 4), keyed by
   // property id. HUD-validated lines carry an observed servicing baseline and
   // separately conserved modeled draw debt; a complete ledger replaces only
@@ -1333,8 +1342,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // after the year settles.
     let yearAdditionalBracketFill: AdditionalBracketFillYear | null = null
     const inflFactor = inflFactorFrom(startYear, year)
-    const { pack, isStandIn } = packForYear(year)
-    const limitGrowth = limitScale(pack, isStandIn, year)
+    const yearParameters = packForYear(year)
+    // `isStandIn` is the federal income-tax figures' flag; every other
+    // publisher's figures carry their own (decision D-2027-ROLLOVER), and each
+    // grows from its own latest published year.
+    const { pack, isStandIn } = yearParameters
+    const limitGrowth = componentScale(yearParameters, 'irsRetirementPlanLimits', year, inflFactorFrom)
+    const incomeTaxGrowth = componentScale(yearParameters, 'irsIncomeTax', year, inflFactorFrom)
+    const socialSecurityGrowth = componentScale(yearParameters, 'ssaProgram', year, inflFactorFrom)
+    // A deduction a state's own statute indexes (the District's, Washington's)
+    // grows at the plan's inflation from the state figures' year, whatever the
+    // IRS has published (review V1); a tax input carries it only when it differs.
+    const stateIndexingGrowth = indexingScaleFor(LATEST_STATE_PACK_YEAR, year, inflFactorFrom, LATEST_STATE_PACK_YEAR)
+    const qcdLimitStandIn = yearParameters.components.irsRetirementPlanLimits.standIn
     // The premium tax credit reads its own coverage-year figures, published on
     // their own calendar (params/acaCoverageYears.ts), so a year can be priced
     // while its income-tax pack is still a stand-in. Published guidelines are
@@ -1747,7 +1767,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ssColaFactor,
       ssHaircutFactor,
       pack,
-      limitGrowth,
+      limitGrowth: socialSecurityGrowth,
     })
     incomes.socialSecurity += socialSecurity.socialSecurity
     for (const write of socialSecurity.withheldMonthWrites) {
@@ -1908,7 +1928,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // carry across years, so they are assigned back here.
     const expenseAssembly = annualExpenseAssemblyPhase({
       plan,
-      pack,
+      // The Medicare readers' view: `year` is CMS's published year.
+      pack: componentPackView(yearParameters, 'cmsMedicare'),
       year,
       startYear,
       inflFactor,
@@ -2014,6 +2035,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const row of fixedAssetDispositions({
       accounts: plan.accounts,
       year,
+      startYear,
       propertyValues,
       inflRateAt,
       filingStatus: taxFilingStatusForYear,
@@ -2506,7 +2528,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           limitGrowth,
           birthMonthByPerson,
           rmdFirstYearDeferrals: opts.rmdFirstYearDeferrals ?? [],
-          isStandIn,
+          qcdLimitStandIn,
           qcdSection219ByDonor,
           preProjectionQcdOffsetUnprovable,
         }),
@@ -2597,7 +2619,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         anyAlive,
         aliveCount,
         inflFactor,
-        limitGrowth,
+        incomeTaxGrowth,
+        stateIndexingGrowth,
         taxFilingStatusForYear,
         filingStatusForYear,
         safetyNetFloorToday,
@@ -2691,7 +2714,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         anyAlive,
         aliveCount,
         inflFactor,
-        limitGrowth,
+        incomeTaxGrowth,
+        stateIndexingGrowth,
         taxFilingStatusForYear,
         filingStatusForYear,
         safetyNetFloorToday,

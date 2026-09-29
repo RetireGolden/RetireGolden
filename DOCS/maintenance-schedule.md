@@ -1,7 +1,9 @@
 # Maintenance & re-research schedule
 
-RetireGolden models current law with current-year numbers. Those numbers change every year, and some rules
-change on legislative timelines. This is the schedule for keeping the parameter packs, the domain rules,
+RetireGolden models current law with the latest published numbers: each agency's figures for the years it
+has published, and for later years those figures grown at the plan's inflation assumption until the agency
+publishes the year's own (the app marks those years as projected). Those numbers change every year, and some
+rules change on legislative timelines. This is the schedule for keeping the parameter packs, the domain rules,
 and the Learning Center current so the app doesn't silently drift into being a 2026 time capsule.
 
 **Last full review: June 2026.** Two kinds of upkeep: a **calendar refresh** (most figures publish each
@@ -11,8 +13,46 @@ fall for the next tax year) and an **event-driven watch-list** (legislation that
 
 The annual refresh is a **data change, not a code change** (that's the point of params-as-data):
 
-1. Add a new dated parameter pack for the year under `packages/engine/src/params/data/` (federal) and
-   `packages/engine/src/params/state/` (states), copying forward and updating the published figures.
+1. Land each publisher's figures when that publisher releases them, not when the last one does: add the
+   year's record to its component in `packages/engine/src/params/components.ts` (IRS income tax, IRS
+   retirement-plan limits with the QCD limit, IRS HSA limits, SSA, CMS, HUD), with every field the
+   component owns and the publication named in `source`; state figures go under
+   `packages/engine/src/params/state/`. Until a component has the year, the year's view projects it from
+   the component's latest year and the planner marks it (decision D-2027-ROLLOVER).
+
+   **Nothing has to move before the first publisher's 2027 figures land.** Every reader takes its year
+   and its growth from the publisher whose figures it reads, never from the base pack
+   (`packForYear(year).pack.year`, which stays the latest base pack's year, 2026, however many
+   components land 2027) or from the income-tax figures' projection factor (which becomes 1 in a year
+   the IRS is loaded for). Nine readers that did not were found and have moved (paths under
+   `packages/engine/src/`; review V1 and PR #768 review issues 1 and 7, 2026-09-29):
+   - The state calculator (`tax/stateTax.ts`) conformed a federal-following deduction (Colorado's) by
+     scaling its copy of the 2026 federal basic by the income-tax factor, so it would fall back to
+     2026's once the IRS landed. It now conforms to the year's federal basic, loaded or projected.
+   - The statutory indexing of the District's deduction (from 2027) and Washington's (from 2029) ran at
+     the same factor, so it would stop once the IRS landed. The state calculator and the optimizer LP
+     now index it at the plan's own inflation from the state figures' year.
+   - The widow's-penalty detector (`insights/detectors/widowsPenalty.ts`) grew the survivor's tax
+     tables from `LATEST_PACK_YEAR`, so it would grow the IRS's loaded figures a second time. It now reads
+     the income-tax component's factor, as the ledger does.
+   - The law-pack detector (`insights/detectors/lawPackDrift.ts`, "rules need a plan review") compared the
+     plan's save year with `ctx.params.year`, so it would never say that a year's figures had landed. It
+     now compares it with the latest year a yearly publisher's figures for the plan's first year are
+     loaded for, and names those figures.
+   - The IRMAA tier-edge detector (`insights/detectors/irmaaTierEdge.ts`) scaled the IRMAA thresholds from
+     `ctx.params.year`. It now reads them through `componentPackView(lookup, 'cmsMedicare')`, as the
+     ledger's expense assembly does (`projection/simulate.ts`).
+   - The optimizer LP (`projection/optimizePlan.ts`) scaled the IRMAA thresholds by the `irsIncomeTax`
+     component's factor. It now scales them by the `cmsMedicare` component's factor.
+   - `params/indexingScale.ts#indexingScaleFor` defaulted its latest year to `LATEST_PACK_YEAR`; every
+     caller now names its publication's.
+   - The HSA limits read their own year table, `params/hsaLimitYears.ts`.
+
+   `params/landing.readers.test.ts` and `tax/stateDeductionLanding.test.ts` land the IRS's income-tax
+   figures alone and CMS's alone and hold each reader to its own publisher, and
+   `params/baseYearReaders.contract.test.ts` fails on any new read of the base pack's year in engine
+   source that is not listed with its reason. A reader added later that scales a publisher's figures
+   either reads that publisher (`componentScale`, `componentPackView`) or is listed there.
 2. Update the affected sections under [domain/domain-rules-reference/](domain/domain-rules-reference/)
    with the new numbers and refresh the source links — edit the section files, not the
    [index](domain/domain-rules-reference.md); bump the provenance dates
@@ -25,6 +65,11 @@ The annual refresh is a **data change, not a code change** (that's the point of 
 5. Review Learning Center articles flagged `currentYearSensitive` (in
    `packages/planner-ui/src/testSupport/articleEditorial.ts`; see the last row) and bump their
    `lastReviewed`.
+6. Once every publisher's figures for a year are loaded, re-date the library examples: they are snapshots
+   of `EXAMPLE_FIXED_YEAR` (`packages/planner-ui/src/planner/examples/exampleClock.ts`) and run from that
+   year whatever the clock says, so their copy stays true. Raise the constant, re-read each example's
+   copy and banner, and regenerate the walkthrough evidence and goldens (every builder writes its
+   calendar years relative to the constant; [features/README.md](features/README.md) section 16).
 
 ## Calendar refresh
 
@@ -100,7 +145,9 @@ These don't follow the calendar — watch for the legislative or actuarial trigg
 
 ## Quick check: "is the app still current?"
 
-If today is past **December** and no new-year parameter pack exists, the calendar refresh is overdue. Spot
-checks: the latest `params/data/yearXXXX.ts` should match the upcoming tax year; the SS COLA and Part B
+If today is past **December** and a publisher has released the new year's figures that its component in
+`params/components.ts` does not yet record, the calendar refresh is overdue (the Disclaimer's source panel
+lists each publisher's published years). Spot checks: every component the IRS, SSA and CMS publish should
+have the upcoming tax year by early December; the SS COLA and Part B
 premium in domain rules §4/§7 should match the most recent SSA/CMS announcement; and no `currentYearSensitive`
 Learning Center article should have a `lastReviewed` more than ~12 months old.

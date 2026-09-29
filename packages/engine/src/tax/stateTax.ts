@@ -15,6 +15,7 @@
  */
 
 import {
+  LATEST_STATE_PACK_YEAR,
   conformStateStandardDeduction,
   stateParamsFor,
   type StateRetirementExclusion,
@@ -1671,8 +1672,17 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // projected on that statute's schedule at the plan's inflation.
     const { pack } = packForYear(input.year)
     const params = statutorilyIndexedStandardDeduction(
-      conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1),
-      { year: input.year, packYear: pack.year, inflationScale: input.inflationScale ?? 1 },
+      conformStateStandardDeduction(
+        published,
+        pack.federalTax.age65Addition,
+        input.inflationScale ?? 1,
+        pack.federalTax.standardDeduction,
+      ),
+      {
+        year: input.year,
+        packYear: LATEST_STATE_PACK_YEAR,
+        inflationScale: input.stateIndexingScale ?? input.inflationScale ?? 1,
+      },
     )
     return opts.mapParams ? opts.mapParams(params) : params
   }
@@ -1874,9 +1884,21 @@ export function computeStateTaxYearResult(
   const published = stateParamsFor(input.state, input.year)
   if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
   const { pack } = packForYear(input.year)
+  // A federal-following deduction conforms to the year's federal basic, loaded
+  // or projected; a statute's own indexing runs at the plan's inflation from
+  // the state figures' year (decision D-2027-ROLLOVER, review V1).
   const resolved = statutorilyIndexedStandardDeduction(
-    conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1),
-    { year: input.year, packYear: pack.year, inflationScale: input.inflationScale ?? 1 },
+    conformStateStandardDeduction(
+      published,
+      pack.federalTax.age65Addition,
+      input.inflationScale ?? 1,
+      pack.federalTax.standardDeduction,
+    ),
+    {
+      year: input.year,
+      packYear: LATEST_STATE_PACK_YEAR,
+      inflationScale: input.stateIndexingScale ?? input.inflationScale ?? 1,
+    },
   )
   const params = opts.mapParams ? opts.mapParams(resolved) : resolved
   return computeStateTaxDetailResult(params, input, { ...opts, localRatePct })

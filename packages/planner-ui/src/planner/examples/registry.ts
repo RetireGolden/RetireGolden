@@ -67,7 +67,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
   {
     id: 'example-couple',
     title: 'Example couple',
-    summary: 'Married couple two years from retirement with diversified accounts.',
+    summary: 'Married couple two years from retirement in 2026, with diversified accounts.',
     teaches: 'The full picture: accounts, Social Security, Roth strategy, insurance, and scenarios.',
     themeTags: ['overview'],
     learnSlug: 'example-couple',
@@ -167,7 +167,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
   {
     id: 'aggressive-saver',
     title: 'Aggressive saver to early retirement',
-    summary: 'High-income saver achieving early retirement in 15 years with a 50% savings rate.',
+    summary: 'High-income saver aged 30 in 2026, reaching early retirement in 15 years with a 50% savings rate.',
     teaches: 'The power of a high savings rate, FI targets, and escalating contribution schedules.',
     themeTags: ['fire', 'accumulation'],
     learnSlug: 'example-aggressive-saver',
@@ -197,11 +197,11 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
   {
     id: 'bridge-early-retirement',
     title: 'Bridge to 59½ (SEPP)',
-    summary: 'Retiring at age 45 and using a 72(t) SEPP program to access retirement accounts penalty-free.',
+    summary: 'Retiring at age 45 in 2026 and using a 72(t) SEPP program to access retirement accounts penalty-free.',
     teaches: 'Substantially Equal Periodic Payments (SEPP) to access pre-tax IRAs before 59½.',
     themeTags: ['fire', 'accumulation'],
     learnSlug: 'example-bridge-early-retirement',
-    lookFor: 'Deterministic 72(t) distributions from the traditional account starting at age 45.',
+    lookFor: 'Deterministic 72(t) distributions from the traditional account starting at age 45, in 2026.',
     build: buildBridgeEarlyRetirement,
   },
   {
@@ -339,7 +339,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
   {
     id: 'no-head-start-grad',
     title: 'Starting from zero (no head start)',
-    summary: 'Control version of "Trump account IRA head start": identical 22-year-old, wages, spending, and ongoing savings; retirement wealth starts at $0.',
+    summary: 'Control version of "Trump account IRA head start": identical 22-year-old in 2026, wages, spending, and ongoing savings; retirement wealth starts at $0.',
     teaches: 'A-B comparison: load with "Trump account IRA head start". The only difference is the seeded IRA. Load both and Compare to see what an 18-year head start compounds into with zero additional behavior.',
     themeTags: ['accumulation'],
     learnSlug: 'example-no-head-start-grad',
@@ -349,8 +349,8 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
   {
     id: 'trump-account-head-start',
     title: 'Trump account IRA head start',
-    summary: 'Illustrative: a 22-year-old whose childhood Trump account (seed + $2,500/yr family contributions) became a traditional IRA at 18 and reaches ≈$115,800 at 22, with $45,000 of nondeductible basis.',
-    teaches: 'The head start compounds into a dramatically larger estate with zero extra saving by Nova. The converted account is just a traditional IRA: the $45,000 of after-tax family contributions is Form 8606 basis, so the pro-rata rule prices any withdrawal or Roth conversion. Illustrative framing. The library clock is 2026, so this shows what a child born under the program will experience at 22.',
+    summary: 'Illustrative: a 22-year-old in 2026 whose childhood Trump account (seed + $2,500/yr family contributions) became a traditional IRA at 18 and reaches ≈$115,800 at 22, with $45,000 of nondeductible basis.',
+    teaches: 'The head start compounds into a dramatically larger estate with zero extra saving by Nova. The converted account is just a traditional IRA: the $45,000 of after-tax family contributions is Form 8606 basis, so the pro-rata rule prices any withdrawal or Roth conversion. Illustrative framing. This example is set in 2026, so this shows what a child born under the program will experience at 22.',
     themeTags: ['accumulation'],
     learnSlug: 'example-trump-account-head-start',
     lookFor: 'The seeded IRA compounding untouched to 60, and the "Bracket-fill Roth conversions (Form 8606 basis)" scenario where the basis converts tax-free pro-rata while only the pre-tax portion fills the 12% bracket.',

@@ -1,6 +1,6 @@
 # Mutation receipt: medicare-irmaa-two-year-lookback
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `aea4dac1` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/medicare.ts`
 
@@ -26,12 +26,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/medicar
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Decision D-2027-ROLLOVER moved the lines these receipts quote (the per-publisher parameter split and the pre-start warnings in projection/simulate.ts and its annual phases, imports added to evidence files) and restated six of the records; the mutations are unchanged. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/tax/medicare.evidence.test.ts (7 tests | 3 failed) 7ms
+ ❯ src/tax/medicare.evidence.test.ts (8 tests | 3 failed) 8ms
    ❯ medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary (3)
      × prices 109,001 at 35/25 of standard plus the 14.50 Part D surcharge 4ms
      × reads the applicable percentage as a share of program cost, not a surcharge 0ms
@@ -39,7 +39,7 @@ RUN  v5.0.0 C:/rgwt/engine9/packages/engine
      × reads 2024 MAGI to price a 2026 premium year 0ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 4 passed (7)
+      Tests  3 failed | 5 passed (8)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
@@ -53,25 +53,25 @@ AssertionError: expected +0 to be 1 // Object.is equality
 - 1
 + 0
 
- ❯ src/tax/medicare.evidence.test.ts:104:32
-    102|       expect(firstTier.partDSurchargeMonthly).toBe(inputs.firstTierPar…
-    103|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
-    104|       expect(result.irmaaTier).toBe(expected.aboveBoundary!.irmaaTier)
+ ❯ src/tax/medicare.evidence.test.ts:105:32
+    103|       expect(firstTier.partDSurchargeMonthly).toBe(inputs.firstTierPar…
+    104|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
+    105|       expect(result.irmaaTier).toBe(expected.aboveBoundary!.irmaaTier)
        |                                ^
-    105|       for (const key of ['partBAnnual', 'partDSurchargeAnnual', 'irmaa…
-    106|         expectWithin(result[key], expected.aboveBoundary![key]!, examp…
+    106|       for (const key of ['partBAnnual', 'partDSurchargeAnnual', 'irmaa…
+    107|         expectWithin(result[key], expected.aboveBoundary![key]!, examp…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
  FAIL  src/tax/medicare.evidence.test.ts > medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary > reads the applicable percentage as a share of program cost, not a surcharge
 AssertionError: expected 2434.8 to be greater than 3286.9800000000005
- ❯ src/tax/medicare.evidence.test.ts:115:34
-    113|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
-    114|       const surchargeReadingAnnual = pack.medicare.partBStandardMonthl…
-    115|       expect(result.partBAnnual).toBeGreaterThan(surchargeReadingAnnua…
+ ❯ src/tax/medicare.evidence.test.ts:116:34
+    114|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
+    115|       const surchargeReadingAnnual = pack.medicare.partBStandardMonthl…
+    116|       expect(result.partBAnnual).toBeGreaterThan(surchargeReadingAnnua…
        |                                  ^
-    116|     })
-    117|   },
+    117|     })
+    118|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
@@ -84,13 +84,13 @@ AssertionError: expected +0 to be 1 // Object.is equality
 - 1
 + 0
 
- ❯ src/tax/medicare.evidence.test.ts:154:32
-    152|       expect(pack.medicare.irmaaTiers[0]!.magiOver.single).toBe(inputs…
-    153|       const result = medicareAnnualPremiumPerPerson(pack, selected, 's…
-    154|       expect(result.irmaaTier).toBe(expected.irmaaTier)
+ ❯ src/tax/medicare.evidence.test.ts:155:32
+    153|       expect(pack.medicare.irmaaTiers[0]!.magiOver.single).toBe(inputs…
+    154|       const result = medicareAnnualPremiumPerPerson(pack, selected, 's…
+    155|       expect(result.irmaaTier).toBe(expected.irmaaTier)
        |                                ^
-    155|       expect(irmaaTierForMagi(pack, selected, 'single')).toBe(expected…
-    156|     })
+    156|       expect(irmaaTierForMagi(pack, selected, 'single')).toBe(expected…
+    157|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```

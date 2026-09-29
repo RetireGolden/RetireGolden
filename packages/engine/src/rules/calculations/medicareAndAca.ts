@@ -277,7 +277,7 @@ export const medicareAndAcaRecords = {
       variables: [
         { symbol: 'base', meaning: 'year2026.medicare.partBStandardMonthly', unit: 'usd/person/month', domain: 'positive' },
         { symbol: 'applicablePct', meaning: 'Beneficiary share of program cost; 25 at tier 0', unit: 'percent', domain: '25 <= applicablePct <= 85' },
-        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year', unit: '1', domain: 'positive; 1 in the year of the published parameters' },
+        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year, from the latest year CMS has published', unit: '1', domain: 'positive; 1 in a year CMS has published' },
       ],
       timing: 'one premium year, per covered person',
       rounding: 'none stated',
@@ -289,11 +289,15 @@ export const medicareAndAcaRecords = {
     limits: [
       'Per person, not per household: a two-person Medicare year charges this twice',
       'The Part D out-of-pocket threshold the published parameters also carry is not a premium and never enters this figure',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER: the premium scale runs from the year of the latest CMS publication (params/index.ts#componentPackView), not the year of the whole set of published figures, so a year whose Medicare premiums CMS has published reads them at a scale of 1 while its other figures may still be projected. Until CMS publishes 2027 the scale from 2026 is exactly the one used before',
     ],
-    implementedBy: ['packages/engine/src/tax/medicare.ts'],
-    implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    implementedBy: ['packages/engine/src/tax/medicare.ts', 'packages/engine/src/params/index.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
+      'packages/engine/src/params/index.ts#componentPackView',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'medicare-irmaa-first-tier-boundary': {
     title: 'Medicare IRMAA first-tier boundary',

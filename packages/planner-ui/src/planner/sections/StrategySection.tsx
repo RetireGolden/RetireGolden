@@ -19,7 +19,7 @@ import {
   QCD_SECTION_HEADING,
 } from '../retirementActionQcdSchedule'
 import { retirementActionsCardParts } from '../retirementActionsCardVisibility'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear, startYearDollarsWord } from '../useProjection'
 import { Issues } from './shared'
 
 const RetirementActionsEditor = lazy(async () => {
@@ -44,12 +44,12 @@ export function StrategySection() {
   const w = plan.strategies.withdrawalOrder
   const rc = plan.strategies.rothConversion
   const orderDetailId = useId()
-  const thisYear = new Date().getFullYear()
+  const thisYear = projectionStartYear(plan)
   const scheduledGiftYears = namedQcdYears(plan)
   // The Retirement actions card mounts only with an IRA, donor, gift, or
   // migrated action to show; the charitable copy must not point at it
   // otherwise (#518).
-  const retirementActionsCardShown = retirementActionsCardParts(plan, currentStartYear()).mounts
+  const retirementActionsCardShown = retirementActionsCardParts(plan, projectionStartYear(plan)).mounts
   return (
     <section>
       {/* Above the cards, not inside one: a strategy issue belongs to the
@@ -90,7 +90,7 @@ export function StrategySection() {
           ) : null}
           <MoneyField
             label="Taxable safety-net floor"
-            help="An optional minimum cash + taxable reserve (today's dollars) the plan tries to keep liquid. Spending is funded from other accounts first so this cushion stays intact, and fill-to-target Roth conversions are trimmed so their tax bill never forces you below the floor. It is only dipped into as a last resort. Leave blank for no floor."
+            help={`An optional minimum cash + taxable reserve (${startYearDollarsWord(plan)} dollars) the plan tries to keep liquid. Spending is funded from other accounts first so this cushion stays intact, and fill-to-target Roth conversions are trimmed so their tax bill never forces you below the floor. It is only dipped into as a last resort. Leave blank for no floor.`}
             hint="Blank = no floor."
             placeholder="No floor"
             path="strategies.taxableSafetyNetFloor"
@@ -100,8 +100,8 @@ export function StrategySection() {
           />
           {plan.household.people.length === 2 ? (
             <MoneyField
-              label="Survivor reserve target (today's $)"
-              help="The minimum investable balance the surviving spouse should have in the first survivor year, in today's dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective, candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint."
+              label={`Survivor reserve target (${startYearDollarsWord(plan)} $)`}
+              help={`The minimum investable balance the surviving spouse should have in the first survivor year, in ${startYearDollarsWord(plan)} dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective, candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint.`}
               hint="Blank = no survivor reserve constraint."
               placeholder="No reserve"
               path="strategies.survivorReserveTarget"
@@ -328,7 +328,7 @@ export function StrategySection() {
         <h2>Charitable giving</h2>
         <div className="form-grid">
           <MoneyField
-            label="QCD per year (today's $)"
+            label={`QCD per year (${startYearDollarsWord(plan)} $)`}
             help="A qualified charitable distribution sends IRA money straight to charity from age 70½. It counts toward your RMD but never appears in taxable income, usually better than a deductible cash gift once you take the standard deduction."
             learn={LEARN.qcd}
             source={provenanceSource('rmd-qcd')}
@@ -375,7 +375,7 @@ export function StrategySection() {
         <p className="card-hint">
           Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction.
           Turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
-          today's dollars.
+          {startYearDollarsWord(plan)} dollars.
         </p>
         <div className="form-grid">
           <CheckboxField
@@ -424,7 +424,7 @@ export function StrategySection() {
         <div className="form-grid">
           <MoneyField
             label="Capital loss carryforward"
-            help="The net capital loss carried into this plan's first year, in today's dollars. Treated as flat nominal (capital losses don't index). Nets against realized gains first, then up to $3,000/yr against other income."
+            help={`The net capital loss carried into this plan's first year, in ${startYearDollarsWord(plan)} dollars. Treated as flat nominal (capital losses don't index). Nets against realized gains first, then up to $3,000/yr against other income.`}
             // The engine's floor (nonNegative) reaches the field by path, so a
             // negative entry is flagged while typing and not kept, rather than
             // rewritten to 0 in the commit with nothing said (#553).

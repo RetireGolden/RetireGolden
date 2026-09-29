@@ -111,9 +111,11 @@ describe('Compare page guards (B2-P1 slice 3, review F6)', () => {
       "These two plans can't be compared: Plan A runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on Plan A's Household page, then compare again.",
     ],
     [
+      // Unreachable from the page (both sides share compareStartYear), so it
+      // gets the plain fallback, not a reload hint that would not help.
       'two different start years',
       () => new PlanHeadlineRefusal('start-years-differ', null, 'Two plans are compared only from one start year; the baseline starts in 2026 and the proposal in 2027'),
-      "These two plans can't be compared: they were projected from different start years. Reload this page so both are projected from this year.",
+      "These two plans can't be compared: one plan's projection gave a result this page can't use. Open each plan's Results page to check its projection, then compare again.",
     ],
     [
       'any other refusal',

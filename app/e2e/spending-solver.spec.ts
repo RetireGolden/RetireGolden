@@ -14,7 +14,8 @@ import { openExamplePlan } from './helpers'
  * now answers on the full premium and names those years, so the answer and
  * its note are required. The amount itself (about $90,300 from a 2026 start)
  * is pinned by examples.spendingSolver.golden.test.ts at the examples' fixed
- * start year; this spec runs from the current year, so it does not pin it.
+ * start year. The example runs from that same 2026 start here too (decision
+ * D-2027-ROLLOVER), but this browser smoke leaves the amount to the golden test.
  *
  * This spec runs against Vite's dev server, like the rest of app/e2e — it
  * does not load the production Rolldown worker graph that #672 crashed on.

@@ -30,6 +30,7 @@ import {
 import { conversionScheduleTotal } from '@retiregolden/engine/strategies/conversionScheduleTotal'
 import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { fmtMoney } from './format'
+import { projectedParametersSentence, projectedParametersFrom } from './projectedParameters'
 
 /** Where a shown value comes from. */
 export type AssumptionProvenance = 'user-set' | 'app-default' | 'published-source'
@@ -71,9 +72,20 @@ export interface SavedQuestionnaireAge {
 
 export interface AssumptionsSnapshot {
   planName: string
-  /** Tax parameter-pack vintage the engine applies. */
+  /** The year the published tax, limit and benefit figures below apply to. */
   packYear: number
   dataAsOf: string
+  /** The year the plan's projection starts (`projectionStartYear`). */
+  startYear: number
+  /**
+   * The plan's projected figures, by publisher, from the year each is first
+   * projected: what the engine grows at the plan's inflation (Medicare at its
+   * healthcare inflation) until RetireGolden loads the agency's figures
+   * (decision D-2027-ROLLOVER). Empty when nothing is.
+   */
+  projectedParameters: readonly { fromYear: number; figures: string; projectedFrom: number }[]
+  /** The same in one sentence, or null. */
+  projectedParametersNote: string | null
   groups: AssumptionGroup[]
   /**
    * Machine-readable section: the raw assumptions object plus the per-account
@@ -364,7 +376,7 @@ function longevityOrigin(
 function taxParametersGroup(): AssumptionGroup {
   return {
     id: 'tax-parameters',
-    label: `Tax & benefit parameters (${LATEST_PACK_YEAR} parameter set)`,
+    label: `Tax & benefit parameters (published for ${LATEST_PACK_YEAR})`,
     rows: PARAMETER_PROVENANCE.map((s) => ({
       id: s.id,
       label: s.label,
@@ -401,6 +413,9 @@ export function buildAssumptionsSnapshot(
     planName: plan.name,
     packYear: LATEST_PACK_YEAR,
     dataAsOf: PARAMETER_DATA_AS_OF,
+    startYear,
+    projectedParameters: projectedParametersFrom(startYear).map(({ fromYear, figures, projectedFrom }) => ({ fromYear, figures, projectedFrom })),
+    projectedParametersNote: projectedParametersSentence(startYear, plan.assumptions),
     groups,
     machine: {
       assumptions: plan.assumptions,
@@ -433,7 +448,8 @@ export function assumptionsExportText(snapshot: AssumptionsSnapshot): string {
   const sourceById = new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s]))
   const lines: string[] = [
     `RetireGolden assumptions, ${snapshot.planName}`,
-    `Tax parameters: ${snapshot.packYear} parameter set, compiled ${snapshot.dataAsOf}.`,
+    `Tax parameters: published for ${snapshot.packYear}, compiled ${snapshot.dataAsOf}. The plan starts in ${snapshot.startYear}.`,
+    ...(snapshot.projectedParametersNote === null ? [] : [snapshot.projectedParametersNote]),
     '',
   ]
   for (const group of snapshot.groups) {

@@ -214,36 +214,36 @@
       "label": "logical live-state snapshot and exact map handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1250,
-        1282
+        1255,
+        1287
       ],
       "anchors": [
         {
-          "line": 1250,
+          "line": 1255,
           "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({"
         },
         {
-          "line": 1255,
+          "line": 1260,
           "text": "people: peopleStates.map((state) => ({"
         },
         {
-          "line": 1262,
+          "line": 1267,
           "text": "ownedIraRmdGrossByOwner,"
         },
         {
-          "line": 1263,
+          "line": 1268,
           "text": "balances: rmdBalances.map((state, balanceIndex) => ({"
         },
         {
-          "line": 1272,
+          "line": 1277,
           "text": "qcd = qcdGiftPlan.qcd"
         },
         {
-          "line": 1280,
+          "line": 1285,
           "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner"
         },
         {
-          "line": 1282,
+          "line": 1287,
           "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner"
         }
       ]
@@ -253,60 +253,60 @@
       "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1287,
-        1320
+        1292,
+        1325
       ],
       "anchors": [
         {
-          "line": 1287,
+          "line": 1292,
           "text": "const validatedQcdGiftDebitIntents: Array<{"
         },
         {
-          "line": 1296,
+          "line": 1301,
           "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()"
         },
         {
-          "line": 1297,
+          "line": 1302,
           "text": "for (const intent of qcdGiftPlan.debitIntents) {"
         },
         {
-          "line": 1301,
+          "line": 1306,
           "text": "const balanceIndex = intent.balanceIndex"
         },
         {
-          "line": 1302,
+          "line": 1307,
           "text": "const sourceAccountId = intent.sourceAccountId"
         },
         {
-          "line": 1303,
+          "line": 1308,
           "text": "const ownerId = intent.ownerId"
         },
         {
-          "line": 1304,
+          "line": 1309,
           "text": "const sourceBalanceBefore = intent.sourceBalanceBefore"
         },
         {
-          "line": 1305,
+          "line": 1310,
           "text": "const amount = intent.amount"
         },
         {
-          "line": 1306,
+          "line": 1311,
           "text": "const state = rmdBalances[balanceIndex]"
         },
         {
-          "line": 1310,
+          "line": 1315,
           "text": "if ("
         },
         {
-          "line": 1312,
+          "line": 1317,
           "text": "!isAggregatedIra(state.account) ||"
         },
         {
-          "line": 1318,
+          "line": 1323,
           "text": "planDollarsMoveNoLedgerCent(amount) ||"
         },
         {
-          "line": 1320,
+          "line": 1325,
           "text": "amount > remainingBalance"
         }
       ],
@@ -317,28 +317,28 @@
       "label": "sequential shadow-balance advance and immutable scalar record cache",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1326,
-        1340
+        1331,
+        1345
       ],
       "anchors": [
         {
-          "line": 1326,
+          "line": 1331,
           "text": "const sourceBalanceAfter = remainingBalance - amount"
         },
         {
-          "line": 1327,
+          "line": 1332,
           "text": "remainingQcdGiftBalanceByIndex.set("
         },
         {
-          "line": 1331,
+          "line": 1336,
           "text": "validatedQcdGiftDebitIntents.push({"
         },
         {
-          "line": 1339,
+          "line": 1344,
           "text": "})"
         },
         {
-          "line": 1340,
+          "line": 1345,
           "text": "}"
         }
       ]
@@ -348,28 +348,28 @@
       "label": "caller-owned history snapshot and donor identity validation",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1341,
-        1348
+        1346,
+        1353
       ],
       "anchors": [
         {
-          "line": 1341,
+          "line": 1346,
           "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = ["
         },
         {
-          "line": 1342,
+          "line": 1347,
           "text": "...qcdGiftPlan.offsetHistoryUnprovableDonorIds,"
         },
         {
-          "line": 1344,
+          "line": 1349,
           "text": "const qcdGiftPersonIds = new Set("
         },
         {
-          "line": 1347,
+          "line": 1352,
           "text": "if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>"
         },
         {
-          "line": 1348,
+          "line": 1353,
           "text": "!qcdGiftPersonIds.has(donorId))) {"
         }
       ],
@@ -380,44 +380,44 @@
       "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1354,
-        1396
+        1359,
+        1401
       ],
       "anchors": [
         {
-          "line": 1354,
+          "line": 1359,
           "text": "for (const debit of validatedQcdGiftDebitIntents) {"
         },
         {
-          "line": 1355,
+          "line": 1360,
           "text": "const state = rmdBalances[debit.balanceIndex]!"
         },
         {
-          "line": 1358,
+          "line": 1363,
           "text": "state.balance = debit.sourceBalanceAfter"
         },
         {
-          "line": 1364,
+          "line": 1369,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1374,
+          "line": 1379,
           "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1384,
+          "line": 1389,
           "text": "if (giftApplication.applicationKind === 'debit') {"
         },
         {
-          "line": 1385,
+          "line": 1390,
           "text": "deferredLegacyQcdDistributions.push({"
         },
         {
-          "line": 1394,
+          "line": 1399,
           "text": "for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {"
         },
         {
-          "line": 1395,
+          "line": 1400,
           "text": "namedQcdOffsetHistoryUnprovable.add(donorId)"
         }
       ]
@@ -436,7 +436,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -452,14 +452,14 @@
     "corpus": {
       "name": "blocks",
       "members": 121,
-      "membersSha256": "1613a1fc1616f8deefbc4507d619a648c113d53842d39d2abcd0bc2fd7e35c53",
+      "membersSha256": "66cff52e468b50043e6b4b1b0e96c5c5c61b1e269b65bb5b4e836f91c443d3a0",
       "entries": 484
     },
     "capture": {
-      "baseDumpSha256": "7cac403504672866c8543ebe20a19294ebe3f4c09a2ff5712d94300ffafdca62",
-      "headDumpSha256": "7cac403504672866c8543ebe20a19294ebe3f4c09a2ff5712d94300ffafdca62",
-      "baseOverallSha256": "988e8c0dc304baaf7ac7dbedfb06355aa3e813cc359151ba139c2f499a8d499a",
-      "headOverallSha256": "988e8c0dc304baaf7ac7dbedfb06355aa3e813cc359151ba139c2f499a8d499a",
+      "baseDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
+      "headDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
+      "baseOverallSha256": "bff301c5551a91002abc608b0d060ea8fb4a9d3e246cfab7831cc8b22355b1b9",
+      "headOverallSha256": "bff301c5551a91002abc608b0d060ea8fb4a9d3e246cfab7831cc8b22355b1b9",
       "entriesMoved": 0,
       "entriesIdentical": 484,
       "result": "IDENTICAL"
@@ -478,6 +478,13 @@
         "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
         "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      },
+      {
+        "date": "2026-09-29",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
+        "pinnedBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
+        "reason": "After main at c2d61967 (plan schema v7, #765) was merged into the D-2027-ROLLOVER branch, two block members no longer parsed under the current tree: j1 (spending phases in a couple) now names phasesAgeOf p1, the person listed first, whose age its phases followed and whom the v7 migration names, and which a tree before v7 drops; and v3 (three qualified contracts) names p1 as each annuitant instead of no owner, the primary the ownerless fallback resolved to. No other member changed. Re-measured by the procedure the D-SS-ANALYSIS-EARNINGS-TEST branch used for the same change: run with the blob this record was measured with (7a1507c9bbf8e42f2e465195628bd389951c8025, the last entry's measuredWithBlob; the blob it pinned, df82d4ee7fbeeaa41c43b1811f05ddb161b01268, was never measured) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: the member hash 1613a1fc1616 to 66cff52e468b and the dump hashes; members stay 121 and entries 484. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
       }
     ],
     "historicalRecord": {

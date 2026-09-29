@@ -251,6 +251,9 @@ function assumptionsSection(model: ReportModel): string {
       ? []
       : [['ACA premium tax credit figures', escapeHtml(acaCoverageYearsText(acaCoverageYears))]]),
     ['State parameter set', `${provenance.stateParameterPackYear}`],
+    ...(provenance.projectedParameters === undefined || provenance.projectedParameters === null
+      ? []
+      : [['Projected parameter years', escapeHtml(provenance.projectedParameters)]]),
     ['Parameter data as of', escapeHtml(provenance.parameterDataAsOf)],
     ['Parameter data basis', escapeHtml(provenance.parameterDataBasis)],
   ]
@@ -281,7 +284,9 @@ function warningsSection(model: ReportModel): string {
 }
 
 function provenanceSection(model: ReportModel): string {
-  return `<section><h2>Parameter source appendix</h2>${table(
+  // Dated (review L9): the rows are the loaded figures as of this date, so a
+  // report that starts in a later year does not print them as that year's.
+  return `<section><h2>Parameter source appendix: figures as of ${escapeHtml(model.provenance.parameterDataAsOf)}</h2>${table(
     ['Group', 'Figures', 'Publisher', 'Source'],
     model.blocks['parameter-sources'].sources.map((source) => [
       escapeHtml(source.label),

@@ -41,6 +41,14 @@ outputs: `qcd-annual`.
 
 feeds: `tax-total-annual`; `magi-annual`.
 
+## Whose publication the growth factor reads (D-2027-ROLLOVER)
+
+`limitGrowth` is 1 in a year whose QCD limit the IRS has published in its November notice of retirement-plan limits, and otherwise the inflation path from that limit's latest published year (`params/index.ts#componentScale` with the `irsRetirementPlanLimits` component). It used to read whether the whole set of published figures was out for the year. Today the QCD limit's only published year is 2026, so every figure is unchanged: 1 in 2026, and at 2.5% inflation `1.025^2` in 2028. The evidence file asserts both.
+
+The named arm executes a gift only in a tax year whose QCD limit is published (`actions/annualQcdTaxCharacterPostPass.ts#qcdLimitPublishedFor`), so a 2027 gift executes once the 2027 notice lands even while the 2027 brackets are still projected (`actions/qcdLimitGate.test.ts`).
+
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-four.md in this directory.

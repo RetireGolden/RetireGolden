@@ -36,6 +36,16 @@ outputs: `spending-debt-service-annual`.
 
 feeds: `spending-total-annual`.
 
+## A payoff dated before the start year (D-2027-ROLLOVER, review L4)
+
+A payoff year before the projection start year is reached in the first projected year, so the rule above pays the whole grown balance then, the same as a payoff dated in that year. Nothing moves. What changed is that it is no longer silent: the projection names it with the amount the ledger pays (`projection/preStartEvents.ts#preStartEvents`):
+
+> The Mortgage payoff is dated 2026, before this plan starts in 2027, so the plan pays it off in 2027: $190,800, its $180,000 balance with a year of interest. If it was paid, set its balance to $0.
+
+Worked case (the evidence file): Debt B's payoff moved to 2029 in a projection that starts in 2030. The 2030 row pays `1,000 x 1.12 = 1,120`, as for a 2030 payoff, and the warning names `$1,120, its $1,000 balance with a year of interest`. From a 2027 start the reviewer's mortgage with a 2026 payoff moved ending net worth by -$189,695.85 with nothing said.
+
+Restated 2026-09-29 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), after the independent review (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-review.md`, finding L4). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eight.md in this directory (approved with a note that the rule was stated to the deriver rather than by a doc comment; the comment patch closes it).

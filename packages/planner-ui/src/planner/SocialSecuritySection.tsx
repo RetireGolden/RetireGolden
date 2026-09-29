@@ -29,12 +29,13 @@ import {
   IMPORT_UNAVAILABLE_MESSAGE,
   useImportAvailability,
 } from '../import/importAvailability'
-import { usePlan } from './planContextCore'
+import { usePlan, usePlanDollarsWord } from './planContextCore'
 import { TypeChip } from './TypeChip'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
 import { dobParts, piaAsOfPlan, resolvePia } from './ssAnalysis'
+import { projectionStartYear, startYearDollarsWord } from './useProjection'
 import { ordinalSuffixes, PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 import { Issues } from './sections/shared'
 
@@ -167,6 +168,7 @@ export function FormerSpousesEditor({
   setStream: (mut: (s: SsStream) => void) => void
   householdIsSingle: boolean
 }) {
+  const dollarsWord = usePlanDollarsWord()
   const records = stream.formerSpouses ?? []
   // Two records of the same kind carry only a chip for a title; the ordinal
   // keeps them and their Remove buttons apart (same family as #541, #549).
@@ -278,7 +280,7 @@ export function FormerSpousesEditor({
               />
               <MoneyField
                 label={`Their ${PIA_MONTHLY_AT_FRA_LABEL}`}
-                help="Your estimate of the ex/deceased spouse's monthly benefit at their full retirement age, today's dollars."
+                help={`Your estimate of the ex/deceased spouse's monthly benefit at their full retirement age, ${dollarsWord} dollars.`}
                 value={r.piaMonthly}
                 disabled={inapplicable}
                 describedBy={describedBy}
@@ -411,7 +413,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
   const streamIndex = plan.incomes.findIndex((s) => s.id === stream.id)
   const mode: 'quick' | 'earnings' = stream.piaMonthly === null ? 'earnings' : 'quick'
-  const piaAsOf = piaAsOfPlan(plan)
+  const piaAsOf = piaAsOfPlan(plan, projectionStartYear(plan))
   const resolved = resolvePia(person, stream, piaAsOf)
   // An earnings-derived PIA past eligibility includes the cost-of-living
   // increases from the eligibility year through the year before the start:
@@ -568,7 +570,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             // the former-spouse record's "Their …"); the longer "PIA (monthly
             // benefit at FRA)" wrapped beside its ⓘ (#511).
             label={PIA_MONTHLY_AT_FRA_LABEL}
-            help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
+            help={`Your Primary Insurance Amount, the monthly benefit at full retirement age in ${startYearDollarsWord(plan)} dollars, from ssa.gov/myaccount.`}
             path={`incomes.${streamIndex}.piaMonthly`}
             value={stream.piaMonthly}
             allowNull
@@ -634,7 +636,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
               <div className="form-grid">
                 <MoneyField
                   label="Assumed annual earnings"
-                  help="Covered wages to assume for each projected year, in today's dollars."
+                  help={`Covered wages to assume for each projected year, in ${startYearDollarsWord(plan)} dollars.`}
                   hint={
                     mostRecentEarnings !== null
                       ? `Blank = reuse your most recent year (${fmtMoney(mostRecentEarnings)}).`
