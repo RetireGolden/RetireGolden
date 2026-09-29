@@ -1,6 +1,6 @@
 # Mutation receipt: qcd-limit-and-age-proxy
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts`
 
@@ -26,17 +26,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annualLegacyQcdGiftPlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of main (c2d61967: #764, #765) into this branch moved the lines these receipts quote or the tests they capture; the mutations are unchanged. The baseline is green (annualLegacyQcdGiftPlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 C:/rgwt/engine21/packages/engine
 
- ❯ src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts (4 tests | 1 failed) 6ms
+ ❯ src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts (5 tests | 1 failed) 6ms
    ❯ qcd-limit-and-age-proxy — QCD per-donor limit and age-70.5 annual proxy (4)
      × refuses an attained-70 donor born in July under the same proxy 3ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 3 passed (4)
+      Tests  1 failed | 4 passed (5)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -50,14 +50,14 @@ AssertionError: qcd on the ineligible side 1000 is not within {"abs":0.005} of t
 - true
 + false
 
- ❯ expectWithin src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts:21:5
-     19|     withinTolerance(actual, expected, tolerance),
-     20|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     21|   ).toBe(true)
+ ❯ expectWithin src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts:23:5
+     21|     withinTolerance(actual, expected, tolerance),
+     22|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     23|   ).toBe(true)
        |     ^
-     22| }
-     23|
- ❯ src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts:88:7
+     24| }
+     25|
+ ❯ src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts:90:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

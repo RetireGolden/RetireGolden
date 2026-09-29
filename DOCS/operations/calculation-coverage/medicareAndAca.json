@@ -737,9 +737,9 @@
           },
           {
             "symbol": "premiumScale",
-            "meaning": "Healthcare-inflation scale to the premium year",
+            "meaning": "Healthcare-inflation scale to the premium year, from the latest year CMS has published",
             "unit": "1",
-            "domain": "positive; 1 in the year of the published parameters"
+            "domain": "positive; 1 in a year CMS has published"
           }
         ],
         "timing": "one premium year, per covered person",
@@ -747,7 +747,8 @@
       },
       "limits": [
         "Per person, not per household: a two-person Medicare year charges this twice",
-        "The Part D out-of-pocket threshold the published parameters also carry is not a premium and never enters this figure"
+        "The Part D out-of-pocket threshold the published parameters also carry is not a premium and never enters this figure",
+        "Restated 2026-09-28 under decision D-2027-ROLLOVER: the premium scale runs from the year of the latest CMS publication (params/index.ts#componentPackView), not the year of the whole set of published figures, so a year whose Medicare premiums CMS has published reads them at a scale of 1 while its other figures may still be projected. Until CMS publishes 2027 the scale from 2026 is exactly the one used before"
       ],
       "worksheet": "DOCS/calculations/medicare-and-aca/medicare-base-part-b-premium.md",
       "mutation": "DOCS/calculations/medicare-and-aca/medicare-base-part-b-premium.mutation.md",
@@ -756,12 +757,13 @@
       "assumption": null,
       "justificationKind": "derivation",
       "implementedBy": [
-        "packages/engine/src/tax/medicare.ts"
+        "packages/engine/src/tax/medicare.ts",
+        "packages/engine/src/params/index.ts"
       ],
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "cursor"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/tax/medicare.evidence.test.ts"

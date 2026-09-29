@@ -6,6 +6,7 @@ import type {
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
 import { taxParameterFilingStatus } from '../../projection/types.js'
+import { effectivePropertySaleYear } from '../../projection/propertySaleYear.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
@@ -327,14 +328,17 @@ export const missingDataBasis: Detector = {
         }
       }
 
+      // The year the ledger sells it: a sale dated before the projection
+      // starts runs in its first year (projection/propertySaleYear.ts).
+      const saleYear =
+        account.type === 'property' ? effectivePropertySaleYear(account, ctx.projection.startYear) : null
       if (
         account.type === 'property' &&
         account.value > 0 &&
         account.costBasis === undefined &&
-        typeof account.plannedSaleYear === 'number' &&
-        account.plannedSaleYear >= ctx.projection.startYear &&
+        saleYear !== null &&
         lastProjectionYear !== undefined &&
-        account.plannedSaleYear <= lastProjectionYear
+        saleYear <= lastProjectionYear
       ) {
         // Entering a cost basis switches the sim from the legacy tax-free
         // deposit path to the exact propertySaleTax path. Even when tax is
@@ -366,7 +370,7 @@ export const missingDataBasis: Detector = {
           // $500k joint). Survivorship can flip MFJ → single between plan open
           // and the sale; the sim prices propertySaleTax with that year's status.
           const saleYearResult = ctx.projection.result.years.find(
-            (y) => y.year === account.plannedSaleYear,
+            (y) => y.year === saleYear,
           )
           const filingStatus =
             saleYearResult?.filingStatus !== undefined
@@ -376,7 +380,7 @@ export const missingDataBasis: Detector = {
             ctx.params.federalTax?.section121Exclusion?.[filingStatus] ?? 0
           const salePrice = projectedSaleYearPropertyValue(
             account.value,
-            account.plannedSaleYear,
+            saleYear,
             ctx.projection.result.years,
           )
           // Zero basis, no selling costs, no recapture → gain = salePrice.
@@ -391,7 +395,7 @@ export const missingDataBasis: Detector = {
             evidence: {
               label: `${account.name} expected net proceeds (${pathLabel})`,
               value: formatEvidenceUsd(expectedNetProceeds),
-              year: account.plannedSaleYear,
+              year: saleYear,
             },
           })
           // Standalone property gap always pairs proceeds with opening value when
@@ -429,7 +433,7 @@ export const missingDataBasis: Detector = {
             evidence: {
               label: `${account.name} planned sale year (${pathLabel})`,
               value: String(account.plannedSaleYear),
-              year: account.plannedSaleYear,
+              year: saleYear,
             },
           })
         }

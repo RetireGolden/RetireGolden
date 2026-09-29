@@ -30,11 +30,12 @@ import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
+import { startYearAsOf } from '../../startYear'
 import { provenanceSource } from '../provenanceLinks'
 import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '../fields'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { TypeChip } from '../TypeChip'
-import { currentStartYear, useProjection } from '../useProjection'
+import { projectionStartYear, useProjection, startYearDollarsWord } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import { hasIssueAt, hasIssueUnder, withoutIssuesBeyond } from '../validationIssues'
 import { ScrollRegion } from '../ScrollRegion'
@@ -113,8 +114,8 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           onCommit={(v) => edit((l) => void (l.purpose = v))}
         />
         <MoneyField
-          label="Annual real income (today's $)"
-          help="The level inflation-adjusted income the ladder pays in each payout year. TIPS index to CPI, so this stays constant in today's dollars. Quotes price each rung on the embedded Treasury real-yield curve."
+          label={`Annual real income (${startYearDollarsWord(plan)} $)`}
+          help={`The level inflation-adjusted income the ladder pays in each payout year. TIPS index to CPI, so this stays constant in ${startYearDollarsWord(plan)} dollars. Quotes price each rung on the embedded Treasury real-yield curve.`}
           source={provenanceSource('real-yield-curve')}
           path={fieldPath('annualRealAmount')}
           value={ladder.annualRealAmount}
@@ -182,7 +183,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
       ) : quote ? (
         <>
           <p className="card-hint">
-            Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> (today's $) for {quote.rungs.length} rung
+            Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> ({startYearDollarsWord(plan)} $) for {quote.rungs.length} rung
             {quote.rungs.length === 1 ? '' : 's'}, real yields as of {CURVE.asOfIso}. That's{' '}
             {planQuote!.incomeYieldPct.toFixed(2)}% of cost per year, inflation-protected.
           </p>
@@ -193,7 +194,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
                 <thead>
                   <tr>
                     <th scope="col">Matures</th>
-                    <th scope="col">Face (today's $)</th>
+                    <th scope="col">Face ({startYearDollarsWord(plan)} $)</th>
                     <th scope="col">Coupon</th>
                     <th scope="col">Est. cost</th>
                   </tr>
@@ -294,7 +295,7 @@ function countedFromPhrase(start: FundedRatioStart, people: readonly { id: strin
 /** The live readout: projects the (valid) plan and renders nothing when it has no measurable essential spending. */
 function FundedRatioReadout() {
   const { plan } = usePlan()
-  const { result, basis } = useProjection(plan)
+  const { result, basis } = useProjection(plan, projectionStartYear(plan))
   const startYear = result.startYear
   // Counted from the household's later retirement, whoever is listed first.
   const start = useMemo(() => fundedRatioStart(plan, startYear), [plan, startYear])
@@ -340,11 +341,11 @@ function FundedRatioReadout() {
         </div>
         <div>
           <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
-          <div className="muted">essential spending, valued today</div>
+          <div className="muted">essential spending, valued as of {startYearAsOf(plan)}</div>
         </div>
         <div>
           <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.guaranteedIncomePv)}</div>
-          <div className="muted">guaranteed income, valued today</div>
+          <div className="muted">guaranteed income, valued as of {startYearAsOf(plan)}</div>
         </div>
         <div>
           <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.unfundedPv)}</div>
@@ -365,7 +366,7 @@ function FundedRatioReadout() {
 export function LivePricesCard() {
   const { plan } = usePlan()
   const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   // Cache-first with zero network: a previously fetched/imported day shows
   // immediately; the fetch button only appears for a fresh look.
   const [snapshot, setSnapshot] = useState<FedInvestSnapshot | null>(() => readFedInvestCache())
@@ -506,7 +507,7 @@ export function LivePricesCard() {
 
 export function IncomeFloorSection() {
   const { plan, update } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const ladders = plan.incomeFloor?.ladders ?? []
 
   return (

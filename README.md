@@ -105,6 +105,12 @@ Manually triggered (Actions tab). Runs the Owl parity harness (`pnpm owl-parity`
 
 Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). Uploads a SARIF report as a build artifact and publishes findings to GitHub code scanning when available. **Only ERROR-severity findings fail the check** — lower severities are reported but do not block merge.
 
+### Rollover — the suites at next 1 January
+
+[`.github/workflows/rollover.yml`](.github/workflows/rollover.yml)
+
+Runs every Monday and on demand. Runs the engine, planner-ui and app suites with the clock shifted to three instants: 15 January of next year, New Year's Eve in New York and New Year's morning in Tokyo, so what changes on 1 January is seen ahead of it (decision D-2027-ROLLOVER). The clock hook is `scripts/rollover/shiftClock.setup.mts`.
+
 ### OWASP ZAP DAST — dynamic scan
 
 [`.github/workflows/zap.yml`](.github/workflows/zap.yml)

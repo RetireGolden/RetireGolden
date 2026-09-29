@@ -3,6 +3,7 @@ import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_DATA_BASIS,
   packForYear,
+  type PackLookup,
   type ParameterSource,
 } from '../params/index.js'
 import { RMD_QCD_PARAMETER_SOURCE } from '../params/provenance.js'
@@ -172,10 +173,24 @@ function blocked(error: unknown): AnnualQcdTaxCharacterPostPassBlocked {
     taxYear: null, personalLimitEvidence: null, pools: [], applications: [], issues: [issue],
   })
 }
+/**
+ * Whether `taxYear`'s QCD limit is published for that exact year, which is all
+ * the named-QCD gate waits on (decision D-2027-ROLLOVER): the limit's own
+ * publication, the IRS notice of retirement-plan limits, and not the whole
+ * parameter set. A year whose notice is out executes named gifts even while
+ * its brackets are still projected; a year whose brackets are out but whose
+ * notice is not refuses them.
+ */
+export function qcdLimitPublishedFor(lookup: Pick<PackLookup, 'components'>, taxYear: number): boolean {
+  const qcdLimit = lookup.components.irsRetirementPlanLimits
+  return !qcdLimit.standIn && qcdLimit.baseYear === taxYear
+}
+
 function exactPersonalLimit(taxYear: number): AnnualQcdPersonalLimitEvidence {
   const lookup = packForYear(taxYear)
   const dollars = lookup.pack.rmd.qcdAnnualLimit
-  if (lookup.isStandIn || lookup.pack.year !== taxYear ||
+  const qcdLimit = lookup.components.irsRetirementPlanLimits
+  if (!qcdLimitPublishedFor(lookup, taxYear) ||
       !Number.isSafeInteger(dollars) || dollars <= 0) {
     fail('taxParameterUnavailable', `Tax year ${taxYear} lacks an exact sourced QCD limit.`)
   }
@@ -184,12 +199,12 @@ function exactPersonalLimit(taxYear: number): AnnualQcdPersonalLimitEvidence {
   // the planner worker does not carry the whole catalog to find one entry.
   const parameterSource = { ...RMD_QCD_PARAMETER_SOURCE }
   const evidenceId = deriveActionStructuralId('annual-qcd-personal-limit', [
-    taxYear, personalLimitAmount, lookup.pack.year, parameterSource,
+    taxYear, personalLimitAmount, qcdLimit.baseYear, parameterSource,
     PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS,
   ])
   return {
     predicate: 'annualQcdExactYearPersonalLimit', taxYear, personalLimitAmount,
-    parameterPackYear: lookup.pack.year, parameterSource,
+    parameterPackYear: qcdLimit.baseYear, parameterSource,
     parameterDataAsOf: PARAMETER_DATA_AS_OF,
     parameterDataBasis: PARAMETER_DATA_BASIS, evidenceId,
   }

@@ -379,6 +379,7 @@ export function annualExpenseAssemblyPhase(
   for (const row of annualPropertyCarryingCosts({
     accounts: plan.accounts,
     year,
+    startYear,
     anyAlive,
     inflFactor,
   })) {

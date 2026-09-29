@@ -2829,7 +2829,10 @@ describe('scenario lever contract', () => {
     expect(carryingCost.ok).toBe(true)
   })
 
-  it('ignores properties sold before the projection when selecting a home sale', () => {
+  it('treats a property whose sale date has passed as owned, so a home sale can re-date it', () => {
+    // Decision D-2027-ROLLOVER, review H1: a property still on the plan with a
+    // sale year before the start is sold by the ledger in the first year, so it
+    // is owned when the projection starts, and a lever may move that sale.
     const plan = buildExampleCouple()
     const active = plan.accounts.find((account) => account.type === 'property')!
     const expired = {
@@ -2855,19 +2858,20 @@ describe('scenario lever contract', () => {
       context,
     )
 
-    expect(automatic.ok).toBe(true)
-    if (automatic.ok) {
-      const applied = applyScenarioPatch(plan, automatic.patch)
+    // Two owned properties: the lever asks which one.
+    expect(automatic.ok).toBe(false)
+    if (!automatic.ok) expect(automatic.issues.join(' ')).toContain('Choose a property')
+    expect(explicitExpired.ok).toBe(true)
+    if (explicitExpired.ok) {
+      const applied = applyScenarioPatch(plan, explicitExpired.patch)
       expect(applied.ok).toBe(true)
       if (applied.ok) {
-        const activeAfter = applied.plan.accounts.find((account) => account.id === active.id)
-        expect(activeAfter?.type === 'property' ? activeAfter.plannedSaleYear : null).toBe(
+        const expiredAfter = applied.plan.accounts.find((account) => account.id === expired.id)
+        expect(expiredAfter?.type === 'property' ? expiredAfter.plannedSaleYear : null).toBe(
           context.startYear + 2,
         )
       }
     }
-    expect(explicitExpired.ok).toBe(false)
-    if (!explicitExpired.ok) expect(explicitExpired.issues.join(' ')).toContain('cannot be sold again')
   })
 
   it('uses the exact-tax property path when deciding whether a sale can fund returns', () => {

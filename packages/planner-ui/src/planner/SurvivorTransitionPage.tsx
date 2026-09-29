@@ -19,7 +19,7 @@ import { LEARN } from './learnLinks'
 import { ScrollRegion } from './ScrollRegion'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { formatYearRuns } from './acaVetoCopy'
-import { currentStartYear, taxCalculatorFor, useProjection } from './useProjection'
+import { projectionStartYear, taxCalculatorFor, useProjection } from './useProjection'
 import {
   isDegenerateTiming,
   survivorTransitionAnalysis,
@@ -290,7 +290,7 @@ export function SurvivorTransitionPage() {
   const eligible = plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2
   // The same memoized deterministic projection the KPI bar reads; its
   // depletion year is named in the degenerate-timings empty state (#513).
-  const { summary } = useProjection(plan)
+  const { summary } = useProjection(plan, projectionStartYear(plan))
   const depletionYear = summary.depletionYear
 
   // Each timing runs a handful of full ledger simulations; debounce off the
@@ -301,7 +301,7 @@ export function SurvivorTransitionPage() {
       try {
         setSnapshot({
           plan,
-          analysis: survivorTransitionAnalysis(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
+          analysis: survivorTransitionAnalysis(plan, { startYear: projectionStartYear(plan), taxCalculator: taxCalculatorFor(plan) }),
           depletionYear,
         })
       } catch {

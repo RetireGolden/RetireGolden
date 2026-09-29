@@ -75,9 +75,10 @@ import {
   PromotionWithheldPanel,
 } from './retirementActionPromotionPanels'
 import { promotedScheduleApplyHint } from './retirementActionPromotionCopy'
-import { currentStartYear, projectPlan } from './useProjection'
+import { projectionStartYear, projectPlan } from './useProjection'
 import { headlineMcRunOptions } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
+import { projectedParametersSentence } from './projectedParameters'
 
 function DeltaStat({
   label,
@@ -129,7 +130,7 @@ export function OptimizePage() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const reportBranding = useReportBranding()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
 
   const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null)
   // The plan object the held result was computed for. After an edit the result
@@ -576,6 +577,11 @@ export function OptimizePage() {
           Using the {formatPct(plan.assumptions.heirTaxRatePct / 100)} heir tax rate from{' '}
           <Link to={`/plan/${plan.id}/assumptions`}>Assumptions</Link>.
         </p>
+        {projectedParametersSentence(startYear, plan.assumptions) !== null ? (
+          <p className="field-hint optimize-projected-parameters">
+            {projectedParametersSentence(startYear, plan.assumptions)}
+          </p>
+        ) : null}
         <div className="form-grid mt-sm">
           <div className="field-span-full">
           <SelectField

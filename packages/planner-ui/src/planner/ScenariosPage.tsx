@@ -30,7 +30,7 @@ import {
   compareScenarios,
   type ScenarioComparison,
 } from '@retiregolden/engine/scenarios/scenarios'
-import { usePlan } from './planContextCore'
+import { usePlan, usePlanDollarsWord } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EditableFieldset } from './EditableFieldset'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
@@ -61,7 +61,7 @@ import {
   spendingCapacityStatus,
   type MetricFormat,
 } from './scenarioComparisonView'
-import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { projectionStartYear, taxCalculatorFor, startYearDollarsWord } from './useProjection'
 import { US_STATES } from './usStates'
 import { labelOfSegments } from './validationIssues'
 /** Said of a scenario whose plan is the base plan, in its row and in its detail. */
@@ -171,19 +171,20 @@ function rebaseYearRelativeParams(
   }
 }
 
-function eligibleHomeSaleProperties(accounts: Plan['accounts'], startYear: number) {
-  return accounts.filter(
-    (account) =>
-      account.type === 'property' &&
-      (account.plannedSaleYear === null || account.plannedSaleYear >= startYear),
-  )
+/**
+ * The properties a home-sale lever can sell: every property on the plan. One
+ * whose sale year has passed is still owned when the projection starts (the
+ * ledger sells it in the first year: engine projection/propertySaleYear.ts),
+ * so the lever may re-date it.
+ */
+function eligibleHomeSaleProperties(accounts: Plan['accounts']) {
+  return accounts.filter((account) => account.type === 'property')
 }
 
 function leverRequest(
   kind: ScenarioLeverId,
   p: LeverParams,
   plan: Plan,
-  startYear: number,
 ): ScenarioLeverRequest {
   switch (kind) {
     case 'retirementAge': return { id: kind, yearsDelta: p.retireAgeDelta }
@@ -222,7 +223,7 @@ function leverRequest(
         annualCost: p.careAnnual,
       }
     case 'homeSale': {
-      const properties = eligibleHomeSaleProperties(plan.accounts, startYear)
+      const properties = eligibleHomeSaleProperties(plan.accounts)
       return {
         id: kind,
         saleYear: p.homeSaleYear,
@@ -239,7 +240,7 @@ function leverRequest(
 
 function AddScenario() {
   const { plan, update } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const [kind, setKind] = useState<ScenarioLeverId>('retirementAge')
   const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -248,8 +249,8 @@ function AddScenario() {
     [plan.household.people],
   )
   const homeSaleProperties = useMemo(
-    () => eligibleHomeSaleProperties(plan.accounts, startYear),
-    [plan.accounts, startYear],
+    () => eligibleHomeSaleProperties(plan.accounts),
+    [plan.accounts],
   )
   const homeSalePropertyIds = useMemo(
     () => new Set(homeSaleProperties.map((property) => property.id)),
@@ -285,8 +286,8 @@ function AddScenario() {
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))
   const previewRequest = useMemo(
-    () => leverRequest(kind, params, plan, startYear),
-    [kind, params, plan, startYear],
+    () => leverRequest(kind, params, plan),
+    [kind, params, plan],
   )
   const previewVersion = useRef(0)
   const [previewState, setPreviewState] = useState<{
@@ -385,7 +386,7 @@ function AddScenario() {
               />
             ) : null}
             <NumberField label="Years of care" value={params.careYears} min={1} max={25} onCommit={(v) => set('careYears', Math.round(v ?? 3))} />
-            <MoneyField label="Annual cost (today's $)" value={params.careAnnual} onCommit={(v) => set('careAnnual', v ?? 110_000)} />
+            <MoneyField label={`Annual cost (${startYearDollarsWord(plan)} $)`} value={params.careAnnual} onCommit={(v) => set('careAnnual', v ?? 110_000)} />
             <NumberField label="Starting age" value={params.careStartAge} min={40} max={110} onCommit={(v) => set('careStartAge', Math.round(v ?? 84))} />
           </>
         ) : null}
@@ -600,6 +601,7 @@ function CapacitySection({
   baselineRemovals?: AcaContractRemovals
   proposalRemovals?: AcaContractRemovals
 }) {
+  const dollarsWord = usePlanDollarsWord()
   // Each side's unpriced-credit sentence is replaced by the plain note that
   // names the years, why, and which way a credit would move that answer; when
   // both sides would say the same thing it is said once, for both.
@@ -652,7 +654,7 @@ function CapacitySection({
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
           <p className="card-hint">
-            Annual base spending in today&apos;s dollars, priced on the full year-by-year projection: the amount the
+            Annual base spending in {dollarsWord} dollars, priced on the full year-by-year projection: the amount the
             spending page shows and applies, rounded down to the nearest $100 (the exact amount that passed when a
             guardrail plan fails at the rounded one), with the slack measured from it. Because of that rounding a
             slack of less than $100 below zero can sit beside current spending that holds; the status table says
@@ -667,7 +669,7 @@ function CapacitySection({
         <>
           <MetricTable
             caption="Sustainable spending capacity"
-            basis="today's dollars; proposal minus baseline"
+            basis={`${dollarsWord} dollars; proposal minus baseline`}
             rows={[
               { label: 'Solved annual base spending', metric: capacity.maxBaseAnnual, format: 'money' },
               { label: 'Slack vs. current base spending', metric: capacity.spendingSlack, format: 'money' },
@@ -928,7 +930,7 @@ function ComparableScenariosPage() {
   } | null>(null)
   const detailGeneration = useRef(0)
   const capacityGeneration = useRef(0)
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const seed = DEFAULT_MONTE_CARLO_SEED
   const selectedScenario =
     plan.scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? plan.scenarios[0] ?? null
@@ -1194,7 +1196,7 @@ function ComparableScenariosPage() {
               <h2 style={{ margin: 0 }}>Baseline vs. {selectedScenario.name}</h2>
               <p className="card-hint">
                 Change is proposal minus baseline. Deterministic, stochastic, and annual-ledger amounts are nominal
-                dollars unless a table explicitly says today&apos;s dollars.
+                dollars unless a table explicitly says {startYearDollarsWord(plan)} dollars.
               </p>
               <p className="small">
                 Deterministic comparison · {detailStatus}

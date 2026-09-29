@@ -1,9 +1,10 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 2,
+  "version": 3,
   "id": "bracket-fill-roth",
   "title": "Bracket-fill Roth conversions",
   "exampleId": "bracket-fill-roth",
+  "startYear": 2026,
   "derivation": "DOCS/walkthroughs/bracket-fill-roth.md",
   "review": "DOCS/walkthroughs/REVIEW-2026-09-27.md",
   "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/bracket-fill-roth.test.ts",
@@ -859,7 +860,7 @@
     "schemaVersion": 7,
     "id": "bracket-fill-roth--seq-1",
     "name": "Bracket-fill Roth conversions",
-    "origin": "user",
+    "origin": "example",
     "createdAtIso": "2026-06-29T12:00:00.000Z",
     "updatedAtIso": "2026-06-29T12:00:00.000Z",
     "household": {
@@ -1024,6 +1025,7 @@
     },
     "inheritedRothTaxCharacterPools": [],
     "employerElectiveDeferralHistory": [],
-    "scenarios": []
+    "scenarios": [],
+    "exampleSourceId": "bracket-fill-roth"
   }
 }

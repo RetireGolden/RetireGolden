@@ -59,6 +59,7 @@ import {
   ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE,
   ROTH_FIVE_YEAR_INCOMPLETE_NOTE,
 } from '../planner/professionalConfirmation'
+import { projectedParametersSentence } from '../planner/projectedParameters'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
 export const REPORT_MODEL_VERSION = 3
@@ -469,6 +470,14 @@ export interface ReportProvenance {
    * row; read it as `acaCoverageYears ?? []`.
    */
   acaCoverageYears?: ReportAcaCoverageYear[]
+  /**
+   * Which of the plan's tax, limit and benefit figures are projected rather
+   * than published, from which year, in one sentence (decision
+   * D-2027-ROLLOVER); null when none are. Optional for the same reason as
+   * `acaCoverageYears`: a model saved before it was added has none, and the
+   * report then prints no row.
+   */
+  projectedParameters?: string | null
   parameterDataAsOf: string
   parameterDataBasis: string
   /** Engine build the host ran, when the host supplies it — never guessed. */
@@ -1173,6 +1182,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         applicablePercentageSource: block.applicablePercentageSource,
         povertyGuidelineSource: block.povertyGuidelineSource,
       })),
+      projectedParameters: projectedParametersSentence(input.startYear, plan.assumptions),
       parameterDataAsOf: PARAMETER_DATA_AS_OF,
       parameterDataBasis: PARAMETER_DATA_BASIS,
       engineVersion: input.build?.engineVersion ?? null,

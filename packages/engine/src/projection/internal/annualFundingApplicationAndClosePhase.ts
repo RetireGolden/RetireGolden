@@ -150,7 +150,15 @@ interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly anyAlive: boolean
   readonly aliveCount: number
   readonly inflFactor: number
-  readonly limitGrowth: number
+  /**
+   * How far the federal income-tax figures (brackets, deductions, capital-gain
+   * breakpoints, AMT) are projected into this year: 1 in a year the IRS has
+   * published them, else the inflation path's factor from the latest published
+   * year (`params/index.ts#componentScale`, 'irsIncomeTax').
+   */
+  readonly incomeTaxGrowth: number
+  /** The plan's inflation from the state figures' year (`TaxInput.stateIndexingScale`, set only when it differs from `incomeTaxGrowth`). */
+  readonly stateIndexingGrowth: number
   readonly taxFilingStatusForYear: FilingStatus
   readonly filingStatusForYear: ProjectedFilingStatus
   readonly safetyNetFloorToday: number
@@ -460,7 +468,8 @@ export function annualFundingApplicationAndClosePhase(
     anyAlive,
     aliveCount,
     inflFactor,
-    limitGrowth,
+    incomeTaxGrowth,
+    stateIndexingGrowth,
     taxFilingStatusForYear,
     filingStatusForYear,
     safetyNetFloorToday,
@@ -523,7 +532,6 @@ export function annualFundingApplicationAndClosePhase(
     excessLifestyleFunded,
     idealSpendingBase,
     excessSpendingBase,
-    inflFactorFrom,
     returnShockAt,
     classShockAt,
     classParams,
@@ -742,7 +750,8 @@ export function annualFundingApplicationAndClosePhase(
           householdSize: aliveCount,
           taxExemptInterest: yearTaxExemptInterest,
           aca: aggregateRothConversionTarget.acaSizingInput,
-          inflationScale: inflFactorFrom(pack.year, year),
+          inflationScale: incomeTaxGrowth,
+          ...(stateIndexingGrowth === incomeTaxGrowth ? {} : { stateIndexingScale: stateIndexingGrowth }),
           itemizedDeductions,
       }),
     }))
@@ -970,7 +979,8 @@ export function annualFundingApplicationAndClosePhase(
           qualifiedDividends: incomes.qualifiedDividends,
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
-          inflationScale: limitGrowth,
+          inflationScale: incomeTaxGrowth,
+          ...(stateIndexingGrowth === incomeTaxGrowth ? {} : { stateIndexingScale: stateIndexingGrowth }),
           state: residenceState,
           stateResidency,
           publicPensionIncome: publicPensionBase,
@@ -1346,7 +1356,8 @@ export function annualFundingApplicationAndClosePhase(
       qualifiedDividends: incomes.qualifiedDividends,
       ssBenefits: incomes.socialSecurity,
       peopleAged65Plus,
-      inflationScale: limitGrowth,
+      inflationScale: incomeTaxGrowth,
+      ...(stateIndexingGrowth === incomeTaxGrowth ? {} : { stateIndexingScale: stateIndexingGrowth }),
       itemizedDeductions,
     }
     const federalDetail = computeFederalTax(advisoryFederalTaxInput)
@@ -1943,6 +1954,7 @@ export function annualFundingApplicationAndClosePhase(
     // producer is its only caller anywhere in this file.
     const propertyAndInsurance = annualPropertyAndInsuranceClosePhase({
       year,
+      startYear,
       accounts: plan.accounts,
       policies: plan.insurance,
       propertyValues,

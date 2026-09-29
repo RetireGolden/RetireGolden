@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../../params/index.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
@@ -6,6 +6,8 @@ import {
   annualLegacyQcdGiftPlan,
   type AnnualLegacyQcdGiftPlanInput,
 } from './annualLegacyQcdGiftPlan.js'
+import { componentScale } from '../../params/index.js'
+import { flatInflationPath } from '../../params/indexingScale.js'
 
 const pack = packForYear(2026).pack
 
@@ -112,3 +114,13 @@ describeCalculation(
     })
   },
 )
+
+describe('qcd-limit-and-age-proxy: the growth factor reads the QCD limit\'s own publication (D-2027-ROLLOVER)', () => {
+  it('is 1 in 2026, whose notice is published, and the path from 2026 in a later year', () => {
+    const path = flatInflationPath(0.025)
+    expect(packForYear(2026).components.irsRetirementPlanLimits).toMatchObject({ baseYear: 2026, standIn: false })
+    expect(componentScale(packForYear(2026), 'irsRetirementPlanLimits', 2026, path)).toBe(1)
+    expect(packForYear(2028).components.irsRetirementPlanLimits).toMatchObject({ baseYear: 2026, standIn: true })
+    expect(componentScale(packForYear(2028), 'irsRetirementPlanLimits', 2028, path)).toBe(path(2026, 2028))
+  })
+})

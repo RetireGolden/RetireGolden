@@ -71,7 +71,15 @@ interface AnnualAggregateRothConversionPhaseFacts {
   readonly anyAlive: boolean
   readonly aliveCount: number
   readonly inflFactor: number
-  readonly limitGrowth: number
+  /**
+   * How far the federal income-tax figures (brackets, deductions, capital-gain
+   * breakpoints, AMT) are projected into this year: 1 in a year the IRS has
+   * published them, else the inflation path's factor from the latest published
+   * year (`params/index.ts#componentScale`, 'irsIncomeTax').
+   */
+  readonly incomeTaxGrowth: number
+  /** The plan's inflation from the state figures' year (`TaxInput.stateIndexingScale`, set only when it differs from `incomeTaxGrowth`). */
+  readonly stateIndexingGrowth: number
   readonly taxFilingStatusForYear: FilingStatus
   readonly filingStatusForYear: ProjectedFilingStatus
   readonly safetyNetFloorToday: number
@@ -237,7 +245,8 @@ export function annualAggregateRothConversionPhase(
     anyAlive,
     aliveCount,
     inflFactor,
-    limitGrowth,
+    incomeTaxGrowth,
+    stateIndexingGrowth,
     taxFilingStatusForYear,
     filingStatusForYear,
     safetyNetFloorToday,
@@ -260,7 +269,6 @@ export function annualAggregateRothConversionPhase(
     acaInitialSupportCodes,
     planHasTaxExemptYieldAttestation,
     assumedEffects,
-    inflFactorFrom,
   } = facts
   const {
     rmdTotal,
@@ -500,7 +508,8 @@ export function annualAggregateRothConversionPhase(
         peopleAged65Plus,
         householdSize: aliveCount,
         taxExemptInterest: yearTaxExemptInterest,
-        inflationScale: inflFactorFrom(pack.year, year),
+        inflationScale: incomeTaxGrowth,
+        ...(stateIndexingGrowth === incomeTaxGrowth ? {} : { stateIndexingScale: stateIndexingGrowth }),
         itemizedDeductions,
         aca: Object.freeze({
           active: acaActive,
@@ -578,7 +587,8 @@ export function annualAggregateRothConversionPhase(
             qualifiedDividends: incomes.qualifiedDividends,
             ssBenefits: incomes.socialSecurity,
             peopleAged65Plus,
-            inflationScale: limitGrowth,
+            inflationScale: incomeTaxGrowth,
+            ...(stateIndexingGrowth === incomeTaxGrowth ? {} : { stateIndexingScale: stateIndexingGrowth }),
             state: residenceState,
             stateResidency,
             privateRetirementIncome: privateRetirementBase,

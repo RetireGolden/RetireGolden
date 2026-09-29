@@ -18,7 +18,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
 import { TypeChip } from '../TypeChip'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear } from '../useProjection'
 import { DateField, MoneyField, SelectField } from '../fields'
 import {
   bulkContributionConflictMessage,
@@ -204,7 +204,7 @@ function SepSimpleActivityBlock({
       ...statedYears,
       ...addedYears,
       ...namedQcdYearsForSource(plan, account.id),
-      currentStartYear(),
+      projectionStartYear(plan),
     ]),
   ].sort((left, right) => left - right)
   const nextYear = Math.max(...years) + 1
@@ -485,7 +485,7 @@ function DeductibleContributionRow({
 export function RetirementActionEligibilityFactsEditor() {
   const { plan } = usePlan()
   const accounts = classifiableIraAccounts(plan)
-  const donors = contributionDonors(plan, currentStartYear())
+  const donors = contributionDonors(plan, projectionStartYear(plan))
   if (accounts.length === 0 && donors.length === 0) return null
   return (
     <>

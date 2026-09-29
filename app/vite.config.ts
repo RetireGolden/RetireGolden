@@ -9,6 +9,13 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 import { howTestedSummaryFromFileGlob } from '../packages/planner-ui/src/planner/howTestedSuites.ts'
 
+// The weekly rollover CI job's clock (decision D-2027-ROLLOVER): with
+// RG_ROLLOVER_CLOCK or RG_ROLLOVER_TZ set, every test reads that instant's
+// calendar and zone (scripts/rollover/shiftClock.setup.mts). Unset, nothing
+// is added and the run is the ordinary one.
+const rolloverSetup =
+  process.env['RG_ROLLOVER_CLOCK'] || process.env['RG_ROLLOVER_TZ'] ? ['../scripts/rollover/shiftClock.setup.mts'] : []
+
 // Workspace package sources, as posix paths for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
 const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
@@ -308,6 +315,7 @@ export default defineConfig({
     // tests are .mjs alongside it — the bundle budget's parsers and
     // fail-closed contract, which nothing else would catch.
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.mjs'],
+    setupFiles: rolloverSetup,
     // The app suite runs whole projections and optimizer tournaments, and CI
     // runs it under v8 coverage on runners measured at ~6x local runtime, so
     // ~6x slower (#230). Vitest's 5s default kept tipping marginal tests one

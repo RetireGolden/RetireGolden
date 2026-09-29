@@ -128,21 +128,21 @@
       "label": "annual property carrying-cost row production",
       "file": "projection/internal/annualPropertyCarryingCosts.ts",
       "lines": [
-        38,
-        55
+        45,
+        63
       ],
       "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 50's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
       "anchors": [
         {
-          "line": 38,
+          "line": 45,
           "text": "if (!input.anyAlive) return []"
         },
         {
-          "line": 47,
+          "line": 55,
           "text": "input.inflFactor"
         },
         {
-          "line": 55,
+          "line": 63,
           "text": "return rows"
         }
       ]
@@ -153,7 +153,7 @@
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
         378,
-        387
+        388
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
@@ -166,11 +166,11 @@
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 386,
+          "line": 387,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 387,
+          "line": 388,
           "text": "}"
         }
       ]
@@ -204,25 +204,25 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        477,
-        507
+        478,
+        508
       ],
       "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 477,
+          "line": 478,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 502,
+          "line": 503,
           "text": "})"
         },
         {
-          "line": 503,
+          "line": 504,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 507,
+          "line": 508,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]
@@ -276,32 +276,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        888,
-        952
+        893,
+        957
       ],
       "anchors": [
         {
-          "line": 888,
+          "line": 893,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 900,
+          "line": 905,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 901,
+          "line": 906,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 911,
+          "line": 916,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 943,
+          "line": 948,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 951,
+          "line": 956,
           "text": "}"
         }
       ],

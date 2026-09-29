@@ -31,7 +31,7 @@ import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
 import { WorkerUnavailableError } from '../workers/spawn'
 import type { ModelKind } from './marketModelPicker'
-import { currentStartYear } from './useProjection'
+import { projectionStartYear } from './useProjection'
 
 const MC_DEBOUNCE_MS = 1200
 
@@ -83,6 +83,10 @@ interface McRunResult {
 }
 
 const inflight = new WeakMap<Plan, Promise<McRunResult>>()
+// The start year each in-flight run's paths begin in. A user plan object left
+// open across New Year keeps its run from the old year; a reader from the new
+// year must not attach to it (review L8, D-2027-ROLLOVER).
+const inflightStartYear = new WeakMap<Plan, number>()
 // The size of a Monte Carlo page run registered for a plan object, so busy
 // copy can name the run actually in flight (10,000, not the default) before
 // it resolves. Keyed like the maps above, so it dies with the plan object.
@@ -130,12 +134,13 @@ export function registerMcHeadlineRun(
   pathCount: number,
   startYear: number,
 ): void {
-  if (inflight.get(plan) !== undefined) return
+  if (inflight.get(plan) !== undefined && inflightStartYear.get(plan) === startYear) return
   const result = run.then((s) => ({ rate: s.successRate, pathCount: s.pathCount, startYear }))
   result.catch(() => {
-    inflight.delete(plan)
+    if (inflight.get(plan) === result) inflight.delete(plan)
   })
   inflight.set(plan, result)
+  inflightStartYear.set(plan, startYear)
   pendingPathCount.set(plan, pathCount)
   for (const listener of listeners) listener()
 }
@@ -154,15 +159,17 @@ function subscribe(listener: () => void): () => void {
 }
 
 /**
- * The published headline run for this plan object, as a subscription: any
- * publisher, not only the Monte Carlo page's own run, re-renders the reader.
- * The store hands back the same object until the next publish, so this never
- * re-renders on its own.
+ * The published headline run for this plan object from `startYear`, as a
+ * subscription: any publisher, not only the Monte Carlo page's own run,
+ * re-renders the reader. A run published from another start year (a plan
+ * object left open across New Year) is not this year's run and reads as none
+ * (review L8). The store hands back the same object until the next publish,
+ * so this never re-renders on its own.
  */
-export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
+export function useMcHeadline(plan: Plan, startYear: number): MonteCarloSummary | undefined {
   // The same snapshot serves a server render: the store is an in-memory map
   // that is empty there, so client and server agree on what it holds.
-  const snapshot = () => published.get(plan)
+  const snapshot = () => (publishedStartYear.get(plan) === startYear ? published.get(plan) : undefined)
   return useSyncExternalStore(subscribe, snapshot, snapshot)
 }
 
@@ -171,15 +178,18 @@ export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
  * publishes them for every host (`headlineMonteCarloOptions`): the headline
  * model built from this plan (its inflation mean, 12 percent return
  * volatility, and per-class shocks when it holds allocated accounts), the
- * engine's default seed, the given start year (the clock's by default), and
- * the given path count. A comparison run for a changed plan passes the base
- * plan and the base run's path count and start year here, so both runs see
- * one market.
+ * engine's default seed, the given start year, and the given path count. A
+ * comparison run for a changed plan passes the base plan and the base run's
+ * path count and start year here, so both runs see one market.
+ *
+ * The start year has no default: the KPI bar's own run passes
+ * `projectionStartYear(plan)`, so an example's Market success runs from the
+ * year its copy is written for, as its KPI bar does (D-2027-ROLLOVER).
  */
 export function headlineMcRunOptions(
   plan: Plan,
-  pathCount: number = DEFAULT_PATH_COUNT,
-  startYear: number = currentStartYear(),
+  pathCount: number,
+  startYear: number,
 ): MonteCarloRunOptions {
   const options = headlineMonteCarloOptions(plan, startYear, pathCount)
   return { startYear: options.startYear, pathCount: options.pathCount, seed: options.seed, model: options.model }
@@ -191,27 +201,34 @@ export function headlineMcRunOptions(
  * run included), else the run in flight, else a new default run, shared with
  * the KPI bar through the in-flight map. What an Insight preview compares a
  * changed plan against, so its "before" is the rate the reader was shown. It
- * carries the start year its paths begin in, which can be earlier than the
- * clock's when the plan object outlived a New Year; the preview runs the
+ * carries the start year its paths begin in, the plan's own start year now
+ * (`projectionStartYear`): a plan object that outlived a New Year runs again
+ * from the new year, as the KPI bar does (review L8), and the preview runs the
  * changed plan from that same year.
  */
 export function headlineMcRun(plan: Plan): Promise<MonteCarloRateRun> {
+  const startYear = projectionStartYear(plan)
   const summary = published.get(plan)
-  const startYear = publishedStartYear.get(plan)
-  if (summary !== undefined && startYear !== undefined) {
+  if (summary !== undefined && publishedStartYear.get(plan) === startYear) {
     return Promise.resolve({ successRate: summary.successRate, pathCount: summary.pathCount, startYear })
   }
-  return successRateOf(plan).then((result) => ({
+  return successRateOf(plan, startYear).then((result) => ({
     successRate: result.rate,
     pathCount: result.pathCount,
     startYear: result.startYear,
   }))
 }
 
-function successRateOf(plan: Plan): Promise<McRunResult> {
+/**
+ * The run for this plan object from `startYear`: the one in flight when it
+ * starts in that year, else a new one. Keyed on the start year as well as the
+ * plan object (review L8), so a plan left open across New Year runs again from
+ * the new year instead of reporting the old year's run.
+ */
+function successRateOf(plan: Plan, startYear: number): Promise<McRunResult> {
   const existing = inflight.get(plan)
-  if (existing !== undefined) return existing
-  const options = headlineMcRunOptions(plan)
+  if (existing !== undefined && inflightStartYear.get(plan) === startYear) return existing
+  const options = headlineMcRunOptions(plan, DEFAULT_PATH_COUNT, startYear)
   const run = runMonteCarlo(plan, options).then((s) => ({
     rate: s.successRate,
     pathCount: s.pathCount,
@@ -221,9 +238,10 @@ function successRateOf(plan: Plan): Promise<McRunResult> {
   // rejection is evicted so the next subscriber retries instead of replaying
   // a transient worker failure forever for this plan object.
   run.catch(() => {
-    inflight.delete(plan)
+    if (inflight.get(plan) === run) inflight.delete(plan)
   })
   inflight.set(plan, run)
+  inflightStartYear.set(plan, startYear)
   return run
 }
 
@@ -254,15 +272,20 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   // object via structuredClone, so reference identity is the right key).
   const [snapshot, setSnapshot] = useState<{
     plan: Plan
+    startYear: number
     rate: number | null
     pathCount: number
     failed: boolean
     failureReason: string | null
   } | null>(null)
   const runToken = useRef(0)
-  // A run the Monte Carlo page published for this exact plan object wins over
-  // the hook's own default run.
-  const headline = useMcHeadline(plan)
+  // The year the plan's projection starts in now: a user plan left open across
+  // New Year moves to the new year on its next render, and every cache below is
+  // read for that year (review L8).
+  const startYear = projectionStartYear(plan)
+  // A run the Monte Carlo page published for this exact plan object, from this
+  // start year, wins over the hook's own default run.
+  const headline = useMcHeadline(plan, startYear)
   // While a page run is in flight the busy copy names its size, not the default.
   const inFlightPathCount = useInFlightMcPathCount(plan)
   useEffect(() => {
@@ -273,12 +296,12 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
     if (headline !== undefined) return undefined
     const token = ++runToken.current
     const attach = () => {
-      successRateOf(plan)
+      successRateOf(plan, startYear)
         .then((result) => {
           // The count rides with the rate: an attached 10,000-path page run is
           // reported as 10,000, not as the default.
           if (token === runToken.current) {
-            setSnapshot({ plan, rate: result.rate, pathCount: result.pathCount, failed: false, failureReason: null })
+            setSnapshot({ plan, startYear, rate: result.rate, pathCount: result.pathCount, failed: false, failureReason: null })
           }
         })
         .catch((error: unknown) => {
@@ -287,14 +310,14 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
           // say why when retrying cannot help (no Web Worker).
           if (token === runToken.current) {
             const failureReason = error instanceof WorkerUnavailableError ? error.message : null
-            setSnapshot({ plan, rate: null, pathCount: DEFAULT_PATH_COUNT, failed: true, failureReason })
+            setSnapshot({ plan, startYear, rate: null, pathCount: DEFAULT_PATH_COUNT, failed: true, failureReason })
           }
         })
     }
     // A run for this plan already exists (typically started by the KPI bar):
     // attach immediately. The debounce only guards against launching fresh
     // simulations mid-edit, and attaching to an existing run starts none.
-    if (inflight.get(plan) !== undefined) {
+    if (inflight.get(plan) !== undefined && inflightStartYear.get(plan) === startYear) {
       attach()
       return undefined
     }
@@ -302,11 +325,11 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
     return () => {
       window.clearTimeout(t)
     }
-  }, [plan, enabled, headline])
+  }, [plan, startYear, enabled, headline])
   if (enabled && headline !== undefined) {
     return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount, failureReason: null }
   }
-  const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
+  const current = enabled && snapshot !== null && snapshot.plan === plan && snapshot.startYear === startYear ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
   return {
     rate: current?.rate ?? null,

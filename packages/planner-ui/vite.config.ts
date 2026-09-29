@@ -3,6 +3,13 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
+// The weekly rollover CI job's clock (decision D-2027-ROLLOVER): with
+// RG_ROLLOVER_CLOCK or RG_ROLLOVER_TZ set, every test reads that instant's
+// calendar and zone (scripts/rollover/shiftClock.setup.mts). Unset, nothing
+// is added and the run is the ordinary one.
+const rolloverSetup =
+  process.env['RG_ROLLOVER_CLOCK'] || process.env['RG_ROLLOVER_TZ'] ? ['../../scripts/rollover/shiftClock.setup.mts'] : []
+
 // Engine package source, as a posix path for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../engine/src', import.meta.url)).replaceAll('\\', '/')
 
@@ -28,7 +35,7 @@ export default defineConfig({
     // Declares the React act environment once for the whole package. Files
     // still opt into jsdom per-file with a `@vitest-environment` pragma; this
     // only removes the copy-pasted act preamble that used to sit next to it.
-    setupFiles: ['./src/testSupport/vitestSetup.ts'],
+    setupFiles: ['./src/testSupport/vitestSetup.ts', ...rolloverSetup],
     coverage: {
       provider: 'v8',
       // Only package code: aliased engine sources must not dilute the report

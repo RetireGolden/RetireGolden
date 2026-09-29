@@ -1,11 +1,11 @@
 # Mutation receipt: medicare-irmaa-first-tier-boundary
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/params/index.ts`
 
 ```diff
-@@ -374,7 +374,7 @@ export function irmaaTierForMagi(
+@@ -480,7 +480,7 @@ export function irmaaTierForMagi(
      const threshold = irmaaTierThreshold(pack, i, filingStatus, at)
      const isTopTier = i === pack.medicare.irmaaTiers.length - 1
      // CMS publishes lower tiers as "greater than" the floor; the final tier is inclusive.
@@ -26,20 +26,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/medicar
 
 ## Captured failing output
 
-Re-executed because the 2027 published figures (the HSA limits by published year and the state rates enacted for 2027) added lines above this receipt's hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of main (068a5968: #761, #762, #763) into this branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 C:/rgwt/engine21/packages/engine
 
- ❯ src/tax/medicare.evidence.test.ts (7 tests | 1 failed) 14ms
+ ❯ src/tax/medicare.evidence.test.ts (8 tests | 1 failed) 11ms
    ❯ medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary (3)
-     × keeps 109,000 itself in tier 0: the test is strictly greater than 8ms
+     × keeps 109,000 itself in tier 0: the test is strictly greater than 6ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 6 passed (7)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+      Tests  1 failed | 7 passed (8)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -53,13 +50,13 @@ AssertionError: expected 1 to be +0 // Object.is equality
 - 0
 + 1
 
- ❯ src/tax/medicare.evidence.test.ts:93:32
-     91|       expect(firstTier.magiOver.single).toBe(inputs.firstTierMagiOver)
-     92|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
-     93|       expect(result.irmaaTier).toBe(expected.atBoundary!.irmaaTier)
+ ❯ src/tax/medicare.evidence.test.ts:94:32
+     92|       expect(firstTier.magiOver.single).toBe(inputs.firstTierMagiOver)
+     93|       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookb…
+     94|       expect(result.irmaaTier).toBe(expected.atBoundary!.irmaaTier)
        |                                ^
-     94|       expectWithin(result.partBAnnual, expected.atBoundary!.partBAnnua…
-     95|       expect(result.partDSurchargeAnnual).toBe(expected.atBoundary!.pa…
+     95|       expectWithin(result.partBAnnual, expected.atBoundary!.partBAnnua…
+     96|       expect(result.partDSurchargeAnnual).toBe(expected.atBoundary!.pa…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

@@ -15,9 +15,9 @@
  * plan.
  */
 
-import { indexFederalTaxPack, packForYear } from '../params/index.js'
-import { flatInflationPath, indexingScaleFor } from '../params/indexingScale.js'
-import { stateParamsFor } from '../params/state/index.js'
+import { componentScale, indexFederalTaxPack, packForYear } from '../params/index.js'
+import { flatInflationPath } from '../params/indexingScale.js'
+import { LATEST_STATE_PACK_YEAR, stateParamsFor } from '../params/state/index.js'
 import { statutorilyIndexedStandardDeduction } from '../tax/stateEnactedLaw.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
@@ -565,7 +565,8 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
   const useStateBrackets = stateOverridePct <= 0
 
   const years: OptimizerYear[] = probes.map((p) => {
-    const { pack: publishedPack } = packForYear(p.year)
+    const yearParameters = packForYear(p.year)
+    const publishedPack = yearParameters.pack
     // The ledger's rule, now shared rather than copied: `indexingScaleFor` is
     // the function `limitScale` in simulate.ts calls, and both halves of it
     // matter here. Below the latest pack the factor must be 1, and above it the
@@ -579,8 +580,14 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     // where the ledger follows a per-year Monte Carlo series when it has one.
     // The LP is solved without market overrides, so the two agree on every
     // path it prices.
+    //
+    // Projected from the federal income-tax figures' own latest published year
+    // (decision D-2027-ROLLOVER). The LP scales the IRMAA thresholds by the
+    // same factor, so a year whose CMS figures land before its brackets would
+    // index them from the brackets' year: a limit of the LP's one-scale
+    // approximation, which the ledger replay does not share.
     const inflationScale =
-      indexingScaleFor(publishedPack.year, p.year, flatInflationPath(infl))
+      componentScale(yearParameters, 'irsIncomeTax', p.year, flatInflationPath(infl))
     // The LP has to price a conversion the way the exact ledger will, so it gets
     // the same indexed figures `computeFederalTax` uses for a stand-in year.
     // Feeding it the raw pack-year brackets and deduction would over-tax late
@@ -598,8 +605,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
             federalDeduction:
               pack.federalTax.standardDeduction[filingStatus] +
               (p.peopleAged65Plus > 0 ? pack.federalTax.age65Addition[filingStatus] * p.peopleAged65Plus : 0),
-            packYear: publishedPack.year,
-            inflationScale,
+            // A state statute's own indexing (the District's, Washington's) runs at the plan's
+            // inflation from the state figures' year, not by the income-tax
+            // figures' projection, which is 1 once the IRS's year is loaded
+            // (decision D-2027-ROLLOVER, review V1).
+            packYear: LATEST_STATE_PACK_YEAR,
+            inflationScale: flatInflationPath(infl)(LATEST_STATE_PACK_YEAR, p.year),
           })
         : undefined,
       ordinaryIncomeBase: p.ordinaryIncomeBase,

@@ -13,7 +13,7 @@ import { effectiveBirthYear, fraForBirthYear } from '../socialSecurity/nra.js'
 import { gridClaimAges, isClaimAlreadyMade, openClaims, type OpenClaim } from '../socialSecurity/openClaims.js'
 import { disabilityReplacesClaimAge } from '../socialSecurity/analysis/claimants.js'
 import type { Account, AllocationWeights, IncomeStream, Plan, TipsLadder } from '../model/plan.js'
-import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { packForYear, rmdStartAgeForBirthYear, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'
 import type { OptimizedSchedule } from '../strategies/optimizer.js'
 import { QLAC_DEFERRED_PAYOUT_RATE, spiaPayoutRate } from './spiaQuotes.js'
@@ -741,9 +741,12 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
       // Match the projection's statutory-limit indexing: for a start year past the
       // latest pack the QLAC cap is inflation-projected, so an un-indexed cap would
       // systematically under-shoot "at the cap" (and mis-price the candidate).
-      const { pack: qlacPack, isStandIn } = packForYear(startYear)
+      const { pack: qlacPack, components } = packForYear(startYear)
       const inflation = plan.assumptions.inflationPct / 100
-      const capGrowth = isStandIn && startYear > LATEST_PACK_YEAR ? Math.pow(1 + inflation, startYear - qlacPack.year) : 1
+      // The QLAC cap's own publication (the IRS retirement-plan notice), not
+      // the whole parameter set's, decides whether it is projected.
+      const qlacCap = components.irsRetirementPlanLimits
+      const capGrowth = qlacCap.standIn && startYear > qlacCap.baseYear ? Math.pow(1 + inflation, startYear - qlacCap.baseYear) : 1
       const cap = qlacPack.annuities.qlacPremiumCap * capGrowth
       const premium = Math.min(cap, traditional.balance * 0.25)
       // The 85 is a redundant safe backstop behind the younger-than-83 product

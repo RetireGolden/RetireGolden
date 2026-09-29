@@ -14,6 +14,7 @@ import { LEARN } from '../learnLinks'
 import { LongevityModal } from '../LongevityModal'
 import { SurvivalPercentileModal } from '../SurvivalPercentileModal'
 import { TypeChip } from '../TypeChip'
+import { projectionStartYear } from '../useProjection'
 import { US_STATES } from '../usStates'
 import { Issues } from './shared'
 import { fallbackPersonName, MONTH_OPTIONS, newId } from './sectionHelpers'
@@ -27,12 +28,13 @@ export function HouseholdSection() {
   const couple = plan.household.people.length === 2
   const [longevityFor, setLongevityFor] = useState<number | null>(null)
   const [percentileFor, setPercentileFor] = useState<number | null>(null)
+  const startYear = projectionStartYear(plan)
   return (
     <section>
       <div className="card">
         <h2>Household</h2>
         <p className="card-hint">
-          Who the plan is for. The projection runs from this year until the later planning age, pays wages until each
+          Who the plan is for. The projection runs from {startYear} until the later planning age, pays wages until each
           person's retirement age, and models survivor rules (filing status, Social Security step-up) after the first
           death. Hover any ⓘ for details.
         </p>
@@ -217,6 +219,7 @@ export function HouseholdSection() {
             person={plan.household.people[percentileFor]}
             personIndex={percentileFor}
             partner={plan.household.people[1 - percentileFor] ?? null}
+            startYear={startYear}
             onApply={(longevity) =>
               update((d) => {
                 updatePersonLongevity(d, percentileFor, longevity)
@@ -316,7 +319,7 @@ export function HouseholdSection() {
             onClick={() =>
               update((d) => {
                 const lastYear = d.household.stateMoves[d.household.stateMoves.length - 1]?.fromYear
-                d.household.stateMoves.push({ fromYear: (lastYear ?? new Date().getFullYear()) + 1, fromMonth: 7, state: d.household.state })
+                d.household.stateMoves.push({ fromYear: (lastYear ?? projectionStartYear(plan)) + 1, fromMonth: 7, state: d.household.state })
                 invalidateAcaEvidence(d, 'householdChanged')
               })
             }

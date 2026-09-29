@@ -3,6 +3,7 @@ import { expect, it } from 'vitest'
 import type { Account } from '../../model/plan.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
 import { annualPropertyCarryingCosts } from './annualPropertyCarryingCosts.js'
+import { effectivePropertySaleYear } from '../propertySaleYear.js'
 
 function expectWithin(
   actual: number,
@@ -67,6 +68,8 @@ describeCalculation(
       const rows = annualPropertyCarryingCosts({
         accounts,
         year: YEAR,
+        // The worksheet's current year is inside a projection that began earlier.
+        startYear: YEAR - 10,
         anyAlive: inputs.anyAlive as boolean,
         inflFactor: inputs.inflationFactor as number,
       })
@@ -87,10 +90,30 @@ describeCalculation(
       const rows = annualPropertyCarryingCosts({
         accounts,
         year: YEAR,
+        // The worksheet's current year is inside a projection that began earlier.
+        startYear: YEAR - 10,
         anyAlive: false,
         inflFactor: inputs.inflationFactor as number,
       })
       expect(rows).toEqual([])
+    })
+
+    it('charges nothing from the start year for a sale dated before it, the year the ledger sells it (restated 2026-09-29)', () => {
+      // Decision D-2027-ROLLOVER, review H1: Home B's sale dated the year
+      // before a projection that starts in YEAR runs in YEAR
+      // (effectivePropertySaleYear), and its costs stop from YEAR, the same
+      // year; Home A, sold later, is still charged.
+      const earlier = [property('home-a', homeA), property('home-b', { ...homeB, plannedSaleYear: YEAR - 1 })]
+      expect(effectivePropertySaleYear({ plannedSaleYear: YEAR - 1 }, YEAR)).toBe(YEAR)
+      const rows = annualPropertyCarryingCosts({
+        accounts: earlier,
+        year: YEAR,
+        startYear: YEAR,
+        anyAlive: inputs.anyAlive as boolean,
+        inflFactor: inputs.inflationFactor as number,
+      })
+      expect(rows.map((row) => row.account.id)).toEqual(['home-a'])
+      expectWithin(rows[0]!.amount, expected.homeAAmount!, example.tolerance, 'Home A carrying cost')
     })
   },
 )

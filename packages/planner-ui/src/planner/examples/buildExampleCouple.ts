@@ -41,7 +41,7 @@ export function buildExampleCouple(): Plan {
   plan.accounts = [
     { type: 'cash', id: exampleEntityId(EXAMPLE_ID, 'savings'), name: 'Savings', ownerPersonId: null, annualReturnPct: 2, balance: 60_000, annualContribution: 0 },
     { type: 'taxable', id: exampleEntityId(EXAMPLE_ID, 'brokerage'), name: 'Joint brokerage', ownerPersonId: null, annualReturnPct: null, balance: 650_000, costBasis: 420_000, annualContribution: 12_000 },
-    { type: 'equityComp', id: exampleEntityId(EXAMPLE_ID, 'rsu'), name: 'Alex RSUs', ownerPersonId: meId, annualReturnPct: null, balance: 120_000, costBasis: 95_000, annualContribution: 0, vestingMode: 'cliff', vestDate: '2028-03-15' },
+    { type: 'equityComp', id: exampleEntityId(EXAMPLE_ID, 'rsu'), name: 'Alex RSUs', ownerPersonId: meId, annualReturnPct: null, balance: 120_000, costBasis: 95_000, annualContribution: 0, vestingMode: 'cliff', vestDate: `${EXAMPLE_FIXED_YEAR + 2}-03-15` },
     { type: 'traditional', id: exampleEntityId(EXAMPLE_ID, '401k'), name: 'Alex 401(k)', ownerPersonId: meId, annualReturnPct: null, kind: 'employer', balance: 820_000, annualContribution: 24_000 },
     { type: 'traditional', id: exampleEntityId(EXAMPLE_ID, 'sam-ira'), name: 'Sam IRA', ownerPersonId: partnerId, annualReturnPct: null, kind: 'ira', balance: 310_000, annualContribution: 0 },
     { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth'), name: 'Alex Roth IRA', ownerPersonId: meId, annualReturnPct: null, kind: 'ira', balance: 145_000, annualContribution: 7_500, contributionBasis: 80_000 },

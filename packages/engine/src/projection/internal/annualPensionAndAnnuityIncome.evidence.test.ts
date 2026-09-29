@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Account, type Plan } from '../../model/plan.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
@@ -189,3 +189,46 @@ describeCalculation(
     })
   },
 )
+
+describe('income-annuity-annual: a purchase dated before the start year (D-2027-ROLLOVER)', () => {
+  // The derivation's U1 contract: $100,000 non-qualified, bought in 2026 from
+  // the brokerage, paying $550 a month from 67. Zero returns and inflation,
+  // no spending, so the brokerage row is the typed balance less what moved.
+  function household(withAnnuity: boolean): Plan {
+    const plan = couplePlan()
+    const owner = plan.household.people[0]!.id
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.accounts = [
+      { type: 'taxable', id: 'brokerage', name: 'Joint brokerage', ownerPersonId: null, annualReturnPct: 0, balance: 700_000, costBasis: 700_000, annualContribution: 0 },
+      ...(withAnnuity
+        ? [{
+            type: 'annuity' as const, id: 'spia', name: 'Income annuity', ownerPersonId: owner, annualReturnPct: null,
+            startAge: 90, monthlyAmount: 550, colaPct: 0, taxablePct: 100,
+            purchase: { year: 2026, premium: 100_000, fundingAccountId: 'brokerage', taxQualification: 'nonQualified' as const },
+          } satisfies Account]
+        : []),
+    ]
+    return validated(plan)
+  }
+  const warning =
+    'The Income annuity purchase is dated 2026, before this plan starts in 2027, so it is treated as already paid: the premium is not taken from Joint brokerage. If that balance still includes the premium, lower it by $100,000.'
+  const brokerageAt = (plan: Plan, startYear: number): number =>
+    simulatePlan(plan, { startYear, horizonEndYear: startYear, taxCalculator: createFederalTaxCalculator() }).years[0]!.balances['brokerage']!
+
+  it('from a 2026 start the premium leaves the brokerage in 2026, with no warning', () => {
+    expect(brokerageAt(household(false), 2026) - brokerageAt(household(true), 2026)).toBeCloseTo(100_000, 2)
+    const result = simulatePlan(household(true), { startYear: 2026, horizonEndYear: 2026, taxCalculator: createFederalTaxCalculator() })
+    expect(result.warnings).not.toContain(warning)
+  })
+
+  it('from a 2027 start it is treated as already paid, and the warning names the premium and the account', () => {
+    // The limit this record registers: the typed balance is read as already
+    // net of the premium, so nothing leaves it; if it was typed before the
+    // purchase, the premium is counted twice.
+    expect(brokerageAt(household(true), 2027)).toBe(brokerageAt(household(false), 2027))
+    const result = simulatePlan(household(true), { startYear: 2027, horizonEndYear: 2027, taxCalculator: createFederalTaxCalculator() })
+    expect(result.warnings).toContain(warning)
+  })
+})

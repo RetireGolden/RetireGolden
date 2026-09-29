@@ -166,20 +166,20 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1546,
-        1556
+        1566,
+        1576
       ],
       "anchors": [
         {
-          "line": 1546,
+          "line": 1566,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1547,
+          "line": 1567,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1556,
+          "line": 1576,
           "text": "})"
         }
       ],
@@ -261,17 +261,17 @@
       "label": "property events + growth: loop header and the shadow membership test",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        227,
-        230
+        233,
+        236
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did. SPLIT on 2026-09-26 from one range, 227-309, around line 231 (`? shadowValues.get(accountId)!`), which is excluded: it reads the numeric shadow for a property id an earlier row already wrote, which only two properties under one id can reach, and the plan checks now refuse that (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts), so no validated differential member selects it. The helper keeps the read for input that did not pass through the checks.",
       "anchors": [
         {
-          "line": 227,
+          "line": 233,
           "text": "for (const account of accounts) {"
         },
         {
-          "line": 230,
+          "line": 236,
           "text": "let value = shadowValues.has(accountId)"
         }
       ]
@@ -281,21 +281,21 @@
       "label": "property events + growth from the entry property value on",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        232,
-        309
+        238,
+        315
       ],
       "note": "The rest of the former entry E; see its note.",
       "anchors": [
         {
-          "line": 232,
+          "line": 238,
           "text": ": (propertyValues.get(accountId) ?? 0)"
         },
         {
-          "line": 245,
+          "line": 251,
           "text": "}"
         },
         {
-          "line": 303,
+          "line": 309,
           "text": "hecmHudEndingLoanBalance,"
         }
       ]
@@ -305,20 +305,20 @@
       "label": "E: the planned-sale-year branch (post-growth value above zero)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        237,
-        253
+        243,
+        259
       ],
       "anchors": [
         {
-          "line": 237,
-          "text": "if (account.plannedSaleYear === year && value > 0) {"
+          "line": 243,
+          "text": "if (effectivePropertySaleYear(account, startYear) === year && value > 0) {"
         },
         {
-          "line": 245,
+          "line": 251,
           "text": "}"
         },
         {
-          "line": 253,
+          "line": 259,
           "text": "}"
         }
       ]
@@ -328,20 +328,20 @@
       "label": "E: the legacy tax-free expectedNetProceeds path (no cost basis)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        238,
-        251
+        244,
+        257
       ],
       "anchors": [
         {
-          "line": 238,
+          "line": 244,
           "text": "if (account.costBasis === undefined) {"
         },
         {
-          "line": 244,
+          "line": 250,
           "text": "closesHecmForAccountId = accountId"
         },
         {
-          "line": 251,
+          "line": 257,
           "text": "}"
         }
       ]
@@ -351,21 +351,21 @@
       "label": "E: the legacy-sale ledger payload (cashFlow modes only)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        248,
-        250
+        254,
+        256
       ],
       "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on.",
       "anchors": [
         {
-          "line": 248,
+          "line": 254,
           "text": "if (amount > 0 && surplusDestination !== null) {"
         },
         {
-          "line": 249,
+          "line": 255,
           "text": "record = { propertyAccountId: accountId, amount, destination: surplusDestination }"
         },
         {
-          "line": 250,
+          "line": 256,
           "text": "}"
         }
       ]
@@ -375,20 +375,20 @@
       "label": "open-line principal-limit growth and mode-specific loan balance accrual",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        263,
-        294
+        269,
+        300
       ],
       "anchors": [
         {
-          "line": 263,
+          "line": 269,
           "text": "if (openLine && account.hecm && !accruedLineIds.has(accountId)) {"
         },
         {
-          "line": 291,
+          "line": 297,
           "text": "openLine.principalLimit *= hecmGrowth"
         },
         {
-          "line": 294,
+          "line": 300,
           "text": "accruedLineIds.add(accountId)"
         }
       ]

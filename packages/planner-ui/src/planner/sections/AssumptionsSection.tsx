@@ -13,6 +13,8 @@ import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LEARN } from '../learnLinks'
 import { Issues } from './shared'
 import { StateTaxFactsEditor } from './StateTaxFactsEditor'
+import { startYearDollarsWord, projectionStartYear } from '../useProjection'
+import { projectedParametersSentence } from '../projectedParameters'
 
 /**
  * Assumptions-level asset-class table: return / volatility / yield per class,
@@ -86,7 +88,7 @@ export function AssumptionsSection() {
         <div className="form-grid">
           <PercentField
             label="Inflation"
-            help="How fast prices rise each year. Results are shown in today's dollars, so this sets how much future dollars are discounted back."
+            help={`How fast prices rise each year. Results are shown in ${startYearDollarsWord(plan)} dollars, so this sets how much future dollars are discounted back.`}
             learn={LEARN.generalInflation}
             path="assumptions.inflationPct"
             value={a.inflationPct}
@@ -225,7 +227,7 @@ export function AssumptionsSection() {
         <div className="form-grid">
           <CheckboxField
             label="Model a benefit cut"
-            hint="Trustees project depletion around 2034 absent action."
+            hint={`The 2026 Trustees Report projects depletion around ${TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear} absent action.`}
             help="Model a benefit cut if the Social Security trust fund exhausts reserves."
             learn={LEARN.ssTrustFund}
             source={provenanceSource('social-security')}
@@ -241,8 +243,10 @@ export function AssumptionsSection() {
         </div>
 
         <p className="card-hint">
-          Tax brackets, contribution limits, RMD factors, Medicare/IRMAA, and per-state rules come from published{' '}
-          {LATEST_PACK_YEAR} figures. <Link to="/disclaimer">See where the numbers come from →</Link>{' '}
+          Tax brackets, contribution limits, RMD factors, Medicare/IRMAA, and per-state rules start from the figures
+          loaded for {LATEST_PACK_YEAR}.{' '}
+          {projectedParametersSentence(projectionStartYear(plan), plan.assumptions) ?? ''}{' '}
+          <Link to="/disclaimer">See where the numbers come from →</Link>{' '}
           <Link to={`/plan/${plan.id}/assumptions-card`}>See every live assumption on one card →</Link>
         </p>
         <Issues section="assumptions" />

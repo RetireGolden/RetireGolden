@@ -4,13 +4,24 @@
  * that fail validation still update the screen (so the user can finish
  * typing) but are not persisted; the issues surface in the save indicator
  * and section forms.
+ *
+ * Validation is the document's shape (`parsePlan`) plus what is wrong only as
+ * of the year the page projects from (`asOfIssues` with
+ * `projectionStartYear(plan)`, decision D-2027-ROLLOVER): an elected pension
+ * lump sum dated before that year. The second is checked on load, on every
+ * edit and at every save, against the same year the projection uses, so the
+ * page, the save and the projection can never disagree about which year has
+ * passed. A stored plan always opens; a refused save lists its issues ("Fix 1
+ * issue to store") and is never reported as a storage failure.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
+import { asOfIssues } from '@retiregolden/engine/model/asOfIssues'
 import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { projectionStartYear } from '../startYear'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
@@ -96,9 +107,21 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     // provider's pre-existing behavior and not this change's to move.
     const adopt = (loaded: Plan, repairs: readonly PlanLoadRepair[]) => {
       setPlan(loaded)
-      latestValid.current = loaded
       setLoadRepairs({ planId, repairs })
       setLoadError(null)
+      // A stored plan always opens. When it holds something wrong only as of
+      // the year the page projects from (an election year that has passed
+      // since it was saved), the page says so at once and holds the next save
+      // until it is fixed; nothing is changed on the household's behalf.
+      const stale = asOfIssues(loaded, projectionStartYear(loaded))
+      if (stale.length > 0) {
+        latestValid.current = null
+        setIssues(stale)
+        setSaveState('invalid')
+        return
+      }
+      latestValid.current = loaded
+      setIssues([])
       setSaveState('saved')
     }
     void (async () => {
@@ -165,12 +188,25 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   // other path (flush on pagehide, a stray caller, or a debounce scheduled
   // just before the flip). It reads the ref so the check is never stale, and
   // the callback stays store-stable so pending timers point at one function.
+  //
+  // A save the check refuses is not a storage failure: its issues are listed
+  // and the chip reads "Fix N issues to store", with the jump link. 'error'
+  // ("Could not store locally") is kept for a store write that throws. The
+  // save runs the start-year check against the year the page projects from,
+  // read when the save runs, so an edit made before New Year and saved after
+  // is judged against the new year, as the projection now is.
   const runSave = useCallback((toSave: Plan) => {
     if (readOnlyRef.current) return
     setSaveState('saving')
-    void savePlanVia(store, toSave)
+    void savePlanVia(store, toSave, undefined, { asOfYear: projectionStartYear(toSave) })
       .then((r) => {
-        setSaveState(r.ok ? 'saved' : 'error')
+        if (r.ok) {
+          setSaveState('saved')
+          return
+        }
+        if (latestValid.current === toSave) latestValid.current = null
+        setIssues(r.issues)
+        setSaveState('invalid')
       })
       .catch(() => {
         setSaveState('error')
@@ -241,6 +277,13 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
         mutator(draft)
         const parsed = parsePlan(draft)
         if (parsed.ok) {
+          const stale = asOfIssues(parsed.plan, projectionStartYear(parsed.plan))
+          if (stale.length > 0) {
+            latestValid.current = null
+            setIssues(stale)
+            setSaveState('invalid')
+            return parsed.plan
+          }
           latestValid.current = parsed.plan
           setIssues([])
           setSaveState('dirty')

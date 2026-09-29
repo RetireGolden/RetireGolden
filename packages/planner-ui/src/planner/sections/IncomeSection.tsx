@@ -8,6 +8,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, Se
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { piaAsOfPlan, resolvePia } from '../ssAnalysis'
+import { projectionStartYear, startYearDollarsWord } from '../useProjection'
 import { TypeChip } from '../TypeChip'
 import { Issues } from './shared'
 import { PIA_MONTHLY_AT_FRA_LABEL, newId } from './sectionHelpers'
@@ -24,7 +25,7 @@ function isOrphanStream(plan: Plan, stream: IncomeStream): boolean {
   return 'personId' in stream && !plan.household.people.some((p) => p.id === stream.personId)
 }
 
-function makeIncome(type: IncomeStream['type'], personId: string): IncomeStream {
+function makeIncome(type: IncomeStream['type'], personId: string, startYear: number): IncomeStream {
   switch (type) {
     case 'wages':
       return { type, id: newId(), personId, annualGross: 0, endAge: null, realGrowthPct: 0 }
@@ -36,7 +37,7 @@ function makeIncome(type: IncomeStream['type'], personId: string): IncomeStream 
       // `inflationAdjusted: true` on a NEWLY authored stream, matching how the
       // same person enters a one-time spending goal. Plans migrated from schema
       // v4 get `false` instead, which is what they already projected.
-      return { type, id: newId(), label: 'Inheritance', year: new Date().getFullYear() + 1, amount: 0, inflationAdjusted: true, taxTreatment: 'none' }
+      return { type, id: newId(), label: 'Inheritance', year: startYear + 1, amount: 0, inflationAdjusted: true, taxTreatment: 'none' }
   }
 }
 
@@ -78,7 +79,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
     case 'socialSecurity': {
       const orphan = isOrphanStream(plan, stream)
       const ssPerson = orphan ? undefined : plan.household.people.find((p) => p.id === stream.personId)
-      const resolved = ssPerson ? resolvePia(ssPerson, stream, piaAsOfPlan(plan)) : null
+      const resolved = ssPerson ? resolvePia(ssPerson, stream, piaAsOfPlan(plan, projectionStartYear(plan))) : null
       const pia = resolved?.piaMonthly ?? stream.piaMonthly
       const sourceLabel = stream.piaMonthly === null ? 'earnings record' : 'quick PIA'
       const claim = `${stream.claimAge.years}y${stream.claimAge.months ? ` ${stream.claimAge.months}m` : ''}`
@@ -118,7 +119,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
         <div className="form-grid">
           <TextField label="Label" path={`incomes.${index}.label`} value={stream.label} onCommit={(v) => set('label', v || 'Income')} />
           <MoneyField
-            label={stream.inflationAdjusted ? "Annual amount (today's $)" : 'Annual amount (fixed $)'}
+            label={stream.inflationAdjusted ? `Annual amount (${startYearDollarsWord(plan)} $)` : 'Annual amount (fixed $)'}
             path={`incomes.${index}.annualAmount`}
             value={stream.annualAmount}
             onCommit={(v) => set('annualAmount', v ?? 0)}
@@ -139,7 +140,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           />
           <CheckboxField
             label="Inflation-adjusted"
-            help="On: the annual amount is in today's dollars and the plan grows it each year with inflation. Off: the same dollar amount is used every year, so it buys less as prices rise."
+            help={`On: the annual amount is in ${startYearDollarsWord(plan)} dollars and the plan grows it each year with inflation. Off: the same dollar amount is used every year, so it buys less as prices rise.`}
             value={stream.inflationAdjusted}
             onCommit={(v) => set('inflationAdjusted', v)}
           />
@@ -149,9 +150,9 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       return (
         <div className="form-grid">
           <TextField label="Label" path={`incomes.${index}.label`} value={stream.label} onCommit={(v) => set('label', v || 'Event')} />
-          <NumberField label="Year" path={`incomes.${index}.year`} value={stream.year} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
+          <NumberField label="Year" path={`incomes.${index}.year`} value={stream.year} onCommit={(v) => set('year', Math.round(v ?? projectionStartYear(plan)))} />
           <MoneyField
-            label={stream.inflationAdjusted ? "Amount (today's $)" : `Amount (${stream.year} $)`}
+            label={stream.inflationAdjusted ? `Amount (${startYearDollarsWord(plan)} $)` : `Amount (${stream.year} $)`}
             path={`incomes.${index}.amount`}
             value={stream.amount}
             onCommit={(v) => set('amount', v ?? 0)}
@@ -168,7 +169,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           />
           <CheckboxField
             label="Inflation-adjusted"
-            help="On: you entered the amount in today's dollars and the plan grows it to the event year. Off: you entered it in that year's dollars and the plan uses it as written. Plans saved before this setting existed have it off, so their numbers do not change."
+            help={`On: you entered the amount in ${startYearDollarsWord(plan)} dollars and the plan grows it to the event year. Off: you entered it in that year's dollars and the plan uses it as written. Plans saved before this setting existed have it off, so their numbers do not change.`}
             value={stream.inflationAdjusted}
             onCommit={(v) => set('inflationAdjusted', v)}
           />
@@ -218,7 +219,7 @@ export function IncomeSection() {
           {(Object.keys(INCOME_LABEL) as IncomeStream['type'][])
             .filter((t) => t !== 'socialSecurity')
             .map((t) => (
-              <button key={t} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.incomes.push(makeIncome(t, firstPerson)))}>
+              <button key={t} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.incomes.push(makeIncome(t, firstPerson, projectionStartYear(plan))))}>
                 + {INCOME_LABEL[t]}
               </button>
             ))}

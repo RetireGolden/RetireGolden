@@ -112,30 +112,56 @@ describe('Monte Carlo headline (#497)', () => {
     expect(mockedRunMc).not.toHaveBeenCalled()
   })
 
-  // PR #754 findings 1 and 2: a headline run carries the start year its
-  // paths begin in, which outlives a New Year with the plan object.
-  it('keeps each headline run\'s own start year across a New Year, published or in flight', async () => {
+  // PR #754 findings 1 and 2 kept each run's own start year; the rollover
+  // review (L8) keys every cache on the start year too: a plan object left
+  // open across New Year runs again from the new year, published or in
+  // flight, instead of reporting the old year's run.
+  it('runs a plan object again from the new year after a New Year, published or in flight', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     try {
-      vi.setSystemTime(new Date('2026-12-31T12:00:00.000Z'))
+      // Local-noon instants (D-2027-ROLLOVER): a Z instant is 31 December or
+      // 2 January only in some zones, and the start year reads the local one.
+      vi.setSystemTime(new Date(2026, 11, 31, 12))
       const published = createSamplePlan()
       publishMcHeadline(published, summaryOf(0.42, 10_000), currentStartYear())
+      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.42, pathCount: 10_000, startYear: 2026 })
       const inFlight = createSamplePlan()
       let settle: (s: MonteCarloSummary) => void = () => {}
       registerMcHeadlineRun(inFlight, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }), 10_000, currentStartYear())
-
-      vi.setSystemTime(new Date('2027-01-02T12:00:00.000Z'))
-      expect(currentStartYear()).toBe(2027)
-      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.42, pathCount: 10_000, startYear: 2026 })
-      const pending = headlineMcRun(inFlight)
+      const pendingOld = headlineMcRun(inFlight)
       settle(summaryOf(0.37, 10_000))
-      await expect(pending).resolves.toEqual({ successRate: 0.37, pathCount: 10_000, startYear: 2026 })
+      await expect(pendingOld).resolves.toEqual({ successRate: 0.37, pathCount: 10_000, startYear: 2026 })
+      expect(mockedRunMc).not.toHaveBeenCalled()
+
+      vi.setSystemTime(new Date(2027, 0, 2, 12))
+      expect(currentStartYear()).toBe(2027)
+      mockedRunMc.mockResolvedValueOnce(summaryOf(0.4, 1_000)).mockResolvedValueOnce(summaryOf(0.35, 1_000))
+      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.4, pathCount: 1_000, startYear: 2027 })
+      await expect(headlineMcRun(inFlight)).resolves.toEqual({ successRate: 0.35, pathCount: 1_000, startYear: 2027 })
+      expect(mockedRunMc.mock.calls.map(([, options]) => options.startYear)).toEqual([2027, 2027])
 
       // A run from the new year replaces a finer one from the old year: it is
       // a different simulation, not a coarser copy of the same one.
-      publishMcHeadline(published, summaryOf(0.4, 1_000), currentStartYear())
-      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.4, pathCount: 1_000, startYear: 2027 })
-      expect(mockedRunMc).not.toHaveBeenCalled()
+      publishMcHeadline(published, summaryOf(0.41, 1_000), currentStartYear())
+      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.41, pathCount: 1_000, startYear: 2027 })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("does not show an old year’s published run on a plan object after New Year (review L8)", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(2026, 11, 31, 12))
+      const plan = createSamplePlan()
+      publishMcHeadline(plan, summaryOf(0.42, 10_000), currentStartYear())
+      await act(async () => root.render(<Probe plan={plan} />))
+      expect(container.textContent).toBe('done|0.42|10000')
+
+      vi.setSystemTime(new Date(2027, 0, 2, 12))
+      // The next render reads the new start year: the 2026 run no longer answers.
+      await act(async () => root.render(<Probe plan={plan} />))
+      expect(container.textContent).toBe('running|null|1000')
     } finally {
       vi.useRealTimers()
     }

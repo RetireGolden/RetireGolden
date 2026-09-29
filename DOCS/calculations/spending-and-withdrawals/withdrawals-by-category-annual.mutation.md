@@ -1,11 +1,11 @@
 # Mutation receipt: withdrawals-by-category-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `d9447bec` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `d9447bec` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -2016,6 +2016,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -2028,6 +2028,7 @@ export function annualFundingApplicationAndClosePhase(
        traditional:
          withdrawalPlan.byCategory.traditional +
          rmdTotal +
@@ -25,17 +25,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for the drift check because implementing D-EXAMPLE-SOURCE-SWITCH, D-ACA-CONTRACT-PATHS and D-MC-DEFAULT-SEED moved lines of its production file or its evidence test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The second verification's fixes on this branch (V1 to V4) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 C:/rgwt/engine21/packages/engine
 
- ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 3 failed) 52ms
+ ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 3 failed) 44ms
    ❯ withdrawals-total-annual — Annual withdrawal total (1)
-     × sums the five categories to 42000 10ms
+     × sums the five categories to 42000 8ms
    ❯ withdrawals-by-category-annual — Annual withdrawals partitioned by source-account category (2)
-     × reports each account's draw in its own source category 4ms
-     × keeps the RMD inside traditional rather than adding it again 3ms
+     × reports each account's draw in its own source category 3ms
+     × keeps the RMD inside traditional rather than adding it again 2ms
 
  Test Files  1 failed (1)
       Tests  3 failed | 3 passed (6)

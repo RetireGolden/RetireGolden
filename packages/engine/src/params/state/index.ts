@@ -144,6 +144,17 @@ export function conformStateStandardDeduction(
   params: StateTaxParams,
   federalAge65Addition: PerStatus<number>,
   inflationScale: number,
+  /**
+   * The year's federal basic standard deduction as the composed parameter
+   * view holds it: the IRS's own figure once that year is loaded, else the
+   * latest loaded one, which `inflationScale` projects (decision
+   * D-2027-ROLLOVER, review V1). A state that follows the federal basic
+   * conforms to it, so it moves with the federal figure whether that is
+   * loaded or projected. Omitted, the pack's copy of the 2026 federal basic
+   * is scaled instead, which agrees while the IRS income-tax figures are at
+   * 2026 and not once a later year lands.
+   */
+  federalBasicAmounts?: PerStatus<number>,
 ): StateTaxParams {
   const federalBasic = params.standardDeductionConformity === 'federal'
   const federalAdditional =
@@ -156,8 +167,8 @@ export function conformStateStandardDeduction(
     ...params,
     standardDeduction: federalBasic
       ? {
-          single: params.standardDeduction.single * scale,
-          marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
+          single: (federalBasicAmounts ?? params.standardDeduction).single * scale,
+          marriedFilingJointly: (federalBasicAmounts ?? params.standardDeduction).marriedFilingJointly * scale,
         }
       : params.standardDeduction,
     ...(federalAdditional

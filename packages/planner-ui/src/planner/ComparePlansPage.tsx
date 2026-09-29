@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
 import { listPlansVia, loadPlanVia, usePlanStore, type PlanSummary } from '../data/planStoreContext'
+import { listExampleSummaries } from '../data/planStore'
+import { isExamplePlanId } from '../data/planOrigin'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MoneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import {
@@ -20,7 +22,9 @@ import { NonFiniteComparisonError } from '@retiregolden/engine/scenarios/scalarC
 import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
-import { currentStartYear, projectPlan, type ProjectionView } from './useProjection'
+import { compareStartYear, projectPlan, projectionStartYear, type ProjectionView } from './useProjection'
+import { EXAMPLE_FIXED_YEAR } from './examples/exampleClock'
+import { compareExampleNote } from './compareExampleNote'
 import { ScrollRegion } from './ScrollRegion'
 import { formatDelta, type DeltaUnit } from './compareDeltas'
 import { moneyLastsValue } from './format'
@@ -42,12 +46,12 @@ function comparisonRefusalSentence(error: unknown): string {
     const name = planName(error.role)
     return `${lead}one of ${name}'s figures could not be computed. Open ${name}'s Results page to check its projection, then compare again.`
   }
-  if (error instanceof PlanHeadlineRefusal) {
-    if (error.reason === 'birth-date-missing' && error.side !== null) {
-      const name = planName(error.side)
-      return `${lead}${name} runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on ${name}'s Household page, then compare again.`
-    }
-    return `${lead}they were projected from different start years. Reload this page so both are projected from this year.`
+  // The engine's other refusal, two start years, cannot reach this page: both
+  // sides run from one `compareStartYear` (review L9, D-2027-ROLLOVER), so it
+  // gets the plain fallback below rather than advice that would not help.
+  if (error instanceof PlanHeadlineRefusal && error.reason === 'birth-date-missing' && error.side !== null) {
+    const name = planName(error.side)
+    return `${lead}${name} runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on ${name}'s Household page, then compare again.`
   }
   return `${lead}one plan's projection gave a result this page can't use. Open each plan's Results page to check its projection, then compare again.`
 }
@@ -55,6 +59,11 @@ function comparisonRefusalSentence(error: unknown): string {
 interface ComparedPlan {
   plan: Plan
   view: ProjectionView
+}
+
+/** A plan's name in the pickers: an example says it is one. */
+function pickerLabel(summary: PlanSummary): string {
+  return isExamplePlanId(summary.id) ? `${summary.name} (example)` : summary.name
 }
 
 /**
@@ -187,8 +196,13 @@ export function ComparePlansPage() {
   const [listUnavailable, setListUnavailable] = useState(false)
 
   useEffect(() => {
-    void listPlansVia(store).then(
-      (items) => {
+    // Your plans, then the library examples opened on this device (they live
+    // in this browser whatever the host store is). An unreadable example list
+    // leaves the user plans comparable.
+    const examples = listExampleSummaries().catch((): PlanSummary[] => [])
+    void Promise.all([listPlansVia(store), examples]).then(
+      ([plans, opened]) => {
+        const items = [...plans, ...opened]
         setSummaries(items)
         setListUnavailable(false)
         setLeftId(items[0]?.id ?? '')
@@ -203,34 +217,37 @@ export function ComparePlansPage() {
 
   useEffect(() => {
     let cancelled = false
-    // One start year for both sides, read once: the engine compares two plans
-    // only from one start year, and two clock reads could straddle a New Year.
-    const startYear = currentStartYear()
-    async function loadCompared(id: string, setter: (plan: ComparedPlan | null) => void) {
-      if (!id) {
-        setter(null)
-        return
-      }
+    // The clock is read once, before either plan loads: two reads could
+    // straddle a New Year and start the two sides in different years.
+    const now = new Date()
+    async function loadCompared(id: string): Promise<Plan | null> {
+      if (!id) return null
       // A rejected read leaves the selection with nothing behind it; say so
       // rather than leaving the comparison silently one-sided.
       let r
       try {
         r = await loadPlanVia(store, id)
       } catch {
-        if (cancelled) return
-        setter(null)
-        setNotice('One of those plans could not be read. Storage is unavailable in this browser right now.')
-        return
+        if (!cancelled) setNotice('One of those plans could not be read. Storage is unavailable in this browser right now.')
+        return null
       }
-      if (cancelled) return
-      if (r.ok) setter({ plan: r.plan, view: projectPlan(r.plan, startYear) })
-      else {
-        setter(null)
-        setNotice(`Could not load one of those plans (${r.reason}).`)
-      }
+      if (r.ok) return r.plan
+      if (!cancelled) setNotice(`Could not load one of those plans (${r.reason}).`)
+      return null
     }
-    void loadCompared(leftId, setLeft)
-    void loadCompared(rightId, setRight)
+    void Promise.all([loadCompared(leftId), loadCompared(rightId)]).then(([leftPlan, rightPlan]) => {
+      if (cancelled) return
+      // One start year for both sides, decided once both are loaded: the
+      // engine compares two plans only from one start year. Two examples run
+      // from the year their copy is written for; anything with a user plan in
+      // it runs from the clock's year (`compareStartYear`).
+      const startYear =
+        leftPlan !== null && rightPlan !== null
+          ? compareStartYear(leftPlan, rightPlan, now)
+          : projectionStartYear(leftPlan ?? rightPlan ?? { origin: 'user' }, now)
+      setLeft(leftPlan === null ? null : { plan: leftPlan, view: projectPlan(leftPlan, startYear) })
+      setRight(rightPlan === null ? null : { plan: rightPlan, view: projectPlan(rightPlan, startYear) })
+    })
     return () => {
       cancelled = true
     }
@@ -311,7 +328,9 @@ export function ComparePlansPage() {
       <h1>Compare plans</h1>
       <p className="lede">
         Compare two saved plans side by side. Use this for A/B planning after duplicating a plan, or for year-over-year
-        tracking across independently saved plans.
+        tracking across independently saved plans. Examples you have opened on this device are listed too. Two
+        examples run from {EXAMPLE_FIXED_YEAR}, the year they are set in. An example compared with one of your plans
+        runs from your plan&apos;s first year instead, and the page says so under the table.
       </p>
       {notice ? <div className="callout callout--warn">{notice}</div> : null}
       {summaries === null ? (
@@ -335,13 +354,13 @@ export function ComparePlansPage() {
             <SelectField
               label="Plan A"
               value={leftId}
-              options={options.map((s) => ({ value: s.id, label: s.name }))}
+              options={options.map((s) => ({ value: s.id, label: pickerLabel(s) }))}
               onCommit={setLeftId}
             />
             <SelectField
               label="Plan B"
               value={rightId}
-              options={options.map((s) => ({ value: s.id, label: s.name }))}
+              options={options.map((s) => ({ value: s.id, label: pickerLabel(s) }))}
               onCommit={setRightId}
             />
           </div>
@@ -377,6 +396,16 @@ export function ComparePlansPage() {
                   which way each row reads (#499): lifetime tax is "lower is
                   better", everything else "higher or later is better". */}
               {headline !== null ? <p className="field-hint compare-basis">{compareBasisSentence(headline)}</p> : null}
+              {headline !== null
+                ? [left.plan, right.plan].map((plan) => {
+                    const note = compareExampleNote(plan, headline.startYear)
+                    return note === null ? null : (
+                      <p key={plan.id} className="field-hint compare-example-year">
+                        {note}
+                      </p>
+                    )
+                  })
+                : null}
               <p className="field-hint compare-delta-legend">
                 Plan B − Plan A: <span className="delta-pos">green</span> means Plan B does better on that row,{' '}
                 <span className="delta-neg">red</span> means worse. Lifetime tax reads lower as better; every other row

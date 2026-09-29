@@ -21,7 +21,7 @@ import {
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
-import { currentStartYear, taxCalculatorFor } from '../useProjection'
+import { projectionStartYear, taxCalculatorFor } from '../useProjection'
 import { CheckboxField, DateField, MoneyField, SelectField, TextField } from '../fields'
 import { formatPositiveUsdCents } from '../retirementActionManualEditor'
 import { TypeChip } from '../TypeChip'
@@ -380,7 +380,7 @@ function GiftDraftForm({
 export function RetirementActionQcdAuthoringSection() {
   const { plan } = usePlan()
   const [drafting, setDrafting] = useState(false)
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const gifts = namedQcdActions(plan)
   const outcomes = useMemo(
     () => projectNamedQcdGifts(plan, startYear, taxCalculatorFor(plan)),

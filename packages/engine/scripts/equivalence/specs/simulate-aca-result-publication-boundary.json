@@ -206,24 +206,24 @@
       "label": "active-year gate plus detached contract and accepted-MAGI snapshots",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1377,
-        1413
+        1388,
+        1424
       ],
       "anchors": [
         {
-          "line": 1377,
+          "line": 1388,
           "text": "let yearAcaResult: AnnualAcaResultPublicationResult['yearAcaResult']"
         },
         {
-          "line": 1378,
+          "line": 1389,
           "text": "if (acaActive) {"
         },
         {
-          "line": 1379,
+          "line": 1390,
           "text": "const acaContractSnapshot = acaContract"
         },
         {
-          "line": 1404,
+          "line": 1415,
           "text": "const acaMagiProbeSnapshot = evaluation.acaMagiProbe === null"
         }
       ]
@@ -233,28 +233,28 @@
       "label": "frozen accepted annual evidence, coordinator invocation, exact result and warning consumption",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1414,
-        1461
+        1425,
+        1472
       ],
       "anchors": [
         {
-          "line": 1414,
+          "line": 1425,
           "text": "const acaPublication = annualAcaResultPublication(Object.freeze({"
         },
         {
-          "line": 1416,
+          "line": 1427,
           "text": "evaluation: Object.freeze({"
         },
         {
-          "line": 1446,
+          "line": 1457,
           "text": "fplInflationScale: acaFplScale,"
         },
         {
-          "line": 1460,
+          "line": 1471,
           "text": "yearAcaResult = acaPublication.yearAcaResult"
         },
         {
-          "line": 1461,
+          "line": 1472,
           "text": "for (const warning of acaPublication.warnings) warnings.add(warning)"
         }
       ]

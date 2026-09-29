@@ -14,7 +14,7 @@ import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import { loadLongevity, loadLongevityPartner, questionnairePlanningAge } from '../longevity/storage'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
-import { currentStartYear } from './useProjection'
+import { projectionStartYear } from './useProjection'
 import {
   assumptionsExportJson,
   assumptionsExportText,
@@ -46,7 +46,7 @@ function savedQuestionnaireAges(): (SavedQuestionnaireAge | null)[] {
 
 export function AssumptionsCardPage() {
   const { plan } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   // Storage is read again whenever the plan changes: completing the
   // questionnaire writes both the saved result and the plan's planning age,
   // so a result saved or cleared while the card is open is picked up with the
@@ -80,7 +80,9 @@ export function AssumptionsCardPage() {
           />
         </div>
         <p className="field-hint mt-sm">
-          Applies to the {snapshot.packYear} tax year · parameter figures compiled {snapshot.dataAsOf} ·{' '}
+          Figures published for {snapshot.packYear} · compiled {snapshot.dataAsOf} · the plan starts in{' '}
+          {snapshot.startYear}
+          {snapshot.projectedParametersNote === null ? '' : `. ${snapshot.projectedParametersNote}`} ·{' '}
           <Link to="/disclaimer">full source list</Link> · <Link to="/how-tested">how RetireGolden is tested</Link>
         </p>
       </div>

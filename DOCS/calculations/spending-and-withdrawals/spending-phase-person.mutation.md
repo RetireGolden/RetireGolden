@@ -1,15 +1,15 @@
 # Mutation receipt: spending-phase-person
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/simulate.ts b/packages/engine/src/projection/simulate.ts
-index 96bb0bb3..e6d5033b 100644
+index dc594a3f..51b8a5d0 100644
 --- a/packages/engine/src/projection/simulate.ts
 +++ b/packages/engine/src/projection/simulate.ts
-@@ -1923,3 +1923,3 @@
+@@ -1944,3 +1944,3 @@
        // then its only person is the one.
 -      phasesPersonId: plan.expenses.phasesAgeOf ?? primary.id,
 +      phasesPersonId: primary.id,
@@ -26,15 +26,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because merging main (#762, #763) moved the production lines this receipt quotes; the mutation is unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of main (c2d61967: #764, #765) into this branch moved the lines these receipts quote or the tests they capture; the mutations are unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 C:/rgwt/engine21/packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (7 tests | 2 failed) 184ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (7 tests | 2 failed) 110ms
    ❯ spending-phase-person — Whose age the spending phases follow (2)
-     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 58ms
-     × gives the same spending with the people listed the other way round 34ms
+     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 37ms
+     × gives the same spending with the people listed the other way round 19ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 5 passed (7)

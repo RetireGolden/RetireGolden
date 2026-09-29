@@ -54,7 +54,7 @@ import {
   presetFamilyOf,
   type ModelKind,
 } from './marketModelPicker'
-import { currentStartYear } from './useProjection'
+import { projectionStartYear, startYearDollarsWord } from './useProjection'
 import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, registerMcHeadlineRun, useMcHeadline } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
@@ -162,7 +162,7 @@ export function MonteCarloPage() {
       const headlineRun = isHeadlineMcConfig({ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
       // The start year is read once and published with the run, so a
       // comparison with it runs from the same year (PR #754 findings 1 and 2).
-      const startYear = currentStartYear()
+      const startYear = projectionStartYear(plan)
       const simulation = runMonteCarlo(plan, {
         startYear,
         pathCount: paths,
@@ -207,7 +207,7 @@ export function MonteCarloPage() {
     setFrontierRunning(true)
     setFrontierError(null)
     void runStochasticFrontiers(plan, {
-      startYear: currentStartYear(),
+      startYear: projectionStartYear(plan),
       pathCount: 200,
       seed,
       model,
@@ -234,7 +234,7 @@ export function MonteCarloPage() {
     setHistoricalRunning(true)
     setHistoricalError(null)
     void runHistoricalStressSuiteViews(plan, {
-      startYear: currentStartYear(),
+      startYear: projectionStartYear(plan),
       equityWeightPct: stressEquityWeightPct,
       classShocks: planUsesAssetAllocation(plan),
       worstWindowCount: 5,
@@ -250,7 +250,7 @@ export function MonteCarloPage() {
   // plan object (a 10,000-path one, typically) is what the page shows, so the
   // gauge here and the KPI bar can never quote different runs (#497). A
   // subscription, so a publish from any surface re-renders this page.
-  const publishedHeadline = useMcHeadline(plan)
+  const publishedHeadline = useMcHeadline(plan, projectionStartYear(plan))
   const cachedHeadline = isHeadlineMcConfig({ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
     ? publishedHeadline
     : undefined
@@ -682,7 +682,7 @@ export function MonteCarloPage() {
                     {riskThresholds.lower !== null ? `cut below ${fmtMoney(riskThresholds.lower)}` : 'no cut threshold'}
                     {' · '}
                     {riskThresholds.upper !== null ? `raise above ${fmtMoney(riskThresholds.upper)}` : 'no raise threshold'}
-                    {' '}(today's dollars, solved on Spending)
+                    {' '}({startYearDollarsWord(plan)} dollars, solved on Spending)
                     {riskThresholds.acts ? '.' : '; the cut threshold is not below the raise threshold, so the rule holds spending every year.'}
                   </p>
                 ) : riskThresholds?.status === 'no-starting-portfolio' ? (

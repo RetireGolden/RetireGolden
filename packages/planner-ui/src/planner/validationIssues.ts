@@ -14,6 +14,7 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import { SECTION_TITLES } from './sectionTitles'
+import { startYearAsOfShort, startYearDollarsWord } from '../startYear'
 
 export interface ParsedIssue {
   /** Raw schema path, dot-joined, as the engine reported it (`(root)` for a top-level issue). */
@@ -49,7 +50,19 @@ export function parseIssue(issue: string, plan?: Plan): ParsedIssue {
   const rawPath = at < 0 ? '(root)' : issue.slice(0, at)
   const path = rawPath === '$' ? '(root)' : rawPath
   const message = at < 0 ? issue : issue.slice(at + 2)
-  return { path, message, section: sectionOfPath(path), label: labelOfPath(path, plan), advice: adviceOf(message, path) }
+  return { path, message, section: sectionOfPath(path), label: dollarsLabelFor(labelOfPath(path, plan), plan), advice: adviceOf(message, path) }
+}
+
+/**
+ * A field label names its dollars and its date the way the field does:
+ * "today's $" and "(today)" on a user plan, "2026 $" and "(start of 2026)" on
+ * a library example (`startYearDollarsWord`, `startYearAsOfShort`,
+ * D-2027-ROLLOVER), so an issue's label matches the field it points at.
+ */
+function dollarsLabelFor(label: string, plan: Plan | undefined): string {
+  return plan === undefined
+    ? label
+    : label.replace("today's $", `${startYearDollarsWord(plan)} $`).replace('(today)', `(${startYearAsOfShort(plan)})`)
 }
 
 /** With the plan, items that a person knows by name are named ("Social Security (Alex)") rather than numbered. */

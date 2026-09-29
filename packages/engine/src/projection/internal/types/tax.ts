@@ -137,6 +137,20 @@ export interface TaxYearInput {
    */
   inflationScale?: number
   /**
+   * Cumulative general-inflation factor from the state figures' latest loaded
+   * year (`LATEST_STATE_PACK_YEAR`) to this one, along the plan's own
+   * inflation path. It indexes a deduction a state's own statute indexes (the
+   * District's from 2027, Washington's from 2029) independent of any federal
+   * publication: `inflationScale` is the IRS income-tax figures' projection,
+   * which becomes 1 once the IRS's figures for the year are loaded (decision
+   * D-2027-ROLLOVER, review V1). Absent, `inflationScale` stands in, which
+   * agrees only while those figures are projected from 2026. The ledger sets
+   * it only when the two differ, so a year's published tax input
+   * (`acceptedTaxInput`, `advisoryFederalTax.input`) keeps its shape while
+   * they agree, as they do until the IRS's figures for a later year land.
+   */
+  stateIndexingScale?: number
+  /**
    * Characterized retirement distributions for state limbs. Missing means
    * characterization unavailable (legacy private/public aggregates apply);
    * an empty array asserts no characterized events. Structurally mirrors

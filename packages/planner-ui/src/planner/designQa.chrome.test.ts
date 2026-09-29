@@ -445,7 +445,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
       expect(order[order.length - 1]).toBe('none')
     }
     // Both Inflation-adjusted checkboxes carry a help affordance.
-    const inflation = income.match(/<CheckboxField\s+label="Inflation-adjusted"\s+help="/g)
+    const inflation = income.match(/<CheckboxField\s+label="Inflation-adjusted"\s+help=(?:"|\{`)/g)
     expect(inflation).toHaveLength(2)
   })
 

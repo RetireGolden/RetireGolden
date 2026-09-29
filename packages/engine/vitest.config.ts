@@ -1,8 +1,16 @@
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
+// The weekly rollover CI job's clock (decision D-2027-ROLLOVER): with
+// RG_ROLLOVER_CLOCK or RG_ROLLOVER_TZ set, every test reads that instant's
+// calendar and zone (scripts/rollover/shiftClock.setup.mts). Unset, nothing
+// is added and the run is the ordinary one.
+const rolloverSetup =
+  process.env['RG_ROLLOVER_CLOCK'] || process.env['RG_ROLLOVER_TZ'] ? ['../../scripts/rollover/shiftClock.setup.mts'] : []
+
 export default defineConfig({
   test: {
     environment: 'node',
+    setupFiles: rolloverSetup,
     // Run one test file at a time. Coverage-heavy projection and nested
     // simulation workloads should not compete with another file for CPU; local
     // and CI use the same limit.

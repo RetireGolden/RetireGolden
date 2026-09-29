@@ -115,8 +115,6 @@ export interface PlanCrossFieldContext {
   readonly accountById: ReadonlyMap<string, Account>
   /** Last-row person per id. */
   readonly personById: ReadonlyMap<string, Person>
-  /** The document’s own "as of" calendar year, or null when unreadable. */
-  readonly planAsOfYear: number | null
 }
 
 /** Builds the derived lookups the checks below share. */
@@ -185,24 +183,6 @@ export function planCrossFieldContext(plan: PlanDocument): PlanCrossFieldContext
   const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
   const personById = new Map(plan.household.people.map((p) => [p.id, p]))
 
-  /**
-   * The document's own "as of" calendar year, or null when the stamp is not a
-   * plain ISO date.
-   *
-   * A projection always starts in the current calendar year (planner-ui
-   * `currentStartYear`), and every save re-stamps `updatedAtIso` from the same
-   * clock immediately before this parse runs (`checkPlanForSave`), so at the
-   * moment a plan is authored or edited this year IS the projection start.
-   * Reading the year from the document rather than the wall clock is what
-   * keeps `parsePlan` a pure function of its input: a plan that saved cleanly
-   * always reopens cleanly (`loadPlan` parses the STORED stamp), so a
-   * year-relative refusal below can never lock the household out of the very
-   * plan it is telling them to edit.
-   */
-  const planAsOfYear = ((): number | null => {
-    const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
-    return stamped === null ? null : Number(stamped[1])
-  })()
   return {
     actionIndexesById,
     personIds,
@@ -213,7 +193,6 @@ export function planCrossFieldContext(plan: PlanDocument): PlanCrossFieldContext
     accountTypeById,
     accountById,
     personById,
-    planAsOfYear,
   }
 }
 
@@ -916,7 +895,7 @@ export function checkAccountCrossFieldRules(
   ctx: z.RefinementCtx,
   context: PlanCrossFieldContext = planCrossFieldContext(plan),
 ): void {
-  const { personIds, accountTypeById, accountById, personById, planAsOfYear } = context
+  const { personIds, accountTypeById, accountById, personById } = context
   plan.accounts.forEach((a, i) => {
     if (a.type === 'equityComp' && a.vestingMode === 'cliff' && a.vestDate === null) {
       ctx.addIssue({
@@ -1185,45 +1164,15 @@ export function checkAccountCrossFieldRules(
           path: ['accounts', i, 'lumpSumElection'],
           message: 'a lump-sum election requires a lump-sum offer (amount and election year)',
         })
-      } else if (planAsOfYear === null) {
-        // Fail closed, not open: the staleness rule reads the document's own
-        // stamp, and a stamp the rule cannot read would otherwise let any
-        // election year through — including the past-year shape this rule
-        // exists to refuse. Every save writes the stamp with toISOString, so
-        // a well-formed document never lands here; a hand-crafted or damaged
-        // one is repaired at load (the migration drops the election), and a
-        // re-save restores the stamp.
-        ctx.addIssue({
-          code: 'custom',
-          path: ['accounts', i, 'lumpSumElection'],
-          message:
-            'an elected pension lump sum requires a readable plan timestamp to check its election year (re-save the plan to restore it)',
-        })
-      } else if (a.lumpSumOffer.electionYear < planAsOfYear) {
-        // An election models a rollover the projection still has to perform:
-        // in the election year the offer arrives in the receiving account and
-        // the pension stops paying. An election year already past has no such
-        // year to land in, and the rest of the product already treats it as
-        // nothing to model (`decisions/pensionElection.ts` skips it,
-        // `insights/detectors/pensionElectionPending.ts` stays quiet,
-        // planner-ui's scenario levers refuse to build one). Only the ledger
-        // acted on it, and only destructively: it skips the pension for every
-        // `year >= electionYear` while crediting the offer in no year at all.
-        //
-        // Crediting it in the first projection year instead would double-count
-        // it. Account balances are what the household holds TODAY (the
-        // accounts editor says so: "Balances as of today"), and the engine
-        // already reads every other pre-start event that way — an annuity
-        // premium and a TIPS-ladder purchase dated before the start are both
-        // "assumed already funded" and never replayed. So the honest answer is
-        // to refuse the shape and let the household restate the fact.
-        ctx.addIssue({
-          code: 'custom',
-          path: ['accounts', i, 'lumpSumOffer', 'electionYear'],
-          message:
-            'an elected pension lump sum cannot have an election year in the past (if the rollover already happened, clear the election and add its dollars to the receiving account balance)',
-        })
       }
+      // An election year before the year the plan starts is NOT refused here
+      // (decision D-2027-ROLLOVER, 2026-09-28). Parse checks the document's
+      // shape only, so every stored plan opens. Whether a year is "in the past"
+      // depends on the year the projection starts, which the document does not
+      // carry and the save stamp does not decide (a stamp lags the clock until
+      // the next save, and it is written in UTC while the start year is local):
+      // `model/asOfIssues.ts#asOfIssues` judges it against a start year the
+      // host names, and the planner runs it on every edit and save.
       // Owned traditional only. An inherited account is `type: 'traditional'`
       // too, so a bare type test admitted a target the message itself excludes:
       // an inherited IRA may only ever hold the decedent's dollars, and the

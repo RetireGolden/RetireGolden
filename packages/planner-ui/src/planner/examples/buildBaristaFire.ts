@@ -1,5 +1,5 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'barista-fire'
 
@@ -21,9 +21,10 @@ export function buildBaristaFire(): Plan {
     ],
   }
   
-  // Born 1996. Current year is 2026. Age is 30.
-  // Turns 40 in 2036. Turns 65 in 2061.
-  const startYear = 2026
+  // Born 1996, so 30 in the example's year (EXAMPLE_FIXED_YEAR, 2026): 40 in
+  // 2036 and 65 in 2061. Relative to the example's year so a yearly re-date
+  // moves these with the date of birth.
+  const startYear = EXAMPLE_FIXED_YEAR
   const turn40Year = startYear + 10
   const turn65Year = startYear + 35
 

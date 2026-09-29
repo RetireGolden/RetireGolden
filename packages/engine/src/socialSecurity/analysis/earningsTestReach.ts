@@ -17,8 +17,8 @@
  * the function the ledger calls.
  */
 import type { Person, Plan } from '../../model/plan.js'
-import { packForYear } from '../../params/index.js'
-import { flatInflationPath, indexingScaleFor } from '../../params/indexingScale.js'
+import { componentScale, packForYear } from '../../params/index.js'
+import { flatInflationPath } from '../../params/indexingScale.js'
 import { annualSocialSecurityPayableMonths } from '../../projection/internal/annualSocialSecurity.js'
 import { wageIncomeStreams } from '../../projection/internal/wageIncomeStreams.js'
 import { socialSecurityDobParts } from '../annualTiming.js'
@@ -87,8 +87,10 @@ export function earningsTestReach(
         const months = annualSocialSecurityPayableMonths(ageAttained, claimAge)
         const wages = wagesIn(year, person.id)
         if (months <= 0 || wages <= 0) continue
-        const { pack, isStandIn } = packForYear(year)
-        const limitGrowth = isStandIn ? indexingScaleFor(pack.year, year, limitPath) : 1
+        const yearParameters = packForYear(year)
+        const pack = yearParameters.pack
+        // SSA's own publication of the earnings-test amounts decides it.
+        const limitGrowth = componentScale(yearParameters, 'ssaProgram', year, limitPath)
         const withheld = earningsTestWithheldAnnual({
           ageAttained,
           fraYears,

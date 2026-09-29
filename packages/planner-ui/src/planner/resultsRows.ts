@@ -31,6 +31,7 @@ import { inheritedEvidenceNote } from '../report/reportModel'
 import { ACCOUNT_CATEGORIES } from './accountCategories'
 import { inheritedCsvColumnHeaders } from './inheritedCsv'
 import { needsProfessionalConfirmation } from './professionalConfirmation'
+import { parameterFiguresCsvValue } from './projectedParameters'
 
 /** Converts a nominal-dollar amount in `year` to the dollar basis the page currently shows (today's or nominal). */
 export type DollarAdjuster = (year: number, value: number) => number
@@ -157,7 +158,9 @@ export function buildLedgerCsv(plan: Plan, view: ProjectionView): string {
   // Per-account inherited columns, flattened in plan account order (same
   // convention as the rest of this ledger export).
   const inheritedCols = inheritedCsvColumnHeaders(inheritedIds)
-  const cols = [...LEDGER_CSV_COLUMNS, ...inheritedCols]
+  // The last column says whether the year's tax, limit and benefit figures are
+  // published or projected, and from which year (D-2027-ROLLOVER).
+  const cols = [...LEDGER_CSV_COLUMNS, ...inheritedCols, 'Parameter figures']
   const lines = [cols.join(',')]
   for (const y of view.result.years) {
     const inheritedValues = inheritedLedgerCsvValues(y, inheritedIds)
@@ -169,6 +172,7 @@ export function buildLedgerCsv(plan: Plan, view: ProjectionView): string {
         y.magi, y.withdrawals.total, y.realizedGains, capitalLossCarryforwardUsed(y), y.capitalLossCarryforwardRemaining, y.shortfall, y.investableTotal,
         y.requiredShortfall, y.targetShortfall, y.idealShortfall, y.excessShortfall, y.guardrailAction, y.expenses.guardrailFactor.toFixed(2), y.flexibleGoals.funded, y.flexibleGoals.partiallyFunded, y.flexibleGoals.deferred, y.flexibleGoals.skipped, y.flexibleGoals.fundedAmount, y.flexibleGoals.unfundedAmount, y.insuranceCashValue, y.ladderValue, y.deathBenefit, y.netWorth,
         ...inheritedValues,
+        parameterFiguresCsvValue(y.year),
       ]
         .map((v) => (typeof v === 'number' ? Math.round(v) : v))
         .join(','),

@@ -46,6 +46,7 @@ export const SCHEMA_FIELD_BOUNDS: Record<string, SchemaBounds> = {
   'accounts.N.inherited.ownerDeathYear': { min: 1900, max: 2200 },
   'accounts.N.interestPct': { exclusiveMin: -100, exclusiveMax: 1000 },
   'accounts.N.interestYieldPct': { min: 0 },
+  'accounts.N.lumpSumOffer.electionYear': { min: 1900, max: 2200 },
   'accounts.N.monthlyAmount': { min: 0 },
   'accounts.N.monthlyPayment': { min: 0 },
   'accounts.N.payoffYear': { min: 1900, max: 2200 },

@@ -50,6 +50,8 @@ function call(
   return propertyEventsAndGrowth({
     accounts,
     year: YEAR,
+    // A projection that started well before YEAR: planned sale years read as entered.
+    startYear: YEAR - 10,
     propertyValues: new Map(accounts.filter((a) => a.type === 'property').map((a) => [a.id, 100_000])),
     inflRateAt: () => 0.1,
     hecmStates: new Map<string, PropertyEventHecmLine>(),

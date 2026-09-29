@@ -20,7 +20,7 @@ import {
   STATE_TAX_WORKSHEET_STATES,
   type StateTaxWorksheetState,
 } from '../stateTaxFactsActions'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear } from '../useProjection'
 
 const STATE_FILING_OPTIONS: ReadonlyArray<{ value: NonNullable<StateTaxYearHouseholdFacts['stateFilingStatus']>; label: string }> = [
   { value: 'single', label: 'Single' },
@@ -457,7 +457,7 @@ function YearRowEditor({
 
 export function StateTaxFactsEditor() {
   const { plan, update } = usePlan()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const [stateFilter, setStateFilter] = useState<StateTaxWorksheetState | ''>('')
   const [draftYear, setDraftYear] = useState(startYear)
   const years = useMemo(

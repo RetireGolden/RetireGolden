@@ -20,7 +20,7 @@ import { singlePersonPlan, validatePlan } from '@retiregolden/engine/testing/pla
 
 import { fmtMoney } from './format'
 import { YearByYearLedger } from './ResultsPage'
-import { useProjection } from './useProjection'
+import { projectionStartYear, useProjection } from './useProjection'
 
 const personId = (id: string): PersonId => id as PersonId
 const accountId = (id: string): AccountId => id as AccountId
@@ -393,8 +393,8 @@ describe('useProjection capture opt-in', () => {
   it('forwards captureAnnualCashFlow and leaves the default path without cashFlow', async () => {
     const plan = testPlan()
     function Harness() {
-      const off = useProjection(plan)
-      const on = useProjection(plan, { captureAnnualCashFlow: true })
+      const off = useProjection(plan, projectionStartYear(plan))
+      const on = useProjection(plan, projectionStartYear(plan), { captureAnnualCashFlow: true })
       return (
         <div
           data-off={String(off.result.years.some((year) => year.cashFlow !== undefined))}

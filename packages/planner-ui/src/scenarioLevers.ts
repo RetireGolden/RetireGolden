@@ -2020,33 +2020,13 @@ function buildHomeSaleLever({
   if (request.saleYear < context.startYear) {
     return unavailable(definition, ['Property sale year must be on or after the projection start year.'])
   }
-  const allProperties = edited.accounts.filter((account) => account.type === 'property')
-  if (allProperties.length === 0) {
-    return unavailable(definition, ['Add a property before modeling a home sale.'])
-  }
-  const expiredProperty =
-    request.propertyId === undefined
-      ? undefined
-      : allProperties.find(
-          (property) =>
-            property.id === request.propertyId &&
-            property.plannedSaleYear !== null &&
-            property.plannedSaleYear < context.startYear,
-        )
-  if (expiredProperty) {
-    return unavailable(definition, [
-      `${expiredProperty.name} was sold before the active projection and cannot be sold again.`,
-    ])
-  }
-  const properties = allProperties.filter(
-    (property) =>
-      property.plannedSaleYear === null ||
-      property.plannedSaleYear >= context.startYear,
-  )
+  // Every property on the plan is owned when the projection starts: one whose
+  // sale year has passed is still on the plan, so the ledger sells it in the
+  // first year (engine projection/propertySaleYear.ts, decision
+  // D-2027-ROLLOVER review H1), and a home-sale lever may re-date that sale.
+  const properties = edited.accounts.filter((account) => account.type === 'property')
   if (properties.length === 0) {
-    return unavailable(definition, [
-      'No property remains owned during the active projection.',
-    ])
+    return unavailable(definition, ['Add a property before modeling a home sale.'])
   }
   if (request.propertyId === undefined && properties.length > 1) {
     return unavailable(definition, ['Choose a property before modeling a sale when the plan has multiple properties.'])

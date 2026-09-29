@@ -8,12 +8,18 @@
  */
 import type { Account } from '../../model/plan.js'
 import type { RecordedAccountAmount } from '../annualCashFlowYearSites.js'
+import { effectivePropertySaleYear } from '../propertySaleYear.js'
 
 type PropertyAccount = Extract<Account, { type: 'property' }>
 
 export interface AnnualPropertyCarryingCostsInput {
   readonly accounts: readonly Readonly<Account>[]
   readonly year: number
+  /**
+   * The projection's first year: a sale dated before it runs in it
+   * (`projection/propertySaleYear.ts`), so the costs stop from that year too.
+   */
+  readonly startYear: number
   readonly anyAlive: boolean
   /** The caller's already-resolved general-inflation factor for this year. */
   readonly inflFactor: number
@@ -28,9 +34,10 @@ export interface AnnualPropertyCarryingCostRow {
 /**
  * Carrying cost of each owned property for the year: `(propertyTaxAnnual +
  * insuranceAnnual) × the inflation factor`, charged every year the household
- * has someone alive and the property has not reached its planned sale year;
- * it continues after any mortgage is paid off, since the debt account carries
- * only principal and interest.
+ * has someone alive and the property has not reached the year the ledger
+ * sells it (its planned sale year, or the start year when that is earlier:
+ * `effectivePropertySaleYear`); it continues after any mortgage is paid off,
+ * since the debt account carries only principal and interest.
  */
 export function annualPropertyCarryingCosts(
   input: AnnualPropertyCarryingCostsInput,
@@ -40,7 +47,8 @@ export function annualPropertyCarryingCosts(
   const rows: AnnualPropertyCarryingCostRow[] = []
   for (const account of input.accounts) {
     if (account.type !== 'property') continue
-    if (account.plannedSaleYear !== null && input.year >= account.plannedSaleYear) continue
+    const saleYear = effectivePropertySaleYear(account, input.startYear)
+    if (saleYear !== null && input.year >= saleYear) continue
 
     const amount =
       ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) *

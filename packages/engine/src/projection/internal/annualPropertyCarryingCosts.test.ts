@@ -43,6 +43,9 @@ const call = (
 ) => annualPropertyCarryingCosts({
   accounts,
   year: YEAR,
+  // A projection that started well before YEAR, so every planned sale year
+  // is read as entered (a sale dated before the start: the pre-start tests).
+  startYear: YEAR - 10,
   anyAlive: true,
   inflFactor: 1,
   ...overrides,

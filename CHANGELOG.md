@@ -4,6 +4,130 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: what 1 January 2027 would have changed without a word, now held or said (decision
+  D-2027-ROLLOVER; derivation and independent check in the validation program's staging,
+  `rollover-2027/{derivation,check}.md`).** Measured by `rollover-2027/impl` on this branch against
+  main (5224c5d0), today's clock against a clock faked to 2027-01-15:
+  - **Library examples run from 2026, the year their copy is written for.** On main all 29 KPI
+    bars, 10 money-lasts years, 16 Market success percentages and all 10 scenarios move on
+    1 January, and every example gains "Plan last saved in 2026". Here none of the 29 examples or
+    their 10 scenarios moves: the whole result, warnings, Insights and Market success are
+    byte-identical (`examples.nextYearClock.test.ts` holds it). The banner says the example is set
+    in 2026 and, from 2027, what Save to my plans changes; its money labels read "2026 dollars".
+    Compare Plans lists the examples opened on this device: two examples run from 2026, and an
+    example beside a user plan runs from the clock's year, which the page says. Example text dates
+    its figures ("two years from retirement in 2026"), and the walkthrough evidence JSON (version 3)
+    carries its start year. Three builders' literal years are relative to `EXAMPLE_FIXED_YEAR`.
+  - **A pension lump sum elected for a year that has passed.** On main a plan saved in 2026 with a
+    2026 election opened in 2027 and refused its next autosave with "Could not store locally",
+    losing every later edit on reload; at 22:00 on New Year's Eve in New York the UTC save stamp
+    refused an election the projection still modeled, and at 05:00 on New Year's morning in Tokyo
+    the save accepted one the projection had stopped modeling. Now the check runs against the
+    year the plan starts (`model/asOfIssues.ts`) on load, edit and save; the plan opens as stored,
+    the chip reads "Fix 1 issue to store" and names both restatements, and a refused save is
+    never reported as a storage failure. Nothing is repaired: dropping the election on load would
+    pay a pension the household gave up if the lump sum was taken.
+  - **Plan events dated before the start year are named, and a sale or payoff dated earlier runs
+    in the first year.** One-time goals and incomes, recurring incomes that ended, annuity
+    purchases of every kind, TIPS-ladder purchases (with the cost the ledger prices), HECM lines
+    dated to open earlier, a Roth window that ended, manual Roth conversion rows, and named Roth
+    conversions, QCDs and withdrawals (each by amount, person, account and execution date, and
+    two that would still read the same are numbered, "the first of two identical entries", so two
+    are two warnings; the second verification's V3) each get a warning saying what the projection
+    assumed. A purchase dated earlier is
+    still treated as already paid; when the funding balance was typed before the purchase that
+    counts the premium twice (the derivation's U1 annuity: -$147,622.51 from a 2026 start,
+    +$454,836.90 from a 2027 start, now pinned in `preStartEvents.figures.test.ts`), so the warning
+    names the amount to lower it by, and the limit is registered in `income-annuity-annual` and
+    `income-tips-ladder-and-ladder-value-annual`. A property still on the plan with a past sale
+    year is sold in the first year, and its carrying costs stop from that same year
+    (`projection/propertySaleYear.ts`, the independent review's H1): main held the house to the
+    end with its tax and insurance dropped, +$1,017,839 on the review's case. A debt payoff dated
+    earlier is paid in the first year, as before, and is named with the amount. Every dated editor
+    field with a pre-start meaning now has a note.
+  - **An example's other "today" labels, and a plan left open across New Year.** On an example,
+    Accounts reads "Balances as of the start of 2026", and the whole-life cash value and the
+    funded-ratio values name 2026; two example bodies name their contribution amounts instead of
+    claiming the maximum. The headline Monte Carlo caches and the Social Security analysis are
+    keyed on the start year, so a plan open at midnight on 31 December runs again from the new
+    year. Undated lines are dated (the Trustees' depletion year, Learn's ACA years, the report's
+    parameter appendix, a walkthrough row), and Compare's unreachable start-year message is gone.
+  - **"Plan last saved in 2026" east of UTC.** The save stamp is read on the start year's calendar
+    (`DetectorContext.planSavedOn`), so a Tokyo save at 04:59:50 on 1 January is not a 2026 save.
+  - **Clock- and zone-fragile tests.** The QCD-authoring file pins its clock (one test failed and
+    one asserted nothing on a 2027 clock); two New Year tests build local instants, so they pass
+    in Bangkok, Tokyo and Auckland.
+- **Changed: the published figures are split by publisher, and projected years are marked.**
+  `params/components.ts` gives every figure one publisher (IRS income tax, IRS retirement-plan
+  limits with the QCD limit and QLAC cap, IRS HSA limits, SSA, CMS, HUD, the premium tax credit's
+  coverage years, statute, tables and defaults), each with its own published years;
+  `packForYear` composes a year from each publisher's latest year and every reader scales a
+  figure from its own publisher's year. The named-QCD gate waits only on the QCD limit. A
+  state deduction that follows the federal one (Colorado's) conforms to the year's federal
+  figure, loaded or projected, and the District's and Washington's statutory indexing runs at
+  the plan's inflation from the state figures' year, so landing the IRS's income-tax figures
+  alone moves neither (`tax/stateDeductionLanding.test.ts`; the second verification's V1). Every
+  publisher's latest year is 2026, so no figure moves: the equivalence corpus (150 members, four
+  modes) against 5224c5d0 differs only in two members' new pre-start warnings (a QCD dated 2025
+  and a HECM line dated 2022, each in a 2026 run). The HSA component reads `hsaLimitYears.ts`
+  (from the state-tax change, #762), so 2027's HSA limits show as loaded and are projected only
+  from 2028. Results marks each projected year and says which figures are projected and from
+  when, that each is projected until RetireGolden loads the agency's own figures, that Medicare
+  premiums grow at the plan's healthcare inflation (its inflation plus its healthcare premium)
+  while the rest grow at its inflation, and that a later year's state income tax is each state's
+  enacted schedules where loaded and otherwise its 2026 figures held without growth, except a
+  standard deduction that follows the federal one (it moves with it) and the District of
+  Columbia's from 2027 and Washington's from 2029 (their statutes index them at the plan's
+  inflation; the second verification's V2); the ledger CSV gains a
+  "Parameter figures" column; the report, the Assumptions page and card, the assumptions export,
+  the Optimizer and the Disclaimer and its source panel say it too (the panel's column is
+  "Loaded for", and its introduction points to that column instead of calling every row "the
+  ones loaded for 2026": the second verification's V4). The published v7 plan schema (current since #765) no longer states the
+  election rule `parsePlan` dropped; v1 to v6 are historical and unchanged. Copy that described later years wrongly is reworded (the Assumptions hint, the source panel, the Part B help, the Disclaimer),
+  Learn's current-figure headings are dated 2026, and HowTested's parity line says when it last
+  ran.
+- **Changed (tests): a clock for the rollover run, and tests that tell the start years apart.**
+  `scripts/rollover/shiftClock.setup.mts` shifts every `Date` (a `Proxy`, so `new Date()`,
+  `Date()` and `Date.now()` all read it) to `RG_ROLLOVER_CLOCK` and applies `RG_ROLLOVER_TZ`; the
+  engine, planner-ui and app vitest configs load it only when either is set, and
+  `.github/workflows/rollover.yml` runs the three suites weekly at next 15 January, New Year's
+  Eve in New York and New Year's morning in Tokyo. `examples.nextYearPages.test.tsx` renders an
+  example's KPI bar, Insights, Results, Report, Scenarios and Monte Carlo pages at a 2027 clock;
+  `params/index.ts#withParameterComponents` lands one publisher's year end to end, so each reader
+  is held to its own publisher; and every surface that prints the projected-year mark is checked.
+  The independent review's mutants B01-B07, G09-G12, G14, H04, H06, H07, I01, I04, I06-I09, A07
+  and E13 are killed. The equivalence corpus builds again under plan schema v7: #765 left two
+  blocks members refused (j1's spending phases named no person, v3's three annuities no
+  annuitant), so `equivalence.mjs corpus` exited 2; each now names p1, the person the v7
+  migration names, and the three proofs that pin `corpus/blocks.mjs` move only their corpus
+  identity. `scripts/equivalence/corpusParses.test.mjs` parses every corpus member in the
+  unfiltered engine suite, so a schema change that refuses one now fails CI.
+- **Follow-ups outside this repository:**
+  - RetireGolden-MCP: the default start year follows the clock (as Pro's `guiStartYear()`), with
+    the protocol baseline regenerated; `update_plan` and `build_plan` run `asOfIssues` against
+    `session.startYear`, and `update_plan` stops re-stamping from the real clock; `build_plan`'s
+    frozen `2026-01-01` build stamp comes from an injected clock; run_monte_carlo,
+    batch_evaluate, run_optimizer and solve_max_spending forward the baseline projection's
+    warnings (they drop the pension warning today). Every projecting tool echoes the `startYear`
+    it ran from (run_monte_carlo, batch_evaluate, solve_max_spending, compare_scenarios,
+    explain_modeled_result and update_plan do not today); the `startYear` schema field gets a
+    description; and `plan-json.md` and SKILL.md tell agents to pass it. Its engine and
+    planner-ui pins move after the next engine release.
+  - RetireGolden-Pro: review and CRM due dates on the local date, not UTC; 2026 checklist items
+    lose Approve once their tax year has ended; the CRM export skips findings whose validity is
+    not current; a review finalized after 1 January judges validity against its scan's start
+    year; the cockpit goes stale when its start year differs from the clock's (a cockpit left
+    open across midnight on 31 December keeps a 2026 start); its records store `startYear` and
+    the projected components beside the "law 2026/2026" labels; and the pin bump that brings
+    pinned examples and the as-of save check.
+  - The methodology site: the walkthrough pages say each example runs "from a fixed 2026
+    start", read from the evidence files' `startYear` (format version 3, which the site's refresh
+    refuses until the site change that reads it lands); `about.astro`'s "models current law"
+    says that later years use projected figures until RetireGolden loads each agency's; and the
+    58 re-verification dates `tax-rules.astro` prints fall due on 1 January 2027.
+  - RetireGolden-MCP and RetireGolden-Pro pin an engine that prices no 2027 premium tax credit
+    (the check's spec 0): each pin bump's pull request should say that 2027 ACA credits were
+    unpriced in that host until then.
 - **Changed: what the people-order, FI and scenario fixes move on screen, measured
   against main at 068a5968 (its figures are #762's, 4fa0c842) on all 29 examples at a
   2026 start (1,000 Monte Carlo paths, the default seed): the FI number and Coast-FIRE
@@ -2375,6 +2499,19 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Rollover (decision D-2027-ROLLOVER), planner-ui:** `projectPlan`, `useProjection`,
+  `headlineMcRunOptions`, `piaAsOfPlan`, `claimingPeople` and `warningFor` require the start
+  year; there is no clock default. Pass `projectionStartYear(plan)` (exported from
+  `projection.ts`). `headlineMcRunOptions` also requires its path count, which had defaulted to
+  `DEFAULT_PATH_COUNT`. `useMcHeadline` takes the start year and reads a run published from
+  another year as none. `SurvivalPercentileModal` takes `startYear`.
+- **Rollover (decision D-2027-ROLLOVER), engine:** `parsePlan` no longer refuses an elected
+  pension lump sum whose election year is before the save stamp's year, nor one on a document
+  whose stamp cannot be read, and `migratePlanToCurrent` no longer drops either election (the
+  `lumpSumElectionDroppedElectionYearPassed` and `lumpSumElectionDroppedUnreadableSaveDate` repair
+  kinds stay in the union and are no longer produced). A host that saves must run
+  `asOfIssues(plan, startYear)`, as planner-ui's `checkPlanForSave(plan, now, { asOfYear })` does.
+  `PackLookup` gains `components`; `packForYear` returns a cached, frozen lookup.
 - **Life table (decision D-LIFE-TABLE-2023):** the subpath
   `@retiregolden/engine/longevity/ssaPeriod2022` is renamed
   `@retiregolden/engine/longevity/ssaPeriodLifeTable`, and its `MALE` and `FEMALE` life

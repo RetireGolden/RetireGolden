@@ -311,7 +311,7 @@ RMDs first and pre-59½ penalty avoidance where possible. See [roth-and-withdraw
 
 ## 10. Projection engine (deterministic)
 
-Annual ledger from the current year to end of plan ([projection/simulate.ts](../../packages/engine/src/projection/simulate.ts)).
+Annual ledger from the plan's start year to end of plan ([projection/simulate.ts](../../packages/engine/src/projection/simulate.ts)): the clock's year for a user plan, 2026 (`EXAMPLE_FIXED_YEAR`) for a library example (planner-ui `projectionStartYear`).
 Each year: income → contributions → spending need → RMDs → withdrawals/conversions → taxes (fixed-point
 iteration over the circular tax-on-withdrawal dependency) → growth → end-of-year balances. Computed in
 nominal dollars, displayed in today's or nominal dollars (toggle). Survivor transition handles filing
@@ -450,7 +450,17 @@ golden test pinning headline KPIs.
   builder.
 - **Demo storage:** lazy — nothing is written until first **Open**. Each example uses a reserved id
   `example:<id>` with `origin: 'example'`. Edits autosave to that demo record but demos are filtered out of
-  **Your plans**, backup export, and Compare (`listUserPlanSummaries()`).
+  **Your plans** and backup export (`listUserPlanSummaries()`). Compare Plans lists the examples opened on
+  this device beside the user's plans.
+- **A fixed year (decision D-2027-ROLLOVER):** every example is a 2026 snapshot and runs from
+  `EXAMPLE_FIXED_YEAR` (2026) on every page whatever the clock says (`projectionStartYear` in
+  `packages/planner-ui/src/startYear.ts`), so its figures, warnings, Insights and Market success are the same
+  on 1 January 2027 as today (`examples.nextYearClock.test.ts` holds all 29 byte-identical). The banner says
+  the example is set in 2026, its money labels read "2026 dollars", and from 2027 it says what Save to my
+  plans changes: the copy is the household's own plan and runs from the clock's year. Two examples compared
+  run from 2026; an example beside a user plan runs from the clock's year, and Compare says so. Re-dating the
+  library to a later year is a scheduled editorial job after that year's figures are loaded: every builder
+  writes its calendar years relative to `EXAMPLE_FIXED_YEAR`.
 - **Save to My Plans:** atomic convert — delete the demo record and put a fresh-id user plan in one
   transaction; `PlanContext.discardPendingSave()` prevents the unmount flush from resurrecting the demo.
   **Duplicate** on a demo also yields a user plan (`origin: 'user'`).

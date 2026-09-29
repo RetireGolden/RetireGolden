@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Account } from '../../model/plan.js'
-import { packForYear } from '../../params/index.js'
+import { packForYear, withParameterComponents } from '../../params/index.js'
+import { landedComponents } from '../../testing/parameterLanding.js'
 import { hecmLineOpeningsWithHudValidation, priceHecmHudMipAssessmentYear } from './hecmHudValidatedOpeningAdapter.js'
 
 type Line = NonNullable<Extract<Account, { type: 'property' }>['hecm']>
@@ -104,5 +105,38 @@ describe('HUD closing advance cash ownership', () => {
     const result = opening(property())
     expect(result.rows).toHaveLength(0)
     expect(result.warnings.some((warning) => warning.includes('closing advance'))).toBe(true)
+  })
+})
+
+describe('HUD case-year limits wait on HUD alone (decision D-2027-ROLLOVER, review L10 G12)', () => {
+  // A 2027 case: HUD has not published a 2027 maximum claim amount in the
+  // table, so the validated opening is refused. Landing HUD's 2027 record
+  // (the 2026 figures copied, illustrative) lets it open; landing another
+  // publisher's does not.
+  function caseYear2027(): Extract<Account, { type: 'property' }> {
+    return {
+      id: 'home', name: 'Home', type: 'property', ownerPersonId: 'owner', annualReturnPct: null,
+      value: 2000000, plannedSaleYear: null, expectedNetProceeds: null,
+      hecm: {
+        openYear: 2027, growthRatePct: 0, drawPolicy: 'lastResort',
+        calculationMode: 'hudValidated', hudTransactionKind: 'ordinaryOrigination',
+        caseAssignmentDate: '2027-01-01', closingDate: '2027-01-01',
+        appraisedValue: 2000000, verifiedPrincipalLimitFactorPct: 50,
+        principalLimitFactorProvenance: { ...provenance, kind: 'quoted' }, otherClosingCosts: 5000,
+        closingDayBorrowerAdvance: 100000, closingDayBorrowerAdvanceTreatment: 'alreadyIncludedInStartingCash',
+      },
+    }
+  }
+  const open2027 = () =>
+    hecmLineOpeningsWithHudValidation({
+      accounts: [caseYear2027()], year: 2027, startYear: 2027,
+      propertyValues: new Map([['home', 2000000]]), openHecmLines: new Map(),
+      people: [], dobYear: (person) => Number(person.dob.slice(0, 4)), pack: packForYear(2027).pack,
+    })
+
+  it('refuses a 2027 case until HUD publishes 2027, and opens it once HUD alone has', () => {
+    expect(open2027().rows).toHaveLength(0)
+    expect(withParameterComponents(landedComponents(['irsIncomeTax'], 2027), open2027).rows).toHaveLength(0)
+    expect(withParameterComponents(landedComponents(['hudHecm'], 2027), open2027).rows).toHaveLength(1)
   })
 })

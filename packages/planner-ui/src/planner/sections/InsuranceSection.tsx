@@ -12,6 +12,7 @@ import {
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { moneyLastsValue } from '../format'
 import { usePlan } from '../planContextCore'
+import { startYearAsOfShort } from '../../startYear'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { useFieldIssue } from '../useFieldIssue'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
@@ -20,7 +21,7 @@ import { ScrollRegion } from '../ScrollRegion'
 import { LEARN } from '../learnLinks'
 import { fmtMoneyCompact } from '../format'
 import { TypeChip } from '../TypeChip'
-import { currentStartYear, taxCalculatorFor } from '../useProjection'
+import { projectionStartYear, taxCalculatorFor, startYearDollarsWord } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import {
   appendScheduleRow,
@@ -145,7 +146,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             onCommit={(v) => set('deathBenefit', v ?? 0)}
           />
           <MoneyField
-            label="Cash value (today)"
+            label={`Cash value (${startYearAsOfShort(plan)})`}
             help="Current policy cash value while the insured is alive. Use the policy statement value, not the death benefit."
             learn={LEARN.permanentLife}
             path={`insurance.${index}.cashValue`}
@@ -330,8 +331,8 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
         onCommit={(v) => set('durationYears', Math.round(v ?? 3))}
       />
       <MoneyField
-        label="Annual cost (today's $)"
-        help="The annual care cost in today's dollars before any LTC policy benefit. This is added on top of baseline spending during the event."
+        label={`Annual cost (${startYearDollarsWord(plan)} $)`}
+        help={`The annual care cost in ${startYearDollarsWord(plan)} dollars before any LTC policy benefit. This is added on top of baseline spending during the event.`}
         learn={LEARN.ltcCosts}
         hint="Additive to baseline spending; an LTC policy on this person offsets it."
         path={`careEvents.${index}.annualCost`}
@@ -353,7 +354,7 @@ function LtcStressPanel() {
   // "Money lasts" cells need for a plan that is short from its first year.
   const stress = useMemo(() => {
     if (onHold) return null
-    const startYear = currentStartYear()
+    const startYear = projectionStartYear(plan)
     return { startYear, cmp: compareLtcStress(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }) }
   }, [plan, onHold])
   const cmp = stress?.cmp ?? null

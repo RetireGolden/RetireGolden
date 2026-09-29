@@ -84,9 +84,9 @@ export function HowTestedPage() {
       <p>
         The Roth-conversion optimizer additionally runs through a <strong>parity check</strong>: a shared matrix of
         test plans is solved both by RetireGolden and by an independent open-source conversion optimizer (pinned
-        version), and both tools' schedules are priced on RetireGolden's own year-by-year projection. As of July 2026
-        the check passes on every test plan, with RetireGolden's schedules ahead on projected after-tax estate. It
-        re-runs on a maintenance cadence.
+        version), and both tools' schedules are priced on RetireGolden's own year-by-year projection. When it last
+        ran, in July 2026, the check passed on every test plan, with RetireGolden's schedules ahead on projected
+        after-tax estate. It runs on demand, not on every change.
       </p>
 
       <h2>Recommendations are arbitrated, not trusted</h2>

@@ -1,7 +1,7 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
-import type { LadderRung } from '../../ladder/ladderMath.js'
+import { quotePlanLadder, type LadderRung } from '../../ladder/ladderMath.js'
 import {
   cashAccount,
   productionTaxCalculator,
@@ -10,6 +10,8 @@ import {
 } from '../../testing/planFixtures.js'
 import { simulatePlan } from '../simulate.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState, type TipsLadderYearRow } from './tipsLadderAnnualCashFlow.js'
+import { parsePlan, type Plan } from '../../model/plan.js'
+import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 
 const ANCHOR_YEAR = 2026
 
@@ -166,3 +168,49 @@ describeCalculation(
     })
   },
 )
+
+describe('income-tips-ladder-and-ladder-value-annual: a purchase dated before the start year (D-2027-ROLLOVER)', () => {
+  // The check's T1 ladder: $30,000 a year (real) for 2028 to 2031, bought in
+  // 2026 from the brokerage. Zero returns and inflation, no spending.
+  function ladderPlan(withLadder: boolean): Plan {
+    const plan = singlePersonPlan({ dob: '1965-06-15', planningAge: 90 })
+    plan.expenses.baseAnnual = 0
+    plan.accounts = [
+      { type: 'taxable', id: 'brokerage', name: 'Joint brokerage', ownerPersonId: null, annualReturnPct: 0, balance: 700_000, costBasis: 700_000, annualContribution: 0 },
+    ]
+    if (withLadder) {
+      plan.incomeFloor = {
+        ladders: [{ id: 't1', name: 'Bridge', purpose: 'bridge', startYear: 2028, endYear: 2031, annualRealAmount: 30_000, purchase: { year: 2026, fundingAccountId: 'brokerage' } }],
+      }
+    }
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.plan
+  }
+  // The warning prints the cost as the ledger prices a purchase in its own
+  // year (review L2, 2026-09-29): quotePlanLadder's real cost, $114,426.17.
+  const warning =
+    'The Bridge TIPS ladder purchase is dated 2026, before this plan starts in 2027, so it is treated as already paid: its $114,426 cost is not taken from Joint brokerage. If that balance still includes the cost, lower it by $114,426.'
+  const run = (plan: Plan, startYear: number) =>
+    simulatePlan(plan, { startYear, horizonEndYear: startYear, taxCalculator: createFederalTaxCalculator() })
+
+  it('from a 2026 start the cost leaves the brokerage, the amount the warning names, with no warning', () => {
+    // At zero returns the brokerage row falls by exactly the priced cost, the
+    // $114,426 the later-start warning names: the same pricing, both ways.
+    const cost = run(ladderPlan(false), 2026).years[0]!.balances['brokerage']! - run(ladderPlan(true), 2026).years[0]!.balances['brokerage']!
+    expect(cost).toBeCloseTo(114_426.17, 2)
+    expect(cost).toBeCloseTo(quotePlanLadder(ladderPlan(true).incomeFloor!.ladders[0]!, 2027)!.build.totalCost, 6)
+    expect(run(ladderPlan(true), 2026).warnings).not.toContain(warning)
+  })
+
+  it('from a 2027 start no cost leaves the brokerage, and the warning says so', () => {
+    // The ladder already owned pays its coupons into the brokerage from 2027,
+    // so the row is the typed balance plus that year's coupons: no cost is
+    // taken (the 2026 start above takes more than $100,000).
+    const withLadder = run(ladderPlan(true), 2027)
+    const coupons = withLadder.years[0]!.incomes.tipsLadder
+    expect(coupons).toBeGreaterThan(0)
+    expect(withLadder.years[0]!.balances['brokerage']! - run(ladderPlan(false), 2027).years[0]!.balances['brokerage']!).toBeCloseTo(coupons, 2)
+    expect(withLadder.warnings).toContain(warning)
+  })
+})

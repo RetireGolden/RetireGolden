@@ -14,7 +14,7 @@ import {
 } from '@retiregolden/engine/allocation/assetClasses'
 import { NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { Modal } from '../Modal'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear } from '../useProjection'
 
 function riskLabel(stocksPct: number): string {
   if (stocksPct < 25) return 'Conservative: low volatility, lower growth'
@@ -210,7 +210,7 @@ export function AllocationPanel({
   onCommit: (a: AssetAllocationPolicy) => void
 }) {
   const policy = account.allocation!
-  const year = currentStartYear()
+  const year = projectionStartYear(plan)
   const params = resolveAssetClassParams(plan.assumptions.assetClassParams)
   const weightsNow = targetWeightsAt(policy, year)
   const blendedNow = blendedReturnPct(weightsNow, params)

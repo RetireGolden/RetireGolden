@@ -8,7 +8,9 @@ export const lawPackDrift: Detector = {
   category: 'tax-brackets',
   version: 1,
   screen(ctx): InsightCard | null {
-    const planAsOfYear = parsePlanUpdatedAtIso(ctx.plan.updatedAtIso)?.year ?? null
+    // On the start year's calendar when the host gives it (planSavedOn).
+    const stampedYear = parsePlanUpdatedAtIso(ctx.plan.updatedAtIso)?.year ?? null
+    const planAsOfYear = stampedYear === null ? null : ctx.planSavedOn?.year ?? stampedYear
     if (planAsOfYear === null || planAsOfYear >= ctx.params.year) return null
 
     return {

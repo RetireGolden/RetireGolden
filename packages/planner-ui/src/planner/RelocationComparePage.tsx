@@ -36,7 +36,7 @@ import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import { currentStartYear } from './useProjection'
+import { projectionStartYear, startYearDollarsWord } from './useProjection'
 import { US_STATES } from './usStates'
 
 const RELOCATION_MC_PATHS = 500
@@ -177,7 +177,7 @@ export function RelocationComparePage() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
 
   const [drafts, setDrafts] = useState<CandidateDraft[]>([
     { state: 'FL', moveYear: null, localRatePct: 0, spendingDeltaPct: 0 },
@@ -384,7 +384,7 @@ export function RelocationComparePage() {
           <p className="card-hint">
             Every row is your full plan, identical except for residence (and any knobs you set on the candidate).
             Deltas are against the first row ({baseline.label}). Dollar columns are nominal lifetime sums; the
-            estate column is in today&apos;s dollars.
+            estate column is in {startYearDollarsWord(plan)} dollars.
           </p>
           <div className="form-grid">
             <SelectField
@@ -416,7 +416,7 @@ export function RelocationComparePage() {
                     Lifetime taxes & penalties <HelpTip text="Federal + state + local + penalties over the whole projection (nominal), the ranking default, since a state change also moves federal interactions like deduction and bracket timing." />
                   </th>
                   <th scope="col" className="nowrap" style={{ textAlign: 'right' }}>Δ vs your plan</th>
-                  <th scope="col" style={{ textAlign: 'right' }}>Ending after-tax estate (today&apos;s $)</th>
+                  <th scope="col" style={{ textAlign: 'right' }}>Ending after-tax estate ({startYearDollarsWord(plan)} $)</th>
                   {result.monteCarlo ? <th scope="col" style={{ textAlign: 'right' }}>Success rate</th> : null}
                 </tr>
               </thead>

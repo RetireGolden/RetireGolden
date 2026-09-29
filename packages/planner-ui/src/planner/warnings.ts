@@ -36,6 +36,8 @@
  * moves one has to move the pin and say why.
  */
 
+import type { Plan } from '@retiregolden/engine/model/plan'
+
 import { boundsKey } from './schemaBounds'
 
 /** The bands the decision names. One band per row of the table above. */
@@ -54,6 +56,23 @@ type Band =
   | 'phaseZero'
   /** D4: a calendar year before the plan's first projected year. */
   | 'pastYear'
+  /**
+   * D4, a purchase: an annuity premium or a TIPS-ladder cost dated before the
+   * first year is treated as already paid (D-2027-ROLLOVER).
+   */
+  | 'pastPurchaseYear'
+  /** D4, a Roth conversion window that opened before the first year. */
+  | 'pastWindowStart'
+  /** D4, a Roth conversion window that ended before the first year: it converts nothing. */
+  | 'pastWindowEnd'
+  /** D4, a manual conversion row dated before the first year: not modeled. */
+  | 'pastConversionYear'
+  /** D4, a property sale dated before the first year: the ledger sells it in the first year. */
+  | 'pastSaleYear'
+  /** D4, a debt payoff dated before the first year: the ledger pays it off in the first year. */
+  | 'pastPayoffYear'
+  /** D4, a HECM line of credit dated to open before the first year: it opens in the first year. */
+  | 'pastLineOpen'
 
 /** The numbers the decision fixed. Named so the pin reads as the decision does. */
 export const WARNING_THRESHOLDS = {
@@ -90,10 +109,13 @@ const classPaths = (leaf: string): string[] =>
  * - The past-year band covers exactly the fields the #495 decision list
  *   enumerated under "past calendar years": the goal year and its funding
  *   window, the one-time income year, a recurring stream's start and end, and
- *   the household move year. A lump-sum payoff year, a planned sale year, and
- *   a TIPS-ladder purchase year are not in that list — a ladder must be bought
- *   BEFORE its first payout year, so a purchase in the current year's past is
- *   the shape the engine requires, not a mistake.
+ *   the household move year. Decision D-2027-ROLLOVER added the dated fields a
+ *   later start reads differently: a purchase year (treated as already paid),
+ *   the Roth window's start and end, a pension election year, a HECM line's
+ *   open year, and, after the review (H1, L4), a property's planned sale year
+ *   and a debt's payoff year (the ledger acts on each in the first year) and a
+ *   manual conversion row's year. Years that are legitimately in the past (an
+ *   inherited account owner's death year, a glide path's start) carry no note.
  * - `strategies.rothConversion.targetValue` carries a bracket rate, a tier
  *   index, or a MAGI ceiling at one path, so no single band fits it. The
  *   engine validates it per target kind instead (model/planCrossFieldChecks.ts,
@@ -176,22 +198,49 @@ const BAND_BY_PATH: Readonly<Record<string, Band>> = {
   'incomes.N.year': 'pastYear',
   'incomes.N.startYear': 'pastYear',
   'incomes.N.endYear': 'pastYear',
+  // D-2027-ROLLOVER (2026-09-28): the four dated fields that had no note. An
+  // unelected pension offer whose election year has passed is kept, and the
+  // pension pays; an ELECTED one in the past is refused at save by the as-of
+  // check (`asOfIssues`), whose error takes this note's place on the field.
+  'accounts.N.lumpSumOffer.electionYear': 'pastYear',
+  'accounts.N.purchase.year': 'pastPurchaseYear',
+  'incomeFloor.ladders.N.purchase.year': 'pastPurchaseYear',
+  'strategies.rothConversion.startYear': 'pastWindowStart',
+  // The check's spec 4 named HECM lines too: one dated to open earlier opens
+  // in the start year (engine hecmLineOpenings), and the projection says so.
+  'accounts.N.hecm.openYear': 'pastLineOpen',
+  // The review's H1, L1 and L4: a Roth window that has ended converts
+  // nothing, and a sale or payoff dated earlier runs in the first year
+  // (engine projection/propertySaleYear.ts, annualDebtAndLongTermCare.ts).
+  'strategies.rothConversion.endYear': 'pastWindowEnd',
+  'strategies.rothConversion.conversions.N.year': 'pastConversionYear',
+  'accounts.N.plannedSaleYear': 'pastSaleYear',
+  'accounts.N.payoffYear': 'pastPayoffYear',
 }
 
 export interface WarningContext {
   /**
-   * The plan's first projected year.
-   *
-   * The fields do not pass one, and that is not an omission: the projection's
-   * first year IS the current calendar year — `currentStartYear` in
-   * `planner-ui/src/projection.ts` is `new Date().getFullYear()`, and
-   * `projectPlan` defaults to it — so the fallback below is the same number,
-   * read the same way, without dragging the projection module (and the engine
-   * simulation it imports) into every field component. The parameter exists so
-   * a test can pin a year instead of depending on the clock, and so this stays
-   * a one-line change if the projection ever starts somewhere else.
+   * The plan's first projected year, `projectionStartYear(plan)`: the clock's
+   * year for a user plan and EXAMPLE_FIXED_YEAR for a library example. There is
+   * no clock fallback: the field components read it from the plan in context
+   * (`usePlanStartYear`), so the note and the projection read one year. Null
+   * where no plan is in context (the import wizard, the lever editors): with
+   * no first year there is nothing for a year to be before.
    */
-  startYear?: number
+  startYear: number | null
+  /**
+   * The Roth conversion window's last year when the plan has one
+   * (`fillToTarget`), so the window-start note can say that a window which
+   * ended before the first year converts nothing (review L1). Absent or null
+   * otherwise.
+   */
+  rothWindowEndYear?: number | null
+}
+
+/** The context a field reads its note against, for the plan in view (or none). */
+export function warningContextFor(plan: Pick<Plan, 'strategies'> | null, startYear: number | null): WarningContext {
+  const roth = plan?.strategies.rothConversion
+  return { startYear, rothWindowEndYear: roth?.mode === 'fillToTarget' ? roth.endYear : null }
 }
 
 /**
@@ -202,7 +251,7 @@ export interface WarningContext {
 export function warningFor(
   path: string | undefined,
   value: number | null | undefined,
-  ctx?: WarningContext,
+  ctx: WarningContext,
 ): string | null {
   if (!path || value === null || value === undefined || !Number.isFinite(value)) return null
   const band = BAND_BY_PATH[boundsKey(path)]
@@ -226,8 +275,52 @@ export function warningFor(
     case 'phaseZero':
       return value === t.phaseMultiplier ? 'A multiplier of 0 means this phase spends nothing. Kept as entered.' : null
     case 'pastYear': {
-      const startYear = ctx?.startYear ?? new Date().getFullYear()
-      return value < startYear ? `Before this plan's first year (${startYear}). Kept as entered.` : null
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear ? `Before this plan's first year (${startYear}). Kept as entered.` : null
+    }
+    case 'pastPurchaseYear': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so the purchase is treated as already paid: its cost is not taken from the funding account. If that balance still includes it, lower the balance. Kept as entered.`
+        : null
+    }
+    case 'pastWindowStart': {
+      const startYear = ctx.startYear
+      if (startYear === null || value >= startYear) return null
+      const endYear = ctx.rothWindowEndYear ?? null
+      return endYear !== null && endYear < startYear
+        ? `Before this plan's first year (${startYear}), and the window ends in ${endYear}, so no conversion runs. Kept as entered.`
+        : `Before this plan's first year (${startYear}), so conversions run from ${startYear}. Kept as entered.`
+    }
+    case 'pastWindowEnd': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so no conversion runs in this window. Kept as entered.`
+        : null
+    }
+    case 'pastConversionYear': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so this conversion is not modeled. Kept as entered.`
+        : null
+    }
+    case 'pastSaleYear': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so the plan sells it in ${startYear}. If it has already been sold, remove the property and add the proceeds to an account. Kept as entered.`
+        : null
+    }
+    case 'pastPayoffYear': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so the plan pays it off in ${startYear}. If it was paid, set its balance to $0. Kept as entered.`
+        : null
+    }
+    case 'pastLineOpen': {
+      const startYear = ctx.startYear
+      return startYear !== null && value < startYear
+        ? `Before this plan's first year (${startYear}), so the line is modeled as opening in ${startYear}. Kept as entered.`
+        : null
     }
   }
 }

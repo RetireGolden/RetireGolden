@@ -37,6 +37,16 @@ outputs: `income-one-time-annual`.
 
 feeds: `income-total-annual`.
 
+## Dated before the start year (D-2027-ROLLOVER)
+
+A stream whose year is before the projection start year pays nothing, as the exact-year gate above already says: from a 2027 start a 2026 stream never reaches a projected year. What changed is that it is no longer silent. The projection adds one warning naming it (`projection/preStartEvents.ts#preStartEvents`):
+
+> The Inheritance income is dated 2026, before this plan starts in 2027, so it is not counted. If it has not arrived, move it to 2027 or later.
+
+Worked case (the derivation's U1 inheritance): $50,000, not inflation-adjusted, dated 2026. From a 2026 start the 2026 row pays `$50,000` and no warning is added; from a 2027 start every row pays `$0` and the warning above is added. The evidence file asserts both.
+
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check in C:/rgwt/staging/rollover-2027/ (derivation.md, check.md). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six.md in this directory.

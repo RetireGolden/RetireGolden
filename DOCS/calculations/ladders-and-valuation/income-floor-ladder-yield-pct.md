@@ -20,7 +20,7 @@ function quoteLadder(ladder: TipsLadder, startYear: number): LadderBuild | null 
 <td>{(ladder.purchase ? ladder.purchase.year : startYear - 1) + rung.maturityOffset}</td>              // :209, the buy-list's "Matures" year
 ```
 
-`startYear` is `currentStartYear()` (`:464`, passed at `:478`). Inputs: the plan's `TipsLadder` and `LadderBuild.totalCost` (`engine/src/ladder/ladderMath.ts:138-143`). `buildLadder` echoes its input as `targetAnnualRealIncome` (`:141`), so `ladder.annualRealAmount` and `quote.targetAnnualRealIncome` are the same number. The census lists only the ratio; the anchor rule (`:43-53`) and the maturity-year label (`:209`, the same anchor again) are the out-of-census copies the recon named.
+`startYear` is `projectionStartYear(plan)` (`:459`, passed at `:473`): the clock's year for a user plan, 2026 for a library example. Inputs: the plan's `TipsLadder` and `LadderBuild.totalCost` (`engine/src/ladder/ladderMath.ts:138-143`). `buildLadder` echoes its input as `targetAnnualRealIncome` (`:141`), so `ladder.annualRealAmount` and `quote.targetAnnualRealIncome` are the same number. The census lists only the ratio; the anchor rule (`:43-53`) and the maturity-year label (`:209`, the same anchor again) are the out-of-census copies the recon named.
 
 ## Engine publication
 

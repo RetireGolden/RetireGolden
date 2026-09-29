@@ -1,8 +1,9 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { irmaaTierForMagi, packForYear } from '../params/index.js'
 import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
+import { componentPackView } from '../params/index.js'
 
 const pack = packForYear(2026).pack
 
@@ -165,3 +166,14 @@ describeCalculation(
     })
   },
 )
+
+describe('medicare-base-part-b-premium: the premium scale reads CMS\'s own publication (D-2027-ROLLOVER)', () => {
+  it('reads the Medicare figures at the year CMS published them', () => {
+    // The view the ledger's Medicare readers get: CMS's year, which is the
+    // year the premium scale runs from.
+    expect(componentPackView(packForYear(2026), 'cmsMedicare').year).toBe(2026)
+    expect(componentPackView(packForYear(2028), 'cmsMedicare').year).toBe(2026)
+    expect(componentPackView(packForYear(2028), 'cmsMedicare').medicare.partBStandardMonthly).toBe(202.9)
+    expect(packForYear(2028).components.cmsMedicare).toMatchObject({ baseYear: 2026, standIn: true })
+  })
+})

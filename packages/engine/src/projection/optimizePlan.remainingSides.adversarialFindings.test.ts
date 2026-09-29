@@ -78,6 +78,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { asOfIssues } from '../model/asOfIssues.js'
 import { migratePlanToCurrent } from '../model/migrations.js'
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
@@ -203,43 +204,43 @@ describe('FINDING 2 (CLOSED): a lump-sum election year before the projection sta
   // year instead would double-count it — balances are what the household holds
   // today ("Balances as of today"), and every other pre-start event in this
   // engine (an annuity premium, a TIPS-ladder purchase) is already read as
-  // "assumed already funded" and never replayed. So the shape is refused, and
-  // the message names the repair.
-  it('is refused at parse, naming the repair', () => {
-    // `createEmptyPlan` stamps `updatedAtIso` from `fixedNow` (2026), which is
-    // the document's own as-of year and, at every save, the projection start.
-    const parsed = parsePlan(stalePlan(2025))
-    expect(parsed.ok).toBe(false)
-    expect(parsed.ok ? [] : parsed.issues).toContain(
-      'accounts.3.lumpSumOffer.electionYear: an elected pension lump sum cannot have an election year in the past (if the rollover already happened, clear the election and add its dollars to the receiving account balance)',
-    )
+  // "assumed already funded" and never replayed. So the shape is refused at
+  // SAVE, against the year the projection starts (decision D-2027-ROLLOVER,
+  // 2026-09-28: model/asOfIssues.ts), and parse accepts it so the plan opens.
+  it('is refused at save against the start year, naming both restatements; parse accepts it', () => {
+    expect(parsePlan(stalePlan(2025)).ok).toBe(true)
+    expect(asOfIssues(validate(stalePlan(2025)), 2026)).toEqual([
+      "accounts.3.lumpSumOffer.electionYear: The lump-sum election is dated 2025, before this plan starts in 2026. If you took the lump sum, remove the pension and add the rollover to IRA's balance. If you did not, clear the election (the pension then pays) or move it to 2026 or later.",
+    ])
+    expect(asOfIssues(validate(stalePlan(2026)), 2026)).toEqual([])
   })
 
-  it('loads a legacy stored document instead of locking the household out, and says why', () => {
-    // The shape was saveable before this rule existed, so a parse refusal on the
-    // load path would be a lockout: `loadPlan` goes through
-    // `migratePlanToCurrent`, and `PlanContext` surfaces only a bare reason code.
-    // The load-time repair returns it undecided with the offer intact, and the
-    // projection states the resulting position rather than changing it in silence.
+  it('loads a stored document as stored, without guessing whether the lump sum was taken', () => {
+    // `loadPlan` goes through `migratePlanToCurrent`; the plan opens with its
+    // election intact (no repair guesses that the lump sum was never taken),
+    // and the projection states the position it models: no pension and no
+    // credit, which is right only when the household already folded the
+    // rollover into the receiving balance, and says so.
     const stored = JSON.parse(JSON.stringify(stalePlan(2025))) as unknown
     const migrated = migratePlanToCurrent(stored)
     expect(migrated.ok).toBe(true)
     if (!migrated.ok) return
+    expect(migrated.repairs).toEqual([])
     const result = simulatePlan(migrated.plan, opts)
     expect(result.warnings).toContain(
-      'A pension lump-sum offer on record has an election year that has already passed, so no rollover is modeled and the pension pays its annuity. Update the election year to compare taking the lump sum again.',
+      'A pension lump-sum election is dated before this projection starts, so the pension pays nothing and no rollover is credited. Update the election year, or clear the election and add the rolled-over dollars to the receiving account balance.',
     )
-    // The pension pays again, which is the repair's whole economic effect.
-    expect(result.years[0]!.incomes.pension).toBeCloseTo(24_000, 2)
+    expect(result.years[0]!.incomes.pension).toBe(0)
     expect(result.years[0]!.balances['ira']).toBeCloseTo(400_000, 2)
   })
 
   it('still parses, and says so out loud, when a plan is reopened a year later', () => {
-    // The residual window the parse rule cannot reach: saved in 2026 with a 2026
-    // election (valid then, and still valid on every reopen), run in 2027. The
-    // ledger keeps the conservative reading — no pension, no credit — because it
-    // cannot tell whether the rollover already happened, and the warning states
-    // exactly that instead of leaving the household to discover it.
+    // Saved in 2026 with a 2026 election (valid then), run in 2027. The planner
+    // refuses its next save against the 2027 start year (asOfIssues); a host
+    // that projects without that check reaches the ledger, which keeps the
+    // conservative reading (no pension, no credit) because it cannot tell
+    // whether the rollover already happened, and the warning states exactly
+    // that instead of leaving the household to discover it.
     const v = validate(stalePlan(2026))
     const probes: OptimizerYearProbe[] = []
     const result = simulatePlan(v, {

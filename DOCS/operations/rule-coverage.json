@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 475,
+    "totalFiles": 480,
     "byStatus": {
       "partial": 94,
       "registered": 130,
-      "rule-free": 251,
+      "rule-free": 256,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -168,8 +168,8 @@
     },
     {
       "path": "insights/detectors/missingDataBasis.ts",
-      "sweptOn": "2026-08-29",
-      "note": "The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer"
+      "sweptOn": "2026-09-29",
+      "note": "The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer. The property basis gap keys on the year the ledger sells the property (projection/propertySaleYear.ts#effectivePropertySaleYear), so a sale dated before the projection, which runs in its first year, is flagged too (decision D-2027-ROLLOVER, review H1)"
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
@@ -198,8 +198,8 @@
     },
     {
       "path": "model/migrations.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records"
+      "sweptOn": "2026-09-28",
+      "note": "Lump-sum election load repairs for a rollover target that is not one owned traditional account (a past election year and an unreadable save stamp are no longer repaired since D-2027-ROLLOVER; model/asOfIssues.ts judges the year at save); inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records"
     },
     {
       "path": "model/plan.ts",
@@ -323,8 +323,8 @@
     },
     {
       "path": "projection/internal/annualPropertyAndInsuranceClosePhase.ts",
-      "sweptOn": "2026-09-12",
-      "note": "the property-events and permanent-life close sub-phase, extracted from annualFundingApplicationAndClosePhase. The property growth, legacy tax-free sale and HECM line accrual stay in independently attested propertyEventsAndGrowth.ts, and cash-value/death-benefit rules stay in annualPermanentLifeTransitions.ts. This sub-phase owns the application order - close the line, deposit, publish, write the value back, then compound what remains - plus HUD split-state commit: a complete servicing ledger replaces only observedServicingBaseline, modeledDebt is conserved, and its annual timing estimate publishes a distinct incomplete issue. The deliberate gating of the legacy-sale payload on the array it feeds and the death-benefit destination assertion remain unchanged. It mutates caller property values, HECM line states and insurance cash values in place; this is not a verbatim move because the HUD component commit and incompleteness publication are calculation behavior"
+      "sweptOn": "2026-09-29",
+      "note": "the property-events and permanent-life close sub-phase, extracted from annualFundingApplicationAndClosePhase. The property growth, legacy tax-free sale and HECM line accrual stay in independently attested propertyEventsAndGrowth.ts, and cash-value/death-benefit rules stay in annualPermanentLifeTransitions.ts. This sub-phase owns the application order - close the line, deposit, publish, write the value back, then compound what remains - plus HUD split-state commit: a complete servicing ledger replaces only observedServicingBaseline, modeledDebt is conserved, and its annual timing estimate publishes a distinct incomplete issue. The deliberate gating of the legacy-sale payload on the array it feeds and the death-benefit destination assertion remain unchanged. It mutates caller property values, HECM line states and insurance cash values in place; this is not a verbatim move because the HUD component commit and incompleteness publication are calculation behavior. It now passes the projection start year to propertyEventsAndGrowth for the effective sale year (decision D-2027-ROLLOVER, review H1)"
     },
     {
       "path": "projection/internal/annualQcdExecutionInput.ts",
@@ -393,8 +393,8 @@
     },
     {
       "path": "projection/internal/propertyEventsAndGrowth.ts",
-      "sweptOn": "2026-09-12",
-      "note": "Ordered property growth, legacy-sale rows and duplicate-id once-only line accrual preserve caller-owned state through private shadows. HUD assessment amounts delegate to the registered MIP leaf through hecmHudValidatedOpeningAdapter. Observed servicing baseline is kept separate from modeled draw debt by hecmLineState; accepted draws are not erased by replacing observed balances. The annual modeled-debt growth estimate and missing-ledger baseline estimate are planning conventions, retain incomplete timing evidence, and are not claimed as complete HUD servicing calculations. Their direct rule/convention trail remains partial."
+      "sweptOn": "2026-09-29",
+      "note": "Ordered property growth, legacy-sale rows and duplicate-id once-only line accrual preserve caller-owned state through private shadows. HUD assessment amounts delegate to the registered MIP leaf through hecmHudValidatedOpeningAdapter. Observed servicing baseline is kept separate from modeled draw debt by hecmLineState; accepted draws are not erased by replacing observed balances. The annual modeled-debt growth estimate and missing-ledger baseline estimate are planning conventions, retain incomplete timing evidence, and are not claimed as complete HUD servicing calculations. Their direct rule/convention trail remains partial.. Decision D-2027-ROLLOVER (review H1, 2026-09-29): the sale year is read through projection/propertySaleYear.ts#effectivePropertySaleYear, so a sale dated before the projection start year runs in the start year (a planning convention, no source governs a past sale date), registered in spending-property-costs-annual"
     },
     {
       "path": "projection/internal/stateBasisPoolState.ts",
@@ -631,10 +631,10 @@
     },
     {
       "directory": "model",
-      "files": 11,
+      "files": 12,
       "byStatus": {
         "partial": 6,
-        "rule-free": 5
+        "rule-free": 6
       }
     },
     {
@@ -647,20 +647,20 @@
     },
     {
       "directory": "params",
-      "files": 18,
+      "files": 19,
       "byStatus": {
         "partial": 2,
         "registered": 14,
-        "rule-free": 2
+        "rule-free": 3
       }
     },
     {
       "directory": "projection",
-      "files": 129,
+      "files": 131,
       "byStatus": {
         "partial": 43,
         "registered": 21,
-        "rule-free": 65
+        "rule-free": 67
       }
     },
     {
@@ -730,10 +730,10 @@
     },
     {
       "directory": "testing",
-      "files": 6,
+      "files": 7,
       "byStatus": {
         "partial": 1,
-        "rule-free": 5
+        "rule-free": 6
       }
     }
   ],

@@ -38,6 +38,8 @@ import { propertyEventsAndGrowth } from './propertyEventsAndGrowth.js'
 
 export interface AnnualPropertyAndInsuranceClosePhaseInput {
   readonly year: number
+  /** The projection's first year: a sale dated before it runs in it. */
+  readonly startYear: number
   readonly accounts: readonly Account[]
   readonly policies: Parameters<
     typeof annualPermanentLifeTransitions
@@ -84,6 +86,7 @@ export function annualPropertyAndInsuranceClosePhase(
   const hecmIssues: string[] = []
   const {
     year,
+    startYear,
     propertyValues,
     hecmStates,
     insuranceCashValues,
@@ -110,6 +113,7 @@ export function annualPropertyAndInsuranceClosePhase(
   for (const row of propertyEventsAndGrowth({
     accounts: input.accounts,
     year,
+    startYear,
     propertyValues,
     inflRateAt: input.inflRateAt,
     hecmStates,

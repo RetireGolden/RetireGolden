@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Plan } from '../../model/plan.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
@@ -269,3 +269,29 @@ describeCalculation(
     })
   },
 )
+
+describe('spending-one-time-goals-annual: a goal dated before the start year (D-2027-ROLLOVER)', () => {
+  // The derivation's U1 car: $30,000 in 2026, with a 0 inflation path.
+  function car(): Plan {
+    const plan = singlePersonPlan({ dob: '1965-06-15', planningAge: 90 })
+    plan.accounts = [{ type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 100_000, annualContribution: 0 }]
+    plan.expenses.oneTimeGoals = [{ id: 'car', label: 'New car', year: 2026, amount: 30_000 }]
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.plan
+  }
+  const warning =
+    'The New car goal is dated 2026, before this plan starts in 2027, so it is not counted. If it has not happened, move it to 2027 or later.'
+
+  it('funds it in 2026 from a 2026 start, with no warning', () => {
+    const result = simulatePlan(car(), { startYear: 2026, horizonEndYear: 2027, taxCalculator: createFederalTaxCalculator() })
+    expect(result.years[0]!.expenses.oneTimeGoals).toBe(30_000)
+    expect(result.warnings).not.toContain(warning)
+  })
+
+  it('funds nothing from a 2027 start, and says so', () => {
+    const result = simulatePlan(car(), { startYear: 2027, horizonEndYear: 2028, taxCalculator: createFederalTaxCalculator() })
+    expect(result.years.map((year) => year.expenses.oneTimeGoals)).toEqual([0, 0])
+    expect(result.warnings).toContain(warning)
+  })
+})

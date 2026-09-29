@@ -124,7 +124,7 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
 
 ### Simulation core (`packages/engine/src/projection/simulate.ts`)
 
-A deterministic annual ledger from the current year to end of plan. Each year, in order: income →
+A deterministic annual ledger from the plan's start year to end of plan (the clock's year for a user plan and 2026, `EXAMPLE_FIXED_YEAR`, for a library example: planner-ui `projectionStartYear`). Each year, in order: income →
 contributions (limit-enforced) → spending need (phased + healthcare incl. IRMAA(MAGI[y−2]) / ACA) → RMDs →
 withdrawals + Roth conversions per strategy → **taxes via fixed-point iteration** (withdrawals raise tax
 which raises withdrawals; converges in a few rounds) → growth → end-of-year balances. Amounts are nominal

@@ -122,3 +122,26 @@ describe('stale plan data detector', () => {
     })
   })
 })
+
+describe('stale plan data on the start year calendar (D-2027-ROLLOVER)', () => {
+  // A save stamp is UTC; a planner starts on the local calendar. At 05:00 on
+  // 1 January 2027 in Tokyo the UTC stamp still reads 2026-12-31, so read on
+  // UTC the card called a plan saved seconds earlier "last saved in 2026"
+  // beside a 2027 start. The planner passes the stamp's local year instead.
+  it('reads the host calendar year when given, so a Tokyo New Year save is not stale', () => {
+    const ctx = context('2026-12-31T20:00:00.000Z')
+    ctx.projection.startYear = 2027
+    expect(stalePlanData.screen(ctx)?.title).toBe('Plan last saved in 2026')
+    expect(stalePlanData.screen({ ...ctx, planSavedOn: { year: 2027, month: '01' } })).toBeNull()
+  })
+
+  it('still names a plan truly saved in an earlier local year', () => {
+    const ctx = { ...context('2026-10-15T12:00:00.000Z'), planSavedOn: { year: 2026, month: '10' } }
+    ctx.projection.startYear = 2027
+    expect(stalePlanData.screen(ctx)?.evidence).toContainEqual({ label: 'Plan last updated', value: '2026-10', year: 2026 })
+  })
+
+  it('stays silent on an unreadable stamp even when a calendar year is given', () => {
+    expect(stalePlanData.screen({ ...context('not-a-date'), planSavedOn: { year: 2020, month: '01' } })).toBeNull()
+  })
+})

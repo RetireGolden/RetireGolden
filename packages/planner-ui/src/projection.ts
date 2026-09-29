@@ -16,9 +16,15 @@ import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import { taxCalculatorFor } from './planTaxCalculator'
 
-export function currentStartYear(): number {
-  return new Date().getFullYear()
-}
+export {
+  compareStartYear,
+  currentStartYear,
+  projectionStartYear,
+  stampCalendarMonth,
+  stampCalendarYear,
+  startYearDollarsWord,
+  startYearDollarsWordCapitalized,
+} from './startYear'
 
 /**
  * Moving an amount between today's dollars and a year's nominal dollars.
@@ -44,7 +50,12 @@ export interface ProjectionView extends InflationView {
 }
 
 export interface ProjectPlanOptions {
-  startYear?: number
+  /**
+   * The year the projection starts. Required: a caller projecting a stored
+   * plan passes `projectionStartYear(plan)`, so an example runs from the year
+   * its copy is written for and a user plan from the clock's.
+   */
+  startYear: number
   /**
    * Opt-in annual cash-flow ledger on each `YearResult`. Absent by default so
    * existing callers (and every shared `useProjection` consumer) stay unchanged.
@@ -54,21 +65,18 @@ export interface ProjectPlanOptions {
 
 /**
  * Deterministic projection: the same `(plan, startYear)` produces the same
- * `result` and `summary`. Hosts capturing evidence must pass an explicit
- * `startYear` instead of relying on the clock default.
+ * `result` and `summary`. The start year is always the caller's: there is no
+ * clock default, because a default read the clock for examples too.
  *
- * The second argument remains a start year for existing callers. Results may
- * pass `{ captureAnnualCashFlow: true }` (optionally with `startYear`) instead.
+ * The second argument is either the start year or the options (Results passes
+ * `{ startYear, captureAnnualCashFlow: true }`).
  */
-export function projectPlan(plan: Plan, startYear?: number): ProjectionView
+export function projectPlan(plan: Plan, startYear: number): ProjectionView
 export function projectPlan(plan: Plan, opts: ProjectPlanOptions): ProjectionView
-export function projectPlan(
-  plan: Plan,
-  startYearOrOpts: number | ProjectPlanOptions = currentStartYear(),
-): ProjectionView {
+export function projectPlan(plan: Plan, startYearOrOpts: number | ProjectPlanOptions): ProjectionView {
   const opts: ProjectPlanOptions =
     typeof startYearOrOpts === 'object' ? startYearOrOpts : { startYear: startYearOrOpts }
-  const startYear = opts.startYear ?? currentStartYear()
+  const startYear = opts.startYear
   const simulateOptions = { startYear, taxCalculator: taxCalculatorFor(plan) }
   const result = simulatePlan(plan, {
     ...simulateOptions,

@@ -1,13 +1,42 @@
 /**
  * Typed access to annual parameter packs.
  *
- * Future years resolve to the latest published pack with `isStandIn: true`
+ * Future years resolve to the latest published figures with `isStandIn: true`
  * (same pattern as v1's ssaWageData "latest published" fallback) — projections
- * inflate from the latest pack rather than failing on unpublished years.
+ * inflate from the latest published figures rather than failing on unpublished
+ * years. Since decision D-2027-ROLLOVER the figures are resolved publisher by
+ * publisher (`components.ts`): a year's view takes each component from its own
+ * latest published year, and says which components it projects.
  */
 
 import type { FilingStatus, ParameterPack, PerStatus } from './types.js'
 import { year2026 } from './data/year2026.js'
+import {
+  activeParameterComponents,
+  composeParameterPack,
+  parameterComponentsForYear,
+  swapActiveParameterComponents,
+  type ParameterComponent,
+  type ParameterComponentKey,
+  type ParameterComponentLookups,
+} from './components.js'
+import { indexingScaleFor, type InflationPath } from './indexingScale.js'
+
+export {
+  PARAMETER_COMPONENTS,
+  PARAMETER_COMPONENT_KEYS,
+  activeParameterComponents,
+  parameterComponentForYear,
+  parameterComponentsForYear,
+  projectedParameterComponents,
+} from './components.js'
+export type {
+  ParameterComponent,
+  ParameterComponentKey,
+  ParameterComponentLookup,
+  ParameterComponentLookups,
+  ParameterComponentYear,
+} from './components.js'
 
 export { PARAMETER_PROVENANCE } from './provenance.js'
 export type { ParameterSource } from './provenance.js'
@@ -32,8 +61,9 @@ export {
 } from './hsaLimitYears.js'
 export type { HsaLimitYearLookup, HsaLimitYearParameters } from './hsaLimitYears.js'
 
+// The base pack: the one year every component has published in full. A later
+// year's figures land component by component (components.ts), not as a pack.
 const packs: ParameterPack[] = [year2026]
-// Keep sorted ascending by year as packs are added each fall.
 
 export const EARLIEST_PACK_YEAR = packs[0]!.year
 export const LATEST_PACK_YEAR = packs[packs.length - 1]!.year
@@ -58,16 +88,92 @@ export const PARAMETER_DATA_BASIS = '2025 published federal and state rules'
 export const TRUSTEES_DEFAULT_SS_HAIRCUT = { fromYear: 2034, cutPct: 17 } as const
 
 export interface PackLookup {
+  /**
+   * The year's parameter view: every component's figures from its own latest
+   * published year at or before `year` (components.ts). `pack.year` is the
+   * base pack's year; a component's own year is in `components`.
+   */
   pack: ParameterPack
-  /** True when `year` has no published pack and a neighboring year is standing in. */
+  /**
+   * True when the year's federal income-tax figures (brackets, deductions,
+   * capital-gain breakpoints, AMT) have no publication of their own and an
+   * earlier year's stand in: the "stand-in pack" every federal-tax reader
+   * means. Every other component says its own in `components`.
+   */
   isStandIn: boolean
+  /** Where each publisher's figures for `year` come from, and whether they are projected. */
+  components: ParameterComponentLookups
+}
+
+const lookupsByYear = new Map<number, PackLookup>()
+
+/**
+ * Run `body` with `components` as the published component table, then put
+ * the real one back. The test seam for landing a publisher's year end to end
+ * (review L10, 2026-09-29): every reader (`packForYear`, `componentScale`,
+ * the named-QCD gate, the HUD gate, the planner's projected-year marks)
+ * resolves from the table in force, and the year cache is cleared on the way
+ * in and out so no lookup outlives its table. Synchronous only.
+ */
+export function withParameterComponents<T>(
+  components: Readonly<Record<ParameterComponentKey, ParameterComponent>>,
+  body: () => T,
+): T {
+  const previous = swapActiveParameterComponents(components)
+  lookupsByYear.clear()
+  try {
+    return body()
+  } finally {
+    swapActiveParameterComponents(previous)
+    lookupsByYear.clear()
+  }
 }
 
 export function packForYear(year: number): PackLookup {
-  const exact = packs.find((p) => p.year === year)
-  if (exact) return { pack: exact, isStandIn: false }
-  if (year > LATEST_PACK_YEAR) return { pack: packs[packs.length - 1]!, isStandIn: true }
-  return { pack: packs[0]!, isStandIn: true }
+  const cached = lookupsByYear.get(year)
+  if (cached !== undefined) return cached
+  const base =
+    packs.find((p) => p.year === year) ??
+    (year > LATEST_PACK_YEAR ? packs[packs.length - 1]! : packs[0]!)
+  const components = parameterComponentsForYear(year)
+  const lookup: PackLookup = Object.freeze({
+    pack: composeParameterPack(base, components),
+    isStandIn: components.irsIncomeTax.standIn,
+    components,
+  })
+  lookupsByYear.set(year, lookup)
+  return lookup
+}
+
+/**
+ * How far to project one component's figures into `year`: exactly 1 when the
+ * component is published for `year` (or is never republished), otherwise the
+ * inflation path's factor from the component's OWN latest published year. A
+ * component that has landed for a later year is therefore read as published
+ * while another is still projected from an earlier one. While every
+ * component's latest year is the base pack's, this equals the one
+ * pack-wide scale every caller used before (decision D-2027-ROLLOVER).
+ */
+export function componentScale(
+  lookup: PackLookup,
+  key: ParameterComponentKey,
+  year: number,
+  inflationPath: InflationPath,
+): number {
+  const component = lookup.components[key]
+  if (!component.standIn || !activeParameterComponents()[key].projectedWhenUnpublished) return 1
+  return indexingScaleFor(component.baseYear, year, inflationPath, component.baseYear)
+}
+
+/**
+ * The year's parameter view as one component's readers see it: the same
+ * figures, with `year` set to the component's own published year. The IRMAA
+ * helpers read `pack.year` as the year their Medicare figures were published
+ * (the top tier's freeze turns on it), so the Medicare readers pass this view.
+ */
+export function componentPackView(lookup: PackLookup, key: ParameterComponentKey): ParameterPack {
+  const baseYear = lookup.components[key].baseYear
+  return baseYear === lookup.pack.year ? lookup.pack : { ...lookup.pack, year: baseYear }
 }
 
 /**

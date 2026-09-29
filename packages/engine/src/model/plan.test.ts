@@ -1106,15 +1106,12 @@ describe('pension lump-sum election', () => {
     expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2026 }, 'a2')).ok).toBe(true)
   })
 
-  it('refuses an election year already past, naming the repair', () => {
-    // Crediting a past election in the first projection year would double-count
-    // it: balances are what the household holds today, so a rollover that really
-    // happened is already inside the receiving account's entered balance.
-    const parsed = parsePlan(planWithElection({ amount: 300_000, electionYear: 2025 }, 'a2'))
-    expect(parsed.ok).toBe(false)
-    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
-      'an elected pension lump sum cannot have an election year in the past (if the rollover already happened, clear the election and add its dollars to the receiving account balance)',
-    )
+  it('opens an election year before the save stamp: parse checks shape, not the calendar (D-2027-ROLLOVER)', () => {
+    // Whether an election year has passed depends on the year the projection
+    // starts, which the document does not carry. parsePlan accepts the shape so
+    // every stored plan opens; model/asOfIssues.ts refuses its save against the
+    // start year the host names (asOfIssues.test.ts).
+    expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2025 }, 'a2')).ok).toBe(true)
   })
 
   it('leaves an unelected offer with a past election year alone', () => {
@@ -1126,17 +1123,13 @@ describe('pension lump-sum election', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
-  it('fails closed when the plan stamp is unreadable and an election is present', () => {
-    // The staleness rule reads the document's own stamp; a stamp it cannot
-    // read would otherwise wave any election year through, including the
-    // past-year shape the rule exists to refuse.
+  it('no longer reads the save stamp for an election (an unreadable stamp says nothing about it)', () => {
+    // The staleness rule used to read the document's own stamp and failed
+    // closed when it could not. It now reads the start year the host names
+    // (asOfIssues), so the stamp plays no part in it.
     const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
     ;(plan as { updatedAtIso: string }).updatedAtIso = 'not-a-timestamp'
-    const parsed = parsePlan(plan)
-    expect(parsed.ok).toBe(false)
-    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
-      'an elected pension lump sum requires a readable plan timestamp',
-    )
+    expect(parsePlan(plan).ok).toBe(true)
   })
 
   it('refuses a duplicated account id once a rollover election references it', () => {

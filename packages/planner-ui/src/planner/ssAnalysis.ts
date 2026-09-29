@@ -22,7 +22,6 @@ import {
   socialSecurityColaAssumptionPct,
   type PiaFromEarningsResult,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
-import { currentStartYear } from './useProjection'
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>
 
@@ -53,7 +52,7 @@ export interface PiaAsOf {
   colaAssumptionPct: number
 }
 
-export function piaAsOfPlan(plan: Plan, startYear: number = currentStartYear()): PiaAsOf {
+export function piaAsOfPlan(plan: Plan, startYear: number): PiaAsOf {
   return { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
 }
 
@@ -108,7 +107,7 @@ export function resolvePia(person: Person, stream: SsStream, asOf: PiaAsOf): Res
  * with the PIA the projection starting in `startYear` pays from (the engine's
  * socialSecurityClaimants, which the benefits-only ranking reads too).
  */
-export function claimingPeople(plan: Plan, startYear: number = currentStartYear()): { person: Person; stream: SsStream; pia: number }[] {
+export function claimingPeople(plan: Plan, startYear: number): { person: Person; stream: SsStream; pia: number }[] {
   return socialSecurityClaimants(plan, startYear).map(({ person, stream, piaMonthly }) => ({ person, stream, pia: piaMonthly }))
 }
 

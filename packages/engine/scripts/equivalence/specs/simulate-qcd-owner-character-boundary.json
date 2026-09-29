@@ -595,7 +595,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -610,13 +610,13 @@
     },
     "corpus": {
       "members": 121,
-      "membersSha256": "1613a1fc1616f8deefbc4507d619a648c113d53842d39d2abcd0bc2fd7e35c53",
+      "membersSha256": "66cff52e468b50043e6b4b1b0e96c5c5c61b1e269b65bb5b4e836f91c443d3a0",
       "entries": 484
     },
     "capture": {
-      "baseDumpSha256": "7cac403504672866c8543ebe20a19294ebe3f4c09a2ff5712d94300ffafdca62",
-      "headDumpSha256": "7cac403504672866c8543ebe20a19294ebe3f4c09a2ff5712d94300ffafdca62",
-      "overallSha256": "988e8c0dc304baaf7ac7dbedfb06355aa3e813cc359151ba139c2f499a8d499a",
+      "baseDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
+      "headDumpSha256": "d7a0e3208ac5a95cf17a3b8fc5df6f1b1e875d36a3ecd34ae38b9050ed6c459e",
+      "overallSha256": "bff301c5551a91002abc608b0d060ea8fb4a9d3e246cfab7831cc8b22355b1b9",
       "entriesMoved": 0,
       "result": "IDENTICAL"
     },
@@ -643,6 +643,13 @@
         "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
         "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      },
+      {
+        "date": "2026-09-29",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
+        "pinnedBlob": "6332be9dcb1ae7b1038d70e5096708192c59ce5a",
+        "reason": "After main at c2d61967 (plan schema v7, #765) was merged into the D-2027-ROLLOVER branch, two block members no longer parsed under the current tree: j1 (spending phases in a couple) now names phasesAgeOf p1, the person listed first, whose age its phases followed and whom the v7 migration names, and which a tree before v7 drops; and v3 (three qualified contracts) names p1 as each annuitant instead of no owner, the primary the ownerless fallback resolved to. No other member changed. Re-measured by the procedure the D-SS-ANALYSIS-EARNINGS-TEST branch used for the same change: run with the blob this record was measured with (7a1507c9bbf8e42f2e465195628bd389951c8025, the last entry's measuredWithBlob; the blob it pinned, df82d4ee7fbeeaa41c43b1811f05ddb161b01268, was never measured) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: the member hash 1613a1fc1616 to 66cff52e468b and the dump hashes; members stay 121 and entries 484. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged; the calibration mutant still moves 12 entries in the same 3 members."
       }
     ],
     "historicalRecord": {

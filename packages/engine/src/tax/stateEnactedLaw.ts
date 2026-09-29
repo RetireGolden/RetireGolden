@@ -204,7 +204,11 @@ export function californiaMilitaryExclusions(args: {
  *
  * The plan's inflation for a year is read from `inflationScale`, the
  * cumulative factor from the pack year to the year priced, as the rate that
- * compounds to it. That is the plan's rate exactly when its inflation is
+ * compounds to it. The pack year is the state figures' own
+ * (`LATEST_STATE_PACK_YEAR`) and the factor the plan's general inflation from
+ * it (`TaxYearInput.stateIndexingScale`), never the income-tax figures'
+ * projection, which becomes 1 once the IRS's year is loaded while the
+ * statute still indexes (decision D-2027-ROLLOVER, review V1). That is the plan's rate exactly when its inflation is
  * constant, as in a deterministic projection; along a Monte Carlo series it is
  * the path's average rate to that year. With no projection (a factor of 1, or
  * a year the pack itself prices) the published amount stands.

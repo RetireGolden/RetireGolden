@@ -67,6 +67,7 @@ export type AnnualFundingCandidateTaxInputBase = Readonly<
     | 'ssBenefits'
     | 'peopleAged65Plus'
     | 'inflationScale'
+    | 'stateIndexingScale'
     | 'state'
     | 'stateResidency'
     | 'publicPensionIncome'
@@ -294,6 +295,7 @@ export function annualFundingCandidateEvaluation<
       ssBenefits: taxInputBase.ssBenefits,
       peopleAged65Plus: taxInputBase.peopleAged65Plus,
       inflationScale: taxInputBase.inflationScale,
+      ...(taxInputBase.stateIndexingScale === undefined ? {} : { stateIndexingScale: taxInputBase.stateIndexingScale }),
       state: taxInputBase.state,
       stateResidency: taxInputBase.stateResidency,
       privateRetirementIncome:

@@ -1154,6 +1154,7 @@
     "hostVersion": null,
     "parameterDataAsOf": "June 2026",
     "parameterDataBasis": "2025 published federal and state rules",
+    "projectedParameters": "From 2027, tax brackets, retirement-plan limits (with the QCD limit), Social Security figures, and Medicare premiums are projected from their 2026 figures; from 2028, HSA limits are projected from their 2027 figures. Until RetireGolden loads each agency's own figures, they grow at this plan's 2.5% inflation assumption, and Medicare premiums at its 5.5% healthcare inflation (its inflation plus its healthcare premium); the agencies' figures will differ. State income tax uses each state's enacted schedules where RetireGolden has loaded them, and otherwise the state's 2026 figures held without growth, except the standard deduction: one that follows the federal deduction moves with it, and the District of Columbia's from 2027 and Washington's from 2029, which their own statutes index to inflation, grow at this plan's 2.5% inflation assumption.",
     "stateParameterPackYear": 2026
   },
   "startYear": 2026,

@@ -27,7 +27,7 @@ import {
   QUALIFIED_PLAN_TYPE_OPTIONS,
 } from '../pensionSourceVocabulary'
 import { usePlan } from '../planContextCore'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear } from '../useProjection'
 import { TypeChip } from '../TypeChip'
 import {
   annuityStartAgeBounds,
@@ -81,15 +81,14 @@ function OptionalBooleanSelect({
 }
 
 /**
- * The lowest election year the engine's parse rule will accept for an elected
- * lump sum: the later of the current UTC year (what the save stamp will carry)
- * and the document's stored stamp year. A stored stamp can be ahead of the wall
- * clock, and the parse rule compares against that stamp, so the stamp must win.
+ * The lowest election year the as-of check accepts for an elected lump sum:
+ * the year the plan's projection starts (`projectionStartYear`, the engine's
+ * `asOfIssues` run with that year). One year, from one resolver, for the
+ * floor, the save check and the projection, on the local calendar: the save
+ * stamp's UTC year no longer takes part (D-2027-ROLLOVER).
  */
 function electionFloorYear(plan: Plan): number {
-  const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
-  const stampYear = stamped === null ? 0 : Number(stamped[1])
-  return Math.max(new Date().getUTCFullYear(), stampYear)
+  return projectionStartYear(plan)
 }
 
 /**
@@ -318,7 +317,7 @@ export function PensionAccountEditor({
           update((draft) => {
             const pension = draft.accounts[index] as Extract<Account, { type: 'pension' }>
             if (value) {
-              pension.lumpSumOffer = { amount: 0, electionYear: new Date().getFullYear() }
+              pension.lumpSumOffer = { amount: 0, electionYear: projectionStartYear(plan) }
             } else {
               pension.lumpSumOffer = undefined
               pension.lumpSumElection = undefined
@@ -337,16 +336,13 @@ export function PensionAccountEditor({
           <NumberField
             label="Election year"
             help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
+            // The path carries the schema's own 1900–2200. An offer kept for
+            // comparison may be historical (the field notes a year before the
+            // plan starts); an ELECTED one before the start year is refused at
+            // save by the engine's as-of check, whose issue names this path, so
+            // the error shows here and the save chip's jump lands on it.
+            path={`accounts.${index}.lumpSumOffer.electionYear`}
             value={account.lumpSumOffer.electionYear}
-            // Intentionally pathless. An offer kept for comparison may be
-            // historical, but an elected rollover needs a projection year that
-            // has not passed, and that floor moves with the election checkbox
-            // and the save stamp. `accounts.N.lumpSumOffer.electionYear` is a
-            // plain calendarYear (1900–2200), so a bound read by path could not
-            // state the floor the engine actually checks here; the range below
-            // is the engine's own, read at the same two conditions it uses.
-            min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
-            max={2200}
             onCommit={(v) =>
               onCommit('lumpSumOffer', {
                 ...account.lumpSumOffer!,
@@ -515,7 +511,7 @@ export function AnnuityAccountEditor({
           setPurchase(
             value
               ? {
-                  year: new Date().getFullYear(),
+                  year: projectionStartYear(plan),
                   premium: 100_000,
                   fundingAccountId: defaultFunding?.id ?? '',
                   taxQualification: 'nonQualified',
@@ -530,7 +526,7 @@ export function AnnuityAccountEditor({
             label="Purchase year"
             path={`accounts.${index}.purchase.year`}
             value={account.purchase.year}
-            onCommit={(v) => setPurchase({ ...account.purchase!, year: Math.round(v ?? new Date().getFullYear()) })}
+            onCommit={(v) => setPurchase({ ...account.purchase!, year: Math.round(v ?? projectionStartYear(plan)) })}
           />
           <MoneyField
             label="Premium"
@@ -595,7 +591,7 @@ export function AnnuityAccountEditor({
 function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: string }) {
   // Capture per render so a start-year rollover invalidates the memo even when
   // the plan itself has not been edited.
-  const startYear = currentStartYear()
+  const startYear = projectionStartYear(plan)
   const analysis = useMemo(
     () => analyzePensionElections(plan, startYear).find((candidate) => candidate.pensionId === pensionId),
     [plan, pensionId, startYear],

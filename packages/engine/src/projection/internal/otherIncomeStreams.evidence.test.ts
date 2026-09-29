@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Plan } from '../../model/plan.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
@@ -179,3 +179,28 @@ describeCalculation(
     })
   },
 )
+
+describe('income-one-time-annual: a stream dated before the start year (D-2027-ROLLOVER)', () => {
+  // The derivation's U1 inheritance: $50,000 in 2026, not inflation-adjusted.
+  function inheritance(): Plan {
+    const plan = singlePersonPlan({ dob: '1965-06-15', planningAge: 90 })
+    plan.incomes = [
+      { type: 'oneTime', id: 'inh', label: 'Inheritance', year: 2026, amount: 50_000, inflationAdjusted: false, taxTreatment: 'none' },
+    ]
+    return validated(plan)
+  }
+  const warning =
+    'The Inheritance income is dated 2026, before this plan starts in 2027, so it is not counted. If it has not arrived, move it to 2027 or later.'
+
+  it('pays in 2026 from a 2026 start, with no warning', () => {
+    const result = simulatePlan(inheritance(), { startYear: 2026, horizonEndYear: 2027, taxCalculator: createFederalTaxCalculator() })
+    expect(rowAt(result.years, 2026).incomes.oneTime).toBe(50_000)
+    expect(result.warnings).not.toContain(warning)
+  })
+
+  it('pays nothing from a 2027 start, and says so', () => {
+    const result = simulatePlan(inheritance(), { startYear: 2027, horizonEndYear: 2028, taxCalculator: createFederalTaxCalculator() })
+    expect(result.years.map((year) => year.incomes.oneTime)).toEqual([0, 0])
+    expect(result.warnings).toContain(warning)
+  })
+})

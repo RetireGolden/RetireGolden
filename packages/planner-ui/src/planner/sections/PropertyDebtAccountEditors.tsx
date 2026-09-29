@@ -6,6 +6,7 @@ import { packForYear } from '@retiregolden/engine/params'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField } from '../fields'
 import { usePlan } from '../planContextCore'
 import type { CommitAccountFieldFor } from './AccountEditorTypes'
+import { projectionStartYear, startYearDollarsWord, startYearDollarsWordCapitalized } from '../useProjection'
 
 export function PropertyAccountEditor({
   account,
@@ -16,7 +17,7 @@ export function PropertyAccountEditor({
   index: number
   onCommit: CommitAccountFieldFor<Extract<Account, { type: 'property' }>>
 }) {
-  const { update } = usePlan()
+  const { plan, update } = usePlan()
 
   return (
     <>
@@ -73,15 +74,15 @@ export function PropertyAccountEditor({
       )}
       <MoneyField
         label="Property tax / year"
-        help="Annual property tax in today's dollars. Charged as a recurring expense while you own the home, and, unlike the mortgage, it keeps going after the loan is paid off."
-        hint="Today's $; continues after payoff."
+        help={`Annual property tax in ${startYearDollarsWord(plan)} dollars. Charged as a recurring expense while you own the home, and, unlike the mortgage, it keeps going after the loan is paid off.`}
+        hint={`${startYearDollarsWordCapitalized(plan)} $; continues after payoff.`}
         value={account.propertyTaxAnnual ?? null}
         allowNull
         onCommit={(v) => onCommit('propertyTaxAnnual', v ?? undefined)}
       />
       <MoneyField
         label="Insurance / year"
-        hint="Homeowner's/hazard insurance, today's $."
+        hint={`Homeowner's/hazard insurance, ${startYearDollarsWord(plan)} $.`}
         value={account.insuranceAnnual ?? null}
         allowNull
         onCommit={(v) => onCommit('insuranceAnnual', v ?? undefined)}
@@ -96,8 +97,8 @@ export function PropertyAccountEditor({
             if (value) {
               property.primaryResidence = true
               property.hecm = {
-                openYear: new Date().getFullYear(),
-                growthRatePct: packForYear(new Date().getFullYear()).pack.hecm.defaultGrowthRatePct,
+                openYear: projectionStartYear(plan),
+                growthRatePct: packForYear(projectionStartYear(plan)).pack.hecm.defaultGrowthRatePct,
                 drawPolicy: 'lastResort',
               }
             } else {
@@ -113,7 +114,7 @@ export function PropertyAccountEditor({
             help="The year the line of credit is opened. Pfau's research favors opening early. The unused credit compounds from that point regardless of home value."
             path={`accounts.${index}.hecm.openYear`}
             value={account.hecm.openYear}
-            onCommit={(v) => onCommit('hecm', { ...account.hecm!, openYear: Math.round(v ?? new Date().getFullYear()) })}
+            onCommit={(v) => onCommit('hecm', { ...account.hecm!, openYear: Math.round(v ?? projectionStartYear(plan)) })}
           />
           <PercentField
             label="Line size (% of value)"

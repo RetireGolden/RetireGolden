@@ -59,6 +59,7 @@ import type { Account } from '../../model/plan.js'
 import type { FilingStatus, ParameterPack } from '../../params/types.js'
 import { propertySaleTax } from '../../tax/propertySale.js'
 import type { RecordedPropertySale } from '../annualCashFlowYearSites.js'
+import { effectivePropertySaleYear } from '../propertySaleYear.js'
 
 /**
  * The year-scoped state this phase reads. Every field is `readonly`, and the
@@ -73,6 +74,11 @@ export interface FixedAssetDispositionYearInput {
   readonly accounts: readonly Readonly<Account>[]
   /** The projected calendar year. */
   readonly year: number
+  /**
+   * The projection's first year. A sale dated before it runs in it
+   * (`projection/propertySaleYear.ts#effectivePropertySaleYear`).
+   */
+  readonly startYear: number
   /** This year's property values, before the sale year's inflation growth. */
   readonly propertyValues: ReadonlyMap<string, number>
   /**
@@ -119,13 +125,17 @@ export interface FixedAssetDispositionRow {
 export function fixedAssetDispositions(
   input: FixedAssetDispositionYearInput,
 ): readonly FixedAssetDispositionRow[] {
-  const { accounts, year, propertyValues, inflRateAt, filingStatus, pack, hecmStates } = input
+  const { accounts, year, startYear, propertyValues, inflRateAt, filingStatus, pack, hecmStates } = input
   const rows: FixedAssetDispositionRow[] = []
   // Ids whose HECM line an earlier row in THIS year already closed. See the
   // delete-as-you-go rule in the module header.
   const closed = new Set<string>()
   for (const account of accounts) {
-    if (account.type !== 'property' || account.plannedSaleYear !== year || account.costBasis === undefined) continue
+    if (
+      account.type !== 'property' ||
+      effectivePropertySaleYear(account, startYear) !== year ||
+      account.costBasis === undefined
+    ) continue
     const value = propertyValues.get(account.id) ?? 0
     if (value <= 0) continue
     // Match the property-events block: the sale year's inflation growth

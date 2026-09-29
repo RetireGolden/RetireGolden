@@ -8,7 +8,7 @@ import { CheckboxField, DateField, MoneyField, NumberField, PercentField, Select
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
 import { ROTH_FIVE_YEAR_INCOMPLETE_NOTE } from '../professionalConfirmation'
-import { currentStartYear } from '../useProjection'
+import { projectionStartYear, startYearDollarsWord } from '../useProjection'
 import type { CommitAccountFieldFor } from './AccountEditorTypes'
 import { localCalendarDateIso } from './sectionHelpers'
 
@@ -337,7 +337,7 @@ export function RetirementAccountEditor({
   onCommit: CommitAccountFieldFor<InheritedRetirementAccount>
 }) {
   const { plan, update } = usePlan()
-  const planningYear = currentStartYear()
+  const planningYear = projectionStartYear(plan)
   const set = onCommit
 
   return (
@@ -354,7 +354,7 @@ export function RetirementAccountEditor({
       {account.type === 'roth' && !account.inherited ? (
         <MoneyField
           label="Contribution basis"
-          help="Your total direct Roth contributions plus any amounts you have already converted into this Roth, less what you have taken out (today's dollars). Both come out before earnings with no income tax, so this is what you can tap tax-free in early retirement. A conversion less than five years old can still owe the 10% penalty before 59½; the plan does not charge it for conversions made before the plan starts. Leave out the conversions and the plan treats them as earnings instead. Leave blank to treat the whole current balance as contributions and conversions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
+          help={`Your total direct Roth contributions plus any amounts you have already converted into this Roth, less what you have taken out (${startYearDollarsWord(plan)} dollars). Both come out before earnings with no income tax, so this is what you can tap tax-free in early retirement. A conversion less than five years old can still owe the 10% penalty before 59½; the plan does not charge it for conversions made before the plan starts. Leave out the conversions and the plan treats them as earnings instead. Leave blank to treat the whole current balance as contributions and conversions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks.`}
           hint="Blank = treat whole balance as contributions and conversions."
           value={account.contributionBasis ?? null}
           allowNull
@@ -398,7 +398,7 @@ export function RetirementAccountEditor({
             return
           }
           const inherited = {
-            ownerDeathYear: new Date().getFullYear() - 1,
+            ownerDeathYear: projectionStartYear(plan) - 1,
             decedentHadStartedRmds: false,
           }
           if (account.type === 'roth') {
@@ -425,7 +425,7 @@ export function RetirementAccountEditor({
             hint="Starts the distribution clock. What is due each year depends on the beneficiary facts below."
             path={`accounts.${index}.inherited.ownerDeathYear`}
             value={account.inherited.ownerDeathYear}
-            onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? new Date().getFullYear() - 1) })}
+            onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? projectionStartYear(plan) - 1) })}
           />
           {account.type === 'traditional' ? (
             <CheckboxField
