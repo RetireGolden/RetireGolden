@@ -282,8 +282,6 @@ export interface ClaimAgeRefinement {
   readonly evaluations: number
   /** Months that ranked higher on the metric but broke one of the objective's constraints, so were not taken. */
   readonly rejectedIneligibleBetter: number
-  /** Whole passes over the claims, the last of which changed none (#refineClaimMonths). */
-  readonly passes: number
 }
 
 function monthCandidate(plan: Plan, streamIdByPerson: ReadonlyMap<string, string>, claim: Readonly<Record<string, ClaimAgeValue>>): DecisionCandidate {
@@ -445,6 +443,5 @@ export function refineClaimAgeMonthly(
     primaryChangeVsWinner: search.row.primaryValue - winner.primaryValue,
     evaluations: search.evaluations,
     rejectedIneligibleBetter: search.rejectedIneligibleBetter,
-    passes: search.passes,
   }
 }
