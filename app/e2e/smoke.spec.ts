@@ -124,6 +124,14 @@ test.describe('Smoke', () => {
   })
 
   test('Results and Monte Carlo render numbers for an example plan', async ({ page }) => {
+    // Playwright's 30s default *test* timeout is a hard ceiling on the whole
+    // test, so the 60s wait below never had more than about 30s: on a hosted
+    // runner the 1,000-path run over this plan's seventy years can take
+    // longer, and the test failed all three attempts on main twice on
+    // 2026-09-29. Give the documented 60s wait room to fit, as the Optimize
+    // and spending-solver specs do.
+    test.setTimeout(90_000)
+
     await openExamplePlan(page, 'Aggressive saver to early retirement')
 
     // The KPI strip renders projected dollar figures.
