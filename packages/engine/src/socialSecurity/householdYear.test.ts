@@ -502,3 +502,32 @@ describeRule('usc-42-403-b-1-worker-excess-charged-to-family', {
     expect(observed).not.toEqual(readings.twoToOneOverEverythingHeIsPaid)
   })
 })
+
+// PR #769 review, issue 3: a full-retirement-age year for a birth with FRA
+// months (66 and 10 months for 1959). Born 1959-06-15: FRA month April 2026.
+// Claimed at 62 in June 2021, 58 months early: 2,000 x (1 - 36 x 5/9% - 22 x
+// 5/12%) = 1,416.67 a month. $300,000 of 2026 wages: the three months before
+// April earn 75,000, an excess of floor((75,000 - 65,160)/3) = 3,280, charged
+// January, February and 446.67 of March: three crediting months, so from April
+// she is paid 55 months early, 1,441.67. 2026 pays 3 x 1,416.67 - 3,280 +
+// 9 x 1,441.67 = 13,945, and 2027 17,300. Testing the year she attains 66
+// (2025, the whole-years rule) leaves 2026 untested: 17,000 in each year. One
+// month more before April (four) withholds January to March in full: 12,975;
+// one month fewer (two) earns 50,000, under the higher amount: 17,000.
+describeRule('usc-42-403-f-3-fra-year-months-before-fra', {
+  note: 'a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months',
+  readings: {
+    theMonthsBeforeTheFraMonth: { y2026: 13_945, y2027: 17_300 },
+    theYearOfTheWholeYears: { y2026: 17_000, y2027: 17_000 },
+    oneMonthTooMany: { y2026: 12_975, y2027: 17_300 },
+  },
+  accepted: 'theMonthsBeforeTheFraMonth',
+}, ({ accepted, readings }) => {
+  it('tests 2026 for a person born 1959-06-15, against the three months before April', () => {
+    const paid = paidBy([person('P', '1959-06-15')], [ss('P', 2_000, 62), wages('P', 300_000, 68)])
+    const observed = { y2026: paid('P', 2026), y2027: paid('P', 2027) }
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.theYearOfTheWholeYears)
+    expect(observed).not.toEqual(readings.oneMonthTooMany)
+  })
+})

@@ -3841,6 +3841,17 @@
           ]
         },
         {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
+          "line": 86,
+          "note": "a path in a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months",
+          "tests": [
+            {
+              "title": "prices the 2026 path of a person born 1959-06-15 against the three months before April",
+              "line": 95
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
           "line": 116,
           "note": null,
@@ -3848,6 +3859,17 @@
             {
               "title": "tests only the earnings of the months before the FRA month in its year (E2, E2b, E2c)",
               "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 517,
+          "note": "a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months",
+          "tests": [
+            {
+              "title": "tests 2026 for a person born 1959-06-15, against the three months before April",
+              "line": 526
             }
           ]
         }

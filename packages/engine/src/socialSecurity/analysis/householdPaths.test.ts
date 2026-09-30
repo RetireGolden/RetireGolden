@@ -77,3 +77,26 @@ describeRule('usc-42-403-f-3-fra-year-months-before-fra', {
     expect(observed).not.toEqual(readings.ignoresTheFraYearsWages)
   })
 })
+
+// PR #769 review, issue 3, in the models: the same person as the ledger's case,
+// born 1959-06-15 (FRA month April 2026), claimed at 62 (1,416.67 a month),
+// $300,000 of wages in 2026 only. 2026 pays 13,945 and each later year 17,300.
+// The whole-years rule tests 2025 and pays 17,000 throughout; one month more
+// before April, 12,975 in 2026.
+describeRule('usc-42-403-f-3-fra-year-months-before-fra', {
+  note: 'a path in a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months',
+  readings: {
+    theMonthsBeforeTheFraMonth: { y2026: 13_945, after: 17_300 },
+    theYearOfTheWholeYears: { y2026: 17_000, after: 17_000 },
+    oneMonthTooMany: { y2026: 12_975, after: 17_300 },
+  },
+  accepted: 'theMonthsBeforeTheFraMonth',
+}, ({ accepted, readings }) => {
+  it('prices the 2026 path of a person born 1959-06-15 against the three months before April', () => {
+    const years = aliveYears(alone('1959-06-15', 2_000, 62, (year) => (year === 2026 ? 300_000 : 0), 0), 2035)
+    const observed = { y2026: years[0], after: years[years.length - 1] }
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.theYearOfTheWholeYears)
+    expect(observed).not.toEqual(readings.oneMonthTooMany)
+  })
+})
