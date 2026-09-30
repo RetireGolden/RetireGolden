@@ -1,6 +1,10 @@
 # Targeted re-check, 2026-09-30 (recheck-grok)
 
-Reviewer: Grok (grok-4.7, xAI), headless and read-only, on a snapshot of branch `claude/scrub-local-paths` at `b251c178`. Scope: 2 records rejected in the 2026-09-29 reviews, or approved there and then touched by a later fix, each checked only for whether its fix resolves the original finding and introduces no error. Verdicts: 2 approve, 0 reject. The only edits to the report below replace local paths with repository paths. Verbatim output follows.
+Reviewer: Grok (grok-4.7, xAI), headless and read-only, on a snapshot of branch `claude/scrub-local-paths` at `b251c178`. Scope: 2 records rejected in the 2026-09-29 reviews, or approved there and then touched by a later fix, each checked only for whether its fix resolves the original finding and introduces no error. Verdicts: 2 approve, 0 reject. The only edits to the report below replace local paths with repository paths.
+
+**Orchestrator's note (added 2026-09-30 after the pull request's round-one review; not the reviewer's words).** Where the report below says "`reviewedBy` stays `unreviewed`", it describes the change it was shown: the field had been reset to `unreviewed` pending this re-check, and the diff under review did not change it. The verdict for both records is approve, so both are recorded as reviewed by Grok (`reviewedBy: 'grok'`). The full-horizon pins are run measurements, not derivations: each record's limit states them as figures a repository test (`packages/planner-ui/src/planner/preStartEvents.figures.test.ts`) pins by running the engine, and the review did not recompute them. The worked cases Grok recomputed on 2026-09-29 (`REVIEW-2026-09-29-grok-1.md`) are unchanged.
+
+Verbatim output follows.
 
 ---
 
