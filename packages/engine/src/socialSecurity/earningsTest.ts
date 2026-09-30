@@ -23,29 +23,40 @@
  *   claim-year convention pays a claim at a whole age for the whole calendar
  *   year, social-security-payable-months) is paid in full and never charged,
  *   so it is never a crediting month either. The worker whose record a household member's spouse
- *   benefit is paid on is charged first against the family benefit on his
- *   record: his own benefits and that spouse benefit. Where the excess left is
- *   less than a month's family benefit, the rest is paid to the two in the
- *   proportion of their original benefits, the worker's PIA to half of it, two
- *   to one, neither share above the person's own benefit, any excess going to
- *   the other (403(b)(1)(B); 20 CFR 404.434(b)(1), 404.439, 404.440; POMS RS
- *   02501.095 B.4, RS 02501.110). Each other person's excess is then charged
- *   against what is left of that person's benefits, an auxiliary benefit before
- *   the old-age benefit (403(b)(1), "only to the extent of the total of his
- *   benefits remaining after such earlier deductions"; 404.434(b)(3); POMS RS
- *   02501.150 A.1). Excess not charged by December lapses (POMS RS 02501.095
- *   B.1).
+ *   benefit is paid on is charged first, against all of his benefits and the
+ *   family benefit on his record: his old-age benefit, any benefit he is paid
+ *   on another record (a former spouse's) and that spouse benefit (403(b)(1)(A)
+ *   and (B); POMS RS 02501.095 B.2, RS 02501.145 A and B.1). Where the excess
+ *   left is less than that total, it is charged to each record in proportion
+ *   to what the record pays him that month (RS 02501.145 B.2), and what is left
+ *   of the family benefit on his record is paid to the two in the proportion of
+ *   their original benefits, the worker's PIA to half of it, two to one,
+ *   neither share above the person's own benefit, any excess going to the other
+ *   (20 CFR 404.434(b)(1), 404.439, 404.440; POMS RS 02501.110). Each other
+ *   person's excess is then charged against what is left of that person's
+ *   benefits (403(b)(1), "only to the extent of the total of his benefits
+ *   remaining after such earlier deductions"; 404.434(b)(3); POMS RS 02501.095
+ *   B.4): a person paid on two records is charged on both, a partial month in
+ *   proportion to the benefits due on each before any deduction for work, and
+ *   the other record no more than what the worker's charge left of it (RS
+ *   02501.145 B.2, RS 02501.150 A.2). Excess not charged by December lapses
+ *   (POMS RS 02501.095 B.1).
  * - A crediting month is reported for each benefit with a full or partial
- *   deduction in a month of its reduction period (402(q)(7)(A); POMS RS
- *   00615.482 B): the worker's own benefit when part of it was withheld, a
- *   spouse benefit whenever the worker's excess was charged against it, even
- *   when her prorated share of a partial month is her whole benefit (RS
- *   00615.482 B.2), and each benefit of a person whose own excess was charged.
- *   The caller says which months are in each benefit's reduction period.
+ *   deduction in a month of its reduction period, each record's benefit on its
+ *   own (402(q)(7)(A); POMS RS 00615.482 B, "grant ARFs separately on each
+ *   record"): the worker's old-age benefit or his benefit on another record
+ *   when part of it was withheld, a spouse benefit whenever the worker's excess
+ *   was charged to his record, even when her prorated share of a partial month
+ *   is her whole benefit (RS 00615.482 B.2), and each benefit of a person whose
+ *   own excess was charged against it. Because a partial month is apportioned
+ *   to both records, a person paid on two records whose own excess is charged
+ *   in a month has a deduction from both benefits that month. The caller says
+ *   which months are in each benefit's reduction period.
  *
- * Nothing here is rounded but the excess: the benefits and the partial-month
- * shares stay unrounded, as the ledger's benefits are (20 CFR 404.304(f) rounds
- * a benefit to the dollar; the engine does not).
+ * Nothing here is rounded but the excess: the benefits, the apportioned parts
+ * and the partial-month shares stay unrounded, as the ledger's benefits are (20
+ * CFR 404.304(f) rounds a benefit to the dollar, and RS 02501.145 B.2 rounds an
+ * apportioned part down to a multiple of $.10; the engine does neither).
  *
  * @see usc-42-403-f-3-retirement-earnings-test in rules/records/socialSecurity.ts
  * @see usc-42-403-b-1-worker-excess-charged-to-family in rules/records/socialSecurity.ts
@@ -171,11 +182,20 @@ interface MonthPosition {
   auxiliary: number
 }
 
-function deduct(position: MonthPosition, amount: number): void {
-  const fromAuxiliary = Math.min(position.auxiliary, amount)
-  position.auxiliary -= fromAuxiliary
-  position.own -= amount - fromAuxiliary
-  if (position.own < 0) position.own = 0
+/**
+ * The part of a person's own excess charged this month that falls on the
+ * benefit paid on another record (RS 02501.145 B.2, RS 02501.150 A.2): all of
+ * what is left of it when the charge takes every benefit left; otherwise the
+ * charge in proportion to the benefits due on the two records before any
+ * deduction for work, and no more than what is left of that benefit after the
+ * worker's charge. The rest falls on the old-age benefit.
+ */
+function chargedToOtherRecord(position: MonthPosition, due: EarningsTestMonthlyDue, charged: number): number {
+  if (charged >= position.own + position.auxiliary - DOLLAR_NOISE) return position.auxiliary
+  const ownBasis = due.ownEntitled ? due.own : 0
+  const auxiliaryBasis = due.auxiliaryEntitled ? due.auxiliary : 0
+  if (ownBasis + auxiliaryBasis <= 0) return 0
+  return Math.min(position.auxiliary, (charged * auxiliaryBasis) / (ownBasis + auxiliaryBasis))
 }
 
 /**
@@ -213,21 +233,21 @@ export function earningsTestYear(input: EarningsTestYearInput): EarningsTestYear
     }
     const ownCredits = new Set<string>()
     const auxiliaryCredits = new Set<string>()
-    const creditsFor = (id: string, due: EarningsTestMonthlyDue, deducted: number): void => {
-      if (deducted <= DOLLAR_NOISE) return
-      if (due.own > 0 && due.ownEntitled && due.ownInReductionPeriod) ownCredits.add(id)
-      if (due.auxiliary > 0 && due.auxiliaryEntitled && due.auxiliaryInReductionPeriod) auxiliaryCredits.add(id)
+    // Each record's benefit is credited on its own (RS 00615.482 B.3 note):
+    // a month counts for a benefit when that benefit had a deduction.
+    const creditsFor = (id: string, due: EarningsTestMonthlyDue, fromOwn: number, fromAuxiliary: number): void => {
+      if (fromOwn > DOLLAR_NOISE && due.own > 0 && due.ownEntitled && due.ownInReductionPeriod) ownCredits.add(id)
+      if (fromAuxiliary > DOLLAR_NOISE && due.auxiliary > 0 && due.auxiliaryEntitled && due.auxiliaryInReductionPeriod) auxiliaryCredits.add(id)
     }
     const chargeable = (id: string): boolean => {
       const position = positions.get(id)
       return position !== undefined && position.own + position.auxiliary > DOLLAR_NOISE && monthIndex < (fraMonthIndexOf.get(id) ?? -Infinity)
     }
 
-    // 1. The worker's excess against the family benefit on his record.
+    // 1. The worker's excess against all of his benefits and the family benefit on his record.
     if (workerId !== null && (remaining.get(workerId) ?? 0) > 0 && chargeable(workerId)) {
       const worker = positions.get(workerId)!
       const workerDue = dueNow.get(workerId)!
-      const workerTotal = worker.own + worker.auxiliary
       let spouseId: string | null = null
       let spouseOnRecord = 0
       for (const [id, due] of dueNow) {
@@ -236,46 +256,63 @@ export function earningsTestYear(input: EarningsTestYearInput): EarningsTestYear
           spouseOnRecord = positions.get(id)!.auxiliary
         }
       }
-      const family = workerTotal + spouseOnRecord
-      const charged = Math.min(remaining.get(workerId)!, family)
+      // His own record pays his old-age benefit and the spouse benefit; the
+      // other record pays any benefit he has on a former spouse's.
+      const onOwnRecord = worker.own + spouseOnRecord
+      const onOtherRecord = worker.auxiliary
+      const total = onOwnRecord + onOtherRecord
+      const charged = Math.min(remaining.get(workerId)!, total)
       charge(workerId, charged)
-      let workerDeducted: number
+      let ownDeducted: number
+      let auxiliaryDeducted: number
       let spouseDeducted: number
-      if (charged >= family - DOLLAR_NOISE) {
-        workerDeducted = workerTotal
+      let chargedToOwnRecord: number
+      if (charged >= total - DOLLAR_NOISE) {
+        ownDeducted = worker.own
+        auxiliaryDeducted = worker.auxiliary
         spouseDeducted = spouseOnRecord
-      } else if (spouseOnRecord > 0) {
-        // 20 CFR 404.439: the rest is paid in proportion to the original
-        // benefits, the worker's PIA and half of it, before the family
-        // maximum, the dual-entitlement and the age reductions; 404.440: a
-        // share above what the person is due goes to the other.
-        const left = family - charged
-        let workerShare = (left * 2) / 3
-        let spouseShare = left / 3
-        if (spouseShare > spouseOnRecord) {
-          spouseShare = spouseOnRecord
-          workerShare = left - spouseOnRecord
-        }
-        if (workerShare > workerTotal) {
-          workerShare = workerTotal
-          spouseShare = left - workerTotal
-        }
-        workerDeducted = workerTotal - workerShare
-        spouseDeducted = spouseOnRecord - spouseShare
+        chargedToOwnRecord = onOwnRecord
       } else {
-        workerDeducted = charged
-        spouseDeducted = 0
+        // RS 02501.145 B.2: charged to each record in proportion to what it
+        // pays him this month; the rest falls on his own record.
+        auxiliaryDeducted = (charged * onOtherRecord) / total
+        chargedToOwnRecord = charged - auxiliaryDeducted
+        if (spouseOnRecord > 0) {
+          // 20 CFR 404.439: what is left of the family benefit on his record is
+          // paid in proportion to the original benefits, the worker's PIA and
+          // half of it, before the family maximum, the dual-entitlement and the
+          // age reductions; 404.440: a share above what the person is due goes
+          // to the other.
+          const left = onOwnRecord - chargedToOwnRecord
+          let workerShare = (left * 2) / 3
+          let spouseShare = left / 3
+          if (spouseShare > spouseOnRecord) {
+            spouseShare = spouseOnRecord
+            workerShare = left - spouseOnRecord
+          }
+          if (workerShare > worker.own) {
+            workerShare = worker.own
+            spouseShare = left - worker.own
+          }
+          ownDeducted = worker.own - workerShare
+          spouseDeducted = spouseOnRecord - spouseShare
+        } else {
+          ownDeducted = chargedToOwnRecord
+          spouseDeducted = 0
+        }
       }
-      deduct(worker, workerDeducted)
-      creditsFor(workerId, workerDue, workerDeducted)
+      worker.own = Math.max(0, worker.own - ownDeducted)
+      worker.auxiliary = Math.max(0, worker.auxiliary - auxiliaryDeducted)
+      creditsFor(workerId, workerDue, ownDeducted, auxiliaryDeducted)
       if (spouseId !== null) {
         const spouse = positions.get(spouseId)!
         spouse.auxiliary -= spouseDeducted
         if (spouse.auxiliary < 0) spouse.auxiliary = 0
         // POMS RS 00615.482 B.2: a spouse month counts whenever the worker's
-        // excess is charged to it, even when her prorated share is paid in full.
+        // excess is charged to his record, even when her prorated share is
+        // paid in full.
         const spouseDue = dueNow.get(spouseId)!
-        if (charged > DOLLAR_NOISE && spouseDue.auxiliaryInReductionPeriod) auxiliaryCredits.add(spouseId)
+        if (chargedToOwnRecord > DOLLAR_NOISE && spouseDue.auxiliaryInReductionPeriod) auxiliaryCredits.add(spouseId)
       }
     }
 
@@ -284,11 +321,15 @@ export function earningsTestYear(input: EarningsTestYearInput): EarningsTestYear
       if (person.id === workerId) continue
       if ((remaining.get(person.id) ?? 0) <= 0 || !chargeable(person.id)) continue
       const position = positions.get(person.id)!
+      const due = dueNow.get(person.id)!
       const left = position.own + position.auxiliary
       const charged = Math.min(remaining.get(person.id)!, left)
       charge(person.id, charged)
-      deduct(position, charged)
-      creditsFor(person.id, dueNow.get(person.id)!, charged)
+      const fromAuxiliary = chargedToOtherRecord(position, due, charged)
+      const fromOwn = charged - fromAuxiliary
+      position.auxiliary = Math.max(0, position.auxiliary - fromAuxiliary)
+      position.own = Math.max(0, position.own - fromOwn)
+      creditsFor(person.id, due, fromOwn, fromAuxiliary)
     }
 
     for (const [id, due] of dueNow) {

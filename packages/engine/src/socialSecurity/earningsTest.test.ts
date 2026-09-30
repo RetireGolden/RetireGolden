@@ -141,4 +141,51 @@ describe('earningsTestYear (403(b)(1), (f)(1); 20 CFR 404.434, 404.439, 404.440)
     expect(result.paidByMonth.get('p')).toEqual([0, 0, 0, 0, 0, 0, 1_400, 1_400, 1_400, 1_400, 1_400, 1_400])
     expect(result.excessChargedByPerson.get('p')).toBe(8_400)
   })
+
+  it('charges a partial month of a person paid on two records to both, so each benefit has a crediting month (PR #769 review issue 1; RS 02501.145 B.2, RS 00615.482 B.3 note)', () => {
+    // Her own 280 and 390 on W's record, $100 of her excess in January, none of
+    // his: 100 x 390/670 = 58.21 falls on the spouse benefit and 41.79 on her
+    // own, so both are credited. Charging the spouse benefit first would credit
+    // only it, and her own benefit first only her own.
+    const credits: string[] = []
+    const result = earningsTestYear({
+      year: 2026,
+      people: [{ id: 'W', excess: 0, fraMonthIndex: 2031 * 12 }, { id: 'S', excess: 100, fraMonthIndex: 2031 * 12 }],
+      workerId: 'W',
+      due: () => new Map([['W', due(1_400)], ['S', due(280, 390, 'W')]]),
+      credit: (month, personId, benefit) => credits.push(`${month}:${personId}:${benefit}`),
+    })
+    expect(result.paidByMonth.get('S')![0]).toBeCloseTo(570, 9)
+    expect(credits).toEqual(['0:S:own', '0:S:auxiliary'])
+  })
+
+  it('charges the worker\'s partial month to each record in proportion to what it pays him, then shares his own record two to one (POMS RS 02501.145 C)', () => {
+    // RS 02501.145's example: the number holder's excess is 400; on his record
+    // he is paid 132.30 and a child 66.20 (two shares to one), and he is paid
+    // 66.20 as a parent on another record. January takes all 264.70. February's
+    // 135.30 falls 135.30 x 66.20/264.70 = 33.84 on the other record and 101.46
+    // on his own, and the 97.04 left there is shared 64.69 to him and 32.35 to
+    // the child. (The POMS rounds the apportioned part down to 33.80, which the
+    // engine does not: its figures are 101.50, 64.70 and 32.40.)
+    const credits: string[] = []
+    const result = earningsTestYear({
+      year: 2026,
+      people: [{ id: 'NH', excess: 400, fraMonthIndex: 2031 * 12 }],
+      workerId: 'NH',
+      due: () => new Map([['NH', due(132.3, 66.2)], ['C', due(0, 66.2, 'NH')]]),
+      credit: (month, personId, benefit) => credits.push(`${month}:${personId}:${benefit}`),
+    })
+    const february = 400 - 264.7
+    const onOtherRecord = (february * 66.2) / 264.7
+    const leftOnHisRecord = 198.5 - (february - onOtherRecord)
+    expect(onOtherRecord).toBeCloseTo(33.838, 3)
+    expect(result.paidByMonth.get('NH')![0]).toBe(0)
+    expect(result.paidByMonth.get('NH')![1]).toBeCloseTo((leftOnHisRecord * 2) / 3 + 66.2 - onOtherRecord, 9)
+    expect(result.paidByMonth.get('NH')![1]).toBeCloseTo(97.0541, 4)
+    expect(result.paidByMonth.get('C')![1]).toBeCloseTo(32.3459, 4)
+    expect(result.paidByMonth.get('NH')![2]).toBeCloseTo(198.5, 9)
+    // Two to one over everything he is paid would leave the child 43.13.
+    expect(result.paidByMonth.get('C')![1]).not.toBeCloseTo((264.7 - february) / 3, 2)
+    expect(credits).toEqual(['0:NH:own', '0:NH:auxiliary', '0:C:auxiliary', '1:NH:own', '1:NH:auxiliary', '1:C:auxiliary'])
+  })
 })

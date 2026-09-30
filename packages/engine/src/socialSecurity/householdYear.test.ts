@@ -411,3 +411,94 @@ describeRule('usc-42-403-f-8-earnings-test-exempt-amounts', {
     expect(observed).not.toEqual(readings.heldAtThe2026Amounts)
   })
 })
+
+// PR #769 review, issue 1: a person paid on two records whose own excess is
+// charged in a month. S, born 1964-01-20, PIA 400, claims at 62: her own 280 and
+// the spouse benefit on W's record, (1,000 - 400) x 0.65 = 390. W, born
+// 1964-01-15, PIA 2,000, claims at 62 and has no wages. S earns $25,000 in
+// 2026, an excess of 260, all charged to January. A partial month is charged to
+// each record in proportion to the benefits due on it (POMS RS 02501.145 B.2):
+// 260 x 390/670 = 151.34 to the spouse benefit and 108.66 to her own, so both
+// have a deduction that month, and each record's benefit is credited on its own
+// (RS 00615.482 B.1 and B.3 note). From January 2031 her own benefit is priced
+// 59 months early, 400 x (1 - 36 x 5/9% - 23 x 5/12%) = 281.67, and the spouse
+// part 600 x (1 - 36 x 25/36% - 23 x 5/12%) = 392.50: 674.17 a month, 8,090.
+// Crediting only the benefit charged first gives 8,070 (the spouse benefit) or
+// 8,060 (her own).
+describeRule('poms-rs-00615-482-arf-crediting-months', {
+  note: 'a partial month charged to both records of a person paid on two',
+  readings: {
+    bothRecordsCredited: 8_090,
+    onlyTheSpouseBenefitCredited: 8_070,
+    onlyHerOwnBenefitCredited: 8_060,
+  },
+  accepted: 'bothRecordsCredited',
+}, ({ accepted, readings }) => {
+  it('credits both of her benefits for a month her own excess is charged against them (RS 02501.145 B.2; RS 00615.482 B.3 note)', () => {
+    const paid = paidBy([person('W', '1964-01-15'), person('S', '1964-01-20')], [ss('W', 2_000, 62), ss('S', 400, 62), wages('S', 25_000, 63)])
+    expect(paid('S', 2026)).toBe(7_780)
+    expect(paid('S', 2031)).toBe(accepted)
+    expect(paid('S', 2031)).not.toBe(readings.onlyTheSpouseBenefitCredited)
+    expect(paid('S', 2031)).not.toBe(readings.onlyHerOwnBenefitCredited)
+  })
+})
+
+// PR #769 review, issue 2: the worker is also paid a survivor benefit on a
+// former spouse's record. W, born 1964-01-15, PIA 2,000, claims at 62 (1,400);
+// his first wife died (PIA 3,000, claimed at her full retirement age, married
+// 20 years) and he remarried at 60, so the widower's benefit is paid from his
+// claim, 3,000 x (1 - 0.285 x 60/84) = 2,389.29, of which 989.29 is paid on her
+// record. S, born 1964-01-20, PIA 400, claims at 62: 280 and 390 on W's record.
+// W's $60,000 of 2026 wages leave an excess of 17,760, charged against all of
+// his benefits and the family benefit on his record, 2,779.29 a month
+// (403(b)(1)(A), (B); RS 02501.145 A, B.1): January to June 16,675.71, and in
+// July the last 1,084.29. The July charge falls on each record in proportion
+// to what it pays him (RS 02501.145 B.2): 1,084.29 x 989.29/2,779.29 = 385.95
+// on his first wife's record, 698.33 on his own. What is left on his record,
+// 1,790 - 698.33 = 1,091.67, is shared two to one (20 CFR 404.439): W 727.78,
+// S 363.89. W is paid 727.78 + 603.33 in July, and 2026 pays him 13,277.54 and
+// S 5,673.89. Sharing two to one everything he is paid (the engine before this
+// review) pays W 13,251.43 and S 5,700.
+describeRule('usc-42-403-b-1-worker-excess-charged-to-family', {
+  note: 'a worker also paid on a former spouse\'s record: each record charged in proportion, the split two to one only on his own',
+  readings: {
+    apportionedByRecordThenTwoToOne: { w: 13_277.54, s: 5_673.89 },
+    twoToOneOverEverythingHeIsPaid: { w: 13_251.43, s: 5_700 },
+  },
+  accepted: 'apportionedByRecordThenTwoToOne',
+}, ({ accepted, readings }) => {
+  it('charges the worker\'s partial month to each record in proportion and shares only his own record two to one (RS 02501.145 B.2; 404.439)', () => {
+    const first: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1962-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 60 }
+    const paid = paidBy([person('W', '1964-01-15'), person('S', '1964-01-20')], [ss('W', 2_000, 62, 0, [first]), ss('S', 400, 62), wages('W', 60_000, 63)])
+    const observed = { w: paid('W', 2026), s: paid('S', 2026) }
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.twoToOneOverEverythingHeIsPaid)
+    // Every month charged, January to July, was a deduction on each of the
+    // three benefits either way, so the later years agree: from January 2031
+    // the spouse part is priced 53 months early, 600 x (1 - 25% - 17 x 5/12%)
+    // = 407.50, and S is paid 12 x (280 + 407.50) = 8,250.
+    expect(paid('S', 2031)).toBe(8_250)
+  })
+})
+
+// The same household with $61,830 of W's wages, an excess of 18,675: July's last
+// 1,999.29 falls 711.63 on his first wife's record and 1,287.66 on his own,
+// leaving 502.34 there, W 334.89 and S 167.45, neither above what each is due.
+// 2026 pays W 12,558.98 and S 5,477.45; two to one over everything he is paid,
+// 12,466.43 and 5,570.
+describeRule('usc-42-403-b-1-worker-excess-charged-to-family', {
+  note: 'a worker also paid on a former spouse\'s record, no share capped',
+  readings: {
+    apportionedByRecordThenTwoToOne: { w: 12_558.98, s: 5_477.45 },
+    twoToOneOverEverythingHeIsPaid: { w: 12_466.43, s: 5_570 },
+  },
+  accepted: 'apportionedByRecordThenTwoToOne',
+}, ({ accepted, readings }) => {
+  it('apportions a partial month by record when no share reaches what the person is due', () => {
+    const first: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1962-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 60 }
+    const paid = paidBy([person('W', '1964-01-15'), person('S', '1964-01-20')], [ss('W', 2_000, 62, 0, [first]), ss('S', 400, 62), wages('W', 61_830, 63)])
+    const observed = { w: paid('W', 2026), s: paid('S', 2026) }
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.twoToOneOverEverythingHeIsPaid)
+  })
+})

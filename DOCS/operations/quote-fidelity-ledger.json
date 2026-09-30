@@ -4,9 +4,9 @@
   "urlCount": 433,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1765,
+  "entryCount": 1771,
   "counts": {
-    "EXACT": 1201,
+    "EXACT": 1207,
     "PDF-WORD-LEVEL": 406,
     "ELISION-EXACT": 142,
     "PUNCTUATION": 4,
@@ -7625,6 +7625,26 @@
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
       "quoteSha256": "187359c346e84da5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-482-arf-crediting-months",
+      "citation": "SSA POMS RS 00615.482, § B.3 note",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
+      "quoteSha256": "15d818ed0a5395e7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-482-arf-crediting-months",
+      "citation": "SSA POMS RS 02501.145, § B.2.a",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145",
+      "quoteSha256": "ba14465a8ba1275b",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -17607,6 +17627,46 @@
     },
     {
       "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "SSA POMS RS 02501.145, § A",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145",
+      "quoteSha256": "2e8564b35b7e92a2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "SSA POMS RS 02501.145, § B.2.a",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145",
+      "quoteSha256": "ba14465a8ba1275b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "SSA POMS RS 02501.150, § A.2",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501150",
+      "quoteSha256": "9489434396b94cbe",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+      "citation": "20 CFR 404.439",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.439",
+      "quoteSha256": "bf0cf80a5e790a63",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-403-b-1-worker-excess-charged-to-family",
       "citation": "SSA POMS RS 02501.150, § A.1",
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501150",
@@ -19376,6 +19436,92 @@
         {
           "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
           "citation": "SSA POMS RS 00207.003 A"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-29",
+      "note": "After the review of pull request 769 (2026-09-29): usc-42-403-b-1-worker-excess-charged-to-family cites POMS RS 02501.145 A and B.2.a, RS 02501.150 A.2 and the opening of 20 CFR 404.439 (a worker's excess charged to every benefit he is paid, a partial month apportioned by record, the two-to-one split only on his own record), and poms-rs-00615-482-arf-crediting-months cites RS 00615.482 B.3 note and RS 02501.145 B.2.a (each record credited on its own). Each row was verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to its record; none cites a PDF.",
+      "entries": [
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "42 U.S.C. 403(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.434(b)(1)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.434(b)(3)"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.439"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.440"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 02501.145, § A"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 02501.145, § B.2.a"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 02501.150, § A.2"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "20 CFR 404.439"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 02501.150, § A.1"
+        },
+        {
+          "id": "usc-42-403-b-1-worker-excess-charged-to-family",
+          "citation": "SSA POMS RS 00615.482, § B.2"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "42 U.S.C. 402(q)(7)(A)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "42 U.S.C. 403(f)(1)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "20 CFR 404.415(a)"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.1"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.1 note"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.2"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 00615.482, § B.3 note"
+        },
+        {
+          "id": "poms-rs-00615-482-arf-crediting-months",
+          "citation": "SSA POMS RS 02501.145, § B.2.a"
         }
       ]
     }

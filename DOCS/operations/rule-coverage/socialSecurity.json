@@ -1473,7 +1473,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The ledger pays a claim at a whole age for the whole calendar year it is attained, which for most birthdays includes months before the claim's first month of entitlement (the claim-year convention, social-security-payable-months). Those months are paid in full and never charged, since 403(f)(1)(A) charges no month for which the person was not entitled to a benefit (usc-42-403-f-1-earnings-test-month-charging), so every month charged is a month of entitlement, and every one before full retirement age is credited. The companion test gives a person born in January 1964, entitled from January 2026, a 2,000 dollar excess in each of five working years, charged 1,400 dollars to January and 600 to February: ten crediting months take the 60 months of reduction to 50 and pay 17,800 dollars a year after full retirement age, where the annual ratio the engine used until 2026-09-29 rounded to one month a year and paid 17,300. The same plan for a person born in June, entitled from June 2026, charges June and July, credits the same ten months and pays 17,800; this decision's first implementation charged January and February 2026, before entitlement, credited neither, and paid 17,600, until the implementation review.",
+      "conventionRationale": "The ledger pays a claim at a whole age for the whole calendar year it is attained, which for most birthdays includes months before the claim's first month of entitlement (the claim-year convention, social-security-payable-months). Those months are paid in full and never charged, since 403(f)(1)(A) charges no month for which the person was not entitled to a benefit (usc-42-403-f-1-earnings-test-month-charging), so every month charged is a month of entitlement, and every one before full retirement age is credited. The companion test gives a person born in January 1964, entitled from January 2026, a 2,000 dollar excess in each of five working years, charged 1,400 dollars to January and 600 to February: ten crediting months take the 60 months of reduction to 50 and pay 17,800 dollars a year after full retirement age, where the annual ratio the engine used until 2026-09-29 rounded to one month a year and paid 17,300. The same plan for a person born in June, entitled from June 2026, charges June and July, credits the same ten months and pays 17,800; this decision's first implementation charged January and February 2026, before entitlement, credited neither, and paid 17,600, until the implementation review. A second test gives a woman paid her own 280 dollars and 390 on her husband's record a 260 dollar excess, all charged to January: 151.34 falls on the spouse benefit and 108.66 on her own, both are credited, and from 2031 she is paid 8,090 dollars a year, where crediting only the spouse benefit, the one the engine charged first until the review of pull request 769, gives 8,070, and only her own 8,060 (the engine then credited both of a two-record beneficiary's benefits for any deduction, so its figures were already these).",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1521,7 +1521,7 @@
           "functions": [
             {
               "name": "earningsTestYear",
-              "line": 186
+              "line": 206
             }
           ]
         },
@@ -1576,6 +1576,17 @@
               "line": 378
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 428,
+          "note": "a partial month charged to both records of a person paid on two",
+          "tests": [
+            {
+              "title": "credits both of her benefits for a month her own excess is charged against them (RS 02501.145 B.2; RS 00615.482 B.3 note)",
+              "line": 437
+            }
+          ]
         }
       ],
       "refusalFixtureFiles": [],
@@ -1610,6 +1621,16 @@
           "kind": "agencyGuidance",
           "citation": "SSA POMS RS 00615.482, § B.2",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.482, § B.3 note",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.145, § B.2.a",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145"
         }
       ]
     },
@@ -3500,7 +3521,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "In a couple the worker is the one a spouse benefit is paid on, the higher PIA, as the ledger chooses the lower earner's spouse benefit; the spouse benefit on his record is her total less her own old-age benefit, after the family maximum and the reductions (404.437). A living former spouse's record carries no plan earnings, and a divorced spouse of two years or more is independent of the ex's earnings (403(b)(2)); the plan has no divorce date, so two years or more is taken. Benefits and the partial-month shares are not rounded (404.304(f) rounds a benefit to the dollar; the engine does not, and 404.439 prorates before that rounding). Until 2026-09-29 the engine charged a worker's wages against his own benefit only. The companion tests give a worker with a 2,000 dollar PIA, claiming at 62 with 60,000 dollars of 2026 wages, and a spouse with a 400 dollar PIA, also claiming at 62: his 17,760 dollar excess takes their 1,790 dollar family benefit for nine months and 1,650 dollars of October, whose other 140 dollars are shared 93.33 and 46.67, so he is paid 2,893.33 dollars and she 4,186.67 in 2026, where the engine paid 0 and 8,040; with 36,000 dollars of her own wages too, her 5,760 dollar excess takes what is left of her benefits, and she is paid nothing, where charging her own old-age benefit only in months her spouse benefit was paid would pay 2,520.",
+      "conventionRationale": "In a couple the worker is the one a spouse benefit is paid on, the higher PIA, as the ledger chooses the lower earner's spouse benefit; the spouse benefit on his record is her total less her own old-age benefit, after the family maximum and the reductions (404.437). A living former spouse's record carries no plan earnings, and a divorced spouse of two years or more is independent of the ex's earnings (403(b)(2)); the plan has no divorce date, so two years or more is taken. Benefits and the partial-month shares are not rounded (404.304(f) rounds a benefit to the dollar; the engine does not, and 404.439 prorates before that rounding). Until 2026-09-29 the engine charged a worker's wages against his own benefit only; until the review of pull request 769 it shared a partial month two to one over everything the worker was paid, a benefit on a former spouse's record included, and charged a person paid on two records on the other record first. The apportioned parts are not rounded (RS 02501.145 B.2 rounds them down to a multiple of $.10). The companion tests give a worker with a 2,000 dollar PIA, claiming at 62 with 60,000 dollars of 2026 wages, and a spouse with a 400 dollar PIA, also claiming at 62: his 17,760 dollar excess takes their 1,790 dollar family benefit for nine months and 1,650 dollars of October, whose other 140 dollars are shared 93.33 and 46.67, so he is paid 2,893.33 dollars and she 4,186.67 in 2026, where the engine paid 0 and 8,040; with 36,000 dollars of her own wages too, her 5,760 dollar excess takes what is left of her benefits, and she is paid nothing, where charging her own old-age benefit only in months her spouse benefit was paid would pay 2,520. Two tests give the worker a widower's benefit on his first wife's record, whose PIA was 3,000 dollars, paid from his claim at 62 (he remarried at 60): 2,389.29 dollars a month, 989.29 of it on her record. His 17,760 dollar excess takes their 2,779.29 dollar total for six months and 1,084.29 of July, which falls 385.95 on her record and 698.33 on his, and the 1,091.67 left on his record is shared 727.78 and 363.89: he is paid 13,277.54 dollars and his wife 5,673.89 in 2026, where sharing two to one everything he is paid gives 13,251.43 and 5,700; with 61,830 dollars of wages, 12,558.98 and 5,477.45, where it gives 12,466.43 and 5,570. The unit test reproduces RS 02501.145's own example, before its rounding.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3528,7 +3549,7 @@
           "functions": [
             {
               "name": "earningsTestYear",
-              "line": 186
+              "line": 206
             }
           ]
         },
@@ -3578,6 +3599,28 @@
               "line": 330
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 462,
+          "note": "a worker also paid on a former spouse's record: each record charged in proportion, the split two to one only on his own",
+          "tests": [
+            {
+              "title": "charges the worker's partial month to each record in proportion and shares only his own record two to one (RS 02501.145 B.2; 404.439)",
+              "line": 470
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 489,
+          "note": "a worker also paid on a former spouse's record, no share capped",
+          "tests": [
+            {
+              "title": "apportions a partial month by record when no share reaches what the person is due",
+              "line": 497
+            }
+          ]
         }
       ],
       "refusalFixtureFiles": [],
@@ -3612,6 +3655,21 @@
           "kind": "regulation",
           "citation": "20 CFR 404.440",
           "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.440"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.145, § A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.145, § B.2.a",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501145"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.150, § A.2",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501150"
         },
         {
           "kind": "agencyGuidance",
@@ -3679,7 +3737,7 @@
           "functions": [
             {
               "name": "earningsTestYear",
-              "line": 186
+              "line": 206
             }
           ]
         },
@@ -3748,11 +3806,11 @@
           "functions": [
             {
               "name": "earningsTestYear",
-              "line": 186
+              "line": 206
             },
             {
               "name": "excessEarnings",
-              "line": 86
+              "line": 97
             }
           ]
         },
@@ -3878,11 +3936,11 @@
           "functions": [
             {
               "name": "earningsTestYear",
-              "line": 186
+              "line": 206
             },
             {
               "name": "excessEarnings",
-              "line": 86
+              "line": 97
             }
           ]
         },

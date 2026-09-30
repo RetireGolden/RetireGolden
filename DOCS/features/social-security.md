@@ -167,12 +167,17 @@ does (42 U.S.C. 403(b) and (f); 20 CFR 404.415 to 404.440), decided under D-SS-A
   month comes from the date of birth, so for the 1955 to 1959 cohorts it can fall in the year after the whole-year
   age.
 - **Charged month by month from January** (403(f)(1); `usc-42-403-f-1-earnings-test-month-charging`). In a couple the
-  worker, the higher PIA, is charged first against the family benefit on his record: his benefits and the spouse
-  benefit on his record. What his excess leaves of a month is shared two to one on the benefits before any
-  reduction, each share held to what that person is due (20 CFR 404.434(b), 404.439, 404.440;
-  `usc-42-403-b-1-worker-excess-charged-to-family`). Each person's own excess is then charged against what is
-  left of that person's benefits, the own old-age benefit included in months his excess took her spouse benefit
-  (POMS RS 02501.150 A.1).
+  worker, the higher PIA, is charged first against all of his benefits and the family benefit on his record: his
+  old-age benefit, any benefit he is paid on a former spouse's record, and the spouse benefit on his record
+  (403(b)(1); POMS RS 02501.145). A month his excess only partly covers is charged to each record in proportion to
+  what that record pays him (RS 02501.145 B.2), and what is left of the family benefit on his own record is
+  shared two to one on the benefits before any reduction, each share held to what that person is due (20 CFR
+  404.434(b), 404.439, 404.440; `usc-42-403-b-1-worker-excess-charged-to-family`). Each person's own excess is
+  then charged against what is left of that person's benefits, the own old-age benefit included in months his
+  excess took her spouse benefit (POMS RS 02501.150 A.1). A person paid on two records is charged on both: a
+  partial month in proportion to the benefits due on each before any deduction for work, the other record no
+  more than what the worker's charge left of it (RS 02501.145 B.2, RS 02501.150 A.2). So both of that person's
+  benefits have a deduction, and a crediting month, in any month the person's own excess is charged.
 - **Crediting months.** Each month with a full or partial deduction in a benefit's reduction period, from the
   claim's first month to the month before full retirement age (the survivor one for a widow(er) benefit), is a
   crediting month for that benefit (402(q)(7); POMS RS 00615.482; `poms-rs-00615-482-arf-crediting-months`), and
