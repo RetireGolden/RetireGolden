@@ -40,6 +40,7 @@ const percentiles = (base: number) => ({ p10: base * 0.5, p25: base * 0.75, p50:
 function fakeSummary(): MonteCarloSummary {
   return {
     pathCount: 1000,
+    lastingPathCount: 850,
     successRate: 0.85,
     requiredFloorSuccessRate: 0.85,
     targetLifestyleSuccessRate: 0.85,
@@ -85,6 +86,7 @@ function fakeSummary(): MonteCarloSummary {
       { year: 2050, count: 60 },
       { year: 2053, count: 50 },
     ],
+    medianFirstDepletionYear: 2050,
     depletionProbabilityByYear: [],
   }
 }
@@ -109,7 +111,7 @@ describe('WhySuccessPanel', () => {
   })
 
   it('handles the no-failures case without a depletion trace', () => {
-    const summary = { ...fakeSummary(), successRate: 1, depletionYearCounts: [] }
+    const summary = { ...fakeSummary(), lastingPathCount: 1000, successRate: 1, depletionYearCounts: [], medianFirstDepletionYear: null }
     summary.downsideRisk = { ...summary.downsideRisk, failingPathCount: 0, failureRate: 0 }
     const { container, unmount } = render(
       <WhySuccessPanel summary={summary} modelLabel="Lognormal returns" seed={1} planId="plan-1" />,

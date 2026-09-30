@@ -436,7 +436,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "364ec5545916b126cd9c8219612efc72f8d329d2",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -451,17 +451,17 @@
     },
     "corpus": {
       "name": "blocks",
-      "members": 127,
-      "membersSha256": "cd492058d9eaf05e7ab4df120037b197a4474917d11c2dd6e2461eb7b9083d79",
-      "entries": 508
+      "members": 138,
+      "membersSha256": "3cd74da2890d37347bce60acbbbf8b8cc1fafcab3464b80557fdb58a2d0b0838",
+      "entries": 552
     },
     "capture": {
-      "baseDumpSha256": "3b3a766f2fb9207ec9ccc37f3b8a9c79eb8a446da91f75ea64b5578ac1a479de",
-      "headDumpSha256": "3b3a766f2fb9207ec9ccc37f3b8a9c79eb8a446da91f75ea64b5578ac1a479de",
-      "baseOverallSha256": "b3abcaba57f1d1c46bfbe2333a0a3d867e72827b9e8bbe5fca5f35c9bb7e3150",
-      "headOverallSha256": "b3abcaba57f1d1c46bfbe2333a0a3d867e72827b9e8bbe5fca5f35c9bb7e3150",
+      "baseDumpSha256": "34c498ce4089ee651eeeeaef72b63b111e8819c73ee456db8878f75363eb6680",
+      "headDumpSha256": "34c498ce4089ee651eeeeaef72b63b111e8819c73ee456db8878f75363eb6680",
+      "baseOverallSha256": "67d0352921e4b1e3f066dab9879c11788d331cee8fcf23f66599a3c67d94ad2d",
+      "headOverallSha256": "67d0352921e4b1e3f066dab9879c11788d331cee8fcf23f66599a3c67d94ad2d",
       "entriesMoved": 0,
-      "entriesIdentical": 508,
+      "entriesIdentical": 552,
       "result": "IDENTICAL"
     },
     "reach": {
@@ -492,6 +492,20 @@
         "measuredWithBlob": "364ec5545916b126cd9c8219612efc72f8d329d2",
         "pinnedBlob": "364ec5545916b126cd9c8219612efc72f8d329d2",
         "reason": "Main at 6f668e06 merged into the D-SS-ANALYSIS-EARNINGS-TEST branch. The corpus is main's (whose j1 and v3 v7 edits are the branch's, byte for byte) plus the branch's six block-L members, l10 to l15: the worker's excess charged to the family and both partial-month caps (l15's spouse born in January, so her spouse benefit is entitled, and charged, from the worker's first month), a couple member on a living ex's record after the spouse's death, a spouse who died before his claim, and an SSDI onset at full retirement age. No existing member changed. Re-measured by the same procedure as the entries above: run with the blob the last entry pinned (6332be9dcb1ae7b1038d70e5096708192c59ce5a) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: members 121 to 127, entries 484 to 508, the member hash 66cff52e468b to cd492058d9ea and the dump hashes. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
+      },
+      {
+        "date": "2026-09-30",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "f4aedd1be06bc6f125013ed042c96eb3a33ee3fa",
+        "pinnedBlob": "f4aedd1be06bc6f125013ed042c96eb3a33ee3fa",
+        "reason": "Eleven members were added so that every reach spec exits 0 on the blocks corpus, which 11 of the 32 did not on main at f97cf418: ae2, af1, ah1, an1, e6, o7, o8, o9, r12, u6 and z3 (the reach-closure note at the top of blocks.mjs). No existing member changed. Re-measured by the procedure the entries above used: run with the blob the last entry pinned and measured with (364ec5545916b126cd9c8219612efc72f8d329d2) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: members 127 to 138, entries 508 to 552, the member hash cd492058d9ea to d7239010b2fd and the dump hashes. The proof's older trees drop the plan fields they predate, so they run some new members as reduced plans; every one still captures byte-identically on this proof's base and head trees. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
+      },
+      {
+        "date": "2026-09-30",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
+        "pinnedBlob": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
+        "reason": "The covers text and comments of o2 and o5 now say what they reach under the dated-election gate; no plan or option of any member changed. covers is part of each stored member, so the member hash moves. Re-measured by the procedure the entries above used: run with the blob the last entry pinned and measured with (f4aedd1be06bc6f125013ed042c96eb3a33ee3fa) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: members stay 138 and entries 552; the member hash d7239010b2fd to 3cd74da2890d and the dump hashes, which carry that hash; every entry hash and the overall hash are unchanged. The engine fix of the same date (one section 4974 obligation in a spousal-election year) is in the current tree, not in this proof's trees, so it moves nothing here. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged."
       }
     ],
     "historicalRecord": {

@@ -97,13 +97,30 @@
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
       "lines": [
         269,
-        294
+        276
       ],
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: lines 277-280 (`ordinaryIncome: taken,`), the `missing-inherited-roth-characterizer` fallback object: the only production caller, annualFundingCandidateEvaluation, always passes `characterizeInheritedRothWithdrawal`. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 269,
           "text": "if (row.poolKey === null) {"
         },
+        {
+          "line": 276,
+          "text": "}) ?? {"
+        }
+      ]
+    },
+    {
+      "id": "AE.helper.rothPoolSelection.2",
+      "label": "inherited Roth exclusion, pool lookup, and multi-account accumulation (continued)",
+      "file": "projection/internal/annualFundingWithdrawalEffects.ts",
+      "lines": [
+        281,
+        294
+      ],
+      "note": "Continues AE.helper.rothPoolSelection past its excluded lines 277-280 (`ordinaryIncome: taken,`); see that entry's note.",
+      "anchors": [
         {
           "line": 292,
           "text": "const pool = rothPools.get(row.poolKey)"
@@ -345,5 +362,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests independently pin taxable-share fallback, inherited and S2 identity, Rule of 55, all HSA modes and exact account order, HSA-only cap refresh identity, inherited-Roth exclusion, first-seen pool order and accumulation, missing basis, pooled Roth worksheet arithmetic, input purity, and nonpositive rows. The hostile delegation test injects non-economic tax character, penalty rows/totals, Roth next state, and HSA cap consumption and proves exact simulator consumption at tax, balance, warning, annual-ledger, cash-flow, next-year Roth-basis, and reimburse-later-pool boundaries."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests independently pin taxable-share fallback, inherited and S2 identity, Rule of 55, all HSA modes and exact account order, HSA-only cap refresh identity, inherited-Roth exclusion, first-seen pool order and accumulation, missing basis, pooled Roth worksheet arithmetic, input purity, and nonpositive rows. The hostile delegation test injects non-economic tax character, penalty rows/totals, Roth next state, and HSA cap consumption and proves exact simulator consumption at tax, balance, warning, annual-ledger, cash-flow, next-year Roth-basis, and reimburse-later-pool boundaries. EXCLUSIONS (2026-09-30): every whole line this spec leaves out of its ranges because no plan that parses can execute it is named, with the reason and whatever direct test pins it, in the note of the entry it was cut from; the pieces that continue that entry carry its id with a numeric suffix. The blocks corpus reaches every other line of every range."
 }

@@ -92,9 +92,21 @@
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  * Several extracted boundaries have no dedicated corpus blocks: their specs
- * measure the existing full corpus and use `AC`, `AD`, `AF`, `AG`, `AH`, `AI`,
- * `AJ`, `AK`, `AL`, `AM`, `AN`, and `AO` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * measure the existing corpus and use `AC`, `AD`, `AG`, `AI`, `AJ`, `AK`, `AL`,
+ * `AM` and `AO` only as reach-entry namespaces. Block AE pins the otherwise-cold
  * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
+ *
+ * REACH CLOSURE. Every spec above is run against THIS tier, and every one
+ * exits 0 on it. Where a spec was first measured on the full corpus (the
+ * examples reach some ACA and fill-to-target lines no block did), or where no
+ * member took a branch at all, a member was added here rather than leaving
+ * the line to the examples tier or to nothing: ae2, af1, ah1, an1, e6, o7 to
+ * o9, r12, u6 and z3. Blocks AF, AH and AN exist for that reason alone, and
+ * e6, o7 to o9, r12, u6 and z3 run at the END of the tier (the `late*`
+ * functions), not inside their blocks, because a member inserted mid-tier
+ * renumbers every later member's fixture plan id and so moves its dump. A
+ * line no valid plan can reach is not forced: its spec narrows the range
+ * around it and says why, in the entry's `note` and in `readingTheCounts`.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are
@@ -3867,9 +3879,15 @@ function blockO() {
   }
 
   {
-    // Both S2 accounts remain beneficiary accounts in the death year. Their
-    // different election years distinguish the death-year S2 identity override,
-    // synthetic S0 schedule, following-year ownership flip, and later zero rows.
+    // Two spouse beneficiaries whose treat-as-own elections are recorded only
+    // as a year, with no death date and no dated election facts. Written when a
+    // recorded year alone flipped the account; under the dated-election gate
+    // (gateSpousalElectionFromInheritedAccount) a year-only record is not an
+    // observed act, so neither election ever takes effect: each year-end the
+    // gate reports missingFacts, both accounts stay beneficiary accounts, the
+    // death year takes the decedent's year-of-death RMD and the later years
+    // take spouse life-expectancy (S0) annual RMDs. o9 carries the dated
+    // facts under which elections do take effect.
     const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80 })
     plan.assumptions.defaultReturnPct = 0
     const spouseFacts = (electionYear, decedentId) => ({
@@ -3895,7 +3913,7 @@ function blockO() {
     ]
     out.push(member(
       'o2-spouseYodPrePostElection',
-      'O: S2 death-year identity override, synthetic pre-election schedule, following-year treat-as-own effect, and later post-election zero rows',
+      'O: year-only treat-as-own elections the dated-election gate refuses (missingFacts): the spouse stays beneficiary, a year-of-death RMD in the death year, then spouse life-expectancy annual RMDs',
       plan,
       { horizonEndYear: START_YEAR + 2 },
     ))
@@ -4015,9 +4033,14 @@ function blockO() {
   }
 
   {
-    // The death and same-year S2 election predate this projection. A second
-    // classified account reaches the last transition-relief year, distinguishing
-    // the notice-waived annual requirement from the S2 rollback limitation.
+    // The death and a same-year election recorded only as a year predate this
+    // projection, which starts in 2024. Without a death date or dated election
+    // facts the dated-election gate keeps the account a beneficiary account, so
+    // its first projected year carries the pre-horizon year-of-death limitation
+    // on an S0 annual row, not on an S2 zero row as when this was written. A
+    // second classified account in the last transition-relief year keeps the
+    // notice-waived requirement (executed 0) beside it. o9's pre-start election
+    // is the one that takes effect.
     const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80 })
     plan.assumptions.defaultReturnPct = 0
     plan.accounts = [
@@ -4047,7 +4070,7 @@ function blockO() {
     ]
     out.push(member(
       'o5-preHorizonS2RollbackReentry',
-      'O: first-year pre-horizon YOD limitation on an already-effective S2 account under repeated optimizer/counterfactual re-entry',
+      'O: first-year pre-horizon YOD limitation on a spouse beneficiary whose year-only pre-horizon election the gate refuses, beside a notice-waived transition-relief requirement, under repeated optimizer/counterfactual re-entry',
       plan,
       { startYear: START_YEAR - 2, horizonEndYear: START_YEAR },
     ))
@@ -4754,12 +4777,586 @@ function blockAE() {
     applyAcaCredit: false,
     medicareExtrasMonthlyPerPerson: 0,
   }
-  return [member(
+  const out = [member(
     'ae1-multiAccountRothPool',
     'AE: one need-based draw spans two owned Roth accounts and increments one owner-wide pool',
     plan,
     { horizonEndYear: START_YEAR },
   )]
+
+  {
+    // The surviving spouse's dated owner redesignation (2025-12-31) and the
+    // completed 2025 beneficiary distribution are both observed before the
+    // 2026 opening cutoff, so the annual spousal-election gate routes the IRA
+    // to owner treatment and `treatAsOwnEffective` is true: the traditional
+    // penalty row reads the account WITHOUT its inherited block, and the
+    // under-59½ owner owes the early-withdrawal additional tax the death
+    // exception spared her as a beneficiary. Sequential order drains that
+    // small IRA before the HSA; the rest of the need comes from a
+    // capByMedicalExpenses HSA with no medical expenses, so the zero cap
+    // leaves the whole draw non-qualified (ordinary plus the pre-65 penalty)
+    // and cash-flow publication records its non-qualified ordinary amount.
+    const plan = singlePersonPlan({ dob: '1975-06-15', planningAge: 80 })
+    plan.id = 'ae2-s2-owner-ira-and-capped-hsa'
+    plan.assumptions.defaultReturnPct = 0
+    const electionDate = `${START_YEAR - 1}-12-31`
+    plan.accounts = [
+      qualified('traditional', 'ae2-s2-ira', 10_000, {
+        annualReturnPct: 0,
+        inherited: {
+          decedentId: 'ae2-decedent',
+          ownerDeathYear: START_YEAR - 2,
+          ownerDeathDate: `${START_YEAR - 2}-06-01`,
+          decedentHadStartedRmds: true,
+          annualDistributionHistory: [{
+            taxYear: START_YEAR - 1,
+            requiredAmount: 1_000,
+            distributedAmount: 1_000,
+            observedAsOfDate: electionDate,
+            legalDistributionDeadline: electionDate,
+            provenance: { source: 'equivalence corpus custodian record', asOf: electionDate },
+          }],
+          beneficiary: inheritedBeneficiary({
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1975,
+            ownerBirthYear: 1945,
+            spouseUnlimitedWithdrawalRight: true,
+            ownerYearOfDeathRmdSatisfied: true,
+            spousalElectionFacts: {
+              directSpouseNamedOnIra: 'verifiedYes',
+              affirmativeElectionDate: electionDate,
+              affirmativeElectionYear: START_YEAR - 1,
+              nonRolloverContributionYears: [],
+              lateElectionCatchUp: null,
+              preElectionDistributionMethod: 'lifeExpectancyRule',
+              section402c2j4Inputs: {
+                transaction: 'affirmativeTreatAsOwnElection',
+                spouseBirthDate: '1975-06-15',
+                decedentBirthDate: '1945-01-01',
+                distributionYear: START_YEAR - 1,
+                currentYearRmdReferenceBalance: 0,
+                actualPriorYearDistributions: [],
+                actualPreElectionDistributionsCurrentYear: 0,
+                currentDistributionOrRemainingInterest: 0,
+                provenance: { source: 'equivalence corpus custodian record', asOf: electionDate },
+              },
+              provenance: { source: 'equivalence corpus owner redesignation', asOf: electionDate },
+            },
+          }),
+        },
+      }),
+      qualified('hsa', 'ae2-hsa', 50_000, {
+        annualReturnPct: 0,
+        withdrawalTreatment: 'capByMedicalExpenses',
+      }),
+    ]
+    plan.expenses.baseAnnual = 30_000
+    out.push(member(
+      'ae2-s2OwnerIraAndCappedHsa',
+      'AE: effective spouse treat-as-own traditional draw drops the inherited block for the penalty rate; zero-cap capByMedicalExpenses HSA draw is non-qualified with the pre-65 penalty and publishes its non-qualified ordinary cash flow',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
+// AF — annual funding candidate evaluation
+// ---------------------------------------------------------------------------
+
+function blockAF() {
+  const out = []
+
+  {
+    // Every other blocks member leaves `plan.stateTaxFacts` at its empty
+    // default, so the annual context never carries household, HSA-account, or
+    // New Jersey IRA-owner facts and the candidate tax input never copies
+    // them. A New Jersey resident with a 2026 household-facts row and a 2026
+    // NJ completeness certificate (HSA and IRA basis both 'complete', no rows)
+    // makes all three fact builders return a value (the household row itself,
+    // and certified-empty arrays for the HSA accounts and NJ owner pools), so
+    // the context snapshot and every candidate probe take the defined arms.
+    // A need-based traditional IRA draw gives every candidate probe income.
+    const plan = singlePersonPlan({ dob: '1960-03-15', planningAge: 80, state: 'NJ' })
+    plan.id = 'af1-nj-state-fact-snapshot'
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      qualified('traditional', 'af1-ira', 100_000, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 20_000
+    plan.stateTaxFacts = {
+      householdYearFacts: [{ year: START_YEAR }],
+      hsaYearEvidence: [],
+      iraBasisYearEvidence: [],
+      annualEvidenceCompleteness: [{
+        taxYear: START_YEAR,
+        state: 'NJ',
+        hsa: 'complete',
+        iraBasis: 'complete',
+        provenance: { source: 'equivalence corpus', asOf: '2026-08-31' },
+      }],
+    }
+    out.push(member(
+      'af1-njStateFactSnapshot',
+      'AF: household, HSA-account and NJ IRA-owner-pool state facts enter the annual context and every candidate tax input',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
+// AH — aggregate Roth-conversion target planning
+// ---------------------------------------------------------------------------
+
+function blockAH() {
+  // A fill-to-target window that opens one year after the start year takes
+  // the coordinator's annual-window exclusion in the start year, then sizes a
+  // top-of-12%-bracket fill in each window year. The only convertible source
+  // is a fully pre-tax IRA (taxable fraction 1), so the sized taxable target
+  // translates back to gross through the partial-taxable loop and its break.
+  // No taxable safety-net floor is set, so the positive fill returns at the
+  // zero-floor gate rather than entering the (directly tested) trim. With one
+  // dollar of cash and no income, the first window year's spending is drawn
+  // from the same IRA after the conversion was sized, so the downstream
+  // fill-to-target signal evaluates every operand through the final
+  // metric-above-ceiling comparison. The opening balance is chosen so the
+  // IRA left for the second window year sits well inside (0, the bracket
+  // headroom): the fill then asks for more than the IRA holds and the
+  // translation keeps the requested-above-capacity remainder.
+  const plan = shell(70, { dob: '1960-01-01' })
+  plan.assumptions.defaultReturnPct = 0
+  plan.incomes = []
+  plan.accounts = [
+    cash('ah1-cash', 1),
+    qualified('traditional', 'ah1-ira', 225_000, { annualReturnPct: 0 }),
+    qualified('roth', 'ah1-roth', 0, { annualReturnPct: 0 }),
+  ]
+  plan.expenses.baseAnnual = 40_000
+  plan.strategies.rothConversion = {
+    mode: 'fillToTarget',
+    target: 'topOfBracket',
+    targetValue: 12,
+    startYear: START_YEAR + 1,
+    endYear: START_YEAR + 2,
+  }
+  return [member(
+    'ah1-fillToTargetWindowAndSpendingDraw',
+    'AH: fill-to-target window exclusion then in-window sizing, pre-tax taxable-to-gross translation with and without the above-capacity remainder, zero safety-net floor return, and the downstream signal after a same-year traditional spending draw',
+    plan,
+    { horizonEndYear: START_YEAR + 2 },
+  )]
+}
+
+// ---------------------------------------------------------------------------
+// AN — annual ACA evidence/result publication
+// ---------------------------------------------------------------------------
+
+function blockAN() {
+  // One stated contract per year and one traditional IRA, so each withdrawal
+  // dollar is a MAGI dollar. 2026: $10,000 of spending plus $12,000 of gross
+  // premium. Below 100% of the poverty line the credit is refused (gross
+  // premium, need about $22,000, above the line); just above the line it is
+  // almost the whole premium (need about $11,000, below the line). The
+  // residual jumps from positive to negative at the line, so the subsidized
+  // fixed point has no root: the gross restart publishes
+  // fixed-point-nonconvergent. 2027: a $90,000 goal puts MAGI far over 400% in
+  // both basins (no conflicting-basin fallback), so the priced quote stays
+  // actionable over the cliff (the warning and 'above-cliff'), and 2027's
+  // income-tax figures are a stand-in while its ACA block is published
+  // (income-tax-parameters-projected). That last arm is a publication window,
+  // not a plan shape: once 2027's income-tax figures are published it goes
+  // cold until the next summer's ACA block again precedes its year's tax
+  // figures, and reach reports it rather than this member hiding it.
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 70 })
+  plan.accounts = [qualified('traditional', 'an1-ira', 500_000, { annualReturnPct: 0 })]
+  plan.expenses.baseAnnual = 10_000
+  plan.expenses.oneTimeGoals = [{
+    id: 'an1-goal',
+    label: 'an1-goal',
+    year: START_YEAR + 1,
+    amount: 90_000,
+  }]
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 1_000,
+    applyAcaCredit: true,
+    medicareExtrasMonthlyPerPerson: 0,
+    acaYears: [
+      acaContract(plan, { year: START_YEAR }),
+      acaContract(plan, { year: START_YEAR + 1 }),
+    ],
+  }
+  return [member(
+    'an1-povertyFloorThenOverCliff',
+    'AN: no subsidized fixed point across the 100% poverty-line floor (fixed-point-nonconvergent), then an actionable over-cliff priced year with the cliff warning, above-cliff state and income-tax-parameters-projected',
+    plan,
+    { horizonEndYear: START_YEAR + 1 },
+  )]
+}
+
+// ---------------------------------------------------------------------------
+// Late members of blocks E, O, R, U and Z
+// ---------------------------------------------------------------------------
+//
+// These belong to earlier blocks but run after every other member, because
+// `singlePersonPlan` and `couplePlan` number plan ids from one module counter:
+// a member inserted inside an earlier block renumbers the plan id of every
+// member after it, and a renumbered plan id moves that member's dump in every
+// mode. Appending here leaves every earlier member byte-identical. Add the
+// next member of any block the same way, at the end of the tier.
+
+function lateE() {
+  const out = []
+
+  {
+    // A HUD-VALIDATED line: the only mode whose opened state carries an
+    // `annualMipRate`, so the year-end close prices HUD monthly MIP from the
+    // servicer ledger instead of compounding the whole loan balance. Every
+    // other HECM member is a legacy quote estimate. The ledger is complete
+    // through 2026 (the complete-MIP arm) and says nothing about 2027 (the
+    // incomplete-MIP arm). Spending far above the small cash balance makes the
+    // lastResort policy draw in 2026, so the close carries nonzero modeled
+    // draw debt and publishes the timing-incomplete reason.
+    const provenance = { source: 'equivalence corpus servicer ledger', asOf: `${START_YEAR}-12-31` }
+    const plan = shell(90, { dob: '1960-01-01' })
+    plan.expenses.baseAnnual = 60_000
+    plan.accounts = [
+      cash('cash-e6', 10_000, { ownerPersonId: 'p1', annualReturnPct: 0 }),
+      property('home-hud', 400_000, {
+        primaryResidence: true,
+        hecm: hecm({
+          growthRatePct: 6,
+          calculationMode: 'hudValidated',
+          hudTransactionKind: 'ordinaryOrigination',
+          caseAssignmentDate: `${START_YEAR}-01-01`,
+          closingDate: `${START_YEAR}-01-01`,
+          appraisedValue: 400_000,
+          verifiedPrincipalLimitFactorPct: 50,
+          principalLimitFactorProvenance: { ...provenance, kind: 'quoted' },
+          firstMipPeriodConvention: 'fullCalendarMonths',
+          mipAssessmentLedgerEvidence: {
+            completeThroughDate: `${START_YEAR}-12-31`,
+            noUnrepresentedTransactionsAfterLastAssessment: true,
+            provenance,
+          },
+          outstandingBalanceAtMipAssessmentByMonth: Array.from({ length: 12 }, (_, index) => ({
+            assessmentDate: `${START_YEAR}-${String(index + 1).padStart(2, '0')}-28`,
+            outstandingBalanceBeforeMip: 8_000 + 5_000 * index,
+            provenance,
+          })),
+        }),
+      }),
+    ]
+    out.push(member(
+      'e6-hudValidatedLineMipAndModeledDebt',
+      'E: HUD-validated open line — complete then incomplete monthly-MIP year-end closes, servicer baseline, and modeled draw debt',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  return out
+}
+
+function lateO() {
+  const out = []
+
+  {
+    // Three disabled-beneficiary inherited Roths take life-expectancy forced
+    // draws, and $6,000 of spending outruns the forced cash so the funding
+    // evaluator draws the first two as well. The first has a verified shared
+    // tax-character pool: its forced draw and its spending draw are both priced
+    // against that pool (five-year clock not yet met, so basis then earnings)
+    // and the pool is promoted to the live ledger. The second names a decedent
+    // but has no pool and no legacy clock, so both of its draws are priced
+    // conservatively as ordinary income with an incomplete-character warning.
+    // The third names no decedent, the missing-identity branch; decedentId is
+    // optional on an inherited account, so that guard is live, not defensive.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 80 })
+    const rothFacts = (decedentId) => ({
+      ...(decedentId === undefined ? {} : { decedentId }),
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: inheritedBeneficiary({ beneficiaryBirthYear: 1970, edbCategory: 'disabled' }),
+    })
+    plan.accounts = [
+      qualified('roth', 'o7-pooled-roth', 3_000, { inherited: rothFacts('o7-pooled-decedent') }),
+      qualified('roth', 'o7-unpooled-roth', 20_000, { inherited: rothFacts('o7-unpooled-decedent') }),
+      qualified('roth', 'o7-anonymous-roth', 20_000, { inherited: rothFacts(undefined) }),
+    ]
+    plan.inheritedRothTaxCharacterPools = [{
+      beneficiaryPersonId: 'p1',
+      decedentId: 'o7-pooled-decedent',
+      firstRothContributionTaxYear: 2022,
+      remainingRegularContributionBasis: 1_000,
+      conversionLayers: [],
+      priorDistributionsConsumedAmount: 0,
+      provenance: { source: 'equivalence corpus', asOf: '2026-08-31' },
+    }]
+    plan.expenses.baseAnnual = 6_000
+    out.push(member(
+      'o7-inheritedRothPoolCharacterAndSpend',
+      'O/AE/AF: inherited-Roth forced draws priced against a shared pool, without a pool (incomplete), and without a decedent identity; the pool is promoted; spending then draws the pooled and unpooled Roths through the funding evaluator',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // An estate beneficiary with a verified non-designated five-year regime:
+    // the owner died in 2021 before the RBD, so 2026 is the deadline year and
+    // the whole balance is swept. That row's regime is non-designated-five-year,
+    // so its section 4974 obligation comes from the five-year deadline
+    // coordinator rather than the applicable-plan aggregation every other
+    // member takes.
+    const plan = singlePersonPlan({ dob: '1966-03-15', planningAge: 80 })
+    plan.accounts = [
+      qualified('traditional', 'o8-estate-five-year', 10_000, {
+        inherited: {
+          ownerDeathYear: START_YEAR - 5,
+          ownerDeathDate: `${START_YEAR - 5}-06-01`,
+          decedentHadStartedRmds: false,
+          beneficiary: inheritedBeneficiary({ beneficiaryClass: 'estate', ownerBirthYear: 1960 }),
+          verifiedNonDesignatedRegime: {
+            classification: 'non-designated-beneficiary',
+            schedule: 'five-year',
+            provenance: { source: 'equivalence corpus', asOf: '2026-08-31' },
+          },
+        },
+      }),
+    ]
+    out.push(member(
+      'o8-verifiedEstateFiveYearDeadline',
+      'O: verified non-designated five-year deadline sweep takes its section 4974 obligation from the deadline coordinator',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // A 79-year-old survivor of three spouses, each account carrying the dated,
+    // provenanced election facts the annual gate needs before owner treatment
+    // takes effect (o2 and o5 predate that gate and never flip now). A: a
+    // death-year election, so 2026 is an election year that keeps the
+    // decedent's residual. B: a mid-2026 election, so the beneficiary take is
+    // suppressed for an owner RMD. Those are the two arms of the election-year
+    // reconciliation. B's year-of-death RMD is satisfied, so its 2026 row has
+    // no limitation and becomes the modeled history the 2027 opening gate
+    // needs. C: elected at the end of 2025, so it is owner-treated
+    // from the first projection year and its zero S2 row carries the
+    // pre-horizon year-of-death limitation; in 2027 all three are effective S2
+    // rows without it. A and C carry treat-as-own elections the optimizer probe
+    // recognizes, and at 79 their owner-RMD obligations are positive, so the
+    // probe remaps them into its inherited flow.
+    const plan = singlePersonPlan({ dob: '1947-06-15', planningAge: 90 })
+    const spouse = (overrides) => inheritedBeneficiary({
+      edbCategory: 'surviving-spouse',
+      beneficiaryBirthYear: 1947,
+      ownerBirthYear: 1945,
+      spouseUnlimitedWithdrawalRight: true,
+      ...overrides,
+    })
+    const electionFacts = (date, referenceBalance) => ({
+      directSpouseNamedOnIra: 'verifiedYes',
+      affirmativeElectionDate: date,
+      affirmativeElectionYear: Number(date.slice(0, 4)),
+      nonRolloverContributionYears: [],
+      lateElectionCatchUp: null,
+      preElectionDistributionMethod: 'lifeExpectancyRule',
+      section402c2j4Inputs: {
+        transaction: 'affirmativeTreatAsOwnElection',
+        spouseBirthDate: '1947-06-15',
+        decedentBirthDate: '1945-01-01',
+        distributionYear: Number(date.slice(0, 4)),
+        currentYearRmdReferenceBalance: referenceBalance,
+        actualPriorYearDistributions: [],
+        actualPreElectionDistributionsCurrentYear: 0,
+        currentDistributionOrRemainingInterest: 0,
+        provenance: { source: 'equivalence corpus', asOf: date },
+      },
+      provenance: { source: 'equivalence corpus', asOf: date },
+    })
+    const completed2025 = [{
+      taxYear: START_YEAR - 1,
+      requiredAmount: 1_000,
+      distributedAmount: 1_000,
+      observedAsOfDate: `${START_YEAR - 1}-12-31`,
+      legalDistributionDeadline: `${START_YEAR - 1}-12-31`,
+      provenance: { source: 'equivalence corpus', asOf: `${START_YEAR - 1}-12-31` },
+    }]
+    plan.accounts = [
+      qualified('traditional', 'o9-a-death-year-election', 97_000, {
+        inherited: {
+          decedentId: 'o9-a-decedent',
+          ownerDeathYear: START_YEAR,
+          ownerDeathDate: `${START_YEAR}-06-01`,
+          decedentHadStartedRmds: true,
+          annualDistributionHistory: [],
+          beneficiary: spouse({
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: START_YEAR,
+            ownerYearOfDeathRmdSatisfied: false,
+            spousalElectionFacts: electionFacts(`${START_YEAR}-12-31`, 0),
+          }),
+        },
+      }),
+      qualified('traditional', 'o9-b-mid-year-election', 100_000, {
+        inherited: {
+          decedentId: 'o9-b-decedent',
+          ownerDeathYear: START_YEAR - 2,
+          ownerDeathDate: `${START_YEAR - 2}-06-01`,
+          decedentHadStartedRmds: true,
+          annualDistributionHistory: completed2025,
+          beneficiary: spouse({
+            ownerYearOfDeathRmdSatisfied: true,
+            spousalElectionFacts: electionFacts(`${START_YEAR}-06-15`, 100_000),
+          }),
+        },
+      }),
+      qualified('traditional', 'o9-c-pre-start-election', 50_000, {
+        inherited: {
+          decedentId: 'o9-c-decedent',
+          ownerDeathYear: START_YEAR - 2,
+          ownerDeathDate: `${START_YEAR - 2}-06-01`,
+          decedentHadStartedRmds: true,
+          annualDistributionHistory: completed2025,
+          beneficiary: spouse({
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: START_YEAR - 1,
+            ownerYearOfDeathRmdSatisfied: false,
+            spousalElectionFacts: electionFacts(`${START_YEAR - 1}-12-31`, 50_000),
+          }),
+        },
+      }),
+    ]
+    out.push(member(
+      'o9-spousalElectionYearAndEffectiveS2',
+      'O/AO: death-year and mid-year spousal elections reconcile election-year owner RMDs; gate-effective S2 rows with and without the pre-horizon limitation; positive S2 owner-RMD obligations remap into the optimizer probe',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  return out
+}
+
+function lateR() {
+  const out = []
+
+  {
+    // An active Marketplace year with no published ACA coverage-year block
+    // (params/acaCoverageYears.ts publishes 2026 and 2027, adding one each
+    // summer): the latest block stands in and the year is marked
+    // tax-year-parameters-unsupported. 2035 stays unpublished for years, where
+    // 2028 would be published by the summer of 2027 and turn this line cold
+    // again. A single stated, structurally valid contract keeps that the only
+    // initial code, and the run starts in 2035 so only that year is simulated.
+    const plan = singlePersonPlan({ dob: '1975-01-15', planningAge: 70 })
+    plan.accounts = [cash('r12-cash', 100_000, { annualReturnPct: 0 })]
+    plan.expenses.baseAnnual = 10_000
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 100,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [acaContract(plan, { year: START_YEAR + 9, enrollment: 100 })],
+    }
+    out.push(member(
+      'r12-acaCoverageYearStandIn',
+      'R: an active Marketplace year with no published ACA coverage-year block takes the tax-year-parameters-unsupported initial support code',
+      plan,
+      { startYear: START_YEAR + 9, horizonEndYear: START_YEAR + 9 },
+    ))
+  }
+
+  return out
+}
+
+function lateU() {
+  const out = []
+
+  {
+    // An explicit `employerPlanId` on a matched 401(k): the plan-keyed
+    // elective group (`${owner}\0${plan}`), the plan-scoped 415(c) key for
+    // both the deferral and the match, and the prior-deferral lookup that
+    // finds no history row for the year and so fails closed to `unknown`.
+    // Every other employer member omits the id and takes the owner-wide
+    // legacy group. The jointly owned brokerage row has no owner and no
+    // `contributionScheduleAgeOf`, so its contribution owner falls through
+    // both `??` arms to the plan's primary person.
+    const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 60 })
+    plan.accounts = [
+      cash('u6-cash', 50_000, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      qualified('traditional', 'u6-401k', 0, {
+        kind: 'employer',
+        annualReturnPct: 0,
+        annualContribution: 10_000,
+        employerPlanId: 'u6-acme-401k',
+        employerMatch: { matchPct: 50, capPctOfPay: 6 },
+      }),
+      taxable('u6-joint-brokerage', 0, 0, {
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        annualContribution: 2_000,
+      }),
+    ]
+    plan.incomes = [wages('u6-wages', 'p1', 120_000)]
+    out.push(
+      member(
+        'u6-explicitEmployerPlanIdAndJointOwnerFallback',
+        'U: explicit employerPlanId group and 415(c) scope keys, unknown prior-deferral fallback with no history row, and a joint account owned through the primary-person fallback',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+function lateZ() {
+  const out = []
+
+  {
+    // The New Jersey IRA owner-pool amount is KNOWN only when every NJ basis
+    // row for the owner and year states the post-year contributions made
+    // through the filing deadline. No other member carries a state IRA basis
+    // row at all, so the per-person fold always took the `known: false` arm.
+    // A NJ resident with wages contributes to a traditional IRA (the in-year
+    // taxed contribution the fold adds) and states 1,000 more contributed
+    // after year end, so both addends of the known amount are nonzero.
+    const plan = shell(75, { dob: '1971-01-01', state: 'NJ' })
+    plan.accounts = [
+      cash('z3-cash', 20_000, { annualReturnPct: 0 }),
+      qualified('traditional', 'z3-ira', 10_000, {
+        annualReturnPct: 0,
+        annualContribution: 5_000,
+      }),
+    ]
+    plan.incomes = [wages('z3-wages', 'p1', 60_000)]
+    plan.stateTaxFacts = {
+      ...plan.stateTaxFacts,
+      iraBasisYearEvidence: [{
+        taxYear: START_YEAR,
+        ownerPersonId: 'p1',
+        state: 'NJ',
+        accountId: 'z3-ira',
+        postYearContributionsThroughFilingDeadline: 1_000,
+        provenance: { source: 'equivalence corpus', asOf: `${START_YEAR + 1}-04-15` },
+      }],
+    }
+    out.push(member(
+      'z3-njIraKnownTaxedContributions',
+      'Z: New Jersey IRA owner pool with every basis row stating post-year contributions — the known taxed-contributions amount',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
 }
 
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
@@ -4794,5 +5391,13 @@ export async function blockMembers() {
     ...blockZ(),
     ...blockAB(),
     ...blockAE(),
+    ...blockAF(),
+    ...blockAH(),
+    ...blockAN(),
+    ...lateE(),
+    ...lateO(),
+    ...lateR(),
+    ...lateU(),
+    ...lateZ(),
   ]
 }

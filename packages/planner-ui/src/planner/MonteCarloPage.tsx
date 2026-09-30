@@ -974,7 +974,7 @@ export function MonteCarloPage() {
                 className="chart-frame"
                 style={frameH(240)}
                 role="figure"
-                aria-label={`Histogram of ending investable balances across ${summary.pathCount.toLocaleString()} simulated paths. Median ending estate ${fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p50)}.`}
+                aria-label={`Histogram of ending investable balances: how many of the ${summary.pathCount.toLocaleString()} simulated paths ended in each balance range.`}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={histRows} margin={{ left: 4, right: 8, top: 8 }}>
@@ -995,7 +995,7 @@ export function MonteCarloPage() {
                   className="chart-frame"
                   style={frameH(240)}
                   role="figure"
-                  aria-label={`Histogram of first-depletion years for the ${summary.depletionYearCounts.reduce((a, r) => a + r.count, 0)} paths that ran out of money.`}
+                  aria-label={`Histogram of first-depletion years for the ${summary.downsideRisk.failingPathCount} paths that ran out of money.`}
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={summary.depletionYearCounts} margin={{ left: 4, right: 8, top: 8 }}>

@@ -18,7 +18,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor } from '../testSupport/settle'
-import { fanInnerBand, fanOuterBand, fmtMoneyOrRange, histogramBars } from './format'
+import { fanInnerBand, fanOuterBand, fmtMoneyCompact, fmtMoneyOrRange, histogramBars } from './format'
 import { buildModel } from './marketModelPicker'
 import { HEADLINE_MC_MODEL } from './useMcSuccessRate'
 
@@ -186,5 +186,62 @@ describe('Ending balance distribution', () => {
     expect(histogram.querySelectorAll('.recharts-bar-rectangle')).toHaveLength(3)
     const ticks = moneyTicks(histogram)
     expect(ticks).toEqual(['$125k', '$175k', '$225k'])
+  })
+})
+
+describe('Chart labels and the Why panel read the engine (B2-P1 freeze additions)', () => {
+  // Eight paths: three run out (one in 2040, two in 2045) and five last. The
+  // page used to sum the year counts (3), subtract the failing count from the
+  // path count (5) and walk the counts to half the failing count (2045).
+  const DEPLETING: Partial<MonteCarloSummary> = {
+    pathCount: 8,
+    lastingPathCount: 5,
+    depletionYearCounts: [
+      { year: 2040, count: 1 },
+      { year: 2045, count: 2 },
+    ],
+    medianFirstDepletionYear: 2045,
+  }
+
+  async function mountDepleting(): Promise<void> {
+    const summary: MonteCarloSummary = {
+      ...base!,
+      ...DEPLETING,
+      fan: FAN,
+      downsideRisk: { ...base!.downsideRisk, failingPathCount: 3, failureRate: 3 / 8 },
+      successRate: 5 / 8,
+    }
+    mockedRunMc.mockResolvedValue(summary)
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(createSamplePlan())}>
+            <MonteCarloPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    await waitFor(() => figure('Histogram of first-depletion years') !== undefined, { what: 'the depletion chart' })
+  }
+
+  it('labels the ending-balance histogram with what it shows, and no estate figure', async () => {
+    await mountDepleting()
+    const label = figure('Histogram of ending investable')!.getAttribute('aria-label')
+    expect(label).toBe('Histogram of ending investable balances: how many of the 8 simulated paths ended in each balance range.')
+    expect(label).not.toMatch(/estate/iu)
+    expect(label).not.toContain(fmtMoneyCompact(base!.endingAfterTaxEstate.percentiles.p50))
+  })
+
+  it("labels the depletion chart with the engine's failing-path count and prints the engine's lasting count and median year", async () => {
+    await mountDepleting()
+    expect(figure('Histogram of first-depletion years')!.getAttribute('aria-label')).toBe(
+      'Histogram of first-depletion years for the 3 paths that ran out of money.',
+    )
+    const text = (container.textContent ?? '').replace(/\s+/gu, ' ')
+    expect(text).toContain('lasted to the end of the plan in 5 of the 8 simulated markets (3 depleted early)')
+    expect(text).toContain('between 2040 and 2045 (median 2045)')
   })
 })

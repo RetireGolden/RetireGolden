@@ -1,11 +1,11 @@
 # Mutation receipt: inherited-distribution-forced-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `d8af8759` (branch `claude/evidence-completeness`, pull request #771) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualInheritedIraDistributions.ts`
 
 ```diff
-@@ -257,8 +257,10 @@
+@@ -258,8 +258,10 @@
              ...(characterized.reason === undefined ? {} : { reason: characterized.reason }),
            })
          }
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualInheritedIraDistributions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-09-30 after the review of #771 (issue 6) moved the lines of annualInheritedIraDistributions.ts; the mutation is unchanged, and the capture, blob hashes and hunk header are refreshed against this head. The baseline is green (annualInheritedIraDistributions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
  ❯ src/projection/internal/annualInheritedIraDistributions.evidence.test.ts (4 tests | 1 failed) 8ms
    ❯ inherited-distribution-forced-annual — Annual forced inherited distribution (1)
-     × sums 11000 of forced cash and carries the 600 Roth slice into the traditional share 4ms
+     × sums 11000 of forced cash and carries the 600 Roth slice into the traditional share 3ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)

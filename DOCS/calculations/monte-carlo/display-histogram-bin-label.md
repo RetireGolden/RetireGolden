@@ -78,7 +78,7 @@ Example library at the page's defaults as they were when this was derived (scrat
 - The bin's left edge (`min + i·w`): "$100k" for case A's first bar.
 - The degenerate placeholder read as a width: "$1" … "$30" (today).
 - `(max − min) / (bins − 1)` spacing: with `w' = (max − min) / (bins − 1)` the centres `min + (i + 0.5) · w'` all shift, and the last one (`i = bins − 1`) is `min + (bins − 0.5) · w' = max + w'/2`, half a width above the maximum. (It is the edges `min + i · w'` that would put the last one at the maximum.)
-- Centres of the estate histogram under the investable chart (the aria label at `:956` already pairs the investable histogram with the estate median; a copy mismatch the recon noted, left for the copy pass).
+- Centres of the estate histogram under the investable chart (the aria label at `:956` already pairs the investable histogram with the estate median; a copy mismatch the recon noted, left for the copy pass; fixed on 2026-09-30, when the label came to say only what the chart shows).
 
 ## Parity test for the switch-over
 

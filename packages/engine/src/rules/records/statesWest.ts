@@ -1383,17 +1383,10 @@ export const westStateRecords = {
   },
 
   'or-oar-150-316-0065-railroad-benefits-not-modeled': {
-    title: 'Oregon subtracts RRB-administered supplemental railroad benefits; the engine cannot certify payer or benefit type',
+    title: 'Oregon does not tax Railroad Retirement Board benefits: tier 1 comes off with Social Security and tier 2 and the other annuities under OAR 150-316-0065',
     statement:
-      '2025 Publication OR-17 (rev. 01-29-26) for tax year 2025 states that administrative rule extended Oregon\'s railroad-benefit subtraction to supplemental Railroad Retirement Board benefits including Tier 2, windfall, vested dual, supplemental annuities, unemployment, and sickness under OAR 150-316-0065, and that there is no Oregon subtraction for retirement benefits paid by private railroad employers. Title II Social Security and tier 1 railroad retirement included under Internal Revenue Code section 86 remain at `or-stat-316-054-social-security-exclusion`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` carries only a private-or-public `source` enum, and `StateTaxParams` / `StateRetirementExclusion` carry no Railroad Retirement Board payer or supplemental-benefit category — so no accepted ordinary, wages, pension, or `ssBenefits` input can identify RRB-administered Tier 2, windfall, vested-dual, supplemental-annuity, unemployment, or sickness dollars versus a private railroad-employer pension. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 Publication OR-17 only and does not extend that treatment to later years without a later source.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'a railroad-retirement income stream: incomeStreamSchema has no railroad-retirement type',
-        'U.S. Railroad Retirement Board payer or RRA Tier 2, windfall, vested-dual, supplemental-annuity, unemployment, or sickness category on pensionSchema, whose `source` enum is only private or public',
-      ],
-    },
+      '45 U.S.C. 231m(a) forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act. 2025 Publication OR-17 (rev. 01-29-26) says the Act prohibits states from taxing certain railroad benefits and pertains to all benefits the Railroad Retirement Board issues; Oregon subtracts tier 1 benefits with Social Security under ORS 316.054, and administrative rule extends the subtraction to the other supplemental RRB benefits, including tier 2, windfall, vested dual and supplemental annuities, under OAR 150-316-0065. There is no Oregon subtraction for retirement benefits paid by private railroad employers. For an Oregon year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`); a railroad employer’s own plan is tagged as a private pension and is not subtracted, and none of the three counts as a qualifying pension for the ORS 316.157 retirement income credit. A single filer aged 60 with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has Oregon taxable income of 77,090 dollars after the 2,910 dollar standard deduction and is charged 6,426.375 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 8,176.375, the difference being the 20,000 dollars at the 8.75 percent rate. Settled for a pension tagged with one of the three railroad sources. Railroad unemployment and sickness benefits have no income type in the plan and are outside this record. Title II Social Security remains at `or-stat-316-054-social-security-exclusion`. The publication quoted is for tax year 2025, and the federal statute carries the rule to later years. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1406,6 +1399,12 @@ export const westStateRecords = {
         '2025 Publication OR-17 ... 150-101-431 (Rev. 01-29-26)',
     }, {
       kind: 'formInstruction',
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054)',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+      quotedText:
+        'The Railroad Retirement Act of 1974 prohibits states from taxing certain railroad benefits. This act pertains to all benefits issued by the Railroad Retirement Board (RRB). Oregon allows a subtraction for Tier 1 RRB benefits (the same as for Social Security benefits).',
+    }, {
+      kind: 'formInstruction',
       citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065',
       url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
       quotedText:
@@ -1416,19 +1415,29 @@ export const westStateRecords = {
       url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
       quotedText:
         'There is no Oregon subtraction for retirement benefits paid by private railroad employers.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'staticStatute',
     effectiveFrom: 2025,
-    effectiveThrough: 2025,
-    verifiedOn: '2026-09-09',
+    effectiveThrough: null,
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.OR',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 

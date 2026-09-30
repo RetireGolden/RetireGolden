@@ -48,7 +48,7 @@
           "text": "const obligation = account.rmdObligation"
         }
       ],
-      "note": "The corpus reaches the S2 eligibility screen but has no post-flip owner-RMD obligation. Lines 163-167, which apply the remap, are therefore deliberately direct-test owned."
+      "note": "REACHED on 2026-09-30: blocks member o9 carries treat-as-own elections that take effect for a 79-year-old survivor, so its owner-RMD obligations are positive and the corpus now runs the remap itself (lines 163-167). Direct tests still own its defensive zero and sub-cent cases."
     },
     {
       "id": "AO.helper.s2AdjustedTotals",

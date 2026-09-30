@@ -2180,7 +2180,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2208,6 +2208,119 @@
           "kind": "statute",
           "citation": "31 U.S.C. 3124(a)",
           "url": "https://www.law.cornell.edu/uscode/text/31/3124"
+        }
+      ]
+    },
+    {
+      "id": "usc-45-231m-state-tax-bar",
+      "title": "No state may tax a Railroad Retirement Act annuity, so every state subtracts a railroad retirement annuity in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Applied once for every state rather than state by state in the per-state tax data, because it is federal law binding every state, as the federal-obligations exemption at `usc-31-3124-a-federal-obligations-state-exempt` is. The states whose own records already subtracted a railroad source keep that subtraction, and the federal rule takes only the rest.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+          "functions": [
+            {
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "RAILROAD_SOURCES_SUBTRACTED_UNDER_STATE_LAW",
+              "line": 42
+            },
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 302,
+          "note": "exactly once in every state",
+          "tests": [
+            {
+              "title": "covers every state that taxes wages or pensions, and no other",
+              "line": 307
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 348,
+          "note": "worked dollar cases",
+          "tests": [
+            {
+              "title": "prices a 20,000 dollar tier II annuity on a 100,000 dollar return in Pennsylvania, Delaware and West Virginia",
+              "line": 356
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231b(a)(1), tier I",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231b(b)(1), tier II",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231a(b), supplemental annuity",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231a"
         }
       ]
     }

@@ -1296,4 +1296,32 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
+  'ss-bridge-ladders-total-cost': {
+    title: 'Social Security bridge ladders: total cost',
+    purpose: 'What buying every offered Social Security bridge ladder costs together, printed on the Social Security page\'s add-ladders button.',
+    kind: 'formula',
+    outputs: ['social-security-bridge-ladders-total-cost'],
+    statement:
+      'ladder/bridge.ts#bridgeLaddersTotalCost adds the quoted ladderCost of each bridge it is given, in the order given, from 0, and refuses a cost that is not finite with a RangeError. The Social Security page gives it the bridges its table lists: one per claimant who delays past 62 and whose window no ladder in the plan already covers, each sized by ladder/bridge.ts#sizeBridge on the embedded real yield curve for the plan\'s start year, and prints the total compactly on the button that adds them. Quotes of $85,000 and $55,216.54 cost $140,216.54 together; one quote costs itself; no bridge costs $0. Units: the start year\'s real dollars, the unit of every quote on the page. Rounding: none; the button prints the total compactly.',
+    formula: {
+      expression: 'total = ((0 + c_1) + c_2) + … + c_n',
+      variables: [
+        { symbol: 'c_i', meaning: 'The quoted TIPS ladder cost of the i-th bridge the page lists', unit: 'usd, the start year\'s real dollars', domain: 'finite, at least 0' },
+      ],
+      timing: 'once per rendering of the bridge panel',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/social-security-bridge-ladders-total-cost.md',
+    },
+    limits: [
+      'The total is of the bridges the page offers. If a plan already holds a ladder under a bridge\'s own id whose years no longer cover its window, the page lists that bridge and counts its cost, but the add button leaves it out rather than add the id twice.',
+      'The Insights card that suggests a bridge prints its own total, which sizes only claimants with an entered monthly PIA; the page also sizes a claimant whose PIA comes from an earnings record, so the two totals can differ.',
+    ],
+    implementedBy: ['packages/engine/src/ladder/bridge.ts'],
+    implementedByFunctions: ['packages/engine/src/ladder/bridge.ts#bridgeLaddersTotalCost'],
+    verifiedOn: '2026-09-30',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
+  },
 } satisfies Record<string, CalculationRecord>

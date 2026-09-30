@@ -631,20 +631,12 @@ export const socialSecurityRecords = {
   'pl-118-273-sec-2-3-wep-gpo-repeal': {
     title: 'WEP and GPO are repealed for title II monthly benefits after December 2023',
     statement:
-      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The Plan has no non-covered-pension fact, WEP/GPO flag, or covered-service fact that would trigger those adjustments, so no accepted input reaches the repealed rule for any projection year and the engine produces no figure from it rather than an approximation.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-      'a non-covered pension on socialSecurityIncomeSchema',
-      'a WEP or GPO flag',
-      'covered-service facts that would have triggered either adjustment',
-      ],
-    },
+      'Public Law 118-273, the Social Security Fairness Act signed January 5, 2025, repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provision by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. So a pension from work Social Security did not cover reduces neither the worker’s own benefit nor a spouse’s or survivor’s benefit in any year the planner projects, and the engine applies neither reduction: `annualSocialSecurity` pays the benefit from the PIA and the claim age alone. A worker born in 1960 with a 2,000 dollar PIA and a 3,000 dollar monthly teacher pension from uncovered work is paid 24,000 dollars at 67 in 2027, where the repealed WEP would have paid 17,856; a spouse with the same pension is paid the 12,000 dollar half-PIA spouse benefit, where the repealed GPO would have paid nothing. Before 2026-09-30 this record was out of scope for want of a WEP or GPO input; no such input can change the figure, because the facts it would collect could only trigger the provisions the law repealed.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts, which is consistent with those trigger facts being unrepresentable for any startYear.',
+      'A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts. A benefit for a month before 2024 is outside the projection, which starts in the current year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -670,10 +662,14 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
-    implementedBy: ['packages/engine/src/model/plan.ts'],
+    verifiedOn: '2026-09-30',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
     ],
   },
 

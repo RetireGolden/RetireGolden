@@ -140,8 +140,9 @@ letters.
   (2)(t) is not tested. **Understates tax**, the dangerous direction, and the
   only one of these gaps that does. Registered as
   `ndcc-57-38-30-3-2-closed-subtraction-list`.
-- **US Railroad Retirement Board benefits**: not modeled; the engine has no
-  input for them. Narrow population, overstates tax for a railroad retiree.
+- **US Railroad Retirement Board benefits**: a pension tagged Railroad Tier I,
+  Tier II or other Railroad Retirement Act comes off in full, as in every state,
+  under 45 U.S.C. 231m (`usc-45-231m-state-tax-bar`, 2026-09-30).
 - **Marriage penalty credit** (§57-38-01.28) and the **credit for tax paid to
   another state** (§57-38-30.3(4)): credits are outside the pack's scope.
 - **Estate and trust schedule** (§57-38-30.3(1)(e)) and **farm income

@@ -1416,4 +1416,68 @@ export const monteCarloRecords = {
     verifiedOn: '2026-09-27',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
+  'monte-carlo-median-depletion-year': {
+    title: 'Median first-depletion year',
+    purpose: 'The year by which half of the simulated markets that run out of money have run out, printed in the Monte Carlo page\'s explanation of its success rate.',
+    kind: 'formula',
+    outputs: ['monte-carlo-median-first-depletion-year'],
+    statement:
+      'montecarlo/run.ts#aggregateMonteCarlo publishes MonteCarloSummary.medianFirstDepletionYear: walking depletionYearCounts in year order and adding each year\'s count, the first year whose running count reaches half of downsideRisk.failingPathCount, so the lower of the two middle years when the failing count is even, and null when no path runs out. Paths that last are not counted. Failing years 2040, 2041, 2042, 2043 and 2060 among ten paths give 2042, whatever the other five do; four paths failing in 2035, 2040, 2045 and 2050 give 2040; 40, 60 and 50 paths failing in 2047, 2050 and 2053 give 2050. Units: a calendar year. Rounding: none; the year is always one a path failed in.',
+    formula: {
+      expression: 'median = the first year y, in year order, with Σ count(year ≤ y) ≥ F / 2; null when F = 0',
+      variables: [
+        { symbol: 'count(year)', meaning: 'Number of simulated paths that first run out of investable assets in that calendar year (depletionYearCounts)', unit: 'count', domain: 'integer, at least 1 for every listed year' },
+        { symbol: 'F', meaning: 'Number of paths that run out at all (downsideRisk.failingPathCount), the sum of the counts', unit: 'count', domain: 'integer, at least 0' },
+      ],
+      timing: 'once per aggregation',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/monte-carlo-median-first-depletion-year.md',
+    },
+    limits: [
+      'A median of the failing paths only: it says when the typical failure happens, not how likely failure is, which the success rate says.',
+      'With an even number of failing paths it is the lower middle year, never an average of two years, so it is always a year some path failed in.',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/run.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/run.ts#aggregateMonteCarlo',
+      'packages/engine/src/montecarlo/run.ts#medianFirstDepletionYear',
+      'packages/engine/src/montecarlo/run.ts#MonteCarloSummary.medianFirstDepletionYear',
+    ],
+    verifiedOn: '2026-09-30',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
+  },
+  'monte-carlo-lasting-path-count': {
+    title: 'Lasting and depleted path counts',
+    purpose: 'How many simulated markets carried the plan to its end and how many ran out of money, as the Monte Carlo page prints them.',
+    kind: 'formula',
+    outputs: ['monte-carlo-lasting-and-depleted-path-counts'],
+    statement:
+      'montecarlo/run.ts#aggregateMonteCarlo publishes MonteCarloSummary.lastingPathCount, the number of paths whose investable assets never run out (depletionYear null), counted in the same pass that counts downsideRisk.failingPathCount, the paths that do run out. Every path is one or the other, so the two add up to pathCount, successRate is lastingPathCount divided by pathCount, and the failing count equals the sum of depletionYearCounts. The explanation panel prints the lasting count ("lasted to the end of the plan in N of the M simulated markets") and the first-depletion chart\'s label prints the failing count. Five failing and five lasting paths give 5 and 5; 150 failing among 1,000 give 850 and 150; a path that falls short of its required spending floor without running out still lasted. Units: counts of paths. Rounding: none.',
+    formula: {
+      expression: 'lasting = #{paths with no depletion year}; depleted = #{paths with a depletion year} = Σ count(year); lasting + depleted = pathCount',
+      variables: [
+        { symbol: 'depletion year', meaning: 'The first year a path\'s investable assets run out, or none', unit: 'calendar year', domain: 'a year of the plan, or none' },
+        { symbol: 'pathCount', meaning: 'Number of simulated paths', unit: 'count', domain: 'integer, at least 0' },
+      ],
+      timing: 'once per aggregation',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/monte-carlo-lasting-and-depleted-path-counts.md',
+    },
+    limits: [
+      'Lasting means the investable assets never ran out; a path can last and still fall short of its required or target spending, which the layered success rates count.',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/run.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/run.ts#aggregateMonteCarlo',
+      'packages/engine/src/montecarlo/run.ts#MonteCarloSummary.lastingPathCount',
+    ],
+    verifiedOn: '2026-09-30',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
+  },
 } satisfies Record<string, CalculationRecord>

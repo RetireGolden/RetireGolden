@@ -1269,7 +1269,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "no registry record on this path; claimFactor is engine/src/socialSecurity/claimFactor.ts (registry records there).",
+    "notes": "no registry record on this path; claimFactor is engine/src/socialSecurity/claimFactor.ts (registry records there). The add-ladders button's total is social-security-bridge-ladders-total-cost.",
     "dimensions": [
       "claimant",
       "figure"
@@ -1289,7 +1289,7 @@
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Bridge panel rows \"$X/yr ($Y/mo, real)\" and ladder cost, and the add-ladders total"
+        "selector": "Bridge panel rows \"$X/yr ($Y/mo, real)\" and ladder cost"
       },
       {
         "surface": "insights",
@@ -3793,7 +3793,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "The chart label's path total and the panel's median year are computed on the page: monte-carlo-lasting-and-depleted-path-counts and monte-carlo-median-first-depletion-year.",
     "dimensions": [
       "year"
     ],
@@ -3812,11 +3812,11 @@
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "\"When depleting plans run out\" bar chart and its aria-label total of depleting paths"
+        "selector": "\"When depleting plans run out\" bar chart"
       },
       {
         "surface": "monte-carlo-page",
-        "selector": "WhySuccessPanel depletion sentence"
+        "selector": "WhySuccessPanel \"Which years drive it\": \"Failing paths first run out between EARLIEST and LATEST\" (the first and last rows)"
       }
     ]
   },
@@ -3824,7 +3824,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Shares the YearPercentiles type rows with the fan family. endingInvestable.percentiles and endingNetWorth.percentiles are computed by the same code path but MonteCarloPage.tsx renders neither; they stay unsurfaced in the notes rather than as rows because the extractor keyed the rows by type.",
+    "notes": "Shares the YearPercentiles type rows with the fan family. endingInvestable.percentiles and endingNetWorth.percentiles are computed by the same code path but MonteCarloPage.tsx renders neither; they stay unsurfaced in the notes rather than as rows because the extractor keyed the rows by type. The ending-balance histogram's accessible label printed this median beside the investable histogram until 2026-09-30, a copy defect the freeze recorded; it now describes the chart it labels and prints no estate figure.",
     "dimensions": [
       "percentile"
     ],
@@ -3848,10 +3848,6 @@
       {
         "surface": "monte-carlo-page",
         "selector": "\"Worst-case estate\" tile (p10)"
-      },
-      {
-        "surface": "monte-carlo-page",
-        "selector": "Ending-balance histogram aria-label median (p50)"
       },
       {
         "surface": "monte-carlo-page",
@@ -3952,7 +3948,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "The lasting-path count printed beside it (\"N of the M simulated markets\") is computed on the page: monte-carlo-lasting-and-depleted-path-counts.",
     "dimensions": [],
     "basis": "n/a",
     "id": "monte-carlo-failing-path-count",
@@ -3969,7 +3965,7 @@
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "WhySuccessPanel \"lasted ... in N of M simulated markets\" (pathCount - failingPathCount)"
+        "selector": "WhySuccessPanel \"What it counts\": \"(F depleted early)\""
       }
     ]
   },
@@ -7777,7 +7773,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes batch_evaluate select the engine summary's lifetimeTaxesAndPenalties (engine/src/projection/compare.ts#summarizeProjection), the same quantity as projection-summary-lifetime-taxes-and-penalties on each candidate plan; per the freeze the family becomes kind engine with the MCP release that ships it. Engine calculation record mcp-batch-cumulative-tax-objective."
   },
   {
     "id": "mcp-batch-ending-traditional-objective",
@@ -7805,7 +7801,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes batch_evaluate select the engine summary's endingByCategory.traditional (engine/src/projection/compare.ts#summarizeProjection, rolled up by engine/src/projection/yearFigures.ts#balancesByCategory); per the freeze the family becomes kind engine with the MCP release that ships it. Engine calculation record mcp-batch-ending-traditional-objective."
   },
   {
     "id": "mcp-compare-ending-after-tax-estate-delta",
@@ -7833,7 +7829,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes compare_scenarios read compareScenarioPlans(a, b, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta (engine/src/scenarios/comparison.ts#compareScenarioPlans), the same number; per the freeze the family becomes kind engine with the MCP release that ships it. Nominal across different end years, unlike compare-plan-money-deltas (R13); the engine record states it as a limit. Engine calculation record mcp-compare-ending-after-tax-estate-delta."
   },
   {
     "id": "scenario-comparison-cell",
@@ -7860,7 +7856,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Money metrics are nominal dollars; the depletionYear and projectionEndYear cells carry years, the IRMAA tier-year and simulation-count cells carry counts, and the risk cells carry probabilities (formatScenarioDelta prints the change in percentage points). safeNumber rejects non-finite values and normalizes -0. The MCP compare_scenarios delta is the adapter family mcp-compare-ending-after-tax-estate-delta, computed from two independent summaries, not from this type."
+    "notes": "Money metrics are nominal dollars; the depletionYear and projectionEndYear cells carry years, the IRMAA tier-year and simulation-count cells carry counts, and the risk cells carry probabilities (formatScenarioDelta prints the change in percentage points). safeNumber rejects non-finite values and normalizes -0. The MCP compare_scenarios delta is the adapter family mcp-compare-ending-after-tax-estate-delta, computed from two independent summaries at the MCP pin 3197d359; RetireGolden-MCP #81 (fc13b94, not yet released) makes it this type's headline endingAfterTaxEstate delta from compareScenarioPlans."
   },
   {
     "id": "cash-flow-line-plan-dollars",
@@ -8044,5 +8040,186 @@
     "candidateRuleIds": [],
     "status": "identified",
     "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year; the Compare page prints it in the Money lasts row and differences it in the delta column. The Insurance section's LTC stress table also prints it (LtcStressComparison.lasts), on a page no census surface names yet."
+  },
+  {
+    "id": "household-map-entered-totals",
+    "group": "accounts-and-growth",
+    "title": "Household map entered totals",
+    "meaning": "The household map's \"As entered\" line: assets (the entered balances of investable accounts plus entered property values), debts (entered debt balances) and net (assets minus debts), for the whole household or for the accounts the map's person focus and group filters leave on screen.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-native",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/householdMap/householdGraph.ts",
+        "symbol": "buildHouseholdGraph"
+      },
+      {
+        "path": "planner-ui/src/householdMap/householdGraph.ts",
+        "symbol": "enteredTotalsOfNodes"
+      },
+      {
+        "path": "planner-ui/src/householdMap/mapViewModel.ts",
+        "symbol": "buildMapViewModel"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "household-map",
+        "selector": "Map totals line \"As entered: assets $X · debts $Y · net $Z\" (\"As entered for NAME\" or \"for the items shown\" when the focus or group filters narrow the map), on screen and on the printed map"
+      }
+    ],
+    "transformations": [
+      "model/enteredBalanceSheet.ts#enteredBalanceSheet over the accounts it is given, in their order: investable = Σ entered balances of the cash, taxable, equityComp, traditional, Roth and HSA accounts; property = Σ entered property values; liabilities = Σ entered debt balances; assets = investable + property; netWorth = assets − liabilities. Pensions and annuities carry a monthly amount and are not lines. householdGraph.ts#buildHouseholdGraph reads it for the plan's accounts, and #enteredTotalsOfNodes for the accounts whose nodes a person focus or group filter leaves on screen (mapViewModel.ts#buildMapViewModel)."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/householdMap/householdGraph.ts#sumEnteredTotals (sums of the account nodes' stored figures by node kind) until the B2-P1 freeze additions (2026-09-30); now engine engine/src/model/enteredBalanceSheet.ts#enteredBalanceSheet, which buildHouseholdGraph and enteredTotalsOfNodes read. Sums of the plan's stored figures as entered today, not projection output: no growth, no year, no deflation; the investable line is the same number as the ledger's first-year portfolio (montecarlo/riskBasedGuardrails.ts#startingInvestableOf). The engine's net worth (accounts-net-worth-annual) is a projected end-of-year value of the same accounts. Found by the independent check of the B2-P1 reconnaissance (evidence/b2p1-recon-check.md, \"Arithmetic the report missed\", item 2) and added when the census was frozen (D-CENSUS-FREEZE, 2026-09-30); the surface name household-map entered the validator's vocabulary with this family.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/model/enteredBalanceSheet.ts#enteredBalanceSheet"
+    }
+  },
+  {
+    "id": "monte-carlo-median-first-depletion-year",
+    "group": "monte-carlo",
+    "title": "Median first-depletion year",
+    "meaning": "Among the simulated paths that run out of money, the calendar year by which half of them have first depleted, printed in the Monte Carlo page's \"Why this number?\" panel.",
+    "unit": "year",
+    "basis": "n/a",
+    "dimensions": [],
+    "kind": "ui-native",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/explainPanels.tsx",
+        "symbol": "WhySuccessPanel"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "monte-carlo-page",
+        "selector": "WhySuccessPanel \"Which years drive it\": \"(median YEAR)\""
+      }
+    ],
+    "transformations": [
+      "montecarlo/run.ts#aggregateMonteCarlo publishes MonteCarloSummary.medianFirstDepletionYear: walking depletionYearCounts in year order, the first year whose running count reaches half of downsideRisk.failingPathCount (the lower middle year when that count is even); null when no path fails. explainPanels.tsx#WhySuccessPanel prints it."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/planner/explainPanels.tsx#WhySuccessPanel (the same walk) until the B2-P1 freeze additions (2026-09-30); now engine engine/src/montecarlo/run.ts#MonteCarloSummary.medianFirstDepletionYear, which WhySuccessPanel reads. Found by the independent check of the B2-P1 reconnaissance (evidence/b2p1-recon-check.md, item 3) and added when the census was frozen (D-CENSUS-FREEZE, 2026-09-30). The earliest and latest first-depletion years in the same sentence are the first and last rows of depletionYearCounts, selections that stay surfaces of monte-carlo-depletion-year-histogram.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.medianFirstDepletionYear"
+    }
+  },
+  {
+    "id": "monte-carlo-lasting-and-depleted-path-counts",
+    "group": "monte-carlo",
+    "title": "Lasting and depleted path counts worked out on the Monte Carlo page",
+    "meaning": "Two path counts the Monte Carlo page works out from the engine's summary: how many simulated paths lasted to the end of the plan (\"Why this number?\") and how many ran out of money (the first-depletion chart's accessible label).",
+    "unit": "count",
+    "basis": "n/a",
+    "dimensions": [
+      "statistic"
+    ],
+    "kind": "ui-transformation",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/explainPanels.tsx",
+        "symbol": "WhySuccessPanel"
+      },
+      {
+        "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+        "symbol": "MonteCarloPage"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "monte-carlo-page",
+        "selector": "WhySuccessPanel \"What it counts\": \"lasted to the end of the plan in N of the M simulated markets\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "\"When depleting plans run out\" chart aria-label \"Histogram of first-depletion years for the N paths that ran out of money.\""
+      }
+    ],
+    "transformations": [
+      "Lasting paths: montecarlo/run.ts#aggregateMonteCarlo publishes MonteCarloSummary.lastingPathCount, the paths whose depletionYear is null, which explainPanels.tsx#WhySuccessPanel prints.",
+      "Depleted paths: downsideRisk.failingPathCount, counted in the same pass and equal to Σ depletionYearCounts[].count, which the depletion chart's aria-label prints (MonteCarloPage.tsx#MonteCarloPage); lastingPathCount + failingPathCount = pathCount."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed on the page until the B2-P1 freeze additions (2026-09-30): pathCount − failingPathCount in explainPanels.tsx#WhySuccessPanel and Σ depletionYearCounts[].count in the chart label of MonteCarloPage.tsx#MonteCarloPage; now engine engine/src/montecarlo/run.ts#MonteCarloSummary.lastingPathCount and downsideRisk.failingPathCount, which they read. Found by the independent check of the B2-P1 reconnaissance (evidence/b2p1-recon-check.md, items 3 and 5; D-CENSUS-FREEZE names the chart label's path count) and added when the census was frozen (D-CENSUS-FREEZE, 2026-09-30). Both counts were surfaces of engine families before (monte-carlo-failing-path-count and monte-carlo-depletion-year-histogram), although the page computed them.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.lastingPathCount"
+    }
+  },
+  {
+    "id": "social-security-bridge-ladders-total-cost",
+    "group": "social-security",
+    "title": "Bridge ladders total cost",
+    "meaning": "The combined quoted TIPS-ladder cost of every delaying claimant's Social Security bridge, printed on the Social Security page's add-ladders button.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-transformation",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+        "symbol": "BridgePanel"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "Bridge panel button \"Add bridge ladder(s) to plan ($X)\""
+      }
+    ],
+    "transformations": [
+      "ladder/bridge.ts#bridgeLaddersTotalCost adds the quoted ladderCost of the bridges the panel lists (one per delaying claimant whose window no plan ladder covers, each from engine/src/ladder/bridge.ts#sizeBridge), in their order from 0; SsAnalysisPage.tsx#BridgePanel prints the total compactly on its button."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/planner/SsAnalysisPage.tsx#BridgePanel (a reduce over ladderCost) until the B2-P1 freeze additions (2026-09-30); now engine engine/src/ladder/bridge.ts#bridgeLaddersTotalCost, which BridgePanel reads. Found by the B2-P1 reconnaissance (evidence/b2p1-recon.md, \"Out-of-census UI arithmetic found in passing\": SsAnalysisPage.tsx:314 at 3a23de9c, line 361 at f97cf418), which found the census attributing the sum to the engine family social-security-bridge-sizing; added when the census was frozen (D-CENSUS-FREEZE, 2026-09-30), and that family's surface no longer claims it.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/ladder/bridge.ts#bridgeLaddersTotalCost"
+    }
+  },
+  {
+    "id": "optimizer-candidate-trailing-estate-amount",
+    "group": "optimizer-and-comparisons",
+    "title": "Candidate's gap to the chosen schedule",
+    "meaning": "In the downloadable report's conversion-candidate table, how far a candidate that was not chosen trails the selected recommendation (or the calculated winner withheld pending account allocation) in after-tax estate improvement.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "candidate"
+    ],
+    "kind": "ui-native",
+    "uiSources": [
+      {
+        "path": "planner-ui/src/report/reportHtml.ts",
+        "symbol": "lossReasonForCandidate"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "report",
+        "selector": "Downloadable HTML report candidate table reason \"Trailed the selected recommendation by $X.\" or \"Trailed the calculated winner by $X; that winner was withheld pending account allocation.\""
+      }
+    ],
+    "transformations": [
+      "projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount: benchmark − candidate.afterTaxEstateDelta when the benchmark is larger, else none, where #tournamentEstateBenchmark is the afterTaxEstateDelta of the winner's validation, else of the withheld winner's validation, else the largest of 0 and every candidate's afterTaxEstateDelta; reportHtml.ts#lossReasonForCandidate prints it."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Computed in planner-ui/src/report/reportHtml.ts#lossReasonForCandidate (the benchmark and the subtraction) until the B2-P1 freeze additions (2026-09-30); now engine engine/src/projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount, which lossReasonForCandidate reads. Found by the B2-P1 reconnaissance (evidence/b2p1-recon.md, out-of-census list: reportHtml.ts:502-506 at 3a23de9c, 562-566 at f97cf418) and added when the census was frozen (D-CENSUS-FREEZE, 2026-09-30). Its operands are simple-candidate-evaluation-after-tax-estate-delta and the validation's delta. On the example library every printed gap is to a winner withheld pending account allocation.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount"
+    }
   }
 ]

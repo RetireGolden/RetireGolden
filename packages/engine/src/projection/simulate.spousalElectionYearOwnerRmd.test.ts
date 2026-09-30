@@ -7,7 +7,7 @@
  * 10,383.68 / 383.68 catch-up from federal-spouse-hecm-completion-spec.md S1/S2.
  * Expectations are source-derived, not read back from the planner under test.
  */
-import { expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { asUsdCents } from '../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
@@ -443,6 +443,67 @@ describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
 
 })
 
+// The election year owes ONE §4974 obligation, the owner's. §4974(b) takes
+// the minimum required distribution "as determined under regulations", and
+// Treas. Reg. 1.408-8(c)(3) determines it for the calendar year of the
+// election under section 401(a)(9)(A) with the spouse as owner, "and not
+// section 401(a)(9)(B)" with the spouse as beneficiary; (e)(2)(i) takes the
+// elected IRA out of the beneficiary's same-decedent group. The beneficiary
+// figure stays on the account's evidence only as the immutable trigger.
+// Owner: 100,000 / 24.6 = 4,065.04, 1,000 credited pre-election and 3,065.04
+// settled. Beneficiary counterfactual: 99,000 / 14.8 (Single Life, age 75) =
+// 6,689.19, which, charged as a second and unpaid obligation, is a 1,672.30
+// excise. The account names its decedent, so it files under the grouped
+// same-decedent identity the phase's old per-account filter never matched.
+const electionYearBeneficiaryCounterfactual = 99_000 / 14.8
+
+describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
+  readings: {
+    ownerObligationOnly: 0,
+    ownerAndBeneficiaryObligations: electionYearBeneficiaryCounterfactual * 0.25,
+  },
+  accepted: 'ownerObligationOnly',
+  note: 'election-year section 4974 obligation',
+}, ({ accepted, readings }) => {
+  it('charges no beneficiary §4974 obligation beside the paid 4065.04 owner RMD', () => {
+    const pack = packForYear(2026).pack
+    expect(pack.rmd.uniformLifetimeTable[75]).toBe(24.6)
+    expect(pack.rmd.singleLifeTable[75]).toBe(14.8)
+    const ownerRequired = 100_000 / 24.6
+    expect(ownerRequired).toBeCloseTo(4065.04, 2)
+    expect(electionYearBeneficiaryCounterfactual).toBeCloseTo(6689.19, 2)
+    expect(readings.ownerAndBeneficiaryObligations).toBeCloseTo(1672.30, 2)
+
+    const plan = planFor('1951-01-02')
+    inherited(plan, {
+      ownerDeathYear: 2024, decedentHadStartedRmds: true,
+      beneficiary: facts({ beneficiaryBirthYear: 1951, ownerBirthYear: 1945 }),
+    }, 99_000)
+    observedElection(plan, '2026-06-15', '2024-06-01', [2025], {
+      referenceBalance: 100_000,
+      preElectionDistributed: 1_000,
+    })
+    const result = run(plan, 2026)
+    const y = year(result, 2026)
+    expect(ownerObligation(result, 2026)).toMatchObject({
+      requiredAmount: ownerRequired,
+      creditedAcceptedDistributionAmount: 1_000,
+      settledAmount: ownerRequired - 1_000,
+      unsatisfiedAmount: 0,
+    })
+    expect(evidence(result, 2026).requiredAmount).toBeCloseTo(electionYearBeneficiaryCounterfactual, 8)
+    expect(y.rmdShortfallExciseDetails).toHaveLength(1)
+    expect(y.rmdShortfallExciseDetails![0]).toMatchObject({
+      obligationId: expect.stringContaining('owned-iras'),
+      requiredAmount: ownerRequired,
+      distributedByDeadline: ownerRequired,
+      tax: 0,
+    })
+    expect(y.rmdShortfallExciseDetails!.some((row) => row.obligationId.includes('inherited'))).toBe(false)
+    expect(y.rmdShortfallExciseTax).toBe(accepted)
+  })
+})
+
 describeRule('treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence', {
   readings: {
     officialAdjustedBalanceRecurrence: 10_383.68,
@@ -586,5 +647,43 @@ describeRule('treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd', {
       accountId: 'inherited', ownerTreatment: true,
     })
     expect(year(result, 2027).inheritedDistribution).toBe(0)
+  })
+})
+
+describe('known limit: pooled elected IRAs share one owner-RMD reference balance', () => {
+  // KNOWN LIMIT (calculation record rmd-uniform-lifetime-divisor and tax rule
+  // treas-reg-1-408-8-c-3-spouse-treated-as-owner). This pins CURRENT
+  // behavior, which is wrong; the fix is meant to fail it. Treas. Reg.
+  // 1.408-8(c)(3) makes the election-year RMD the owner's, on each IRA's own
+  // prior December 31 balance ((b)(2) with 1.401(a)(9)-5(b), calculated
+  // separately for each IRA under (e)(1)(i)). The plan checks require every
+  // IRA inherited from one decedent to carry identical election facts, and a
+  // positive election reference balance replaces the prior December 31
+  // balance, so both IRAs here take their owner RMD from the one 100,000
+  // reference: the 29,600 IRA owes 100,000 / 24.6 = 4,065.04, where its own
+  // balance gives 29,600 / 24.6 = 1,203.25. The engine overstates it.
+  it('takes the 29,600 IRA\'s owner RMD from the pool\'s 100,000 reference: 4065.04, not 1203.25', () => {
+    expect(packForYear(2026).pack.rmd.uniformLifetimeTable[75]).toBe(24.6)
+    const fromSharedReference = 100_000 / 24.6
+    const fromOwnBalance = 29_600 / 24.6
+    expect(fromSharedReference).toBeCloseTo(4065.04, 2)
+    expect(fromOwnBalance).toBeCloseTo(1203.25, 2)
+
+    const plan = planFor('1951-01-02')
+    inherited(plan, {
+      ownerDeathYear: 2024, decedentHadStartedRmds: true,
+      beneficiary: facts({ beneficiaryBirthYear: 1951, ownerBirthYear: 1945 }),
+    }, 100_000)
+    observedElection(plan, '2026-06-15', '2024-06-01', [2025], { referenceBalance: 100_000 })
+    const first = plan.accounts.find((row) => row.id === 'inherited') as Extract<Account, { type: 'traditional' }>
+    plan.accounts.push({ ...structuredClone(first), id: 'pooled-second', name: 'Second IRA, same decedent', balance: 29_600 })
+    const result = run(plan, 2026)
+    const obligations = year(result, 2026).electionYearOwnerRmdObligations ?? []
+    const second = obligations.find((row) => row.accountId === 'pooled-second')
+    expect(obligations.find((row) => row.accountId === 'inherited')?.requiredAmount).toBeCloseTo(fromSharedReference, 8)
+    // Current behavior: the shared reference, not the account's own balance.
+    expect(second?.requiredAmount).toBeCloseTo(fromSharedReference, 8)
+    expect(second?.requiredAmount).not.toBeCloseTo(fromOwnBalance, 2)
+    expect(second?.settledAmount).toBeCloseTo(fromSharedReference, 8)
   })
 })

@@ -163,7 +163,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -242,11 +242,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -310,7 +310,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -409,7 +409,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -499,11 +499,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -514,12 +514,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 815,
+          "line": 818,
           "note": null,
           "tests": [
             {
               "title": "keeps the legacy approximation distinguishable from the characterized result",
-              "line": 818
+              "line": 821
             }
           ]
         }
@@ -577,7 +577,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -666,11 +666,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -756,7 +756,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -830,7 +830,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -925,7 +925,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1013,7 +1013,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1091,7 +1091,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1166,11 +1166,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1205,12 +1205,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 829,
+          "line": 832,
           "note": null,
           "tests": [
             {
               "title": "Maryland qualifies employer-plan income and offsets gross SS rather than taxable SS",
-              "line": 830
+              "line": 833
             }
           ]
         }
@@ -1275,7 +1275,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1407,7 +1407,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1497,7 +1497,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1591,7 +1591,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -1694,7 +1694,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -1773,7 +1773,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1837,11 +1837,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1907,8 +1907,8 @@
     },
     {
       "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-      "title": "45 U.S.C. 231m exempts Railroad Retirement Act annuities from state income tax; the engine cannot certify annuity category or federally included amount",
-      "classification": "outOfScope",
+      "title": "45 U.S.C. 231m exempts Railroad Retirement Act annuities from South Carolina income tax, so a railroad annuity comes off the South Carolina base in full",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
@@ -1917,38 +1917,76 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "states.SC",
+              "line": 916
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 159,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 160,000 dollar South Carolina return",
+              "line": 163
+            },
+            {
+              "title": "subtracts tier I, tier II and the other annuities in full, and not a railroad employer’s own plan",
+              "line": 173
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -1961,6 +1999,16 @@
           "kind": "statute",
           "citation": "45 U.S.C. 231m(b)(1)",
           "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231b(a)(1), tier I",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231b(b)(1), tier II",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b"
         },
         {
           "kind": "statute",
@@ -2002,7 +2050,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2120,11 +2168,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2194,11 +2242,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2225,12 +2273,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 840,
+          "line": 843,
           "note": null,
           "tests": [
             {
               "title": "grants ordinary private and public retirement only the under65 statutory cap",
-              "line": 841
+              "line": 844
             }
           ]
         }
@@ -2278,11 +2326,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2294,16 +2342,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 849,
+          "line": 852,
           "note": null,
           "tests": [
             {
               "title": "excludes qualifying military fully while ordinary public retirement remains capped",
-              "line": 850
+              "line": 853
             },
             {
               "title": "SC survivor military deduction does not consume the survivor’s own age65 room",
-              "line": 854
+              "line": 857
             }
           ]
         },
@@ -2335,48 +2383,92 @@
     },
     {
       "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
-      "title": "South Carolina’s 2025 SC1040 line o reaches federally taxed railroad retirement; the engine cannot certify payer or category",
-      "classification": "outOfScope",
+      "title": "South Carolina’s SC1040 line o subtracts railroad retirement taxed on the federal return, and it takes no room from the retirement deduction",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "state:SC",
-      "volatility": "annuallyIndexed",
+      "volatility": "staticStatute",
       "effectiveFrom": 2025,
-      "effectiveThrough": 2025,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-01-07",
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateSouthCarolinaRetirement.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "states.SC",
+              "line": 916
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateSouthCarolinaRetirement.ts",
+          "functions": [
+            {
+              "name": "scSection1170Deduction",
+              "line": 66
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 178,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the annuity on line o and leaves the under-65 retirement deduction for an IRA",
+              "line": 182
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -2384,6 +2476,16 @@
           "kind": "formInstruction",
           "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o",
           "url": "https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify",
+          "url": "https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -2420,11 +2522,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2489,11 +2591,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -2513,12 +2615,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 662,
+          "line": 665,
           "note": null,
           "tests": [
             {
               "title": "recovers only documented prior-state contributions once across annual events",
-              "line": 663
+              "line": 666
             }
           ]
         }
@@ -2567,11 +2669,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -2645,11 +2747,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -2732,7 +2834,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2807,11 +2909,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2998,7 +3100,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3036,8 +3138,8 @@
     },
     {
       "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-      "title": "Virginia subtracts Tier 2 and other railroad benefits included in federal AGI; the engine cannot certify benefit type",
-      "classification": "outOfScope",
+      "title": "Virginia subtracts Tier 2 and the other Railroad Retirement Act benefits included in federal AGI, beside the Tier 1 subtraction",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
@@ -3046,38 +3148,76 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "states.VA",
+              "line": 1040
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 198,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Virginia return",
+              "line": 202
+            },
+            {
+              "title": "subtracts tier II and the other annuities in full, and tier I once, beside its own paragraph (3) subtraction",
+              "line": 212
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -3090,6 +3230,11 @@
           "kind": "stateAgencyPublication",
           "citation": "Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
           "url": "https://www.tax.virginia.gov/subtractions"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -3126,11 +3271,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3141,12 +3286,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 784,
+          "line": 787,
           "note": null,
           "tests": [
             {
               "title": "removes included Tier I while a private pension remains taxable",
-              "line": 785
+              "line": 788
             }
           ]
         }
@@ -3204,11 +3349,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3219,16 +3364,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 761,
+          "line": 764,
           "note": null,
           "tests": [
             {
               "title": "grants the $2,000 PERS or Teachers cap without a federal pension masking it",
-              "line": 762
+              "line": 765
             },
             {
               "title": "shares the public/federal limit and separates full police/fire benefits",
-              "line": 769
+              "line": 772
             }
           ]
         }
@@ -3286,11 +3431,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3301,16 +3446,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 776,
+          "line": 779,
           "note": null,
           "tests": [
             {
               "title": "excludes military retirement without the historical $20,000 cap",
-              "line": 777
+              "line": 780
             },
             {
               "title": "excludes military survivor income without the historical $20,000 cap",
-              "line": 780
+              "line": 783
             }
           ]
         }
@@ -3368,11 +3513,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3383,12 +3528,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 790,
+          "line": 793,
           "note": null,
           "tests": [
             {
               "title": "selects 35 percent 65 percent and full Social Security relief in 2024 2025 and 2026",
-              "line": 791
+              "line": 794
             }
           ]
         }
@@ -3446,11 +3591,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3461,12 +3606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 753,
+          "line": 756,
           "note": null,
           "tests": [
             {
               "title": "subtracts prior named modifications from each eligible owner’s $8,000 room",
-              "line": 754
+              "line": 757
             }
           ]
         }
@@ -3514,7 +3659,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3597,7 +3742,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -3688,11 +3833,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -3703,12 +3848,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 744,
+          "line": 747,
           "note": null,
           "tests": [
             {
               "title": "distinguishes §151(d)(2) and the surviving-spouse two-year addition",
-              "line": 745
+              "line": 748
             }
           ]
         }

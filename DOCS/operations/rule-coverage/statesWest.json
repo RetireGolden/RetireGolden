@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -109,7 +109,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -373,7 +373,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -451,11 +451,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -538,7 +538,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -612,11 +612,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -701,7 +701,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -789,7 +789,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -882,7 +882,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -956,7 +956,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1034,7 +1034,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1190,7 +1190,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1348,7 +1348,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1359,12 +1359,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 809,
+          "line": 812,
           "note": null,
           "tests": [
             {
               "title": "selects the statutory age65 pension limit",
-              "line": 810
+              "line": 813
             }
           ]
         }
@@ -1432,7 +1432,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1511,7 +1511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1522,12 +1522,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 812,
+          "line": 815,
           "note": null,
           "tests": [
             {
               "title": "raises subtraction room for fully excludable Social Security",
-              "line": 813
+              "line": 816
             }
           ]
         }
@@ -1596,7 +1596,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         },
@@ -1725,7 +1725,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -1790,7 +1790,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1935,7 +1935,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2034,7 +2034,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2124,7 +2124,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2198,7 +2198,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2263,7 +2263,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -2350,7 +2350,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2424,11 +2424,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2511,7 +2511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -2599,7 +2599,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         },
@@ -2740,7 +2740,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2839,7 +2839,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2931,11 +2931,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             },
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -3025,7 +3025,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3089,7 +3089,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3158,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -3253,7 +3253,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -3319,11 +3319,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3386,54 +3386,97 @@
     },
     {
       "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-      "title": "Oregon subtracts RRB-administered supplemental railroad benefits; the engine cannot certify payer or benefit type",
-      "classification": "outOfScope",
+      "title": "Oregon does not tax Railroad Retirement Board benefits: tier 1 comes off with Social Security and tier 2 and the other annuities under OAR 150-316-0065",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "state:OR",
-      "volatility": "annuallyIndexed",
+      "volatility": "staticStatute",
       "effectiveFrom": 2025,
-      "effectiveThrough": 2025,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-01-07",
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "states.OR",
+              "line": 865
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 240,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Oregon return",
+              "line": 244
+            },
+            {
+              "title": "subtracts tier I, tier II and the other annuities in full, and not a railroad employer’s own plan",
+              "line": 254
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
         {
           "kind": "formInstruction",
           "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page",
+          "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054)",
           "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
         },
         {
@@ -3445,6 +3488,11 @@
           "kind": "formInstruction",
           "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions",
           "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -3481,7 +3529,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3555,7 +3603,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -3629,7 +3677,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -3707,7 +3755,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -3782,7 +3830,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -3864,7 +3912,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -3943,7 +3991,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         },
@@ -4016,7 +4064,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -4106,7 +4154,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -4185,7 +4233,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -4288,7 +4336,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -4362,7 +4410,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 1862
+              "line": 1907
             }
           ]
         }
@@ -4469,7 +4517,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -4534,7 +4582,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }

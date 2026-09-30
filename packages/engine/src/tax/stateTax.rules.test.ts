@@ -534,10 +534,10 @@ describeRule('ny-dtf-qualified-government-pension-full-subtraction', {
   })
 })
 
-// pensionSchema.source is only private or public
-// (`ny-government-pension-issuer-qualification-not-modeled`); military
-// eligibility is not encoded by that enum. Private routing is a model control,
-// not a statutory alternate or proof of issuer liability.
+// The New York rule reads neither a pension's source kind nor its plan state
+// (`ny-government-pension-issuer-qualification-not-modeled`), so issuer
+// eligibility is not checked. Private routing is a model control, not a
+// statutory alternate or proof of issuer liability.
 describe('ny-dtf-qualified-government-pension private routing', () => {
   it('keeps private routing as an ordinary model control outside the statutory wrapper', () => {
     const ny = pack('NY')

@@ -2,27 +2,27 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 232,
+    "identified": 237,
     "byGroup": {
-      "accounts-and-growth": 11,
+      "accounts-and-growth": 12,
       "cash-flow-and-summary": 60,
       "insights": 12,
       "ladders-and-valuation": 15,
       "longevity": 4,
       "medicare-and-aca": 10,
-      "monte-carlo": 35,
-      "optimizer-and-comparisons": 27,
+      "monte-carlo": 37,
+      "optimizer-and-comparisons": 28,
       "rmd": 3,
       "roth": 4,
-      "social-security": 17,
+      "social-security": 18,
       "spending-and-withdrawals": 16,
       "taxes": 18
     },
     "byKind": {
       "adapter": 3,
       "engine": 189,
-      "ui-native": 21,
-      "ui-transformation": 19
+      "ui-native": 24,
+      "ui-transformation": 21
     },
     "complete": [
       "aca-applicable-slcsp-premium-annual",
@@ -82,6 +82,7 @@
       "funded-ratio-result-unfunded-pv",
       "hecm-draw-annual",
       "historical-stress-window-total-shortfall",
+      "household-map-entered-totals",
       "income-annuity-annual",
       "income-floor-ladder-yield-pct",
       "income-one-time-annual",
@@ -128,6 +129,9 @@
       "longevity-last-funded-year",
       "longevity-survival-percentile-age",
       "magi-annual",
+      "mcp-batch-cumulative-tax-objective",
+      "mcp-batch-ending-traditional-objective",
+      "mcp-compare-ending-after-tax-estate-delta",
       "medicare-premiums-annual",
       "monte-carlo-average-longest-cut-spell-years",
       "monte-carlo-average-total-shortfall",
@@ -145,7 +149,9 @@
       "monte-carlo-guardrail-action-counts",
       "monte-carlo-ideal-funding-rate",
       "monte-carlo-investable-fan-percentiles",
+      "monte-carlo-lasting-and-depleted-path-counts",
       "monte-carlo-max-cut-depth-percentiles",
+      "monte-carlo-median-first-depletion-year",
       "monte-carlo-p90-average-annual-target-shortfall",
       "monte-carlo-p90-total-shortfall",
       "monte-carlo-paths-with-cut-share",
@@ -158,6 +164,7 @@
       "monte-carlo-target-lifestyle-success-rate",
       "optimization-baseline-after-tax-estate",
       "optimization-candidate-after-tax-estate",
+      "optimizer-candidate-trailing-estate-amount",
       "optimizer-recommended-conversion-annual",
       "optimizer-schedule-conversion-total",
       "pension-election-annuity-present-value",
@@ -194,6 +201,7 @@
       "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
       "social-security-break-even",
+      "social-security-bridge-ladders-total-cost",
       "social-security-bridge-sizing",
       "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
@@ -256,11 +264,7 @@
       "year-result-tax-exempt-interest"
     ],
     "partial": [],
-    "noRecordYet": [
-      "mcp-batch-cumulative-tax-objective",
-      "mcp-batch-ending-traditional-objective",
-      "mcp-compare-ending-after-tax-estate-delta"
-    ],
+    "noRecordYet": [],
     "relocationPending": [],
     "fedBy": {
       "aca-applicable-slcsp-premium-annual": [
@@ -939,16 +943,16 @@
     }
   },
   "records": {
-    "total": 273,
+    "total": 281,
     "byKind": {
-      "composition": 86,
+      "composition": 89,
       "data": 24,
-      "formula": 93,
+      "formula": 98,
       "model": 70
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 268
+      "derivation": 276
     }
   },
   "oracleExamples": [
@@ -1111,7 +1115,7 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 83,
+    "catalogued": 85,
     "excludedWithReason": 0,
     "notYetReviewed": 170
   },
@@ -1119,7 +1123,7 @@
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 17
+      "recordCount": 19
     },
     {
       "group": "cashFlowAndSummary",
@@ -1149,12 +1153,12 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 40
+      "recordCount": 42
     },
     {
       "group": "optimizerAndComparisons",
       "path": "calculation-coverage/optimizerAndComparisons.json",
-      "recordCount": 19
+      "recordCount": 21
     },
     {
       "group": "rmd",
@@ -1169,7 +1173,7 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 32
+      "recordCount": 33
     },
     {
       "group": "spendingAndWithdrawals",
@@ -1179,7 +1183,7 @@
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 21
+      "recordCount": 22
     }
   ]
 }

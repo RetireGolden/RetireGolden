@@ -9,8 +9,9 @@
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
         155,
-        190
+        182
       ],
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 183 (`? {}`), the `? {}` arm when `electionYearOwnerRmdObligations` is undefined: the forced-distribution phase always builds and returns that array. annualYearResultAssembly.test.ts omits the field and its key-order assertion pins the absent key. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 155,
@@ -23,6 +24,30 @@
         {
           "line": 174,
           "text": "ownedRothIraPoolActivity: entityFacts.ownedRothIraPoolActivity,"
+        },
+        {
+          "line": 182,
+          "text": "...(retirement.electionYearOwnerRmdObligations === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AC.helper.core.2",
+      "label": "chronology, ledger, entity-fact, and retirement publication (continued)",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [
+        184,
+        190
+      ],
+      "note": "Continues AC.helper.core past its excluded line 183 (`? {}`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 184,
+          "text": ": { electionYearOwnerRmdObligations: retirement.electionYearOwnerRmdObligations }),"
+        },
+        {
+          "line": 190,
+          "text": "retirement.inheritedTraditionalDistribution,"
         }
       ]
     },
@@ -161,5 +186,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin optional presence and absence, legacy always-present undefined fields, input purity, exact cancellation-sensitive realized-gain and net-worth associations, identity forwarding, and cash-flow delegation. The hostile delegation test separately injects non-economic references and proves simulatePlan commits the exact coordinator-owned YearResult object without caller-side rebuilding."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin optional presence and absence, legacy always-present undefined fields, input purity, exact cancellation-sensitive realized-gain and net-worth associations, identity forwarding, and cash-flow delegation. The hostile delegation test separately injects non-economic references and proves simulatePlan commits the exact coordinator-owned YearResult object without caller-side rebuilding. EXCLUSIONS (2026-09-30): every whole line this spec leaves out of its ranges because no plan that parses can execute it is named, with the reason and whatever direct test pins it, in the note of the entry it was cut from; the pieces that continue that entry carry its id with a numeric suffix. The blocks corpus reaches every other line of every range."
 }

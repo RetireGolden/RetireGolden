@@ -14,6 +14,7 @@ import {
   mapPensionSourceToStateKind,
   resolveStateDirectQcdPolicy,
 } from './stateRetirementFactsAdapter.js'
+import { isRailroadSource } from '../../tax/stateRetirementFacts.js'
 
 describe('stateRetirementFactsAdapter', () => {
   it('rejects impossible schema-shaped civil dates without rolling them forward', () => {
@@ -32,6 +33,28 @@ describe('stateRetirementFactsAdapter', () => {
     )
     expect(isPublicPensionSourceKind('militaryRetirement')).toBe(true)
     expect(isPublicPensionSourceKind('ordinaryPrivatePension')).toBe(false)
+  })
+
+  it('passes each railroad source through, so the state return sees a railroad annuity (45 U.S.C. 231m)', () => {
+    // The state calculator takes a railroad source off state income in every
+    // state; a mapping that dropped or renamed one would re-tax it silently.
+    for (const source of ['railroadTier1', 'railroadTier2', 'railroadRetirementAct'] as const) {
+      expect(mapPensionSourceToStateKind(source)).toBe(source)
+      const row = characterizePensionDistribution({
+        account: {
+          type: 'pension', id: 'rrb', name: 'Railroad annuity', ownerPersonId: 'owner',
+          annualReturnPct: null, source, startAge: 60, monthlyAmount: 1_000, colaPct: 0, survivorPct: 0,
+        } as Extract<Account, { type: 'pension' }>,
+        sourceOwnerPersonId: 'owner',
+        payeePersonId: 'owner',
+        federallyIncludedAmount: 12_000,
+        recipientAgeYears: 66,
+      })
+      expect(row.fact).toEqual(expect.objectContaining({
+        accountId: 'rrb', ownerPersonId: 'owner', sourceKind: source, federallyIncludedAmount: 12_000,
+      }))
+      expect(isRailroadSource(row.fact.sourceKind)).toBe(true)
+    }
   })
 
   it('infers early-distribution clearance only from proved payment age or a Jan-1 lower bound', () => {

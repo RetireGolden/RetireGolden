@@ -1,15 +1,15 @@
 # Mutation receipt: monte-carlo-histogram-bin-centres
 
-Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `fbc9a9d3` (branch `claude/ui-relocations-six`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/run.ts b/packages/engine/src/montecarlo/run.ts
-index c12606f1..422b7976 100644
+index 46dbbe43..7e9ec187 100644
 --- a/packages/engine/src/montecarlo/run.ts
 +++ b/packages/engine/src/montecarlo/run.ts
-@@ -430,5 +430,5 @@
+@@ -444,5 +444,5 @@
      counts[Math.min(histogramBins - 1, Math.floor((v - min) / binWidth))]!++
    }
 -  const binCenters = counts.map((_, i) => (max > min ? min + (i + 0.5) * binWidth : min))
@@ -28,7 +28,7 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.binCenters.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed because the census freeze additions (B2-P1) added MonteCarloSummary.lastingPathCount and medianFirstDepletionYear to run.ts, which moved the production lines this receipt quotes; the mutation is unchanged. The baseline is green (run.binCenters.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine

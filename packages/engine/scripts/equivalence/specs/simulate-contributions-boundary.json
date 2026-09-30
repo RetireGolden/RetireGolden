@@ -351,14 +351,30 @@
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
       "lines": [
         729,
-        750
+        747
       ],
-      "note": "The allocation-undefined fallback on line 612 is structurally unreachable within this helper: every desired employer row is collected and allocated before match processing. The measured allocation range ends before that defensive operand; the production arm begins on line 613.",
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 748 (`? undefined`), the `? undefined` arm of `planGroupKey === undefined`: `employerGroupKeyByRowKey` is written for every balance index that passes the same employer-plan and desired-contribution guard this match loop applies, under the same row key, and neither map is ever deleted from, so every row the loop reaches has a key. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors. The allocation-undefined fallback (`? employeeLandedByEmployerRowKey.get(rowKey) ?? 0`, line 751 on 2026-09-30) is structurally unreachable within this helper: every desired employer row is collected and allocated before match processing. The measured allocation range ends before that defensive operand; the production arm begins at `: employerMatchElectiveBase({` (U.helper.employerMatchAllocation).",
       "anchors": [
         {
           "line": 729,
           "text": "for ("
         },
+        {
+          "line": 747,
+          "text": "const allocation = planGroupKey === undefined"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.employerMatchRequest.2",
+      "label": "employer-match row selection and allocated elective base (continued)",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        749,
+        750
+      ],
+      "note": "Continues U.helper.employerMatchRequest past its excluded line 748 (`? undefined`); see that entry's note.",
+      "anchors": [
         {
           "line": 750,
           "text": "const electiveForMatch = allocation === undefined"
@@ -544,14 +560,30 @@
       "file": "projection/internal/annualContributionReconciliationPhase.ts",
       "lines": [
         394,
-        419
+        415
       ],
-      "note": "RE-MEASURED on 2026-09-28: the invocation gained one line, the `hsaLimits` field, when the HSA base limits moved to their own published years (params/hsaLimitYears.ts); both anchors are the same text. RE-MEASURED, not shifted: the planner invocation lost two lines in the move, because the caller-supplied `filingStatus`, `peopleCount`, `primaryPersonId` and the two owner resolvers are now fields of this module's own Input and pass through as shorthand. Both anchors are the same text they always were. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 416 (`? {}`), the `? {}` arm when `employerPriorElectiveByPlanKey` is undefined: the field is optional in this phase's input, but its only production caller, simulatePlan, always passes the Map it builds unconditionally each year. No direct test pins it; nothing calls this phase directly. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors. RE-MEASURED on 2026-09-28: the invocation gained one line, the `hsaLimits` field, when the HSA base limits moved to their own published years (params/hsaLimitYears.ts); both anchors are the same text. RE-MEASURED, not shifted: the planner invocation lost two lines in the move, because the caller-supplied `filingStatus`, `peopleCount`, `primaryPersonId` and the two owner resolvers are now fields of this module's own Input and pass through as shorthand. Both anchors are the same text they always were. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
           "line": 394,
           "text": "const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult("
         },
+        {
+          "line": 415,
+          "text": "...(employerPriorElectiveByPlanKey === undefined"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.invoke.2",
+      "label": "annual contribution boundary invocation and atomic snapshot (continued)",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [
+        417,
+        419
+      ],
+      "note": "Continues U.callsite.invoke past its excluded line 416 (`? {}`); see that entry's note.",
+      "anchors": [
         {
           "line": 419,
           "text": ")"
@@ -935,5 +967,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof. EXCLUSIONS (2026-09-30): every whole line this spec leaves out of its ranges because no plan that parses can execute it is named, with the reason and whatever direct test pins it, in the note of the entry it was cut from; the pieces that continue that entry carry its id with a numeric suffix. The blocks corpus reaches every other line of every range."
 }

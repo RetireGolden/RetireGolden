@@ -4,12 +4,13 @@
  * privacy toggle (`hideAmounts`) the produced model contains NO dollar
  * strings anywhere (test-enforced), so it is safe for screen sharing and
  * reusable for report embedding later. All figures are the plan's stored
- * values formatted here — no money math.
+ * values, or the engine's entered totals of them, formatted here — no money
+ * math.
  */
 
 import {
+  enteredTotalsOfNodes,
   personNodeId,
-  sumEnteredTotals,
   type HouseholdEdge,
   type HouseholdGraph,
   type HouseholdNode,
@@ -253,10 +254,10 @@ export function buildMapViewModel(graph: HouseholdGraph, options: MapViewOptions
   // joint): the reader asked about one person, so the copy says so. A group
   // filter scopes it only when it actually hid something.
   const scope = options.focusPersonId || nodes.length !== graph.nodes.length ? 'shown' : 'household'
-  // The same reading of stored figures the whole-household graph uses, over
-  // the nodes that survived the filters, so "as entered" never describes
-  // items the map is not showing.
-  const totals = scope === 'household' ? graph.totals : sumEnteredTotals(nodes)
+  // The engine's entered totals, as for the whole-household graph, of the
+  // accounts whose nodes survived the filters, so "as entered" never
+  // describes items the map is not showing.
+  const totals = scope === 'household' ? graph.totals : enteredTotalsOfNodes(graph, nodeIds)
   const edges = graph.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to))
   const layout = layoutHouseholdGraph({ ...graph, nodes, edges })
 

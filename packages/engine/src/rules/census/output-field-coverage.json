@@ -1240,6 +1240,14 @@
   {
     "source": "engine/src/montecarlo/run.ts",
     "owner": "MonteCarloSummary",
+    "field": "lastingPathCount",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "monte-carlo-lasting-and-depleted-path-counts"
+  },
+  {
+    "source": "engine/src/montecarlo/run.ts",
+    "owner": "MonteCarloSummary",
     "field": "successRate",
     "tsType": "number",
     "disposition": "family",
@@ -1550,6 +1558,14 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "monte-carlo-depletion-year-histogram"
+  },
+  {
+    "source": "engine/src/montecarlo/run.ts",
+    "owner": "MonteCarloSummary",
+    "field": "medianFirstDepletionYear",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "monte-carlo-median-first-depletion-year"
   },
   {
     "source": "engine/src/montecarlo/run.ts",
@@ -10952,5 +10968,84 @@
     "familyId": null,
     "reason": "The months of a claim the search held, printed as \"66y 6m\".",
     "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "investable",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "note": "Operand of assets; the map prints assets, debts and net, not this subtotal."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "property",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "note": "Operand of assets; the map prints assets, debts and net, not this subtotal."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "assets",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals"
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "liabilities",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "note": "Printed as \"debts\"."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "netWorth",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "note": "Printed as \"net\"."
+  },
+  {
+    "source": "planner-ui/src/planner/explainPanels.tsx",
+    "owner": "WhySuccessPanel",
+    "field": "medianDepletion",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "monte-carlo-median-first-depletion-year"
+  },
+  {
+    "source": "planner-ui/src/planner/explainPanels.tsx",
+    "owner": "WhySuccessPanel",
+    "field": "precision",
+    "tsType": "string",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "WhySuccessPanel.precision: a fixed label, \"±0.5\" at 10,000 paths or more and \"±1.5\" below, printed as how many points the success rate is good to; chosen by run size, not computed from the plan or the paths. It is about one binomial standard error at a 50% success rate (0.5 points at 10,000 paths, 1.6 at 1,000)."
+  },
+  {
+    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "owner": "BridgePanel",
+    "field": "totalCost",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-bridge-ladders-total-cost"
+  },
+  {
+    "source": "planner-ui/src/report/reportHtml.ts",
+    "owner": "lossReasonForCandidate",
+    "field": "trailingAmount",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "optimizer-candidate-trailing-estate-amount",
+    "note": "The gap the sentence prints, read from the engine (projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount); null when the candidate does not trail."
   }
 ]

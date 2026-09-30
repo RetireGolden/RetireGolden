@@ -56,8 +56,9 @@
       "file": "projection/internal/annualHealthcareExpenses.ts",
       "lines": [
         82,
-        200
+        164
       ],
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 165 (`: input.peopleStates.map((_, position) => position)`), the positional order used when the plan's people and the year's person states differ in length: simulatePlan builds the person states from `plan.household.people` and passes both through unchanged. annualHealthcareExpenses.test.ts pairs a one-person plan with two person states and asserts the folded total. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors. The positional result retains one row per person-state while the keyed birth-month input deliberately preserves simulatePlan's last-wins duplicate-id lookup and January fallback; focused helper and differential fixtures pin both contracts. The warning condition is pinned at line 171; its body at lines 172-175 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract.",
       "anchors": [
         {
           "line": 82,
@@ -72,11 +73,26 @@
           "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>"
         },
         {
+          "line": 164,
+          "text": ".map((person) => person.position)"
+        }
+      ]
+    },
+    {
+      "id": "R.healthcare.helperPricing.2",
+      "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate (continued)",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [
+        166,
+        200
+      ],
+      "note": "Continues R.healthcare.helperPricing past its excluded line 165 (`: input.peopleStates.map((_, position) => position)`); see that entry's note.",
+      "anchors": [
+        {
           "line": 200,
           "text": "if (medicare.partDSurchargeUnverified) {"
         }
-      ],
-      "note": "The positional result retains one row per person-state while the keyed birth-month input deliberately preserves simulatePlan's last-wins duplicate-id lookup and January fallback; focused helper and differential fixtures pin both contracts. The warning condition is pinned at line 171; its body at lines 172-175 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
+      ]
     },
     {
       "id": "R.healthcare.helperContract",
@@ -304,5 +320,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so cold sub-line regions and focused helper/delegation tests remain complementary evidence."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so cold sub-line regions and focused helper/delegation tests remain complementary evidence. EXCLUSIONS (2026-09-30): every whole line this spec leaves out of its ranges because no plan that parses can execute it is named, with the reason and whatever direct test pins it, in the note of the entry it was cut from; the pieces that continue that entry carry its id with a numeric suffix. The blocks corpus reaches every other line of every range."
 }

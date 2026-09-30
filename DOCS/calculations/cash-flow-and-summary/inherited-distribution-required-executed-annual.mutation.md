@@ -1,11 +1,11 @@
 # Mutation receipt: inherited-distribution-required-executed-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-30 against RetireGolden base `d8af8759` (branch `claude/evidence-completeness`, pull request #771) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualInheritedIraDistributions.ts`
 
 ```diff
-@@ -461,7 +461,7 @@
+@@ -464,7 +464,7 @@
        } else if (req.kind === 'none' || req.noticeWaived === true) {
          take = 0
        } else {
@@ -26,7 +26,7 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualInheritedIraDistributions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-09-30 after the review of #771 (issue 6) moved the lines of annualInheritedIraDistributions.ts; the mutation is unchanged, and the capture, blob hashes and hunk header are refreshed against this head. The baseline is green (annualInheritedIraDistributions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
@@ -37,6 +37,9 @@ RUN  v5.0.0 packages/engine
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
