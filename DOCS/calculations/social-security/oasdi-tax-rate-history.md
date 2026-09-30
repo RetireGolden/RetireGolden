@@ -134,8 +134,8 @@ feeds: `social-security-oasdi-paid-in`.
 
 ## Provenance
 
-Transcribed from the SSA page by the B2-P1 slice 4 derivation (claude, opus 5.5, 2026-09-27; its parse script and the capture's hash are in its evidence), and compared with the live page by the independent check (C4). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Transcribed from the SSA page by the B2-P1 slice 4 derivation (claude, opus 5.5, 2026-09-27; its parse script and the capture's hash are in its evidence), and compared with the live page by the independent check (C4). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
 
-Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`): the claim says the general schedule rather than what each payer actually paid, and the 2010 employer exemption for certain new hires is named as a limit; the 2011 and 2012 reduction was already applied. No rate changes. Revised by claude (opus 5.5); unreviewed until the reviewer checks the revision.
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`): the claim says the general schedule rather than what each payer actually paid, and the 2010 employer exemption for certain new hires is named as a limit; the 2011 and 2012 reduction was already applied. No rate changes. Revised by claude (opus 5.5); unreviewed until the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

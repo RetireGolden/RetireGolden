@@ -122,7 +122,7 @@ feeds: none. Reads `ladder-build-total-cost` and `ladder-build-target-annual-rea
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26; cases A to C by hand, D and the D-TREASURY variant by `scripts/ladder-independent.mjs`; `buildLadder` cross-check in the scratch copy (`scripts/engine-ladder.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-26; cases A to C by hand, D and the D-TREASURY variant by `scripts/ladder-independent.mjs`; `buildLadder` cross-check in the scratch copy (`scripts/engine-ladder.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.
 

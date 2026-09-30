@@ -56,6 +56,6 @@ feeds: `monte-carlo-success-rate`; `monte-carlo-investable-fan-percentiles`; `mo
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from the decision's text (decisions-2026-09-25.md, "The Monte Carlo diagnosis, checked") and the check's section 4 (evidence/mc-example-source-check.md), the path seeds by exact integer arithmetic in a separate script that imports nothing from the engine. Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from the decision's text (decisions-2026-09-25.md, "The Monte Carlo diagnosis, checked") and the check's section 4 (evidence/mc-example-source-check.md), the path seeds by exact integer arithmetic in a separate script that imports nothing from the engine. Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.

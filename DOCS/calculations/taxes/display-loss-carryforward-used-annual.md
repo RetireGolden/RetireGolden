@@ -43,6 +43,6 @@ feeds: none. Reads `tax-loss-carryforward-used-against-gains-annual`, `tax-loss-
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from `tax/federalTax.ts#applyCapitalLossCarryforward` as read at RetireGolden `aeb2861a`; arithmetic by hand. Checked by a second claude agent that did not derive it, which confirmed every value. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from `tax/federalTax.ts#applyCapitalLossCarryforward` as read at RetireGolden `aeb2861a`; arithmetic by hand. Checked by a second claude agent that did not derive it, which confirmed every value. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

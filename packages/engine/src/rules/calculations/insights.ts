@@ -343,8 +343,8 @@ export const insightsRecords = {
     verifiedOn: '2026-09-27',
     // Restated 2026-09-27 (PR #754 review, finding 7): the statement named
     // today's dollars, while both deltas are differences of nominal summary
-    // figures, as InsightImpact's comments and the census say. The record is
-    // unreviewed until the review lane checks the correction.
+    // figures, as InsightImpact's comments and the census say. Grok checked
+    // the correction on 2026-09-29 (REVIEW-2026-09-29-grok-1.md).
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'monte-carlo-success-rate-comparison': {

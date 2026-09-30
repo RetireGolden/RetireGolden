@@ -74,6 +74,6 @@ feeds: `aca-gross-enrollment-premium-annual`; `aca-applicable-slcsp-premium-annu
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from the decisions' text (decisions-2026-09-25.md, "The Monte Carlo diagnosis, checked") and the check's specification (evidence/mc-example-source-check.md, sections 3.2 and 5.3), by hand arithmetic, before the evidence test was run. Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from the decisions' text (decisions-2026-09-25.md, "The Monte Carlo diagnosis, checked") and the check's specification (evidence/mc-example-source-check.md, sections 3.2 and 5.3), by hand arithmetic, before the evidence test was run. Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.

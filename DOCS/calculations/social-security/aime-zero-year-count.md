@@ -48,6 +48,6 @@ outputs: `social-security-computation-summary-counts`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-computation-summary-counts.md` (by hand; case A cross-checked on the engine); independently checked (C7: 5, 0 and 30 with AIMEs 7,487, 10,028 and 793). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-computation-summary-counts.md` (by hand; case A cross-checked on the engine); independently checked (C7: 5, 0 and 30 with AIMEs 7,487, 10,028 and 793). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

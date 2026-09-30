@@ -1195,10 +1195,11 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
     verifiedOn: '2026-09-18',
-    // The independent reviewer rejected two of the three seed words on its own
-    // shift arithmetic; the orchestrator's script check is not the independent
-    // recomputation this field reports, so the record stays unreviewed until an
-    // independent lane approves one (see the worksheet's Provenance section).
+    // An earlier independent reviewer rejected two of the three seed words on
+    // its own shift arithmetic, and the orchestrator's script check was not an
+    // independent recomputation; Grok recomputed all three words and approved
+    // on 2026-09-29 (REVIEW-2026-09-29-grok-2.md; the worksheet's Provenance
+    // section has the history).
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'grok' },
   },
   'rng-mulberry32-reference-stream': {

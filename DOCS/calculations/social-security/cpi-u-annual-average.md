@@ -128,6 +128,6 @@ feeds: `social-security-oasdi-paid-in`.
 
 ## Provenance
 
-Transcribed from the BLS figures read by the B2-P1 slice 4 independent check (C4 and its correction 5); the derivation's own series agrees in the other 83 years. Restated 2026-09-27 for the slice review's F9: the review read BLS's published annual averages for all 89 years from the data viewer, all equal to this table, so no year rests on a recomputed mean and the limit that said so is removed. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Transcribed from the BLS figures read by the B2-P1 slice 4 independent check (C4 and its correction 5); the derivation's own series agrees in the other 83 years. Restated 2026-09-27 for the slice review's F9: the review read BLS's published annual averages for all 89 years from the data viewer, all equal to this table, so no year rests on a recomputed mean and the limit that said so is removed. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

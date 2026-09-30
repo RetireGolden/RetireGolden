@@ -473,8 +473,9 @@ export const laddersAndValuationRecords = {
     implementedByFunctions: ['packages/engine/src/params/data/realYieldCurve2026.ts#REAL_YIELD_CURVE_2026'],
     verifiedOn: '2026-09-27',
     // Restated 2026-09-27 (decision D-TREASURY): the claim is now the official
-    // row, so the record is unreviewed until a reviewer of another family
-    // recomputes it; the worksheet's provenance names the original derivation.
+    // row; Codex read it against Treasury's row on 2026-09-29
+    // (REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md), and the
+    // worksheet's provenance names the original derivation.
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'income-tips-ladder-and-ladder-value-annual': {

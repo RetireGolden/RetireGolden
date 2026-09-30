@@ -70,8 +70,8 @@ feeds: `social-security-benefit-annual`, `social-security-expected-present-value
 
 ## Provenance
 
-The formula and case A are from the B2-P1 slice 4 derivation (problem 2) and its independent check (A2, with the correction to the general form), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute and POMS text are quoted from uscode.house.gov and secure.ssa.gov as saved by that check. Cases B, C and D and every figure above were recomputed by hand and by a script that does not import the engine. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+The formula and case A are from the B2-P1 slice 4 derivation (problem 2) and its independent check (A2, with the correction to the general form), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute and POMS text are quoted from uscode.house.gov and secure.ssa.gov as saved by that check. Cases B, C and D and every figure above were recomputed by hand and by a script that does not import the engine. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
 
-Revision 2026-09-27 (B2-P1 slice 4): the benefits-only expected value and the survivor switching analysis, now engine models, price the widow(er) benefit with this helper, so the record feeds their families too. No value changes. Restated by claude (opus 5.5); not yet reviewed.
+Revision 2026-09-27 (B2-P1 slice 4): the benefits-only expected value and the survivor switching analysis, now engine models, price the widow(er) benefit with this helper, so the record feeds their families too. No value changes. Restated by claude (opus 5.5); not yet reviewed at the time.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

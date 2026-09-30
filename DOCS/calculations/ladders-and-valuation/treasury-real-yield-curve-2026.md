@@ -52,6 +52,6 @@ Embedded dataset row `[1.93,2.06,2.20,2.54,2.73]`, with exact tolerance.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-14, by independent recomputation without executing the engine; see REVIEW-2026-09-14.md in this directory. That review covered the 2026-09-14 card.
 
-Restated 2026-09-27 by claude, the implementer of decision D-TREASURY: the claim is now the official row, read again from Treasury on 2026-09-27. The restatement is unreviewed until a reviewer who is not its author reads the source again, so the record carries reviewedBy 'unreviewed'.
+Restated 2026-09-27 by claude, the implementer of decision D-TREASURY: the claim is now the official row, read again from Treasury on 2026-09-27. The restatement was unreviewed until the review below, so the record carried reviewedBy 'unreviewed'.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

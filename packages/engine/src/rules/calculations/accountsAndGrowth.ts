@@ -633,8 +633,8 @@ export const accountsAndGrowthRecords = {
     ],
     verifiedOn: '2026-09-27',
     // Restated 2026-09-27 (decision D-TREASURY): the worksheet's figures were
-    // recomputed on the official curve row, so the record is unreviewed until
-    // a reviewer of another family recomputes them.
+    // recomputed on the official curve row; Codex recomputed them on
+    // 2026-09-29 (REVIEW-2026-09-29-codex-2-cash-flow.md).
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'display-balance-by-category-annual': {

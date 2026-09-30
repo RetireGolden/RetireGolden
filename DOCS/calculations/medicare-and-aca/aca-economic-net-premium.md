@@ -38,6 +38,6 @@ feeds: `spending-healthcare-annual`.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
 
-Revision, 2026-09-26: the record's rounding is stated as none of its own (decision D-ACA-2027-TABLE): the net premium is the gross premium less the credit, not rounded, and it inherits the credit's rounding. No figure here moves. Unreviewed until a Codex or Cursor review.
+Revision, 2026-09-26: the record's rounding is stated as none of its own (decision D-ACA-2027-TABLE): the net premium is the gross premium less the credit, not rounded, and it inherits the credit's rounding. No figure here moves. Unreviewed until the review below.
 
 Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.

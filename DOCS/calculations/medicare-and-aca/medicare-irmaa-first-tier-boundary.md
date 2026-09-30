@@ -62,6 +62,6 @@ feeds: `spending-healthcare-annual`.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
 
-Restated 2026-09-29 by claude (opus 5.5): the engine now reads CMS's published Part B tier totals, so the first tier prices at $284.10 a month, not $284.06 (Part B annual $3,409.20, was $3,408.72; IRMAA-only $1,148.40, was $1,147.92), and the worksheet adds one case per tier from CMS's 2026 table, read on cms.gov on 2026-09-29. The restated claim is Claude's, and the record is unreviewed until a Codex or Grok review.
+Restated 2026-09-29 by claude (opus 5.5): the engine now reads CMS's published Part B tier totals, so the first tier prices at $284.10 a month, not $284.06 (Part B annual $3,409.20, was $3,408.72; IRMAA-only $1,148.40, was $1,147.92), and the worksheet adds one case per tier from CMS's 2026 table, read on cms.gov on 2026-09-29. The restated claim is Claude's, and the record was unreviewed until the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

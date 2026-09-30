@@ -58,6 +58,6 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 
 Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.
 
-Revision 2026-09-29, after the Grok review above: the engine now reads CMS's published IRMAA amounts, which moves the pre-start figures `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins (a full-horizon measurement the review did not recompute) by cents to a few dollars; the record's limit and the paragraph above state the new pins beside the old. No worked case of this worksheet moves. Because the record's text changed, it is unreviewed until a Grok re-check. Revised by claude (opus 5.5).
+Revision 2026-09-29, after the Grok review above: the engine now reads CMS's published IRMAA amounts, which moves the pre-start figures `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins (a full-horizon measurement the review did not recompute) by cents to a few dollars; the record's limit and the paragraph above state the new pins beside the old. No worked case of this worksheet moves. Because the record's text changed, it was unreviewed until the review below. Revised by claude (opus 5.5).
 
 Reviewed by: Grok (grok-4.7), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-grok.md`.

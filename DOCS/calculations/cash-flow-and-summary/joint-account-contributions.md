@@ -57,8 +57,8 @@ feeds: `year-result-contributions`.
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R3 (evidence/people-order-check.md). Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R3 (evidence/people-order-check.md). Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
-Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`): the worksheet had no scheduled case, so it could not derive the record's schedule branch or tell it from a schedule with a wage test. Case B adds one, with no household wages and the named person's death inside the schedule, and the evidence test pins it. Case A is unchanged. Revised by claude (opus 5.5), who checked the engine agrees after deriving the case; unreviewed until the reviewer checks the revision.
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`): the worksheet had no scheduled case, so it could not derive the record's schedule branch or tell it from a schedule with a wage test. Case B adds one, with no household wages and the named person's death inside the schedule, and the evidence test pins it. Case A is unchanged. Revised by claude (opus 5.5), who checked the engine agrees after deriving the case; unreviewed until the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

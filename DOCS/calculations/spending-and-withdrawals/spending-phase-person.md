@@ -65,6 +65,6 @@ feeds: `spending-base-annual`.
 
 Cases Older and Death: added by claude (Opus 5.5), 2026-09-29, after the different-family review of #769 found that the first case could not tell the younger-person and stop-at-death readings from the rule; hand arithmetic at zero inflation.
 
-Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R1 (evidence/people-order-check.md). Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R1 (evidence/people-order-check.md). Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.
