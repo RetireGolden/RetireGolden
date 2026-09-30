@@ -369,7 +369,14 @@ interface PricedRow {
   readonly withheldBy: readonly string[]
 }
 
-interface PricedRanking {
+/**
+ * Every row of the benefits-only ranking priced for a plan and start year: the
+ * paths each claim-age combination pays, which do not depend on the discount
+ * rate (#priceBenefitsOnlyRanking). #weighBenefitsOnlyRanking turns them into
+ * the ranking at a rate. It holds the plan's figures as they were when priced;
+ * price again after the plan changes.
+ */
+export interface PricedBenefitsOnlyRanking {
   readonly personIds: readonly string[]
   readonly rows: readonly PricedRow[]
   readonly weighted: readonly WeightedPerson[]
@@ -379,13 +386,13 @@ interface PricedRanking {
 }
 
 /**
- * The priced paths of every row, by plan and start year: the paths do not
- * depend on the discount rate, so a new rate re-weights them without pricing
- * them again.
+ * Prices every row of the benefits-only ranking (see #benefitsOnlyRanking) for
+ * the plan and start year: each claim-age combination's household paths,
+ * priced year by year by the ledger's year function. Nothing is kept between
+ * calls; a caller that re-weights the same plan at several rates holds the
+ * result and passes it to #weighBenefitsOnlyRanking.
  */
-const pricedRankings = new WeakMap<Plan, Map<number, PricedRanking>>()
-
-function priceRanking(plan: Plan, startYear: number): PricedRanking {
+export function priceBenefitsOnlyRanking(plan: Plan, startYear: number): PricedBenefitsOnlyRanking {
   const claimants = socialSecurityClaimants(plan, startYear)
   const isOpen = (entry: SocialSecurityClaimant) => !isClaimAlreadyMade(entry.person, entry.stream.claimAge, startYear)
   const open = claimants.filter(isOpen)
@@ -445,18 +452,20 @@ function priceRanking(plan: Plan, startYear: number): PricedRanking {
   return { personIds, rows, weighted, payees, disabilityPersonIds: [], alreadyClaimed }
 }
 
-function pricedRankingFor(plan: Plan, startYear: number): PricedRanking {
-  let byYear = pricedRankings.get(plan)
-  if (byYear === undefined) {
-    byYear = new Map()
-    pricedRankings.set(plan, byYear)
-  }
-  let priced = byYear.get(startYear)
-  if (priced === undefined) {
-    priced = priceRanking(plan, startYear)
-    byYear.set(startYear, priced)
-  }
-  return priced
+/**
+ * The benefits-only ranking at a discount rate from rows priced by
+ * #priceBenefitsOnlyRanking: each row's paths weighted by survival and
+ * discounted, ranked highest first.
+ */
+export function weighBenefitsOnlyRanking(priced: PricedBenefitsOnlyRanking, discountRate: number): BenefitsOnlyRanking {
+  checkRate(discountRate)
+  const rows: BenefitsPvRow[] = priced.rows.map((row) => ({
+    claimByPersonId: row.claimByPersonId,
+    expectedPv: presentValueOfPaths(row.paths, priced.weighted, priced.payees, discountRate),
+    withheldBy: row.withheldBy,
+  }))
+  const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
+  return { personIds: priced.personIds, rows, ranked, disabilityPersonIds: priced.disabilityPersonIds, alreadyClaimed: priced.alreadyClaimed }
 }
 
 /**
@@ -469,18 +478,13 @@ function pricedRankingFor(plan: Plan, startYear: number): PricedRanking {
  * claim age and named in `alreadyClaimed`; when every claim is already made,
  * nothing is ranked. A claimant whose benefit the ledger pays as a disability
  * benefit from its onset is named and nothing is ranked, since the claim age
- * would not start it. The paths are priced once per plan and start year.
+ * would not start it. Each call prices the paths again and keeps nothing: to
+ * re-weight one plan at several rates, price once with
+ * #priceBenefitsOnlyRanking and weigh each rate with #weighBenefitsOnlyRanking.
  */
 export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear: number): BenefitsOnlyRanking {
   checkRate(discountRate)
-  const priced = pricedRankingFor(plan, startYear)
-  const rows: BenefitsPvRow[] = priced.rows.map((row) => ({
-    claimByPersonId: row.claimByPersonId,
-    expectedPv: presentValueOfPaths(row.paths, priced.weighted, priced.payees, discountRate),
-    withheldBy: row.withheldBy,
-  }))
-  const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
-  return { personIds: priced.personIds, rows, ranked, disabilityPersonIds: priced.disabilityPersonIds, alreadyClaimed: priced.alreadyClaimed }
+  return weighBenefitsOnlyRanking(priceBenefitsOnlyRanking(plan, startYear), discountRate)
 }
 
 /** A person's wages in a year from the plan's wage rows, at the plan's inflation from `startYear`; 0 before it. */

@@ -14,6 +14,8 @@ import {
   disabilityReplacesClaimAge,
   expectedPvCouple,
   expectedPvSingle,
+  priceBenefitsOnlyRanking,
+  weighBenefitsOnlyRanking,
   type ExpectedValueClaimant,
   type ExpectedValueOptions,
 } from './expectedValue.js'
@@ -54,6 +56,22 @@ describe('benefitsOnlyRanking', () => {
     expect(at67.expectedPv).toBeCloseTo(expectedPvSingle(claimant, { single: false, spouse: { id: spouse.id, sex: spouse.sex, dob: { year: 1965, month: 3, day: 1 } } }, options), 6)
     expect(at67.expectedPv).toBeGreaterThan(expectedPvSingle(claimant, { single: false }, options))
     expect(at67.expectedPv).toBeLessThan(expectedPvSingle(claimant, { single: true }, options))
+  })
+
+  it('keeps nothing between calls: a plan edited in place is priced again, and pricing once then weighing each rate gives the same ranking (PR #769 review, issue 6)', () => {
+    const plan = validatePlan({ ...couplePlan({ p1Dob: '1964-06-15', p2Dob: '1965-03-01' }), incomes: [socialSecurityIncome('ss', 1_500, 67, 'p1')] })
+    const before = benefitsOnlyRanking(plan, 0.02, 2026)
+    const priced = priceBenefitsOnlyRanking(plan, 2026)
+    expect(weighBenefitsOnlyRanking(priced, 0.02)).toEqual(before)
+    expect(weighBenefitsOnlyRanking(priced, 0.04)).toEqual(benefitsOnlyRanking(plan, 0.04, 2026))
+    // The same plan object with a larger PIA: every benefit on this path is in
+    // proportion to it, so every row's value rises by 2,000/1,500.
+    const stream = plan.incomes[0] as { piaMonthly: number }
+    stream.piaMonthly = 2_000
+    const after = benefitsOnlyRanking(plan, 0.02, 2026)
+    after.rows.forEach((row, index) => expect(row.expectedPv / before.rows[index]!.expectedPv).toBeCloseTo(2_000 / 1_500, 9))
+    // The rows priced before the edit keep the old plan's figures.
+    expect(weighBenefitsOnlyRanking(priced, 0.02)).toEqual(before)
   })
 })
 

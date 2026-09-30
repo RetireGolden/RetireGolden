@@ -37,9 +37,10 @@ import type { Person, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
 import {
-  benefitsOnlyRanking,
   disabilityReplacesClaimAge,
   personWagesInYear,
+  priceBenefitsOnlyRanking,
+  weighBenefitsOnlyRanking,
   type BenefitsOnlyRanking,
 } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
 import { socialSecurityStreamFor } from '@retiregolden/engine/socialSecurity/analysis/claimants'
@@ -1381,10 +1382,11 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const { plan } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const [discountPct, setDiscountPct] = useState(2)
-  const ranking = useMemo(
-    () => benefitsOnlyRanking(plan, discountPct / 100, projectionStartYear(plan)),
-    [plan, discountPct],
-  )
+  // The paths are priced once per plan and start year; the discount slider
+  // only re-weights them.
+  const startYear = projectionStartYear(plan)
+  const priced = useMemo(() => priceBenefitsOnlyRanking(plan, startYear), [plan, startYear])
+  const ranking = useMemo(() => weighBenefitsOnlyRanking(priced, discountPct / 100), [priced, discountPct])
   const withheldAt = useMemo(() => rankingWithheldAt(ranking), [ranking])
   const planLimits = useMemo(() => benefitsOnlyPlanLimits(plan, personName), [plan, personName])
   // The ranking's own people: its open claims (a claim already made is held
@@ -1466,7 +1468,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       {ranking.alreadyClaimed.length > 0 && ranking.disabilityPersonIds.length === 0 ? (
         <div className="callout callout--note" role="note">
           {rankedIds.length === 0 ? <strong>Every claim here is already made. </strong> : null}
-          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {projectionStartYear(plan)}
+          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {startYear}
           {rankedIds.length === 0
             ? `, so there is no claim age left to compare. ${ALREADY_CLAIMED_LIMITS}`
             : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is held as it is' : 'those claims are held as they are'} below.`}
