@@ -49,3 +49,5 @@ feeds: `social-security-benefit-annual`.
 ## Provenance
 
 Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-pia-annualized.md`; independently checked (C9, and its finding P12, the increases since eligibility, fixed in the Social Security law change this slice sits on). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

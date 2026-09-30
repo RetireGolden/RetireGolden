@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed after merging origin/main 4d2d9d67 into this branch, which moved the hunk. The baseline is green (survivorTransition.lever.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging origin/main 4d2d9d67 into this branch, which moved the hunk. The baseline is green (survivorTransition.lever.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine17/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/survivorTransition.lever.evidence.test.ts (4 tests | 2 failed) 49ms
    ❯ survivor-convert-early-lever — Survivor convert-early lever (4)

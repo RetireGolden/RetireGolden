@@ -214,7 +214,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.evidence.test.ts"

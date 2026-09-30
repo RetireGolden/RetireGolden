@@ -59,6 +59,8 @@ feeds: `projection-summary-fi-number`, `projection-summary-fi-age`, `projection-
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from decisions D-FI-CONVERSION-TAX and D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R4 (evidence/people-order-check.md), the arithmetic in exact decimals by a separate script that imports nothing from the engine (C:/rgwt/staging/order-diag/impl/worksheets/fi_spending_base.py). Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from decisions D-FI-CONVERSION-TAX and D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R4 (evidence/people-order-check.md), the arithmetic in exact decimals by a separate script that imports nothing from the engine (fi_spending_base.py, not yet published). Implemented by the same session. Reviewed by: unreviewed.
 
 Revision 2026-09-28 (independent review M1): the conversion-free run is read whenever the plan converts in any year, not only when the priced year converts; the claim, the justification and the last wrong reading are restated.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`.

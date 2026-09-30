@@ -26,10 +26,10 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-derived when the branch merged main: this branch's R6 mutation, re-applied to main's walk over the 2023 life table. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-derived when the branch merged main: this branch's R6 mutation, re-applied to main's walk over the 2023 life table. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/montecarlo/survival.evidence.test.ts (23 tests | 1 failed) 115ms
    ❯ joint-survival-percentile-age — Joint (either-survives) percentile age on the primary's age clock (6)

@@ -245,7 +245,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/evaluateCandidate.evidence.test.ts"
@@ -692,7 +692,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/stochastic.evidence.test.ts"

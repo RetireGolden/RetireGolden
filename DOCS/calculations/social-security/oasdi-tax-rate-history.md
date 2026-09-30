@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: data. `socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR` carries, for every calendar year from 1937, when the tax began, through 2026, the Social Security (OASDI) payroll tax rate each payer actually paid, in percent of taxable earnings: the employee's, the employer's, and the self-employed rate (none before 1951, when self-employment income was first taxed). `socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn` reads it, and uses the 2026 row, current law, for a later year.
+Kind: data. `socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR` carries, for every calendar year from 1937, when the tax began, through 2026, the Social Security (OASDI) payroll tax rate each payer paid under the general schedule, in percent of taxable earnings: the employee's, the employer's, and the self-employed rate (none before 1951, when self-employment income was first taxed). `socialSecurity/analysis/oasdiReturn.ts#oasdiPaidIn` reads it, and uses the 2026 row, current law, for a later year.
 
 New 2026-09-27 (B2-P1 slice 4, owner decision R8: "each year's statutory rate"). It replaces the parameter field `socialSecurity.oasdiEmployeeRatePct` (6.2 for 2026), which planner-ui applied to every year of a career and which is deleted.
 
@@ -11,7 +11,7 @@ SSA, "Social Security Tax Rates" (ssa.gov/oact/progdata/oasdiRates.html; the der
 - "In 1984 only, an immediate credit of 0.3 percent of taxable wages was allowed against the OASDI taxes paid by employees, resulting in an effective employee tax rate of 5.4 percent." The employer paid the 5.7 percent trust-fund rate.
 - "For 2011 and 2012, the OASDI tax rate is reduced by 2 percentage points for employees and for self-employed workers, resulting in a 4.2 percent effective tax rate for employees and a 10.4 percent effective tax rate for self-employed workers." The employer paid 6.2 percent.
 
-The same footnote records self-employed credits of 2.7, 2.3 and 2.0 percent in 1984, 1985 and 1986-89 "against the combined OASDI and HI taxes"; the page does not allocate them to OASDI, so the self-employed rates for those years are the trust-fund rates, high by at most those credits (a stated limit of `oasdi-paid-in-today-dollars`). IRC 3101(a) sets today's employee rate, "6.2 percent of the wages", and IRC 1401(a) today's 12.4 percent self-employment rate.
+The same footnote records self-employed credits of 2.7, 2.3 and 2.0 percent in 1984, 1985 and 1986-89 "against the combined OASDI and HI taxes"; the page does not allocate them to OASDI, so the self-employed rates for those years are the trust-fund rates, high by at most those credits (a stated limit of `oasdi-paid-in-today-dollars`). Footnote c also says "For 2010, most employers were exempt from paying the employer share of OASDI tax on wages paid to certain qualified individuals hired after February 3." That exemption was 26 U.S.C. 3111(d), added by the HIRE Act (Pub. L. 111-147, section 101) for wages paid after March 18, 2010, and struck out in 2018. It turns on the employer and the hire, not the year, so the table does not carry it: the 2010 employer rate is the 6.2 percent schedule rate, and the employer's share on such wages was 0 (a limit of this record). The 2011 and 2012 reduction in the same footnote is applied, as above. IRC 3101(a) sets today's employee rate, "6.2 percent of the wages", and IRC 1401(a) today's 12.4 percent self-employment rate.
 
 The rate table and its footnotes, cut byte for byte from that capture, are committed as `sources/ssa-oasdi-rates.table.html` (the capture's URL, its whole-page SHA-256 and the byte range are in `sources/manifest.json`). The evidence test (`oasdiTaxRates.evidence.test.ts`) parses the table, applies footnotes a and c from their own text, and compares every year and payer of `oasdiTaxRates.ts` with the result.
 
@@ -135,3 +135,7 @@ feeds: `social-security-oasdi-paid-in`.
 ## Provenance
 
 Transcribed from the SSA page by the B2-P1 slice 4 derivation (claude, opus 5.5, 2026-09-27; its parse script and the capture's hash are in its evidence), and compared with the live page by the independent check (C4). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`): the claim says the general schedule rather than what each payer actually paid, and the 2010 employer exemption for certain new hires is named as a limit; the 2011 and 2012 reduction was already applied. No rate changes. Revised by claude (opus 5.5); unreviewed until the reviewer checks the revision.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

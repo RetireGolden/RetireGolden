@@ -58,3 +58,5 @@ feeds: `social-security-benefit-annual`.
 ## Provenance
 
 Case A, its before-figures and the fix are from the B2-P1 slice 4 derivation (problem 5) and its independent check (A4, including the note to keep computation years after 1950), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute and SSA's bases are as saved by that check (the deriver's copy agrees row for row). Case B was added for the 1951 start. The after-figures were recomputed by a script that does not import the engine, with exact fractions, and the before-figures by running the engine at RetireGolden `4a80669e`. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

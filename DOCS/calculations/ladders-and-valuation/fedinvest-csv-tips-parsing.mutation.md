@@ -26,10 +26,10 @@ npx vitest run src/ladder/fedInvest.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed, and the checkout's path is written from the repository root.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4long/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/ladder/fedInvest.evidence.test.ts (9 tests | 1 failed) 7ms
    ❯ fedinvest-csv-tips-parsing — FedInvest security-price CSV: TIPS rows to reference records (2)
      × parses one synthetic TIPS row: rate to percent, date to ISO, price per $100 face as-is 5ms

@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-PR #757 review 4 moved the evidence tests off the worksheets onto the committed BLS and SSA source files, so the tests' titles, counts and lines changed; the mutations are unchanged. The baseline is green (cpiU.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+PR #757 review 4 moved the evidence tests off the worksheets onto the committed BLS and SSA source files, so the tests' titles, counts and lines changed; the mutations are unchanged. The baseline is green (cpiU.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/socialSecurity/cpiU.evidence.test.ts (5 tests | 2 failed) 23ms
    ❯ cpi-u-annual-average — Consumer Price Index annual averages (5)

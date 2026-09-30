@@ -39,6 +39,8 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.
 
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.
+
 ## Restated (PR #754 review, finding 7, 2026-09-27)
 
 The record's statement and this worksheet's inputs named the unit as today's dollars. Both deltas are differences of `summarizeProjection` figures, which are nominal: the ending after-tax estate is in dollars of the plan's last year, and the lifetime sum adds each year's own dollars. `InsightImpact`'s comments (slice 3) and the census families (`insight-impact-ending-after-tax-estate-delta` and `insight-impact-lifetime-tax-delta`, basis `nominal`) already say so, and the Insights card prints no basis beside either figure ("Ending estate delta", "Lifetime tax delta"). The evidence plan runs at zero inflation, so its figures are the same in either basis and no worked value moves. The record is unreviewed until the review lane checks the correction. RetireGolden-Pro renders these fields in its review queue; its labels are outside this repository and are on the slice's Pro follow-up list.

@@ -92,6 +92,37 @@ describeCalculation(
     it('gives the same spending with the people listed the other way round', () => {
       expect(run(reversed(plan)).map((y) => y.expenses.baseSpending)).toEqual(run(plan).map((y) => y.expenses.baseSpending))
     })
+
+    // The different-family review of #769: Sam is both the named person and the
+    // younger one, and outlives Alex, so two more households name Alex.
+    const namingAlex = (alexPlanningAge: number): Plan => couple(
+      [{ ...alex, longevity: { planningAge: alexPlanningAge, source: 'manual' } }, { id: 'sam', name: 'Sam', dob: '1964-09-02', sex: 'female', retirementAge: 64, longevity: { planningAge: 95, source: 'manual' } }],
+      (p) => {
+        p.expenses.baseAnnual = 60_000
+        p.expenses.phases = [{ fromAge: 75, multiplier: 0.9 }, { fromAge: 85, multiplier: 0.8 }]
+        p.expenses.phasesAgeOf = 'alex'
+        p.accounts = [{ type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 4_000_000, annualContribution: 0 }]
+      },
+    )
+    const expectSpending = (years: readonly YearResult[], label: string, year: number): void => {
+      const actual = yearOf(years, year).expenses.baseSpending
+      expect(withinTolerance(actual, phases.value(label), tolerance), `${label}: actual ${actual}`).toBe(true)
+    }
+
+    it('case Older: follows Alex’s age when the plan names Alex, the older person, not the younger one’s', () => {
+      const years = run(namingAlex(92))
+      expectSpending(years, 'Older: base spending, 2036', 2036)
+      expectSpending(years, 'Older: base spending, 2037', 2037)
+      expectSpending(years, 'Older: base spending, 2047', 2047)
+    })
+
+    it('case Death: keeps following Alex’s age after he dies in 2038, neither stopping the phases nor following Sam’s', () => {
+      const years = run(namingAlex(76))
+      expect(yearOf(years, 2039).people.find((row) => row.personId === 'alex')?.alive).toBe(false)
+      expectSpending(years, 'Death: base spending, 2038', 2038)
+      expectSpending(years, 'Death: base spending, 2046', 2046)
+      expectSpending(years, 'Death: base spending, 2047', 2047)
+    })
   },
 )
 
@@ -163,6 +194,7 @@ describeCalculation(
       inputs: {
         people: ['Pat 1966-01-01 (listed first), no wages, planning age 62', 'Robin 1970-01-01, wages 80,000 to age 64, planning age 90'],
         jointCash: { annualContribution: 6_000 },
+        scheduledCase: { wages: 'none', jointCash: { contributionSchedule: [{ annualAmount: 5_000, fromAge: 60, toAge: 64, escalationPct: 0 }], contributionScheduleAgeOf: 'pat' } },
       },
       expected: Object.fromEntries([...joint.rows].map(([label, cells]) => [label, cells[0]])),
       tolerance,
@@ -196,6 +228,39 @@ describeCalculation(
 
     it('gives the same contributions with the people listed the other way round', () => {
       expect(run(reversed(plan)).map((y) => y.balances['joint'])).toEqual(run(plan).map((y) => y.balances['joint']))
+    })
+
+    // Case B: a schedule by Pat's age, no wages in the household, Pat dying inside the schedule.
+    const scheduled = couple(
+      [
+        { id: 'pat', name: 'Pat', dob: '1966-01-01', sex: 'average', retirementAge: 60, longevity: { planningAge: 62, source: 'manual' } },
+        { id: 'robin', name: 'Robin', dob: '1970-01-01', sex: 'average', retirementAge: 64, longevity: { planningAge: 90, source: 'manual' } },
+      ],
+      (p) => {
+        p.expenses.baseAnnual = 20_000
+        p.incomes = []
+        p.accounts = [
+          { type: 'cash', id: 'buffer', name: 'Buffer', ownerPersonId: 'robin', annualReturnPct: 0, balance: 2_000_000, annualContribution: 0 },
+          {
+            type: 'cash', id: 'joint', name: 'Joint savings', ownerPersonId: null, annualReturnPct: 0, balance: 0, annualContribution: 0,
+            contributionSchedule: [{ annualAmount: 5_000, fromAge: 60, toAge: 64, escalationPct: 0 }], contributionScheduleAgeOf: 'pat',
+          },
+        ]
+      },
+    )
+
+    it('takes a joint schedule by the named person\'s age with no household wages, after that person dies too', () => {
+      const years = run(scheduled)
+      expect(years.every((y) => y.incomes.wages === 0)).toBe(true)
+      const labels = [['Scheduled, joint balance, end of 2026', 2026], ['Scheduled, joint balance, end of 2028', 2028], ['Scheduled, joint balance, end of 2029', 2029], ['Scheduled, joint balance, end of 2030', 2030], ['Scheduled, joint balance, end of 2031', 2031]] as const
+      for (const [label, year] of labels) {
+        const actual = yearOf(years, year).balances['joint'] ?? 0
+        expect(withinTolerance(actual, joint.value(label), tolerance), `${label}: actual ${actual}`).toBe(true)
+      }
+      // A wage test on the schedule would take nothing; stopping at Pat's death would leave 15,000 at the end of 2030.
+      expect(yearOf(years, 2030).balances['joint']).not.toBe(0)
+      expect(yearOf(years, 2030).balances['joint']).not.toBe(15_000)
+      expect(run(reversed(scheduled)).map((y) => y.balances['joint'])).toEqual(years.map((y) => y.balances['joint']))
     })
   },
 )

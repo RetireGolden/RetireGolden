@@ -45,3 +45,5 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 Revision, 2026-09-26: the claim now reads the ceiling from the coverage year's block (decision D-ACA-2027-TABLE); the 2026 example and its figures are unchanged. The rewording is unreviewed until a Codex or Cursor review, so the record carries reviewedBy 'unreviewed'.
 
 Revision, 2026-09-27: the Claim names both coverage years, as the record's statement and limits do (review of #750); the 2026 worked example is unchanged.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.

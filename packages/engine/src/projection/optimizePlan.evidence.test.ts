@@ -916,6 +916,8 @@ describeCalculation(
         // equal.
         currentClaimExactEstate: 1_130_409.2,
         jointExactEstate: 1_130_409.2,
+        // Derived: the current-claim-wins fixture's benefits in PIA-years, from the claim year through 2061.
+        currentClaimWinsPiaYears: { 70: 32.24, 67: 29, 62: 23.8 },
       },
       tolerance: { abs: 0.005 },
     },
@@ -1056,6 +1058,14 @@ describeCalculation(
         withinTolerance(joint.claimAge.jointExactEstate, expectedJoint, example.tolerance),
         `jointExactEstate: actual ${joint.claimAge.jointExactEstate}, run-pinned ${expectedJoint}`,
       ).toBe(true)
+      // The worksheet's PIA-years: a 1966 birth at planning age 95 is paid through 2061.
+      const piaYears = example.expected.currentClaimWinsPiaYears as Record<string, number>
+      for (const age of [70, 67, 62]) {
+        const years = simulatePlan(claimPlan({ ...inputs.currentClaimWinsFixture!, currentClaimAgeYears: age }), federalOptions()).years
+        const benefits = years.reduce((sum, year) => sum + year.incomes.socialSecurity, 0)
+        expect(years.at(-1)!.year).toBe(2061)
+        expect(Math.abs(benefits / (12 * 2_600) - piaYears[age]!), `claim at ${age}: ${benefits / (12 * 2_600)} PIA-years`).toBeLessThan(1e-9)
+      }
     })
   },
 )

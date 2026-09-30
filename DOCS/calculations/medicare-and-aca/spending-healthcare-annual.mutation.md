@@ -1,6 +1,6 @@
 # Mutation receipt: spending-healthcare-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6905169c` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `50327f81` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualHealthcareExpenses.ts`
 
@@ -30,16 +30,16 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because the independent review's fixes (M1 to L3) moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annualHealthcareExpenses.spendingHealthcare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the engine began reading CMS's published IRMAA tier premiums (2026-09-29): the evidence test gained a case per tier and new figures, which moved the lines, titles or counts this receipt quotes; the mutation is unchanged. The baseline is green (annualHealthcareExpenses.spendingHealthcare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 36ms
+ ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 38ms
    ❯ spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums (3)
-     × charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras 30ms
-     × charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare 2ms
-     × adds the two people to 8831.20 on one household plan 3ms
+     × charges the first person 4243.20: twelve Medicare months of tier premium plus scaled extras 31ms
+     × charges the second person 4588.80: 1760 of marketplace beside 2828.80 of Medicare 3ms
+     × adds the two people to 8832.00 on one household plan 3ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
@@ -50,8 +50,8 @@ RUN  v5.0.0 C:/rgwt/engine19/packages/engine
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras
-AssertionError: medicarePremiums 3940.9920000000006 is not within {"abs":0.005} of 3582.72: expected false to be true // Object.is equality
+ FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > charges the first person 4243.20: twelve Medicare months of tier premium plus scaled extras
+AssertionError: medicarePremiums 3941.5200000000004 is not within {"abs":0.005} of 3583.2: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -70,8 +70,8 @@ AssertionError: medicarePremiums 3940.9920000000006 is not within {"abs":0.005} 
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
- FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare
-AssertionError: medicarePremiums over the eight Medicare months 2627.3280000000004 is not within {"abs":0.005} of 2388.48: expected false to be true // Object.is equality
+ FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > charges the second person 4588.80: 1760 of marketplace beside 2828.80 of Medicare
+AssertionError: medicarePremiums over the eight Medicare months 2627.6800000000003 is not within {"abs":0.005} of 2388.7999999999997: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -90,8 +90,8 @@ AssertionError: medicarePremiums over the eight Medicare months 2627.32800000000
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
- FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > adds the two people to 8831.20 on one household plan
-AssertionError: household medicarePremiums 6568.3200000000015 is not within {"abs":0.005} of 5971.2: expected false to be true // Object.is equality
+ FAIL  src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts > spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums > adds the two people to 8832.00 on one household plan
+AssertionError: household medicarePremiums 6569.200000000001 is not within {"abs":0.005} of 5972: expected false to be true // Object.is equality
 
 - Expected
 + Received

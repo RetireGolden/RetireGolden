@@ -430,7 +430,7 @@ describe('full-plan characterization fixtures', () => {
       requestedConversions: 538_917.7,
       exactConversions: 423_639.14,
       baselineEstate: 381_703.41,
-      exactEstate: 444_058.78,
+      exactEstate: 444_057.76,
       firstConversions: [
         { year: 2026, amount: 62_681.5 },
         { year: 2027, amount: 74_550 },

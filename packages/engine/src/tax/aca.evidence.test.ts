@@ -171,7 +171,7 @@ describeCalculation(
       // truncation alone 1,633.73.
       const result = acaEconomicPremiumByMonth(pack, 1, 28_500, byMonth(12_000), byMonth(12_000))
       expect(acaApplicablePct(pack, 182)).toBe(5.73)
-      expectWithin(result.fplPct, 182.1086261981, { abs: 1e-9 }, 'fplPct')
+      expectWithin(result.fplPct, 182.10862619808307, { abs: 1e-9 }, 'fplPct')
       expectWithin(result.expectedContribution, 1_633.05, example.tolerance, 'expectedContribution')
       for (const wrong of [1_635.23, 1_635.9, 1_633.73]) {
         expect(withinTolerance(result.expectedContribution, wrong, example.tolerance)).toBe(false)

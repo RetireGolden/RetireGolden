@@ -81,6 +81,8 @@ feeds: none. Reads `monte-carlo-investable-fan-percentiles`.
 
 Derived by: claude (opus 5.5), 2026-09-26; tooltip strings by `scripts/independent.mjs`; Recharts behaviour read from the installed 3.10.1 source. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
 
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.
+
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 Implemented as derived: two range areas keyed `[d.p10, d.p90]` and `[d.p25, d.p75]`, labelled "10th to 90th percentile" and "25th to 75th percentile", and the tooltip formatter `fmtMoneyOrRange` (kept in the shared `format.ts`, so no new page module) prints an array as "$low to $high". The family has its own record, `monte-carlo-fan-chart-ranges` (unreviewed), rather than being added to the reviewed fan-percentile record's outputs, so no reviewed record claims the new mapping; the census retitles the family "Fan chart percentile ranges". Its evidence reproduces row 1 from eleven paths whose balances that year are 0, 400,000, 600,000, 600,000, 700,000, 800,000, 900,000, 1,000,000, 1,000,000, 1,300,000 and 2,000,000: at the interpolation index (p/100)(n − 1) = 1, 2.5, 5, 7.5 and 9 the levels are 400,000, (600,000 + 600,000)/2, 800,000, (1,000,000 + 1,000,000)/2 and 1,300,000.

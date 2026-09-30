@@ -26,10 +26,10 @@ npx vitest run src/allocation/assetClasses.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed, and the checkout's path is written from the repository root. The run exited 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 1 failed) 9ms
    ❯ allocation-blended-taxable-yield — Blended taxable yields and dividend-weighted qualified share (3)
      × blends 60/40 to 1.6% interest, 0.9% dividends and a 0.95 dividend-weighted qualified share 3ms

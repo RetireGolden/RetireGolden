@@ -2340,7 +2340,7 @@
           "functions": [
             {
               "name": "rothCatchUpWageThreshold",
-              "line": 140
+              "line": 145
             }
           ]
         },

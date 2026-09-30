@@ -106,3 +106,5 @@ outputs: `social-security-claiming-sweep-objective`.
 ## Provenance
 
 Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 5 derivation (evidence/b2p1-slice5-derivation.md, worksheet `social-security-claiming-sweep-objective.md`: cases S-F, S-G and S-E by hand), with the independent check's corrections C2 (each unpriced year with its reason), C5 (one test for every search), C7 (the ranked metric per row) and C10 (the limits). Cases S-H, S-I and S-J are the implementation's, the S-H year by the published-figures fact. Implemented by: claude (opus 5.5), 2026-09-28. Reviewed by: not yet reviewed.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

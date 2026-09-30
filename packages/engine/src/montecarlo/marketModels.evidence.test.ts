@@ -337,7 +337,7 @@ describeCalculation(
     it('2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster', () => {
       // P = 2,000 paths seeded createRng(derivePathSeed(20260925, p)), Y = 30 years, r = shock / 12.
       // mean(r^2) is 1 in every year (E[v_t] = sigmaBar^2 by induction from v_1 = sigmaBar^2); the
-      // tolerance 0.07 is five times an upper bound of 0.01428 on its standard error. mean(r) is 0
+      // tolerance 0.0714 is five times its standard error, 0.01428 to four figures. mean(r) is 0
       // with standard error 1 / sqrt(60,000) = 0.00408; tolerance five of those, 0.0205. The
       // clustering statistic is the pooled Pearson correlation of (r_{t-1}^2, r_t^2) over all
       // 2,000 x 29 consecutive within-path pairs (separate x and y means): the GARCH value over 20
@@ -382,7 +382,7 @@ describeCalculation(
         return { meanSquare: sumSquares / count, mean: sum / count, clustering }
       }
       const garch = statistics({ type: 'garch', inflationMeanPct: 2.5 })
-      expect(Math.abs(garch.meanSquare - 1), `mean(r^2) ${garch.meanSquare}`).toBeLessThan(0.07)
+      expect(Math.abs(garch.meanSquare - 1), `mean(r^2) ${garch.meanSquare}`).toBeLessThan(0.0714)
       expect(Math.abs(garch.mean), `mean(r) ${garch.mean}`).toBeLessThan(0.0205)
       expect(garch.clustering, `clustering ${garch.clustering}`).toBeGreaterThan(0.08)
       // The same statistic on alpha = beta = 0 (an iid normal) stays far below the bound.

@@ -177,6 +177,8 @@ feeds: `sustainable-spending-result-spending-slack-dollars`, `solved-initial-wit
 
 Derived by: claude (opus 5.5), 2026-09-26, from the source at `a7f62f1e` and #747 `4109e0b4`; expected values from hand arithmetic and the author's `scripts/independent.mjs` and `scripts/solver-independent.mjs` (no engine import); engine cross-checks (`scripts/engine-solver.json`, `scripts/engine-solver-rounding.json`) run afterwards in the scratch copy. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
 
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.
+
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 Implemented by a claude subagent on RetireGolden `a70eb815` (the first commit of #750, on `main` `37d9ae3e`), after #748 changed the solver this worksheet was derived on. What differs from the derivation above, and why:

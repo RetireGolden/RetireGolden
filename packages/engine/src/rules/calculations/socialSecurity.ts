@@ -49,7 +49,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/ssaWageData.ts#wageBaseForYearOrLatest',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'dual-entitlement-composition': {
     title: 'Own benefit plus the separately reduced spouse excess',
@@ -100,7 +100,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'delayed-retirement-credit-factor': {
     title: 'Delayed retirement credit factor',
@@ -240,7 +240,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'pia-from-aime-bend-points': {
     title: 'PIA from AIME across the bend points',
@@ -319,7 +319,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'social-security-payable-months': {
     title: 'Social Security payable months',
@@ -399,7 +399,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'ss-bridge-sizing': {
     title: 'Social Security bridge: age-62 replacement sized as a TIPS ladder',
@@ -477,7 +477,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/survivorBenefit.ts#SURVIVOR_MAX_REDUCTION',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survivor-reduction-entitlement-month': {
     title: 'Widow(er) reduction from the first month of widow(er) entitlement',
@@ -526,7 +526,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/survivorBenefit.ts#widowEntitlementAgeMonths',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'family-maximum-bend-points': {
     title: 'Retirement/survivor family maximum from PIA',
@@ -621,7 +621,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'social-security-claim-break-even': {
     title: 'Claiming break-even ages and cumulative benefits',
@@ -672,7 +672,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/analysis/householdPaths.ts#householdPathYear',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'social-security-expected-value': {
     title: 'Benefits-only expected present value of Social Security',
@@ -704,7 +704,7 @@ export const socialSecurityRecords = {
       'One claim age per person: a widow(er) is paid from the later of the year after the death and their own claim year, and cannot take the widow(er) benefit first and their own later, as in the ledger (usc-42-402-r-survivor-deemed-filing-exemption); the survivor switching analysis covers a widow(er) living alone',
       'The earnings test is the ledger\'s, on the plan\'s wage rows: whole calendar years spread evenly over their months, with no grace year (cfr-20-404-435-grace-year-monthly-earnings-test); only wage streams are earnings (usc-42-403-f-5-earnings-counted); exempt amounts after the latest published year grow at the plan\'s inflation (usc-42-403-f-8-earnings-test-exempt-amounts)',
       'Deterministic: the plan\'s flat inflation carries the wages, the exempt amounts and the COLA; Monte Carlo market paths are not priced here',
-      'A claim at a whole age pays the whole calendar year it is attained; its months before the claim month are paid and can be charged, but are not credited (poms-rs-00615-482-arf-crediting-months)',
+      'A claim at a whole age pays the whole calendar year it is attained; its months before the first month of entitlement are paid in full and never charged, so never credited, since no excess is charged to a month for which the person is not entitled (42 U.S.C. 403(f)(1)(A); usc-42-403-f-1-earnings-test-month-charging, poms-rs-00615-482-arf-crediting-months)',
       'No taxes, disability benefit, child benefit or lump-sum death payment',
       'The family maximum is applied with the ledger\'s own helper (socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum): half the worker\'s PIA is held first to the maximum less that PIA (20 CFR 404.404), which is at least half the PIA less the rounding of the maximum to the dime, so with one spouse it binds by at most 10 cents a month',
       'A death before 62 passes on the PIA as entered, as the survivor benefit calculation does',
@@ -741,7 +741,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'oasdi-paid-in-today-dollars': {
     title: 'Social Security tax paid in, in today\'s dollars',
@@ -789,11 +789,11 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/ssaWageData.ts#wageBaseForYearOrLatest',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'oasdi-tax-rate-history': {
     title: 'Social Security tax rates by year',
-    purpose: 'The Social Security tax rate each payer actually paid in each year since 1937.',
+    purpose: 'The general Social Security tax rate each payer paid in each year since 1937.',
     kind: 'data',
     outputs: [],
     feeds: ['social-security-oasdi-paid-in'],
@@ -807,6 +807,7 @@ export const socialSecurityRecords = {
     limits: [
       'The self-employed credits of 1984 to 1989, which the source gives against the combined OASDI and HI tax, are not applied',
       'A year after 2026 uses the 2026 rates, current law, until the table is extended',
+      'The rates are the general schedule, not every payer\'s own: for 2010 most employers were exempt from the employer\'s OASDI share on wages paid to certain qualified individuals hired after February 3, 2010 (the source\'s footnote c; 26 U.S.C. 3111(d), added by the HIRE Act, Pub. L. 111-147, section 101, and struck out in 2018), which the table does not model, so the 2010 employer rate is 6.2 percent where such wages bore 0. The same footnote\'s 2011 and 2012 two-point reduction for employees and the self-employed is applied: 4.2 and 10.4 percent',
     ],
     implementedBy: ['packages/engine/src/socialSecurity/oasdiTaxRates.ts'],
     implementedByFunctions: [
@@ -815,7 +816,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/oasdiTaxRates.ts#LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'cpi-u-annual-average': {
     title: 'Consumer Price Index annual averages',
@@ -840,7 +841,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/cpiU.ts#CPI_U_LATEST_YEAR',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'benefits-to-contributions-ratio': {
     title: 'Benefits received per dollar of Social Security tax paid',
@@ -882,7 +883,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/piaFromEarnings.ts#resolveStreamPiaMonthly',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survivor-switching-expected-value': {
     title: 'Survivor and own benefit switching for a widow(er)',
@@ -890,17 +891,21 @@ export const socialSecurityRecords = {
     kind: 'model',
     outputs: ['social-security-survivor-switch-pv'],
     statement:
-      'socialSecurity/analysis/survivorSwitching.ts#survivorSwitchingInputs takes a single household\'s one claimant and, of the deceased or surviving-divorced former-spouse records that pass the ledger\'s modeled widow(er) gates, the one whose survivor benefit at the claimant\'s survivor full retirement age is largest (the first on a tie), with the deceased\'s benefit the PIA x the deceased\'s claim factor (full retirement age when none is entered); a claimant whose benefit is paid as a disability benefit from its onset gets none. #expectedPvSwitch values a strategy as the sum over ages from the current age to 119 of S x the larger claimed yearly benefit x s(y) x (1 + r)^-(age - current age); with the widow(er)\'s wages (the plan\'s wage rows), each year before the full-retirement-age year is priced month by month and the ledger\'s earnings-test year (socialSecurity/earningsTest.ts#earningsTestYear) charges the excess against the larger claimed benefit, the survivor part first, and its crediting months raise the own benefit from the FRA month and the survivor benefit from the survivor FRA month, each counting only months of its own reduction period, with s(y) the plan\'s COLA factor over its inflation factor times the haircut for the year the age is reached (socialSecurity/analysis/expectedValue.ts#realBenefitScale, the ranking\'s own), the survivor benefit from socialSecurity/survivorBenefit.ts#survivorBenefitMonthly at its whole-year age and the own benefit at its claim factor, S the engine\'s survival curve. #rankSwitchStrategies offers survivor ages (the current age, at least 60, and the survivor full retirement age\'s year) and own ages (the current age from 62 to 70, the full retirement age\'s year, 70), every pairing and each alone, keeps one strategy per distinct yearly stream (the one with fewer claims, then the earlier survivor age, then the earlier own age), and ranks them by value, ties in the same order. Units: start-year dollars. Rounding: none.',
+      'socialSecurity/analysis/survivorSwitching.ts#survivorSwitchingInputs takes a single household\'s one claimant and, of the deceased or surviving-divorced former-spouse records that pass the ledger\'s modeled widow(er) gates, the one whose survivor benefit at the claimant\'s survivor full retirement age is largest (the first on a tie), with the deceased\'s benefit the PIA x the deceased\'s claim factor (full retirement age when none is entered); a claimant whose benefit is paid as a disability benefit from its onset gets none. #expectedPvSwitch values a strategy as the sum over ages from the current age to 119 of S x the larger claimed yearly benefit x s(y) x (1 + r)^-(age - current age); with the widow(er)\'s wages (the plan\'s wage rows), each year before the full-retirement-age year is priced month by month and the ledger\'s earnings-test year (socialSecurity/earningsTest.ts#earningsTestYear) charges the excess against the benefits she is entitled to that month, a month it only partly covers in proportion to the own benefit and the survivor excess (POMS RS 02501.145 B.2), and a month the claim-year convention pays the own benefit before its entitlement against the survivor benefit alone; its crediting months raise the own benefit from the FRA month and the survivor benefit from the survivor FRA month, and the months withheld before 62 raise it from the month of 62 too (20 CFR 404.412(b)), each counting only months of its own reduction period, with s(y) the plan\'s COLA factor over its inflation factor times the haircut for the year the age is reached (socialSecurity/analysis/expectedValue.ts#realBenefitScale, the ranking\'s own), the survivor benefit from socialSecurity/survivorBenefit.ts#survivorBenefitMonthly at its whole-year age and the own benefit at its claim factor, S the engine\'s survival curve. #rankSwitchStrategies offers survivor ages (the current age, at least 60, and the survivor full retirement age\'s year) and own ages (the current age from 62 to 70, the full retirement age\'s year, 70), every pairing and each alone, keeps one strategy per distinct yearly stream (the one with fewer claims, then the earlier survivor age, then the earlier own age), and ranks them by value, ties in the same order. Units: start-year dollars. Rounding: none.',
     formula: {
-      expression: 'EV(s, o) = sum_{a = x..119} S(a) x max([a >= s] W(s), [a >= o] P f(o)) x 12 x s(y) x (1 + r)^-(a - x)',
+      expression: 'EV(s, o) = sum_{a = x..119} S(a) x B(a) x s(y) x (1 + r)^-(a - x), B(a) = sum_{m = 1..12} (max([a >= s] W_m, [a >= o] O_m) - D_m); with no wages D_m = 0 and B(a) = 12 x max([a >= s] W(s), [a >= o] P f(o))',
       variables: [
+        { symbol: 'B(a)', meaning: 'The year\'s benefits paid at age a, month by month, in start-year dollars before s(y)', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'W_m', meaning: 'The survivor benefit in month m: survivorBenefitMonthly at survivor claim age s, held to the widow\'s limit, its reduction months cut from the month of 62 by the months withheld before 62 and from the survivor full-retirement-age month by every month withheld before it (20 CFR 404.412(b)); W(s) when nothing is withheld', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'O_m', meaning: 'The own benefit in month m: the own PIA x the claim factor at own age o, its reduction months cut by the months withheld from the full-retirement-age month; P f(o) when nothing is withheld', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'D_m', meaning: 'The month\'s earnings-test deduction: the year\'s excess earnings (42 U.S.C. 403(f)(3)), restated in start-year dollars at the year\'s COLA factor and haircut, charged from January, only before the full-retirement-age month and only against a benefit from its first month of entitlement (403(f)(1)), a month it only partly covers in proportion to the own benefit and the survivor excess (POMS RS 02501.145 B.2); 0 with no wages', unit: 'usd/month', domain: 'nonnegative' },
         { symbol: 'W(s)', meaning: 'Monthly widow(er) benefit at survivor age s', unit: 'usd/month', domain: 'nonnegative' },
         { symbol: 'P f(o)', meaning: 'Own PIA x the claim factor at own age o', unit: 'usd/month', domain: 'nonnegative' },
         { symbol: 'x', meaning: 'Age in the start year', unit: 'years', domain: 'integer' },
         { symbol: 's(y)', meaning: 'The COLA factor over the inflation factor, times the haircut, for the year y the age a is reached', unit: '1', domain: 'positive' },
         { symbol: 'r', meaning: 'Real discount rate', unit: 'rate/year', domain: 'above -1' },
       ],
-      timing: 'annual, from the start year to age 119',
+      timing: 'monthly in each year, annual weights, from the start year to age 119',
       rounding: 'none',
     },
     justification: {
@@ -911,7 +916,7 @@ export const socialSecurityRecords = {
       'Whole-year ages: the survivor benefit at the current age (at least 60) or the survivor full retirement age\'s year; the own benefit at the current age (62 to 70), the full retirement age\'s year or 70',
       'The deceased\'s benefit is the claim age entered for the record, or full retirement age when none is; a death before the deceased claimed is priced only through the claim age entered',
       'Single households only; no taxes or child benefits',
-      'The earnings test on the widow(er)\'s wages is charged against the larger claimed benefit each month, as the ledger charges it; wages are whole calendar years spread evenly over their months, with no grace year, and only wage streams are earnings (usc-42-403-f-5-earnings-counted)',
+      'The earnings test on the widow(er)\'s wages is charged against the benefits paid each month, as the ledger charges it; wages are whole calendar years spread evenly over their months, with no grace year, and only wage streams are earnings (usc-42-403-f-5-earnings-counted)',
       'A benefit paid as a disability benefit from its onset is not ranked, since no own claim age starts it',
       'Survival on the engine\'s one curve, the SSA period table',
     ],
@@ -928,7 +933,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/earningsTest.ts#earningsTestYear',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'covered-work-credit-estimate': {
     title: 'Covered-work credit estimate',
@@ -967,7 +972,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/ssaWageData.ts#quarterOfCoverageAmountForYearOrLatest',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'aime-zero-year-count': {
     title: 'Zero years in the averaged earnings',
@@ -994,7 +999,7 @@ export const socialSecurityRecords = {
     implementedBy: ['packages/engine/src/socialSecurity/piaFromEarnings.ts'],
     implementedByFunctions: ['packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'zero-year-replacement-gain': {
     title: 'PIA gain from replacing a year with no earnings',
@@ -1029,7 +1034,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/piaFromEarnings.ts#piaWithCostOfLivingIncreases',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'social-security-pia-resolution': {
     title: 'The PIA a Social Security stream is paid from',
@@ -1058,7 +1063,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'social-security-claim-already-made': {
     title: 'Social Security claim already made',
@@ -1095,7 +1100,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/openClaims.ts#openClaims',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'social-security-claim-age-sweep': {
     title: 'Whole-plan Social Security claim-age sweep',
@@ -1144,7 +1149,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/decisions/generators.ts#claimAgeGridClaims',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'social-security-claim-age-monthly-refinement': {
     title: 'Claim-age refinement to the month',
@@ -1160,7 +1165,7 @@ export const socialSecurityRecords = {
         { symbol: 'eligible(m)', meaning: 'Month m meets every hard constraint of the policy (money-lasts, the estate floor, a structural diagnostic)', unit: 'boolean', domain: 'true or false' },
         { symbol: 'estate(m)', meaning: 'Ending after-tax estate of the plan with month m\'s claim', unit: 'nominal USD of the plan\'s last year', domain: 'finite' },
       ],
-      timing: 'one full ledger run per combination tried: up to 25 per claim per pass, 13 to 72 in the first pass, and a later pass prices only the combinations not yet priced',
+      timing: 'one full ledger run per combination tried: up to 36 per claim per pass (the months from a year below the whole-year pick to a year above it: 36, or 24 for a pick of 62, 25 for 69 and 13 for 70, fewer when the age reached in the start year cuts the window), 13 to 72 in the first pass, and a later pass prices only the combinations not yet priced',
       rounding: 'none',
     },
     justification: {
@@ -1178,7 +1183,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/decisions/claimAgeSweep.ts#refineClaimMonths',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survivor-convert-early-lever': {
     title: 'Survivor convert-early lever',
@@ -1188,8 +1193,10 @@ export const socialSecurityRecords = {
     statement:
       'projection/survivorTransition.ts#survivorTransitionAnalysis runs each death timing twice through projection/simulate.ts#simulatePlan with the same death override and the plan\'s own SSA-44 setting: the base run, and the lever run with SimulateOptions.additionalBracketFill { bracketPct: 12, startYear: the start year, endYear: the death year }. In each window year the lever run\'s aggregate conversion target (projection/internal/annualAggregateRothConversionTargetPlan.ts#annualAggregateRothConversionTargetPlan) is the larger of the plan\'s own target and a fill of taxable income to the top of the 12% bracket for the year\'s filing status, both sized on the same state of the year, the fill capped first at the convertible traditional balance; outside the window, and in a year a named conversion action suppresses the aggregate strategy, the plan\'s own strategy runs unchanged. It publishes estateDelta, the lever run\'s ending after-tax estate minus the base run\'s, and lifetimeTaxDelta, the lever run\'s lifetime taxes and penalties minus the base run\'s, and, from the lever run\'s window rows (#leverYears), each window year\'s reason read from executed dollars (the ledger\'s rothConversion) against own (the plan\'s own target capped at the convertible balance) and the capped fill, in this order: named-conversions when a named conversion action suppressed the aggregate strategy, raised when it converted more than own, covered when it converted something and at least the fill, short when it converted less than the fill, and with no fill asked no-balance (no convertible balance), fill-limited (the fill\'s own sizing cut it to nothing) or no-room; with each year the ledger\'s own words (AdditionalBracketFillYear.fillNotes on a fill-limited year, and on any year ledgerNotes, the messages the ledger raised when it converted less than the year\'s target asked). raisedYears and coveredYears are the raised and covered years. Units: nominal dollars of the timing\'s last year (endYear) for the estate, an undiscounted sum of nominal dollars for the tax. Rounding: none.',
     formula: {
-      expression: 'conversion(y) = max(own(y), min(fill12(y), convertible(y))) for y in [start, death year], own(y) otherwise; estateDelta = estate(lever) - estate(base); lifetimeTaxDelta = tax(lever) - tax(base)',
+      expression: 'target(y) = max(own(y), min(fill12(y), convertible(y))) for y in [start, death year], own(y) otherwise; executed(y) = the lever run\'s rothConversion(y), which falls short of target(y) when the ledger cannot execute it; estateDelta = estate(lever) - estate(base); lifetimeTaxDelta = tax(lever) - tax(base)',
       variables: [
+        { symbol: 'target(y)', meaning: 'The lever run\'s aggregate conversion target for year y, what the lever asks for', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'executed(y)', meaning: 'The conversion the lever run\'s ledger executed in year y (YearResult.rothConversion): short of target(y) when a share cannot land, for instance 0 when the traditional balance\'s owner has no Roth account (worksheet case L-B, Roth IRA is Sam\'s)', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'own(y)', meaning: 'The plan\'s own aggregate conversion target for year y (its schedule amount, its own fill, or 0)', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'fill12(y)', meaning: 'The conversion that brings federal taxable income to the top of the 12% bracket for the year\'s filing status, sized on the same state of the year', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'convertible(y)', meaning: 'The traditional balance convertible in year y', unit: 'nominal USD', domain: 'nonnegative' },
@@ -1224,7 +1231,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts#annualAggregateRothConversionPhase',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survivor-ssa44-premium-difference': {
     title: 'SSA-44 survivor premium difference',
@@ -1256,7 +1263,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/survivorTransition.ts#withSurvivorSsa44',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survivor-shortfall-year-count': {
     title: 'Survivor shortfall years',
@@ -1287,6 +1294,6 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/survivorTransition.ts#isDegenerateTiming',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

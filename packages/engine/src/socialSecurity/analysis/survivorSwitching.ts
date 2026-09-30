@@ -192,11 +192,11 @@ function strategyStream(input: SwitchingInput, strategy: SwitchStrategy, options
  * month pays the larger claimed benefit, the survivor benefit at its claim age
  * and the own benefit at its, each raised by its crediting months from its full
  * retirement age, and the survivor benefit also from the month of 62 by the
- * months withheld before 62 (20 CFR 404.412(b)); the year's excess earnings,
- * in that year's dollars, are charged against the month's benefit in today's
- * dollars at the year's COLA factor and haircut, the survivor part before the
- * own, and only against a benefit from its first month of entitlement (a month
- * the claim-year convention pays before it is paid in full, 403(f)(1)(A)).
+ * months withheld before 62 (20 CFR 404.412(b)); the year's excess, restated in
+ * today's dollars at the year's COLA factor and haircut, is charged against the
+ * two benefits, a partial month in proportion to each (RS 02501.145 B.2), and
+ * only from a benefit's first month of entitlement (a month the claim-year
+ * convention pays before it is paid in full, 403(f)(1)(A)).
  */
 function strategyStreamWithEarningsTest(input: SwitchingInput, strategy: SwitchStrategy, options: SwitchingOptions): number[] {
   const { dob } = input

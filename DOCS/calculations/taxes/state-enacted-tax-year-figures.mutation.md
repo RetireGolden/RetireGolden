@@ -34,10 +34,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/params/stat
 
 ## Captured failing output
 
-Re-executed because the enacted-year list now also holds 2031 and 2032, so the mutation empties its nine lines, and the evidence test prices the widened set of states and the 2026 corrections. The baseline is green (enacted2027.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the enacted-year list now also holds 2031 and 2032, so the mutation empties its nine lines, and the evidence test prices the widened set of states and the 2026 corrections. The baseline is green (enacted2027.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/params/state/enacted2027.evidence.test.ts (3 tests | 3 failed) 31ms
    ❯ state-enacted-tax-year-figures — State income tax figures already enacted for 2027 and later (3)

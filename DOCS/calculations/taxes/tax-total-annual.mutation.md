@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/federal
 
 ## Captured failing output
 
-Re-executed because the hunk's lines moved down one line in tax/federalTax.ts, which now also passes the federal senior deduction to the state household facts. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the hunk's lines moved down one line in tax/federalTax.ts, which now also passes the federal senior deduction to the state household facts. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/tax/federalTax.evidence.test.ts (15 tests | 1 failed) 12ms
    ❯ tax-total-annual — Annual composed tax (2)

@@ -1,6 +1,6 @@
 # Mutation receipt: medicare-irmaa-first-tier-boundary
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1d1cbbb9` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `50327f81` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/params/index.ts`
 
@@ -26,22 +26,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/medicar
 
 ## Captured failing output
 
-The merge of main (068a5968: #761, #762, #763) into this branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed after the engine began reading CMS's published IRMAA tier premiums (2026-09-29): the evidence test gained a case per tier and new figures, which moved the lines, titles or counts this receipt quotes; the mutation is unchanged. The baseline is green (medicare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
- ❯ src/tax/medicare.evidence.test.ts (8 tests | 1 failed) 11ms
-   ❯ medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary (3)
-     × keeps 109,000 itself in tier 0: the test is strictly greater than 6ms
+ ❯ src/tax/medicare.evidence.test.ts (9 tests | 1 failed) 7ms
+   ❯ medicare-irmaa-first-tier-boundary — Medicare IRMAA tier premiums and the first-tier boundary (4)
+     × keeps 109,000 itself in tier 0: the test is strictly greater than 3ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 7 passed (8)
+      Tests  1 failed | 8 passed (9)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/tax/medicare.evidence.test.ts > medicare-irmaa-first-tier-boundary — Medicare IRMAA first-tier boundary > keeps 109,000 itself in tier 0: the test is strictly greater than
+ FAIL  src/tax/medicare.evidence.test.ts > medicare-irmaa-first-tier-boundary — Medicare IRMAA tier premiums and the first-tier boundary > keeps 109,000 itself in tier 0: the test is strictly greater than
 AssertionError: expected 1 to be +0 // Object.is equality
 
 - Expected

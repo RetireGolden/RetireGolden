@@ -50,3 +50,5 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 Revision: The first derivation stopped the stream after three payments even though the stated planning age 70 sets both the six-year curve horizon and the field's owner death age; the implementation's fixture found the mismatch.
 
 Revision, 2026-09-27 (decision D-TREASURY): the embedded curve became the official 2026-06-30 Treasury row, so the six-year yield moved from 1.95% to 1.995% and every figure above moved with it; the inputs, the method and the wrong readings' logic are unchanged. Recomputed by claude, the implementer of that decision, in exact rational arithmetic by a script that imports nothing from the engine; the same script reproduces the figures this worksheet stated before (3.95%, $63,008.166010097986, $33,332.7193407416). The restated figures are unreviewed until a reviewer who is not their author recomputes them, so the record carries reviewedBy 'unreviewed'.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`.

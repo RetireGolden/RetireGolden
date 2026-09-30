@@ -26,10 +26,10 @@ npx vitest run src/spending/abw.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed, and the checkout's path is written from the repository root. The run exited 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/spending/abw.evidence.test.ts (4 tests | 1 failed) 5ms
    ❯ abw-expected-real-return — ABW expected real return: fixed, TIPS yield, or CAPE-blended (3)
      × blends the 4% CAPE earnings yield at 60% with the 2% bond yield to 3.2%/yr real 3ms

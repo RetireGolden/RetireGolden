@@ -26,10 +26,10 @@ npx vitest run src/allocation/assetClasses.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed, and the checkout's path is written from the repository root. The run exited 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 2 failed) 11ms
    ❯ asset-class-parameter-overrides — Asset-class parameters: assumption overrides laid over the sourced defaults (5)
      × takes the bonds return from the override and keeps its volatility at the 7.7 default 4ms

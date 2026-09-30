@@ -64,3 +64,5 @@ Derived by: claude (Claude Opus), 2026-09-26, from Rev. Proc. 2026-26, 91 FR 179
 Revision, 2026-09-26: the applicable percentage is read at the whole-number poverty-line percentage and rounded to a hundredth of a percent (decision D-ACA-2027-TABLE, the rounding change), so the worksheet's credit moves from `10,925.19` to `10,924.78` and its contribution from `1,734.81` to `1,735.22`; the evidence check (evidence/aca-2027-check.md, section 3) recomputed the same figure, 10,924.78, for early-retiree-aca's MAGI of 29,212.49.
 
 Revision, 2026-09-27: the claim and the record's statement say "income-tax figures" for what they called the income-tax pack (the public-text rule), and the record gains a stated limit for the last sentence of 26 CFR 1.36B-1(h): a household whose primary residence moves during the year between states with different guidelines, or whose married members live in separate ones, uses the higher guideline, and the engine, which reads one `fplRegion` per year contract, does not apply that rule. No figure moves; unreviewed as above.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-6-after-769.md`.

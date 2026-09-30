@@ -42,3 +42,5 @@ feeds: `aca-economic-net-premium-annual`; `spending-healthcare-annual`.
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
 
 Revision, 2026-09-26: the record's rounding is stated (decision D-ACA-2027-TABLE). The contribution the credit is sized from carries the applicable percentage's rounding (read at the whole-number poverty-line percentage, rounded to a hundredth of a percent; worksheet aca-expected-contribution). This worksheet's case is at exactly 200%, where that rounding changes nothing, so no figure here moves. The monthly credit is computed from the unrounded contribution / 12, where Form 8962 rounds line 8b to a whole dollar: a stated limit on the record. Unreviewed until a Codex or Cursor review.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.

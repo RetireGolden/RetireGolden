@@ -487,7 +487,7 @@
           "url": "https://reverse.mortgage/age-requirements"
         },
         {
-          "figures": "Standard Part B $202.90/mo; five IRMAA tiers starting at $109,000 / $218,000 MAGI; Part D IRMAA surcharges $14.50-$91.00/mo.",
+          "figures": "Standard Part B $202.90/mo; five IRMAA tiers starting at $109,000 / $218,000 MAGI; Part B IRMAA totals $284.10-$689.90/mo as CMS publishes them; Part D IRMAA surcharges $14.50-$91.00/mo.",
           "label": "Medicare Part B & IRMAA",
           "publisher": "CMS",
           "url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles"

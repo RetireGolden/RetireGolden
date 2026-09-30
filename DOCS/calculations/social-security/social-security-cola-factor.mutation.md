@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The merge of origin/main (#756) into the slice moved the lines around its hunk, and both sides had re-executed it, so it is re-executed on the merged code. The baseline is green (annualSocialSecurity.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of origin/main (#756) into the slice moved the lines around its hunk, and both sides had re-executed it, so it is re-executed on the merged code. The baseline is green (annualSocialSecurity.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/internal/annualSocialSecurity.evidence.test.ts (4 tests | 2 failed) 33ms
    ❯ social-security-cola-factor — Social Security COLA factor (2)

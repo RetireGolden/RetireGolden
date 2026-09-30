@@ -22,6 +22,18 @@ function round2(n: number): number {
 }
 
 const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable: number; lifetimeTax: number; lifetimeRoth: number }> = {
+  // Re-baselined 2026-09-29 (the Medicare IRMAA amounts come from CMS's published
+  // table): each tier's Part B premium is CMS's published total (284.10, 405.80,
+  // 527.50, 649.20 and 689.90 a month for 2026) instead of the standard premium
+  // times the applicable percentage over 25 (284.06, 405.80, 527.54, 649.28 and
+  // 689.86). Sixteen examples have an IRMAA year at a tier that differs and move
+  // by cents a month a person there, compounded: the ending investable falls
+  // where tier 1 or 5 binds (example-couple -12.77, rmd-irmaa -26.65,
+  // salary-growth-escalation -85.55) and rises where tier 3 or 4 does
+  // (aggressive-saver +470.78, trump-account-head-start +162.65); lifetime tax
+  // and conversions move by cents to a few dollars through the funding and
+  // bracket-fill feedback. No depletion year moves. The before and after of
+  // every year row are in the change's measurement, not repeated here.
   // Re-baselined 2026-09-12 (NEW BASELINE — example-couple and coast-fire only).
   // KY MFJ now carries one joint standard deduction ($3,360, not $6,720); rich
   // state facts count actual conversion/withdrawal sources under per-owner
@@ -126,7 +138,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // the 5.5% default because these accounts follow a glidepath.
   // NEW BASELINE 2026-09-12: pins above superseded; see header note for KY/CO
   // drivers and stateRichAnnual.rules / exampleCoupleStateOwnerCaps authority.
-  'example-couple': { depletionYear: null, endingInvestable: 2_729_452.99, lifetimeTax: 433_212.27, lifetimeRoth: 1_017_094.47 },
+  'example-couple': { depletionYear: null, endingInvestable: 2_729_440.23, lifetimeTax: 433_211.72, lifetimeRoth: 1_017_093.22 },
   'under-saved-single': { depletionYear: 2046, endingInvestable: 0, lifetimeTax: 183_713.99, lifetimeRoth: 0 },
   // bracket-fill-roth: Morgan holds a 700k IRA and the only Roth, Riley a 400k
   // IRA and none. 2026 is the arithmetic in the open: the same 183,448.24
@@ -161,7 +173,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // example stood before the 2026-08-04 owner boundary (conversions 806,028.59,
   // tax 219,203.75, ending 586,419.24, QCDs 52,563.29), when the engine
   // converted both IRAs into Morgan's Roth; now each share lands in its owner's.
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 587_705.63, lifetimeTax: 218_889.9, lifetimeRoth: 808_047.79 },
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 587_702.26, lifetimeTax: 218_889.95, lifetimeRoth: 808_046.21 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%
@@ -181,7 +193,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // 10,925.20 -> 10,924.78 (read at 183: 5.94%); ending investable
   // 579,399.32 -> 579,405.87, lifetime tax 107,861.71 -> 107,862.17.
   'early-retiree-aca': { depletionYear: null, endingInvestable: 579_405.87, lifetimeTax: 107_862.17, lifetimeRoth: 59_661.87 },
-  'rmd-irmaa': { depletionYear: null, endingInvestable: 1_546_195.28, lifetimeTax: 512_837.64, lifetimeRoth: 0 },
+  'rmd-irmaa': { depletionYear: null, endingInvestable: 1_546_168.63, lifetimeTax: 512_839.75, lifetimeRoth: 0 },
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 79_020.67, lifetimeRoth: 0 },
   'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_516.31, lifetimeTax: 732_565.75, lifetimeRoth: 0 },
   'ltc-shock': { depletionYear: 2033, endingInvestable: 0, lifetimeTax: 0, lifetimeRoth: 0 },
@@ -191,7 +203,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // 2060 Roth conversion year and from 2085, so 2060's tax falls 200.64 and
   // 2085 to 2091 fall 127.87 to 2,278.21 a year: ending investable
   // 17,028,288.16 -> 17,036,796.98, lifetime tax 2,806,009.29 -> 2,798,420.94.
-  'early-career-match': { depletionYear: null, endingInvestable: 17_036_796.98, lifetimeTax: 2_798_420.94, lifetimeRoth: 0 },
+  'early-career-match': { depletionYear: null, endingInvestable: 17_036_771.42, lifetimeTax: 2_798_420.94, lifetimeRoth: 0 },
   // Reviewed 2026-09-28 (D-2027-PUBLISHED-FIGURES, the survey of every state):
   // Washington taxes income above a 1,000,000 deduction at 9.9% from 2028
   // (ESSB 6346, chapter 238, Laws of 2026; Initiative 645 on the November 3,
@@ -200,7 +212,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // 2089 and 2090 and 2,202,000 for 2091, and the household's Washington base
   // income peaks at 2,023,808 in 2091, so it never owes the tax and nothing
   // here moves.
-  'aggressive-saver': { depletionYear: null, endingInvestable: 138_916_241.94, lifetimeTax: 6_849_942.2, lifetimeRoth: 0 },
+  'aggressive-saver': { depletionYear: null, endingInvestable: 138_916_712.73, lifetimeTax: 6_849_942.2, lifetimeRoth: 0 },
   // coast-fire reviewed 2026-07-16: CO standard deduction moved to the 2026
   // federal-equivalent ($15,750 -> $16,100) in the state-pack staleness sweep,
   // lowering lifetime CO tax slightly and raising ending assets to match.
@@ -247,7 +259,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // and indexed breakpoints single $4,050/$10,200 -> $4,550/$11,400 (`or-lro-2026-rate-
   // schedule-and-standard-deduction`). barista-fire is the only curated OR example.
   // Observed characterization only — engine record/fixtures supply the legal oracle.
-  'barista-fire': { depletionYear: null, endingInvestable: 14_616_509.01, lifetimeTax: 2_094_166.96, lifetimeRoth: 0 },
+  'barista-fire': { depletionYear: null, endingInvestable: 14_616_478.79, lifetimeTax: 2_094_166.96, lifetimeRoth: 0 },
   // bridge-early-retirement re-baselined 2026-08-04 for the Notice 2022-6
   // section 3.02(a) correction. It is the one example carrying a 72(t) SEPP
   // election, and its payment was sized from the engine's SSA period table
@@ -273,18 +285,18 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // bands end from 2031, and this household reaches them only in 2070 and 2071,
   // whose tax falls 178.38 and 370.23: ending investable 11,977,572.35 ->
   // 11,978,172.73, lifetime tax 1,451,864.02 -> 1,451,315.41.
-  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_978_172.73, lifetimeTax: 1_451_315.41, lifetimeRoth: 0 },
-  'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_918.82, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },
+  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_978_137.11, lifetimeTax: 1_451_315.41, lifetimeRoth: 0 },
+  'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_988.96, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },
   // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES): the 2027 HSA limit is the
   // published 4,500 (Rev. Proc. 2026-24), not 4,400 grown to 4,510, and later
   // years grow from it. The capped HSA takes 10 less in 2027 and a little less
   // every later working year: ending investable falls 240.41, lifetime tax and
   // penalties rise 186.04.
   'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_493_410.11, lifetimeTax: 808_136.54, lifetimeRoth: 0 },
-  'salary-growth-escalation': { depletionYear: null, endingInvestable: 46_295_269.76, lifetimeTax: 2_552_250.15, lifetimeRoth: 0 },
+  'salary-growth-escalation': { depletionYear: null, endingInvestable: 46_295_184.2, lifetimeTax: 2_552_250.15, lifetimeRoth: 0 },
   // New July enhancement examples (positive/negative cases for guardrails, annuities+estate, allocation+MC v2, HSA/property depth)
   'guardrails-flex-goals': { depletionYear: 2041, endingInvestable: 0, lifetimeTax: 7_903.47, lifetimeRoth: 0 },
-  'annuity-purchases-estate': { depletionYear: null, endingInvestable: 3_254_253.2, lifetimeTax: 342_232.06, lifetimeRoth: 857_968.22 },
+  'annuity-purchases-estate': { depletionYear: null, endingInvestable: 3_254_271.75, lifetimeTax: 342_232.06, lifetimeRoth: 857_968.22 },
   // Re-baselined 2026-09-26 for the IRS rounding of the ACA applicable
   // percentage (decision D-ACA-2027-TABLE): the 2026 credit, at 180.5% of the
   // 15,650 poverty line, is read at 180 and rounded to 5.64% (unrounded
@@ -292,7 +304,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // little less taxable income: ending investable 1,272,656.33 ->
   // 1,272,697.21, lifetime tax 347,018.53 -> 347,014.81, lifetime conversions
   // 765,919.48 -> 765,933.31.
-  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_697.21, lifetimeTax: 347_014.81, lifetimeRoth: 765_933.31 },
+  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_713.1, lifetimeTax: 347_013.89, lifetimeRoth: 765_935.72 },
   // Re-baselined for exact committed Form 8606 line-8 character: generated
   // conversions now size gross dollars against their taxable fraction.
   // Re-baselined 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is priced, a
@@ -302,11 +314,11 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // 184,163.05 rather than 180,171.15: lifetime conversions rise by 3,991.90.
   // Tax falls 344.18 in 2027 and 975.16 in 2032 and rises 775.77 in 2029, so
   // lifetime tax goes 32,843.21 -> 32,299.64; the plan still depletes in 2043.
-  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 32_299.64, lifetimeRoth: 184_163.05 },
+  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 32_299.65, lifetimeRoth: 184_163.05 },
   // A-B control variants for direct Plan Compare (fixed target, no annuity, static allocation, no HSA)
   'fixed-target-spending': { depletionYear: 2034, endingInvestable: 0, lifetimeTax: 7_215.17, lifetimeRoth: 0 },
-  'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3_684_430.57, lifetimeTax: 278_493.11, lifetimeRoth: 1_230_830.55 },
-  'static-allocation-control': { depletionYear: null, endingInvestable: 840_094.51, lifetimeTax: 328_960.33, lifetimeRoth: 759_850.34 },
+  'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3_684_449.12, lifetimeTax: 278_493.11, lifetimeRoth: 1_230_830.55 },
+  'static-allocation-control': { depletionYear: null, endingInvestable: 840_109.18, lifetimeTax: 328_960.07, lifetimeRoth: 759_853.75 },
   'brokerage-no-hsa': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 24_137.83, lifetimeRoth: 0 },
   // A-B decision pairs (savings location for early retirement; Trump-account IRA head start).
   // The A-vs-B deltas are the story: the all-401(k) control pays $83.3k of
@@ -338,8 +350,8 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // Pack used as future nominal stand-in, not future statutory certification. Engine
   // record/atomic/full-plan fixtures supply the legal oracle; these numbers only
   // characterize the observed long-horizon result -- not a new oracle.
-  'no-head-start-grad': { depletionYear: null, endingInvestable: 17_961_668.68, lifetimeTax: 3_328_628.63, lifetimeRoth: 0 },
-  'trump-account-head-start': { depletionYear: null, endingInvestable: 26_331_100.59, lifetimeTax: 4_835_379.54, lifetimeRoth: 0 },
+  'no-head-start-grad': { depletionYear: null, endingInvestable: 17_961_593.53, lifetimeTax: 3_328_628.63, lifetimeRoth: 0 },
+  'trump-account-head-start': { depletionYear: null, endingInvestable: 26_331_263.24, lifetimeTax: 4_835_379.54, lifetimeRoth: 0 },
   'inherited-ira-beneficiary': { depletionYear: 2032, endingInvestable: 0, lifetimeTax: 49_647.74, lifetimeRoth: 0 },
 }
 

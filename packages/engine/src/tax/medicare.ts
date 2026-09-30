@@ -37,18 +37,18 @@ export function medicareAnnualPremiumPerPerson(
   const base = pack.medicare.partBStandardMonthly
   let partDSurchargeMonthly = 0
   let partDSurchargeUnverified = false
-  let applicablePct = 25
+  let partBTotalMonthly = base
   if (tier > 0) {
     const t = pack.medicare.irmaaTiers[tier - 1]!
-    applicablePct = t.applicablePct
+    partBTotalMonthly = t.partBTotalMonthly
     if (t.partDSurchargeMonthly === null) {
       partDSurchargeUnverified = true
     } else {
       partDSurchargeMonthly = t.partDSurchargeMonthly
     }
   }
-  // Standard premium is 25% of program cost; IRMAA tiers pay a larger share.
-  const partBMonthly = base * (applicablePct / 25) * premiumScale
+  // CMS's published tier total; a projected year grows it as it grows the standard premium.
+  const partBMonthly = partBTotalMonthly * premiumScale
 
   return {
     partBAnnual: partBMonthly * 12,

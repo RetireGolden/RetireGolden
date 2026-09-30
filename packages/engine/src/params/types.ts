@@ -42,10 +42,15 @@ export interface IrmaaTier {
   /** Tier applies when MAGI (2-year lookback) exceeds this. */
   magiOver: PerStatus<number>
   /**
-   * Statutory share of program cost (35/50/65/80/85). Standard premium is 25%,
-   * so Part B total = partBStandardMonthly * applicablePct / 25.
+   * Statutory share of program cost (35/50/65/80/85; the standard premium is
+   * 25%), 42 USC 1395r(i)(3)(C). Not used to price a premium: CMS derives each
+   * tier's adjustment from the unrounded actuarial rate, so the standard
+   * premium times applicablePct / 25 misses its published total by cents
+   * (2026 tier 4: 649.28 against 649.20). The ledger reads partBTotalMonthly.
    */
   applicablePct: number
+  /** CMS's published total monthly Part B premium for the tier (standard plus the income-related adjustment). */
+  partBTotalMonthly: number
   /** Published monthly Part D surcharge. null = not yet verified for this year. */
   partDSurchargeMonthly: number | null
 }

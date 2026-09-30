@@ -46,7 +46,7 @@ Unpriced-credit fixture: 2028's figures are not published, so 2028 is unpriced f
 
 No-stream fixture: generated candidates `= 0`; `combinationsEvaluated = 1 + 0 = 1`.
 
-Current-claim-wins fixture: two candidates, `62y0m` and `67y0m (FRA)`, each with an empty conversion schedule (no traditional balance). A candidate replaces the current claim only when its `jointExactEstate − currentClaimExactEstate > $1,000`. With zero returns and a planning age of 95, claiming at 70 pays 1.24 × 25 = 31 PIA-years, at 67 1.00 × 28 = 28 and at 62 0.70 × 33 = 23.1, so neither candidate clears the margin: `winningClaimLabel = null`, `winningClaimPatch = null`, and `jointExactEstate = currentClaimExactEstate`. The shared dollar value is run-pinned.
+Current-claim-wins fixture: two candidates, `62y0m` and `67y0m (FRA)`, each with an empty conversion schedule (no traditional balance). A candidate replaces the current claim only when its `jointExactEstate − currentClaimExactEstate > $1,000`. With zero returns and a planning age of 95 the last projection year is 1966 + 95 = 2061, and a claim pays from its claim year through 2061: claiming at 70 (2036) pays 1.24 × 26 = 32.24 PIA-years, at 67 (2033) 1.00 × 29 = 29 and at 62 (2028) 0.70 × 34 = 23.8, so neither candidate clears the margin: `winningClaimLabel = null`, `winningClaimPatch = null`, and `jointExactEstate = currentClaimExactEstate`. The shared dollar value is run-pinned.
 
 ## Expected
 
@@ -55,6 +55,7 @@ Current-claim-wins fixture: two candidates, `62y0m` and `67y0m (FRA)`, each with
 - `claim-age-co-optimization-current-claim-exact-estate`: run-pinned, no number. Fixture tolerance absolute `$0.005`.
 - `claim-age-co-optimization-joint-exact-estate`: run-pinned, and exactly equal to the current-claim estate in the current-claim-wins fixture. Fixture tolerance absolute `$0.005`.
 - In the current-claim-wins, already-claimed and unpriced-credit fixtures, `winningClaimLabel` and `winningClaimPatch` are exactly `null`.
+- Current-claim-wins fixture, the Social Security the plan receives in PIA-years (the sum over the years of the benefit over 12 × $2,600): `32.24` claiming at 70, `29` at 67 and `23.8` at 62. Tolerance absolute `1e-9`.
 
 ## Wrong readings
 
@@ -67,6 +68,7 @@ Current-claim-wins fixture: two candidates, `62y0m` and `67y0m (FRA)`, each with
 - Refusing a couple because one claim is made: the partly-claimed couple's open claim would not be searched (1 combination, not 3).
 - Moving a claim already made: the partly-claimed couple's Pat would be offered 67 (FRA) and 70, a claim re-made.
 - Switching at a `$1,000` estate advantage treats the threshold as inclusive; the required comparison is more than `$1,000`.
+- Ending the benefits a year before the last projection year (through 2060): 31, 28 and 23.1 PIA-years, the figures this worksheet gave before the 2026-09-29 review.
 
 ## Family
 
@@ -77,3 +79,7 @@ feeds: `optimizer-recommended-conversion-annual` through each claim candidate's 
 ## Provenance
 
 Derived by: codex (gpt-5.6-terra), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-twelve.md in this directory. Revision 2026-09-22: the current-claim-wins case was re-derived on the schema fact that planningAge is a whole number of years; the null winner follows from the $1,000 switch margin over two evaluated candidates, not from a planning age past the current claim. Re-derived by codex without executing the engine. Revision 2026-09-25: the middle claim age became the person’s own FRA (decision D-CLAIM-AGE-FRA-LABEL), so the one-stream and current-claim-wins cases name 66y2m for the 1956-01-01 birth; edited by Claude to match the code, with the counts, the null winner and the run-pinned estates unchanged. Revision 2026-09-28 (B2-P1 slice 5): the refusals (a claim already made, an unpriced credit year) and the dropped past canonical ages are the slice 5 derivation's (evidence/b2p1-slice5-derivation.md, problems 4 and 7, with the independent check's C3 and C4); the fixtures were restated by claude (opus 5.5) so the open one has candidates in the future, the old 1956 fixture is now the past-ages case, and the current-claim-wins estate was re-pinned by one run. Reviewed by: not yet reviewed after this revision.
+
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`): the current-claim-wins arithmetic stopped the benefits in 2060, a year short; a planning age of 95 for a 1966 birth runs the plan through 2061, and the engine pays through it (a run of the fixture gives 26, 29 and 34 benefit years). The PIA-years are 32.24, 29 and 23.8, not 31, 28 and 23.1; the conclusion, that age 70 pays most and no candidate clears the margin, is unchanged, and the evidence test now pins the three figures. The estate dollars stay run-pinned, as the Expected section says. Revised by claude (opus 5.5); unreviewed until the reviewer checks the revision.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

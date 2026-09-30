@@ -122,7 +122,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/compareSummary.evidence.test.ts"
@@ -580,7 +580,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/allocation/assetClasses.evidence.test.ts"
@@ -715,7 +715,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/allocation/assetClasses.evidence.test.ts"
@@ -783,7 +783,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "grok"
       },
       "fixtureFiles": [
         "packages/engine/src/allocation/assetClasses.evidence.test.ts"
@@ -927,7 +927,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/yearFigures.evidence.test.ts"
@@ -1123,7 +1123,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/pensionElection.evidence.test.ts"

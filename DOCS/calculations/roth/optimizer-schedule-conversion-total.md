@@ -150,6 +150,8 @@ feeds: none. Reads `optimizer-recommended-conversion-annual`.
 
 Derived by: claude (opus 5.5), 2026-09-27; cases U to Y by hand and `scripts/independent.mjs`; the example rows and the two sentences from the scratch run, with the page's branch conditions replicated. Checked by: a separate Claude (Opus 5.5) instance that did not derive it (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`): every case and table figure reproduces; its corrections 5 to 8 are applied above. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
 
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`.
+
 ## Implementation (B2-P1 slice 3, 2026-09-27)
 
 - **Correction 5**: the engine's three cleaned-total copies read `cleanedSchedule.conversionTotal`.

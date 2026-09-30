@@ -23,6 +23,7 @@ describeCalculation(
         spansThree: [2, 8],
         spansTwo: [3],
         floatCase: { needs: [1_028.55, 2_057.21, 0], investable: [100_000.01, 0, 0], spans: [1, 1] },
+        threeSpanCase: { needs: [1_251.79, 84_015.57, 138_302.07], investable: [822_519.53, 0, 0], spans: [1, 1, 1] },
       },
       expected: {
         three: [
@@ -41,6 +42,8 @@ describeCalculation(
         ],
         floatBuckets: [1_028.55, 2_057.21, 96_914.24999999999],
         floatSum: 100_000.00999999998,
+        threeSpanBuckets: [1_251.79, 84_015.57, 138_302.07, 598_950.0999999999],
+        threeSpanSum: 822_519.5299999998,
         nextYearStartWrongReadingBucket1: 50_000,
       },
       tolerance: { abs: 0 },
@@ -55,6 +58,7 @@ describeCalculation(
       spansThree: number[]
       spansTwo: number[]
       floatCase: { needs: number[]; investable: number[]; spans: number[] }
+      threeSpanCase: { needs: number[]; investable: number[]; spans: number[] }
     }
     const expected = example.expected as Record<string, unknown>
 
@@ -76,13 +80,24 @@ describeCalculation(
       expect(BUCKET_LENS_SPANS.two).toEqual(inputs.spansTwo)
     })
 
-    it('adds to the investable total to within one unit in the last place, not exactly', () => {
+    it('adds to the investable total to within 2 × spans.length units in the last place, not exactly', () => {
+      // One unit in the last place of a positive total below 2^53 (exact for these totals).
+      const ulp = (x: number) => 2 ** (Math.floor(Math.log2(x)) - 52)
       const c = inputs.floatCase
       const lens = bucketLens(rows(2026, c.needs, c.investable), c.spans)
       expect(lens[0]!.buckets).toEqual(expected.floatBuckets)
       const sum = lens[0]!.buckets.reduce((a, b) => a + b, 0)
       expect(sum).toBe(expected.floatSum)
       expect(sum).not.toBe(c.investable[0])
+      expect(Math.abs(sum - c.investable[0]!)).toBeLessThanOrEqual(2 * c.spans.length * ulp(c.investable[0]!))
+      const t = inputs.threeSpanCase
+      const three = bucketLens(rows(2026, t.needs, t.investable), t.spans)
+      expect(three[0]!.buckets).toEqual(expected.threeSpanBuckets)
+      const threeSum = three[0]!.buckets.reduce((a, b) => a + b, 0)
+      expect(threeSum).toBe(expected.threeSpanSum)
+      // Two units below the total: one unit is not a bound for three spans, 2 × 3 units is.
+      expect(t.investable[0]! - threeSum).toBe(2 * ulp(t.investable[0]!))
+      expect(Math.abs(threeSum - t.investable[0]!)).toBeLessThanOrEqual(2 * t.spans.length * ulp(t.investable[0]!))
     })
 
     it('refuses a span that is not a positive whole number and a year without a finite need', () => {

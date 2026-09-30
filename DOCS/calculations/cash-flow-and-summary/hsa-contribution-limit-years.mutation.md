@@ -28,10 +28,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/params/hsaL
 
 ## Captured failing output
 
-The module doc of hsaLimitYears.ts gained a paragraph on the years before the earliest published one (review round one of #762, issue 9), moving the mutated lines down five. The baseline is green (hsaLimitYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The module doc of hsaLimitYears.ts gained a paragraph on the years before the earliest published one (review round one of #762, issue 9), moving the mutated lines down five. The baseline is green (hsaLimitYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/params/hsaLimitYears.evidence.test.ts (3 tests | 3 failed) 42ms
    ❯ hsa-contribution-limit-years — HSA contribution limits by year (3)

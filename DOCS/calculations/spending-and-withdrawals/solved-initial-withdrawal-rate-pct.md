@@ -95,6 +95,8 @@ feeds: none. Reads `solved-spending-rounded-to-hundred` (through `maxBaseAnnual`
 
 Derived by: claude (opus 5.5), 2026-09-26; expected values by hand and `scripts/independent.mjs` (no engine import); example rates from the scratch-copy engine run (`scripts/engine-solver.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
 
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.
+
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 Implemented as derived, on the published amount (which is exact under guardrails when the rounded amount fails; see `solved-spending-rounded-to-hundred`). `initialWithdrawalRatePct` also refuses a negative spend. The rate is taken over `startingInvestableOf` of the plan the solve priced, so the stale window the check confirmed (the page's current balances beside a previous answer) is gone. Re-measured on the 27 examples that answer after #748: every printed rate is unchanged (for example rmd-irmaa 5.71, early-retiree-aca 5.92); the evidence case pins the bit patterns of cases A and C.

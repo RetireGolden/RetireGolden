@@ -35,7 +35,7 @@ export interface BucketYearRow {
   year: number
   /** This year's published netPortfolioNeed (nominal, >= 0). */
   need: number
-  /** One balance per bucket, spans.length + 1 of them; they add to investableTotal to within one unit in the last place. */
+  /** One balance per bucket, spans.length + 1 of them; they add to investableTotal to within 2 * spans.length units in the last place. */
   buckets: number[]
   investableTotal: number
 }
@@ -57,6 +57,8 @@ Five-year projection: needs `[10,000, 20,000, 30,000, 40,000, 50,000]`, investab
 
 Floating-point case: one year with `T = 100,000.01`, needs `[1,028.55, 2,057.21, 0]` (years 0 to 2), spans `[1, 1]`.
 
+Three-span case (added 2026-09-29, the Codex review's counterexample): one year with `T = 822,519.53`, needs `[1,251.79, 84,015.57, 138,302.07]` (years 0 to 2), spans `[1, 1, 1]`.
+
 ## Arithmetic
 
 Spans `[2, 8]`:
@@ -68,7 +70,11 @@ Spans `[2, 8]`:
 
 Spans `[3]`: year 0 `60,000` → 60,000, growth 140,000; year 1 `90,000` → 90,000, growth 60,000; year 2 `120,000` capped at 100,000, growth 0; year 3 `90,000` capped at 60,000; year 4 `50,000` capped at 20,000.
 
-Floating-point case: bucket 1 = 1,028.55, bucket 2 = 2,057.21, growth `(100,000.01 − 1,028.55) − 2,057.21 = 96,914.24999999999`; their sum is `100,000.00999999998`, not `100,000.01` (difference `−1.4551915228366852e−11`).
+Floating-point case: bucket 1 = 1,028.55, bucket 2 = 2,057.21, growth `(100,000.01 − 1,028.55) − 2,057.21 = 96,914.24999999999`; their sum is `100,000.00999999998`, not `100,000.01` (difference `−1.4551915228366852e−11`, one unit in the last place of the total, `2^−36`).
+
+Three-span case: buckets 1,251.79, 84,015.57 and 138,302.07, growth `((822,519.53 − 1,251.79) − 84,015.57) − 138,302.07 = 598,950.0999999999`; their left-to-right sum is `822,519.5299999998`, two units in the last place (`2 × 2^−33 = 2.3283064365386963e−10`) below the total. One unit in the last place is therefore not a bound for three spans.
+
+The bound that holds. With `K = spans.length`, the buckets take `K` subtractions (`R_{k+1} = R_k − b_k`) and their left-to-right sum takes `K` additions. In binary64 with round to nearest each operation's result is off by at most `u = 2^−53` of itself. Every subtraction result is at most `T` (`0 ≤ b_k ≤ R_k ≤ T`), and every partial sum is at most `T` plus the roundings before it, so with `M` the largest result, `M ≤ T + 2K·u·M` and `|sum − T| ≤ 2K·u·M ≤ 2K·u·T / (1 − 2K·u)`. As `u·T` is under one unit in the last place of `T`, and the sum and `T` differ by a whole number of half units, `|sum − T|` is at most `2K` units in the last place of `T`: at most 4 for the `[2, 8]` preset and 2 for `[3]`. The example library's rows (both presets) differ by at most one.
 
 ## Expected
 
@@ -80,7 +86,7 @@ Floating-point case: bucket 1 = 1,028.55, bucket 2 = 2,057.21, growth `(100,000.
 | 3 | 60,000 / 0 / 0 | 60,000 / 0 |
 | 4 | 20,000 / 0 / 0 | 20,000 / 0 |
 
-Tolerance `exact`. `need` in each row equals that year's need. The floating-point case returns `[1028.55, 2057.21, 96914.24999999999]` exactly. `bucketLens(result, [0])`, `[2.5]` and `[-1]` throw; a row with `netPortfolioNeed` undefined throws naming its year.
+Tolerance `exact`. `need` in each row equals that year's need. The floating-point case returns `[1028.55, 2057.21, 96914.24999999999]` exactly, whose sum is `100,000.00999999998`. The three-span case returns `[1251.79, 84015.57, 138302.07, 598950.0999999999]` exactly, whose sum is `822,519.5299999998`. Each sum is within `2 × spans.length` units in the last place of its total. `bucketLens(result, [0])`, `[2.5]` and `[-1]` throw; a row with `netPortfolioNeed` undefined throws naming its year.
 
 Example library (scratch-copy run, 29 examples, both presets, 2,420 year-rows): the engine function is the UI's code, so every bucket is bit-identical. The buckets add to `investableTotal` exactly in 2,297 rows and differ by one unit in the last place in 123 (largest relative difference `2.2e−16`); the census meaning and the card copy ("The buckets sum exactly to the investable total every year") overstate this by that residue.
 
@@ -119,6 +125,10 @@ feeds: none. Reads `portfolio-need-annual` and `accounts-investable-total-annual
 
 Derived by: claude (opus 5.5), 2026-09-26; the five-year and floating-point cases by hand and `scripts/independent.mjs`; example counts from the scratch-copy run (`scripts/engine-cashflow-buckets.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
 
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`): the claim that the buckets always add to the total within one unit in the last place fails for three spans (the review's counterexample, now the three-span case). The record, the doc comments and this worksheet state the bound that holds, `2 × spans.length` units, derived under Arithmetic, and the evidence test pins the three-span case and checks both floating-point cases against that bound. No other figure changes. Revised by claude (opus 5.5); unreviewed until the reviewer checks the revision.
+
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 Moved verbatim with the refusals (open question 10); the planner module keeps only the preset labels and its tests moved to the engine. Measured on the example library at RetireGolden `277a4ab8` (#752's first commit, on `ed9ef8f9`; 2,420 rows, both presets): the engine rows equal the retired function's bit for bit; the buckets add to the investable total exactly in 2,293 rows and differ by one unit in the last place in 127 (the derivation's 123 was measured on #747; the premium-credit pricing has moved the ledger since). These counts are measurements of the library at that commit; the parity test (`planner-ui/src/planner/slice2Figures.parity.test.ts`) pins each row against the retired function, not the counts. The card's whole-dollar copy stays (open question 11).
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

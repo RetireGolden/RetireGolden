@@ -34,3 +34,5 @@ For a 2x2 correlation matrix `[[1,r],[r,1]]`, triangular multiplication gives `L
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. That first version was reviewed by cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
 Revision, 2026-09-26 (the nothing-silent decision of 2026-09-25): implemented by claude-subagent. A pivot at or below 0 is now refused instead of being raised to 1e-12, and a positive pivot below 1e-12 is now factored exactly; the claim, the domain and the refusal case above were rewritten for it. The rewrite's implementation was reviewed 2026-09-26 by another Claude Opus instance, but the catalog requires the reviewer to be a different agent family from the author of the change, and both are Claude, so the record is unreviewed until a Codex or Cursor review of the rewrite. The 2x2 example and its expected factor are unchanged.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.

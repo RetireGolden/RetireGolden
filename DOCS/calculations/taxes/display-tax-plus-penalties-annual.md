@@ -40,3 +40,5 @@ feeds: none. Reads `tax-total-annual` and `tax-penalties-annual`.
 ## Provenance
 
 Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; values checked with plain JavaScript arithmetic, no engine import. Checked by a second claude agent that did not derive it, which confirmed every value. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

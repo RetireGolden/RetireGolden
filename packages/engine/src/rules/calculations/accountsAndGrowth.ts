@@ -91,7 +91,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#weightsToVector'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'allocation-glidepath-interpolation': {
     title: 'Glidepath compilation: linear interpolation with flat endpoints, staged as a step function',
@@ -138,7 +138,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/allocation/assetClasses.ts#lerpVectors',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'allocation-blended-expected-return': {
     title: 'Blended expected nominal return of a weight vector',
@@ -303,7 +303,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#driftWeights'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'allocation-rebalance-turnover': {
     title: 'Rebalance turnover: the fraction sold to reach the target weights',
@@ -485,7 +485,7 @@ export const accountsAndGrowthRecords = {
     verifiedOn: '2026-09-26',
     // Restated 2026-09-26 (B2-P1 slice 1); the original codex derivation and
     // its cursor review cover the earlier text, not the restatement.
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'estate-to-charity': {
     title: 'Ending estate passing to charity',
@@ -635,7 +635,7 @@ export const accountsAndGrowthRecords = {
     // Restated 2026-09-27 (decision D-TREASURY): the worksheet's figures were
     // recomputed on the official curve row, so the record is unreviewed until
     // a reviewer of another family recomputes them.
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'display-balance-by-category-annual': {
     title: 'Balances by account type, one value per logical account',
@@ -679,6 +679,6 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/projection/internal/types/result.ts#YearResult.unassignedCash',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

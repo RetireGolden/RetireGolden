@@ -76,3 +76,5 @@ Revision later on 2026-09-28 (the independent review's N3): cases 6 and 7 added 
 Revision 2026-09-28 (independent review M4): the null retirement age follows the shared rule; the claim, a wrong reading and a limit are restated. The five cases are unchanged.
 
 Revision 2026-09-29 (round-one review of #765, issues 1 and 3): a retirement age with wages paid past it counts from the first year without those wages (`household-later-retirement`, rule `wagesPastRetirementAge`); case 8 added, cases 1 to 7 unchanged. Revised by claude (Opus 5.5). Reviewed by: unreviewed.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

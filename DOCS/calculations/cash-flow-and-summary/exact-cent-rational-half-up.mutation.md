@@ -30,10 +30,10 @@ npx.cmd vitest run src/actions/exactCentProRata.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/actions/exactCentProRata.evidence.test.ts (3 tests | 1 failed) 5ms
    ❯ exact-cent-rational-half-up — Exact cent rational half up (1)

@@ -1132,8 +1132,8 @@ describe('healthcare and penalties', () => {
       expect(observed).not.toEqual(readings.sameYearIncome)
       const healthInfl = (y: number) => Math.pow(1.03, y - 2026) // inflation 0 + 3% healthcare extra
       expect(baselineYear.expenses.healthcare).toBeCloseTo(202.9 * 12 * healthInfl(2028), 4)
-      // 300k (vs thresholds unscaled at 0% inflation) -> tier 4 = 3.2× Part B + $83.30/mo Part D.
-      expect(twoYearsLater.expenses.healthcare).toBeCloseTo((202.9 * 3.2 + 83.3) * 12 * healthInfl(2029), 4)
+      // 300k (vs thresholds unscaled at 0% inflation) -> tier 4 = CMS's $649.20 Part B + $83.30/mo Part D.
+      expect(twoYearsLater.expenses.healthcare).toBeCloseTo((649.2 + 83.3) * 12 * healthInfl(2029), 4)
     })
   })
 

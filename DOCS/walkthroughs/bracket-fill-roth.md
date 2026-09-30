@@ -1463,6 +1463,25 @@ from 2027 (part IV). Warnings are projection-level (`ProjectionResult.warnings`)
 
 # Part IV: year 2029 for the household as decided (with 2027 and 2028 as bridges)
 
+**Revision 2026-09-29 (the Medicare IRMAA amounts come from CMS's published table).** The engine now reads CMS's
+published total Part B premium for each IRMAA tier instead of the standard premium times the applicable percentage over
+25 (worksheet `medicare-irmaa-first-tier-boundary`). 2028 is the only year here in a tier where the two differ: at tier
+1, Part B is 284.10 × 12 × 1.113025 = 3,794.524830 a person, not 202.90 × 35/25 × 12 × 1.113025 = 3,793.990578, so §3 C3's
+`medicarePremiums` is **7,976.38236** (was 7,975.313856), C4's healthcare **14,654.53236** (was 14,653.463856), and the
+2028 fixed point draws about 1.41 more from Morgan's IRA: the ledger's 2028 `magi` is 354,300.25168441515 (was
+354,298.8457519252), its `tax` 60,527.28290425964 (was 60,526.9454804621), and **Morgan's 2028 close
+177,683.12712224785** (was 177,684.6033513623). 2027 and 2029's Medicare rows do not move (2027 is at tier 0 and
+2029 at tier 2, whose published total, 405.80, equals 202.90 × 50/25), and the 2027 and 2028 executed conversions
+keep their cents. 2029 opens on the new Morgan close, so Morgan's RMD is 7,497.18 (was 7,497.24), the net RMD cash
+4,781.38 (was 4,781.44), the household root 210,091.9020 and the traced landing 210,091.89606565362 (was
+210,091.83500391064), executed as 21,009,190 cents (was 21,009,184): Morgan 97,295.11 and Riley 112,796.79 (were
+97,295.52 and 112,796.32). Then `magi` 384,777.83 (was 384,777.75), `tax` 67,229.28 (was 67,229.26),
+`netPortfolioNeed` 123,674.92 (was 123,674.90), the IRA withdrawals 134,443.82 (was 134,443.80), Riley's IRA
+40,426.65 (was 40,428.28), Morgan's Roth IRA 562,512.79 (was 562,513.22), Riley's 377,005.09 (was 377,004.59) and the
+investable total 979,944.52 (was 979,946.09). The tables below keep the figures as first derived; the walkthrough's
+rows (`packages/planner-ui/src/planner/examples/walkthroughs/bracketFillRoth.walkthrough.ts`) and their evidence
+(`DOCS/operations/walkthroughs/bracket-fill-roth.json`) carry the moved ones.
+
 **Provenance.** As part III (same session, same checkout, same method and exclusions). I start from the part III 2026
 closes as my replay and exact companion reproduce them and carry them forward; nothing is taken from the old household's
 part II except methods and the calibration.

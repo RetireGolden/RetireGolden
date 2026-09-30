@@ -36,6 +36,8 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-slice-seven.md in this directory.
 
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.
+
 ## Restated (B2-P1 slice 3, 2026-09-27)
 
 The helper moved, unchanged in its arithmetic, from a private function of `scenarios/comparison.ts` to the exported leaf module `scenarios/scalarComparison.ts` as `compareNullableScalars`; a present value that is not finite is refused with a `RangeError`, and a negative zero is published as 0. It serves the scenario comparison's nullable cells (the depletion year, the spending-capacity figures and the annual rows where only one horizon has the year) and the Compare page's depletion age; the candidate evaluation's deltas (`decisions/evaluateCandidate.ts`) are plain subtractions and do not use it. The evidence asserts the worksheet's two cases directly on the exported helper as well as through `compareScenarioPlans`. The record is `unreviewed` again because its statement and pins changed. Derivation and check: RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-derivation.md` and `b2p1-slice3-check.md`.

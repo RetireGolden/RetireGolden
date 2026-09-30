@@ -83,7 +83,7 @@ export const rothRecords = {
     // lane checks the rewording; Codex derived and Cursor reviewed the case.
     // The owner-split limit (decision D-BRACKET-FILL-ROTH-EXAMPLE) is also
     // unreviewed.
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'conversion-schedule-total': {
     title: 'Conversion schedule total',
@@ -123,6 +123,6 @@ export const rothRecords = {
       'packages/engine/src/decisions/evaluateCandidate.ts#buildConversionExecution',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

@@ -30,10 +30,10 @@ npx.cmd vitest run src/projection/moneyTolerance.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/moneyTolerance.evidence.test.ts (1 test | 1 failed) 4ms
    ❯ projection-money-tolerance-thresholds — Projection money tolerance thresholds (1)

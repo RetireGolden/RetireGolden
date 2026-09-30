@@ -93,7 +93,7 @@ export const rmdRecords = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#qcdLimitPublishedFor',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'rmd-applicable-age-attain-year': {
     title: 'RMD applicable age and attain year',

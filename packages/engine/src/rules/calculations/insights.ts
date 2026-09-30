@@ -345,7 +345,7 @@ export const insightsRecords = {
     // today's dollars, while both deltas are differences of nominal summary
     // figures, as InsightImpact's comments and the census say. The record is
     // unreviewed until the review lane checks the correction.
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'monte-carlo-success-rate-comparison': {
     title: 'Monte Carlo success rate change on shared paths',
@@ -382,6 +382,6 @@ export const insightsRecords = {
       'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

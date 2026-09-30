@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed 2026-09-27 for the review of decision D-ACA-2027-TABLE: #744 removed the original anchor (the delayed credit became a rate by birth date, and the 2/3 of 1 percent a default parameter), so the receipt was re-anchored on that default with the equivalent mutation described above. The baseline is green (benefitFactor.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 for the review of decision D-ACA-2027-TABLE: #744 removed the original anchor (the delayed credit became a rate by birth date, and the 2/3 of 1 percent a default parameter), so the receipt was re-anchored on that default with the equivalent mutation described above. The baseline is green (benefitFactor.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine7/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/socialSecurity/benefitFactor.evidence.test.ts (7 tests | 1 failed) 6ms
    ❯ delayed-retirement-credit-factor — Delayed retirement credit factor (4)

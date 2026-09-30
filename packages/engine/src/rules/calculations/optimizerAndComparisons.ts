@@ -93,7 +93,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/scenarios/comparison.ts#compareScenarioPlans',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'scenario-scalar-comparison': {
     title: 'Scenario scalar comparison',
@@ -124,7 +124,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/scenarios/comparison.ts#compareScenarioPlans',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'swr-rule-depletion-year': {
     title: 'Swr rule depletion year',
@@ -319,7 +319,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'exact-ledger-traditional-depletion': {
     title: 'Full projection traditional depletion',
@@ -401,7 +401,7 @@ export const optimizerAndComparisonsRecords = {
     verifiedOn: '2026-09-26',
     // Restated 2026-09-26 (B2-P1 slice 1); the original codex derivation and
     // its cursor review cover the earlier text, not the restatement.
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'exact-ledger-tournament-margin': {
     title: 'Full projection tournament margin',
@@ -496,6 +496,7 @@ export const optimizerAndComparisonsRecords = {
     },
     limits: [
       'The count includes the current claim and excludes the stream\'s own current age as a candidate: an open stream claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream, or whose claims are all made, still evaluates one. The middle point is the person\'s own full retirement age from socialSecurity/nra.ts#fraForBirthYear. The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the test\'s example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality: with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce',
+      'The two estate dollars (1,130,409.20 in the current-claim-wins case) stay pinned from one engine run. Nothing outside the engine derives them, so the test shows only that the run has not changed, not that the figure is right; the independent review of 2026-09-29 asked for an outside derivation, and none is made',
       'It differs from the Social Security page\'s whole-plan sweep (social-security-claim-age-sweep): it re-optimizes conversions for each candidate but tries only 62, full retirement age and 70, one stream at a time, compares on the estate alone under every objective, and needs a 1000-dollar margin; the sweep holds the plan\'s conversions and tries every whole year. Adding the sweep\'s winner as one more candidate is a later change',
       'A claim already made, and a canonical age whose claim year is before the start year, is not offered: an early claim cannot be paid for months before its application (20 CFR 404.621(a)(3)), and a later one only six months back ((a)(2)); withdrawal within 12 months and voluntary suspension from full retirement age are not modeled',
       'Where the premium tax credit cannot be priced in a year of the plan as entered, no claim candidate is priced, since a claim age moves the income that credit depends on and the ledger cannot say which way; the conversion side keeps its own refusal (the tournament\'s ACA veto)',
@@ -513,7 +514,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'plan-headline-money-comparison': {
     title: 'Compare plans: money rows in one stated basis',
@@ -554,7 +555,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/projection/dollarBasis.ts#toTodayDollars',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'plan-headline-longevity-comparison': {
     title: 'Compare plans: how long the money lasts, deterministic success and depletion age',
@@ -597,7 +598,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/model/peopleOrder.ts#canonicalFirstPerson',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'relocation-row-comparison': {
     title: 'Relocation rows compared with your plan',
@@ -636,7 +637,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/projection/dollarBasis.ts#toTodayDollars',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'claim-change-estate-gain': {
     title: 'Claim-age co-optimization estate gain',
@@ -671,6 +672,6 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

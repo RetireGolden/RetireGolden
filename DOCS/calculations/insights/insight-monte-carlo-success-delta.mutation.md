@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/s
 
 ## Captured failing output
 
-The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (stochastic.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (stochastic.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/stochastic.evidence.test.ts (4 tests | 3 failed) 3158ms
    ❯ monte-carlo-success-rate-comparison — Monte Carlo success rate change on shared paths (4)

@@ -47,3 +47,5 @@ feeds: `monte-carlo-success-rate`; `monte-carlo-investable-fan-percentiles`; `mo
 ## Provenance
 
 Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R5 (evidence/people-order-check.md). Implemented by the same session. Reviewed by: unreviewed.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.

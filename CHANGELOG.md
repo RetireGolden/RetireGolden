@@ -4,6 +4,47 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: every calculation record has an independent review from a different agent
+  family, and every record passes every catalog gate: 229 of 232 families are complete (149
+  on main before), and the other three have no record yet** (decision
+  D-DIFFERENT-FAMILY-REVIEWS, 2026-09-29 and 2026-09-30). 108 records said
+  `reviewedBy: 'unreviewed'`. Codex (GPT-6-Sol) reviewed the 81 derived by Claude and Grok
+  (grok-4.7) the 27 derived by Codex, each by read-only recomputation from the worksheets and
+  their sources. 88 approved at once; the 20 rejects were fixed once and all approved on a
+  targeted re-check. The eleven reports and the reviewers' scripts are under
+  `DOCS/calculations/reviews/`, and each worksheet cites its report. The fixes are text,
+  worksheet and evidence changes except the IRMAA table below. The census scanner also resumed
+  inside a test title with a substitution and missed every test after it, so two fixtures
+  registered none; it now skips the whole title, and a freshness test requires every record's
+  fixture to register a test.
+- **Changed: committed evidence names no local machine path** (decision
+  D-LOCAL-PATHS-IN-EVIDENCE). Mutation receipts write the checkout path from the repository
+  root, quote-ledger notes give each saved source's fetch date and SHA-256, and a conformance
+  test (`rules/localPaths.conformance.test.ts`) fails the engine suite on any local path in a
+  tracked file.
+- **Fixed: the Medicare income-related (IRMAA) premiums come from CMS's published table,
+  not from the standard premium times the applicable percentage** (2026-09-29, after the
+  Codex review of `spending-healthcare-annual`). The engine priced each IRMAA tier's Part B
+  premium as $202.90 times 35, 50, 65, 80 or 85 over 25: $284.06, $405.80, $527.54, $649.28
+  and $689.86 a month. CMS applies those percentages to the unrounded actuarial rate and
+  publishes $284.10, $405.80, $527.50, $649.20 and $689.90 ("2026 Medicare Parts A & B
+  Premiums and Deductibles", read on cms.gov on 2026-09-29), so four of the five tiers were
+  off by 4 or 8 cents a month a person. The 2026 parameters now carry CMS's totals and the
+  ledger, the optimizer's IRMAA cost and the IRMAA insight read them; a year after the
+  latest CMS publication grows them as it grows the standard premium. The Part D amounts
+  ($14.50 to $91.00) were already loaded from CMS's table and were right. A first-tier
+  person now pays $3,409.20 of Part B a year (was $3,408.72), and the worked healthcare
+  household of `spending-healthcare-annual` $8,832.00 (was $8,831.20). Sixteen of the 29
+  examples have a year at a tier that differs; their ending figures move by cents to a few
+  hundred dollars through the compounding (example-couple's ending after-tax estate
+  $3,701,888.29 to $3,701,875.52, rmd-irmaa's $1,208,827.56 to $1,208,800.91,
+  aggressive-saver's up $470.78, trump-account-head-start's up $162.65); no depletion year
+  and no Monte Carlo success rate moves, and the IRMAA insight's premium cliff moves by a
+  few dollars (aggressive-saver $13,738 to $13,735, barista-fire $14,110 to $14,116). The
+  bracket-fill-roth walkthrough's 2029 figures move by cents (its 2028 is at tier 1): the
+  conversion 210,091.84 to 210,091.90 and the investable total 979,946.09 to 979,944.52.
+  The parameter source appendix of the report now lists the Part B IRMAA totals.
+
 - **Fixed: the Social Security earnings test is charged month by month, as the law
   charges it, by one year function the projection and the Social Security analysis page
   share; the analysis page now counts it (example-couple's benefits-only headline at 2%

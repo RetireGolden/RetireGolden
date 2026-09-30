@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Executed for the new record (decision D-SS-LAW-2): the mutation reverts the fix, paying the larger of the own benefit and the reduced half. Re-executed after the review of RetireGolden #755 added case I (an ex born in December after the 2nd, whose divorced-spouse benefit starts the next January) to the test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (dualEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Executed for the new record (decision D-SS-LAW-2): the mutation reverts the fix, paying the larger of the own benefit and the reduced half. Re-executed after the review of RetireGolden #755 added case I (an ex born in December after the 2nd, whose divorced-spouse benefit starts the next January) to the test; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (dualEntitlement.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine12/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/socialSecurity/dualEntitlement.evidence.test.ts (9 tests | 7 failed) 109ms
    ❯ dual-entitlement-composition — Own benefit plus the separately reduced spouse excess (9)
