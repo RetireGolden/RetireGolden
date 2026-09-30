@@ -4,6 +4,21 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.4.0** (2026-09-30) — a **minor** bump, because
+  plans it writes carry `schemaVersion` 7 and engine 0.3.x refuses them as
+  `newer_than_app` (it migrates only up to 5). It carries every engine change in this file
+  since 0.3.0 (2026-09-04), including the 0.3.1 patch, which was prepared but never
+  published and is folded in here. **Not yet published**; the owner tags `engine-v0.4.0` and
+  approves the `npm-publish` environment, and npm serves 0.3.0 until they do.
+- **The planner-ui range moves to `^0.4.0`**, the same coordinated floor as 0.3.0 and
+  0.3.1. Its own version is not bumped here. Its source reads schema 7 plans and the
+  engine figures relocated from the UI (`enteredBalanceSheet`,
+  `MonteCarloSummary.medianFirstDepletionYear`, `bridgeLaddersTotalCost` and others), which
+  0.3.x never exported. Its README now names the floor by reference to `package.json`
+  instead of repeating the number.
+- **Downstream to coordinate:** RetireGolden-MCP and RetireGolden-Pro move their engine
+  pins to 0.4.0 once it is on npm. Until a host moves, a plan saved by 0.4.0 does not open
+  in it. Pack smoke's `auto` mode packs the local unpublished minimum until then.
 - **Changed: every one of the 237 frozen output families is complete** (2026-09-30). The
   output census froze at 237 families (RetireGolden-Docs 5881834); every family has a record,
   every record passes every catalog gate, and every record has an independent review from a
