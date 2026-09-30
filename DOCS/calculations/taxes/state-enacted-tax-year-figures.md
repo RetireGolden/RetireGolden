@@ -82,6 +82,10 @@ Section 302(3) of ESSB 6346 adds back into the income-tax base, for a filer who 
 
 The plan models single and married filing jointly. Head of household and qualifying surviving spouse need dependents, which the plan does not collect, so a state's head-of-household schedule or deduction is used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts). Delaware's new domicile test for the pension subtraction at 60 or older needs a domicile history the plan does not hold and is assumed to be met.
 
+### Not modeled: a state's own military retirement rule
+
+A state's own military retirement exclusion is modeled only in Arkansas, California, Delaware, Idaho, Iowa, Kansas, Massachusetts, Missouri, New Jersey, Rhode Island, South Carolina, Utah, Vermont, Virginia and West Virginia. In every other state a pension tagged Military retirement or Military survivor benefit is priced under the state's general retirement rules, and the state's own military exclusion, with its age or income tests, is not modeled yet, so the engine can overstate that state's tax on a military pension. The first known case is Wisconsin: its 2025 Schedule SB instructions, line 12, subtract retirement payments from the U.S. military retirement system, including Survivor Benefit Plan payments, up to the amount included in federal income, where the engine gives only the retirement income subtraction at 67 or older. The per-state work is queued. Railroad Retirement Act annuities are not a limit: every state subtracts them under 45 U.S.C. 231m (`usc-45-231m-state-tax-bar`). No case below has a military pension, so no figure here depends on this limit.
+
 ## Inputs
 
 | Input | Value | Unit |
@@ -172,3 +176,5 @@ Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, `DOCS/calculations/reviews/REVIEW-2026-09-30-round3-codex.md`.
+
+Revision 2026-09-30 (review of pull request 771, issues 4 and 10): the military-pension limit the record states, which that review approved with a note to put it on this worksheet too, is added under Justification as "Not modeled: a state's own military retirement rule", in the record's words. No figure changes.

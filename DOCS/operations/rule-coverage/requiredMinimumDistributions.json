@@ -1021,12 +1021,12 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.test.ts",
-          "line": 673,
+          "line": 677,
           "note": null,
           "tests": [
             {
               "title": "refuses successor schedules once an eligible designated beneficiary dies in horizon",
-              "line": 681
+              "line": 685
             }
           ]
         }

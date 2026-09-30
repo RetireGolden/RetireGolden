@@ -1,6 +1,6 @@
 # Review, 2026-09-30 (round3-grok)
 
-Reviewer: Grok (grok-4.7, xAI), headless and read-only, by independent recomputation without executing the engine, on a snapshot of branch `claude/evidence-completeness` at `45efae57`. Scope: the two calculation records derived by Codex that the branch restated (rmd-uniform-lifetime-divisor and tax-penalties-annual). Verdicts: 2 approve, 0 reject. The reviewer's script `DOCS/calculations/reviews/scripts/round3-grok/recompute.py` runs from the repository root. The only edits to the report below replace local paths with repository paths. Verbatim output follows.
+Reviewer: Grok (grok-4.7, xAI), headless and read-only, by independent recomputation without executing the engine, on a snapshot of branch `claude/evidence-completeness` at `45efae57`. Scope: the two calculation records derived by Codex that the branch restated (rmd-uniform-lifetime-divisor and tax-penalties-annual). Verdicts: 2 approve, 0 reject. The reviewer's script `DOCS/calculations/reviews/scripts/round3-grok/recompute.py` runs from the repository root. The only edits to the report below replace the reviewer's local paths: its script's with the repository path above, its checkout directory with the commit it held, and its saved copy of a source with a note that the copy is not in the repository. Otherwise the report is verbatim.
 
 ---
 
@@ -8,10 +8,10 @@ Reviewer: Grok (grok-4.7, xAI), headless and read-only, by independent recomputa
 
 Reviewer: Grok (grok-4.7, xAI), headless, read-only.
 Date: 2026-09-30.
-Repository commit: `45efae57` (copy under `tree4/`).
+Repository commit: `45efae57` (a read-only checkout of that commit).
 Scope: `rmd-uniform-lifetime-divisor` and `tax-penalties-annual`, both restated 2026-09-30 and unreviewed since. Recomputation is from the worksheets, the cited primary sources, and the pinned election-year cases. The engine was not run, and no file under `packages/` was imported. Signatures of the named functions were not needed; the evidence tests were skimmed for the values they assert, not executed.
 
-Arithmetic is in `scratch/recompute.py` (Python `decimal` and `fractions`, nothing imported from the repository). Sources actually read: eCFR 26 CFR 1.408-8 as served 2026-09-30 (saved at `scratch/cfr-1-408-8-2.txt`); Cornell LII 26 CFR 1.401(a)(9)-5; Office of the Law Revision Counsel, 26 USC 4974, current through 2026-09-18 (Public Law 119-111); IRS Publication 590-B (2025), catalog 66303U, downloaded from `https://www.irs.gov/pub/irs-pdf/p590b.pdf` on 2026-09-30.
+Arithmetic is in `DOCS/calculations/reviews/scripts/round3-grok/recompute.py` (Python `decimal` and `fractions`, nothing imported from the repository). Sources actually read: eCFR 26 CFR 1.408-8 as served 2026-09-30 (saved by the reviewer as `cfr-1-408-8-2.txt`, a copy that is not in the repository); Cornell LII 26 CFR 1.401(a)(9)-5; Office of the Law Revision Counsel, 26 USC 4974, current through 2026-09-18 (Public Law 119-111); IRS Publication 590-B (2025), catalog 66303U, downloaded from `https://www.irs.gov/pub/irs-pdf/p590b.pdf` on 2026-09-30.
 
 ## rmd-uniform-lifetime-divisor
 

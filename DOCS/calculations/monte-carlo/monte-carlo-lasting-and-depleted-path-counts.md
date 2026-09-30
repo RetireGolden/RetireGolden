@@ -55,7 +55,7 @@ G. lasting 3 + 2 = 5, failing 1; the paths meeting the required floor number 3 (
 
 Tolerance exact. An empty sample gives 0 and 0.
 
-Example library at the Monte Carlo page's defaults (each example as the app opens it, a 2026 start, 1,000 paths on the default seed with the headline model, measured on this branch): on all 29 `lastingPathCount` equals the retired `pathCount − failingPathCount`, and `failingPathCount` equals the retired sum of the year counts. Lasting counts run from 0 (inherited-ira-beneficiary, survivor-years, ltc-shock) to 1,000 (five examples); example-couple lasts in 720 of 1,000 and runs out in 280.
+Example library, measured once on 2026-09-30 at the Monte Carlo page's defaults (each example as the app opens it, a 2026 start, 1,000 paths on the default seed with the headline model): on all 29 `lastingPathCount` equals the retired `pathCount − failingPathCount`, and `failingPathCount` equals the retired sum of the year counts. Lasting counts run from 0 (inherited-ira-beneficiary, survivor-years, ltc-shock) to 1,000 (five examples); example-couple lasts in 720 of 1,000 and runs out in 280. These are recorded measurements, not a committed test: the parity test ("Parity test for the switch-over" below) pins the same bit-identity on the 29 examples at 100 paths on the default seed, where the counts differ, so nothing in the repository reproduces the 1,000-path figures.
 
 ## Wrong readings
 

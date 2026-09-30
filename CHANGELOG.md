@@ -16,13 +16,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   beneficiary's same-decedent group, so the year has one obligation, the owner RMD. The engine
   also charged an unpaid beneficiary obligation: on the reproduction, $1,672.30 of excise on a
   $6,689.19 requirement while the $4,065.04 owner RMD was paid. `annualInheritedIraDistributions`
-  now leaves an election-year account out of the §4974 grouping. No library example moves.
+  now leaves an election-year account out of the §4974 grouping, and the check comes before
+  every five-year deadline branch, so such an account enters no deadline obligation either,
+  completed or live (a combination no parsed plan can build, pinned by a unit test). No
+  library example moves.
   Registered as a limit, not fixed here: when two or more IRAs in one pool are elected, each
   takes its owner RMD from the pool's shared reference balance rather than its own prior
   year-end balance (`rmd-uniform-lifetime-divisor`, pinned by a test).
 - **Changed (tests): every equivalence reach spec is held at exit 0.** Eleven blocks-corpus
-  members reach the production lines no member reached (11 specs exited 1 on main); 19 lines no valid plan can execute
-  are documented exclusions; the three proofs that pin the corpus were re-measured (identity
+  members reach the production lines no member reached (11 specs exited 1 on main); 24 lines
+  that no valid plan can execute, at 16 places in six specs, are documented exclusions; the three proofs that pin the corpus were re-measured (identity
   only). `scripts/equivalence/reachGuard.test.mjs` runs all 32 specs in the engine suite.
 - **Changed: the three RetireGolden-MCP output families have calculation records, each
   against an engine function that already computes it; no engine function was added and no
@@ -33,9 +36,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `scenarios/comparison.ts#compareScenarioPlans(...).headline.endingAfterTaxEstate.delta`.
   Each record has a worksheet with worked cases and wrong readings, an evidence test that
   also checks the adapter's own arithmetic at the census pin, and an executed mutation
-  receipt. They are derived by Claude and not yet reviewed, so the three families are
-  partial: 229 of 232 are complete and none lacks a record; a different-family review
-  makes it 232 (checked by a temporary review flip). One stated limit: the comparison delta
+  receipt. They are derived by Claude and reviewed by Codex (GPT-6-Sol), all approved
+  (`DOCS/calculations/reviews/REVIEW-2026-09-30-round3-codex.md`), so the three families
+  are complete. One stated limit: the comparison delta
   is nominal, so two plans that end in different years are subtracted in two different
   years' dollars (the worksheet's plans: +200,000.00 nominal, +6,579.93 in the Compare
   page's start-year dollars).
@@ -43,7 +46,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   repository** under `DOCS/calculations/<group>/scripts/` (`fi_spending_base.py`,
   `joint_survival_2023.py`, `claim_month_rb.py`, `claim_month_rc.py`, and `run-base.mjs`
   with its model and data), each with no local path, reading nothing from `packages/`, and
-  reproducing its worksheet's figures when run from the repository root.
+  reproducing its worksheet's figures when run from the repository root with no arguments.
 - **Follow-ups outside this repository.** RetireGolden-MCP: its main already reads the three
   figures from the engine (RetireGolden-MCP #81, unreleased): `summarizeProjection` for
   `lifetimeTaxesAndPenalties` and `endingByCategory.traditional`, and `compareScenarioPlans`
@@ -62,7 +65,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   engine's failing-path count instead of adding up the year counts; the Social Security
   page's add-ladders total is `ladder/bridge.ts#bridgeLaddersTotalCost`; and the downloadable
   report's "Trailed … by $X" is `projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount`.
-  Each has a calculation record (unreviewed), a worksheet, an evidence test and an executed
+  Each has a calculation record, reviewed by Codex (GPT-6-Sol) and approved
+  (`REVIEW-2026-09-30-round3-codex.md`), a worksheet, an evidence test and an executed
   mutation receipt, and a parity test shows every figure equal to the page's retired
   arithmetic, bit for bit, on the 29 example plans. All 45 UI families are now relocated.
 - **Fixed: the ending-balance histogram's accessible label says what the chart shows.** It
@@ -91,6 +95,22 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   engine models and say the rest are not modeled yet, starting with Wisconsin's full
   subtraction of U.S. military retirement pay. The New York issuer record no longer says a
   pension's source is only private or public.
+- **Fixed: Utah keeps its Social Security credit when the household has a railroad
+  annuity** (2026-09-30, review of #771). The household facts left Utah's Social Security
+  credit base and its railroad overlap unknown whenever any railroad pension existed, so the
+  Utah Code 59-10-1042(2) credit was dropped and the year marked incomplete. Only a tier 1
+  benefit can be a Social Security benefit (IRC 86(d)(1)(B)), so with no tier 1 pension the
+  59-10-114(2)(d) subtraction removes none of the Social Security left in Utah taxable
+  income: the credit base is the federally included Social Security and the overlap is 0 (a
+  tier 1 pension still leaves it unknown). A joint return at 70 with 50,000 of other income,
+  13,350 of Social Security and a 20,000 tier II annuity, its Utah MAGI additions stated:
+  a 504.96 credit and 2,225.00 of Utah tax, not 2,729.96. Utah MAGI, which phases the credit
+  out, still counts the annuity, as the engine reads Utah's definition (federal AGI plus the
+  excluded interest and the 59-10-114 additions). Plan-level tests
+  (`projection/simulate.stateRailroadProduction.test.ts`) price a tier II pension through
+  `simulatePlan` in Utah, Pennsylvania and New Jersey at 65 and find each state's tax equal
+  to the same plan's without the annuity, with the household railroad aggregates carried;
+  the state-facts adapter test covers the three railroad sources. No example figure changes.
 - **Fixed: a railroad retirement annuity is not taxed in Alabama, New York, Oregon, Rhode
   Island, South Carolina, Virginia or Wisconsin, and Rhode Island subtracts a military
   pension in full** (2026-09-30, the D-OOS-INPUTS grouping, group 1). 45 U.S.C. 231m(a)
@@ -122,8 +142,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   benefit, not nothing. With the federal railroad rule above, the registry counts 582
   records, 375 settled and 78 out of scope (581, 364 and 88 before).
 - **Changed: every calculation record has an independent review from a different agent
-  family, and every record passes every catalog gate: 229 of 232 families are complete (149
-  on main before), and the other three have no record yet** (decision
+  family, and every record passes every catalog gate; 149 families were complete on main
+  before, and with the 2026-09-30 entries above all 237 are** (decision
   D-DIFFERENT-FAMILY-REVIEWS, 2026-09-29 and 2026-09-30). 108 records said
   `reviewedBy: 'unreviewed'`. Codex (GPT-6-Sol) reviewed the 81 derived by Claude and Grok
   (grok-4.7) the 27 derived by Codex, each by read-only recomputation from the worksheets and
@@ -2734,6 +2754,14 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Freeze additions (B2-P1 under D-UI-SS), engine and planner-ui:** `MonteCarloSummary`
+  (`@retiregolden/engine/montecarlo/run`) gains the required fields `lastingPathCount` and
+  `medianFirstDepletionYear` (`number | null`), so a host that constructs a summary must set
+  both. planner-ui's `HouseholdGraphTotals` is removed: `HouseholdGraph.totals`
+  (`@retiregolden/planner-ui/householdMap/householdGraph`) is now the engine's
+  `EnteredBalanceSheet` (`@retiregolden/engine/model/enteredBalanceSheet`; the same five
+  fields, read-only), `HouseholdGraph` gains the required `accountNodes`, and
+  `sumEnteredTotals` is replaced by `enteredTotalsOfNodes(graph, nodeIds)`.
 - **Rollover (decision D-2027-ROLLOVER), planner-ui:** `projectPlan`, `useProjection`,
   `headlineMcRunOptions`, `piaAsOfPlan`, `claimingPeople` and `warningFor` require the start
   year; there is no clock default. Pass `projectionStartYear(plan)` (exported from

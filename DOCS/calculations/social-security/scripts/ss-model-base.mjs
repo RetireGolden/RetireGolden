@@ -372,7 +372,7 @@ export function creditsPerYear(earnings) {
   let c = 0
   for (const e of earnings) {
     if (e.amount <= 0) continue
-    if (e.year >= 1978) c += Math.min(4, Math.floor(e.amount / QC[e.year] ?? QC[Math.max(...Object.keys(QC).map(Number))]))
+    if (e.year >= 1978) c += Math.min(4, Math.floor(e.amount / (QC[e.year] ?? QC[Math.max(...Object.keys(QC).map(Number))])))
     else c += e.amount >= WAGE_BASE[e.year] ? 4 : Math.min(4, Math.floor(e.amount / 50))
   }
   return Math.min(40, c)

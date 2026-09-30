@@ -64,7 +64,7 @@ E. Failing 150, half 75: running 40 (2047), 100 (2050) ≥ 75, so 2050. This is 
 
 Tolerance exact. An empty sample gives null.
 
-Example library at the Monte Carlo page's defaults (each example as the app opens it, a 2026 start, 1,000 paths on the default seed with the headline model, measured on this branch): on all 29 the engine's median equals the retired walk. 24 examples have failing paths (13 of them an even number); the 5 with none (moving-state-tax, early-career-match, annuity-purchases-estate, no-head-start-grad, trump-account-head-start) print the no-depletion sentence and no median. Some medians: example-couple 2051 (280 failing, first 2038, last 2059), rmd-irmaa 2045, inherited-ira-beneficiary 2032 (every path fails).
+Example library, measured once on 2026-09-30 at the Monte Carlo page's defaults (each example as the app opens it, a 2026 start, 1,000 paths on the default seed with the headline model): on all 29 the engine's median equals the retired walk. 24 examples have failing paths (13 of them an even number); the 5 with none (moving-state-tax, early-career-match, annuity-purchases-estate, no-head-start-grad, trump-account-head-start) print the no-depletion sentence and no median. Some medians: example-couple 2051 (280 failing, first 2038, last 2059), rmd-irmaa 2045, inherited-ira-beneficiary 2032 (every path fails). These are recorded measurements, not a committed test: the parity test ("Parity test for the switch-over" below) pins the same bit-identity on the 29 examples at 100 paths on the default seed, where the counts and medians differ, so nothing in the repository reproduces the 1,000-path figures.
 
 ## Wrong readings
 
