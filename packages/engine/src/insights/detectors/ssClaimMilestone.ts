@@ -10,7 +10,12 @@ import {
   spouseReductionFactorAtAgeMonths,
 } from '../../socialSecurity/dualEntitlement.js'
 import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
-import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
+import {
+  bestMaritalBenefit,
+  formerSpouseSurvivorEntitlementAgeMonths,
+  type MaritalBenefitCandidate,
+} from '../../socialSecurity/maritalBenefits.js'
+import { attainedAgeZeroMonthIndex } from '../../socialSecurity/nra.js'
 import { ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
@@ -281,7 +286,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
  *            enabler itself predates the horizon), unless current-spouse
  *            spousal already beats the former amount
  */
-function formerSpouseWonOverOwnPriorYear(args: {
+interface PriorYearFormerSpouseArgs {
   plan: Plan
   personId: string
   projectedAge: number
@@ -290,25 +295,28 @@ function formerSpouseWonOverOwnPriorYear(args: {
   formerRelationships: readonly FormerSpouse['relationship'][]
   claimantIsSingle: boolean
   /**
-   * When set, include the current-spouse spousal total as a competing prior-year
-   * source (sim highest-wins). Omit for single-household / co already dead.
+   * The first month the claimant is unmarried, as the ledger reads it
+   * (householdYear.ts): -Infinity for a household of one, January after the
+   * current spouse's death for a couple member whose spouse had died, null
+   * while the current spouse is alive.
    */
-  currentSpouseCompetitor?: {
-    coPersonId: string
-    coPersonAgePrior: number
-  }
-}): boolean | null {
-  const {
-    plan,
-    personId,
-    projectedAge,
-    startYear,
-    formerRelationships,
-    claimantIsSingle,
-    currentSpouseCompetitor,
-  } = args
+  claimantUnmarriedFromMonthIndex: number | null
+}
+
+/**
+ * The largest former-spouse benefit the claimant was paid in the year before
+ * the start, by the ledger's former-spouse pass (householdYear.ts): each
+ * stream's records are priced only when the stream has payable months that
+ * year, and a survivor benefit that a remarriage before 60 barred until the
+ * current spouse's death starts, and is reduced from, the January after that
+ * death (maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths; POMS RS
+ * 00207.003 A). Null when no record paid a visible amount. Exported for its
+ * test.
+ */
+export function priorYearFormerSpouseBenefit(args: PriorYearFormerSpouseArgs): { monthly: number; annual: number } | null {
+  const { plan, personId, projectedAge, startYear, formerRelationships, claimantIsSingle, claimantUnmarriedFromMonthIndex } = args
   const claimant = plan.household.people.find((row) => row.id === personId)
-  if (claimant === undefined) return false
+  if (claimant === undefined) return null
 
   const claimantDobParts = socialSecurityDobParts(claimant)
   const claimantDob = {
@@ -316,6 +324,7 @@ function formerSpouseWonOverOwnPriorYear(args: {
     month: claimantDobParts.m,
     day: claimantDobParts.d,
   }
+  const claimantZero = attainedAgeZeroMonthIndex(claimantDob)
   const priorYear = startYear - 1
   const claimantAgePrior = projectedAge - 1
   const asOf = piaAsOf(plan, startYear)
@@ -325,13 +334,16 @@ function formerSpouseWonOverOwnPriorYear(args: {
   const gateStream = lastSsIncomeForPerson(plan, personId)
   const ownPiaMonthly = gateStream === undefined ? 0 : (resolveOwnPiaMonthly(gateStream, claimant, asOf) ?? 0)
   const ownActualMonthly = resolveOwnMonthlyRate(plan, personId, claimant, claimantAgePrior, asOf) ?? 0
+  const unmarriedFrom =
+    claimantUnmarriedFromMonthIndex !== null && Number.isFinite(claimantUnmarriedFromMonthIndex)
+      ? { claimantUnmarriedFromMonthIndex }
+      : {}
 
   // Mirror the former-spouse pass in householdYear.ts: each stream's formers are priced
   // only when that stream has positive payable months in the year (claim age
-  // reached — the same shared annual payable-month gate before bestMaritalBenefit).
+  // reached — the same shared annual payable-month gate before the menu).
   // An age-eligible former on a stream that had not begun paying enables nothing.
-  let anyEligibleFormer = false
-  let bestFormerAnnual = 0
+  let best: { monthly: number; annual: number } | null = null
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
     const formers = (stream.formerSpouses ?? []).filter((former) =>
@@ -343,25 +355,58 @@ function formerSpouseWonOverOwnPriorYear(args: {
       stream.claimAge,
     )
     if (formerPayableMonths <= 0) continue
-    const bestPrior = bestMaritalBenefit(formers, {
-      claimantDob,
-      claimantClaimAge: stream.claimAge,
-      claimantOwnPiaMonthly: ownPiaMonthly,
-      claimantOwnActualMonthly: ownActualMonthly,
-      claimantAge: claimantAgePrior,
-      year: priorYear,
-      claimantIsSingle,
-    })
+    let bestPrior: MaritalBenefitCandidate | null = null
+    for (const former of formers) {
+      const survivorMonths = formerSpouseSurvivorEntitlementAgeMonths(
+        former,
+        claimantZero,
+        claimAgeTotalMonths(stream.claimAge),
+        claimantUnmarriedFromMonthIndex,
+      )
+      // One record at a time: the survivor entitlement month is the record's own.
+      const candidate = bestMaritalBenefit([former], {
+        claimantDob,
+        claimantClaimAge: stream.claimAge,
+        claimantOwnPiaMonthly: ownPiaMonthly,
+        claimantOwnActualMonthly: ownActualMonthly,
+        claimantSurvivorClaimAge: { years: Math.floor(survivorMonths / 12), months: survivorMonths % 12 },
+        claimantAge: claimantAgePrior,
+        year: priorYear,
+        claimantIsSingle,
+        ...unmarriedFrom,
+      })
+      if (candidate && (bestPrior === null || candidate.monthly > bestPrior.monthly)) bestPrior = candidate
+    }
     if (bestPrior === null) continue
     // Age-eligible formers with zero PIA (or sub-cent residue) could not have
     // paid — do not treat them as a prior-year enabler. A zero-PIA ex plus a
     // positive ex first eligible at start must still fire as NEW entitlement.
     const formerAnnual = bestPrior.monthly * formerPayableMonths
     if (!isVisiblePositiveAmount(formerAnnual)) continue
-    anyEligibleFormer = true
-    bestFormerAnnual = Math.max(bestFormerAnnual, formerAnnual)
+    if (best === null || formerAnnual > best.annual) best = { monthly: bestPrior.monthly, annual: formerAnnual }
   }
-  if (!anyEligibleFormer) return false
+  return best
+}
+
+function formerSpouseWonOverOwnPriorYear(args: PriorYearFormerSpouseArgs & {
+  /**
+   * When set, include the current-spouse spousal total as a competing prior-year
+   * source (sim highest-wins). Omit for single-household / co already dead.
+   */
+  currentSpouseCompetitor?: {
+    coPersonId: string
+    coPersonAgePrior: number
+  }
+}): boolean | null {
+  const { plan, personId, projectedAge, startYear, currentSpouseCompetitor } = args
+  const claimant = plan.household.people.find((row) => row.id === personId)
+  if (claimant === undefined) return false
+  const claimantAgePrior = projectedAge - 1
+  const asOf = piaAsOf(plan, startYear)
+
+  const formerPrior = priorYearFormerSpouseBenefit(args)
+  if (formerPrior === null) return false
+  const bestFormerAnnual = formerPrior.annual
 
   // Current-spouse top-up competes after the former menu (sim sequential max).
   const currentSpousalAnnual =
@@ -658,6 +703,12 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
         // before it, which lifts the bar of a remarriage before 60, as the
         // ledger reads it (POMS RS 00207.003 A).
         claimantIsSingle: !coAliveInPriorYear,
+        // The ledger's unmarried month: January after the co-person's death.
+        claimantUnmarriedFromMonthIndex: coAliveInPriorYear
+          ? null
+          : lifeAge === null
+            ? -Infinity
+            : (socialSecurityDobParts(coPerson).y + lifeAge + 1) * 12,
         currentSpouseCompetitor: coAliveInPriorYear
           ? {
               coPersonId: coPerson.id,
@@ -682,7 +733,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   // living former spouse whose marital benefit already won pre-horizon.
   if (coPerson === undefined) {
     // Former-spouse spousal (single household): pre-horizon only when a living
-    // former spouse was eligible under bestMaritalBenefit *and* that benefit
+    // former spouse was eligible under the marital-benefit menu *and* that benefit
     // actually displaced the claimant's summed own benefit before start — the
     // same "larger of own vs marital" rule that householdYear.ts uses
     // when publishing the auxiliary (its own sites sum ALL resolved streams; formers may be split
@@ -708,6 +759,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       startYear: firstProjectionYear.year,
       formerRelationships: ['divorced'],
       claimantIsSingle: true,
+      claimantUnmarriedFromMonthIndex: -Infinity,
     })
     // null = eligible former, no usable own on any stream → already-paying
     // (enabling-event rule; do not treat null own as a new in-horizon entitlement).
