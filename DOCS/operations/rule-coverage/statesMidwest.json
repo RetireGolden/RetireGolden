@@ -3860,16 +3860,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 88,
+          "line": 93,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 160,000 dollar Wisconsin return",
-              "line": 92
+              "line": 97
             },
             {
               "title": "subtracts tier I, tier II and the other annuities in full, and not a railroad employer’s own plan",
-              "line": 105
+              "line": 110
             }
           ]
         }

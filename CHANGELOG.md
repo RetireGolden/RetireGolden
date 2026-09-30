@@ -98,19 +98,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 - **Fixed: Utah keeps its Social Security credit when the household has a railroad
   annuity** (2026-09-30, review of #771). The household facts left Utah's Social Security
   credit base and its railroad overlap unknown whenever any railroad pension existed, so the
-  Utah Code 59-10-1042(2) credit was dropped and the year marked incomplete. Only a tier 1
-  benefit can be a Social Security benefit (IRC 86(d)(1)(B)), so with no tier 1 pension the
-  59-10-114(2)(d) subtraction removes none of the Social Security left in Utah taxable
-  income: the credit base is the federally included Social Security and the overlap is 0 (a
-  tier 1 pension still leaves it unknown). A joint return at 70 with 50,000 of other income,
-  13,350 of Social Security and a 20,000 tier II annuity, its Utah MAGI additions stated:
-  a 504.96 credit and 2,225.00 of Utah tax, not 2,729.96. Utah MAGI, which phases the credit
+  Utah Code 59-10-1042(2) credit was dropped and the year marked incomplete. The credit base
+  is the Social Security the engine includes federally, IRC 86 on the Social Security streams
+  alone, and every railroad pension, tier 1 included, is priced as pension income outside it,
+  so the 59-10-114(2)(d) subtraction removes none of the base: the overlap is 0 whenever the
+  railroad ledger is known. A joint return at 70 with 50,000 of other income, 13,350 of
+  Social Security and a 20,000 tier II, tier 1 or other railroad annuity, its Utah MAGI
+  additions stated: a 504.96 credit and 2,225.00 of Utah tax, not 2,729.96. Utah MAGI, which phases the credit
   out, still counts the annuity, as the engine reads Utah's definition (federal AGI plus the
   excluded interest and the 59-10-114 additions). Plan-level tests
   (`projection/simulate.stateRailroadProduction.test.ts`) price a tier II pension through
   `simulatePlan` in Utah, Pennsylvania and New Jersey at 65 and find each state's tax equal
   to the same plan's without the annuity, with the household railroad aggregates carried;
-  the state-facts adapter test covers the three railroad sources. No example figure changes.
+  the state-facts adapter test covers the three railroad sources. The 42-jurisdiction sweep
+  in `tax/stateRailroadAndMilitary.rules.test.ts` now builds its household facts with the
+  production builders (`deriveAnnualStateRailroadBenefits`, `buildAnnualStateHouseholdFacts`),
+  so every state is priced with the railroad aggregates a plan carries: each railroad source
+  still comes off exactly once, alone and beside a private pension, and adds no warning. No
+  example figure changes.
 - **Fixed: a railroad retirement annuity is not taxed in Alabama, New York, Oregon, Rhode
   Island, South Carolina, Virginia or Wisconsin, and Rhode Island subtracts a military
   pension in full** (2026-09-30, the D-OOS-INPUTS grouping, group 1). 45 U.S.C. 231m(a)

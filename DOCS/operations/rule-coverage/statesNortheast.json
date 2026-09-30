@@ -1827,16 +1827,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 110,
+          "line": 115,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar New York return",
-              "line": 114
+              "line": 119
             },
             {
               "title": "subtracts tier I, tier II and the other annuities in full, outside the 20,000 dollar pension exclusion",
-              "line": 125
+              "line": 130
             }
           ]
         }
@@ -2457,16 +2457,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 320,
+          "line": 384,
           "note": null,
           "tests": [
             {
               "title": "takes a 40,000 dollar military pension off a 100,000 dollar return at 62, before full retirement age",
-              "line": 324
+              "line": 388
             },
             {
               "title": "holds above the (c)(9) AGI limit, and leaves the (c)(9) room to other pensions",
-              "line": 335
+              "line": 399
             }
           ]
         }
@@ -2990,16 +2990,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 133,
+          "line": 138,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Rhode Island return",
-              "line": 137
+              "line": 142
             },
             {
               "title": "subtracts every railroad source at any age and above the pension modification’s AGI limit",
-              "line": 147
+              "line": 152
             }
           ]
         }

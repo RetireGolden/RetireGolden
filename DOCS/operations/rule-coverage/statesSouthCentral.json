@@ -1354,16 +1354,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 213,
+          "line": 218,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Alabama return",
-              "line": 217
+              "line": 222
             },
             {
               "title": "subtracts tier I, tier II and the other annuities in full, outside the age-65 exclusion",
-              "line": 227
+              "line": 232
             }
           ]
         }

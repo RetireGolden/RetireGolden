@@ -2273,23 +2273,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 259,
+          "line": 302,
           "note": "exactly once in every state",
           "tests": [
             {
               "title": "covers every state that taxes wages or pensions, and no other",
-              "line": 264
+              "line": 307
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 284,
+          "line": 348,
           "note": "worked dollar cases",
           "tests": [
             {
               "title": "prices a 20,000 dollar tier II annuity on a 100,000 dollar return in Pennsylvania, Delaware and West Virginia",
-              "line": 292
+              "line": 356
             }
           ]
         }

@@ -3452,16 +3452,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 235,
+          "line": 240,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Oregon return",
-              "line": 239
+              "line": 244
             },
             {
               "title": "subtracts tier I, tier II and the other annuities in full, and not a railroad employer’s own plan",
-              "line": 249
+              "line": 254
             }
           ]
         }

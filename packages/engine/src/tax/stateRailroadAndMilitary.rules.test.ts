@@ -23,7 +23,12 @@ import { describe, expect, it } from 'vitest'
 import { stateParamsFor } from '../params/state/index.js'
 import { describeRule } from '../rules/describeRule.js'
 import { US_STATE_CODES } from '../rules/taxRuleRegistry.js'
+import type { PensionSourceKind } from '../model/stateTaxPlanFacts.js'
+import { buildAnnualStateHouseholdFacts } from '../projection/internal/annualStateHouseholdFacts.js'
+import { deriveAnnualStateRailroadBenefits } from '../projection/internal/annualStateRailroadFacts.js'
 import type { TaxYearInput } from '../projection/types.js'
+import { singlePersonPlan } from '../testing/planFixtures.js'
+import { computeFederalTax } from './federalTax.js'
 import { computeStateTaxYearResult } from './stateTax.js'
 import type { StateHouseholdTaxFacts, StateRetirementDistributionFact } from './stateRetirementFacts.js'
 
@@ -256,6 +261,44 @@ describe('45 U.S.C. 231m in every state with an income tax', () => {
   /** Every jurisdiction that taxes wages or pensions in 2026. */
   const incomeTaxStates = US_STATE_CODES.filter((state) => stateParamsFor(state, 2026)?.hasIncomeTax === true)
 
+  /**
+   * The household facts simulatePlan hands the state calculator for these
+   * pension rows, built by the production builders rather than restated: the
+   * railroad ledger `deriveAnnualStateRailroadBenefits` reads from the rows,
+   * and `buildAnnualStateHouseholdFacts` over it, with the federal figures
+   * `computeFederalTax` gives for the same return. So a railroad row carries
+   * the household railroad aggregates (gross, federally included, tier 1 and
+   * its recipient row) exactly as a real plan does, and the run without the
+   * row carries the known-empty ledger.
+   */
+  function plannedHousehold(state: string, income: number, rows: readonly StateRetirementDistributionFact[], age: number): Partial<StateHouseholdTaxFacts> {
+    const plan = singlePersonPlan({ dob: `${2026 - age}-01-02`, planningAge: 95, state })
+    plan.household.people[0]!.id = 'owner'
+    const railroadBenefits = deriveAnnualStateRailroadBenefits({
+      characterizedRetirementDistributions: rows.map((row) => ({
+        accountId: row.accountId ?? 'annuity', ownerPersonId: row.ownerPersonId, sourceOwnerPersonId: row.ownerPersonId,
+        federallyIncludedAmount: row.federallyIncludedAmount, recipientAgeYears: row.recipientAgeYears,
+        source: row.sourceKind as PensionSourceKind, fact: row,
+      })),
+    })
+    expect(railroadBenefits).toBeDefined()
+    const federal = computeFederalTax(input(state, { ordinaryIncome: income, agesAlive: [age] }))
+    return buildAnnualStateHouseholdFacts({
+      plan, taxYear: 2026, socialSecurityStreams: [], railroadBenefits, claimantPersonIds: ['owner'],
+      federal: { agi: federal.agi, taxableIncome: federal.taxableIncome, deductionUsed: federal.deduction,
+        seniorDeduction: federal.seniorDeduction, taxableSocialSecurity: federal.taxableSocialSecurity, taxExemptInterest: 0 },
+    }).householdFacts
+  }
+  /** The state result for `rows`, with the household facts a plan builds for them. */
+  function plannedYear(state: string, income: number, rows: readonly StateRetirementDistributionFact[], age: number) {
+    return stateYear(state, income, rows, { age, facts: plannedHousehold(state, income, rows, age) })
+  }
+  /** As `subtracted`, each run with its own planned household facts. */
+  function plannedSubtracted(state: string, income: number, rows: readonly StateRetirementDistributionFact[], age: number): number {
+    return plannedYear(state, income, [], age).taxableIncome - plannedYear(state, income, rows, age).taxableIncome
+  }
+  const warningCodes = (result: ReturnType<typeof stateYear>) => result.warnings.map((warning) => warning.code).sort()
+
   describeRule('usc-45-231m-state-tax-bar', {
     note: 'exactly once in every state',
     readings: { subtractedOnce: 20_000, taxedLikeAPension: 0 },
@@ -270,14 +313,35 @@ describe('45 U.S.C. 231m in every state with an income tax', () => {
     it.each([60, 70])('takes each railroad source off once at %i, and leaves every retirement pool to other income', (age) => {
       for (const state of incomeTaxStates) {
         for (const sourceKind of RAILROAD_SOURCES) {
-          expect(subtracted(state, 100_000, [fact({ sourceKind, recipientAgeYears: age })], age), `${state} ${sourceKind}`).toBe(accepted)
+          expect(plannedSubtracted(state, 100_000, [fact({ sourceKind, recipientAgeYears: age })], age), `${state} ${sourceKind}`).toBe(accepted)
         }
         // A private pension beside the annuity keeps whatever exclusion it
-        // gets alone: the annuity is in no pool.
+        // gets alone: the annuity is in no pool. And the annuity, with the
+        // household railroad aggregates it brings, adds no warning: no rule
+        // that reads those aggregates (Maryland's pension offset, Idaho's cap,
+        // Oregon's credit, Utah's Social Security credit) is left unknown.
         const privatePension = fact({ accountId: 'private', sourceKind: 'ordinaryPrivatePension', recipientAgeYears: age })
-        expect(subtracted(state, 100_000, [fact({ recipientAgeYears: age }), privatePension], age), state)
-          .toBeCloseTo(accepted + subtracted(state, 100_000, [privatePension], age), 6)
+        for (const others of [[], [privatePension]]) {
+          const alone = plannedYear(state, 100_000, others, age)
+          for (const sourceKind of RAILROAD_SOURCES) {
+            const rows = [fact({ sourceKind, recipientAgeYears: age }), ...others]
+            expect(plannedSubtracted(state, 100_000, rows, age), `${state} ${sourceKind} beside ${others.length} pension`)
+              .toBeCloseTo(accepted + plannedSubtracted(state, 100_000, others, age), 6)
+            expect(warningCodes(plannedYear(state, 100_000, rows, age)), `${state} ${sourceKind} beside ${others.length} pension`)
+              .toEqual(warningCodes(alone))
+          }
+        }
       }
+    })
+    it.each([60, 70])('carries the household railroad aggregates a plan builds at %i', (age) => {
+      for (const sourceKind of RAILROAD_SOURCES) {
+        const facts = plannedHousehold('PA', 100_000, [fact({ sourceKind, recipientAgeYears: age })], age)
+        expect(facts, sourceKind).toMatchObject({ householdGrossRailroadBenefits: 20_000,
+          railroadRetirementActBenefitsPaid: 20_000, railroadRetirementActBenefitsIncludedInFederalAgi: 20_000,
+          federallyIncludedRailroadTier1: sourceKind === 'railroadTier1' ? 20_000 : 0 })
+      }
+      expect(plannedHousehold('PA', 100_000, [], age)).toMatchObject({ householdGrossRailroadBenefits: 0,
+        railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome: 0 })
     })
   })
 

@@ -84,7 +84,7 @@ describe('45 U.S.C. 231m(a) from the plan to the state return', () => {
       federallyIncludedRailroadTier1: 0 })
   }
 
-  it('Utah: the Social Security credit is kept beside the railroad subtraction', () => {
+  it('Utah: the Social Security credit is kept beside each railroad subtraction', () => {
     // Joint, both 70, 50,000 other income and a 1,500 PIA claimed at 62
     // (13,350 of benefits in 2026, 11,347.50 included federally). Utah
     // taxable income 81,347.50 - 20,000 = 61,347.50 with the annuity, the
@@ -112,6 +112,16 @@ describe('45 U.S.C. 231m(a) from the plan to the state return', () => {
     expect(annuity.state.taxableIncome).toBeCloseTo(none.state.taxableIncome, 6)
     expect(annuity.state.taxCredit).toBeCloseTo(none.state.taxCredit, 6)
     expect(annuity.state.amount).toBeCloseTo(none.state.amount, 6)
+    // Tier 1 and the other annuities too: a railroad pension is priced as
+    // pension income, outside the Social Security the credit base holds.
+    for (const source of ['railroadTier1', 'railroadRetirementAct'] as const) {
+      const plan = build()
+      plan.accounts = [...plan.accounts, { ...tierTwo(), source } as Account]
+      const other = priced(plan)
+      expect(other.year.taxComputation?.status, source).toBe('complete')
+      expect(other.state.taxCredit, source).toBeCloseTo(none.state.taxCredit, 6)
+      expect(other.state.amount, source).toBeCloseTo(none.state.amount, 6)
+    }
   })
 
   it('Pennsylvania, which subtracted nothing before: 3.07% of the other income only', () => {

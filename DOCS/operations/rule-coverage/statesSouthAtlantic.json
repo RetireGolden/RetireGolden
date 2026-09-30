@@ -1973,16 +1973,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 154,
+          "line": 159,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 160,000 dollar South Carolina return",
-              "line": 158
+              "line": 163
             },
             {
               "title": "subtracts tier I, tier II and the other annuities in full, and not a railroad employer’s own plan",
-              "line": 168
+              "line": 173
             }
           ]
         }
@@ -2459,12 +2459,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 173,
+          "line": 178,
           "note": null,
           "tests": [
             {
               "title": "subtracts the annuity on line o and leaves the under-65 retirement deduction for an IRA",
-              "line": 177
+              "line": 182
             }
           ]
         }
@@ -3204,16 +3204,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
-          "line": 193,
+          "line": 198,
           "note": null,
           "tests": [
             {
               "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Virginia return",
-              "line": 197
+              "line": 202
             },
             {
               "title": "subtracts tier II and the other annuities in full, and tier I once, beside its own paragraph (3) subtraction",
-              "line": 207
+              "line": 212
             }
           ]
         }
