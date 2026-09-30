@@ -15,10 +15,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   engine figures relocated from the UI (`enteredBalanceSheet`,
   `MonteCarloSummary.medianFirstDepletionYear`, `bridgeLaddersTotalCost` and others), which
   0.3.x never exported. Its README now names the floor by reference to `package.json`
-  instead of repeating the number.
+  instead of repeating the number. `accountStartAgeBounds.ts` re-exports the three
+  start-age constants from `model/plan.ts` instead of restating them: its comment gated
+  that on an engine with the constants reaching npm, and 0.3.0 did.
 - **Downstream to coordinate:** RetireGolden-MCP and RetireGolden-Pro move their engine
   pins to 0.4.0 once it is on npm. Until a host moves, a plan saved by 0.4.0 does not open
-  in it. Pack smoke's `auto` mode packs the local unpublished minimum until then.
+  in it. planner-ui's pack smoke in `auto` mode packs the local engine only while npm lacks
+  0.4.0, and switches to the registry once the tag publishes it.
 - **Changed: every one of the 237 frozen output families is complete** (2026-09-30). The
   output census froze at 237 families (RetireGolden-Docs 5881834); every family has a record,
   every record passes every catalog gate, and every record has an independent review from a
