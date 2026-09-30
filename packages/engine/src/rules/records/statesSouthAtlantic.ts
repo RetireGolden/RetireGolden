@@ -197,17 +197,10 @@ export const southAtlanticStateRecords = {
   },
 
   'sc-45-usc-231m-railroad-annuities-not-modeled': {
-    title: '45 U.S.C. 231m exempts Railroad Retirement Act annuities from state income tax; the engine cannot certify annuity category or federally included amount',
+    title: '45 U.S.C. 231m exempts Railroad Retirement Act annuities from South Carolina income tax, so a railroad annuity comes off the South Carolina base in full',
     statement:
-      'Section 231m(a) of title 45 prohibits state income tax on any annuity or supplemental annuity except as provided in subsection (b) and the Internal Revenue Code — a federal exemption that reaches South Carolina to the extent qualifying Railroad Retirement Act annuity or supplemental-annuity amounts would otherwise enter the state base. Subsection (b)(1) preserves federal income taxation of supplemental annuities under section 231a(b), so federal and state treatment can diverge for that limb. S.C. Code §12-6-1120(4) independently supplies the state-law counterpart for IRC section 86 Social Security and Tier 1 Railroad Retirement benefits; the companion settled record certifies only Title 2 Social Security, while Tier 1 railroad identification remains within this record’s missing-input boundary. The broader Railroad Retirement Act annuity exemption registered here rests on 45 U.S.C. 231m, not on South Carolina paragraph (4) alone. This record covers RRA annuities and supplemental annuities only; it does not reach every payment issued by the Railroad Retirement Board, private railroad-employer pensions, or unemployment or sickness benefits. That limb is separate from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which settles only Internal Revenue Code section 86 for Title 2 Social Security, and from the 2025 return-instruction limb at `sc-form1040-line-o-railroad-benefits-not-modeled`, which quotes broader tax-year-2025 SC1040 line o wording without fixing a post-2025 form window. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no RRA annuity or supplemental-annuity qualification, Railroad Retirement Board payer or category, or separately identifiable federally included RRA benefit amount — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying 231m annuity dollars. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. `effectiveFrom: 2026` marks the first observed and supported modeling window for this statutory limb, not an assertion that section 231m began in 2026.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'RRA annuity or supplemental-annuity qualification and payer/category distinct from ordinary private/public pension and Social Security streams: incomeStreamSchema has no railroad-retirement type and pensionSchema.source is only private or public',
-        'separately identifiable federally included RRA benefit amount otherwise entering the state base on StateTaxParams, which carries only the `taxesSocialSecurity` boolean and no railroad-benefit classification',
-      ],
-    },
+      'Section 231m(a) of title 45 forbids any tax on an annuity or supplemental annuity under the Railroad Retirement Act, notwithstanding any law of any State, except as subsection (b) and the Internal Revenue Code provide; subsection (b)(1) only keeps the supplemental annuity in federal income. An annuity under the Act is built from a tier I amount (45 U.S.C. 231b(a)) increased by a tier II amount (231b(b)), with the vested dual benefit of 231b(h); the supplemental annuity is 231a(b). A pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) is one of these, so for a South Carolina year `characterizedRetirementDelta` subtracts its federally included amount (`railroadRetirementActSubtraction`) before the military and section 12-6-1170 deductions, and none of the three enters the section 1170 pool. A single filer aged 60 with 160,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has South Carolina taxable income of 140,000 dollars (the SCIAD deduction is fully phased out at that federal AGI) and pays 6,328.00 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 7,370.00. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is not an annuity under the Act; it is a private pension and is not subtracted. Railroad unemployment and sickness benefits have no income type in the plan and are outside this record. S.C. Code 12-6-1120(4) independently leaves IRC section 86 Social Security and tier 1 benefits out of South Carolina gross income; the Social Security limb is registered at `sc-code-12-6-1120-4-social-security-subtraction`, and the 2025 return instruction for line o at `sc-form1040-line-o-railroad-benefits-not-modeled`. `effectiveFrom: 2026` marks the first modeled year, not the start of section 231m. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -226,6 +219,18 @@ export const southAtlanticStateRecords = {
         '(b)(1) This section shall not operate to exclude the amount of any supplemental annuity paid to an individual under section 231a(b) of this title from income taxable pursuant to the Federal income tax provisions of the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.].',
     }, {
       kind: 'statute',
+      citation: '45 U.S.C. 231b(a)(1), tier I',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b',
+      quotedText:
+        '(1) The annuity of an individual under section 231a(a)(1) of this title shall be in an amount equal to the amount (before any reduction on account of age and before any deductions on account of work) of the old-age insurance benefit or disability insurance benefit to which such individual would have been entitled under the Social Security Act [42 U.S.C. 301 et seq.] if all of his or her service as an employee after December 31, 1936, had been included in the term "employment" as defined in that Act.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231b(b)(1), tier II',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b',
+      quotedText:
+        '(1) The amount of the annuity of an individual provided under subsection (a) shall be increased by an amount equal to seven-tenths of 1 per centum of the product which is obtained by multiplying such individual\'s "years of service" by such individual\'s "average monthly compensation" as determined under this subsection.',
+    }, {
+      kind: 'statute',
       citation: 'S.C. Code 12-6-1120(4)',
       url: 'https://www.scstatehouse.gov/code/t12c006.php',
       quotedText:
@@ -234,31 +239,27 @@ export const southAtlanticStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-09',
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.SC',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
   'sc-form1040-line-o-railroad-benefits-not-modeled': {
-    title: 'South Carolina’s 2025 SC1040 line o reaches federally taxed railroad retirement; the engine cannot certify payer or category',
+    title: 'South Carolina’s SC1040 line o subtracts railroad retirement taxed on the federal return, and it takes no room from the retirement deduction',
     statement:
-      'The 2025 South Carolina Form SC1040 instructions direct taxpayers to enter on line o the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on the federal return. That form line is a different limb from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which rests on section 12-6-1120(4) and the pack\'s `taxesSocialSecurity: false` carrier rather than on line o, and from the current Railroad Retirement Act annuity exemption registered at `sc-45-usc-231m-railroad-annuities-not-modeled`, which rests on 45 U.S.C. 231m rather than on return-instruction wording. This record quotes tax year 2025 form instructions only — broader line o language that reaches Social Security and railroad retirement taxed federally in one entry — and does not extend that line to later years without a later source; its `effectiveFrom`/`effectiveThrough` window is 2025 only. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no Railroad Retirement Board payer, Title 2 versus railroad category, or federal-taxability facts — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying line o railroad retirement. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'railroad retirement benefits taxed on the federal return, as distinct from Title 2 Social Security benefits taxed on the federal return: incomeStreamSchema has no railroad-retirement type',
-        'Railroad Retirement Board payer or railroad benefit category on pensionSchema, whose `source` enum is only private or public',
-        'federal return inclusion status for railroad retirement on StateTaxParams, which carries only the `taxesSocialSecurity` boolean and no railroad-benefit classification',
-      ],
-    },
+      'The 2025 South Carolina Form SC1040 instructions direct taxpayers to enter on line o the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on the federal return, and say that railroad retirement income does not qualify for the retirement deduction on lines p-1 to p-3 because South Carolina does not tax it. For a South Carolina year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`), and `scSection1170Deduction` leaves all three out of its pool, so the owner’s retirement deduction stays available for other retirement income. A single filer aged 64 with 160,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity and a 10,000 dollar IRA distribution subtracts the 20,000 dollars on line o and 3,000 dollars of the IRA as the under-65 retirement deduction, has South Carolina taxable income of 137,000 dollars and pays 6,171.70 dollars for 2026; before 2026-09-30 the engine subtracted only the 3,000 dollars and charged 7,213.70. Settled for a pension tagged with one of the three railroad sources; the federal rule behind line o is registered at `sc-45-usc-231m-railroad-annuities-not-modeled`, and the Title 2 Social Security limb, carried by the state not taxing Social Security, at `sc-code-12-6-1120-4-social-security-subtraction`. The instructions quoted are for tax year 2025, and the federal statute carries the rule to later years. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -269,19 +270,37 @@ export const southAtlanticStateRecords = {
       url: 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
       quotedText:
         '2025 Individual Income Tax Instructions ... Line o: Social Security and/or railroad retirement if taxed on your federal return Enter the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on your federal return.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify',
+      url: 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
+      quotedText:
+        'Disability retirement income due to total and permanent disability, Social Security income, and railroad retirement income do not qualify because these items are not taxed by South Carolina.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'staticStatute',
     effectiveFrom: 2025,
-    effectiveThrough: 2025,
-    verifiedOn: '2026-09-09',
+    effectiveThrough: null,
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateSouthCarolinaRetirement.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.SC',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateSouthCarolinaRetirement.ts#scSection1170Deduction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
@@ -1235,17 +1254,10 @@ export const southAtlanticStateRecords = {
   },
 
   'va-railroad-retirement-and-unemployment-benefits-not-modeled': {
-    title: 'Virginia subtracts Tier 2 and other railroad benefits included in federal AGI; the engine cannot certify benefit type',
+    title: 'Virginia subtracts Tier 2 and the other Railroad Retirement Act benefits included in federal AGI, beside the Tier 1 subtraction',
     statement:
-      'Virginia Department of Taxation guidance on Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits states that federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits from income tax, and that the subtraction is the benefit amount included in federal adjusted gross income as a taxable pension or annuity that was not already deducted on the federal return. Social Security and Tier 1 Railroad Retirement benefits taxed under IRC section 86 are a separate subtraction limb; the age deduction registered at `va-code-58-1-322-03-age-deduction-and-social-security` references adjusted federal AGI reduced by those benefits but does not reach Tier 2 or Railroad Unemployment. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` carries only a private-or-public `source` enum, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit type or federal-deduction facts — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify qualifying Tier 2, vested dual, other Railroad Retirement Act, or Railroad Unemployment Insurance dollars or federal-AGI inclusion not already deducted federally. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'Tier 2, vested dual, other Railroad Retirement Act, or Railroad Unemployment Insurance benefits included in federal adjusted gross income as a taxable pension or annuity not already deducted on the federal return: incomeStreamSchema has no railroad-retirement type',
-        'railroad benefit type or federal-AGI inclusion and federal-deduction status on pensionSchema, whose `source` enum is only private or public',
-      ],
-    },
+      'Virginia Department of Taxation guidance on Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits states that federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits, from income tax, and that the subtraction is the benefit amount included in federal adjusted gross income as a taxable pension or annuity that was not already deducted on the federal return; the federal law is 45 U.S.C. 231m(a), which forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act. Social Security and Tier 1 Railroad Retirement benefits are the separate subtraction of Va. Code 58.1-322.02(3), registered at `va-code-58-1-322-02-3-ss-tier1`. For a Virginia year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`), beside the Tier I subtraction, so each railroad dollar comes off once. A single filer aged 60 with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has Virginia taxable income of 70,320 dollars after the 8,750 dollar standard deduction and the 930 dollar exemption and pays 3,785.90 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 4,935.90. Settled for a pension tagged with one of these railroad sources; the engine deducts nothing for them on the federal return, so the whole federally included amount is subtracted. A railroad employer’s own plan is a private pension and is not subtracted; Railroad Unemployment Insurance benefits have no income type in the plan and are outside this record. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1262,19 +1274,29 @@ export const southAtlanticStateRecords = {
       url: 'https://www.tax.virginia.gov/subtractions',
       quotedText:
         'Federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits from income tax. The amount to be subtracted is the benefit amount that was included in federal adjusted gross income as a taxable pension or annuity, and that was not already deducted on your federal return.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-09',
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.VA',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
   'va-code-58-1-322-03-standard-deduction-steps': {

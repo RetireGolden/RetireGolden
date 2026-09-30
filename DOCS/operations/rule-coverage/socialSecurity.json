@@ -1248,19 +1248,20 @@
     {
       "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
       "title": "WEP and GPO are repealed for title II monthly benefits after December 2023",
-      "classification": "outOfScope",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts, which is consistent with those trigger facts being unrepresentable for any startYear.",
+      "conventionRationale": "A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts. A benefit for a month before 2024 is outside the projection, which starts in the current year.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2027-08-26",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts"
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts"
       ],
       "implementations": [
         {
@@ -1271,10 +1272,44 @@
               "line": 1957
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 44
+            }
+          ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/projection/wepGpoRepeal.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/wepGpoRepeal.rules.test.ts",
+          "line": 67,
+          "note": "own benefit with a non-covered pension",
+          "tests": [
+            {
+              "title": "pays the full PIA at full retirement age beside a non-covered pension",
+              "line": 72
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/wepGpoRepeal.rules.test.ts",
+          "line": 86,
+          "note": "spouse benefit with a non-covered pension",
+          "tests": [
+            {
+              "title": "pays the half-PIA spouse benefit to a spouse drawing a non-covered pension",
+              "line": 91
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [

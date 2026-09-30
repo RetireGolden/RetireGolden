@@ -13,7 +13,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planner/planContextCore'
 import { PrivacyProvider } from '../planner/privacyContext'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'
-import { buildHouseholdGraph, sumEnteredTotals } from './householdGraph'
+import { buildHouseholdGraph, enteredTotalsOfNodes } from './householdGraph'
 import { buildMapViewModel } from './mapViewModel'
 import { HouseholdMapPage } from './HouseholdMapPage'
 
@@ -75,10 +75,9 @@ describe('view model scope', () => {
     const sam = graph.nodes.find((n) => n.kind === 'person' && n.label === 'Sam')!
     const focused = buildMapViewModel(graph, { focusPersonId: sam.id.replace(/^person:/, '') })
     expect(focused.scope).toBe('shown')
-    // The scoped totals are the same reading of stored figures, over the
-    // nodes left on the map — never the whole-household number.
-    const shownGraphNodes = graph.nodes.filter((n) => focused.nodes.some((v) => v.id === n.id))
-    const expected = sumEnteredTotals(shownGraphNodes)
+    // The scoped totals are the engine's entered totals of the accounts left
+    // on the map — never the whole-household number.
+    const expected = enteredTotalsOfNodes(graph, new Set(focused.nodes.map((v) => v.id)))
     expect(focused.totals!.assetsText).not.toBe(whole.totals!.assetsText)
     expect(expected.assets).toBeLessThan(graph.totals.assets)
     // Alex's own accounts are out; the joint ones and Sam's stay.
@@ -87,7 +86,7 @@ describe('view model scope', () => {
     expect(focused.nodes.map((n) => n.label)).toContain('Joint brokerage')
   })
 
-  it('the node-based sum reproduces the stored balances summed straight off the plan', () => {
+  it('the engine sheet reproduces the stored balances summed straight off the plan', () => {
     // Expected values are read from the plan's accounts, not from the graph
     // or the function under test, so a change to either side is caught.
     const plan = buildExampleCouple()
@@ -107,7 +106,7 @@ describe('view model scope', () => {
       netWorth: investable + property - liabilities,
     }
     const graph = buildHouseholdGraph(plan)
-    expect(sumEnteredTotals(graph.nodes)).toEqual(expected)
+    expect(enteredTotalsOfNodes(graph, new Set(graph.nodes.map((n) => n.id)))).toEqual(expected)
     expect(graph.totals).toEqual(expected)
     // Focus on Sam: her IRA plus the joint items, nothing of Alex's own.
     const sam = plan.household.people.find((p) => p.name === 'Sam')!
@@ -117,9 +116,9 @@ describe('view model scope', () => {
       .filter((a) => a.ownerPersonId === null || a.ownerPersonId === sam.id)
       .reduce((sum, a) => sum + ('balance' in a ? a.balance : 0), 0)
     expect(samInvestable).toBeLessThan(investable)
-    const shown = graph.nodes.filter((n) => focused.nodes.some((v) => v.id === n.id))
-    expect(sumEnteredTotals(shown).investable).toBe(samInvestable)
-    expect(sumEnteredTotals(shown).liabilities).toBe(liabilities)
+    const shown = enteredTotalsOfNodes(graph, new Set(focused.nodes.map((v) => v.id)))
+    expect(shown.investable).toBe(samInvestable)
+    expect(shown.liabilities).toBe(liabilities)
   })
 })
 

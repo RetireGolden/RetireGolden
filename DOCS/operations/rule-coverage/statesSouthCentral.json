@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -138,11 +138,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 803,
+          "line": 806,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 804
+              "line": 807
             }
           ]
         }
@@ -323,7 +323,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 806,
+          "line": 809,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 807
+              "line": 810
             }
           ]
         }
@@ -407,11 +407,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -567,7 +567,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -654,7 +654,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -749,7 +749,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -822,7 +822,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -905,11 +905,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1017,7 +1017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1084,11 +1084,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1170,11 +1170,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1245,7 +1245,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1288,8 +1288,8 @@
     },
     {
       "id": "al-form40-railroad-retirement-not-modeled",
-      "title": "Alabama excludes Federal Railroad Retirement benefits; the engine has no railroad input",
-      "classification": "outOfScope",
+      "title": "Alabama does not tax Federal Railroad Retirement benefits, so a railroad retirement annuity comes off the Alabama base in full",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
@@ -1298,23 +1298,15 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
         "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/model/plan.ts",
-          "functions": [
-            {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
@@ -1325,17 +1317,57 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+          "functions": [
+            {
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
             {
-              "name": "computeStateTaxableIncome",
-              "line": 1276
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 213,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Alabama return",
+              "line": 217
+            },
+            {
+              "title": "subtracts tier I, tier II and the other annuities in full, outside the age-65 exclusion",
+              "line": 227
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -1343,6 +1375,16 @@
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -1379,7 +1421,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1445,7 +1487,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1527,7 +1569,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1612,11 +1654,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1729,7 +1771,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1828,11 +1870,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1928,7 +1970,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2002,11 +2044,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2090,11 +2132,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2186,7 +2228,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2275,7 +2317,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2413,7 +2455,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -2543,7 +2585,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2627,7 +2669,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -2722,7 +2764,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2802,11 +2844,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2902,7 +2944,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1284
+              "line": 1329
             }
           ]
         }
@@ -2975,7 +3017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3048,7 +3090,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -3116,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }

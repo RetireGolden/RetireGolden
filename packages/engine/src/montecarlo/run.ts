@@ -282,6 +282,13 @@ export interface Histogram {
 
 export interface MonteCarloSummary {
   pathCount: number
+  /**
+   * Number of paths whose investable assets never deplete (depletionYear
+   * null): the paths that lasted to the end of the plan. successRate is this
+   * count ÷ pathCount, and this count + downsideRisk.failingPathCount =
+   * pathCount.
+   */
+  lastingPathCount: number
   /** Share of paths whose investable assets never deplete. */
   successRate: number
   /**
@@ -376,6 +383,13 @@ export interface MonteCarloSummary {
   endingAfterTaxEstate: { percentiles: Omit<YearPercentiles, 'year'>; histogram: Histogram }
   /** Depletion year → number of paths first depleting that year (successes excluded). */
   depletionYearCounts: { year: number; count: number }[]
+  /**
+   * Among the paths that deplete, the calendar year by which half of them
+   * have first depleted: walking depletionYearCounts in year order, the first
+   * year whose running count reaches half of downsideRisk.failingPathCount
+   * (the lower median when that count is even). Null when no path depletes.
+   */
+  medianFirstDepletionYear: number | null
   /**
    * One row per depletion year in `depletionYearCounts` order: `probability` is
    * that year's count divided by the total path count (successes included in
@@ -553,6 +567,7 @@ export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins
   }
   return {
     pathCount: paths.length,
+    lastingPathCount: successes,
     successRate: share(successes),
     requiredFloorSuccessRate: share(requiredFloorSuccesses),
     targetLifestyleSuccessRate: share(targetLifestyleSuccesses),
@@ -588,8 +603,30 @@ export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins
       histogram: histogramFor(endingAfterTaxEstates, histogramBins),
     },
     depletionYearCounts,
+    medianFirstDepletionYear: medianFirstDepletionYear(depletionYearCounts, failingPathCount),
     depletionProbabilityByYear,
   }
+}
+
+/**
+ * The median first-depletion year of the failing paths: walking the
+ * per-year counts in year order, the first year whose running count reaches
+ * half of `failingPathCount`, so the lower of the two middle years when the
+ * count is even. The counts are the aggregation's own, which add up to
+ * `failingPathCount` because both count a path exactly when its depletionYear
+ * is set; so when no path fails there is no row to walk and the median is
+ * null.
+ */
+function medianFirstDepletionYear(
+  depletionYearCounts: readonly { year: number; count: number }[],
+  failingPathCount: number,
+): number | null {
+  let seen = 0
+  for (const row of depletionYearCounts) {
+    seen += row.count
+    if (seen >= failingPathCount / 2) return row.year
+  }
+  return null
 }
 
 /** Merge per-worker partial results (path order does not affect aggregation). */

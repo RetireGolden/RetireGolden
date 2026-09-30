@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 3e88f1862d7d80ca276b0f137bb90325b73d1813.
+ * Output field coverage imported from the output-family census at commit 588183401a7d49b5209b554ce86e54cf340a7f93.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -1448,6 +1448,50 @@ const coverageCensus = [
     "tsType": "number"
   },
   {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "assets",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "investable",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "tsType": "number",
+    "note": "Operand of assets; the map prints assets, debts and net, not this subtotal."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "liabilities",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "tsType": "number",
+    "note": "Printed as \"debts\"."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "netWorth",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "tsType": "number",
+    "note": "Printed as \"net\"."
+  },
+  {
+    "source": "engine/src/model/enteredBalanceSheet.ts",
+    "owner": "EnteredBalanceSheet",
+    "field": "property",
+    "disposition": "family",
+    "familyId": "household-map-entered-totals",
+    "tsType": "number",
+    "note": "Operand of assets; the map prints assets, debts and net, not this subtotal."
+  },
+  {
     "source": "engine/src/montecarlo/frontiers.ts",
     "owner": "StochasticFrontierPoint",
     "field": "expectedShortfallDollars",
@@ -2457,6 +2501,22 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "monte-carlo-ideal-funding-rate",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/run.ts",
+    "owner": "MonteCarloSummary",
+    "field": "lastingPathCount",
+    "disposition": "family",
+    "familyId": "monte-carlo-lasting-and-depleted-path-counts",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/run.ts",
+    "owner": "MonteCarloSummary",
+    "field": "medianFirstDepletionYear",
+    "disposition": "family",
+    "familyId": "monte-carlo-median-first-depletion-year",
+    "tsType": "number | null"
   },
   {
     "source": "engine/src/montecarlo/run.ts",
@@ -9029,6 +9089,14 @@ const coverageCensus = [
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "owner": "BridgePanel",
+    "field": "totalCost",
+    "disposition": "family",
+    "familyId": "social-security-bridge-ladders-total-cost",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
     "owner": "SsAnalysisPage",
     "field": "piaAnnual",
     "disposition": "family",
@@ -9145,6 +9213,24 @@ const coverageCensus = [
     "reasonKind": "runtime-diagnostic",
     "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior.",
     "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/explainPanels.tsx",
+    "owner": "WhySuccessPanel",
+    "field": "medianDepletion",
+    "disposition": "family",
+    "familyId": "monte-carlo-median-first-depletion-year",
+    "tsType": "number | null"
+  },
+  {
+    "source": "planner-ui/src/planner/explainPanels.tsx",
+    "owner": "WhySuccessPanel",
+    "field": "precision",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "WhySuccessPanel.precision: a fixed label, \"±0.5\" at 10,000 paths or more and \"±1.5\" below, printed as how many points the success rate is good to; chosen by run size, not computed from the plan or the paths. It is about one binomial standard error at a 50% success rate (0.5 points at 10,000 paths, 1.6 at 1,000).",
+    "tsType": "string"
   },
   {
     "source": "planner-ui/src/planner/format.ts",
@@ -10189,6 +10275,15 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "display-dollar-basis-conversion",
     "tsType": "function"
+  },
+  {
+    "source": "planner-ui/src/report/reportHtml.ts",
+    "owner": "lossReasonForCandidate",
+    "field": "trailingAmount",
+    "disposition": "family",
+    "familyId": "optimizer-candidate-trailing-estate-amount",
+    "tsType": "number | null",
+    "note": "The gap the sentence prints, read from the engine (projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount); null when the candidate does not trail."
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",
@@ -13808,6 +13903,14 @@ const exclusionCensus = [
     "field": "value",
     "reasonKind": "runtime-diagnostic",
     "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-explainpanels-tsx-whysuccesspanel-precision",
+    "path": "planner-ui/src/planner/explainPanels.tsx",
+    "symbol": "WhySuccessPanel",
+    "field": "precision",
+    "reasonKind": "label-or-category",
+    "reason": "WhySuccessPanel.precision: a fixed label, \"±0.5\" at 10,000 paths or more and \"±1.5\" below, printed as how many points the success rate is good to; chosen by run size, not computed from the plan or the paths. It is about one binomial standard error at a 50% success rate (0.5 points at 10,000 paths, 1.6 at 1,000)."
   },
   {
     "id": "field-planner-ui-src-planner-montecarlopage-tsx-modelkind-pathcount",

@@ -48,8 +48,10 @@ Retirement benefits are fully exempt, but these are special cases not covered by
 the big-levers private-retiree model.)
 
 ## Simplifications / not modeled
-- Exemption of military retirement, federal civil-service (CSRS/FERS) annuities,
-  and Railroad Retirement not modeled (`none` overstates tax for those retirees).
+- Exemption of military retirement and federal civil-service (CSRS/FERS)
+  annuities not modeled (`none` overstates tax for those retirees). Railroad
+  Retirement comes off in full, as in every state, under 45 U.S.C. 231m
+  (`usc-45-231m-state-tax-bar`, 2026-09-30).
 - Nebraska's top rate is **phasing down** under LB 754 (5.20% in 2025 → 4.55% in
   2026 → 3.99% in 2027); the 2025 nominal rates are held forward — re-check at the
   2026 transcription point. (2026-09-28: rates three and four at 3.99% from 2027,

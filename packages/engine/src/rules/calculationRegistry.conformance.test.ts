@@ -1499,7 +1499,8 @@ describe('calculation registry conformance', () => {
       }
     }
     expect(violations).toEqual([])
-    // Slice 1 of B2-P1 moved eleven, slice 2 nine, slice 3 six, slice 4 nine and slice 5 five; a later slice adds to the list.
+    // Slice 1 of B2-P1 moved eleven, slice 2 nine, slice 3 six, slice 4 nine and slice 5 five, and the five
+    // families the census froze as pending (2026-09-30) followed; a later relocation adds to the list.
     expect(
       Object.entries(families)
         .filter(([, family]) => family.relocation?.status === 'done')
@@ -1525,11 +1526,16 @@ describe('calculation registry conformance', () => {
       'display-upside-shortfall-annual',
       'display-upside-spending-annual',
       'display-years-before-plan-end',
+      'household-map-entered-totals',
       'income-floor-ladder-yield-pct',
       'insight-monte-carlo-success-delta',
+      'monte-carlo-lasting-and-depleted-path-counts',
+      'monte-carlo-median-first-depletion-year',
+      'optimizer-candidate-trailing-estate-amount',
       'optimizer-schedule-conversion-total',
       'relocation-tax-comparison',
       'social-security-break-even',
+      'social-security-bridge-ladders-total-cost',
       'social-security-claiming-sweep-objective',
       'social-security-computation-summary-counts',
       'social-security-credit-estimate',

@@ -1,15 +1,15 @@
 # Mutation receipt: monte-carlo-fan-chart-ranges
 
-Executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `da378d9b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `fbc9a9d3` (branch `claude/ui-relocations-six`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/run.ts b/packages/engine/src/montecarlo/run.ts
-index c12606f1..18dfb83a 100644
+index 46dbbe43..682b224b 100644
 --- a/packages/engine/src/montecarlo/run.ts
 +++ b/packages/engine/src/montecarlo/run.ts
-@@ -409,5 +409,5 @@
+@@ -423,5 +423,5 @@
      p50: percentile(sorted, 50),
      p75: percentile(sorted, 75),
 -    p90: percentile(sorted, 90),
@@ -28,14 +28,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.fanRanges.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed because the census freeze additions (B2-P1) added MonteCarloSummary.lastingPathCount and medianFirstDepletionYear to run.ts, which moved the production lines this receipt quotes; the mutation is unchanged. The baseline is green (run.fanRanges.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
- ❯ src/montecarlo/run.fanRanges.evidence.test.ts (1 test | 1 failed) 7ms
+ ❯ src/montecarlo/run.fanRanges.evidence.test.ts (1 test | 1 failed) 6ms
    ❯ monte-carlo-fan-chart-ranges — Fan chart percentile ranges (1)
-     × draws the outer band from p10 to p90 and the inner from p25 to p75 of the fan row, not their widths 7ms
+     × draws the outer band from p10 to p90 and the inner from p25 to p75 of the fan row, not their widths 5ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

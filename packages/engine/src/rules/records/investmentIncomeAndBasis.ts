@@ -595,6 +595,64 @@ export const investmentIncomeAndBasisRecords = {
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
+  'usc-45-231m-state-tax-bar': {
+    title: 'No state may tax a Railroad Retirement Act annuity, so every state subtracts a railroad retirement annuity in full',
+    statement:
+      '45 U.S.C. 231m(a) provides that, notwithstanding any law of any State, no annuity or supplemental annuity under the Railroad Retirement Act shall be subject to any tax, except as subsection (b) and the Internal Revenue Code provide; subsection (b)(1) only keeps the supplemental annuity in federal income. An annuity under the Act is the tier I amount of 231b(a)(1) increased by the tier II amount of 231b(b)(1), with the vested dual benefit of 231b(h), and the supplemental annuity is paid under 231a(b). A pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) is one of these. So in every state with an income tax on wages or pensions `characterizedRetirementDelta` subtracts the federally included amount of those pensions (`railroadRetirementActSubtraction`) before any of the state’s own rules, less the sources the state’s own law already subtracts under its own record (`federalRailroadRetirementActKinds`: all three in Arkansas, Colorado, Iowa, Kansas, Louisiana, Massachusetts, Missouri, Utah and Vermont, tier I in Virginia and West Virginia), and no state’s retirement pool counts a railroad source, so each comes off exactly once. A state with no tax on this income never reaches the subtraction. For a single filer aged 60 with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity, 2026: Pennsylvania charged 3,070.00 dollars before 2026-09-30 and 2,456.00 after; Delaware, which counted the annuity in its 12,500 dollar pension exclusion, 4,544.00 and 4,049.00; West Virginia, which subtracted tier I only, 3,690.90 and 2,774.90. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is a private pension and is not subtracted; railroad unemployment and sickness benefits (45 U.S.C. 352(e)) have no income type in the plan and are outside this record. Alabama, New York, Oregon, Rhode Island, South Carolina, Virginia and Wisconsin also have records quoting their own instructions on the point, for example `wi-schedule-sb-15-railroad-benefits-not-modeled`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Applied once for every state rather than state by state in the per-state tax data, because it is federal law binding every state, as the federal-obligations exemption at `usc-31-3124-a-federal-obligations-state-exempt` is. The states whose own records already subtracted a railroad source keep that subtraction, and the federal rule takes only the rest.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(b)(1) This section shall not operate to exclude the amount of any supplemental annuity paid to an individual under section 231a(b) of this title from income taxable pursuant to the Federal income tax provisions of the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.].',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231b(a)(1), tier I',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b',
+      quotedText:
+        '(1) The annuity of an individual under section 231a(a)(1) of this title shall be in an amount equal to the amount (before any reduction on account of age and before any deductions on account of work) of the old-age insurance benefit or disability insurance benefit to which such individual would have been entitled under the Social Security Act [42 U.S.C. 301 et seq.] if all of his or her service as an employee after December 31, 1936, had been included in the term "employment" as defined in that Act.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231b(b)(1), tier II',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231b',
+      quotedText:
+        '(1) The amount of the annuity of an individual provided under subsection (a) shall be increased by an amount equal to seven-tenths of 1 per centum of the product which is obtained by multiplying such individual\'s "years of service" by such individual\'s "average monthly compensation" as determined under this subsection.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231a(b), supplemental annuity',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231a',
+      quotedText:
+        '(b) Individuals eligible for supplemental annuities … shall, subject to the conditions set forth in subsections (e) and (h), be entitled to a supplemental annuity in the amount provided under section 231b of this title',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-30',
+    implementedBy: [
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#RAILROAD_SOURCES_SUBTRACTED_UNDER_STATE_LAW',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
   'irc-165-c-personal-use-sale-loss-nondeductible': {
     title: 'The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones',
     statement:

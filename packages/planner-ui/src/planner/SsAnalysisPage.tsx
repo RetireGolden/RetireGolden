@@ -31,7 +31,7 @@ import {
 } from 'recharts'
 
 import { runMonteCarlo } from '../mc/pool'
-import { sizeBridge, type BridgeSizing } from '@retiregolden/engine/ladder/bridge'
+import { bridgeLaddersTotalCost, sizeBridge, type BridgeSizing } from '@retiregolden/engine/ladder/bridge'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { Person, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
@@ -358,7 +358,8 @@ function BridgePanel() {
     }
   }
 
-  const totalCost = sized.reduce((sum, s) => sum + s.bridge.ladderCost, 0)
+  // The engine's sum of the offered bridges' quoted ladder costs (B2-P1).
+  const totalCost = bridgeLaddersTotalCost(sized.map((s) => s.bridge))
   return (
     <div className="card">
       <h2>Social Security bridge</h2>

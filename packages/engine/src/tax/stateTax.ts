@@ -11,6 +11,21 @@
  * set above zero (a manual correction); otherwise a modeled pack is used, and
  * unmodeled states contribute zero until their pack ships.
  *
+ * Railroad Retirement Act annuities come off the base in every state with an
+ * income tax, under 45 U.S.C. 231m (usc-45-231m-state-tax-bar, applied at the
+ * top of `characterizedRetirementDelta`).
+ *
+ * Military retirement: a state's own military rule is modeled only in
+ * Arkansas, California, Delaware, Idaho, Iowa, Kansas, Massachusetts,
+ * Missouri, New Jersey, Rhode Island, South Carolina, Utah, Vermont, Virginia
+ * and West Virginia. Everywhere else a pension tagged Military retirement or
+ * Military survivor benefit is priced under the state's general retirement
+ * rules, and the state's own military exclusion, with its age or income
+ * tests, is not modeled yet. The first known case is Wisconsin, which
+ * subtracts U.S. military retirement pay in full (2025 Schedule SB, line 12);
+ * the engine gives it only the retirement income subtraction at 67 or older.
+ * This is a stated limit of the state-enacted-tax-year-figures calculation.
+ *
  * @see DOCS/features/taxes.md
  */
 
@@ -120,6 +135,11 @@ import {
   wisconsinPersonalExemption,
   wisconsinStandardDeduction,
 } from './stateMidwestExtras.js'
+import {
+  federalRailroadRetirementActKinds,
+  railroadRetirementActSubtraction,
+  rhodeIslandMilitaryServicePensionModification,
+} from './stateRailroadAndMilitary.js'
 import { ageOnDate } from '../projection/internal/stateRetirementFactsAdapter.js'
 
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
@@ -398,6 +418,12 @@ function characterizedRetirementDelta(
   const taxCredit = 0
   const code = params.code
 
+  // 45 U.S.C. 231m(a): no state may tax a Railroad Retirement Act annuity
+  // (usc-45-231m-state-tax-bar). Subtracted here, before every state's own
+  // rules, for the railroad sources the state's own law does not already
+  // subtract below; no retirement pool below counts a railroad source.
+  taxableIncomeDelta -= railroadRetirementActSubtraction(distributions, federalRailroadRetirementActKinds(code))
+
   if (code === 'IA') {
     const part = iowaRetirementExclusionTotal(distributions)
     taxableIncomeDelta += part.taxableIncomeDelta
@@ -416,6 +442,8 @@ function characterizedRetirementDelta(
   }
 
   if (code === 'SC') {
+    // Railroad retirement (SC1040 line o) came off above under 45 U.S.C. 231m
+    // and does not enter the section 1170 pool below.
     const military = scMilitaryDeduction(distributions)
     taxableIncomeDelta += military.taxableIncomeDelta
     warnings.push(...military.warnings)
@@ -535,8 +563,10 @@ function characterizedRetirementDelta(
     warnings.push(...military.warnings)
     // Remaining ordinary NJ pension cap stays on the coarse path when only
     // military facts are characterized; integrator should supply full components.
+    // Railroad sources came off in full above (45 U.S.C. 231m), so they stay
+    // out of the pension exclusion.
     const nonMilitary = distributions.filter(
-      (f) => f.sourceKind !== 'militaryRetirement' && f.sourceKind !== 'militarySurvivor',
+      (f) => f.sourceKind !== 'militaryRetirement' && f.sourceKind !== 'militarySurvivor' && !isRailroadSource(f.sourceKind),
     )
     if (nonMilitary.length > 0) {
       const privateAmt = nonMilitary
@@ -578,8 +608,10 @@ function characterizedRetirementDelta(
         }
         // Section1106(b)(3): eligible retirement income (including IRA) is
         // an age60+ limb; under60 ordinary relief is employer/government pension.
+        // Railroad sources came off in full above (45 U.S.C. 231m) and take
+        // no room in either limb.
         return age60Plus
-          ? !isMilitarySource(fact.sourceKind)
+          ? !isMilitarySource(fact.sourceKind) && !isRailroadSource(fact.sourceKind)
           : ['ordinaryPrivatePension', 'employerPlan', 'federalCivilService', 'stateLocalPublic'].includes(fact.sourceKind)
       }).reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
       const military = rows.filter((fact) => isMilitarySource(fact.sourceKind)).reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
@@ -636,6 +668,8 @@ function characterizedRetirementDelta(
     // here; applying the SS paragraph again would subtract unrelated income.
     const tier1 = distributions.filter((fact) => fact.sourceKind === 'railroadTier1').reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
     taxableIncomeDelta -= virginiaSsTier1Subtraction({ federallyIncludedSocialSecurity: 0, federallyIncludedRailroadTier1: tier1 })
+    // Tier II, the vested dual benefit and the other Railroad Retirement Act
+    // annuities came off above under 45 U.S.C. 231m(a).
     const remainingBasis = new Map<string, number>()
     for (const fact of distributions) {
       const enumerated =
@@ -864,9 +898,18 @@ function characterizedRetirementDelta(
     warnings.push(...part.warnings)
   }
 
+  // Railroad sources came off at the top under 45 U.S.C. 231m(a) and are in
+  // neither retirement pool below.
+  // Rhode Island 44-30-12(c)(11): military service pensions in full, with no
+  // age or AGI test, so before the (c)(9) AGI test returns.
+  if (code === 'RI') {
+    taxableIncomeDelta -= rhodeIslandMilitaryServicePensionModification(distributions)
+  }
+
   // Rhode Island 44-30-12(c)(9): no pension modification at or above the
   // Social Security modification's AGI limit, and the Division's instructions
-  // leave IRA distributions out of it.
+  // leave IRA distributions out of it, and military service pensions, which
+  // (c)(11) subtracts above and (c)(11)(iii) keeps from being counted twice.
   if (code === 'RI' && params.rhodeIslandSocialSecurityModification && !rhodeIslandPensionModificationAllowed({
     config: params.rhodeIslandSocialSecurityModification,
     joint: context.joint,
@@ -874,7 +917,9 @@ function characterizedRetirementDelta(
   })) {
     return { taxableIncomeDelta, taxCredit, warnings }
   }
-  const eligibleDistributions = code === 'RI' ? distributions.filter((fact) => fact.sourceKind !== 'ira') : distributions
+  const eligibleDistributions = code === 'RI'
+    ? distributions.filter((fact) => fact.sourceKind !== 'ira' && !isMilitarySource(fact.sourceKind))
+    : distributions
 
   // Most default pack caps are per recipient (KY, AL, GA, ME, NY, OK,
   // RI), so another spouse's unused exclusion cannot shelter this owner's

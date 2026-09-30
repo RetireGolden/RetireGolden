@@ -205,13 +205,13 @@ export const northeastStateRecords = {
   'ny-government-pension-issuer-qualification-not-modeled': {
     title: 'New York subtracts qualifying governmental pensions only, but the coarse public bucket removes every `publicPensionIncome` dollar',
     statement:
-      'New York Department of Taxation and Finance guidance allows a full subtraction only for distributions from a New York State or local government pension plan or a federal government pension plan, including military pensions under the United States or its agencies, to the extent included in federal adjusted gross income — and, for Optional Retirement Program members, only the portion attributable to employment with the State, City University of New York, or the New York State Education Department. Approximated: the 2026 pack sets `retirementPublic: { kind: \'full\' }` through `PUBLIC_PENSION_OVERRIDES`, so `retirementExclusion` subtracts every `publicPensionIncome` dollar without an issuer check or an ORP employment-attributable portion check. `pensionSchema.source` is only `private` or `public`, `incomeStreamSchema` has no governmental issuer, plan, military-service, or eligible-portion fields, and `StateTaxParams` / `StateRetirementExclusion` carry no New York issuer or portion facts — missing eligibility is a caller assumption, not a typed field. That coarse bucket understates tax when a routed `public` amount is not a qualifying governmental pension or includes a non-qualifying ORP excess; it does not claim every out-of-state public pension is taxable. The conditional full subtraction once eligibility is established is registered at `ny-dtf-qualified-government-pension-full-subtraction`.',
+      'New York Department of Taxation and Finance guidance allows a full subtraction only for distributions from a New York State or local government pension plan or a federal government pension plan, including military pensions under the United States or its agencies, to the extent included in federal adjusted gross income — and, for Optional Retirement Program members, only the portion attributable to employment with the State, City University of New York, or the New York State Education Department. Approximated: the 2026 pack sets `retirementPublic: { kind: \'full\' }` through `PUBLIC_PENSION_OVERRIDES`, so `retirementExclusion` subtracts every `publicPensionIncome` dollar without an issuer check or an ORP employment-attributable portion check. The plan says more than private or public: a pension’s `source` can be federal civil service, state or local public, military retirement or military survivor benefit (`pensionSourceKindSchema` in model/stateTaxPlanFacts.ts), and `stateEligibility.planJurisdiction` can name the plan’s state. The New York rule uses neither: every dollar in the public group, those sources with the legacy `public` and unknown public ones, is subtracted in full whether or not its issuer is one the guidance names, and an Optional Retirement Program member’s employment-attributable portion has no plan fact at all. Until 2026-09-30 this record said the source was only private or public, which had stopped being true. That coarse bucket understates tax when a routed `public` amount is not a qualifying governmental pension or includes a non-qualifying ORP excess; it does not claim every out-of-state public pension is taxable. The conditional full subtraction once eligibility is established is registered at `ny-dtf-qualified-government-pension-full-subtraction`.',
     classification: 'approximated',
     contraryReading:
       'Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.',
     errorDirection: 'understatesTax',
     conventionRationale:
-      'The public bucket is one `{ kind: \'full\' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: \'public\'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window (baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome`), not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.',
+      'The public bucket is one `{ kind: \'full\' }` flag: the New York rule reads neither the pension’s source kind nor its plan state, no plan fact holds an Optional Retirement Program portion, and `annualPensionAndAnnuityIncome` routes explicit `source: \'public\'` to `publicPensionIncome` without validating it. The pin uses the 2026 observed model window (baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome`), not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.',
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
@@ -283,18 +283,10 @@ export const northeastStateRecords = {
   },
 
   'ny-it225-s122-non-ss-railroad-benefits-not-modeled': {
-    title: 'New York subtracts non-Tier-1 railroad benefits on IT-225 S-122; the engine cannot identify them',
+    title: 'New York subtracts railroad retirement: tier I with Social Security, tier II and the supplemental annuity on IT-225 S-122',
     statement:
-      'New York Department of Taxation and Finance guidance allows a subtraction from federal adjusted gross income when computing New York adjusted gross income for supplemental annuity or Tier 2 benefits received under the Railroad Retirement Act of 1974, or benefits received under the Railroad Unemployment Insurance Act, that were included in federal adjusted gross income and are exempt from state income taxes under Title 45 of the United States Code, using Form IT-225 code S-122. Social Security-equivalent Tier 1 railroad retirement benefits are a separate subtraction registered at `ny-dtf-social-security-subtraction`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Act category, Railroad Unemployment Insurance Act provenance, or Title 45 exemption flag, and `StateTaxParams` carries no railroad-benefit classification — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying S-122 benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record does not certify part-year allocation, unsupported filing statuses, or whole-return IT-225 accuracy.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'whether a benefit is supplemental annuity or Tier 2 under the Railroad Retirement Act of 1974, as distinct from Social Security-equivalent Tier 1 railroad retirement benefits',
-        'whether a benefit is received under the Railroad Unemployment Insurance Act',
-        'whether the benefit is exempt from state income taxes under Title 45 of the United States Code',
-      ],
-    },
+      '45 U.S.C. 231m(a) forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act. New York Department of Taxation and Finance guidance applies it in two places: Social Security equivalent tier 1 railroad retirement benefits included in federal adjusted gross income are subtracted (IT-201 line 27), and supplemental annuity or tier 2 benefits under the Railroad Retirement Act of 1974, or benefits under the Railroad Unemployment Insurance Act, that are exempt from state income taxes under Title 45 are subtracted on Form IT-225 with code S-122. For a New York year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`); the three are outside the 20,000 dollar pension and annuity exclusion pool, so the subtraction takes nothing from it. A single filer with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has New York taxable income of 72,000 dollars after the 8,000 dollar standard deduction and pays 3,723.00 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 4,859.75. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is a private pension and is not subtracted; railroad unemployment insurance benefits have no income type in the plan and are outside this record, as are part-year allocation and whole-return IT-225 accuracy. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -311,19 +303,29 @@ export const northeastStateRecords = {
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'Social Security equivalent Tier 1 railroad retirement benefits that are included in federal adjusted gross income may be subtracted from your federal adjusted gross income when computing your New York adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-09',
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.NY',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
@@ -1187,20 +1189,10 @@ export const northeastStateRecords = {
   },
 
   'ri-code-44-30-12-c-11-military-pension-not-modeled': {
-    title: 'Rhode Island exempts qualifying military-service pensions under §44-30-12(c)(11); the engine cannot certify military source or portion',
+    title: 'Rhode Island subtracts a military service pension in full under 44-30-12(c)(11), with no age or income test and survivors included',
     statement:
-      'For tax years beginning on or after January 1, 2023, Rhode Island allows a modification subtracting military service pension benefits included in federal adjusted gross income. The term military service follows 20 C.F.R. § 212.2, and the modification allowed under subsection (c)(11) alone or together with subsection (c)(9) cannot exceed the military service pension received in the tax year. That limb is separate from the general pension modification at `ri-gen-laws-44-30-12-social-security-and-pension-modification`, from Railroad Retirement at `ri-schedule-m-1d-railroad-benefits-not-modeled`, and from the TY2026 bracket and standard-deduction amounts registered at `ri-dot-adv-2025-22-2026-deduction-and-rate-schedule`. Out of scope: `pensionSchema.source` is only `private` or `public`, `incomeStreamSchema` has no military-service, federal-military payer, or qualifying-portion fields, and `StateTaxParams` / `StateRetirementExclusion` carry no military-pension provenance — so no accepted pension or income-stream input can establish a qualifying military-service pension, avoid duplicate use with the general pension modification, or identify the federally included portion to subtract. Generic public or private pension amounts are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes the 2025 Rhode Island retirement income tax guide and reproduced statute text only; it does not fabricate a 2026 guide or assert new annual dollar figures.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'whether a pension is a military service pension included in federal adjusted gross income, as defined through 20 C.F.R. § 212.2',
-        'the amount of military service pension received in the tax year so modifications under §44-30-12(c)(9) and (c)(11) do not exceed that receipt',
-        'military-service or federal-military payer provenance on pensionSchema, whose `source` enum is only private or public',
-        'military-service, benefit-source, or qualifying-portion facts on incomeStreamSchema',
-        'military-pension classification on StateTaxParams / StateRetirementExclusion, which carry only retirement-exclusion kind, cap, and age facts',
-      ],
-    },
+      'For tax years beginning on or after January 1, 2023, R.I. Gen. Laws 44-30-12(c)(11) lets a taxpayer subtract the military service pension benefits included in federal adjusted gross income, with military service defined as in 20 C.F.R. 212.2, and (c)(11)(iii) keeps the (c)(11) modification, alone or with the (c)(9) pension and annuity modification, from exceeding the military service pension received. The Division of Taxation’s Publication 2026-01 says the modification has no income or age requirements, that a surviving spouse receiving the pension is also eligible, and that income claimed under it cannot also be claimed for the pension and annuity modification; the 2025 instructions report it on Schedule M line 1v and keep it off line 1t. For a Rhode Island year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Military retirement or Military survivor benefit (`rhodeIslandMilitaryServicePensionModification`) before the (c)(9) federal AGI test, and leaves those pensions out of the (c)(9) pool. A single filer aged 62 with 100,000 dollars of ordinary income that includes a 40,000 dollar military retirement pension has Rhode Island taxable income of 48,800 dollars after the 11,200 dollar standard deduction and pays 1,830.00 dollars for 2026; before 2026-09-30 the engine priced the pension under (c)(9) alone, which allows nothing before full retirement age, and charged 3,397.50. At 68 with 150,000 dollars, above the (c)(9) AGI limit, the filer pays 3,872.50 where the engine charged 5,772.50; at 68 with 100,000 dollars and a 30,000 dollar private pension beside the military one, the military pension comes off in full and the private one under (c)(9), and the filer pays 705.00 where the shared 50,000 dollar cap charged 1,455.00. Settled for a pension tagged Military retirement or Military survivor benefit: the tag is the taxpayer’s statement that the pension is paid for military service. The id keeps its earlier suffix; the general pension modification is registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1211,6 +1203,24 @@ export const northeastStateRecords = {
       url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf',
       quotedText:
         'For tax years beginning on or after January 1, 2023, military service pensions are fully exempt from Rhode Island Personal Income Tax. R.I. Gen. Laws § 44-30-12(c)(11) allows for a modification reducing federal AGI for taxpayers receiving military service pensions. When filing a Rhode Island Personal Income Tax return, a taxpayer will be able to subtract the amount of the military service pension benefits that were included in their federal AGI.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025)',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf',
+      quotedText:
+        'Unlike the Pension and Annuity Income Modification, there are no income or age requirements. The full amount of taxable military service pension income qualifies for this modification.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025)',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf',
+      quotedText:
+        'In addition, a surviving spouse who has received military pension benefits on behalf of a spouse who served in the armed forces is also eligible for the Military Service Pension Modification. Military service pension income claimed for the Military Service Pension Modification cannot also be claimed for the Pension and Annuity Income Modification.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',
+      quotedText:
+        'Pursuant to R.I. Gen. Laws § 44-30-12(c)(11), beginning with tax year 2023, there is a decreasing modification solely for reporting a military service pension. Accordingly, do not include any amount related to a military service pension on this line.',
     }, {
       kind: 'statute',
       citation: 'R.I. Gen. Laws §44-30-12(c)(11)(i)(A)',
@@ -1233,30 +1243,26 @@ export const northeastStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2023,
     effectiveThrough: null,
-    verifiedOn: '2026-09-09',
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#RI',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#rhodeIslandMilitaryServicePensionModification',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
   'ri-schedule-m-1d-railroad-benefits-not-modeled': {
-    title: 'Rhode Island exempts federally included 1974 Railroad Retirement benefits on Schedule M line 1d; the engine cannot identify them',
+    title: 'Rhode Island exempts federally included Railroad Retirement benefits on Schedule M line 1d, with no age or income test',
     statement:
-      'The 2025 Rhode Island resident instructions for tax year 2025 state that under the Federal 1974 Railroad Retirement Act the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes is exempt from state income taxes, reported on RI Schedule M line 1d. That limb is separate from the pension or annuity modification on Schedule M line 1t and from the Social Security and pension approximations registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Board payer or Federal 1974 Railroad Retirement Act provenance, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying Schedule M line 1d benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 resident instructions only and does not extend that exemption to later years without a later source.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'whether Railroad Retirement benefits are paid by the Railroad Retirement Board under the Federal 1974 Railroad Retirement Act, as distinct from pension income reported on Schedule M line 1t',
-        'the amount of Railroad Retirement benefits included in gross income for federal income tax purposes that qualify for the full state exemption',
-      ],
-    },
+      '45 U.S.C. 231m(a) forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act, and the 2025 Rhode Island resident instructions say that under the Federal 1974 Railroad Retirement Act the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes is exempt from state income taxes, subtracted on Schedule M line 1d and kept out of the line 1t pension and annuity modification. For a Rhode Island year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`) before the 44-30-12(c)(9) federal AGI test, so the subtraction holds at any income and any age, and the three are outside the (c)(9) pool. A single filer aged 60 with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has Rhode Island taxable income of 68,800 dollars after the 11,200 dollar standard deduction and pays 2,580.00 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 3,397.50. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is a private pension and is not subtracted; railroad unemployment and sickness benefits have no income type in the plan and are outside this record. The instructions quoted are for tax year 2025, and the federal statute carries the rule to later years. The Social Security and pension modifications are registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1275,23 +1281,39 @@ export const northeastStateRecords = {
         'Line 1d – Under the Federal 1974 Railroad Retirement Act, the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes are exempt from state income taxes.',
     }, {
       kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',
+      quotedText:
+        'Do not include amounts related to Railroad Retirement benefits included in your gross income for federal tax purposes on this line. These amounts should be reported on line 1d.',
+    }, {
+      kind: 'formInstruction',
       citation: 'Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d',
       url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/2025%20RI%20Schedule%20M_w.pdf',
       quotedText:
         'Railroad Retirement benefits paid by the Railroad Retirement Board',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'staticStatute',
     effectiveFrom: 2025,
-    effectiveThrough: 2025,
-    verifiedOn: '2026-09-09',
+    effectiveThrough: null,
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#RI',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 

@@ -1623,16 +1623,10 @@ export const southCentralStateRecords = {
   },
 
   'al-form40-railroad-retirement-not-modeled': {
-    title: 'Alabama excludes Federal Railroad Retirement benefits; the engine has no railroad input',
+    title: 'Alabama does not tax Federal Railroad Retirement benefits, so a railroad retirement annuity comes off the Alabama base in full',
     statement:
-      'The Form 40 booklet lists Federal Railroad Retirement benefits among the amounts a taxpayer does not report. Out of scope: the engine has no railroad-retirement income field, so the exclusion cannot be modeled or discriminated by a fixture — a household entering railroad benefits as ordinary income would see them taxed where the booklet exempts them. Registered as an absence rather than folded into the Social Security record, whose fixture only exercises `taxesSocialSecurity`.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-      'a railroad-retirement income stream: incomeStreamSchema has no railroad-retirement type, and a household entering the benefits as ordinary income is indistinguishable from any other ordinary stream',
-      ],
-    },
+      '45 U.S.C. 231m(a) forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act, and the 2025 Alabama Form 40 booklet lists Federal Railroad Retirement benefits among the income a taxpayer does not report, and railroad retirement benefits under the Federal Railroad Retirement Acts among the retirement systems whose payments are not taxable. For an Alabama year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`); the three are outside the 6,000 dollar age-65 retirement exclusion pool, so the subtraction takes nothing from it. A single filer aged 60 with 100,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity has Alabama taxable income of 77,000 dollars and is charged 3,810.00 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 4,810.00. Both figures take the 3,000 dollar maximum standard deduction the engine holds at every income and no personal exemption, the approximations registered at `al-form40-standard-deduction-agi-slide` and `al-form40-personal-and-dependent-exemptions-not-modeled`; the difference, the 20,000 dollars at the 5 percent rate, does not depend on them. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is a private pension and is not subtracted; railroad unemployment and sickness benefits have no income type in the plan and are outside this record. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1643,20 +1637,35 @@ export const southCentralStateRecords = {
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Examples of Income You DO NOT Report … United States Retirement System benefits. … Federal Railroad Retirement benefits.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Amounts you received from the following retirement systems are not taxable and should not be reported. … Railroad retirement benefits received under the Federal Railroad Retirement Acts of 1935 and 1937.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-28',
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
       'packages/engine/src/params/state/data/year2026.ts#states.AL',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 

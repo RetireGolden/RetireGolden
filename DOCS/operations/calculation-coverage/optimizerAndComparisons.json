@@ -546,6 +546,126 @@
       }
     },
     {
+      "id": "mcp-compare-ending-after-tax-estate-delta",
+      "title": "MCP scenario ending after-tax estate delta",
+      "kind": "composition",
+      "outputs": [
+        "mcp-compare-ending-after-tax-estate-delta"
+      ],
+      "feeds": [],
+      "purpose": "The difference RetireGolden-MCP's compare_scenarios reports between two plans' ending after-tax estates: Plan B minus Plan A, nominal.",
+      "statement": "RetireGolden-MCP's compare_scenarios reports deltaEndingAfterTaxEstate as scenarios/comparison.ts#compareScenarioPlans(planA, planB, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta: each plan is projected from the same start year with its own tax calculator and summarized by projection/compare.ts#summarizeProjection, and the delta is scenarios/scalarComparison.ts#compareScalars(a.endingAfterTaxEstate, b.endingAfterTaxEstate).delta = b − a, Plan B the proposal and Plan A the baseline; a negative zero is published as 0 and a non-finite figure is refused with a RangeError. Each ending after-tax estate is in nominal dollars of its own plan's last year, and the delta subtracts the two as they are, with no conversion when the plans end in different years. The adapter reads this delta (RetireGolden-MCP #81); at the census pin 3197d359 it subtracted the two summaries itself, the same number. Plans ending in 2050 with 1,800,000.00 and in 2054 with 2,000,000.00 differ by +200,000.00. Units: nominal USD. Rounding: none.",
+      "formula": {
+        "expression": "delta = E_B − E_A; E_s = endingNetWorth_s − endingEstateToCharity_s − endingEstateHeirTax_s at plan s's last year",
+        "variables": [
+          {
+            "symbol": "E_A",
+            "meaning": "Plan A (baseline) ending after-tax estate",
+            "unit": "nominal USD of plan A's last year",
+            "domain": "finite"
+          },
+          {
+            "symbol": "E_B",
+            "meaning": "Plan B (proposal) ending after-tax estate",
+            "unit": "nominal USD of plan B's last year",
+            "domain": "finite"
+          }
+        ],
+        "timing": "once per compared pair, both projected from the same start year",
+        "rounding": "none"
+      },
+      "limits": [
+        "When the two plans end in different years the delta subtracts dollars of two different years. The worksheet's plans, ending in 2050 and 2054 at 2.5 percent inflation, differ by +200,000.00 nominal but by +6,579.93 in 2026 dollars, which is what the Compare page prints (scenarios/planHeadlines.ts#comparePlanHeadlines, owner decision R13). The tool's field is nominal, as its census meaning says; an earlier engine CHANGELOG follow-up asks RetireGolden-MCP to read comparePlanHeadlines instead, which would change the tool's payload and is left to that repository.",
+        "Each plan is priced with the calculator taxCalculatorForPlan returns for it. The evidence uses a zero flat-rate calculator on plans with no taxable income, so it exercises the comparison and the heir-tax identity of the ending estate, not tax law."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/mcp-compare-ending-after-tax-estate-delta.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/mcp-compare-ending-after-tax-estate-delta.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/scenarios/comparison.ts",
+        "packages/engine/src/scenarios/scalarComparison.ts",
+        "packages/engine/src/projection/compare.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/scenarios/comparison.mcpDelta.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "optimizer-candidate-trailing-estate-gap",
+      "title": "Conversion candidate: gap to the chosen schedule",
+      "kind": "formula",
+      "outputs": [
+        "optimizer-candidate-trailing-estate-amount"
+      ],
+      "feeds": [],
+      "purpose": "How far a conversion schedule that was not chosen falls short of the chosen one in after-tax estate, as the downloadable report states it.",
+      "statement": "projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount returns benchmark − the candidate's afterTaxEstateDelta when the benchmark is larger, and null otherwise. The benchmark (#tournamentEstateBenchmark) is the afterTaxEstateDelta of the full projection that validated the selected winner, or, when the calculated winner was withheld pending account allocation, of the one that validated that withheld winner; with neither (the plan's own strategy kept, or no winner) it is the largest of 0 and every candidate's afterTaxEstateDelta. The downloadable report prints the gap for a candidate that improved the estate by more than $1 and was not the winner, not vetoed and not held back by unpriced premium credits, as \"Trailed the selected recommendation by $X\", or \"Trailed the calculated winner by $X\" when that winner was withheld. A validated winner at +$48,000 puts candidates at +$42,500 and +$10,000 behind by $5,500 and $38,000, and one at +$48,700 does not trail; with a withheld winner at +$30,000, a candidate at +$12,000 trails by $18,000; with no validated winner, a candidate at +$600 trails the best one, at +$900, by $300. Units: nominal dollars at the plan's last year, the unit of every estate delta. Rounding: none; the report prints whole dollars.",
+      "formula": {
+        "expression": "B = winner validation delta, else withheld winner validation delta, else max(0, d_1, …, d_n); gap_i = B − d_i when B > d_i, else none",
+        "variables": [
+          {
+            "symbol": "d_i",
+            "meaning": "The candidate's ending after-tax estate minus the plan's own (afterTaxEstateDelta)",
+            "unit": "usd, nominal at the plan's last year",
+            "domain": "finite"
+          },
+          {
+            "symbol": "B",
+            "meaning": "The estate improvement the candidates are measured against",
+            "unit": "usd, nominal at the plan's last year",
+            "domain": "finite; at least 0 when no winner was validated"
+          }
+        ],
+        "timing": "once per candidate row of the report",
+        "rounding": "none"
+      },
+      "limits": [
+        "The gap is in after-tax estate whatever the objective ranked the schedules by; under another objective a candidate can have a larger estate than the winner, and then it does not trail at all.",
+        "With no validated winner the benchmark is the best candidate, which was not selected, while the report still calls it \"the selected recommendation\"; the words are the report's, and on the example plans no row is printed that way."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/optimizer-candidate-trailing-estate-amount.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/optimizer-candidate-trailing-estate-amount.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/candidateTrailingEstate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/candidateTrailingEstate.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "plan-headline-longevity-comparison",
       "title": "Compare plans: how long the money lasts, deterministic success and depletion age",
       "kind": "composition",

@@ -48,7 +48,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -144,11 +144,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -241,11 +241,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -256,12 +256,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 825,
+          "line": 828,
           "note": null,
           "tests": [
             {
               "title": "selects proved contributory Massachusetts income",
-              "line": 826
+              "line": 829
             }
           ]
         }
@@ -314,7 +314,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -397,11 +397,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -480,11 +480,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -558,11 +558,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -638,11 +638,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -761,7 +761,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -843,7 +843,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1045,7 +1045,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1132,7 +1132,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 1862
+              "line": 1907
             }
           ]
         }
@@ -1210,11 +1210,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1291,7 +1291,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1357,11 +1357,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1463,11 +1463,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -1540,11 +1540,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1622,7 +1622,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -1661,7 +1661,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "The public bucket is one `{ kind: 'full' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: 'public'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window (baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome`), not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.",
+      "conventionRationale": "The public bucket is one `{ kind: 'full' }` flag: the New York rule reads neither the pension’s source kind nor its plan state, no plan fact holds an Optional Retirement Program portion, and `annualPensionAndAnnuityIncome` routes explicit `source: 'public'` to `publicPensionIncome` without validating it. The pin uses the 2026 observed model window (baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome`), not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.",
       "contraryReading": "Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.",
       "jurisdiction": "state:NY",
       "volatility": "staticStatute",
@@ -1718,7 +1718,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -1761,8 +1761,8 @@
     },
     {
       "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-      "title": "New York subtracts non-Tier-1 railroad benefits on IT-225 S-122; the engine cannot identify them",
-      "classification": "outOfScope",
+      "title": "New York subtracts railroad retirement: tier I with Social Security, tier II and the supplemental annuity on IT-225 S-122",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
@@ -1771,38 +1771,76 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "states.NY",
+              "line": 779
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 110,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar New York return",
+              "line": 114
+            },
+            {
+              "title": "subtracts tier I, tier II and the other annuities in full, outside the 20,000 dollar pension exclusion",
+              "line": 125
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -1815,6 +1853,11 @@
           "kind": "stateAgencyPublication",
           "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits",
           "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -1871,7 +1914,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -1962,11 +2005,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2044,7 +2087,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2120,11 +2163,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2201,7 +2244,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2295,7 +2338,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             }
           ]
         }
@@ -2352,8 +2395,8 @@
     },
     {
       "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-      "title": "Rhode Island exempts qualifying military-service pensions under §44-30-12(c)(11); the engine cannot certify military source or portion",
-      "classification": "outOfScope",
+      "title": "Rhode Island subtracts a military service pension in full under 44-30-12(c)(11), with no age or income test and survivors included",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
@@ -2362,38 +2405,72 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2023,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "RI",
+              "line": 896
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "rhodeIslandMilitaryServicePensionModification",
+              "line": 95
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 320,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 40,000 dollar military pension off a 100,000 dollar return at 62, before full retirement age",
+              "line": 324
+            },
+            {
+              "title": "holds above the (c)(9) AGI limit, and leaves the (c)(9) room to other pensions",
+              "line": 335
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -2401,6 +2478,21 @@
           "kind": "stateAgencyPublication",
           "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)",
           "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025)",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025)",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf"
         },
         {
           "kind": "statute",
@@ -2452,11 +2544,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 125
+              "line": 145
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }
@@ -2545,11 +2637,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2658,11 +2750,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             },
             {
               "name": "retirementExclusion",
-              "line": 143
+              "line": 163
             }
           ]
         }
@@ -2780,7 +2872,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2832,48 +2924,86 @@
     },
     {
       "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-      "title": "Rhode Island exempts federally included 1974 Railroad Retirement benefits on Schedule M line 1d; the engine cannot identify them",
-      "classification": "outOfScope",
+      "title": "Rhode Island exempts federally included Railroad Retirement benefits on Schedule M line 1d, with no age or income test",
+      "classification": "settled",
       "errorDirection": null,
       "approximation": null,
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "state:RI",
-      "volatility": "annuallyIndexed",
+      "volatility": "staticStatute",
       "effectiveFrom": 2025,
-      "effectiveThrough": 2025,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-01-07",
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-30",
+      "dueOn": "2027-09-30",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/params/state/types.ts"
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/model/plan.ts",
+          "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "incomeStreamSchema",
-              "line": 2059
-            },
-            {
-              "name": "pensionSchema",
-              "line": 1269
+              "name": "RI",
+              "line": 896
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
-              "name": "StateTaxParams",
-              "line": 50
+              "name": "mapPensionSourceToStateKind",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "federalRailroadRetirementActKinds",
+              "line": 64
+            },
+            {
+              "name": "railroadRetirementActSubtraction",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 409
             }
           ]
         }
       ],
-      "fixtureFiles": [],
-      "fixtures": [],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.rules.test.ts",
+          "line": 133,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a 20,000 dollar tier II annuity off a 100,000 dollar Rhode Island return",
+              "line": 137
+            },
+            {
+              "title": "subtracts every railroad source at any age and above the pension modification’s AGI limit",
+              "line": 147
+            }
+          ]
+        }
+      ],
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
@@ -2889,8 +3019,18 @@
         },
         {
           "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf"
+        },
+        {
+          "kind": "formInstruction",
           "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d",
           "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/2025%20RI%20Schedule%20M_w.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "45 U.S.C. 231m(a)",
+          "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m"
         }
       ]
     },
@@ -2927,11 +3067,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         }
@@ -2942,12 +3082,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 675,
+          "line": 678,
           "note": null,
           "tests": [
             {
               "title": "uses the exact marginal arithmetic at the joint top threshold",
-              "line": 676
+              "line": 679
             }
           ]
         }
@@ -3006,11 +3146,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -3030,12 +3170,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 683,
+          "line": 686,
           "note": null,
           "tests": [
             {
               "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
-              "line": 684
+              "line": 687
             }
           ]
         }
@@ -3084,11 +3224,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -3108,12 +3248,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 710,
+          "line": 713,
           "note": null,
           "tests": [
             {
               "title": "subtracts both included tiers without requiring a Social Security election",
-              "line": 711
+              "line": 714
             }
           ]
         }
@@ -3167,11 +3307,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -3191,12 +3331,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 702,
+          "line": 705,
           "note": null,
           "tests": [
             {
               "title": "phases military at$150k and preserves the independent election",
-              "line": 703
+              "line": 706
             }
           ]
         }
@@ -3245,11 +3385,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1298
+              "line": 1343
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 929
+              "line": 974
             }
           ]
         },
@@ -3269,12 +3409,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 693,
+          "line": 696,
           "note": null,
           "tests": [
             {
               "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
-              "line": 694
+              "line": 697
             }
           ]
         }
@@ -3324,7 +3464,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1276
+              "line": 1321
             }
           ]
         }

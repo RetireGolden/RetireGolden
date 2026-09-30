@@ -45,15 +45,8 @@ export function WhySuccessPanel({
   const depletions = summary.depletionYearCounts
   const earliestDepletion = depletions.length > 0 ? depletions[0]!.year : null
   const latestDepletion = depletions.length > 0 ? depletions[depletions.length - 1]!.year : null
-  const medianDepletion = (() => {
-    if (failing === 0) return null
-    let seen = 0
-    for (const row of depletions) {
-      seen += row.count
-      if (seen >= failing / 2) return row.year
-    }
-    return depletions[depletions.length - 1]?.year ?? null
-  })()
+  // The engine's median first-depletion year and lasting-path count (B2-P1).
+  const medianDepletion = summary.medianFirstDepletionYear
   // "First decade" = the 10th projected year (or the last year on short plans).
   const decade = summary.fan[Math.min(9, summary.fan.length - 1)]
   const precision = summary.pathCount >= 10_000 ? '±0.5' : '±1.5'
@@ -63,7 +56,7 @@ export function WhySuccessPanel({
       <summary>Why this number?</summary>
       <p>
         <strong>What it counts.</strong> {pct}% means investable assets lasted to the end of the plan in{' '}
-        {(summary.pathCount - failing).toLocaleString()} of the {summary.pathCount.toLocaleString()} simulated markets
+        {summary.lastingPathCount.toLocaleString()} of the {summary.pathCount.toLocaleString()} simulated markets
         ({failing.toLocaleString()} depleted early). It is a statistic about this model of your plan, not a
         probability about your actual life.
       </p>

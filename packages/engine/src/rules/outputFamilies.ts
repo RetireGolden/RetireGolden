@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 3e88f1862d7d80ca276b0f137bb90325b73d1813.
+ * Output families imported from the output-family census at commit 588183401a7d49b5209b554ce86e54cf340a7f93.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -1474,6 +1474,26 @@ const families = {
     ],
     "relocation": null
   },
+  "household-map-entered-totals": {
+    "title": "Household map entered totals",
+    "group": "accounts-and-growth",
+    "meaning": "The household map's \"As entered\" line: assets (the entered balances of investable accounts plus entered property values), debts (entered debt balances) and net (assets minus debts), for the whole household or for the accounts the map's person focus and group filters leave on screen.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-native",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "household-map",
+        "selector": "Map totals line \"As entered: assets $X · debts $Y · net $Z\" (\"As entered for NAME\" or \"for the items shown\" when the focus or group filters narrow the map), on screen and on the printed map"
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/model/enteredBalanceSheet.ts#enteredBalanceSheet"
+    }
+  },
   "income-annuity-annual": {
     "title": "Annuity income",
     "group": "cash-flow-and-summary",
@@ -2877,11 +2897,11 @@ const families = {
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "\"When depleting plans run out\" bar chart and its aria-label total of depleting paths"
+        "selector": "\"When depleting plans run out\" bar chart"
       },
       {
         "surface": "monte-carlo-page",
-        "selector": "WhySuccessPanel depletion sentence"
+        "selector": "WhySuccessPanel \"Which years drive it\": \"Failing paths first run out between EARLIEST and LATEST\" (the first and last rows)"
       }
     ],
     "relocation": null
@@ -2908,10 +2928,6 @@ const families = {
       {
         "surface": "monte-carlo-page",
         "selector": "\"Worst-case estate\" tile (p10)"
-      },
-      {
-        "surface": "monte-carlo-page",
-        "selector": "Ending-balance histogram aria-label median (p50)"
       },
       {
         "surface": "monte-carlo-page",
@@ -3009,7 +3025,7 @@ const families = {
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "WhySuccessPanel \"lasted ... in N of M simulated markets\" (pathCount - failingPathCount)"
+        "selector": "WhySuccessPanel \"What it counts\": \"(F depleted early)\""
       }
     ],
     "relocation": null
@@ -3145,6 +3161,32 @@ const families = {
     ],
     "relocation": null
   },
+  "monte-carlo-lasting-and-depleted-path-counts": {
+    "title": "Lasting and depleted path counts worked out on the Monte Carlo page",
+    "group": "monte-carlo",
+    "meaning": "Two path counts the Monte Carlo page works out from the engine's summary: how many simulated paths lasted to the end of the plan (\"Why this number?\") and how many ran out of money (the first-depletion chart's accessible label).",
+    "unit": "count",
+    "basis": "n/a",
+    "dimensions": [
+      "statistic"
+    ],
+    "kind": "ui-transformation",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "monte-carlo-page",
+        "selector": "WhySuccessPanel \"What it counts\": \"lasted to the end of the plan in N of the M simulated markets\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "\"When depleting plans run out\" chart aria-label \"Histogram of first-depletion years for the N paths that ran out of money.\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.lastingPathCount"
+    }
+  },
   "monte-carlo-max-cut-depth-percentiles": {
     "title": "Deepest cut, median and p90",
     "group": "monte-carlo",
@@ -3166,6 +3208,26 @@ const families = {
       }
     ],
     "relocation": null
+  },
+  "monte-carlo-median-first-depletion-year": {
+    "title": "Median first-depletion year",
+    "group": "monte-carlo",
+    "meaning": "Among the simulated paths that run out of money, the calendar year by which half of them have first depleted, printed in the Monte Carlo page's \"Why this number?\" panel.",
+    "unit": "year",
+    "basis": "n/a",
+    "dimensions": [],
+    "kind": "ui-native",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "monte-carlo-page",
+        "selector": "WhySuccessPanel \"Which years drive it\": \"(median YEAR)\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.medianFirstDepletionYear"
+    }
   },
   "monte-carlo-p90-average-annual-target-shortfall": {
     "title": "p90 average annual target shortfall",
@@ -3478,6 +3540,28 @@ const families = {
       }
     ],
     "relocation": null
+  },
+  "optimizer-candidate-trailing-estate-amount": {
+    "title": "Candidate's gap to the chosen schedule",
+    "group": "optimizer-and-comparisons",
+    "meaning": "In the downloadable report's conversion-candidate table, how far a candidate that was not chosen trails the selected recommendation (or the calculated winner withheld pending account allocation) in after-tax estate improvement.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "candidate"
+    ],
+    "kind": "ui-native",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "report",
+        "selector": "Downloadable HTML report candidate table reason \"Trailed the selected recommendation by $X.\" or \"Trailed the calculated winner by $X; that winner was withheld pending account allocation.\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount"
+    }
   },
   "optimizer-recommended-conversion-annual": {
     "title": "Recommended Roth conversion schedule",
@@ -4620,6 +4704,26 @@ const families = {
       "target": "engine/src/socialSecurity/analysis/breakEven.ts#claimBreakEven"
     }
   },
+  "social-security-bridge-ladders-total-cost": {
+    "title": "Bridge ladders total cost",
+    "group": "social-security",
+    "meaning": "The combined quoted TIPS-ladder cost of every delaying claimant's Social Security bridge, printed on the Social Security page's add-ladders button.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "ui-transformation",
+    "engineSource": null,
+    "surfaces": [
+      {
+        "surface": "ss-page",
+        "selector": "Bridge panel button \"Add bridge ladder(s) to plan ($X)\""
+      }
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/ladder/bridge.ts#bridgeLaddersTotalCost"
+    }
+  },
   "social-security-bridge-sizing": {
     "title": "Social Security bridge sizing",
     "group": "social-security",
@@ -4638,7 +4742,7 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Bridge panel rows \"$X/yr ($Y/mo, real)\" and ladder cost, and the add-ladders total"
+        "selector": "Bridge panel rows \"$X/yr ($Y/mo, real)\" and ladder cost"
       },
       {
         "surface": "insights",

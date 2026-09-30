@@ -4,6 +4,123 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: every one of the 237 frozen output families is complete** (2026-09-30). The
+  output census froze at 237 families (RetireGolden-Docs 5881834); every family has a record,
+  every record passes every catalog gate, and every record has an independent review from a
+  different agent family. The eleven records this change adds or restates were reviewed by
+  Codex (GPT-6-Sol) and Grok (grok-4.7), all approved (`DOCS/calculations/reviews/REVIEW-2026-09-30-round3-*.md`).
+- **Fixed: no phantom §4974 excise in the year a surviving spouse elects to treat an
+  inherited IRA as their own** (2026-09-30, found by the reach-spec work). Treas. Reg.
+  1.408-8(c)(3), as amended by T.D. 10001, sets that year's requirement under 401(a)(9)(A)
+  with the spouse as owner, and 1.408-8(e)(2)(i) takes the elected IRA out of the
+  beneficiary's same-decedent group, so the year has one obligation, the owner RMD. The engine
+  also charged an unpaid beneficiary obligation: on the reproduction, $1,672.30 of excise on a
+  $6,689.19 requirement while the $4,065.04 owner RMD was paid. `annualInheritedIraDistributions`
+  now leaves an election-year account out of the §4974 grouping. No library example moves.
+  Registered as a limit, not fixed here: when two or more IRAs in one pool are elected, each
+  takes its owner RMD from the pool's shared reference balance rather than its own prior
+  year-end balance (`rmd-uniform-lifetime-divisor`, pinned by a test).
+- **Changed (tests): every equivalence reach spec is held at exit 0.** Eleven blocks-corpus
+  members reach the production lines no member reached (11 specs exited 1 on main); 19 lines no valid plan can execute
+  are documented exclusions; the three proofs that pin the corpus were re-measured (identity
+  only). `scripts/equivalence/reachGuard.test.mjs` runs all 32 specs in the engine suite.
+- **Changed: the three RetireGolden-MCP output families have calculation records, each
+  against an engine function that already computes it; no engine function was added and no
+  figure moves** (2026-09-30). `mcp-batch-cumulative-tax-objective` is
+  `projection/compare.ts#summarizeProjection`'s `lifetimeTaxesAndPenalties`,
+  `mcp-batch-ending-traditional-objective` its `endingByCategory.traditional`, and
+  `mcp-compare-ending-after-tax-estate-delta` is
+  `scenarios/comparison.ts#compareScenarioPlans(...).headline.endingAfterTaxEstate.delta`.
+  Each record has a worksheet with worked cases and wrong readings, an evidence test that
+  also checks the adapter's own arithmetic at the census pin, and an executed mutation
+  receipt. They are derived by Claude and not yet reviewed, so the three families are
+  partial: 229 of 232 are complete and none lacks a record; a different-family review
+  makes it 232 (checked by a temporary review flip). One stated limit: the comparison delta
+  is nominal, so two plans that end in different years are subtracted in two different
+  years' dollars (the worksheet's plans: +200,000.00 nominal, +6,579.93 in the Compare
+  page's start-year dollars).
+- **Docs: the five check scripts worksheets cited as "not yet published" are in the
+  repository** under `DOCS/calculations/<group>/scripts/` (`fi_spending_base.py`,
+  `joint_survival_2023.py`, `claim_month_rb.py`, `claim_month_rc.py`, and `run-base.mjs`
+  with its model and data), each with no local path, reading nothing from `packages/`, and
+  reproducing its worksheet's figures when run from the repository root.
+- **Follow-ups outside this repository.** RetireGolden-MCP: its main already reads the three
+  figures from the engine (RetireGolden-MCP #81, unreleased): `summarizeProjection` for
+  `lifetimeTaxesAndPenalties` and `endingByCategory.traditional`, and `compareScenarioPlans`
+  (`@retiregolden/engine/scenarios/comparison`) for `headline.endingAfterTaxEstate.delta`;
+  its next release ships that, and its next engine bump must pass `summarizeProjection` its
+  third argument (the schema v7 follow-up below). RetireGolden-Docs: the output census
+  should make the three families kind `engine`, naming those functions, and the engine's
+  census copy is re-imported once that lands.
+
+- **Changed: the five figures the output census froze as still computed in the planner now
+  come from the engine, and none of them prints differently** (B2-P1 under D-UI-SS; census
+  RetireGolden-Docs 6af6441 plus the relocation patch). The household map's "As entered"
+  assets, debts and net are `model/enteredBalanceSheet.ts#enteredBalanceSheet` of the accounts
+  shown; the Monte Carlo summary publishes `medianFirstDepletionYear` and `lastingPathCount`,
+  which the "Why this number?" panel prints, and the depletion chart's label reads the
+  engine's failing-path count instead of adding up the year counts; the Social Security
+  page's add-ladders total is `ladder/bridge.ts#bridgeLaddersTotalCost`; and the downloadable
+  report's "Trailed … by $X" is `projection/candidateTrailingEstate.ts#candidateTrailingEstateAmount`.
+  Each has a calculation record (unreviewed), a worksheet, an evidence test and an executed
+  mutation receipt, and a parity test shows every figure equal to the page's retired
+  arithmetic, bit for bit, on the 29 example plans. All 45 UI families are now relocated.
+- **Fixed: the ending-balance histogram's accessible label says what the chart shows.** It
+  described the histogram of ending investable balances and then gave the median ending
+  estate, a different measure (example-couple: $2.59M against a median ending investable
+  balance of $1.61M). It now reads "Histogram of ending investable balances: how many of the N
+  simulated paths ended in each balance range." The estate median stays in the verdict
+  paragraph.
+- **Fixed: no state taxes a railroad retirement annuity** (2026-09-30, the orchestrator's
+  decision after the D-OOS-INPUTS fix below). 45 U.S.C. 231m(a) bars every state, so the
+  subtraction is one federal rule (`usc-45-231m-state-tax-bar`), applied at the top of
+  `characterizedRetirementDelta` for every state with an income tax, less the railroad
+  sources a state's own law already subtracts under its own record (Arkansas, Colorado,
+  Iowa, Kansas, Louisiana, Massachusetts, Missouri, Utah and Vermont all three; Virginia
+  and West Virginia tier I). Twenty-four jurisdictions subtracted nothing before (AZ, CA,
+  CT, DC, GA, HI, ID, IL, IN, KY, ME, MD, MI, MN, MS, MT, NE, NJ, NM, NC, ND, OH, OK, PA),
+  West Virginia now takes tier II and the other annuities off too, and Delaware, which
+  counted the annuity in its pension exclusion, and New Jersey keep railroad out of their
+  pension pools. Single filer, 100,000 dollars with a 20,000 dollar tier II annuity, 2026:
+  Pennsylvania 3,070.00 to 2,456.00, Delaware 4,544.00 to 4,049.00, West Virginia 3,690.90
+  to 2,774.90. A sweep of all 42 income-tax jurisdictions in
+  `tax/stateRailroadAndMilitary.rules.test.ts` shows each railroad source coming off exactly
+  once at 60 and 70 and every retirement pool left to other income. No example figure
+  changes. Military retirement is not extended: the state-tax module doc and a limit on
+  `state-enacted-tax-year-figures` now name the fifteen states whose own military rule the
+  engine models and say the rest are not modeled yet, starting with Wisconsin's full
+  subtraction of U.S. military retirement pay. The New York issuer record no longer says a
+  pension's source is only private or public.
+- **Fixed: a railroad retirement annuity is not taxed in Alabama, New York, Oregon, Rhode
+  Island, South Carolina, Virginia or Wisconsin, and Rhode Island subtracts a military
+  pension in full** (2026-09-30, the D-OOS-INPUTS grouping, group 1). 45 U.S.C. 231m(a)
+  forbids any state tax on an annuity under the Railroad Retirement Act, and each of these
+  states' instructions subtracts it. A pension tagged Railroad Tier I, Railroad Tier II or
+  Railroad Retirement Act (other) was priced there as ordinary income, outside every
+  retirement exclusion (Virginia already subtracted tier I). It now comes off the state base
+  in full (`tax/stateRailroadAndMilitary.ts`). Rhode Island's 44-30-12(c)(11) subtracts a
+  pension tagged Military retirement or Military survivor benefit with no age or income
+  test, and keeps it out of the (c)(9) pension modification, where the engine had put it:
+  at 62 with 100,000 dollars and a 40,000 dollar military pension a single filer pays
+  1,830.00 dollars for 2026, not 3,397.50. For a single filer with a 20,000 dollar tier II
+  annuity the 2026 state tax falls by the annuity at the marginal rate: Wisconsin 7,839.36
+  to 6,779.36 at 160,000 dollars; New York 4,859.75 to 3,723.00, Rhode Island 3,397.50 to
+  2,580.00, Virginia 4,935.90 to 3,785.90, Alabama 4,810.00 to 3,810.00 and Oregon 8,176.38
+  to 6,426.38 at 100,000; South Carolina 7,370.00 to 6,328.00 at 160,000. The nine records
+  that called these pensions inexpressible (the plan has carried the sources for some time)
+  are settled, each citing the federal statute or the Rhode Island law with its state's
+  instructions and pricing both readings in `tax/stateRailroadAndMilitary.rules.test.ts`.
+  Railroad unemployment and sickness benefits still have no income type. None of the 29
+  examples has a railroad or military pension, so no example figure changes.
+- **Changed: the WEP and GPO repeal record is settled** (2026-09-30, the D-OOS-INPUTS
+  grouping, group 5). Public Law 118-273, signed January 5, 2025, repealed both for benefits
+  payable after December 2023, so the unreduced benefit the engine pays is what the law
+  requires; a WEP or GPO input could only trigger the repealed reductions. A worked case
+  pins it (`projection/wepGpoRepeal.rules.test.ts`): a worker with a 2,000 dollar PIA and a
+  3,000 dollar monthly pension from uncovered work is paid 24,000 dollars at 67, not the
+  17,856 WEP would have paid, and a spouse with that pension the 12,000 dollar spouse
+  benefit, not nothing. With the federal railroad rule above, the registry counts 582
+  records, 375 settled and 78 out of scope (581, 364 and 88 before).
 - **Changed: every calculation record has an independent review from a different agent
   family, and every record passes every catalog gate: 229 of 232 families are complete (149
   on main before), and the other three have no record yet** (decision

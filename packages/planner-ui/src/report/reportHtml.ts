@@ -11,6 +11,7 @@
 import { objectivePolicies } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { candidateTrailingEstateAmount } from '@retiregolden/engine/projection/candidateTrailingEstate'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import type {
@@ -537,7 +538,6 @@ export function buildStandaloneReportHtml(input: StandaloneReportInput): string 
 
 function lossReasonForCandidate(
   tournament: ExactLedgerTournamentSummary,
-  validation: ExactLedgerValidation | null,
   candidate: ExactLedgerTournamentSummary['candidates'][number],
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
@@ -559,11 +559,13 @@ function lossReasonForCandidate(
       `priced, so this estate delta omits the ACA effect in ${years.length === 1 ? 'that year' : 'those years'}.`
     )
   }
-  const benchmark = validation?.afterTaxEstateDelta ?? Math.max(0, ...tournament.candidates.map((row) => row.afterTaxEstateDelta))
-  if (benchmark > candidate.afterTaxEstateDelta) {
+  // The engine's gap to the winner's validated improvement, or to the best
+  // candidate's when no winner was validated (B2-P1).
+  const trailingAmount = candidateTrailingEstateAmount(tournament, candidate)
+  if (trailingAmount !== null) {
     return readinessVeto
-      ? `Trailed the calculated winner by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}; that winner was withheld pending account allocation.`
-      : `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
+      ? `Trailed the calculated winner by ${fmtMoney(trailingAmount)}; that winner was withheld pending account allocation.`
+      : `Trailed the selected recommendation by ${fmtMoney(trailingAmount)}.`
   }
   if (readinessVeto) {
     return 'Not selected under the active objective and guardrails; the calculated winner was withheld pending account allocation.'
@@ -634,7 +636,7 @@ export function reportEvidenceFromOptimizeResult(
     candidateId: candidate.id,
     label: candidate.label,
     lifetimeTaxDelta: candidate.lifetimeTaxDelta,
-    lossReason: lossReasonForCandidate(tournament, validation, candidate),
+    lossReason: lossReasonForCandidate(tournament, candidate),
     moneyLastsYearsDelta: candidate.moneyLastsYearsDelta,
   }))
   const readinessVeto = tournament.retirementActionReadinessVeto

@@ -2,11 +2,11 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 581,
+    "total": 582,
     "byClassification": {
       "approximated": 122,
-      "outOfScope": 88,
-      "settled": 364,
+      "outOfScope": 78,
+      "settled": 375,
       "unsettled": 7
     },
     "approximatedByKind": {
@@ -15,13 +15,13 @@
       "needs-fact": 25
     },
     "byVolatility": {
-      "annuallyIndexed": 96,
+      "annuallyIndexed": 92,
       "awaitingGuidance": 13,
-      "staticStatute": 463,
+      "staticStatute": 468,
       "sunsetting": 9
     },
     "byJurisdiction": {
-      "federal": 360,
+      "federal": 361,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 481,
+    "totalFiles": 484,
     "byStatus": {
       "partial": 94,
-      "registered": 134,
-      "rule-free": 253,
+      "registered": 135,
+      "rule-free": 255,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -631,10 +631,10 @@
     },
     {
       "directory": "model",
-      "files": 12,
+      "files": 13,
       "byStatus": {
         "partial": 6,
-        "rule-free": 6
+        "rule-free": 7
       }
     },
     {
@@ -656,11 +656,11 @@
     },
     {
       "directory": "projection",
-      "files": 131,
+      "files": 132,
       "byStatus": {
         "partial": 42,
         "registered": 23,
-        "rule-free": 66
+        "rule-free": 67
       }
     },
     {
@@ -721,10 +721,10 @@
     },
     {
       "directory": "tax",
-      "files": 20,
+      "files": 21,
       "byStatus": {
         "partial": 12,
-        "registered": 7,
+        "registered": 8,
         "rule-free": 1
       }
     },
@@ -776,7 +776,7 @@
     {
       "module": "investmentIncomeAndBasis",
       "path": "rule-coverage/investmentIncomeAndBasis.json",
-      "ruleCount": 31
+      "ruleCount": 32
     },
     {
       "module": "iraBasisAndRollovers",
@@ -846,15 +846,15 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1773,
+    "entryCount": 1796,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 144,
+      "ELISION-EXACT": 145,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1207,
+      "EXACT": 1220,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 406,
+      "PDF-WORD-LEVEL": 415,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 10
     },
@@ -2474,6 +2474,206 @@
           {
             "id": "usc-42-1395r-i-irmaa-applicable-percentage",
             "citation": "42 U.S.C. 1395r(i)(3)(A)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-30",
+        "note": "The railroad and military pension records of D-OOS-INPUTS group 1 and the WEP and GPO repeal record (group 5) were restated on 2026-09-30 when each moved out of scope to settled: al-form40-railroad-retirement-not-modeled, ny-it225-s122-non-ss-railroad-benefits-not-modeled, or-oar-150-316-0065-railroad-benefits-not-modeled, ri-schedule-m-1d-railroad-benefits-not-modeled, sc-45-usc-231m-railroad-annuities-not-modeled, sc-form1040-line-o-railroad-benefits-not-modeled, va-railroad-retirement-and-unemployment-benefits-not-modeled and wi-schedule-sb-15-railroad-benefits-not-modeled now also cite 45 U.S.C. 231m(a) (the South Carolina record also 231b(a)(1) and (b)(1)), and some add a line of their state's instructions; ri-code-44-30-12-c-11-military-pension-not-modeled adds Publication 2026-01's no-age-or-income-test and surviving-spouse passages and the RI-1040 line 1t note; pl-118-273-sec-2-3-wep-gpo-repeal keeps its three rows. Every row of the ten records was verified individually on 2026-09-30 with verify-quotes.mjs --refresh, filtered to its record, with pdftotext from poppler 25.07.0: 19 EXACT and 23 PDF-WORD-LEVEL, nothing serious.",
+        "entries": [
+          {
+            "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+            "citation": "2025 Wisconsin Schedule SB Instructions, title page"
+          },
+          {
+            "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 15"
+          },
+          {
+            "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 4"
+          },
+          {
+            "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 16"
+          },
+          {
+            "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122)"
+          },
+          {
+            "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits"
+          },
+          {
+            "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page"
+          },
+          {
+            "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d"
+          },
+          {
+            "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits"
+          },
+          {
+            "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+            "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d"
+          },
+          {
+            "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)"
+          },
+          {
+            "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(iii)"
+          },
+          {
+            "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+            "citation": "45 U.S.C. 231m(b)(1)"
+          },
+          {
+            "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+            "citation": "45 U.S.C. 231b(a)(1), tier I"
+          },
+          {
+            "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+            "citation": "45 U.S.C. 231b(b)(1), tier II"
+          },
+          {
+            "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+            "citation": "S.C. Code 12-6-1120(4)"
+          },
+          {
+            "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
+            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o"
+          },
+          {
+            "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
+            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify"
+          },
+          {
+            "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+            "citation": "Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits"
+          },
+          {
+            "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+            "citation": "Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits"
+          },
+          {
+            "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "al-form40-railroad-retirement-not-modeled",
+            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report"
+          },
+          {
+            "id": "al-form40-railroad-retirement-not-modeled",
+            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable"
+          },
+          {
+            "id": "al-form40-railroad-retirement-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page"
+          },
+          {
+            "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054)"
+          },
+          {
+            "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065"
+          },
+          {
+            "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions"
+          },
+          {
+            "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
+            "citation": "P.L. 118-273, § 2(a)"
+          },
+          {
+            "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
+            "citation": "P.L. 118-273, § 3(a)"
+          },
+          {
+            "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
+            "citation": "P.L. 118-273, § 4"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-30",
+        "note": "The federal bar on state tax of a Railroad Retirement Act annuity is registered once for every state at usc-45-231m-state-tax-bar (2026-09-30), citing 45 U.S.C. 231m(a) and (b)(1), 231b(a)(1) and (b)(1), and 231a(b). Its five rows were verified individually on 2026-09-30 with verify-quotes.mjs --refresh, filtered to the record: four EXACT and one ELISION-EXACT.",
+        "entries": [
+          {
+            "id": "usc-45-231m-state-tax-bar",
+            "citation": "45 U.S.C. 231m(a)"
+          },
+          {
+            "id": "usc-45-231m-state-tax-bar",
+            "citation": "45 U.S.C. 231m(b)(1)"
+          },
+          {
+            "id": "usc-45-231m-state-tax-bar",
+            "citation": "45 U.S.C. 231b(a)(1), tier I"
+          },
+          {
+            "id": "usc-45-231m-state-tax-bar",
+            "citation": "45 U.S.C. 231b(b)(1), tier II"
+          },
+          {
+            "id": "usc-45-231m-state-tax-bar",
+            "citation": "45 U.S.C. 231a(b), supplemental annuity"
           }
         ]
       }

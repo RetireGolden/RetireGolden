@@ -654,7 +654,10 @@ describeRule('va-code-58-1-322-02-28-military-retirement-subtraction', { reading
 describeRule('va-code-58-1-322-02-3-ss-tier1', { readings: { tier1: 12_000, tier2InParagraph3: 0 }, accepted: 'tier1' }, ({ accepted }) => {
   it('selects Tier I and does not claim ordinary annuity or Tier II under paragraph3', () => {
     expect(exclusion('VA', [fact({ sourceKind: 'railroadTier1' })])).toBe(accepted)
-    expect(exclusion('VA', [fact({ sourceKind: 'railroadTier2' })])).toBe(0)
+    // Tier II comes off under 45 U.S.C. 231m
+    // (va-railroad-retirement-and-unemployment-benefits-not-modeled), not
+    // paragraph (3): beside a Tier I row each comes off once.
+    expect(exclusion('VA', [fact({ sourceKind: 'railroadTier1' }), fact({ accountId: 'tier2', sourceKind: 'railroadTier2' })])).toBe(2 * accepted)
     expect(exclusion('VA', [fact()])).toBe(0)
     expect(annual('VA', {}, { ssBenefits: 30_000 }).taxableIncome).toBe(annual('VA').taxableIncome)
   })

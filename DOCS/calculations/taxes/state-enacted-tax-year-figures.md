@@ -170,3 +170,5 @@ Derived by: claude (Claude Opus 5.5), 2026-09-28, under decision D-2027-PUBLISHE
 Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`): the District of Columbia's deduction for 2027 to 2029 is worded as provisional, loaded under the emergency D.C. Act 26-416, which lasts no more than 90 days, pending the congressional review of the permanent D.C. Act 26-418 to about 2026-11-20, when it is revisited, rather than grouped with figures enacted without condition. The rule record it depends on, `dc-code-47-1801-04-3a-standard-deduction-2026-2029`, already says the same (the emergency act's 90 days, Act 26-418's projected law date of November 20, 2026, and the revisit then) and is unchanged. No figure changes. Revised by claude (opus 5.5); unreviewed until the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, `DOCS/calculations/reviews/REVIEW-2026-09-30-round3-codex.md`.

@@ -59,7 +59,7 @@ feeds: `projection-summary-fi-number`, `projection-summary-fi-age`, `projection-
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from decisions D-FI-CONVERSION-TAX and D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R4 (evidence/people-order-check.md), the arithmetic in exact decimals by a separate script that imports nothing from the engine (fi_spending_base.py, not yet published). Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
+Derived by: claude (Opus 5.5), 2026-09-28, from decisions D-FI-CONVERSION-TAX and D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R4 (evidence/people-order-check.md), the arithmetic in exact decimals by a separate script that imports nothing from the engine (`DOCS/calculations/cash-flow-and-summary/scripts/fi_spending_base.py`, run from the repository root). Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
 Revision 2026-09-28 (independent review M1): the conversion-free run is read whenever the plan converts in any year, not only when the priced year converts; the claim, the justification and the last wrong reading are restated.
 

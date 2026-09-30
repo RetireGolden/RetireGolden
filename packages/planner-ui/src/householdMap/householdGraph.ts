@@ -7,8 +7,9 @@
  * of the plan, never a second source of truth:
  *
  *  - Amounts are the plan's own stored figures (balance, value, owed,
- *    annual/monthly amounts) tagged with an `amountKind` — the selector never
- *    computes derived dollars beyond exact sums of stored values.
+ *    annual/monthly amounts) tagged with an `amountKind` — the selector
+ *    computes no dollars: the entered totals are the engine's
+ *    `model/enteredBalanceSheet.ts#enteredBalanceSheet` (B2-P1).
  *  - Node ids are stable functions of plan entity ids, so layouts and tests
  *    survive unrelated plan edits.
  *  - Relationships the schema cannot express are listed honestly in
@@ -17,12 +18,13 @@
  *
  * Lives in planner-ui (not the engine package) by the same convention as the
  * report model: a pure, deterministic reading of the Plan with no ledger
- * math, importing only *types* from the published engine surface — so the
- * packed planner-ui artifact builds against the registry engine release.
+ * math. Its one engine function is the leaf enteredBalanceSheet, which loads
+ * nothing else.
  *
  * @see DOCS/features/household-map.md (taxonomy audit + feature doc)
  */
 
+import { enteredBalanceSheet, type EnteredBalanceSheet } from '@retiregolden/engine/model/enteredBalanceSheet'
 import type { Account, IncomeStream, InsurancePolicy, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 
 // ---------------------------------------------------------------------------
@@ -131,24 +133,6 @@ export interface HouseholdEdge {
   joint?: boolean
 }
 
-/**
- * Sums of *entered* values (stored balances/values), deliberately distinct
- * from the projection's simulated net worth. Reconciled against the report
- * model's accounts block (see householdGraphReconciliation.test.ts).
- */
-export interface HouseholdGraphTotals {
-  /** Cash + taxable + equity comp + traditional + Roth + HSA stored balances. */
-  investable: number
-  /** Stored property values. */
-  property: number
-  /** investable + property. */
-  assets: number
-  /** Stored debt balances. */
-  liabilities: number
-  /** assets − liabilities. */
-  netWorth: number
-}
-
 export interface UnsupportedRelationship {
   id: string
   label: string
@@ -158,7 +142,19 @@ export interface UnsupportedRelationship {
 export interface HouseholdGraph {
   nodes: HouseholdNode[]
   edges: HouseholdEdge[]
-  totals: HouseholdGraphTotals
+  /**
+   * The engine's balance sheet of the plan's accounts as entered
+   * (enteredBalanceSheet), deliberately distinct from the projection's
+   * simulated net worth. Reconciled against the report model's accounts
+   * block (see householdGraphReconciliation.test.ts).
+   */
+  totals: EnteredBalanceSheet
+  /**
+   * Every plan account with the id of the node that shows it, in plan order,
+   * so a view that shows some of the nodes can ask the engine for the
+   * balance sheet of exactly those accounts (enteredTotalsOfNodes).
+   */
+  accountNodes: readonly { readonly nodeId: string; readonly account: Account }[]
   /** Relationship categories the plan schema cannot express (never inferred). */
   unsupported: readonly UnsupportedRelationship[]
 }
@@ -279,27 +275,16 @@ const ESTATE_LABELS: Record<EstateDestinationId, string> = {
 const INVESTABLE_TYPES = new Set<Account['type']>(['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'])
 
 /**
- * Sums of *entered* values over a set of account nodes — the graph's own
- * totals and, on the map page, the totals of whatever the person focus and
- * group filters leave on screen (#506), so one reading of the stored figures
- * serves both. Exact sums of stored figures only, keyed by the node kind the
- * account union maps to (`accountKind`): investable accounts carry a
- * 'balance', property a 'value', debt an 'owed' figure; pensions, annuities,
- * ladders, and insurance are never balance-sheet lines here.
+ * The engine's balance sheet as entered (enteredBalanceSheet) of the plan
+ * accounts whose nodes are among `nodeIds`, in plan order: on the map page,
+ * the totals of whatever the person focus and group filters leave on screen
+ * (#506), read the same way as the graph's own totals. Nodes that are not
+ * accounts (people, income, insurance, ladders, estate) carry no
+ * balance-sheet line; pensions and annuities are accounts the engine leaves
+ * off the sheet.
  */
-export function sumEnteredTotals(
-  nodes: readonly Pick<HouseholdNode, 'kind' | 'amount' | 'amountKind'>[],
-): HouseholdGraphTotals {
-  const totals: HouseholdGraphTotals = { investable: 0, property: 0, assets: 0, liabilities: 0, netWorth: 0 }
-  for (const n of nodes) {
-    if (n.amount === null) continue
-    if (n.kind === 'account' && n.amountKind === 'balance') totals.investable += n.amount
-    else if (n.kind === 'property' && n.amountKind === 'value') totals.property += n.amount
-    else if (n.kind === 'debt' && n.amountKind === 'owed') totals.liabilities += n.amount
-  }
-  totals.assets = totals.investable + totals.property
-  totals.netWorth = totals.assets - totals.liabilities
-  return totals
+export function enteredTotalsOfNodes(graph: Pick<HouseholdGraph, 'accountNodes'>, nodeIds: ReadonlySet<string>): EnteredBalanceSheet {
+  return enteredBalanceSheet(graph.accountNodes.filter((entry) => nodeIds.has(entry.nodeId)).map((entry) => entry.account))
 }
 
 // ---------------------------------------------------------------------------
@@ -542,9 +527,11 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
   // --- accounts (incl. pensions, annuities, property, debts) ---------------
   const spouseCanExist = people.length === 2
+  const accountNodes: { nodeId: string; account: Account }[] = []
   plan.accounts.forEach((a, i) => {
     const claimed = claimNodeId(accountNodeId(a.id))
     const id = claimed.id
+    accountNodes.push({ nodeId: id, account: a })
     const { amount, amountKind } = accountAmount(a)
     const owners = a.ownerPersonId === null ? personIds : [a.ownerPersonId]
     const missing = accountMissingFacts(a, people.length)
@@ -707,6 +694,12 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     })
   }
 
-  // Totals: exact sums of stored figures only (account nodes carry them).
-  return { nodes, edges, totals: sumEnteredTotals(nodes), unsupported: UNSUPPORTED_RELATIONSHIPS }
+  // Totals: the engine's balance sheet of the plan's accounts as entered.
+  return {
+    nodes,
+    edges,
+    totals: enteredBalanceSheet(plan.accounts),
+    accountNodes,
+    unsupported: UNSUPPORTED_RELATIONSHIPS,
+  }
 }

@@ -942,6 +942,72 @@
       }
     },
     {
+      "id": "entered-balance-sheet",
+      "title": "Balance sheet as entered",
+      "kind": "formula",
+      "outputs": [
+        "household-map-entered-totals"
+      ],
+      "feeds": [],
+      "purpose": "The assets, debts and net worth the household map prints from the figures the plan stores today, before any projection.",
+      "statement": "model/enteredBalanceSheet.ts#enteredBalanceSheet adds, over the accounts it is given and in their order from 0, the entered balance of every cash, taxable, equity compensation, traditional, Roth and HSA account (investable), the entered value of every property (property) and the entered balance owed on every debt (liabilities), and publishes assets = investable + property and netWorth = assets − liabilities. Pensions and annuities carry a monthly amount, not a balance, and are not lines of the sheet. The household map prints assets, debts and net for the whole plan, and for the accounts a person focus or group filter leaves on screen. Cash $40,000, taxable $300,000, traditional $500,000, Roth $120,000, HSA $25,000, equity compensation $15,000, a $650,000 home and a $210,000 mortgage give assets $1,650,000, debts $210,000 and net $1,440,000, whatever pensions or annuities the plan also holds; a $10,000 account and a $200,000 property with a $350,000 debt give a net of −$140,000. Units: dollars as entered today, with no growth, year or deflation. Rounding: none; the map prints whole dollars. A figure that is not finite is refused.",
+      "formula": {
+        "expression": "investable = Σ balance over the six investable types; property = Σ value; liabilities = Σ debt balance; assets = investable + property; netWorth = assets − liabilities",
+        "variables": [
+          {
+            "symbol": "balance",
+            "meaning": "The entered balance of a cash, taxable, equity compensation, traditional, Roth or HSA account",
+            "unit": "usd, as entered",
+            "domain": "finite, at least 0"
+          },
+          {
+            "symbol": "value",
+            "meaning": "The entered value of a property",
+            "unit": "usd, as entered",
+            "domain": "finite, at least 0"
+          },
+          {
+            "symbol": "debt balance",
+            "meaning": "The entered balance owed on a debt",
+            "unit": "usd, as entered",
+            "domain": "finite, at least 0"
+          }
+        ],
+        "timing": "once per reading of the plan, over the accounts shown",
+        "rounding": "none"
+      },
+      "limits": [
+        "These are the figures as entered, not the projection: the projected net worth (accounts-net-worth-annual) is the same accounts at the end of a projected year, after growth, contributions and withdrawals.",
+        "A pension or annuity is income, not a balance, so it adds nothing to the sheet even when it has a lump-sum offer; a TIPS ladder and an insurance policy are not accounts and are not on it either.",
+        "The investable total is the same number, from the same accounts in the same order, as the ledger's first-year portfolio (montecarlo/riskBasedGuardrails.ts#startingInvestableOf)."
+      ],
+      "worksheet": "DOCS/calculations/accounts-and-growth/household-map-entered-totals.md",
+      "mutation": "DOCS/calculations/accounts-and-growth/household-map-entered-totals.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/model/enteredBalanceSheet.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/model/enteredBalanceSheet.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "estate-to-charity",
       "title": "Ending estate passing to charity",
       "kind": "formula",
@@ -1059,6 +1125,67 @@
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualHecmBackstop.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "mcp-batch-ending-traditional-objective",
+      "title": "MCP batch ending traditional balance objective",
+      "kind": "composition",
+      "outputs": [
+        "mcp-batch-ending-traditional-objective"
+      ],
+      "feeds": [],
+      "purpose": "The figure RetireGolden-MCP's batch_evaluate ranks candidates on under objective ending_trad: each candidate plan's ending traditional balance.",
+      "statement": "For objective=ending_trad, RetireGolden-MCP's batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection's endingByCategory.traditional: the last ledger row's published balances summed over the plan's accounts of type traditional (kinds ira and employer, inherited accounts included), each logical account id once, by projection/yearFigures.ts#balancesByCategory. Roth, HSA, taxable, cash and equity-compensation balances are not in it, and it is the gross balance, before heir tax. The engine publishes the figure and the adapter selects it (RetireGolden-MCP #81); at the census pin 3197d359 the adapter walked the last row's balance entries and added those whose account type is traditional. On the worksheet's six accounts the objective is 550,750.75. Units: nominal USD of the projection's end year. Rounding: none.",
+      "formula": {
+        "expression": "objective = Σ over the plan's logical accounts a with type traditional of lastYear.balances[a.id]",
+        "variables": [
+          {
+            "symbol": "lastYear",
+            "meaning": "The final ledger row",
+            "unit": "year row",
+            "domain": "an empty ledger publishes 0"
+          },
+          {
+            "symbol": "lastYear.balances[a.id]",
+            "meaning": "Account a's published year-end balance, 0 when absent",
+            "unit": "nominal USD of the end year",
+            "domain": "finite"
+          }
+        ],
+        "timing": "once per evaluated candidate, on the final ledger row",
+        "rounding": "none"
+      },
+      "limits": [
+        "Gross: the objective ranks the pre-tax balance a candidate leaves, before the heir tax and before any nondeductible basis; what heirs keep is projection-summary-ending-after-tax-estate.",
+        "The pinned adapter added the balances in the order of the row's balance entries; the engine adds them in the order of the plan's accounts. The two orders can differ in the last binary digit, never by a cent; on the worksheet's accounts they give the same double, which the evidence asserts.",
+        "balancesByCategory refuses a plan whose account id is also the id of a property, a debt or a permanent-life policy, where the pinned adapter's walk would have added whatever the ledger published under that id; the plan checks refuse such plans before a projection runs."
+      ],
+      "worksheet": "DOCS/calculations/accounts-and-growth/mcp-batch-ending-traditional-objective.md",
+      "mutation": "DOCS/calculations/accounts-and-growth/mcp-batch-ending-traditional-objective.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/compare.ts",
+        "packages/engine/src/projection/yearFigures.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/compareSummary.mcpObjectives.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,

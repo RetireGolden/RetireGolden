@@ -284,7 +284,13 @@ looks clean while some of the numbers came from different bytes.
   ranges. It fails on an unreached entry and on a cold line inside a reached one; it reports, but does not
   fail, an untaken sub-line branch, because an untaken defensive `?? 0` arm is a legitimate steady state. So a
   green `reach` means "every line of every named range ran", never "every branch inside them was taken" — and
-  never that a constant's neighborhood was straddled, which stays a unit test's job.
+  never that a constant's neighborhood was straddled, which stays a unit test's job. Every committed spec is
+  kept at exit 0 on the blocks corpus alone (`equivalence.mjs corpus --name blocks`), which CI does not run, so
+  run the specs before trusting one. A cold line is closed with a corpus member whose plan takes it, never a
+  hook. A line no plan that parses can execute is not forced: its spec narrows the range around it and names
+  it, with the reason and any direct test that pins it, in the entry's `note`. A new member goes at the END of
+  the tier, because the fixtures number plan ids from one counter and a member inserted mid-tier moves every
+  later member's dump.
 
 Committed reach specs still store positional `lines` plus exact trimmed `{ line, text }` anchors. Before
 coverage runs, `reach` (and the committed-spec Vitest guard) **content-locate** each entry: every candidate

@@ -306,6 +306,7 @@ export const taxesRecords = {
       'Two enacted changes have a vote pending and are loaded as current law, to be revisited when the vote is decided: Washington’s income tax from 2028, which Initiative 645 on the November 3, 2026 ballot would repeal, and the end of California’s top three bands from 2031, which Proposition 3 on the same ballot would prevent.',
       'A figure a state statute indexes is held at its latest published amount in every later year, not projected at the plan’s inflation, so tax is overstated by more each year the projection runs: among the figures loaded here, Nebraska’s thresholds at their 2026 amounts from 2027 (the 2027 schedule is in draft only), Montana’s breaks at their 2027 amounts from 2028, Rhode Island’s surtax threshold at 1,000,000 dollars from 2028 and its Social Security limits at the 2025 amounts, Maryland’s deduction at its 2026 amounts from 2027, and Illinois’s exemption at 2,925 dollars for 2027 and 2028. This is the registered approximation neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal, which lists every figure the survey found indexed. Washington’s deduction is the exception: it is projected on its statute’s own schedule (every second year from 2029, by one year’s inflation, rounded to 1,000 dollars) at the plan’s inflation.',
       'The plan models single and married filing jointly. Head of household and qualifying surviving spouse need dependents, which the plan does not collect, so a state’s head-of-household schedule or deduction is used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts), and Delaware’s new domicile test for the pension subtraction at 60 or older, which needs a domicile history the plan does not hold, is assumed to be met.',
+      'A state’s own military retirement exclusion is modeled only in Arkansas, California, Delaware, Idaho, Iowa, Kansas, Massachusetts, Missouri, New Jersey, Rhode Island, South Carolina, Utah, Vermont, Virginia and West Virginia. In every other state a pension tagged Military retirement or Military survivor benefit is priced under the state’s general retirement rules, and the state’s own military exclusion, with its age or income tests, is not modeled yet, so the engine can overstate that state’s tax on a military pension. The first known case is Wisconsin: its 2025 Schedule SB instructions, line 12, subtract retirement payments from the U.S. military retirement system, including Survivor Benefit Plan payments, up to the amount included in federal income, where the engine gives only the retirement income subtraction at 67 or older. The per-state work is queued. Railroad Retirement Act annuities are not a limit: every state subtracts them under 45 U.S.C. 231m (usc-45-231m-state-tax-bar).',
     ],
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
@@ -338,7 +339,7 @@ export const taxesRecords = {
       'packages/engine/src/tax/stateEnactedLaw.ts#federalSeniorDeductionSubtraction',
       'packages/engine/src/tax/stateEnactedLaw.ts#californiaMilitaryExclusions',
     ],
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-09-30',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'projection-summary-estate-heir-tax': {
@@ -599,7 +600,7 @@ export const taxesRecords = {
     outputs: ['tax-penalties-annual'],
     feeds: ['portfolio-need-annual', 'display-total-spending-annual', 'display-tax-plus-penalties-annual', 'scenario-lifetime-penalties'],
     statement:
-      'projection/internal/types/result.ts#YearResult.penalties is composed by projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation as projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects reporting penaltyExcludingRmdShortfallExcise plus the IRC 4974 excise from rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise. The early-withdrawal rate is 10 percent on pre-age-59-and-a-half taxable traditional withdrawals, inherited distributions are never subject to it, and the excise prices max(0, required - distributed by deadline) at the stated rate, whose post-SECURE-2 default is 25 percent. Penalties stay outside tax, AGI and MAGI. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/types/result.ts#YearResult.penalties is composed by projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation as projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects reporting penaltyExcludingRmdShortfallExcise plus the IRC 4974 excise from rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise. The early-withdrawal rate is 10 percent on pre-age-59-and-a-half taxable traditional withdrawals, inherited distributions are never subject to it, and the excise prices max(0, required - distributed by deadline) at the stated rate, whose post-SECURE-2 default is 25 percent, once for each obligation. In the calendar year a surviving spouse\'s election to treat an inherited IRA as her own takes effect, after the year of the owner\'s death, that IRA owes only its owner RMD (Treas. Reg. 1.408-8(c)(3)) and leaves the beneficiary\'s same-decedent group ((e)(2)(i)), so projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions puts it in no beneficiary obligation. Penalties stay outside tax, AGI and MAGI. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'penalties = penaltyExcludingRmdShortfallExcise + rmdShortfallExciseTax; early = 0.10 x penalizable traditional; excise = rate x max(0, required - distributed)',
       variables: [
@@ -619,21 +620,24 @@ export const taxesRecords = {
       'Asserted twice. At the two component producers: annualFundingWithdrawalEffects reports 2,000 of penaltyExcludingRmdShortfallExcise on the worksheet\'s 20,000 pre-59.5 taxable traditional withdrawal, and computeRmdShortfallExcise prices the worksheet\'s 12,000 required against 4,000 distributed as an 8,000 shortfall and a 2,000 excise at the default 25-percent rate with no relief elected. And as the published penalties of a real simulatePlan 2026 row that carries both channels at once: a 50-year-old whose only portfolio is a traditional IRA and whose 16,000 of required lifestyle plus the 2,000 excise drive a need-based withdrawal of exactly 20,000 under a zero-rate test calculator, alongside an inherited Roth account whose completed five-year deadline observation (opening benefit 12,000, 4,000 distributed by the 2026 deadline) prices the excise without replaying any cash',
       'Plan assumptions beyond the worksheet\'s inputs for that ledger year: filing single in KY at a zero state rate with a zero-rate test tax calculator, so tax is 0 and the whole need is spending plus penalties; the test asserts the 10-percent rate relation W = S + excise + 0.10 W closes at exactly 20,000',
       'The worksheet\'s fourth wrong reading is asserted as a rule: the same withdrawal-effects call on an inherited traditional account reports a zero penalty',
+      'Restated 2026-09-30, unreviewed: in an election year the elected IRA enters no beneficiary obligation. Asserted in simulate.spousalElectionYearOwnerRmd.test.ts on a 75-year-old spouse whose mid-2026 election takes effect: the owner RMD of 4,065.04 (100,000 / 24.6) is paid by 1,000 before the election and 3,065.04 after and is the one obligation, and the beneficiary figure of 6,689.19 (99,000 / 14.8) stays on the account\'s evidence as the trigger only, so the excise is 0 and not the 1,672.30 a second, unpaid obligation would charge',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
       'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts',
       'packages/engine/src/projection/internal/annualFundingWithdrawalEffects.ts',
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/result.ts#YearResult.penalties',
       'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation',
       'packages/engine/src/projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects',
       'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-30',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'display-tax-plus-penalties-annual': {
     title: 'Tax plus penalties for the year',
@@ -758,5 +762,38 @@ export const taxesRecords = {
     ],
     verifiedOn: '2026-09-26',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
+  },
+  'mcp-batch-cumulative-tax-objective': {
+    title: 'MCP batch cumulative tax objective',
+    purpose: 'The figure RetireGolden-MCP\'s batch_evaluate ranks candidates on under objective cumulative_tax: each candidate plan\'s lifetime tax plus penalties.',
+    kind: 'composition',
+    outputs: ['mcp-batch-cumulative-tax-objective'],
+    feeds: [],
+    statement: 'For objective=cumulative_tax, RetireGolden-MCP\'s batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection\'s lifetimeTaxesAndPenalties: the sum over every projection year, in ledger order from 0, of that year\'s YearResult.tax plus YearResult.penalties, each in that year\'s nominal dollars, undiscounted. tax already holds the federal AMT, penalties (early-withdrawal penalties and the IRC 4974 excise) are not in tax, and Medicare premiums and their IRMAA surcharges are in neither. The engine publishes the figure and the adapter selects it (RetireGolden-MCP #81); at the census pin 3197d359 the adapter reduced the same two fields itself. On the worksheet\'s four-year ledger the objective is 67,191.52. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'objective = Σ_y (tax_y + penalties_y), added in ledger order from 0',
+      variables: [
+        { symbol: 'tax_y', meaning: 'Year y published tax, AMT included', unit: 'nominal USD of year y', domain: 'finite, nonnegative' },
+        { symbol: 'penalties_y', meaning: 'Year y early-withdrawal penalties and IRC 4974 excise, not in tax', unit: 'nominal USD of year y', domain: 'finite, nonnegative' },
+      ],
+      timing: 'once per evaluated candidate, over every projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/mcp-batch-cumulative-tax-objective.md',
+    },
+    limits: [
+      'Nominal and undiscounted, as the name cumulative says: a tax dollar paid in the last year counts the same as one paid in the first, so candidates that shift tax in time are ranked on nominal totals, not present values.',
+      'The pinned adapter added each year\'s tax and then its penalties to the running total; the engine adds each year\'s tax plus penalties as one term. The two orders can differ in the last binary digit, never by a cent on ledger-sized figures; on the worksheet\'s ledger they give the same double, which the evidence asserts, and RetireGolden-MCP #81\'s parity test holds them within a cent on its plans.',
+      'The engine function is the figure; which objective name selects it is RetireGolden-MCP code, covered by that repository\'s wiring test, not by this record.',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/compare.ts#ProjectionSummary.lifetimeTaxesAndPenalties',
+    ],
+    verifiedOn: '2026-09-30',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

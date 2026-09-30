@@ -1103,11 +1103,11 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         ],
       }
     })
+  // Treas. Reg. 1.408-8(c)(3): an election-year account owes only its owner
+  // RMD, so the planner above leaves it out of every beneficiary obligation,
+  // grouped by decedent or not (its suppressForcedDistributionAccountIds).
   const inheritedRmdShortfallObligations =
-    inheritedPlan.rmdShortfallObligations.filter((obligation) => {
-      if (obligation.applicablePlan.kind !== 'inheritedIraAccount') return true
-      return !suppressInheritedForcedTakeAccountIds.has(obligation.applicablePlan.accountId)
-    })
+    inheritedPlan.rmdShortfallObligations
   const inheritedOperationIndexes = new Set<number>()
   for (const operation of inheritedOperations) {
     const state = rmdBalances[operation.balanceIndex]

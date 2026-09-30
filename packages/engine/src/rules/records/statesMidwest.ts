@@ -2065,17 +2065,10 @@ export const midwestStateRecords = {
   },
 
   'wi-schedule-sb-15-railroad-benefits-not-modeled': {
-    title: 'Wisconsin excludes U.S. Railroad Retirement Board benefits on federal line 5b; the engine cannot certify RRB payer',
+    title: 'Wisconsin does not tax U.S. Railroad Retirement Board benefits, so a railroad retirement annuity comes off the Wisconsin base in full',
     statement:
-      'The 2025 Wisconsin Schedule SB instructions for tax year 2025, Line 15, state that Wisconsin does not tax amounts received from the U.S. Railroad Retirement Board and that a taxpayer may subtract railroad retirement benefits included on line 5b of federal Form 1040 or 1040-SR; the line title also names railroad unemployment insurance and sickness benefits. That exclusion is scoped to RRB-paid amounts with federal line 5b inclusion, not to every pension — qualified-plan and IRA retirement subtractions on Line 16 remain registered at `wi-stat-71-05-retirement-income-subtraction`, and Social Security at Line 4. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` has no U.S. Railroad Retirement Board payer fact, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify Line 15 railroad retirement, unemployment, or sickness dollars. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 Schedule SB instructions only and does not extend that exclusion to later years without a later source.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'U.S. Railroad Retirement Board-paid railroad retirement, unemployment, or sickness benefits included on federal Form 1040 or 1040-SR line 5b: incomeStreamSchema has no railroad-retirement type',
-        'U.S. Railroad Retirement Board payer on pensionSchema, whose `source` enum is only private or public',
-      ],
-    },
+      '45 U.S.C. 231m(a) forbids any state tax on an annuity or supplemental annuity under the Railroad Retirement Act, and the 2025 Wisconsin Schedule SB instructions say that Wisconsin does not tax amounts received from the U.S. Railroad Retirement Board: tier I, which the federal return reports with Social Security on line 6b, comes off on line 4, and the railroad retirement benefits on federal line 5b come off on line 15. For a Wisconsin year `characterizedRetirementDelta` subtracts the federally included amount of every pension whose source is Railroad Tier I, Railroad Tier II or Railroad Retirement Act (other) (`railroadRetirementActSubtraction`), and none of the three enters the line 16 retirement income subtraction, which the instructions allow only on income not already removed on lines 12 through 15. A single filer with 160,000 dollars of ordinary income that includes a 20,000 dollar tier II annuity, age 60, with Wisconsin income of 140,000 dollars for the standard deduction (so none is allowed), has Wisconsin taxable income of 139,300 dollars after the 700 dollar exemption and pays 6,779.36 dollars for 2026; before 2026-09-30 the engine taxed the annuity like any pension and charged 7,839.36. Settled for a pension tagged with one of the three railroad sources. A railroad employer’s own plan is a private pension and is not subtracted; railroad unemployment and sickness benefits, which line 15 also names, have no income type in the plan and are outside this record. The instructions quoted are for tax year 2025, and the federal statute carries the rule to later years. The id keeps its earlier suffix.',
+    classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -2092,19 +2085,41 @@ export const midwestStateRecords = {
       url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
       quotedText:
         'Line 15 – Railroad Retirement Benefits, Railroad Unemployment Insurance, and Sickness Benefits\nWisconsin does not tax amounts received from the U.S. Railroad Retirement Board. You may subtract railroad retirement benefits included on line 5b of your federal Form 1040 or 1040-SR.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 4',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'Social security benefits are not taxable for Wisconsin. You may subtract any social security benefits that were taxable on your federal Form 1040 or 1040-SR.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 16',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'retirement income from a qualified retirement plan or individual retirement account (IRA) that is federally taxable and has not been removed from Wisconsin income on lines 12 through 15 of this schedule.',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'staticStatute',
     effectiveFrom: 2025,
-    effectiveThrough: 2025,
-    verifiedOn: '2026-09-09',
+    effectiveThrough: null,
+    verifiedOn: '2026-09-30',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/data/year2026.ts#states.WI',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#mapPensionSourceToStateKind',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#federalRailroadRetirementActKinds',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#railroadRetirementActSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
   'iowa-code-422-5-alternate-minimum-tax': {

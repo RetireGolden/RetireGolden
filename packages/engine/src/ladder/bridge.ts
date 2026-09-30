@@ -103,3 +103,24 @@ export function sizeBridge(input: BridgeSizingInput): BridgeSizing | null {
     ladderCost: build.totalCost,
   }
 }
+
+/**
+ * The combined quoted cost of several bridges' TIPS ladders (the Social
+ * Security page's add-ladders button, B2-P1): their `ladderCost` values
+ * added in the order given, from 0, in the dollars each quote is in (the
+ * start year's real dollars; every bridge on the page is quoted on one
+ * curve for one start year). 0 for no bridge. Refuses a non-finite cost
+ * with a RangeError.
+ *
+ * @see DOCS/calculations/social-security/social-security-bridge-ladders-total-cost.md
+ */
+export function bridgeLaddersTotalCost(bridges: readonly Pick<BridgeSizing, 'ladderCost'>[]): number {
+  let total = 0
+  for (const bridge of bridges) {
+    if (!Number.isFinite(bridge.ladderCost)) {
+      throw new RangeError(`A bridge ladder's quoted cost must be finite; got ${String(bridge.ladderCost)}`)
+    }
+    total += bridge.ladderCost
+  }
+  return total
+}

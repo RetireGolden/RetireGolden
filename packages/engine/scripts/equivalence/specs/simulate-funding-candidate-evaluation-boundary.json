@@ -32,8 +32,9 @@
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
         269,
-        369
+        308
       ],
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 309 (`? {}`), the `? {}` arm for an undefined `stateRetirementDistributions`: simulatePlan always hands the funding phase an array literal. The direct contract test's minimal tax input takes it. Also line 322 (`: { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),`), the defined arm for `stateHsaYearFacts`: the only context builder (annualFundingApplicationAndClosePhase) never sets it. No direct test pins it. Also line 324 (`? {}`), the `? {}` arm for an undefined `stateQcdEventFacts`: the forced-distribution phase always returns `qcdEventFactsForYear(plan, year, stateQcdEvents)` over an array, which is never undefined for a defined event list. The direct contract test's minimal tax input takes it. Also line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`), the defined arm for `stateQcdYearFacts`: the annual facts simulatePlan hands the funding phase never carry it. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 269,
@@ -48,12 +49,88 @@
           "text": "let taxInput: TaxYearInput = {"
         },
         {
+          "line": 308,
+          "text": "...(taxInputBase.stateRetirementDistributions === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AF.helper.tax.2",
+      "label": "capital-loss netting, complete tax input, and gross healthcare default (continued)",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [
+        310,
+        321
+      ],
+      "note": "Continues AF.helper.tax past its excluded line 309 (`? {}`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 319,
+          "text": ": { stateHsaAccountYearFacts: taxInputBase.stateHsaAccountYearFacts }),"
+        },
+        {
+          "line": 321,
+          "text": "? {}"
+        }
+      ]
+    },
+    {
+      "id": "AF.helper.tax.3",
+      "label": "capital-loss netting, complete tax input, and gross healthcare default (continued)",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [
+        323,
+        323
+      ],
+      "note": "Continues AF.helper.tax past its excluded line 322 (`: { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 323,
+          "text": "...(taxInputBase.stateQcdEventFacts === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AF.helper.tax.4",
+      "label": "capital-loss netting, complete tax input, and gross healthcare default (continued)",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [
+        325,
+        327
+      ],
+      "note": "Continues AF.helper.tax past its excluded line 324 (`? {}`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 325,
+          "text": ": { stateQcdEventFacts: taxInputBase.stateQcdEventFacts }),"
+        },
+        {
+          "line": 327,
+          "text": "? {}"
+        }
+      ]
+    },
+    {
+      "id": "AF.helper.tax.5",
+      "label": "capital-loss netting, complete tax input, and gross healthcare default (continued)",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [
+        329,
+        369
+      ],
+      "note": "Continues AF.helper.tax past its excluded line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`); see that entry's note.",
+      "anchors": [
+        {
           "line": 351,
           "text": "taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)"
         },
         {
           "line": 368,
           "text": "candidateHealthcare ="
+        },
+        {
+          "line": 369,
+          "text": "aca.healthcareExcludingEnrollment + aca.grossEnrollmentPremium"
         }
       ]
     },
@@ -205,8 +282,9 @@
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
         934,
-        1047
+        989
       ],
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 990 (`? {}`), the `? {}` arm for an undefined `facts.stateRetirementDistributions`, which simulatePlan always passes as an array literal. No direct test pins it. Also line 1007 (`? {}`), the `? {}` arm for an undefined `facts.stateQcdEventFacts`, which the forced-distribution phase always defines (see AF.helper.tax). No direct test pins it. Also line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`), the defined arm for `facts.stateQcdYearFacts`, which simulatePlan never sets. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 934,
@@ -221,12 +299,72 @@
           "text": "taxInputBase: Object.freeze({"
         },
         {
+          "line": 989,
+          "text": "...(facts.stateRetirementDistributions === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AF.callsite.context.2",
+      "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [
+        991,
+        1006
+      ],
+      "note": "Continues AF.callsite.context past its excluded line 990 (`? {}`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 996,
+          "text": "return household === undefined ? {} : { stateHouseholdFacts: household }"
+        },
+        {
+          "line": 1006,
+          "text": "...(facts.stateQcdEventFacts === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AF.callsite.context.3",
+      "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [
+        1008,
+        1015
+      ],
+      "note": "Continues AF.callsite.context past its excluded line 1007 (`? {}`); see that entry's note.",
+      "anchors": [
+        {
+          "line": 1008,
+          "text": ": { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({"
+        },
+        {
+          "line": 1015,
+          "text": "? {}"
+        }
+      ]
+    },
+    {
+      "id": "AF.callsite.context.4",
+      "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [
+        1017,
+        1047
+      ],
+      "note": "Continues AF.callsite.context past its excluded line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`); see that entry's note.",
+      "anchors": [
+        {
           "line": 1024,
           "text": "aca: Object.freeze({"
         },
         {
           "line": 1036,
           "text": "hsa: Object.freeze({"
+        },
+        {
+          "line": 1047,
+          "text": "})"
         }
       ]
     },
@@ -262,5 +400,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Corpus-cold known-attestation merge, contradicted-attestation provenance, and HSA-only recharacterization are intentionally excluded from steady-state ranges and pinned by direct contract tests. The defensive nonconvergent HSA-cap fallback is unreachable while its frozen finite qualified-expense cap is the sole refresh input, so neither this corpus nor direct tests claim it. Object identity and hostile output consumption are delegation-test responsibilities, not claims made by a byte-identical dump or coverage range."
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Corpus-cold known-attestation merge, contradicted-attestation provenance, and HSA-only recharacterization are intentionally excluded from steady-state ranges and pinned by direct contract tests. The defensive nonconvergent HSA-cap fallback is unreachable while its frozen finite qualified-expense cap is the sole refresh input, so neither this corpus nor direct tests claim it. Object identity and hostile output consumption are delegation-test responsibilities, not claims made by a byte-identical dump or coverage range. EXCLUSIONS (2026-09-30): every whole line this spec leaves out of its ranges because no plan that parses can execute it is named, with the reason and whatever direct test pins it, in the note of the entry it was cut from; the pieces that continue that entry carry its id with a numeric suffix. The blocks corpus reaches every other line of every range."
 }
