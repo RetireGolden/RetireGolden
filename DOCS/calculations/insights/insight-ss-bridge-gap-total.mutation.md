@@ -30,10 +30,10 @@ npx vitest run src/insights/detectors/ssBridgeGap.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (ssBridgeGap.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (ssBridgeGap.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/insights/detectors/ssBridgeGap.evidence.test.ts (1 test | 1 failed) 5ms
    ❯ insight-ss-bridge-gap-total — Household Social Security bridge: summed ladder cost and annual real income (1)

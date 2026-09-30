@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualPermanentLifeTransitions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualPermanentLifeTransitions.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/internal/annualPermanentLifeTransitions.evidence.test.ts (2 tests | 1 failed) 5ms
    ❯ insurance-cash-value-and-death-benefit-annual — Annual permanent-life cash value and death-year settlement (2)

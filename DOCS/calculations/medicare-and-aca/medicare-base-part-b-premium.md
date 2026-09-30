@@ -46,3 +46,9 @@ Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.
+
+Restated 2026-09-29 by claude (opus 5.5), after the Grok review above: the record's formula wrote the Part B premium as the standard premium times the applicable percentage over 25, which the engine no longer computes above tier 0; it now reads CMS's published tier totals (`medicare-irmaa-first-tier-boundary`). The formula says so, with the standard premium at tier 0. The tier-0 case here, $2,434.80, does not move. The restated formula is Claude's, so the record was unreviewed until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

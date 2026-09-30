@@ -5,7 +5,7 @@
  * annuity-purchases-estate, 1 care path) now draw identical paths, compared
  * as exact floats, in the headline, longevity and care modes. The per-person
  * healthcare sum and the legacy QCD split now add in the canonical order.
- * The measurement harness (C:/rgwt/staging/order-diag/impl) asserts the same
+ * The implementation's measurement harness (not yet published) asserts the same
  * on all seven example couples.
  */
 import { describe, expect, it } from 'vitest'

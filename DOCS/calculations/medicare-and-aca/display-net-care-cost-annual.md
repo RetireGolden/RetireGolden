@@ -44,4 +44,6 @@ feeds: none.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; case C's residue was found by the deriver's own search over random cents in plain JavaScript reproducing the ledger's two-policy arithmetic, and the ledger case by the implementer's search over whole-cent monthly benefits (the same residue). Checked by a second claude agent that did not derive it, which confirmed the values and asked for an invariant over the example ledgers, since a refusal from a display function would stop the whole Results table. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; case C's residue was found by the deriver's own search over random cents in plain JavaScript reproducing the ledger's two-policy arithmetic, and the ledger case by the implementer's search over whole-cent monthly benefits (the same residue). Checked by a second claude agent that did not derive it, which confirmed the values and asked for an invariant over the example ledgers, since a refusal from a display function would stop the whole Results table. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.

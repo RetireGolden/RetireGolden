@@ -44,7 +44,7 @@ feeds: none.
 
 ## A purchase dated before the start year (D-2027-ROLLOVER): a registered limit
 
-A ladder whose purchase year is before the start is treated as already paid, anchored at its purchase year: its rungs pay and no cost leaves the funding account. When the balance was entered before the purchase and not updated, the cost is counted twice. The check measured a $30,000-a-year real bridge ladder for 2028 to 2031 bought in 2026: it costs $14,873 of ending net worth from a 2026 start and adds $702,171 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins the same ladder to the cent: -$14,872.97 from a 2026 start and +$702,077.21 from a 2027 start (main's #761 moved the 2027 figure from the check's, by pricing a saved example's 2027 premium tax credit from a 2027 start). The figure is not corrected, for the reason the annuity record gives; the projection names each such purchase with the cost the ledger prices for a purchase in its own year (`ladder/ladderMath.ts#quotePlanLadder`, `projection/preStartEvents.ts#preStartEvents`):
+A ladder whose purchase year is before the start is treated as already paid, anchored at its purchase year: its rungs pay and no cost leaves the funding account. When the balance was entered before the purchase and not updated, the cost is counted twice. The check measured a $30,000-a-year real bridge ladder for 2028 to 2031 bought in 2026: it costs $14,873 of ending net worth from a 2026 start and adds $702,171 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins the same ladder to the cent: -$14,871.56 from a 2026 start and +$702,077.94 from a 2027 start (main's #761 moved the 2027 figure from the check's, by pricing a saved example's 2027 premium tax credit from a 2027 start, and the 2026-09-29 change to CMS's published IRMAA amounts moved both, from -$14,872.97 and +$702,077.21). The figure is not corrected, for the reason the annuity record gives; the projection names each such purchase with the cost the ledger prices for a purchase in its own year (`ladder/ladderMath.ts#quotePlanLadder`, `projection/preStartEvents.ts#preStartEvents`):
 
 > The Bridge TIPS ladder purchase is dated 2026, before this plan starts in 2027, so it is treated as already paid: its $114,426 cost is not taken from Joint brokerage. If that balance still includes the cost, lower it by $114,426.
 
@@ -55,3 +55,9 @@ Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.
+
+Revision 2026-09-29, after the Grok review above: the engine now reads CMS's published IRMAA amounts, which moves the pre-start figures `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins (a full-horizon measurement the review did not recompute) by cents to a few dollars; the record's limit and the paragraph above state the new pins beside the old. No worked case of this worksheet moves. Because the record's text changed, it was unreviewed until the review below. Revised by claude (opus 5.5).
+
+Reviewed by: Grok (grok-4.7), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-grok.md`.

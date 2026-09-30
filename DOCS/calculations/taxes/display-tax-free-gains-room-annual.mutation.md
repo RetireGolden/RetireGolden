@@ -27,10 +27,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The baseline is green (yearFigures.taxFreeGainsRoom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The baseline is green (yearFigures.taxFreeGainsRoom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/yearFigures.taxFreeGainsRoom.evidence.test.ts (11 tests | 4 failed) 43ms
    ❯ display-tax-free-gains-room-annual — Tax-free gains room: extra long-term gain at no extra federal tax (11)

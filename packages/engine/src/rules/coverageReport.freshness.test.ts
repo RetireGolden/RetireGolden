@@ -423,6 +423,20 @@ describe('calculation coverage report artifacts', () => {
     }
   })
 
+  it("finds a registered test in every record's evidence fixture", () => {
+    // The census scans fixtures for literal it() titles. A substitution title
+    // once resumed the scan inside its template literal and swallowed every
+    // test after it, so two fixtures with plenty of tests registered none and
+    // their families stayed partial with nothing saying why.
+    const missing: string[] = []
+    for (const { shard } of calculationReport.shards) {
+      for (const record of shard.records) {
+        if (!record.gates.fixtureRegistersTest) missing.push(record.id)
+      }
+    }
+    expect(missing).toEqual([])
+  })
+
   it('publishes exactly the documented record keys in order, substance between feeds and justificationKind', () => {
     const documentedKeys = [
       'id',

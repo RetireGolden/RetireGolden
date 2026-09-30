@@ -32,10 +32,10 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/spending/layers.evidence.test.ts
 
 ## Captured failing output
 
-The unmodified baseline passed (exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Mutation exit code: 1.
+The unmodified baseline passed (exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Mutation exit code: 1.
 
 ```
-RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/spending/layers.evidence.test.ts (5 tests | 1 failed) 5ms
    ❯ spending-layer-shortfall-attribution — Spending layer shortfall attribution (4)

@@ -27,10 +27,10 @@ npx vitest run src/decisions/spiaQuotes.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spiaQuotes.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spiaQuotes.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/spiaQuotes.evidence.test.ts (5 tests | 2 failed) 6ms
    ❯ qlac-deferred-payout-placeholder — Temporary deferred-QLAC payout-rate placeholder (2)

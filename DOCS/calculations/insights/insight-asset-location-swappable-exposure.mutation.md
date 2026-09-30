@@ -35,10 +35,10 @@ npx vitest run src/insights/detectors/assetLocation.evidence.test.ts
 
 ## Captured failing output
 
-The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (assetLocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (assetLocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/insights/detectors/assetLocation.evidence.test.ts (2 tests | 2 failed) 14ms
    ❯ insight-asset-location-swappable-exposure — Swappable class exposure of the preferred asset-location candidate (2)

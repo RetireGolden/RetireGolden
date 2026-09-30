@@ -846,11 +846,11 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1771,
+    "entryCount": 1773,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 142,
+      "ELISION-EXACT": 144,
       "ELISION-PUNCTUATION": 1,
       "EXACT": 1207,
       "PDF-NOT-VERIFIABLE": 1,
@@ -1861,7 +1861,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, cross-check of the survey (2026-09-28): dc-code-47-1801-04-3a-standard-deduction-2026-2029 records which District act is in force and what happens at each date. Four quotes, each checked by a live verify-quotes --refresh run on 2026-09-28: D.C. Act 26-416 sec. 7112(b)(1) adding 47-1801.04(3A)(A)(ii)(I) (elided between the lead-in and subclause (I)), and sec. 9003 (the 90-day limit), both from code.dccouncil.gov/us/dc/council/acts/26-416; the permanent text of 47-1801.04(44)(A)(iv) from the (Perm) page; and the code site's note that D.C. Law 26-89's amendments expire September 25, 2026. Sources saved under C:/rgwt/staging/2027-figures/sources/ (dc-act-26-416.html, dc-47-1801.04-perm.html, dc-47-1801.04.html, each with URL, time and SHA-256; the SHA-256s match the survey's captures).",
+        "note": "D-2027-PUBLISHED-FIGURES, cross-check of the survey (2026-09-28): dc-code-47-1801-04-3a-standard-deduction-2026-2029 records which District act is in force and what happens at each date. Four quotes, each checked by a live verify-quotes --refresh run on 2026-09-28: D.C. Act 26-416 sec. 7112(b)(1) adding 47-1801.04(3A)(A)(ii)(I) (elided between the lead-in and subclause (I)), and sec. 9003 (the 90-day limit), both from code.dccouncil.gov/us/dc/council/acts/26-416; the permanent text of 47-1801.04(44)(A)(iv) from the (Perm) page; and the code site's note that D.C. Law 26-89's amendments expire September 25, 2026. The three pages as fetched on 2026-09-28 have SHA-256 972aa394f9e5688b1aa594758f0a9b6f98891239eac3499f4b517e03465e97ce (the act), 42b8c641f1ed929386ea563ea8d912ac6c64d214742122ef6935ec0c4d5c93dd (the (Perm) page) and a05723522ea232e10175318b8264f3a3c9171b97f18c23c8d566fdd0c8815ba3 (the code page), matching the survey's captures.",
         "entries": [
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
@@ -1883,7 +1883,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): wa-essb-6346-s316-standard-deduction-indexing quotes ESSB 6346 (chapter 238, Laws of 2026) section 316(1), the biennial inflation indexing of the $1,000,000 standard deduction, and its no-reduction and effective-year sentences. Two quotes from the enrolled session law PDF (lawfilesext.leg.wa.gov 6346-S.SL.pdf), each elided at the printed line numbers, checked by a live verify-quotes --refresh run on 2026-09-28 (PDF-WORD-LEVEL). The same PDF is saved under C:/rgwt/staging/2027-figures/survey/sources/WA/ with URL, time and SHA-256.",
+        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): wa-essb-6346-s316-standard-deduction-indexing quotes ESSB 6346 (chapter 238, Laws of 2026) section 316(1), the biennial inflation indexing of the $1,000,000 standard deduction, and its no-reduction and effective-year sentences. Two quotes from the enrolled session law PDF (lawfilesext.leg.wa.gov 6346-S.SL.pdf), each elided at the printed line numbers, checked by a live verify-quotes --refresh run on 2026-09-28 (PDF-WORD-LEVEL). The PDF as read on 2026-09-28 has SHA-256 16a356b992ef94745143637d7868f424207e50be24ba2fb66b4e96743facbc37.",
         "entries": [
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
@@ -1897,7 +1897,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal registers, as an approximation pinned on Nebraska, that state figures a statute indexes stay at their latest published amounts in later years. Two quotes from Neb. Rev. Stat. 77-2715.03(3)(a) (elided between the adjustment sentence and the rounding sentence) and (3)(b)(ii), checked by a live verify-quotes --refresh run on 2026-09-28. The statute page is saved under C:/rgwt/staging/2027-figures/survey/sources/NE/ with URL, time and SHA-256.",
+        "note": "D-2027-PUBLISHED-FIGURES, coordinator fix before independent review (2026-09-28): neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal registers, as an approximation pinned on Nebraska, that state figures a statute indexes stay at their latest published amounts in later years. Two quotes from Neb. Rev. Stat. 77-2715.03(3)(a) (elided between the adjustment sentence and the rounding sentence) and (3)(b)(ii), checked by a live verify-quotes --refresh run on 2026-09-28. The statute page as read on 2026-09-28 (nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03) has SHA-256 cd481e0f0d9b98fd433771b81116e6213da9eebd14c90014eaa6507a82d27055.",
         "entries": [
           {
             "id": "neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal",
@@ -2011,7 +2011,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, round-three review F4 (2026-09-28): md-tg-10-217-2026-indexed-standard-deduction is now approximated. Two quotes added: Md. Tax-General 10-217(c)(2), which leaves the cost-of-living adjustment \"as determined by the Comptroller\", and the Comptroller's 2026 Form PV estimated-tax worksheet (PDF modified 2026-04-20, saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256), which prints $3,350 and $6,700, the contrary reading. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F4 (2026-09-28): md-tg-10-217-2026-indexed-standard-deduction is now approximated. Two quotes added: Md. Tax-General 10-217(c)(2), which leaves the cost-of-living adjustment \"as determined by the Comptroller\", and the Comptroller's 2026 Form PV estimated-tax worksheet (PDF modified 2026-04-20; as fetched on 2026-09-28, SHA-256 8e5cd3503f4dff584373abfe79e4a189f5286861611525f06639d97a24199fd8), which prints $3,350 and $6,700, the contrary reading. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
         "entries": [
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
@@ -2037,7 +2037,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, round-three review F5 (2026-09-28): ri-gen-laws-44-30-12-social-security-and-pension-modification is now settled: the engine applies (c)(9)'s AGI test with the (c)(8) limits and leaves IRA distributions out. One quote added from the Division of Taxation's 2025 RI-1040 resident instructions (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the forms page refuses scripts and was read in the in-app browser to find the link). All seven quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F5 (2026-09-28): ri-gen-laws-44-30-12-social-security-and-pension-modification is now settled: the engine applies (c)(9)'s AGI test with the (c)(8) limits and leaves IRA distributions out. One quote added from the Division of Taxation's 2025 RI-1040 resident instructions (PDF as fetched on 2026-09-28, SHA-256 17c4d5abe85fe61e69da5daa349865576b5a66425a147dd5686a922b0c208336; the forms page refuses scripts and was read in the in-app browser to find the link). All seven quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
         "entries": [
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
@@ -2131,7 +2131,7 @@
       },
       {
         "on": "2026-09-28",
-        "note": "D-2027-PUBLISHED-FIGURES, round-three review F8 (2026-09-28): ri-gen-laws-44-30-12-c-8-c-9-2026-modifications quotes the Division of Taxation's 2025 Modification Worksheet for taxable Social Security (PDF saved under C:/rgwt/staging/2027-figures/sources/ with URL, time and SHA-256; the link was found by reading the forms page in the in-app browser), whose Step 2 prorates the modification when only one spouse has reached full retirement age. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
+        "note": "D-2027-PUBLISHED-FIGURES, round-three review F8 (2026-09-28): ri-gen-laws-44-30-12-c-8-c-9-2026-modifications quotes the Division of Taxation's 2025 Modification Worksheet for taxable Social Security (PDF as fetched on 2026-09-28, SHA-256 a839cab443f371964eff75e543317b5bd74ef261c847e8600673329062d6c429; the link was found by reading the forms page in the in-app browser), whose Step 2 prorates the modification when only one spouse has reached full retirement age. All five quotes checked by a live verify-quotes --refresh run on 2026-09-28.",
         "entries": [
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
@@ -2450,6 +2450,30 @@
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
             "citation": "SSA POMS RS 02501.145, § B.2.a"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-29",
+        "note": "The 2026 Medicare IRMAA amounts are read from CMS’s published table (decision of 2026-09-29, after the Codex review of spending-healthcare-annual): usc-42-1395r-i-irmaa-applicable-percentage now also cites CMS’s 2026 Medicare Parts A & B premiums fact sheet for the tier-one rows of its Part B total-premium table and its Part D income-related adjustment table. The record’s rows were verified individually on 2026-09-29 with verify-quotes.mjs --refresh, filtered to the record; the two new rows are ELISION-EXACT and the three statute rows kept their verdicts.",
+        "entries": [
+          {
+            "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part B income-related monthly adjustment amounts"
+          },
+          {
+            "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part D income-related monthly adjustment amounts"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-30",
+        "note": "After the round-one review of pull request 770, usc-42-1395r-i-irmaa-applicable-percentage states the statute’s adjustment as the product of the applicable percentage minus 25 percentage points and the unsubsidized Part B premium amount, so its 42 U.S.C. 1395r(i)(3)(A) quote now runs on through clause (ii)(II). The row was verified on 2026-09-30 with verify-quotes.mjs --refresh, filtered to the record: EXACT, and the record’s other four rows kept their verdicts.",
+        "entries": [
+          {
+            "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+            "citation": "42 U.S.C. 1395r(i)(3)(A)"
           }
         ]
       }

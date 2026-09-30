@@ -1,12 +1,12 @@
 # Mutation receipt: claim-age-co-optimization
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `edf7cdb1` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7f6fdfc5` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/generators.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/generators.ts b/packages/engine/src/decisions/generators.ts
-index c347e9d1..f3b145bb 100644
+index afe781d5..9f3fbb24 100644
 --- a/packages/engine/src/decisions/generators.ts
 +++ b/packages/engine/src/decisions/generators.ts
 @@ -359,7 +359,7 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
@@ -30,17 +30,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because merging main moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the Codex review of 2026-09-29 added the current-claim-wins fixture's PIA-year pins to optimizePlan.evidence.test.ts, which moved lines this receipt quotes; the mutation is unchanged. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (23 tests | 4 failed) 701ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (23 tests | 4 failed) 719ms
    ❯ claim-age-co-optimization — Claim age co-optimization (9)
-     × generates 2 candidates for an open claim at 70y0m, so 3 combinations are evaluated 13ms
-     × offers no canonical age already passed: a 70-year-old claiming at 70 has none to try, and says so 7ms
+     × generates 2 candidates for an open claim at 70y0m, so 3 combinations are evaluated 14ms
+     × offers no canonical age already passed: a 70-year-old claiming at 70 has none to try, and says so 6ms
      × searches the open claim of a couple whose other claim is already made, and holds that one 10ms
-     × holds the current claim, so the joint estate IS the current-claim estate 213ms
+     × holds the current claim, so the joint estate IS the current-claim estate 215ms
 
  Test Files  1 failed (1)
       Tests  4 failed | 19 passed (23)
@@ -63,13 +63,13 @@ AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
 +   "Pat claims Social Security at 70",
   ]
 
- ❯ src/projection/optimizePlan.evidence.test.ts:961:69
-    959|       // Born 1966-01-01: full retirement age 67; 62 falls in 2028 and…
-    960|       // 2033, both open. The stream's own 70y0m is skipped: 3 - 1 = 2.
-    961|       expect(candidates.map((candidate) => candidate.label).sort()).to…
+ ❯ src/projection/optimizePlan.evidence.test.ts:963:69
+    961|       // Born 1966-01-01: full retirement age 67; 62 falls in 2028 and…
+    962|       // 2033, both open. The stream's own 70y0m is skipped: 3 - 1 = 2.
+    963|       expect(candidates.map((candidate) => candidate.label).sort()).to…
        |                                                                     ^
-    962|         'Pat claims Social Security at 62',
-    963|         'Pat claims Social Security at 67 (FRA)',
+    964|         'Pat claims Social Security at 62',
+    965|         'Pat claims Social Security at 67 (FRA)',
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
 
@@ -82,13 +82,13 @@ AssertionError: expected 1 to be +0 // Object.is equality
 - 0
 + 1
 
- ❯ src/projection/optimizePlan.evidence.test.ts:972:48
-    970|       const plan = claimPlan(inputs.pastAgesFixture!)
-    971|       // Born 1956-01-01: 62 fell in 2018 and 66y2m in 2022, both befo…
-    972|       expect(generatedCandidates(plan).length).toBe(example.expected.p…
+ ❯ src/projection/optimizePlan.evidence.test.ts:974:48
+    972|       const plan = claimPlan(inputs.pastAgesFixture!)
+    973|       // Born 1956-01-01: 62 fell in 2018 and 66y2m in 2022, both befo…
+    974|       expect(generatedCandidates(plan).length).toBe(example.expected.p…
        |                                                ^
-    973|       const joint = await optimizePlanCoOptimizingClaimAge(plan, feder…
-    974|       expect(joint.claimAge.outcome).toBe('no-age-left')
+    975|       const joint = await optimizePlanCoOptimizingClaimAge(plan, feder…
+    976|       expect(joint.claimAge.outcome).toBe('no-age-left')
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
 
@@ -104,13 +104,13 @@ AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
 +   "Sam claims Social Security at 70",
   ]
 
- ❯ src/projection/optimizePlan.evidence.test.ts:1001:84
-    999|       })
-    1000|       // Pat claimed at 62 in 2025, before the plan: no candidate move…
-    1001|       expect(generatedCandidates(plan).map((candidate) => candidate.la…
+ ❯ src/projection/optimizePlan.evidence.test.ts:1003:84
+    1001|       })
+    1002|       // Pat claimed at 62 in 2025, before the plan: no candidate move…
+    1003|       expect(generatedCandidates(plan).map((candidate) => candidate.la…
        |                                                                                    ^
-    1002|         'Sam claims Social Security at 62',
-    1003|         'Sam claims Social Security at 67 (FRA)',
+    1004|         'Sam claims Social Security at 62',
+    1005|         'Sam claims Social Security at 67 (FRA)',
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
 
@@ -123,13 +123,13 @@ AssertionError: expected 4 to be 3 // Object.is equality
 - 3
 + 4
 
- ❯ src/projection/optimizePlan.evidence.test.ts:1043:52
-    1041|     it('holds the current claim, so the joint estate IS the current-cl…
-    1042|       const joint = await optimizePlanCoOptimizingClaimAge(claimPlan(i…
-    1043|       expect(joint.claimAge.combinationsEvaluated).toBe(example.expect…
+ ❯ src/projection/optimizePlan.evidence.test.ts:1045:52
+    1043|     it('holds the current claim, so the joint estate IS the current-cl…
+    1044|       const joint = await optimizePlanCoOptimizingClaimAge(claimPlan(i…
+    1045|       expect(joint.claimAge.combinationsEvaluated).toBe(example.expect…
        |                                                    ^
-    1044|       // No traditional balance, so every conversion schedule is empty…
-    1045|       // claim candidate clears the $1,000 switch margin.
+    1046|       // No traditional balance, so every conversion schedule is empty…
+    1047|       // claim candidate clears the $1,000 switch margin.
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 ```

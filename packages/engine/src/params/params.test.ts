@@ -171,12 +171,12 @@ describe('partBMonthlyPremium', () => {
     expect(partBMonthlyPremium(pack, 50_000, 'marriedFilingJointly')).toBe(202.9)
   })
 
-  it('applies tier multiples above thresholds (statutory share of cost)', () => {
-    // 35% tier: 202.90 * 1.4
-    expect(partBMonthlyPremium(pack, 109_001, 'single')).toBeCloseTo(284.06, 2)
-    // Top tier: 202.90 * 3.4
-    expect(partBMonthlyPremium(pack, 500_000, 'single')).toBeCloseTo(689.86, 2)
-    expect(partBMonthlyPremium(pack, 750_000, 'marriedFilingJointly')).toBeCloseTo(689.86, 2)
+  it('reads CMS\'s published tier totals above the thresholds, not the standard premium times the share', () => {
+    // CMS 2026: $284.10 at the 35% tier (202.90 x 1.4 would be 284.06).
+    expect(partBMonthlyPremium(pack, 109_001, 'single')).toBe(284.1)
+    // Top tier: $689.90 (202.90 x 3.4 would be 689.86).
+    expect(partBMonthlyPremium(pack, 500_000, 'single')).toBe(689.9)
+    expect(partBMonthlyPremium(pack, 750_000, 'marriedFilingJointly')).toBe(689.9)
   })
 
   it('treats tier thresholds as cliffs', () => {

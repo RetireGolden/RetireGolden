@@ -1,6 +1,6 @@
 # Mutation receipt: benefits-to-contributions-ratio
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757), and re-executed 2026-09-28 against RetireGolden base `a24a985a` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757), and re-executed 2026-09-28 against RetireGolden base `a24a985a` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `e51a4f00` (branch `claude/ss-review-fixes`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/oasdiReturn.ts`
 
@@ -29,17 +29,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The Social Security year moved into one function the ledger and the analysis models share, with the earnings test charged month by month (decision D-SS-ANALYSIS-EARNINGS-TEST), so the mutation is re-executed on that code. The baseline is green (oasdiReturn.ratio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. The checkout's path is written from the repository root. Exit code: 1.
+Re-executed after the different-family review of #769 added worked cases W and X to its test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (oasdiReturn.ratio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
- ❯ src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts (5 tests | 1 failed) 18ms
-   ❯ benefits-to-contributions-ratio — Benefits received per dollar of Social Security tax paid (5)
+ ❯ src/socialSecurity/analysis/oasdiReturn.ratio.evidence.test.ts (6 tests | 1 failed) 18ms
+   ❯ benefits-to-contributions-ratio — Benefits received per dollar of Social Security tax paid (6)
      × case B: a person collecting since 2023 counts the three years already received (2.93, not 2.37) 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 4 passed (5)
+      Tests  1 failed | 5 passed (6)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

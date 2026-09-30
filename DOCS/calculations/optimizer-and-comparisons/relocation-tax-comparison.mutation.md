@@ -31,10 +31,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The slice 3 review fixes moved compareMoneyLasts and conversionScheduleTotal, rewrote comments in these files and added evidence tests, so the hunk headers and test counts are re-pointed. The baseline is green (relocation.comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice 3 review fixes moved compareMoneyLasts and conversionScheduleTotal, rewrote comments in these files and added evidence tests, so the hunk headers and test counts are re-pointed. The baseline is green (relocation.comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/relocation.comparison.evidence.test.ts (3 tests | 1 failed) 15ms
    ❯ relocation-row-comparison — Relocation rows compared with your plan (3)

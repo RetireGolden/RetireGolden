@@ -8,8 +8,9 @@ import { medicareAnnualPremiumPerPerson } from './medicare.js'
  * Atomic oracle tests for Medicare Part B / IRMAA (Phase 1, calculation-test-plan.md).
  *
  * Thresholds and the standard premium are pinned against the 2026 pack (CMS 2026:
- * $202.90 standard Part B; IRMAA tiers per statute). Part B at a tier is the
- * standard premium scaled by applicablePct / 25 (the standard 25% cost share).
+ * $202.90 standard Part B; IRMAA tiers per statute). Part B at a tier is CMS's
+ * published total for it ($284.10 ... $689.90), which CMS derives from the
+ * unrounded actuarial rate, not the standard premium times applicablePct / 25.
  * IRMAA brackets are cliffs on MAGI from two years prior.
  */
 const pack = packForYear(2026).pack
@@ -35,10 +36,10 @@ describe('Medicare / IRMAA golden worksheets', () => {
   })
 
   it('jumps to tier 1 one dollar over the first single threshold (cliff)', () => {
-    // applicablePct 35 -> Part B = 202.90 * (35/25) = 202.90 * 1.4.
+    // CMS 2026 tier 1: $284.10 (202.90 x 35/25 would be 284.06).
     const r = medicareAnnualPremiumPerPerson(pack, 109_001, 'single')
     expect(r.irmaaTier).toBe(1)
-    expectMoney(r.partBAnnual, STD_MONTHLY * 1.4 * 12)
+    expectMoney(r.partBAnnual, 284.1 * 12)
     expectMoney(r.partDSurchargeAnnual, 14.5 * 12)
     expect(r.partDSurchargeUnverified).toBe(false)
   })
@@ -57,10 +58,10 @@ describe('Medicare / IRMAA golden worksheets', () => {
   })
 
   it('reaches the top tier with the maximum applicable percentage', () => {
-    // Tier 5 starts at single >= 500,000, applicablePct 85 -> Part B = 202.90 * (85/25) = * 3.4.
+    // Tier 5 starts at single >= 500,000: CMS 2026 $689.90 (202.90 x 85/25 would be 689.86).
     const r = medicareAnnualPremiumPerPerson(pack, 500_000, 'single')
     expect(r.irmaaTier).toBe(5)
-    expectMoney(r.partBAnnual, STD_MONTHLY * 3.4 * 12)
+    expectMoney(r.partBAnnual, 689.9 * 12)
     expectMoney(r.partDSurchargeAnnual, 91 * 12)
   })
 

@@ -10,6 +10,8 @@ import {
 import { couplePlan, singlePersonPlan, socialSecurityIncome, validatePlan } from '../../testing/planFixtures.js'
 import { neverClaimedDeceasedFactor, survivorBenefitMonthly, widowEntitlementAgeMonths } from '../survivorBenefit.js'
 import { bestMaritalBenefit } from '../maritalBenefits.js'
+import { claimFactor } from '../claimFactor.js'
+import { spouseDualEntitlementMonthly } from '../dualEntitlement.js'
 import {
   benefitsOnlyRanking,
   expectedPvCouple,
@@ -138,6 +140,12 @@ describeCalculation(
         survivorClaimAge: { years: 67, months: 10 }, survivorFraMonths: 798,
       })
       expectAmount(widow, 'C-D widow monthly, death 2026')
+      // Born 1959 (full retirement age 66y10m), her claim at 67 carries two
+      // months of delayed credit, but the combined payment with the spouse
+      // benefit is computed without them (POMS RS 00615.694 A).
+      const own = 500 * claimFactor(1959, 3, 10, { years: 67, months: 0 })
+      expectAmount(own, 'C-D own monthly at 67, two months of delayed credit')
+      expectAmount(spouseDualEntitlementMonthly({ ownPiaMonthly: 500, ownActualMonthly: own, spouseBaseMonthly: 1_000, spouseFactor: 1 }), 'C-D combined monthly while both are paid')
     })
 
     // 20 CFR 404.404 counts the worker's PIA against the family maximum, which

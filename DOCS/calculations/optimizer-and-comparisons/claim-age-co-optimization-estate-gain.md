@@ -115,7 +115,9 @@ feeds: none. Reads `claim-age-co-optimization-joint-exact-estate` and `claim-age
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27; cases R to T by hand and `scripts/independent.mjs`; the example rows from the scratch run. Checked by: a separate Claude (Opus 5.5) instance that did not derive it (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`): R to T reproduce, the five winners are bit-identical on the page, the report and the engine, and its correction 15 (a required field and a changed report model) is applied. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-27; cases R to T by hand and `scripts/independent.mjs`; the example rows from the scratch run. Checked by: a separate Claude (Opus 5.5) instance that did not derive it (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`): R to T reproduce, the five winners are bit-identical on the page, the report and the engine, and its correction 15 (a required field and a changed report model) is applied. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.
 
 ## Implementation (B2-P1 slice 3, 2026-09-27)
 

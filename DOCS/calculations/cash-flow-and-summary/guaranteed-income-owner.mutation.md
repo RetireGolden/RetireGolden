@@ -1,6 +1,6 @@
 # Mutation receipt: guaranteed-income-owner
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7f6fdfc5` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts`
 
@@ -26,18 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-First execution, for decision D-PEOPLE-ORDER (and D-FI-CONVERSION-TAX for the FI base): the mutation restores the rule before the decision, and the evidence fails. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of claude/ss-review-fixes into the catalog-evidence branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (7 tests | 2 failed) 110ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 166ms
    ❯ guaranteed-income-owner — Whose age and life a pension or annuity is paid on (3)
      × starts and ends Sam’s pension and annuity on Sam’s age and life 12ms
-     × gives the same income with the people listed the other way round 16ms
+     × gives the same income with the people listed the other way round 18ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 5 passed (7)
+      Tests  2 failed | 8 passed (10)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -54,14 +54,14 @@ AssertionError: Pension income, 2028: actual 24000: expected false to be true //
 - true
 + false
 
- ❯ check src/projection/peopleNamed.evidence.test.ts:131:100
-    129|       const years = run(plan)
-    130|       const check = (label: string, value: number) =>
-    131|         expect(withinTolerance(value, owner.value(label), tolerance), …
+ ❯ check src/projection/peopleNamed.evidence.test.ts:162:100
+    160|       const years = run(plan)
+    161|       const check = (label: string, value: number) =>
+    162|         expect(withinTolerance(value, owner.value(label), tolerance), …
        |                                                                                                    ^
-    132|       check('Pension income, 2028', yearOf(years, 2028).incomes.pensio…
-    133|       check('Pension income, 2029', yearOf(years, 2029).incomes.pensio…
- ❯ src/projection/peopleNamed.evidence.test.ts:132:7
+    163|       check('Pension income, 2028', yearOf(years, 2028).incomes.pensio…
+    164|       check('Pension income, 2029', yearOf(years, 2029).incomes.pensio…
+ ❯ src/projection/peopleNamed.evidence.test.ts:163:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -203,13 +203,13 @@ AssertionError: expected [ [ +0, +0 ], [ +0, +0 ], …(27) ] to deeply equal [ [
     ],
   ]
 
- ❯ src/projection/peopleNamed.evidence.test.ts:143:41
-    141|     it('gives the same income with the people listed the other way rou…
-    142|       const incomesOf = (p: Plan) => run(p).map((y) => [y.incomes.pens…
-    143|       expect(incomesOf(reversed(plan))).toEqual(incomesOf(plan))
+ ❯ src/projection/peopleNamed.evidence.test.ts:174:41
+    172|     it('gives the same income with the people listed the other way rou…
+    173|       const incomesOf = (p: Plan) => run(p).map((y) => [y.incomes.pens…
+    174|       expect(incomesOf(reversed(plan))).toEqual(incomesOf(plan))
        |                                         ^
-    144|     })
-    145|
+    175|     })
+    176|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

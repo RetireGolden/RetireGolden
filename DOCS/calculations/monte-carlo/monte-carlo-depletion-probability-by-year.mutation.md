@@ -32,10 +32,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because decisions D-PEOPLE-ORDER and D-FI-CONVERSION-TAX moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/montecarlo/run.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ monte-carlo-depletion-probability-by-year — Depletion probability and cumulative probability by year (1)

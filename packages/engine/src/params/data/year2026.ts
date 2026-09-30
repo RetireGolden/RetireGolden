@@ -192,31 +192,43 @@ export const year2026: ParameterPack = {
     partBStandardMonthly: 202.9,
     // CMS Final CY 2026 Part D Redesign Program Instructions §§10/100: $2,100.
     partDAnnualOutOfPocketThreshold: 2_100,
+    // CMS, "2026 Medicare Parts A & B Premiums and Deductibles" (fact sheet,
+    // https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles,
+    // retrieved 2026-09-29): per tier, the Part B "Total Monthly Premium Amount"
+    // with full Part B coverage (partBTotalMonthly, read as published rather
+    // than re-derived as the standard premium times applicablePct / 25, which
+    // misses by cents) and the Part D income-related monthly adjustment amount
+    // (partDSurchargeMonthly). The rule record usc-42-1395r-i-irmaa-applicable-percentage
+    // quotes the tier-one rows.
     irmaaTiers: [
-      // CMS 2026 Part D IRMAA surcharges by income tier.
       {
         magiOver: { single: 109_000, marriedFilingJointly: 218_000 },
         applicablePct: 35,
+        partBTotalMonthly: 284.1,
         partDSurchargeMonthly: 14.5,
       },
       {
         magiOver: { single: 137_000, marriedFilingJointly: 274_000 },
         applicablePct: 50,
+        partBTotalMonthly: 405.8,
         partDSurchargeMonthly: 37.5,
       },
       {
         magiOver: { single: 171_000, marriedFilingJointly: 342_000 },
         applicablePct: 65,
+        partBTotalMonthly: 527.5,
         partDSurchargeMonthly: 60.4,
       },
       {
         magiOver: { single: 205_000, marriedFilingJointly: 410_000 },
         applicablePct: 80,
+        partBTotalMonthly: 649.2,
         partDSurchargeMonthly: 83.3,
       },
       {
         magiOver: { single: 500_000, marriedFilingJointly: 750_000 },
         applicablePct: 85,
+        partBTotalMonthly: 689.9,
         partDSurchargeMonthly: 91.0,
       },
     ],

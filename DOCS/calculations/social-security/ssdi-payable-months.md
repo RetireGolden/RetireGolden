@@ -85,4 +85,6 @@ feeds: `social-security-benefit-annual`.
 
 ## Provenance
 
-The design and the worked cases are the D-APPROX-FACTS derivation's (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/approx-facts-derivation.md`, section 4), and every cell of the onset table, both FRA edges and the 29,760 label were confirmed by its independent check (`evidence/approx-facts-check.md`, S1 to S5 and S8) from a month-by-month enumeration of 423 written by the checker; the check's correction 5 (29,760 is the engine's convention, 17,360 the statute's) and correction 7 (split the FRA year in `ssdiPaid`) are applied here. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+The design and the worked cases are the D-APPROX-FACTS derivation's (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/approx-facts-derivation.md`, section 4), and every cell of the onset table, both FRA edges and the 29,760 label were confirmed by its independent check (`evidence/approx-facts-check.md`, S1 to S5 and S8) from a month-by-month enumeration of 423 written by the checker; the check's correction 5 (29,760 is the engine's convention, 17,360 the statute's) and correction 7 (split the FRA year in `ssdiPaid`) are applied here. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

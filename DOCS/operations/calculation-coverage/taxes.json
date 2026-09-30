@@ -246,7 +246,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/yearFigures.evidence.test.ts"
@@ -330,13 +330,13 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/yearFigures.taxFreeGainsRoom.evidence.test.ts"
       ],
       "gates": {
-        "fixtureRegistersTest": false,
+        "fixtureRegistersTest": true,
         "pinsResolve": true,
         "familiesExist": true,
         "worksheetExists": true,
@@ -389,7 +389,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/yearFigures.evidence.test.ts"
@@ -792,7 +792,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/params/provenance.evidence.test.ts"
@@ -1104,8 +1104,8 @@
         "tax-total-annual",
         "relocation-lifetime-state-local-tax"
       ],
-      "purpose": "Price 2027 and later years with the state income tax figures the states have already enacted for them without conditions, instead of the 2026 figures, and correct the 2026 figures the survey of every state found wrong.",
-      "statement": "params/state/index.ts#stateParamsFor resolves a state for a year after the latest published state figures (2026) by applying every enacted year module at or before it in order (params/state/data/enacted2027.ts to enacted2033.ts): each field an entry names replaces the field for every filing status it carries, a field named as null ends, and a field no entry names keeps the 2026 figure. The fields a statute changes include the rate schedules, the standard deduction, retirement exclusions, surtax bands, state-specific blocks and whether a state taxes income at all. What is loaded, each with its own rule record: Indiana 2.9% from 2027; Mississippi 3.75%, 3.5%, 3.25% and 3% over 2027 to 2030; Montana 4.7% and 5.4% at 65,000, 97,500 and 130,000 from 2027; Nebraska 3.99% from 2027; North Carolina 3.49%, 3.24% from 2030 and 2.99% from 2033; the Hawaii Act 24 tables for 2027 and 2029 and its standard deduction steps in 2028, 2030 and 2031; New York’s five lowest rates cut 0.1 point for 2027 to 2032 and an 8.82% top rate from 2033; Rhode Island’s surtax over 1,000,000 dollars (1%, 2%, 3% over 2027 to 2029) and its Social Security modification without the age test from 2027; Virginia’s standard deduction steps in 2027, 2028 and 2030; Georgia’s 70,000 dollar retirement exclusion at 65 or older from 2027; Delaware’s military pension steps over 2027 to 2029; Illinois’s 1,000 dollar exemption from 2029; Maine’s standard deduction following the federal one from 2027; Maryland’s public-safety retirement subtraction steps to 2030; the end of Oregon’s retirement income credit from 2032; the end of California’s military exclusions from 2030 and of its top three bands from 2031; and Washington’s 9.9% tax above a 1,000,000 dollar deduction from 2028, the deduction indexed every second year from 2029 as its statute provides. The same change corrects 2026: Arkansas’s 3.7% top rate, the District of Columbia’s own deduction of 15,000 and 30,000 dollars for 2026 to 2029 under the emergency act in force (indexed from 2027, federal from 2030), Maryland’s indexed deduction, capital gain surtax and public-safety subtraction, Virginia’s personal exemptions, Rhode Island’s 50,000 dollar pension cap and Social Security modification, California’s military exclusions, and the federal senior deduction carried into Arizona, Colorado and Idaho. This list is what has been verified against the statutes; the survey of all 51 jurisdictions, recorded state by state in DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md, covers every other state. Each loaded figure is carried forward nominally until a later enacted step. The projection prices state tax for each year through tax/stateTax.ts#computeStateTaxYearResult, which reads stateParamsFor. Units: percent rates and nominal USD amounts. Rounding: none beyond the whole-dollar base taxes the Hawaii and New York tables print.",
+      "purpose": "Price 2027 and later years with the state income tax figures the states have already enacted for them without conditions (the District of Columbia’s deduction provisionally, under an emergency act, pending its permanent act’s congressional review), instead of the 2026 figures, and correct the 2026 figures the survey of every state found wrong.",
+      "statement": "params/state/index.ts#stateParamsFor resolves a state for a year after the latest published state figures (2026) by applying every enacted year module at or before it in order (params/state/data/enacted2027.ts to enacted2033.ts): each field an entry names replaces the field for every filing status it carries, a field named as null ends, and a field no entry names keeps the 2026 figure. The fields a statute changes include the rate schedules, the standard deduction, retirement exclusions, surtax bands, state-specific blocks and whether a state taxes income at all. What is loaded, each with its own rule record: Indiana 2.9% from 2027; Mississippi 3.75%, 3.5%, 3.25% and 3% over 2027 to 2030; Montana 4.7% and 5.4% at 65,000, 97,500 and 130,000 from 2027; Nebraska 3.99% from 2027; North Carolina 3.49%, 3.24% from 2030 and 2.99% from 2033; the Hawaii Act 24 tables for 2027 and 2029 and its standard deduction steps in 2028, 2030 and 2031; New York’s five lowest rates cut 0.1 point for 2027 to 2032 and an 8.82% top rate from 2033; Rhode Island’s surtax over 1,000,000 dollars (1%, 2%, 3% over 2027 to 2029) and its Social Security modification without the age test from 2027; Virginia’s standard deduction steps in 2027, 2028 and 2030; Georgia’s 70,000 dollar retirement exclusion at 65 or older from 2027; Delaware’s military pension steps over 2027 to 2029; Illinois’s 1,000 dollar exemption from 2029; Maine’s standard deduction following the federal one from 2027; Maryland’s public-safety retirement subtraction steps to 2030; the end of Oregon’s retirement income credit from 2032; the end of California’s military exclusions from 2030 and of its top three bands from 2031; and Washington’s 9.9% tax above a 1,000,000 dollar deduction from 2028, the deduction indexed every second year from 2029 as its statute provides. The same change corrects 2026: Arkansas’s 3.7% top rate, the District of Columbia’s own deduction of 15,000 and 30,000 dollars for 2026 to 2029, loaded provisionally under the emergency act in force, D.C. Act 26-416, which lasts no more than 90 days, pending the congressional review of the permanent D.C. Act 26-418 to about November 20, 2026, when it is revisited (indexed from 2027, federal from 2030), Maryland’s indexed deduction, capital gain surtax and public-safety subtraction, Virginia’s personal exemptions, Rhode Island’s 50,000 dollar pension cap and Social Security modification, California’s military exclusions, and the federal senior deduction carried into Arizona, Colorado and Idaho. This list is what has been verified against the statutes; the survey of all 51 jurisdictions, recorded state by state in DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md, covers every other state. Each loaded figure is carried forward nominally until a later enacted step. The projection prices state tax for each year through tax/stateTax.ts#computeStateTaxYearResult, which reads stateParamsFor. Units: percent rates and nominal USD amounts. Rounding: none beyond the whole-dollar base taxes the Hawaii and New York tables print.",
       "formula": {
         "expression": "params(S, Y) = figures(S, latest published year) with, for each enacted year E with published year < E <= Y in ascending order, every field entry(E, S) names replaced (or removed when named as null); tax(S, Y) = state tax of params(S, Y) on the state base",
         "variables": [
@@ -1133,7 +1133,7 @@
       },
       "limits": [
         "Changes that apply only when a condition is met are not loaded, so the engine overstates the rate in any year one is triggered; each is decided on a known date and revisited then. Colorado’s TABOR temporary rate cut: the executive director’s estimate due October 1, 2026 (C.R.S. 39-22-627). Georgia’s rate cut, standard deduction and dependent exemption steps under HB 463: the Office of Planning and Budget’s determination as of December 1, 2026, and each December 1 after. Minnesota’s one-year first-tier cut: the commissioner, by December 15, 2026 (Minn. Stat. 290.036). Oklahoma’s quarter-point cuts: the State Board of Equalization, preliminary in December 2026 and final in February 2027, for 2028 at the earliest (68 O.S. 2355). Michigan’s one-year cut below 4.25%: the January 2027 revenue conference (MCL 206.51). South Carolina’s top-rate cut: the Board of Economic Advisors forecast in effect on February 15, 2027 (S.C. Code 12-6-510(C)(2)). Kansas’s rate cuts (the August 15 determination under K.S.A. 79-32,110c), Missouri’s top-rate cuts (RSMo 143.011.4) and West Virginia’s rate cut (the August 15, 2026 determination under W. Va. Code 11-21-4h): determinations not yet published. Indiana’s 0.05-point cuts from 2030 on a budget agency determination (IC 6-3-2-1(b)(9) to (15)); Mississippi’s cuts from 2031 when the reserve fund is full (2025 H.B. 1, section 2); North Carolina’s quarter-point cuts to 2.49% from 2035 when General Fund revenue exceeds its trigger (G.S. 105-153.7(a1)).",
-        "The District of Columbia’s own standard deduction is loaded as the law in force with an approval pending. On 2026-09-28 D.C. Act 26-416, an emergency act effective August 13, 2026 for no more than 90 days (to about November 11, 2026), sets a basic deduction of 15,000 dollars single, 22,500 head of household and 30,000 joint plus the IRC 63(c)(3) addition for 2026 to 2029, indexed from a 2025 base, and the federal deduction from 2030; the temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026; the permanent act, D.C. Act 26-418, is under congressional review with a projected law date of November 20, 2026, when this is revisited. If Congress disapproves it and no further emergency act follows, the code’s permanent text returns to the federal deduction.",
+        "The District of Columbia’s own standard deduction is loaded provisionally, as the law in force with an approval pending, not as a figure enacted for 2027 to 2029 without condition: the emergency act alone does not enact it for those years. On 2026-09-28 D.C. Act 26-416, an emergency act effective August 13, 2026 for no more than 90 days (to about November 11, 2026), sets a basic deduction of 15,000 dollars single, 22,500 head of household and 30,000 joint plus the IRC 63(c)(3) addition for 2026 to 2029, indexed from a 2025 base, and the federal deduction from 2030; the temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026; the permanent act, D.C. Act 26-418, is under congressional review with a projected law date of November 20, 2026, when this is revisited. If Congress disapproves it and no further emergency act follows, the code’s permanent text returns to the federal deduction.",
         "Washington’s section 302(3) add-back is not modeled: a filer who owes the RCW 82.87 capital gains tax that year adds the Washington capital gains taxed under it, plus the RCW 82.87.060(1) deduction, back into the income-tax base, with the section 205 credit for the capital gains tax; the engine leaves every long-term gain out of the Washington base, as it leaves out the capital gains excise itself.",
         "Two enacted changes have a vote pending and are loaded as current law, to be revisited when the vote is decided: Washington’s income tax from 2028, which Initiative 645 on the November 3, 2026 ballot would repeal, and the end of California’s top three bands from 2031, which Proposition 3 on the same ballot would prevent.",
         "A figure a state statute indexes is held at its latest published amount in every later year, not projected at the plan’s inflation, so tax is overstated by more each year the projection runs: among the figures loaded here, Nebraska’s thresholds at their 2026 amounts from 2027 (the 2027 schedule is in draft only), Montana’s breaks at their 2027 amounts from 2028, Rhode Island’s surtax threshold at 1,000,000 dollars from 2028 and its Social Security limits at the 2025 amounts, Maryland’s deduction at its 2026 amounts from 2027, and Illinois’s exemption at 2,925 dollars for 2027 and 2028. This is the registered approximation neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal, which lists every figure the survey found indexed. Washington’s deduction is the exception: it is projected on its statute’s own schedule (every second year from 2029, by one year’s inflation, rounded to 1,000 dollars) at the plan’s inflation.",
@@ -1161,7 +1161,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/params/state/enacted2027.evidence.test.ts"

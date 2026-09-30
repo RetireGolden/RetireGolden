@@ -1,6 +1,6 @@
 # Mutation receipt: spending-phase-person
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7bcf555a` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
@@ -26,18 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for D-SS-ANALYSIS-EARNINGS-TEST after merging main at 6f668e06 (the 2027 rollover), because its production file now carries both branches' changes; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+The merge of claude/ss-review-fixes into the catalog-evidence branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (7 tests | 2 failed) 120ms
-   ❯ spending-phase-person — Whose age the spending phases follow (2)
-     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 39ms
-     × gives the same spending with the people listed the other way round 21ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 153ms
+   ❯ spending-phase-person — Whose age the spending phases follow (4)
+     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 38ms
+     × gives the same spending with the people listed the other way round 20ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 5 passed (7)
+      Tests  2 failed | 8 passed (10)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -102,7 +102,7 @@ AssertionError: expected [ 60000, 60000, 60000, 60000, …(30) ] to deeply equal
      93|       expect(run(reversed(plan)).map((y) => y.expenses.baseSpending)).…
        |                                                                       ^
      94|     })
-     95|   },
+     95|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

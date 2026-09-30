@@ -479,7 +479,15 @@ function testsBetween(
         title += c
         cursor += 1
       }
-      if (!broken) tests.push({ title, line: lineAt(newlines, index) })
+      if (broken) {
+        // Resume after the whole template literal, never inside it: resuming
+        // at its `${` let the closing backtick open a phantom template that
+        // swallowed every it() after it, so a fixture whose literal tests
+        // followed a substitution title registered none.
+        index = skipNonCode(source, titleStart - 1, false)
+        continue
+      }
+      tests.push({ title, line: lineAt(newlines, index) })
       index = cursor + 1
       continue
     }

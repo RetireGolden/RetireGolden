@@ -63,4 +63,6 @@ feeds: none. Reads `accounts-balance-per-account-annual`. `endingByCategory` in 
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a` and the ledger's publication contract; arithmetic by hand. Case D was added by the implementer for owner answer Q9, by hand from the surplus rule `YearResult.surplusInvested` states. Checked by a second claude agent that did not derive cases A to C, which confirmed them and found that unassigned cash is not small in the example library (`coast-fire` carries it from 2026, up to 45% of investable in 2055). Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a` and the ledger's publication contract; arithmetic by hand. Case D was added by the implementer for owner answer Q9, by hand from the surplus rule `YearResult.surplusInvested` states. Checked by a second claude agent that did not derive cases A to C, which confirmed them and found that unassigned cash is not small in the example library (`coast-fire` carries it from 2026, up to 45% of investable in 2055). Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`.

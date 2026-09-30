@@ -79,7 +79,9 @@ feeds: none. Reads `monte-carlo-investable-fan-percentiles`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26; tooltip strings by `scripts/independent.mjs`; Recharts behaviour read from the installed 3.10.1 source. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-26; tooltip strings by `scripts/independent.mjs`; Recharts behaviour read from the installed 3.10.1 source. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.
 
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 

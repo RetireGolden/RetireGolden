@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/c
 
 ## Captured failing output
 
-the slice 5 review fixes moved the production lines and test titles these receipts quote The baseline is green (claimAgeSweep.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+the slice 5 review fixes moved the production lines and test titles these receipts quote The baseline is green (claimAgeSweep.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/claimAgeSweep.evidence.test.ts (5 tests | 1 failed) 223ms
    ❯ social-security-claim-age-sweep — Whole-plan Social Security claim-age sweep (5)

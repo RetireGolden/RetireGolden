@@ -26,10 +26,10 @@ npx vitest run src/params/data/realYieldCurve2026.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after the branch review added a fourth evidence test (the record's digest against the stored points), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (realYieldCurve2026.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 after the branch review added a fourth evidence test (the record's digest against the stored points), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (realYieldCurve2026.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine10/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/params/data/realYieldCurve2026.evidence.test.ts (4 tests | 2 failed) 9ms
    ❯ treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 (4)

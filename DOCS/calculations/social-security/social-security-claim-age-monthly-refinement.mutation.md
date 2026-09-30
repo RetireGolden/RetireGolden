@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/c
 
 ## Captured failing output
 
-Re-executed because the pass count moved out of the published refinement, which moved this receipt's hunk; the mutation is unchanged. The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because the pass count moved out of the published refinement, which moved this receipt's hunk; the mutation is unchanged. The baseline is green (claimAgeSweep.refine.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/claimAgeSweep.refine.evidence.test.ts (3 tests | 1 failed) 20ms
    ❯ social-security-claim-age-monthly-refinement — Claim-age refinement to the month (3)

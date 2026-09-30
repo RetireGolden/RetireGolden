@@ -49,4 +49,6 @@ outputs: `survivor-scenario-row-ssa44premium-savings`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 5 derivation (worksheet `survivor-scenario-row-ssa44premium-savings.md`, case M-B by hand); independently checked (evidence/b2p1-slice5-check.md, item 4). Implemented by: claude (opus 5.5), 2026-09-28. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 5 derivation (worksheet `survivor-scenario-row-ssa44premium-savings.md`, case M-B by hand); independently checked (evidence/b2p1-slice5-check.md, item 4). Implemented by: claude (opus 5.5), 2026-09-28. Reviewed by: not yet reviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

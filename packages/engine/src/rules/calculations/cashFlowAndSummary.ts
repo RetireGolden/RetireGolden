@@ -277,7 +277,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'usd-cent-arithmetic': {
     title: 'Usd cent arithmetic',
@@ -470,10 +470,10 @@ export const cashFlowAndSummaryRecords = {
     statement:
       'projection/householdRetirement.ts#personRetirement gives each person\'s retirement year, the first year without their work, and its rule. A wage stream of theirs with gross pay above 0 pays through birthYear + stopAge - 1, stopAge being its end age, else the retirement age (stopAge = endAge ?? retirementAge, as projection/internal/wageIncomeStreams.ts pays), and with neither through their last year alive at the planning age, never after it. With a retirement age the person retires in the later of the ISO birth year plus that age (retirementAge) and the year after their last wage year, when a stream\'s end age keeps paying past the retirement age (wagesPastRetirementAge); with none, in the year after their last wage year when that year is the start year or later (wagesEnd), otherwise in the start year (startYear). A person retires in the plan only when alive in max(year, startYear): one whose wages run through their last year alive works through the plan, a retirement age past the planning age is never reached, and a planning age ended before the start retires no one. projection/householdRetirement.ts#householdRetirement leaves those people out (notRetiring) and takes the latest of the rest, a tie going to the older person and then the smaller id by ordinal comparison, so list order never decides it; with nobody retiring in the plan there is no household retirement, and no FI figure, Coast-FIRE figure or funded ratio is priced (decision D-PEOPLE-ORDER; the independent review\'s M4 and N3). The FI figures (projection/compare.ts#summarizeProjection) and the funded ratio (ladder/fundedRatio.ts#fundedRatioStart) both read it, and projection/householdRetirement.ts#householdRetirementClause and #notRetiringClause word it for every page: they name the person, say which rule applied, and name anyone who works through the plan. Sam, born 1964 with no retirement age, planning age 95 and wages with no end age, works through the plan, so with Alex, born 1962 retiring at 66, the household retires in Alex\'s 2028; Gus, born 1966 with a retirement age of 65 and wages to age 75, is paid through 2040 and retires in 2041 (round-one review of #765). Units: calendar year. Rounding: none.',
     formula: {
-      expression: 'year(p) = retirementAge !== null ? max(birthYear + retirementAge, lastWage(p) + 1) : lastWage(p) >= startYear ? lastWage(p) + 1 : startYear, lastWage(p) = max over p\'s paying wage streams of min(stopAge !== null ? birthYear + stopAge - 1 : birthYear + planningAge, birthYear + planningAge) with stopAge = endAge ?? retirementAge, the max(...) taking the retirement age\'s year when p has no paying wage stream; in(p) = max(year(p), startYear) <= birthYear + planningAge; household = argmax year over the people with in(p), ties to the earlier dob then the smaller id, none when nobody has in(p)',
+      expression: 'year(p) = retirementAge !== null ? (lastWage(p) !== null ? max(birthYear + retirementAge, lastWage(p) + 1) : birthYear + retirementAge) : lastWage(p) !== null and lastWage(p) >= startYear ? lastWage(p) + 1 : startYear, lastWage(p) = max over p\'s paying wage streams of min(stopAge !== null ? birthYear + stopAge - 1 : birthYear + planningAge, birthYear + planningAge) with stopAge = endAge ?? retirementAge, and null when p has no paying wage stream; in(p) = max(year(p), startYear) <= birthYear + planningAge; household = argmax year over the people with in(p), ties to the earlier dob then the smaller id, none when nobody has in(p)',
       variables: [
         { symbol: 'year(p)', meaning: 'A person\'s retirement year, the first year without their work', unit: 'calendar year', domain: 'integer' },
-        { symbol: 'lastWage(p)', meaning: 'The last year one of their wage streams pays', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'lastWage(p)', meaning: 'The last year one of their wage streams pays, null when none pays', unit: 'calendar year', domain: 'integer or null' },
         { symbol: 'in(p)', meaning: 'Whether the person is alive in the year their retirement would be priced', unit: 'boolean', domain: 'true or false' },
       ],
       timing: 'once per reading, from the plan (not a Monte Carlo path\'s sampled deaths)',
@@ -496,7 +496,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/householdRetirement.ts#notRetiringClause',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'projection-summary-fi-spending-base': {
     title: 'Which year and which outflows the FI figures price',
@@ -540,7 +540,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/compare.ts#conversionFreeRun',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'projection-summary-fi-number': {
     title: 'Projection summary fi number',
@@ -716,8 +716,8 @@ export const cashFlowAndSummaryRecords = {
       'Asserted on a real simulatePlan run over 2028-2029. Plan assumptions beyond the worksheet\'s inputs: a two-person household filing jointly in KY with a zero state rate, zero inflation and zero account returns, the owner\'s planning age set to 65 so the run makes them dead from 2029, the joint annuitant\'s planning age set to 95, and an already-owned contract with no purchase event so no exclusion ratio is derived',
       'taxablePct is the contract\'s tax character, not its cash amount; the published income field is the same under any character',
       'Period-certain and life-only are the other two forms and are not this record\'s claim',
-      'Restated 2026-09-28 under decision D-2027-ROLLOVER. A PURCHASE DATED BEFORE THE START, a registered limit of the convention and not corrected: a contract whose purchase year is before the projection start year is treated as already paid, so the projection pays its annuity and takes no premium from the funding account, whose entered balance is read as already net of it. That is right when the household entered the balance after buying; when the balance was entered before the purchase and not updated (a plan saved in the purchase year and reopened the next), the premium is counted twice, once in the balance and once as the contract it bought. Measured by the derivation on its U1 household (a $100,000 non-qualified contract bought in 2026 from the brokerage, $550 a month from 67): at a 2026 start the purchase lowers ending net worth by $147,623; at a 2027 start it raises it by $454,837 (+$455,165.79 since main\'s #761, pinned below). The independent check measured every tax qualification the same way. The projection cannot tell which case it has, so it does not deduct the premium (which would double-deduct it for every household that did update the balance); it names each such purchase in a warning with the premium and the funding account, and says to lower that balance by the premium if it still includes it (projection/preStartEvents.ts#preStartEvents)',
-      'The U1 sizes are pinned to the cent in a repository test (2026-09-29, review L7): packages/planner-ui/src/planner/preStartEvents.figures.test.ts builds the household from the example couple and asserts -$147,622.51 from a 2026 start and +$455,165.79 from a 2027 start. The review measured +$454,836.90 from 2027 before main\'s #761 (D-EXAMPLE-SOURCE-SWITCH) priced a saved example\'s 2027 premium tax credit from a 2027 start; the same test on main at 9676392f gives +$455,165.79',
+      'Restated 2026-09-28 under decision D-2027-ROLLOVER. A PURCHASE DATED BEFORE THE START, a registered limit of the convention and not corrected: a contract whose purchase year is before the projection start year is treated as already paid, so the projection pays its annuity and takes no premium from the funding account, whose entered balance is read as already net of it. That is right when the household entered the balance after buying; when the balance was entered before the purchase and not updated (a plan saved in the purchase year and reopened the next), the premium is counted twice, once in the balance and once as the contract it bought. Measured by the derivation on its U1 household (a $100,000 non-qualified contract bought in 2026 from the brokerage, $550 a month from 67): at a 2026 start the purchase lowers ending net worth by $147,623; at a 2027 start it raises it by $454,837 (+$455,159.49 as pinned below, after main\'s #761 and the 2026-09-29 change to CMS\'s published IRMAA amounts). The independent check measured every tax qualification the same way. The projection cannot tell which case it has, so it does not deduct the premium (which would double-deduct it for every household that did update the balance); it names each such purchase in a warning with the premium and the funding account, and says to lower that balance by the premium if it still includes it (projection/preStartEvents.ts#preStartEvents)',
+      'The U1 sizes are pinned to the cent in a repository test (2026-09-29, review L7): packages/planner-ui/src/planner/preStartEvents.figures.test.ts builds the household from the example couple and asserts -$147,623.51 from a 2026 start and +$455,159.49 from a 2027 start (-$147,622.51 and +$455,165.79 before the 2026-09-29 change to CMS\'s published IRMAA amounts). The review measured +$454,836.90 from 2027 before main\'s #761 (D-EXAMPLE-SOURCE-SWITCH) priced a saved example\'s 2027 premium tax credit from a 2027 start; the same test on main at 9676392f gives +$455,165.79',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
@@ -730,7 +730,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'guaranteed-income-owner': {
     title: 'Whose age and life a pension or annuity is paid on',
@@ -769,7 +769,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'income-recurring-annual': {
     title: 'Annual recurring household income',
@@ -848,7 +848,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'income-taxable-interest-annual': {
     title: 'Annual taxable interest distributed by a taxable account',
@@ -1370,7 +1370,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'spending-property-costs-annual': {
     title: 'Annual property carrying costs on owned properties',
@@ -1410,7 +1410,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/propertySaleYear.ts#effectivePropertySaleYear',
     ],
     verifiedOn: '2026-09-29',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'spending-insurance-premiums-annual': {
     title: 'Annual level insurance premiums',
@@ -1526,7 +1526,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/preStartEvents.ts#preStartEvents',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'year-result-contributions': {
     title: 'Annual contributions credited after limit trimming',
@@ -1572,12 +1572,12 @@ export const cashFlowAndSummaryRecords = {
     outputs: [],
     feeds: ['year-result-contributions'],
     statement:
-      'params/hsaLimitYears.ts#hsaLimitsForYear returns the published IRC 223(b)(2) base limits for a calendar year: 4,400 self-only and 8,750 family for 2026 (Rev. Proc. 2025-19), and 4,500 and 9,000 for 2027 (Rev. Proc. 2026-24 section 3.01(1)). projection/simulate.ts#simulatePlan reads them for each year at a scale of exactly 1 when the year is published, so 2027 is read as published although its income tax figures are still projected from 2026. A year after the latest published one grows from that year at the plan inflation path. A year before the earliest gets the earliest published limits, unscaled and flagged as a stand-in, a year no plan reaches, since the examples are pinned to 2026 and a user\'s plan starts in the clock\'s year. projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch holds each owner\'s HSA contributions to that base (the family base halved between two spouses filing jointly) plus the flat 1,000 dollar age-55 catch-up, which is not scaled. Units: nominal USD per year. Rounding: none; the projected years do not reproduce the statute\'s rounding to a multiple of 50 dollars.',
+      'params/hsaLimitYears.ts#hsaLimitsForYear returns the published IRC 223(b)(2) base limits for a calendar year: 4,400 self-only and 8,750 family for 2026 (Rev. Proc. 2025-19), and 4,500 and 9,000 for 2027 (Rev. Proc. 2026-24 section 3.01(1)). projection/simulate.ts#simulatePlan reads them for each year at a scale of exactly 1 when the year is published, so 2027 is read as published although its income tax figures are still projected from 2026. A year after the latest published one grows from that year at the plan inflation path. A year before the earliest gets the earliest published limits, unscaled and flagged as a stand-in, a year no plan reaches, since the examples are pinned to 2026 and a user\'s plan starts in the clock\'s year. projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch holds each owner\'s HSA contributions to that base (the family base halved between two spouses filing jointly, the model\'s default division) plus the flat 1,000 dollar age-55 catch-up, which is not scaled. Units: nominal USD per year. Rounding: none; the projected years do not reproduce the statute\'s rounding to a multiple of 50 dollars.',
     formula: {
       expression: 'limit(Y) = base(Y) x g(Y) + catchUp; base(Y) = published block for Y, else the latest block before Y (or the earliest after it); g(Y) = 1 for a published Y and for Y before the earliest block, else inflation from the latest block year to Y',
       variables: [
         { symbol: 'Y', meaning: 'Contribution year', unit: 'year', domain: 'integer' },
-        { symbol: 'base(Y)', meaning: 'Self-only amount, or the family amount (halved between two spouses filing jointly)', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'base(Y)', meaning: 'Self-only amount, or the family amount (halved between two spouses filing jointly, the model\'s default division)', unit: 'usd/year', domain: 'positive' },
         { symbol: 'g(Y)', meaning: 'Cumulative plan inflation from the latest published year to Y', unit: 'ratio', domain: 'positive; 1 for a published year' },
         { symbol: 'catchUp', meaning: 'IRC 223(b)(3)(B) additional amount at age 55 or older', unit: 'usd/year', domain: '0 or 1,000' },
       ],
@@ -1592,6 +1592,7 @@ export const cashFlowAndSummaryRecords = {
       'Years after the latest published limits (2028 and later today) are projected at the plan inflation path, not the C-CPI-U of section 1(f)(3), and without the rounding to a multiple of 50 dollars under section 223(g)(2)',
       'The coverage tier, the monthly eligibility and Medicare entitlement are not modeled; irc-223-b-2-7-projection-coverage-proration-and-medicare carries those shortcuts',
       'The 2027 high deductible health plan minimum deductibles (1,750 and 3,500) and out of pocket limits (8,700 and 17,400) in the same revenue procedure are not read by any calculation',
+      'Two spouses\' family base is divided equally, the model\'s default: IRC 223(b)(5)(B)(ii) divides it equally unless the spouses agree on a different division, which the plan cannot state, so an agreed split such as 9,000 and 0 keeps the household total but not the owner limits',
     ],
     implementedBy: [
       'packages/engine/src/params/hsaLimitYears.ts',
@@ -1604,7 +1605,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'year-result-employer-match': {
     title: 'Annual employer match under the pay cap and the annual-additions limit',
@@ -1790,7 +1791,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts'],
     implementedByFunctions: ['packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch'],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'projection-summary-fi-year': {
     title: 'First financial-independence crossing year',
@@ -2022,7 +2023,7 @@ export const cashFlowAndSummaryRecords = {
       'Case A is asserted at the worksheet\'s absolute $0.005 because the bisection lands 0.002 under the exact $12,450 root; a test that demanded exactness would fail on the algorithm\'s own $0.01 stopping width, not on the identity',
       'The at-threshold branch returns exactly 0 before any bisection, which is why Case B is compared with toBe rather than a tolerance',
       'The benefits branch is out of scope here: the worksheet states the no-benefit subtraction, and the bisection exists precisely because that subtraction is wrong once §86 inclusion moves with the gain',
-      'Cases C and D, added under decision D-ZERO-RATE-HEADROOM on 2026-09-25, put ordinary income below the deduction: the same plan with a $10,000 ordinary stream, and with no income at all. Their search runs from the threshold to the threshold plus the unused deduction, a wider bracket than Case A\'s, so the bisection lands up to $0.008 under the root (55,549.994 and 65,549.992); each is asserted within the $0.01 stopping width and at or under the root, and away from the 49,450 that a search bounded by the threshold published before the decision. Cases A and B were derived by Codex and reviewed by Cursor; Cases C and D were worked by the implementer from the decision\'s evidence and independently checked on 2026-09-26 by a reviewer who is not the author, as the worksheet records. The record is unreviewed since the worksheet\'s claim was reworded on 2026-09-27 to name the indexed threshold of a projected year',
+      'Cases C and D, added under decision D-ZERO-RATE-HEADROOM on 2026-09-25, put ordinary income below the deduction: the same plan with a $10,000 ordinary stream, and with no income at all. Their search runs from the threshold to the threshold plus the unused deduction, a wider bracket than Case A\'s, so the bisection lands up to $0.008 under the root (55,549.994 and 65,549.992); each is asserted within the $0.01 stopping width and at or under the root, and away from the 49,450 that a search bounded by the threshold published before the decision. Cases A and B were derived by Codex and reviewed by Cursor; Cases C and D were worked by the implementer from the decision\'s evidence and independently checked on 2026-09-26 by a reviewer who is not the author, as the worksheet records. The worksheet\'s claim was reworded on 2026-09-27 to name the indexed threshold of a projected year, and Codex reviewed the reworded claim on 2026-09-29 (DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md)',
     ],
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
@@ -2034,9 +2035,9 @@ export const cashFlowAndSummaryRecords = {
     ],
     verifiedOn: '2026-09-27',
     // Restated 2026-09-27 (decision D-WALKTHROUGH-WORKSHEET-WORDING): the
-    // worksheet's claim now names the year's threshold, so the record is
-    // unreviewed until the review lane checks the rewording.
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    // worksheet's claim now names the year's threshold; Codex reviewed the
+    // rewording on 2026-09-29 (REVIEW-2026-09-29-codex-2-cash-flow.md).
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'sustainable-spending-result-simulation-count': {
     title: 'Sustainable-spending simulation count: the probe sequence, counted',
@@ -2072,7 +2073,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/decisions/spendingSolver.ts#SustainableSpendingResult',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'display-dollar-basis-conversion': {
     title: 'Today\'s dollars by the ledger\'s own inflation factor',
@@ -2133,7 +2134,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/decisions/swrComparator.ts#compareSwrRules',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'bucket-lens-allocation': {
     title: 'Bucket view of the investable total',
@@ -2141,7 +2142,7 @@ export const cashFlowAndSummaryRecords = {
     kind: 'formula',
     outputs: ['bucket-lens-allocation'],
     statement:
-      'projection/bucketLens.ts#bucketLens reads each projection year i with investable total T_i and published net portfolio needs n_j (YearResult.netPortfolioNeed) as spans.length + 1 buckets: bucket k claims the needs of the next spans[k] years, starting with year i and continuing after the earlier buckets\' years, capped by what is left, and the last bucket is the remainder. Needs past the horizon count 0. BUCKET_LENS_SPANS holds the two presets the planner offers, [2, 8] and [3]. It refuses a span that is not a positive whole number and a year whose netPortfolioNeed is not a finite number, naming the year, rather than reading it as 0. For needs 10,000, 20,000, 30,000, 40,000 and 50,000 against totals 200,000, 150,000, 100,000, 60,000 and 20,000, spans [2, 8] give year 0 buckets of 30,000, 120,000 and 50,000 and year 2 buckets of 70,000, 30,000 and 0. Units: nominal dollars of each row\'s year; needs summed undiscounted across future years. Rounding: none; the buckets add to the investable total to within one unit in the last place.',
+      'projection/bucketLens.ts#bucketLens reads each projection year i with investable total T_i and published net portfolio needs n_j (YearResult.netPortfolioNeed) as spans.length + 1 buckets: bucket k claims the needs of the next spans[k] years, starting with year i and continuing after the earlier buckets\' years, capped by what is left, and the last bucket is the remainder. Needs past the horizon count 0. BUCKET_LENS_SPANS holds the two presets the planner offers, [2, 8] and [3]. It refuses a span that is not a positive whole number and a year whose netPortfolioNeed is not a finite number, naming the year, rather than reading it as 0. For needs 10,000, 20,000, 30,000, 40,000 and 50,000 against totals 200,000, 150,000, 100,000, 60,000 and 20,000, spans [2, 8] give year 0 buckets of 30,000, 120,000 and 50,000 and year 2 buckets of 70,000, 30,000 and 0. Units: nominal dollars of each row\'s year; needs summed undiscounted across future years. Rounding: none; the buckets add to the investable total to within 2 × spans.length units in the last place of the total, since the spans.length subtractions and the spans.length additions of their sum each round once (the worksheet derives the bound).',
     formula: {
       expression: 'need_k = sum of n_j for j from c_k to min(c_k + s_k, N) − 1; b_k = min(R_k, need_k); R_0 = T_i; R_(k+1) = R_k − b_k; c_0 = i; c_(k+1) = c_k + s_k; growth bucket = R_K',
       variables: [
@@ -2161,12 +2162,12 @@ export const cashFlowAndSummaryRecords = {
       'A reporting view: nothing feeds back into the projection, and the bucket literature (Estrada; Kitces) finds no systematic benefit from managing money as buckets over a rebalanced total-return portfolio.',
       'Needs past the horizon count 0, so the leading buckets drain near the end of the plan.',
       'Future needs are nominal and undiscounted, so bucket 2 read in today\'s dollars overstates its real size by the inflation between the row\'s year and each need\'s year.',
-      'The buckets add to the investable total to within one unit in the last place, not exactly: 127 of 2,420 example rows differ by one unit.',
+      'The buckets add to the investable total to within 2 × spans.length units in the last place, not exactly: at most 4 units for the [2, 8] preset and 2 for [3]; 127 of 2,420 example rows differ by one unit, and spans [1, 1, 1] can differ by two (the worksheet\'s three-span case).',
     ],
     implementedBy: ['packages/engine/src/projection/bucketLens.ts'],
     implementedByFunctions: ['packages/engine/src/projection/bucketLens.ts#bucketLens'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'cash-flow-drilldown-amounts': {
     title: 'Cash-flow drilldown amounts',
@@ -2196,6 +2197,6 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/projection/annualCashFlowReconciliation.ts'],
     implementedByFunctions: ['packages/engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

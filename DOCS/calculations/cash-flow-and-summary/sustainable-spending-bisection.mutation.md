@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/decisions/spendingSolver.evidenc
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spendingSolver.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spendingSolver.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/spendingSolver.evidence.test.ts (1 test | 1 failed) 57ms
    ❯ sustainable-spending-bisection — Sustainable spending bisection (1)

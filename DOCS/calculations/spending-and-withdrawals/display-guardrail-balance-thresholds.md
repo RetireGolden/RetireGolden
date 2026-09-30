@@ -149,7 +149,9 @@ feeds: none. Reads `risk-based-guardrail-solved-balance-thresholds` (through the
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26; cases A to G by hand and `scripts/independent.mjs`, the lattice ties by `scripts/lattice-ties.mjs` (no engine import); the anchor, the zero-balance case and the tie values confirmed afterwards in the scratch copy (`scripts/engine-guardrail-anchor.json`, `engine-anchor-behaviour.json`, `engine-guardrail-solver.json`, `engine-lattice-ties.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-26; cases A to G by hand and `scripts/independent.mjs`, the lattice ties by `scripts/lattice-ties.mjs` (no engine import); the anchor, the zero-balance case and the tie values confirmed afterwards in the scratch copy (`scripts/engine-guardrail-anchor.json`, `engine-anchor-behaviour.json`, `engine-guardrail-solver.json`, `engine-lattice-ties.json`). Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every value with its own scripts and ran the engine where a claim was numeric (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice2-check.md`): every expected value reproduces; its corrections are applied in the implementation section. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.
 
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 

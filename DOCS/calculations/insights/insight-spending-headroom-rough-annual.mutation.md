@@ -23,10 +23,10 @@ npx vitest run src/insights/detectors/spendingHeadroom.evidence.test.ts
 
 ## Captured failing output
 
-The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (spendingHeadroom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (spendingHeadroom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine11/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/insights/detectors/spendingHeadroom.evidence.test.ts (1 test | 1 failed) 14ms
    ❯ insight-spending-headroom-rough-annual — Rough real annual spending headroom from excess terminal estate (1)

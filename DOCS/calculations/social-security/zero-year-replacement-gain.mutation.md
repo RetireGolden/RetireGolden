@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (piaFromEarnings.zeroYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (piaFromEarnings.zeroYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts (5 tests | 4 failed) 7ms
    ❯ zero-year-replacement-gain — PIA gain from replacing a year with no earnings (5)

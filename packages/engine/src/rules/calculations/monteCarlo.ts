@@ -54,7 +54,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#choleskyDecompose'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'historical-market-series': {
     title: 'Embedded annual stock, bond, and inflation series, 1928–2023',
@@ -302,7 +302,7 @@ export const monteCarloRecords = {
     outputs: [],
     feeds: [...PATH_FAMILIES],
     statement:
-      'With sigmaBar = returnVolPct/100 (default 12), alpha (default 0.1) and beta (default 0.85), omega = sigmaBar^2 · (1 − alpha − beta), so the long-run variance omega / (1 − alpha − beta) is sigmaBar^2 (Bollerslev 1986, with the variance targeting of Engle and Mezrich 1996). The path starts at v_1 = sigmaBar^2. Each year t draws Z1_t = nextNormal, sets the innovation e_t = sqrt(v_t) · Z1_t and publishes returnShockPct = 100 · e_t; then Z2_t = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · Z1_t + sqrt(1 − rho^2) · Z2_t); then v_{t+1} = omega + alpha · e_t^2 + beta · v_t, which feeds back the innovation itself. Because E[e_t^2 | past] = v_t and v_1 = sigmaBar^2, E[v_t] = sigmaBar^2 in every year, so every year\'s shock has mean 0 and unconditional standard deviation returnVolPct points. A negative or non-finite returnVolPct, a negative or non-finite alpha or beta, alpha + beta of 1 or more, and the retired keys omega (now derived) and returnVolScalePct (now returnVolPct) are refused with a message. For the defaults, zero inflation inputs and Z1 = 1, 0.5, −2, 0 (Z2 = 0), omega = 0.00072 and v = 0.0144, 0.0144, 0.01332, 0.01737, so the shocks are 12, 6, −23.082460874005616 and 0 points and inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.',
+      'With sigmaBar = returnVolPct/100 (default 12), alpha (default 0.1) and beta (default 0.85), omega = sigmaBar^2 · (1 − alpha − beta), so the long-run variance omega / (1 − alpha − beta) is sigmaBar^2 (Bollerslev 1986, with variance targeting as the Federal Reserve\'s stress-test model documentation of October 2025 states it, after Engle and Mezrich 1996; the defaults alpha and beta are the model\'s choices). The path starts at v_1 = sigmaBar^2. Each year t draws Z1_t = nextNormal, sets the innovation e_t = sqrt(v_t) · Z1_t and publishes returnShockPct = 100 · e_t; then Z2_t = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · Z1_t + sqrt(1 − rho^2) · Z2_t); then v_{t+1} = omega + alpha · e_t^2 + beta · v_t, which feeds back the innovation itself. Because E[e_t^2 | past] = v_t and v_1 = sigmaBar^2, E[v_t] = sigmaBar^2 in every year, so every year\'s shock has mean 0 and unconditional standard deviation returnVolPct points. A negative or non-finite returnVolPct, a negative or non-finite alpha or beta, alpha + beta of 1 or more, and the retired keys omega (now derived) and returnVolScalePct (now returnVolPct) are refused with a message. For the defaults, zero inflation inputs and Z1 = 1, 0.5, −2, 0 (Z2 = 0), omega = 0.00072 and v = 0.0144, 0.0144, 0.01332, 0.01737, so the shocks are 12, 6, −23.082460874005616 and 0 points and inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.',
     formula: {
       expression: 'v_1 = sigmaBar^2; e_t = sqrt(v_t) · Z1_t; shock_t = 100 · e_t; v_{t+1} = sigmaBar^2 (1 − alpha − beta) + alpha e_t^2 + beta v_t',
       variables: [
@@ -331,7 +331,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGarchModel'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'market-model-gaussian-draw': {
     title: 'Additive Gaussian return shock',
@@ -529,7 +529,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createReversedHistoryModel'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'market-model-stationary-bootstrap': {
     title: 'Stationary (geometric-block) historical bootstrap',
@@ -572,7 +572,7 @@ export const monteCarloRecords = {
     outputs: [],
     feeds: [...PATH_FAMILIES],
     statement:
-      'For degrees of freedom df > 2 (default 5) and sigma = returnVolPct/100, each year draws Z ~ N(0, 1) with nextNormal; then V ~ chi-square(df) as 2G with G ~ Gamma(df/2, 1) by the method of Marsaglia and Tsang (2000, ACM TOMS 26(3):363-372), which uses uniforms only (its normal is built by Box-Muller from its own two uniforms, cosine branch); then m = sqrt((df − 2)/V) and t = m · Z, and the published shock is returnShockPct = sigma · t · 100; then z2 = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · t + sqrt(1 − rho^2) · z2). Because E[1/V] = 1/(df − 2), E[t^2] = 1, so the shock has mean 0 and standard deviation returnVolPct points, and Corr(shock, inflation) = rho exactly. A df of 2 or less, or not finite, is refused with a message. For df = 5, returnVolPct = 12, Z = 1 and uniforms 0.5, 0, 0.5: the method\'s normal is x = sqrt(2 ln 2) = 1.1774100225154747, d = 13/6, c = 1/sqrt(19.5), v = (1 + c x)^3 = 2.0321239789552172, and 0.5 is below the squeeze bound 1 − 0.0331 x^4 = 0.9363880209572302, so V = 2 d v = 8.805870575472607, m = 0.5836795510996967 and the shock is 7.00415461319636 points; inflation inputs are zero, so inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.',
+      'For degrees of freedom df > 2 (default 5) and sigma = returnVolPct/100, each year draws Z ~ N(0, 1) with nextNormal; then V ~ chi-square(df) as 2G with G ~ Gamma(df/2, 1) by the method of Marsaglia and Tsang (2000, ACM TOMS 26(3):363-372), which uses uniforms only (its normal is built by Box-Muller from its own two uniforms, cosine branch); then m = sqrt((df − 2)/V) and t = m · Z, and the published shock is returnShockPct = sigma · t · 100; then z2 = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · t + sqrt(1 − rho^2) · z2). For an ideal chi-square V, E[1/V] = 1/(df − 2) and E[t^2] = 1, so the shock has mean 0 and standard deviation returnVolPct points, and Corr(shock, inflation) = rho when returnVolPct and inflationVolPct are both positive (undefined when either is 0); the implemented V, whose private normal is capped (a limit), makes these approximate rather than exact. A df of 2 or less, or not finite, is refused with a message. For df = 5, returnVolPct = 12, Z = 1 and uniforms 0.5, 0, 0.5: the method\'s normal is x = sqrt(2 ln 2) = 1.1774100225154747, d = 13/6, c = 1/sqrt(19.5), v = (1 + c x)^3 = 2.0321239789552172, and 0.5 is below the squeeze bound 1 − 0.0331 x^4 = 0.9363880209572302, so V = 2 d v = 8.805870575472607, m = 0.5836795510996967 and the shock is 7.00415461319636 points; inflation inputs are zero, so inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.',
     formula: {
       expression: 't = Z · sqrt((df − 2)/V), V ~ chi-square(df) by Marsaglia and Tsang; returnShockPct = returnVolPct · t',
       variables: [
@@ -593,10 +593,10 @@ export const monteCarloRecords = {
     limits: [
       'A tail model, not a claim that future returns follow a t distribution; the planner always uses df 5, and no source fixes df',
       'A df of 2 or less is refused, because the variance is infinite there; for df of 4 or less the fourth moment is infinite',
-      'Allocated accounts\' class shocks share V with the market, so the class vector is a multivariate t: large moves in magnitude co-occur across classes (tail dependence) even where the class correlation is low, while their direction follows the correlation; cash gets t tails too',
-      'Inflation reads t rather than Z, so it inherits a little of the tail at the default correlation of −0.2; this keeps the configured correlation exact',
+      'Allocated accounts\' class shocks share V with the market, so the class vector is approximately a multivariate t (exactly one for an ideal chi-square V): large moves in magnitude co-occur across classes (tail dependence) even where the class correlation is low, while their direction follows the correlation; cash gets t tails too',
+      'Inflation reads t rather than Z, so it inherits a little of the tail at the default correlation of −0.2; this keeps the configured correlation, for positive return and inflation volatilities and up to the capped normal inside V; with either volatility 0 the correlation is undefined',
       'An additive shock can take a year\'s return below −100 percent (the return is the plan\'s expected return plus the shock), and the ledger floors balances at zero (annualPostSolveAccountGrowth.ts). At df 5 the chance per year of a shock at or below −105 points is 4.8e-5 at 12 percent volatility, 5.3e-4 at 20 percent and 1.4e-3 at 25 percent; the earlier mixture was about 2.3e-3 at 25 percent',
-      'The normal inside the chi-square draw floors its first uniform at 1e-12, as rng.ts does, which caps its size near 7.43',
+      'The normal inside the chi-square draw floors its first uniform at 1e-12, as rng.ts does, which caps its size near 7.43, so V is a close approximation of chi-square(df), not exactly it: the exact t variance, correlation and multivariate t are the ideal draw\'s',
       'A return-inflation correlation outside [−1, 1], or not finite, is refused with a message rather than clamped',
       'A negative or non-finite returnVolPct or inflationVolPct is refused with a message',
     ],
@@ -606,7 +606,7 @@ export const monteCarloRecords = {
       'packages/engine/src/montecarlo/marketModels.ts#sampleChiSquare',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'market-model-user-shock': {
     title: 'One-year additive user shock on a lognormal base',
@@ -1060,7 +1060,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'risk-based-starting-investable': {
     title: 'Starting investable: sum of listed account balances',
@@ -1130,7 +1130,7 @@ export const monteCarloRecords = {
       'packages/engine/src/montecarlo/headline.ts#headlineMonteCarloOptions',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'monte-carlo-people-draw-order': {
     title: 'The order a Monte Carlo path draws each person\'s death and care from',
@@ -1163,7 +1163,7 @@ export const monteCarloRecords = {
       'packages/engine/src/montecarlo/run.ts#runMonteCarloPaths',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'rng-derived-path-seed': {
     title: 'SplitMix32-style per-path seed',
@@ -1195,11 +1195,12 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
     verifiedOn: '2026-09-18',
-    // The independent reviewer rejected two of the three seed words on its own
-    // shift arithmetic; the orchestrator's script check is not the independent
-    // recomputation this field reports, so the record stays unreviewed until an
-    // independent lane approves one (see the worksheet's Provenance section).
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    // An earlier independent reviewer rejected two of the three seed words on
+    // its own shift arithmetic, and the orchestrator's script check was not an
+    // independent recomputation; Grok recomputed all three words and approved
+    // on 2026-09-29 (REVIEW-2026-09-29-grok-2.md; the worksheet's Provenance
+    // section has the history).
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'grok' },
   },
   'rng-mulberry32-reference-stream': {
     title: 'Mulberry32 uniform reference stream',
@@ -1380,12 +1381,12 @@ export const monteCarloRecords = {
     },
     limits: [
       'The last bin is closed (it holds the maximum), so its centre is the midpoint of a closed interval.',
-      'With every value equal the other bins are empty and their centres carry no information; at the page\'s defaults this happens on 5 of the 29 example plans as the library opens them (every path runs out).',
+      'With every value equal the other bins are empty and their centres carry no information; at the page\'s defaults this happens on 3 of the 29 example plans as the library opens them on the default seed (every path runs out; 5 on the plan-id seed it replaced).',
     ],
     implementedBy: ['packages/engine/src/montecarlo/run.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/run.ts#histogramFor', 'packages/engine/src/montecarlo/run.ts#Histogram.binCenters'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'monte-carlo-fan-chart-ranges': {
     title: 'Fan chart percentile ranges',
@@ -1413,6 +1414,6 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/run.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/run.ts#aggregateMonteCarlo'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

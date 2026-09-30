@@ -59,4 +59,6 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 
 Revision note: The first derivation expected an empty list where production omits the key, found by the implementation's fixture.
 
-Revision (2026-09-26; owner decision R15 of 2026-09-25, B2-P1 slice 1): the money-lasts convention was restated from `depletionYear` or `endYear + 1` to the last fully funded year, `depletionYear − 1` or `endYear`, by claude (the slice's implementer). No expected value changed; the second wrong reading was rewritten to one that is still wrong under the new convention. The restated text has not been reviewed: the review above covers the first derivation, and the record now says reviewedBy unreviewed.
+Revision (2026-09-26; owner decision R15 of 2026-09-25, B2-P1 slice 1): the money-lasts convention was restated from `depletionYear` or `endYear + 1` to the last fully funded year, `depletionYear − 1` or `endYear`, by claude (the slice's implementer). No expected value changed; the second wrong reading was rewritten to one that is still wrong under the new convention. The restated text had not been reviewed then: the review above covers the first derivation, and the record said reviewedBy unreviewed until the review below.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.

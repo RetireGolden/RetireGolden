@@ -582,6 +582,10 @@ function medicareIrmaaClauses(): FigureClause[] {
       clause: `starting at ${usd(firstIrmaaTier.magiOver.single)} / ${usd(firstIrmaaTier.magiOver.marriedFilingJointly)} MAGI`,
     },
     {
+      label: 'Part B IRMAA total range',
+      clause: `Part B IRMAA totals $${firstIrmaaTier.partBTotalMonthly.toFixed(2)}-$${lastIrmaaTier.partBTotalMonthly.toFixed(2)}/mo`,
+    },
+    {
       label: 'Part D surcharge range',
       clause: `Part D IRMAA surcharges $${firstPartDSurchargeMonthly.toFixed(2)}-$${lastPartDSurchargeMonthly.toFixed(2)}/mo`,
     },

@@ -14,7 +14,7 @@
  * buckets' years, capped by what is left; the last bucket is the remainder.
  * Needs past the horizon count 0, so the leading buckets drain near the end
  * of the plan. The needs are nominal and summed undiscounted across years.
- * The buckets add to T_i to within one unit in the last place.
+ * The buckets add to T_i to within 2 * spans.length units in the last place.
  *
  * Moved from planner-ui in B2-P1 slice 2 (the UI never recomputes dollars).
  *
@@ -34,7 +34,7 @@ export interface BucketYearRow {
   need: number
   /**
    * One balance per bucket, spans.length + 1 of them, nominal dollars of this
-   * year; they add to `investableTotal` to within one unit in the last place.
+   * year; they add to `investableTotal` to within 2 * spans.length ulps.
    */
   buckets: number[]
   investableTotal: number

@@ -54,7 +54,7 @@ export const longevityRecords = {
       'packages/engine/src/longevity/ssaPeriodLifeTable.ts#storedLifeTableEdition',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'mortality-published-death-probability': {
     title: 'One-year death probability: SSA\'s published q(x)',
@@ -99,7 +99,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/deathProbability.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/deathProbability.ts#annualMortality'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'mortality-sampled-death-age': {
     title: 'Sampled death age: a year-by-year walk down the survival curve',
@@ -137,7 +137,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#sampleDeathAge'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'mortality-joint-last-survivor-expectancy': {
     title: 'Joint last-survivor life expectancy of two independent lives',
@@ -180,7 +180,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#jointLastSurvivorExpectancy'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survival-probability-product': {
     title: 'The survival curve: product of hazard-adjusted one-year survivals, and the 50/50 mixture for \'average\'',
@@ -231,7 +231,7 @@ export const longevityRecords = {
       'packages/engine/src/montecarlo/survival.ts#annualSurvival',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survival-percentile-age': {
     title: 'Survival-percentile planning age: oldest age reached with probability at least pct/100',
@@ -268,7 +268,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#survivalPercentileAge'],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'joint-survival-percentile-age': {
     title: 'Joint (either-survives) percentile age on the primary\'s age clock',
@@ -305,7 +305,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#jointSurvivalPercentileAge'],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'survival-hazard-from-expectancy-multiplier': {
     title: 'Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection',
@@ -317,13 +317,13 @@ export const longevityRecords = {
     outputs: [],
     feeds: ['longevity-survival-percentile-age'],
     statement:
-      'Given age, sex and multiplier m: at m = 1 the power is exactly 1. Otherwise target = max(0.1, m) x E(1), where E(h) = 0.5 + the sum over t = 1, 2, ... (while from + t <= 120) of S_h(t), the survival curve from from = floor(max(age, 0)) under power h (survival-probability-product; for \'average\' the mixture, one power for both sexes), and the sum stops once S_h(t) <= 1e-12. E is strictly decreasing in h. If E(0.2) <= target return 0.2; if E(8) >= target return 8; otherwise bisect [0.2, 8] for 40 halvings, raising lo to the midpoint when E(mid) > target and lowering hi otherwise, and return the final midpoint. So the adjusted curve\'s expectancy is m times the unadjusted curve\'s own, the ratio the questionnaire\'s multiplier means (its central estimate is its baseline times m). Units: dimensionless hazard power. Rounding: none.',
+      'Given age, sex and multiplier m: at m = 1 the power is exactly 1. Otherwise target = max(0.1, m) x E(1), where E(h) = 0.5 + the sum over t = 1, 2, ... (while from + t <= 120) of S_h(t), the survival curve from from = floor(max(age, 0)) under power h (survival-probability-product; for \'average\' the mixture, one power for both sexes), and the sum stops once S_h(t) <= 1e-12. E is strictly decreasing in h for a starting age below 119, the table\'s last age; from 119 on, the closed last row (q = 1) makes every S_h(t) with t >= 1 zero, so E(h) = 0.5 for every h. If E(0.2) <= target return 0.2; if E(8) >= target return 8; otherwise bisect [0.2, 8] for 40 halvings, raising lo to the midpoint when E(mid) > target and lowering hi otherwise, and return the final midpoint. So, for a starting age below 119 and a target E reaches inside [0.2, 8], the adjusted curve\'s expectancy is m times the unadjusted curve\'s own, the ratio the questionnaire\'s multiplier means (its central estimate is its baseline times m). Units: dimensionless hazard power. Rounding: none.',
     formula: {
       expression: 'h* = 1 when m = 1; otherwise h* solves E(h) = max(0.1, m) E(1) on [0.2, 8]; E(h) = 0.5 + sum_t S_h(t)',
       variables: [
         { symbol: 'm', meaning: 'Remaining-years multiplier from the longevity questionnaire (m < 1 is shorter)', unit: '1', domain: 'floored at 0.1' },
         { symbol: 'E(1)', meaning: 'The survival curve\'s own remaining expectancy at power 1, at the floored age', unit: 'years', domain: '> 0' },
-        { symbol: 'E(h)', meaning: 'Remaining expectancy under hazard power h', unit: 'years', domain: 'strictly decreasing in h' },
+        { symbol: 'E(h)', meaning: 'Remaining expectancy under hazard power h', unit: 'years', domain: 'strictly decreasing in h below age 119; 0.5 for every h from 119' },
         { symbol: 'h*', meaning: 'Solved hazard power', unit: '1', domain: '0.2 <= h* <= 8' },
       ],
       timing: 'annual survival steps; the 0.5 is the within-year death convention',
@@ -336,6 +336,7 @@ export const longevityRecords = {
     limits: [
       'Proportional hazards is the modeling choice: the multiplier is matched on remaining expectancy only, not on the shape of the survival curve',
       'The result is clamped to [0.2, 8] and the multiplier floored at 0.1, so extreme questionnaire answers cannot degenerate the curve; the clamps are unstated in the signature comment',
+      'A clamped result need not reach its target, and from age 119, the table\'s last age, none can for m other than 1: E(h) is 0.5 for every h, so m = 0.8 returns 8 and m = 1.2 returns 0.2 with the expectancy still 0.5, not 0.4 or 0.6; m = 1 still returns 1',
       'The questionnaire\'s factors are not validated here; the record maps a given multiplier, whatever its source',
       'The expectancy sum stops once the running survival falls to 1e-12, and the bisection runs a fixed 40 halvings rather than to a stated tolerance',
       'expectancyUnderHazard is module-private; the evidence recomputes the expectancies through survivalCurve',
@@ -350,7 +351,7 @@ export const longevityRecords = {
       'packages/engine/src/montecarlo/survival.ts#expectancyUnderHazard',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'longevity-depletion-year': {
     title: 'Depletion year: the first projection year whose shortfall clears the funding tolerance',
@@ -428,6 +429,6 @@ export const longevityRecords = {
       'packages/engine/src/decisions/evaluateCandidate.ts#evaluateCandidate',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

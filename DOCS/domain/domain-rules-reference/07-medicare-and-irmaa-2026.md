@@ -1,7 +1,7 @@
 ## 7. Medicare and IRMAA (2026)
 
 - Standard Part B premium: **$202.90/mo**.
-- IRMAA based on **MAGI from 2 years prior** (2026 premiums ← 2024 MAGI). Cliff brackets (single / MFJ MAGI): $109k/$218k, then ~$137k, ~$171k, ~$205k single tiers, top tier $500k/$750k. 2026 Part B totals range $284.10–$689.90/mo; Part D surcharges $14.50–$91.00/mo.
+- IRMAA based on **MAGI from 2 years prior** (2026 premiums ← 2024 MAGI). Cliff brackets (single / MFJ MAGI): $109k/$218k, then ~$137k, ~$171k, ~$205k single tiers, top tier $500k/$750k. 2026 Part B totals, read from CMS's table rather than derived from the applicable percentage: $284.10, $405.80, $527.50, $649.20 and $689.90/mo; Part D surcharges $14.50, $37.50, $60.40, $83.30 and $91.00/mo.
 - **Top-tier freeze.** 42 USC 1395r(i)(5)(C) freezes the **top** threshold ($500,000 individual / $750,000 joint)
   through premium year **2027**, then resumes indexing it off an August **2026** base; the four tiers beneath it
   index without interruption under (i)(5)(A). The exact-ledger helper `irmaaTierThreshold` implements exactly
@@ -14,9 +14,9 @@
 - **Optimizer beneficiary-month exposure.** 1839(a)(2), 1839(i)(3)(A), and 1860D-13(a)(7) price Part B and
   Part D IRMAA per enrolled individual per month. The LP annualizes one household coefficient of 12 months of
   the planning combined increment and applies it once per premium year
-  (`usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure`). That coefficient uses the planning
-  first-tier combined surcharge ($95.66) rather than CMS's published $95.70, the same 4¢ residual named on
-  the standard-premium sibling; prices are not re-derived here. Both optimizer gaps are the local LP Medicare
+  (`usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure`). That coefficient uses CMS's
+  published first-tier combined surcharge ($95.70: the $284.10 tier total less the $202.90 standard premium,
+  plus the $14.50 Part D amount), as the ledger does. Both optimizer gaps are the local LP Medicare
   surcharge at held planning prices, not recommendation quality or a complete household premium.
 - **IRMAA MAGI feed (exact ledger residual).** The lookback feed adds tax-exempt interest but omits the
   §135/§911/§931/§933 without-regard addback (`usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`);

@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/longevity/s
 
 ## Captured failing output
 
-Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (ssaPeriodLifeTable.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (ssaPeriodLifeTable.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine15/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts (6 tests | 3 failed) 13ms
    ❯ ssa-period-life-table — SSA period life table, 2023 (2026 Trustees Report) (6)

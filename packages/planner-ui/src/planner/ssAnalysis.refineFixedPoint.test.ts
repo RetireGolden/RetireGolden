@@ -8,7 +8,8 @@
  * whatever the loop did. From annuity-purchases-estate's current claims
  * (Jordan 70, Taylor 67), on the after-tax-estate objective, a single pass
  * stops at Jordan 69y3m and $3,284,964; the fixed point is Jordan 69y6m,
- * Taylor 66y0m and $3,285,820, whichever person is listed first.
+ * Taylor 66y0m and $3,285,839, whichever person is listed first ($3,285,820
+ * before the 2026-09-29 change to CMS's published IRMAA amounts).
  *
  * Since #758 the refinement is the engine's (decisions/claimAgeSweep.ts
  * #refineClaimAgeMonthly), each month priced through the decision engine; the
@@ -56,7 +57,7 @@ function reversed(plan: Plan): Plan {
 
 describe('refine to the month: older first, repeated to the fixed point (review L4)', () => {
   for (const order of ['listed', 'reversed'] as const) {
-    it(`${order}: from Jordan 70 and Taylor 67 it settles at 69y6m and 66y0m, $3,285,820`, () => {
+    it(`${order}: from Jordan 70 and Taylor 67 it settles at 69y6m and 66y0m, $3,285,839`, () => {
       const listed = appExamplePlanById('annuity-purchases-estate')
       const plan = order === 'listed' ? listed : reversed(listed)
       const sweep = estateSweep(plan, EXAMPLE_FIXED_YEAR)
@@ -69,7 +70,7 @@ describe('refine to the month: older first, repeated to the fixed point (review 
         simulated.on = false
       }
       expect(refined.claimByPersonId).toEqual({ [JORDAN]: { years: 69, months: 6 }, [TAYLOR]: { years: 66, months: 0 } })
-      expect(refined.endingAfterTaxEstate).toBeCloseTo(3_285_820.3141, 3)
+      expect(refined.endingAfterTaxEstate).toBeCloseTo(3_285_838.8607, 3)
       // The months priced (the refinement's own runs, after the decision
       // context prices the plan as entered): the first moves Jordan's claim,
       // the older person's. A combination already priced is not priced

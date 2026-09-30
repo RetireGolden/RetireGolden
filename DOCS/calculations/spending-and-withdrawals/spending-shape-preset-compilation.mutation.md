@@ -26,10 +26,10 @@ npx vitest run src/spending/shapePresets.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed, and the checkout's path is written from the repository root. The run exited 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/spending/shapePresets.evidence.test.ts (7 tests | 2 failed) 7ms
    ❯ spending-shape-preset-compilation — Named spending shapes compiled to phase rows (4)
      × compiles smirk from 65 into (70, 0.95) and (75, 0.90) as its first rows 3ms

@@ -48,7 +48,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/strategies/optimizer.conversionTotal.evidence.test.ts"
@@ -184,7 +184,7 @@
       "provenance": {
         "derivedBy": "claude",
         "implementedBy": "claude",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "codex"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.evidence.test.ts"

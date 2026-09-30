@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-First execution, for decision D-PEOPLE-ORDER (and D-FI-CONVERSION-TAX for the FI base): the mutation restores the rule before the decision, and the evidence fails. The baseline is green (peopleDrawOrder.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+First execution, for decision D-PEOPLE-ORDER (and D-FI-CONVERSION-TAX for the FI base): the mutation restores the rule before the decision, and the evidence fails. The baseline is green (peopleDrawOrder.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/montecarlo/peopleDrawOrder.evidence.test.ts (2 tests | 1 failed) 397ms
    ❯ monte-carlo-people-draw-order — The order a Monte Carlo path draws each person's death and care from (2)

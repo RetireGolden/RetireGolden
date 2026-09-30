@@ -41,7 +41,7 @@ export const medicareAndAcaRecords = {
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'aca-allowable-premium-tax-credit': {
     title: 'ACA modeled allowable premium tax credit',
@@ -73,7 +73,7 @@ export const medicareAndAcaRecords = {
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'aca-economic-net-premium': {
     title: 'ACA economic net premium',
@@ -103,7 +103,7 @@ export const medicareAndAcaRecords = {
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'aca-expected-contribution': {
     title: 'ACA expected contribution',
@@ -143,7 +143,7 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'aca-coverage-year-parameters': {
     title: 'ACA credit figures by coverage year',
@@ -190,7 +190,7 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/strategies/rothConversion.ts#sizeRothConversion',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'aca-household-magi-composition': {
     title: 'ACA household MAGI composition',
@@ -262,7 +262,7 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'medicare-base-part-b-premium': {
     title: 'Medicare base Part B premium',
@@ -273,10 +273,10 @@ export const medicareAndAcaRecords = {
     statement:
       'tax/medicare.ts#medicareAnnualPremiumPerPerson publishes the 2026 standard Part B premium per Medicare-covered person as year2026.medicare.partBStandardMonthly times twelve, with no Part D surcharge and no IRMAA surcharge at tier 0. Units: nominal USD per person per year. Rounding: none stated.',
     formula: {
-      expression: 'partBAnnual = base x (applicablePct / 25) x premiumScale x 12; at tier 0 applicablePct = 25',
+      expression: 'partBAnnual = partBMonthly(tier) x premiumScale x 12; at tier 0 partBMonthly = base',
       variables: [
         { symbol: 'base', meaning: 'year2026.medicare.partBStandardMonthly', unit: 'usd/person/month', domain: 'positive' },
-        { symbol: 'applicablePct', meaning: 'Beneficiary share of program cost; 25 at tier 0', unit: 'percent', domain: '25 <= applicablePct <= 85' },
+        { symbol: 'partBMonthly(tier)', meaning: 'The standard premium at tier 0; above it, CMS\'s published tier total (medicare-irmaa-first-tier-boundary)', unit: 'usd/person/month', domain: 'positive' },
         { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year, from the latest year CMS has published', unit: '1', domain: 'positive; 1 in a year CMS has published' },
       ],
       timing: 'one premium year, per covered person',
@@ -296,42 +296,49 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
       'packages/engine/src/params/index.ts#componentPackView',
     ],
-    verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'medicare-irmaa-first-tier-boundary': {
-    title: 'Medicare IRMAA first-tier boundary',
-    purpose: 'Price the cliff at the first IRMAA threshold, on both sides of the same dollar.',
+    title: 'Medicare IRMAA tier premiums and the first-tier boundary',
+    purpose: 'Price each IRMAA tier at the premiums CMS publishes, and the cliff at the first threshold on both sides of the same dollar.',
     kind: 'formula',
     outputs: ['medicare-premiums-annual', 'irmaa-surcharge-annual'],
     feeds: ['spending-healthcare-annual'],
     statement:
-      'tax/medicare.ts#medicareAnnualPremiumPerPerson applies the 2026 single-filer first IRMAA tier only when two-year-lookback MAGI is strictly greater than the tier\'s magiOver, then prices Part B at the tier\'s applicable percentage over the 25% standard share and adds the published monthly Part D surcharge. The IRMAA-only surcharge is the Part B amount above standard plus the Part D surcharge. Units: nominal USD per person per year, and an integer tier. Rounding: none stated.',
+      'tax/medicare.ts#medicareAnnualPremiumPerPerson applies the 2026 single-filer first IRMAA tier only when two-year-lookback MAGI is strictly greater than the tier\'s magiOver (the top tier when it is at or above its floor), then prices Part B at CMS\'s published total monthly premium for the tier (params/data/year2026.ts, irmaaTiers[i].partBTotalMonthly: 284.10, 405.80, 527.50, 649.20 and 689.90 dollars for 2026) and adds CMS\'s published monthly Part D amount (14.50, 37.50, 60.40, 83.30 and 91.00). The table is read as published, not re-derived as the standard premium times the applicable percentage over 25, which CMS applies to the unrounded actuarial rate and which misses four of the five totals by cents. The IRMAA-only surcharge is the Part B amount above standard plus the Part D amount. A year after the latest CMS publication grows the latest published figures by the Medicare component\'s projection factor (cmsMedicare), as the standard premium grows. At 109,001 of single MAGI Part B is 3,409.20 a year and the IRMAA-only surcharge 1,148.40. Units: nominal USD per person per year, and an integer tier. Rounding: none; the published figures are whole cents.',
     formula: {
       expression:
-        'tier = 1 when MAGI > magiOver; partBMonthly = base x (applicablePct / 25); irmaaSurchargeAnnual = max(0, partBMonthly - base) x 12 + partDSurchargeMonthly x 12',
+        'tier = 1 when MAGI > magiOver (the top tier when MAGI >= its floor); partBMonthly = partBTotalMonthly(tier) x premiumScale, standard at tier 0; irmaaSurchargeAnnual = max(0, partBMonthly - base x premiumScale) x 12 + partDSurchargeMonthly x premiumScale x 12',
       variables: [
         { symbol: 'MAGI', meaning: 'Two-year-lookback MAGI', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'magiOver', meaning: 'First-tier floor, year2026.medicare.irmaaTiers[0].magiOver for the filing status', unit: 'usd/year', domain: 'positive' },
-        { symbol: 'applicablePct', meaning: 'First-tier share of program cost', unit: 'percent', domain: 'greater than 25' },
-        { symbol: 'partDSurchargeMonthly', meaning: 'First-tier Part D surcharge', unit: 'usd/person/month', domain: 'nonnegative, or null when unverified' },
+        { symbol: 'partBTotalMonthly(tier)', meaning: 'CMS\'s published total monthly Part B premium for the tier, full Part B coverage', unit: 'usd/person/month', domain: 'above base' },
+        { symbol: 'base', meaning: 'year2026.medicare.partBStandardMonthly', unit: 'usd/person/month', domain: 'positive' },
+        { symbol: 'partDSurchargeMonthly', meaning: 'CMS\'s published Part D income-related monthly adjustment for the tier', unit: 'usd/person/month', domain: 'nonnegative, or null when unverified' },
+        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year from the latest year CMS has published', unit: '1', domain: 'positive; 1 in a year CMS has published' },
       ],
       timing: 'one premium year, per covered person',
-      rounding: 'none stated',
+      rounding: 'none; the published figures are whole cents',
     },
     justification: {
       kind: 'derivation',
       worksheet: 'DOCS/calculations/medicare-and-aca/medicare-irmaa-first-tier-boundary.md',
     },
     limits: [
-      'The applicable percentage is a share of program cost, not a surcharge percentage: reading 35% as standard plus 35% understates every tier',
+      'The tier totals are CMS\'s published figures, not the standard premium times the applicable percentage over 25 (284.06 against 284.10 at the 2026 first tier); reading the percentage as a surcharge on the standard premium (35% as standard plus 35%) understates every tier further',
+      'A year after the latest CMS publication is projected: it grows the latest published totals and Part D amounts by the Medicare component\'s factor, a stand-in for CMS\'s next table, which re-derives every tier from a new actuarial rate',
       'The lower tiers use a strict greater-than test and only the top tier is inclusive; that asymmetry is the module\'s own stated convention',
-      'A tier whose Part D surcharge is unpublished sets partDSurchargeUnverified rather than inventing a figure; this record is asserted on the first tier, whose surcharge is published',
+      'A tier whose Part D surcharge is unpublished sets partDSurchargeUnverified rather than inventing a figure; every 2026 tier\'s is published',
+      'The table is the full-Part-B-coverage table for single and joint filers; the separate tables for married people filing separately who lived with their spouse, and for immunosuppressive-drug-only coverage, are not read',
     ],
-    implementedBy: ['packages/engine/src/tax/medicare.ts'],
-    implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    implementedBy: ['packages/engine/src/tax/medicare.ts', 'packages/engine/src/params/data/year2026.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+    ],
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'medicare-irmaa-two-year-lookback': {
     title: 'Medicare IRMAA two-year lookback',
@@ -479,7 +486,7 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'aca-enrollment-and-applicable-slcsp-premium-annual': {
     title: 'ACA gross enrollment premium and applicable SLCSP benchmark',
@@ -529,9 +536,12 @@ export const medicareAndAcaRecords = {
     statement:
       'YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the year of the published parameters to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus (with the ACA credit OFF) pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and when the year is published actionable (its coverage year has published figures, no support code blocks pricing, and the funding fixed point converges) healthcare is republished as healthcare excluding enrollment plus the economic net premium; every other year keeps the gross premium, by design in a year whose credit cannot be priced (no published coverage-year figures, or a blocking support code) and as a fallback in a year whose fixed point does not converge, which the engine marks fixed-point-nonconvergent and publishes non-actionable. Units: nominal dollars per year. Rounding: none.',
     formula: {
-      expression: 'healthcare = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h + premium x A_p x h ], M_p = 12 - A_p',
+      expression: 'credit off: healthcare = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h + premium x A_p x h ], M_p = 12 - A_p; credit on: healthcare = H_ex + N in an actionable year, H_ex + G in any other year, H_ex = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h ]',
       variables: [
-        { symbol: 'P_tier(p)', meaning: 'Annual Part B + Part D surcharge at the lookback MAGI tier for the year', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'P_tier(p)', meaning: 'Annual Part B + Part D surcharge at the lookback MAGI tier for the year, from CMS\'s published tier table (medicare-irmaa-first-tier-boundary)', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'H_ex', meaning: 'Healthcare excluding the marketplace enrollment premium', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'G', meaning: 'The year\'s gross marketplace enrollment premium (aca-contract-premium-basis)', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'N', meaning: 'The economic net premium, the gross premium less the modeled allowable credit (aca-economic-net-premium)', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'A_p, M_p', meaning: 'Marketplace and Medicare months for person p', unit: 'months', domain: 'A_p + M_p = 12' },
         { symbol: 'h', meaning: 'Cumulative healthcare inflation factor from the start year (general inflation plus the healthcare extra)', unit: '1', domain: 'positive' },
       ],
@@ -543,9 +553,9 @@ export const medicareAndAcaRecords = {
       worksheet: 'DOCS/calculations/medicare-and-aca/spending-healthcare-annual.md',
     },
     limits: [
-      'The worksheet\'s household is constructible on one plan as it now stands: the second person\'s 4 marketplace months and 8 Medicare months partition that person\'s year, so a March-1958 birth (12 Medicare months) and a May-1961 birth (4 marketplace, 8 Medicare) are one household whose published healthcare is $8,831.20. The first derivation gave the second person the 4 marketplace months with no Medicare months and totalled $6,002.72, an impossible annual partition; it was corrected on 2026-09-18, and $6,002.72 is now the worksheet\'s third wrong reading, asserted as not matching',
+      'The worksheet\'s household is constructible on one plan as it now stands: the second person\'s 4 marketplace months and 8 Medicare months partition that person\'s year, so a March-1958 birth (12 Medicare months) and a May-1961 birth (4 marketplace, 8 Medicare) are one household whose published healthcare is $8,832.00. The first derivation gave the second person the 4 marketplace months with no Medicare months and totalled $6,002.72 (on the old tier premium), an impossible annual partition; it was corrected on 2026-09-18, and the same reading, $6,003.20 on CMS\'s tier premium, is now the worksheet\'s third wrong reading, asserted as not matching',
       'Beyond the worksheet\'s inputs the evidence plans fix: startYear 2025 with the asserted row in 2026, inflationPct 0 and healthcareExtraInflationPct 10, so the factor from the start year is 1.10 while the factor from the year of the published parameters (2026) to the asserted year is 1; this is what leaves the tier-priced premium unscaled while extras and the marketplace premium are scaled, the distinction the worksheet\'s first wrong reading names. Each person\'s own component is asserted on that person\'s own single-filer plan, and the household plan asserts the total and the 12 + 8 Medicare months behind it',
-      'Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet\'s $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,582.72 either way',
+      'Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet\'s $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,583.20 either way: CMS\'s published $284.10 Part B total and $14.50 Part D amount, times 12',
       'The second person\'s marketplace component is read as healthcare minus medicarePremiums minus that person\'s extras, since the phase result itself is not published on the year row; the extras rule it subtracts is pinned independently by the first person, whose zero marketplace months make healthcare minus medicarePremiums the extras exactly',
       'The credit-on branch carries no numeric expectation: the worksheet states none without a complete ACA quote and a converged fixed point',
       'With the credit on, the gross premium is the year\'s contract as the run prices it (aca-contract-premium-basis): a premiumField contract grows the premium field by the same healthcare factor as the credit-off branch, and a stated contract is held as written and charges nothing for a member who has died',
@@ -559,8 +569,8 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
-    verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    verifiedOn: '2026-09-29',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'display-net-care-cost-annual': {
     title: 'Net long-term-care cost after the LTC benefit',
@@ -598,6 +608,6 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.ltcBenefit',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

@@ -95,6 +95,8 @@ outputs: `social-security-break-even`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-break-even.md`; independently checked (the check's C1: cases A to D reproduced to float error; its correction that the COLA helper must take the ledger's own inflation path, which `socialSecurityColaFactor` does by taking the ledger's inflation-factor function). Expected values are the derivation's independent model (no engine import) and equal the engine's output bit for bit. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-break-even.md`; independently checked (the check's C1: cases A to D reproduced to float error; its correction that the COLA helper must take the ledger's own inflation path, which `socialSecurityColaFactor` does by taking the ledger's inflation-factor function). Expected values are the derivation's independent model (no engine import) and equal the engine's output bit for bit. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
 
-Case E and the Claim's second paragraph are new with decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): derived by claude (opus 5.5) as that derivation's case E4, by hand as above, and reproduced by a second claude (opus 5.5) instance's independent model (same model family, so not the catalog's review). Implemented by: claude (opus 5.5), 2026-09-29. Reviewed by: not yet reviewed.
+Case E and the Claim's second paragraph are new with decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): derived by claude (opus 5.5) as that derivation's case E4, by hand as above, and reproduced by a second claude (opus 5.5) instance's independent model (same model family, so not the catalog's review). Implemented by: claude (opus 5.5), 2026-09-29. Reviewed by: not yet reviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-6-after-769.md`.

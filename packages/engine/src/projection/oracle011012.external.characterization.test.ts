@@ -141,7 +141,7 @@ describe('ORACLE-011: Roth bridge optimizer direction vs Owl', () => {
       rmdYearRequested: 190_036.2,
       exactConversions: 423_639.14,
       baselineEstate: 381_703.41,
-      exactEstate: 444_058.78,
+      exactEstate: 444_057.76,
       baselineRmd: 64_428.89,
       exactRmd: 5_393.72,
       firstConversions: [

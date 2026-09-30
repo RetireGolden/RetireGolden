@@ -57,6 +57,8 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-nine.md in this directory.
 
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.
+
 ## Restated (B2-P1 slice 3, 2026-09-27)
 
 The requested total is computed with the one schedule sum, `strategies/conversionScheduleTotal.ts#conversionScheduleTotal` (amounts added left to right from 0, refusing a non-finite amount), the same helper that publishes `OptimizedSchedule.conversionTotal` and `ExactLedgerTournament.winnerConversionTotal` (see `../roth/optimizer-schedule-conversion-total.md`). The order of addition is the one the private reduce used, so no figure changes; the record names the helper among its pins and is `unreviewed` again because its statement changed.

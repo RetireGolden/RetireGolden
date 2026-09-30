@@ -1,6 +1,6 @@
 # Mutation receipt: joint-account-contributions
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7f6fdfc5` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts`
 
@@ -26,18 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed because merging main (#762, #763) moved the production lines this receipt quotes; the mutation is unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The merge of claude/ss-review-fixes into the catalog-evidence branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (7 tests | 2 failed) 192ms
-   ❯ joint-account-contributions — When a jointly owned account takes contributions (2)
-     × keeps contributing while the household has wages, after Pat, listed first, has stopped earning and died 20ms
-     × gives the same contributions with the people listed the other way round 35ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 165ms
+   ❯ joint-account-contributions — When a jointly owned account takes contributions (3)
+     × keeps contributing while the household has wages, after Pat, listed first, has stopped earning and died 14ms
+     × gives the same contributions with the people listed the other way round 20ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 5 passed (7)
+      Tests  2 failed | 8 passed (10)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
@@ -54,7 +54,7 @@ AssertionError: Joint balance, end of 2026: actual 0: expected false to be true 
 - true
 + false
 
- ❯ src/projection/peopleNamed.evidence.test.ts:193:102
+ ❯ src/projection/peopleNamed.evidence.test.ts:225:102
 
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
@@ -138,13 +138,13 @@ AssertionError: expected [ 6000, 12000, 18000, 24000, …(31) ] to deeply equal 
 +   48000,
   ]
 
- ❯ src/projection/peopleNamed.evidence.test.ts:198:67
-    196|
-    197|     it('gives the same contributions with the people listed the other …
-    198|       expect(run(reversed(plan)).map((y) => y.balances['joint'])).toEq…
+ ❯ src/projection/peopleNamed.evidence.test.ts:230:67
+    228|
+    229|     it('gives the same contributions with the people listed the other …
+    230|       expect(run(reversed(plan)).map((y) => y.balances['joint'])).toEq…
        |                                                                   ^
-    199|     })
-    200|   },
+    231|     })
+    232|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

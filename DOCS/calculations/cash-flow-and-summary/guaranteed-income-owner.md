@@ -54,6 +54,8 @@ feeds: `income-pension-annual`, `income-annuity-annual`.
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R2 (evidence/people-order-check.md), the statute and regulation quoted from the texts the check fetched (uscode.house.gov, the eCFR). Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-09-28, from decision D-PEOPLE-ORDER (decisions-2026-09-25.md) and the independent check's rule R2 (evidence/people-order-check.md), the statute and regulation quoted from the texts the check fetched (uscode.house.gov, the eCFR). Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
-Revision 2026-09-28 (independent review M2): the surviving-spouse exception and the dead-at-purchase refusal; the quotes are held in `irc-72-c-3-A-annuity-measured-on-named-lives`. Reviewed by: unreviewed.
+Revision 2026-09-28 (independent review M2): the surviving-spouse exception and the dead-at-purchase refusal; the quotes are held in `irc-72-c-3-A-annuity-measured-on-named-lives`. Reviewed by: unreviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-2-cash-flow.md`.

@@ -62,4 +62,6 @@ outputs: `social-security-zero-year-replacement-gain`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-zero-year-replacement-gain.md` (by hand from the AIME and bend points; engine cross-check afterwards); independently checked (C8: 45.70, 110.40 and 66.00; its open question 6 kept the latest $0 year, named in the copy). Case N is new here, and case O is the slice review's (F7), by hand above and by the review's independent model (`ssmodel.py`, which imports nothing from the engine). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-zero-year-replacement-gain.md` (by hand from the AIME and bend points; engine cross-check afterwards); independently checked (C8: 45.70, 110.40 and 66.00; its open question 6 kept the latest $0 year, named in the copy). Case N is new here, and case O is the slice review's (F7), by hand above and by the review's independent model (`ssmodel.py`, which imports nothing from the engine). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

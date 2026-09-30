@@ -30,10 +30,10 @@ npx.cmd vitest run src/params/provenance.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after merging main (#760) into the branch: rmd-qcd is now the exported RMD_QCD_PARAMETER_SOURCE, listed in its place, and the catalog holds main's rows and the branch's together, 40 entries, so the real-yield entry sits ten lines lower and the evidence test's title names forty. The baseline is green (provenance.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after merging main (#760) into the branch: rmd-qcd is now the exported RMD_QCD_PARAMETER_SOURCE, listed in its place, and the catalog holds main's rows and the branch's together, 40 entries, so the real-yield entry sits ten lines lower and the evidence test's title names forty. The baseline is green (provenance.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine18/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/params/provenance.evidence.test.ts (1 test | 1 failed) 5ms
    ❯ parameter-provenance-catalog — Parameter provenance catalog (1)

@@ -181,7 +181,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/guardrails.ts#clampRange',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
   'spending-shape-annual-delta-phases': {
     title: 'Annual real spending drift compiled to five-year phase rows',
@@ -442,7 +442,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/internal/annualExpenseAssemblyPhase.ts#annualExpenseAssemblyPhase',
     ],
     verifiedOn: '2026-09-28',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'spending-base-annual': {
     title: 'Annual base spending after the guardrail cut',
@@ -674,7 +674,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/compare.ts#summarizeProjection',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'display-upside-spending-annual': {
     title: 'Upside spending: intended spending above the target layer',
@@ -711,7 +711,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.excessSpending',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'display-upside-shortfall-annual': {
     title: 'Upside miss: upside spending not funded',
@@ -748,7 +748,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/internal/types/result.ts#YearResult.excessShortfall',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'solved-spending-rounding': {
     title: 'Sustainable spending rounded down to the hundred',
@@ -789,7 +789,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'solved-initial-withdrawal-rate': {
     title: 'Solved spending as an initial withdrawal rate',
@@ -821,7 +821,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'spending-shape-comparison': {
     title: 'Spending shapes compared with constant-real spending',
@@ -854,7 +854,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/decisions/spendingShapes.ts#planWithSpendingShape',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
   'guardrail-threshold-dollars': {
     title: 'Risk-based guardrail thresholds in dollars',
@@ -889,6 +889,6 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/montecarlo/riskBasedGuardrails.ts#balanceThresholdPct',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

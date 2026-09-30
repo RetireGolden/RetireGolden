@@ -8,7 +8,7 @@ The same change corrects the 2026 figures the survey of every state found wrong.
 
 ## Justification
 
-Each figure is law in force on 2026-09-28 that names the year, with no condition attached.
+Each figure is law in force on 2026-09-28 that names the year, with no condition attached, except the figures listed below under Loaded, with a vote pending. Of those, the District of Columbia's deduction for 2027 to 2029 is provisional: the emergency act that sets it lasts no more than 90 days and does not by itself enact it for those years.
 
 ### Enacted for 2027 and later
 
@@ -40,7 +40,7 @@ Each figure is law in force on 2026-09-28 that names the year, with no condition
 | State | Figure | Before | Authority (rule record) |
 |---|---|---|---|
 | Arkansas | top rate 3.7% | 3.9% | 2026 Ark. Acts (1st Ex. Sess.), Act 1 (`aca-26-51-201-published-indexed-rate-schedule`) |
-| District of Columbia | own basic deduction 15,000 / 30,000 plus the 63(c)(3) addition for 2026 to 2029, indexed from 2027, federal from 2030 | federal 16,100 / 32,200 | D.C. Act 26-416, 47-1801.04(3A) and (44) (`dc-code-47-1801-04-3a-standard-deduction-2026-2029`) |
+| District of Columbia | own basic deduction 15,000 / 30,000 plus the 63(c)(3) addition for 2026 to 2029, indexed from 2027, federal from 2030 | federal 16,100 / 32,200 | D.C. Act 26-416, 47-1801.04(3A) and (44), an emergency act, so provisional (`dc-code-47-1801-04-3a-standard-deduction-2026-2029`) |
 | Maryland | standard deduction 3,400 / 6,850 | 3,350 / 6,700 | Tax-General 10-217(c) (`md-tg-10-217-2026-indexed-standard-deduction`) |
 | Maryland | 2% on net capital gain above 350,000 of federal AGI | not modeled | Tax-General 10-105(a)(3)-(4) (`md-tg-10-105-a-3-capital-gain-surtax`) |
 | Maryland | public-safety retirement subtraction 16,000 at 55 | not modeled | Tax-General 10-207(mm) (`md-tg-10-207-mm-public-safety-retirement-subtraction`) |
@@ -68,7 +68,7 @@ Enacted law with a vote pending is loaded as current law, with the vote named an
 
 - Washington's income tax from 2028. Initiative 645, certified for the November 3, 2026 ballot, repeals chapter 238, Laws of 2026.
 - The end of California's top three bands from 2031. Proposition 3, on the same ballot, would make them permanent.
-- The District of Columbia's own standard deduction for 2026 to 2029. D.C. Act 26-416, an emergency act effective August 13, 2026 for no more than 90 days (to about November 11, 2026), sets it; the temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026; the permanent act, D.C. Act 26-418, is under congressional review with a projected law date of November 20, 2026, when this is revisited. If it fails and no further emergency act follows, the code's permanent text returns to the federal deduction.
+- The District of Columbia's own standard deduction for 2026 to 2029, loaded provisionally. D.C. Act 26-416, an emergency act effective August 13, 2026 for no more than 90 days (to about November 11, 2026), sets it, so by itself it does not enact the deduction for 2027 to 2029; the temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026; the permanent act, D.C. Act 26-418, is under congressional review with a projected law date of November 20, 2026, when this is revisited. If it fails and no further emergency act follows, the code's permanent text returns to the federal deduction.
 
 ### Indexed figures held at their latest published amounts
 
@@ -165,4 +165,8 @@ feeds: `tax-total-annual`; `relocation-lifetime-state-local-tax`.
 
 ## Provenance
 
-Derived by: claude (Claude Opus 5.5), 2026-09-28, under decision D-2027-PUBLISHED-FIGURES and the decision of 2026-09-28 that state income tax follows each state's enacted law, from the statutes and agency publications each rule record quotes, fetched that day and checked with verify-quotes. The first version covered five states' 2027 rates; the same day it gained the later unconditional steps, and then, after an independent review found the set incomplete and a survey of all 51 jurisdictions followed, the widened set and the 2026 corrections above. Reviewed by: unreviewed, until a Codex or Cursor review; the catalog requires a reviewer of a different agent family.
+Derived by: claude (Claude Opus 5.5), 2026-09-28, under decision D-2027-PUBLISHED-FIGURES and the decision of 2026-09-28 that state income tax follows each state's enacted law, from the statutes and agency publications each rule record quotes, fetched that day and checked with verify-quotes. The first version covered five states' 2027 rates; the same day it gained the later unconditional steps, and then, after an independent review found the set incomplete and a survey of all 51 jurisdictions followed, the widened set and the 2026 corrections above. Reviewed by: unreviewed at the time, until the review below; the catalog requires a reviewer of a different agent family.
+
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`): the District of Columbia's deduction for 2027 to 2029 is worded as provisional, loaded under the emergency D.C. Act 26-416, which lasts no more than 90 days, pending the congressional review of the permanent D.C. Act 26-418 to about 2026-11-20, when it is revisited, rather than grouped with figures enacted without condition. The rule record it depends on, `dc-code-47-1801-04-3a-standard-deduction-2026-2029`, already says the same (the emergency act's 90 days, Act 26-418's projected law date of November 20, 2026, and the revisit then) and is unchanged. No figure changes. Revised by claude (opus 5.5); unreviewed until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

@@ -36,4 +36,6 @@ feeds: none. Reads `spending-ideal-requested-annual`, `spending-excess-requested
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; no engine value used. Checked by a second claude agent that did not derive it, which confirmed every value. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; no engine value used. Checked by a second claude agent that did not derive it, which confirmed every value. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.

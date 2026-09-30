@@ -108,4 +108,6 @@ outputs: `social-security-credit-estimate`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-credit-estimate.md` (by hand; the per-year table was its open question 5); independently checked (B1 and C6: 5 and 11, 5 and 15, 40, 12; the 2026 amount on the live SSA page). Case E is new here. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-credit-estimate.md` (by hand; the per-year table was its open question 5); independently checked (B1 and C6: 5 and 11, 5 and 15, 40, 12; the 2026 amount on the live SSA page). Case E is new here. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed at the time; see the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-1-social-security.md`.

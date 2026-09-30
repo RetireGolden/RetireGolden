@@ -71,9 +71,10 @@ describe('relocation rows on library examples (B2-P1 slice 3)', () => {
     expect(retiredDeltaCell(florida!, florida!.lifetimeTaxesAndPenaltiesDeltaVsBaseline)).toBe('-$69,920')
     expect(retiredDeltaCell(california!, california!.lifetimeTaxesAndPenaltiesDeltaVsBaseline)).toBe('+$43,302')
     expect([baseline, florida, california].map((row) => fmtMoney(row!.endingAfterTaxEstateTodayDollars!))).toEqual([
-      '$1,638,837',
-      '$1,796,477',
-      '$1,521,481',
+      // $1,638,837, $1,796,477 and $1,521,481 before the 2026-09-29 change to CMS's published IRMAA amounts.
+      '$1,638,831',
+      '$1,796,471',
+      '$1,521,472',
     ])
   })
 })

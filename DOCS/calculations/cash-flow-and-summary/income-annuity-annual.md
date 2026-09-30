@@ -40,7 +40,7 @@ feeds: `income-total-annual`.
 
 ## A purchase dated before the start year (D-2027-ROLLOVER): a registered limit
 
-The engine reads every entered balance as of the start year, so a contract whose purchase year is before the start is treated as already paid: its annuity pays, and no premium leaves the funding account. That is right when the balance was entered after the purchase. When it was entered before and not updated, the premium is counted twice. The derivation measured its U1 household ($100,000 non-qualified, bought in 2026 from the brokerage, $550 a month from 67): the purchase lowers ending net worth by $147,623 from a 2026 start and raises it by $454,837 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins U1 to the cent: -$147,622.51 from a 2026 start and +$455,165.79 from a 2027 start (main's #761 moved the 2027 figure from the derivation's, by pricing a saved example's 2027 premium tax credit from a 2027 start). The check found every tax qualification behaves the same way.
+The engine reads every entered balance as of the start year, so a contract whose purchase year is before the start is treated as already paid: its annuity pays, and no premium leaves the funding account. That is right when the balance was entered after the purchase. When it was entered before and not updated, the premium is counted twice. The derivation measured its U1 household ($100,000 non-qualified, bought in 2026 from the brokerage, $550 a month from 67): the purchase lowers ending net worth by $147,623 from a 2026 start and raises it by $454,837 from a 2027 start. `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins U1 to the cent: -$147,623.51 from a 2026 start and +$455,159.49 from a 2027 start (main's #761 moved the 2027 figure from the derivation's, by pricing a saved example's 2027 premium tax credit from a 2027 start, and the 2026-09-29 change to CMS's published IRMAA amounts moved both, from -$147,622.51 and +$455,165.79). The check found every tax qualification behaves the same way.
 
 The engine cannot tell which case it has, so the figure is not corrected: deducting the premium at the start would double-deduct it for every household that did update the balance. The projection names each such purchase instead (`projection/preStartEvents.ts#preStartEvents`):
 
@@ -53,3 +53,9 @@ Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six.md in this directory.
+
+Reviewed by: Grok (grok-4.7), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.
+
+Revision 2026-09-29, after the Grok review above: the engine now reads CMS's published IRMAA amounts, which moves the pre-start figures `packages/planner-ui/src/planner/preStartEvents.figures.test.ts` pins (a full-horizon measurement the review did not recompute) by cents to a few dollars; the record's limit and the paragraph above state the new pins beside the old. No worked case of this worksheet moves. Because the record's text changed, it was unreviewed until the review below. Revised by claude (opus 5.5).
+
+Reviewed by: Grok (grok-4.7), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-grok.md`.

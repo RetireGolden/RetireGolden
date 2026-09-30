@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-a doc-comment line in survivorTransition.ts moved the lines these receipts quote The baseline is green (survivorTransition.ssa44.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+a doc-comment line in survivorTransition.ts moved the lines these receipts quote The baseline is green (survivorTransition.ssa44.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine16/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/projection/survivorTransition.ssa44.evidence.test.ts (1 test | 1 failed) 9ms
    ❯ survivor-ssa44-premium-difference — SSA-44 survivor premium difference (1)

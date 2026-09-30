@@ -61,7 +61,7 @@ describeCalculation(
         firstPersonMarketplaceAndMedicareMonths: [0, 12],
         filingStatus: 'single',
         lookbackMagiTier: 1,
-        tierPricedAnnualPremium: 3_582.72,
+        tierPricedAnnualPremium: 3_583.2,
         medicareExtrasMonthly: 50,
         secondPersonMarketplaceAndMedicareMonths: [4, 8],
         creditEnabled: false,
@@ -71,15 +71,15 @@ describeCalculation(
         jointFilerTierOneLookbackMagi: 240_000,
       },
       expected: {
-        firstPersonHealthcare: 4_242.72,
+        firstPersonHealthcare: 4_243.2,
         secondPersonMarketplace: 1_760,
-        secondPersonMedicare: 2_828.48,
-        secondPersonHealthcare: 4_588.48,
-        householdMedicarePremiums: 5_971.2,
-        householdHealthcare: 8_831.2,
-        inflatedMedicarePremiumWrongReading: 4_600.992,
+        secondPersonMedicare: 2_828.8,
+        secondPersonHealthcare: 4_588.8,
+        householdMedicarePremiums: 5_972,
+        householdHealthcare: 8_832,
+        inflatedMedicarePremiumWrongReading: 4_601.52,
         marketplaceWithoutHealthFactorWrongReading: 1_600,
-        forgottenMedicareMonthsWrongReading: 6_002.72,
+        forgottenMedicareMonthsWrongReading: 6_003.2,
       },
       tolerance: { abs: 0.005 },
     },
@@ -140,7 +140,7 @@ describeCalculation(
       )
     }
 
-    it('charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras', () => {
+    it('charges the first person 4243.20: twelve Medicare months of tier premium plus scaled extras', () => {
       // Born March 1958: 68 in 2026, so zero marketplace months and all 12
       // months are Medicare months.
       const row = personRow(MEDICARE_PERSON_DOB)
@@ -162,7 +162,7 @@ describeCalculation(
       ).toBe(false)
     })
 
-    it('charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare', () => {
+    it('charges the second person 4588.80: 1760 of marketplace beside 2828.80 of Medicare', () => {
       // Born May 1961: attains 65 in 2026, so marketplace months are
       // birthMonth - 1 = 4 and the remaining 8 are Medicare months — the two
       // counts partition that person's year.
@@ -189,7 +189,7 @@ describeCalculation(
       ).toBe(false)
     })
 
-    it('adds the two people to 8831.20 on one household plan', () => {
+    it('adds the two people to 8832.00 on one household plan', () => {
       const row = householdRow()
       expect(row.irmaaTier).toBe(inputs.lookbackMagiTier)
       // The household really carries 12 + 8 = 20 Medicare months of tier

@@ -3,7 +3,8 @@
  * with Alex's planning age 68 (Alex dies after 2030) and a qualified purchase
  * in 2032 of $120,000 from Alex's 401(k), $1,500 a month from Sam's 70th year.
  * The base build accepted it named for Sam and paid Sam $18,000 a year from
- * 2034 (ending net worth $4,751,515). Head 41e6df50 refused it, and its
+ * 2034 (ending net worth $4,751,515; $4,751,500 since the 2026-09-29 change to
+ * CMS's published IRMAA amounts). Head 41e6df50 refused it, and its
  * remedy (naming Alex) and its v6 repair both spent the premium on a contract
  * that paid $0. Now: accepted named for Sam, the same figures as the base, a
  * v6 file loads unchanged, and naming Alex is refused in plain words.
@@ -35,7 +36,7 @@ describe('a surviving spouse buys from the dead owner’s 401(k) (review M2)', (
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
     const view = projectPlan(parsed.plan, EXAMPLE_FIXED_YEAR)
     expect(view.result.years.find((y) => y.year === 2034)!.incomes.annuity).toBe(18_000)
-    expect(Math.round(view.summary.endingNetWorth)).toBe(4_751_515)
+    expect(Math.round(view.summary.endingNetWorth)).toBe(4_751_500)
   })
 
   it('loads a v6 file of that shape without renaming it to the dead owner', () => {

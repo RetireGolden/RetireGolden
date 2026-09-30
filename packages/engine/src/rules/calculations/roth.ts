@@ -79,11 +79,11 @@ export const rothRecords = {
     verifiedOn: '2026-09-27',
     // Restated 2026-09-27 (decision D-WALKTHROUGH-WORKSHEET-WORDING): the
     // worksheet's claim and tolerance now state the bisection's one-sided
-    // $0.01 and the owner split, so the record is unreviewed until the review
-    // lane checks the rewording; Codex derived and Cursor reviewed the case.
-    // The owner-split limit (decision D-BRACKET-FILL-ROTH-EXAMPLE) is also
-    // unreviewed.
-    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+    // $0.01 and the owner split; Codex derived and Cursor reviewed the case.
+    // Codex reviewed the rewording and the owner-split limit (decision
+    // D-BRACKET-FILL-ROTH-EXAMPLE) on 2026-09-29
+    // (REVIEW-2026-09-29-codex-2-cash-flow.md).
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'conversion-schedule-total': {
     title: 'Conversion schedule total',
@@ -123,6 +123,6 @@ export const rothRecords = {
       'packages/engine/src/decisions/evaluateCandidate.ts#buildConversionExecution',
     ],
     verifiedOn: '2026-09-27',
-    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

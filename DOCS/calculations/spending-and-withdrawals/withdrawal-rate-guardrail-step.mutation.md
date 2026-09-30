@@ -26,10 +26,10 @@ npx vitest run src/spending/guardrails.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed, and the checkout's path is written from the repository root. The run exited 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/spending/guardrails.evidence.test.ts (6 tests | 1 failed) 6ms
    ❯ withdrawal-rate-guardrail-step — Withdrawal-rate guardrail: one year's cut, raise or hold of the discretionary multiplier (3)
      × cuts the discretionary multiplier from 0.8 to 0.7 when a 6% rate exceeds 120% of the 4% starting rate 4ms

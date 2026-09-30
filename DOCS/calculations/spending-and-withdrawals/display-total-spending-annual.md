@@ -38,4 +38,6 @@ feeds: none. Reads `spending-total-annual`, `tax-total-annual`, `tax-penalties-a
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; the association example was found by the deriver's own random search in plain JavaScript. No engine value is used. Checked by a second claude agent that did not derive it, which confirmed both values and the association. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; the association example was found by the deriver's own random search in plain JavaScript. No engine value is used. Checked by a second claude agent that did not derive it, which confirmed both values and the association. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-5-medicare-spending.md`.

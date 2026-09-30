@@ -118,13 +118,15 @@ Example library (scratch run at `4a80669e`, both plans stamped as the app opens 
 
 | A (end) | B (end) | Row | before (A, B, delta) | after |
 |---|---|---|---|---|
-| example-couple (2059) | hsa-stealth-retirement (2076) | After-tax estate | $3.70M, $4.03M, +$330k green | $1.64M, $1.17M, −$466k red |
-| example-couple (2059) | hsa-stealth-retirement (2076) | Ending net worth | $3.70M, $4.49M, +$792k green | $1.64M, $1.31M, −$331k red |
+| example-couple (2059) | hsa-stealth-retirement (2076) | After-tax estate | $3.70M, $4.03M, +$329k green | $1.64M, $1.17M, −$466k red |
+| example-couple (2059) | hsa-stealth-retirement (2076) | Ending net worth | $3.70M, $4.49M, +$792k green | $1.64M, $1.31M, −$332k red |
 | example-couple (2059) | annuity-purchases-estate (2056) | After-tax estate | $3.70M, $3.25M, −$448k red | $1.64M, $1.65M, +$6,225 green |
 | rmd-irmaa (2048) | glidepath-allocation (2053) | After-tax estate | $1.21M, $1.27M, +$64k green | $702k, $653k, −$49k red |
 | moving-state-tax (2056) | coast-fire (2086) | After-tax estate | $3.88M, $7.77M, +$3.89M green | $1.85M, $1.77M, −$85k red |
 | moving-state-tax (2056) | hsa-stealth-retirement (2076) | Lifetime tax + penalties | $733k, $808k, +$75k red | $491k, $439k, −$52k green |
 | annuity-purchases-estate (2056) | no-annuity-brokerage (2056) | After-tax estate | $3.25M, $3.68M, +$430k | unchanged (nominal) |
+
+The example-couple / hsa-stealth-retirement pair's retired estate delta (+$329k) and ending net worth delta (−$332k) are the current figures, after the 2027 HSA limit (Revision, 2026-09-28, below); at `cb72713e` they read +$330k and −$331k. The other cells are as measured at `cb72713e`.
 
 ## Wrong readings
 
@@ -164,7 +166,9 @@ feeds: none. Reads `projection-summary-ending-net-worth`, `projection-summary-en
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27; cases H to M by hand and `scripts/independent.mjs` (no engine import); the example-library figures from the scratch run, with "after" computed by a scratch implementation of this worksheet's formula over existing engine primitives; a second engine-free pass recomputed all 762 today's-dollar estate deltas from the per-example summaries with the ledger recurrence alone and matched every one bit for bit. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every case with its own script and every example cell with its own implementation (all 3,248 money cells bit-identical; RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`); its corrections 1 to 4 are applied above. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-27; cases H to M by hand and `scripts/independent.mjs` (no engine import); the example-library figures from the scratch run, with "after" computed by a scratch implementation of this worksheet's formula over existing engine primitives; a second engine-free pass recomputed all 762 today's-dollar estate deltas from the per-example summaries with the ledger recurrence alone and matched every one bit for bit. Checked by: a separate Claude (Opus 5.5) instance that did not derive it, which recomputed every case with its own script and every example cell with its own implementation (all 3,248 money cells bit-identical; RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`); its corrections 1 to 4 are applied above. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
+
+Revision 2026-09-29 (Codex review, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`): the example-pair table kept +$330k and −$331k for the example-couple / hsa-stealth-retirement pair after the 2027 HSA limit moved them; the table now reads +$329k and −$332k, as the 2026-09-28 revision and the planner-ui parity tests already did. No other figure changes. Revised by claude (opus 5.5); unreviewed until the review below.
 
 ## Implementation (B2-P1 slice 3, 2026-09-27)
 
@@ -188,3 +192,5 @@ Derived by: claude (opus 5.5), 2026-09-27; cases H to M by hand and `scripts/ind
 ## Revision, 2026-09-28 (the 2027 published figures)
 
 The example-library table above was measured at `cb72713e`. With the 2027 HSA limit read as published ($4,500 self-only, Rev. Proc. 2026-24, where 2027 had been $4,400 grown at plan inflation), hsa-stealth-retirement's HSA takes a little less each working year, and its nominal ending net worth falls $240 (4,493,650.52 to 4,493,410.11). Two printed cells of the example-couple / hsa-stealth-retirement pair move by one rounding step: the retired nominal estate delta reads +$329k (was +$330k), and the ending net worth delta in 2026 dollars reads −$332k (was −$331k). The after-tax estate cell still reads −$466k in red. `ComparePlansPage.parity.test.tsx` and `comparePlanHeadlines.parity.test.ts` assert the new figures. The comparison convention, the formula and the engine evidence are unchanged.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-30, targeted re-check after the fix, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-codex.md`.

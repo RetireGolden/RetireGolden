@@ -47,4 +47,6 @@ feeds: `compare-plan-deltas` (since B2-P1 slice 3, the Compare page's Money last
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; cases A and C reuse the plan of the existing worksheet `longevity-depletion-year.md`, whose depletion year is hand-derived there. Checked by a second claude agent that did not derive it, which confirmed every value and named the restatements the change needs (the simple candidate comparison record and its worksheet, and the first-year case of the KPI wording). Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the source at RetireGolden `aeb2861a`; cases A and C reuse the plan of the existing worksheet `longevity-depletion-year.md`, whose depletion year is hand-derived there. Checked by a second claude agent that did not derive it, which confirmed every value and named the restatements the change needs (the simple candidate comparison record and its worksheet, and the first-year case of the KPI wording). Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

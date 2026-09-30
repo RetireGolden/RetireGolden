@@ -2,9 +2,9 @@
  * Pins for the two optimizer IRMAA `approximated` records in the health shard.
  *
  * Each fixture drives real `optimizeSchedule` / HiGHS. Expected local LP
- * Medicare surcharge cost is the independent planning increment at held 2026
- * pack prices, not a solver dump and not CMS's published first-tier combined
- * $95.70 (the 4¢ residual is the standard-premium sibling).
+ * Medicare surcharge cost is the increment at held 2026 prices, computed here
+ * from CMS's published tier totals (first-tier combined $95.70 a month), not a
+ * solver dump.
  */
 import { expect, it } from 'vitest'
 
@@ -78,13 +78,13 @@ function expectCostVector(actual: readonly number[], expected: readonly number[]
   for (let i = 0; i < expected.length; i++) expectMoney(actual[i]!, expected[i]!)
 }
 
-// Planning combined surcharge at held 2026 prices (one person, 12 months):
-// tier 1: 202.90 × 0.40 + 14.50 = 95.66/mo → 1,147.92  (CMS published combined 95.70)
-// tier 4: (202.90 × (80 − 25) / 25 + 83.30) × 12 = 6,356.16
-// tier 5: (202.90 × (85 − 25) / 25 + 91.00) × 12 = 6,935.52
-const TIER1_ANNUAL = 1_147.92
-const TIER4_ANNUAL = 6_356.16
-const TIER5_ANNUAL = 6_935.52
+// Combined surcharge at held 2026 prices, from CMS's published tier totals (one person, 12 months):
+// tier 1: (284.10 − 202.90 + 14.50) × 12 = 95.70/mo → 1,148.40
+// tier 4: (649.20 − 202.90 + 83.30) × 12 = 6,355.20
+// tier 5: (689.90 − 202.90 + 91.00) × 12 = 6,936.00
+const TIER1_ANNUAL = 1_148.4
+const TIER4_ANNUAL = 6_355.2
+const TIER5_ANNUAL = 6_936
 
 describeRule('usc-42-1395r-i-5-optimizer-uniform-threshold-indexing', {
   readings: {
@@ -138,10 +138,10 @@ describeRule('usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposur
   readings: {
     // Stipulated actual B+D beneficiary-months 0 / 12 / 24 / 6 (July start).
     // Months are fixture metadata; the engine has no field for them.
-    statute: [0, 1_147.92, 2_295.84, 573.96],
-    fullYearHousehold: [1_147.92, 1_147.92, 1_147.92, 1_147.92],
-    fullYearPerPerson: [0, 1_147.92, 2_295.84, 1_147.92],
-    anyEligibleHousehold: [0, 1_147.92, 1_147.92, 1_147.92],
+    statute: [0, 1_148.4, 2_296.8, 574.2],
+    fullYearHousehold: [1_148.4, 1_148.4, 1_148.4, 1_148.4],
+    fullYearPerPerson: [0, 1_148.4, 2_296.8, 1_148.4],
+    anyEligibleHousehold: [0, 1_148.4, 1_148.4, 1_148.4],
   },
   accepted: 'statute',
   produced: 'fullYearHousehold',

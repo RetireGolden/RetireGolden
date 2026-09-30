@@ -1117,7 +1117,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The repayment amount rides on the standard premium but is not part of the income-related scaling, so deriving a tier premium as the standard premium times the applicable percentage over 25 reproduces the promulgated table only to within a few cents. That residual is accepted as planning-grade rather than carrying a separate per-tier premium table. The Federal Register determination is registered under the regulation authority kind because the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding; the choice is named here rather than left silent.",
+      "conventionRationale": "The repayment amount rides on the standard premium but is not part of the income-related scaling, and CMS scales the unrounded actuarial rate, so deriving a tier premium as the standard premium times the applicable percentage over 25 reproduces the promulgated table only to within a few cents (2026 tier 4: 649.28 against 649.20). The engine therefore carries CMS's per-tier totals and reads them as published (usc-42-1395r-i-irmaa-applicable-percentage). The Federal Register determination is registered under the regulation authority kind because the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding; the choice is named here rather than left silent.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -1279,7 +1279,7 @@
         "kind": "convention",
         "reason": "future enrollment and death months are not credible beneficiary-year inputs"
       },
-      "conventionRationale": "irmaaIncrements builds one 12-month combined increment from the standard Part B premium in the tax-year parameters, scaled by the applicable-percentage step, plus the Part D monthly surcharge. That planning first-tier combined $95.66 (202.90 × (35 − 25) / 25 + 14.50) is the 4¢-under CMS published $95.70 residual already named on usc-42-1395r-a-3-part-b-standard-premium; this record preserves it and does not change prices. buildOptimizerModel applies that coefficient once per premium year; irmaaSurchargeFor reads the same sum into lifetimeTax. Holding the price isolates the month-count omission from premium-table rounding. The stipulated month counts are test metadata the engine cannot express. Referent is local LP surcharge cost, not recommendation quality or a complete household premium. Age 65 is not asserted as legal enrollment.",
+      "conventionRationale": "irmaaIncrements builds one 12-month combined increment per tier from CMS's published Part B tier totals in the tax-year parameters, each tier's total less the one below it, plus the Part D monthly surcharge; the first-tier combined is CMS's $95.70 (284.10 − 202.90 + 14.50), as the ledger prices it. buildOptimizerModel applies that coefficient once per premium year; irmaaSurchargeFor reads the same sum into lifetimeTax. Holding the price isolates the month-count omission. The stipulated month counts are test metadata the engine cannot express. Referent is local LP surcharge cost, not recommendation quality or a complete household premium. Age 65 is not asserted as legal enrollment.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1772,14 +1772,14 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points; the engine computes the whole premium as the standard one times the applicable percentage over 25. Those are the same quantity written from different ends, which is why no explicit 25-point subtraction appears in the code.",
+      "conventionRationale": "The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points times the unsubsidized premium amount built on the monthly actuarial rate; CMS applies it to the unrounded rate and publishes each tier's total. The engine does not re-derive a total from the percentage: scaling the rounded standard premium by the percentage over 25 misses the published total by up to 8 cents a month (2026 tier 4: 649.28 against 649.20). It reads CMS's totals (params/data/year2026.ts, partBTotalMonthly), and a year after the latest CMS publication grows them by the Medicare figures' projection factor (the cmsMedicare component), as it grows the standard premium. The applicable percentages stay in the 2026 figures as the statute's tier structure.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-07",
-      "dueOn": "2027-01-05",
+      "verifiedOn": "2026-09-29",
+      "dueOn": "2027-01-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/medicare.ts"
@@ -1810,12 +1810,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/medicare.test.ts",
-          "line": 25,
+          "line": 29,
           "note": null,
           "tests": [
             {
-              "title": "scales the standard premium by the applicable percentage over 25",
-              "line": 29
+              "title": "prices the first tier at the total CMS publishes for it, $284.10 a month",
+              "line": 33
             }
           ]
         }
@@ -1837,6 +1837,16 @@
           "kind": "statute",
           "citation": "42 U.S.C. 1395r(i)(3)(C)(i)(III)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part B income-related monthly adjustment amounts",
+          "url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part D income-related monthly adjustment amounts",
+          "url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles"
         }
       ]
     },
@@ -1885,7 +1895,7 @@
           "functions": [
             {
               "name": "ParameterPack",
-              "line": 53
+              "line": 58
             }
           ]
         },

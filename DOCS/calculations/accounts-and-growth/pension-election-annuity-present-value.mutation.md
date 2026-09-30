@@ -32,10 +32,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/p
 
 ## Captured failing output
 
-Re-executed 2026-09-27 for decision D-TREASURY: the embedded Treasury row became the official 2026-06-30 row, which changed this receipt's evidence file, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (pensionElection.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 for decision D-TREASURY: the embedded Treasury row became the official 2026-06-30 row, which changed this receipt's evidence file, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (pensionElection.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine10/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/pensionElection.evidence.test.ts (3 tests | 3 failed) 14ms
    ❯ pension-election-annuity-present-value — Pension annuity present value at the curve-anchored discount rate (3)

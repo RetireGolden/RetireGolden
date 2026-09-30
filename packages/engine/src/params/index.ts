@@ -492,11 +492,11 @@ export function partBMonthlyPremium(
   filingStatus: FilingStatus,
 ): number {
   const base = pack.medicare.partBStandardMonthly
-  let applicablePct = 25
+  let total = base
   const tier = irmaaTierForMagi(pack, magiTwoYearsPrior, filingStatus)
-  if (tier > 0) applicablePct = pack.medicare.irmaaTiers[tier - 1]!.applicablePct
-  // Standard premium is 25% of program cost; IRMAA tiers pay a higher share.
-  return Math.round(base * (applicablePct / 25) * 100) / 100
+  if (tier > 0) total = pack.medicare.irmaaTiers[tier - 1]!.partBTotalMonthly
+  // CMS's published tier total, read as published rather than re-derived from applicablePct.
+  return total
 }
 
 /**

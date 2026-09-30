@@ -106,4 +106,6 @@ feeds: none. Reads `tax-loss-carryforward-remaining-annual`, `tax-loss-carryforw
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-26, from the statute and the engine's netting and tax functions as read at RetireGolden `aeb2861a`; households A to H by hand and by the deriver's own statute script, which imports nothing from the engine. Checked by a second claude agent that did not derive it, with its own statute script; it confirmed every value, added the NIIT and senior phase-out cases, and noted that D's 12 months of 2026 benefits come from the engine's attained-age claim timing. Reviewed by: pending; the catalog asks for a reviewer of a different agent family.
+Derived by: claude (opus 5.5), 2026-09-26, from the statute and the engine's netting and tax functions as read at RetireGolden `aeb2861a`; households A to H by hand and by the deriver's own statute script, which imports nothing from the engine. Checked by a second claude agent that did not derive it, with its own statute script; it confirmed every value, added the NIIT and senior phase-out cases, and noted that D's 12 months of 2026 benefits come from the engine's attained-age claim timing. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, and the review below is one.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-3-longevity-ladders-taxes.md`.

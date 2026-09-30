@@ -138,7 +138,9 @@ feeds: none. Reads `longevity-depletion-year` and `longevity-last-funded-year`.
 
 ## Provenance
 
-Derived by: claude (opus 5.5), 2026-09-27; cases A to H by hand and `scripts/independent.mjs`; the library parity from the scratch run. Checked by: a separate Claude (Opus 5.5) instance that did not derive it (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`): cases A to H reproduce; its corrections (the colour for two full plans, case G refused, the wrong reading's null cases C and H) and the decided null delta are applied above. Reviewed by: pending; the catalog asks for a reviewer of a different agent family, so the record is `unreviewed`.
+Derived by: claude (opus 5.5), 2026-09-27; cases A to H by hand and `scripts/independent.mjs`; the library parity from the scratch run. Checked by: a separate Claude (Opus 5.5) instance that did not derive it (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice3-check.md`): cases A to H reproduce; its corrections (the colour for two full plans, case G refused, the wrong reading's null cases C and H) and the decided null delta are applied above. Reviewed by: pending at the time; the catalog asks for a reviewer of a different agent family, so the record was `unreviewed` until the review below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.
 
 ## Implementation (B2-P1 slice 3, 2026-09-27)
 

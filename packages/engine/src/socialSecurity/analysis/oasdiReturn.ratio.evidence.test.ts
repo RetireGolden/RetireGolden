@@ -110,31 +110,53 @@ describeCalculation(
       expect(result.ratio!.toFixed(2)).toBe('1.59')
     })
 
-    it('in a couple, a divorced spouse\'s benefit enters the get-back only after the spouse\'s death, as the ledger pays it to an unmarried claimant', () => {
+    it('case W: the earnings test withholds part of a claim at 66 while he works and its months raise the benefit from 67 (2.4705, not 2.4601 paid in full)', () => {
+      // Case A's history, claimed at 66y0m, with $50,000 of 2026 wages.
+      const working = (withWages: boolean): Plan => {
+        const plan = careerPlan('1960-05-01', 1982, 2021)
+        plan.incomes = [{ ...plan.incomes[0]!, claimAge: { years: 66, months: 0 } } as Plan['incomes'][number]]
+        if (withWages) plan.incomes.push({ type: 'wages', id: 'job', personId: 'p1', annualGross: 50_000, endAge: 67, realGrowthPct: 0 } as Plan['incomes'][number])
+        return validatePlan(plan)
+      }
+      const result = oasdiReturnForPerson(working(true), 'p1', at2026)!
+      expectValue(result.getBackPv, 'W get-back PV')
+      expectValue(result.paid.paidInToday, 'A paid in today')
+      expect(result.paid.projectedToday).toBe(0)
+      expectValue(result.ratio!, 'W ratio')
+      // Paid in full while he works: the same plan with no wages.
+      const inFull = oasdiReturnForPerson(working(false), 'p1', at2026)!
+      expectValue(inFull.getBackPv, 'W get-back PV, paid in full while working (wrong reading)')
+      expectValue(inFull.ratio!, 'W ratio, paid in full while working (wrong reading)')
+      expect(result.ratio!.toFixed(4)).not.toBe(inFull.ratio!.toFixed(4))
+    })
+
+    it('case X: in a couple, a living ex\'s divorced-spouse benefit enters the get-back only from the January after the spouse\'s death (5.0449)', () => {
       const ex: FormerSpouse = { id: 'ex', relationship: 'divorced', dob: '1960-01-10', piaMonthly: 4_000, marriageYears: 15, remarriedAtAge: null }
       const plan = couplePlan({ p1Dob: '1960-05-01', p2Dob: '1962-05-01' })
       plan.household.people[0] = { ...plan.household.people[0]!, sex: 'male' }
+      plan.household.people[1] = { ...plan.household.people[1]!, sex: 'female' }
       plan.assumptions.inflationPct = 2.5
       plan.assumptions.ssCola = { mode: 'matchInflation' }
       // $10,000 a year gives a PIA below half the ex's 4,000, so the divorced-spouse benefit would be larger.
       const lowEarner = careerPlan('1960-05-01', 1982, 2021, 10_000)
       plan.incomes = [{ ...lowEarner.incomes[0]!, formerSpouses: [ex] } as Plan['incomes'][number]]
       const couple = validatePlan(plan)
+      expect(socialSecurityClaimants(couple, 2026)[0]!.piaMonthly).toBe(value('X PIA 2026'))
       const result = oasdiReturnForPerson(couple, 'p1', at2026)!
+      expectValue(result.getBackPv, 'X get-back PV')
+      expectValue(result.paid.paidInToday, 'X paid in today')
+      expectValue(result.ratio!, 'X ratio')
       const claimant = {
         dob: { year: 1960, month: 5, day: 1 },
         sex: 'male' as const,
-        piaMonthly: socialSecurityClaimants(couple, 2026)[0]!.piaMonthly,
+        piaMonthly: value('X PIA 2026'),
         claimAge: { years: 67, months: 0 },
         formerSpouses: [ex],
       }
       const options = { startYear: 2026, discountRate: 0.02, assumptions: couple.assumptions }
-      const spouse = couple.household.people[1]!
-      const widowed = expectedPvSingle(claimant, { single: false, spouse: { id: spouse.id, sex: spouse.sex, dob: { year: 1962, month: 5, day: 1 } } }, options)
-      expect(result.getBackPv).toBeCloseTo(widowed, 6)
-      // Married throughout it would be the own benefit alone; living alone, the divorced-spouse benefit from the start.
-      expect(result.getBackPv).toBeGreaterThan(expectedPvSingle(claimant, { single: false }, options))
-      expect(result.getBackPv).toBeLessThan(expectedPvSingle(claimant, { single: true }, options))
+      // Married throughout: his own benefit alone; unmarried throughout: the divorced-spouse benefit from the start.
+      expectValue(expectedPvSingle(claimant, { single: false }, options), 'X get-back PV, the ex\'s benefit left out (wrong reading)')
+      expectValue(expectedPvSingle(claimant, { single: true }, options), 'X get-back PV, the ex\'s benefit from the start (wrong reading)')
     })
 
     it('no ratio when nothing was paid in, no comparison without an earnings history, and none for a disability benefit from its onset', () => {

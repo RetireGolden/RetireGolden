@@ -8,18 +8,18 @@ import { medicareAnnualPremiumPerPerson } from './medicare.js'
  * ORACLE-004 (DOCS/external-oracles.md) — Medicare Part B / IRMAA
  * vs the CMS 2026 release (premiums from 2024 MAGI, two-year lookback).
  *
- * Oracle: CMS CY2026 Medicare Parts B & D premium / IRMAA amounts.
- * Cross-checked against the Kiplinger 2026 IRMAA table (the pack provenance
- * source), thefinancebuff.com, and irmaagroup.com — all reproducing the CMS
- * figures. Access date: 2026-06-29. Tax/premium year: 2026. Tolerance: $1/yr.
+ * Oracle: CMS, "2026 Medicare Parts A & B Premiums and Deductibles" (fact
+ * sheet, https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles),
+ * read 2026-09-29. Tax/premium year: 2026. Tolerance: one cent.
  *
  * CMS 2026 published figures frozen as the oracle:
  *   Standard Part B: $202.90/mo.
  *   IRMAA tiers (single / MFJ MAGI floor): cliffs are "> threshold", except the
  *     top tier starts at "greater than or equal to" the final threshold.
- *   Total Part B at each tier is the standard premium × statutory multiplier
- *     (1.4 / 2.0 / 2.6 / 3.2 / 3.4 = applicablePct ÷ 25); CMS rounds the printed
- *     premium to the dime — endpoints published as $284.10 … $689.90.
+ *   Total Part B at each tier, as published: $284.10, $405.80, $527.50,
+ *     $649.20, $689.90. CMS derives them from the unrounded actuarial rate,
+ *     so they are not the standard premium times applicablePct / 25 rounded to
+ *     the dime (tier 4 would round 649.28 to 649.30); the pack carries them.
  *   Part D IRMAA surcharge (identical across filing statuses): $14.50, $37.50,
  *     $60.40, $83.30, $91.00.
  */
@@ -34,13 +34,10 @@ const CMS_THRESHOLDS = [
   { single: 205_000, marriedFilingJointly: 410_000 },
   { single: 500_000, marriedFilingJointly: 750_000 },
 ] as const
-// CMS 2026 statutory cost-share multipliers (= applicablePct ÷ 25).
-const CMS_PART_B_MULTIPLIER = [1.4, 2.0, 2.6, 3.2, 3.4] as const
 // CMS 2026 Part D IRMAA monthly surcharge per tier.
 const CMS_PART_D_SURCHARGE = [14.5, 37.5, 60.4, 83.3, 91.0] as const
-// CMS-published dime-rounded total Part B endpoints (tier 1 and tier 5).
-const CMS_PART_B_TIER1_MONTHLY = 284.1
-const CMS_PART_B_TIER5_MONTHLY = 689.9
+// CMS 2026 total monthly Part B premium per tier, full Part B coverage.
+const CMS_PART_B_TOTAL = [284.1, 405.8, 527.5, 649.2, 689.9] as const
 
 describe('ORACLE-004: Medicare Part B / IRMAA vs CMS 2026', () => {
   it('standard Part B premium equals the CMS 2026 value ($202.90/mo)', () => {
@@ -58,16 +55,20 @@ describe('ORACLE-004: Medicare Part B / IRMAA vs CMS 2026', () => {
     })
   })
 
-  it('per-tier total Part B matches the CMS statutory multiplier of the standard premium', () => {
-    // applicablePct / 25 reproduces the CMS multipliers 1.4 / 2.0 / 2.6 / 3.2 / 3.4.
-    pack.medicare.irmaaTiers.forEach((tier, i) => {
-      expect(tier.applicablePct / 25).toBeCloseTo(CMS_PART_B_MULTIPLIER[i]!, 10)
+  it('per-tier total Part B equals CMS\'s published premium to the cent', () => {
+    expect(pack.medicare.irmaaTiers.map((tier) => tier.partBTotalMonthly)).toEqual(CMS_PART_B_TOTAL)
+    const tierProbe = [109_001, 137_001, 171_001, 205_001, 500_000]
+    tierProbe.forEach((magi, i) => {
+      const r = medicareAnnualPremiumPerPerson(pack, magi, 'single')
+      expect(r.irmaaTier).toBe(i + 1)
+      expectMoney(r.partBAnnual, CMS_PART_B_TOTAL[i]! * 12)
+      expectMoney(r.irmaaSurchargeAnnual, (CMS_PART_B_TOTAL[i]! - STD_MONTHLY + CMS_PART_D_SURCHARGE[i]!) * 12)
     })
-    // Endpoints vs CMS's dime-rounded published premiums, within the $1/yr tolerance.
-    const tier1 = medicareAnnualPremiumPerPerson(pack, 109_001, 'single')
-    expectMoney(tier1.partBAnnual, CMS_PART_B_TIER1_MONTHLY * 12, 1) // 284.06 vs 284.10 → 48¢/yr
-    const tier5 = medicareAnnualPremiumPerPerson(pack, 500_000, 'single')
-    expectMoney(tier5.partBAnnual, CMS_PART_B_TIER5_MONTHLY * 12, 1) // 689.86 vs 689.90 → 48¢/yr
+    // The standard premium times applicablePct / 25 misses four of the five
+    // (tier 4 by 8 cents a month), so it is not a stand-in for the table.
+    const derived = pack.medicare.irmaaTiers.map((tier) => Math.round(STD_MONTHLY * (tier.applicablePct / 25) * 100) / 100)
+    expect(derived).toEqual([284.06, 405.8, 527.54, 649.28, 689.86])
+    expect(derived).not.toEqual(CMS_PART_B_TOTAL)
   })
 
   it('matches CMS top-tier boundary semantics (single $500,000 / MFJ $750,000)', () => {

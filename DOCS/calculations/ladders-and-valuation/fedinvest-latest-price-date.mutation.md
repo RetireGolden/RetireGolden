@@ -26,10 +26,10 @@ npx vitest run src/ladder/fedInvest.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed.
+Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed, and the checkout's path is written from the repository root.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4long/packages/engine
+ RUN  v5.0.0 packages/engine
  ❯ src/ladder/fedInvest.evidence.test.ts (9 tests | 3 failed) 7ms
    ❯ fedinvest-latest-price-date — Latest FedInvest price date: previous business day in local time (3)
      × walks Sunday 2026-07-12 back past Saturday to Friday 2026-07-10 3ms

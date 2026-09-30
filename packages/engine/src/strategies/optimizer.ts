@@ -573,9 +573,9 @@ function irmaaIncrements(pack: ParameterPack): { threshold: (f: FilingStatus) =>
   const std = pack.medicare.partBStandardMonthly
   const tiers = pack.medicare.irmaaTiers
   return tiers.map((tier, i) => {
-    const prevPct = i === 0 ? 25 : tiers[i - 1]!.applicablePct
-    // Part B increment over the previous tier + this tier's Part D surcharge.
-    const partB = std * ((tier.applicablePct - prevPct) / 25) * 12
+    const prevTotal = i === 0 ? std : tiers[i - 1]!.partBTotalMonthly
+    // Part B increment over the previous tier (CMS's published totals) + this tier's Part D surcharge.
+    const partB = (tier.partBTotalMonthly - prevTotal) * 12
     const partD = (tier.partDSurchargeMonthly ?? 0) * 12 - (i === 0 ? 0 : (tiers[i - 1]!.partDSurchargeMonthly ?? 0) * 12)
     return { threshold: (f: FilingStatus) => tier.magiOver[f], surcharge: Math.max(0, partB + partD) }
   })

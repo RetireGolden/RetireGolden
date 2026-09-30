@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { irmaaTierForMagi, packForYear } from '../params/index.js'
-import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
 import { componentPackView } from '../params/index.js'
 
@@ -66,16 +66,16 @@ describeCalculation(
         lookbackMagiAboveBoundary: 109_001,
         firstTierMagiOver: 109_000,
         standardPartBMonthly: 202.9,
-        firstTierApplicablePct: 35,
+        firstTierPartBTotalMonthly: 284.1,
         firstTierPartDSurchargeMonthly: 14.5,
       },
       expected: {
         atBoundary: { irmaaTier: 0, partBAnnual: 2_434.8, partDSurchargeAnnual: 0, irmaaSurchargeAnnual: 0 },
         aboveBoundary: {
           irmaaTier: 1,
-          partBAnnual: 3_408.72,
+          partBAnnual: 3_409.2,
           partDSurchargeAnnual: 174,
-          irmaaSurchargeAnnual: 1_147.92,
+          irmaaSurchargeAnnual: 1_148.4,
         },
       },
       tolerance: { abs: 0.005 },
@@ -97,9 +97,9 @@ describeCalculation(
       expect(result.irmaaSurchargeAnnual).toBe(expected.atBoundary!.irmaaSurchargeAnnual)
     })
 
-    it('prices 109,001 at 35/25 of standard plus the 14.50 Part D surcharge', () => {
+    it('prices 109,001 at CMS\'s 284.10 total plus the 14.50 Part D surcharge', () => {
       expect(pack.medicare.partBStandardMonthly).toBe(inputs.standardPartBMonthly)
-      expect(firstTier.applicablePct).toBe(inputs.firstTierApplicablePct)
+      expect(firstTier.partBTotalMonthly).toBe(inputs.firstTierPartBTotalMonthly)
       expect(firstTier.partDSurchargeMonthly).toBe(inputs.firstTierPartDSurchargeMonthly)
       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookbackMagiAboveBoundary as number, 'single')
       expect(result.irmaaTier).toBe(expected.aboveBoundary!.irmaaTier)
@@ -110,10 +110,30 @@ describeCalculation(
 
     it('reads the applicable percentage as a share of program cost, not a surcharge', () => {
       // The second wrong reading: 35% as a surcharge would price Part B at
-      // 273.915 a month rather than 284.06.
+      // 273.915 a month rather than 284.10.
       const result = medicareAnnualPremiumPerPerson(pack, inputs.lookbackMagiAboveBoundary as number, 'single')
       const surchargeReadingAnnual = pack.medicare.partBStandardMonthly * 1.35 * 12
       expect(result.partBAnnual).toBeGreaterThan(surchargeReadingAnnual)
+    })
+
+    it('prices every tier at CMS\'s published Part B total and Part D amount, one case per tier', () => {
+      const rows = worksheetExpectedRows('DOCS/calculations/medicare-and-aca/medicare-irmaa-first-tier-boundary.md')
+      pack.medicare.irmaaTiers.forEach((tier, i) => {
+        const cells = rows.get(`Tier ${i + 1}`)
+        expect(cells, `worksheet row Tier ${i + 1}`).toBeDefined()
+        const [magi, total, partBAnnual, partDAnnual, surcharge] = cells!.map(worksheetNumber)
+        expect(tier.partBTotalMonthly).toBe(total)
+        const result = medicareAnnualPremiumPerPerson(pack, magi!, 'single')
+        expect(result.irmaaTier).toBe(i + 1)
+        expectWithin(result.partBAnnual, partBAnnual!, example.tolerance, `tier ${i + 1} partBAnnual`)
+        expectWithin(result.partDSurchargeAnnual, partDAnnual!, example.tolerance, `tier ${i + 1} partDSurchargeAnnual`)
+        expectWithin(result.irmaaSurchargeAnnual, surcharge!, example.tolerance, `tier ${i + 1} irmaaSurchargeAnnual`)
+      })
+      // The third wrong reading: the standard premium times the applicable
+      // percentage over 25 misses four of the five published totals.
+      const derived = pack.medicare.irmaaTiers.map((tier) => Math.round(pack.medicare.partBStandardMonthly * (tier.applicablePct / 25) * 100) / 100)
+      expect(derived).toEqual([284.06, 405.8, 527.54, 649.28, 689.86])
+      expect(derived.filter((value, i) => value !== pack.medicare.irmaaTiers[i]!.partBTotalMonthly)).toHaveLength(4)
     })
   },
 )

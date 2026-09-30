@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/a
 
 ## Captured failing output
 
-Re-executed because decision D-PEOPLE-ORDER's canonical-person changes moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annuitization.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because decision D-PEOPLE-ORDER's canonical-person changes moved the production lines or the evidence test lines this receipt quotes; the mutation is unchanged. The baseline is green (annuitization.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine19/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/decisions/annuitization.evidence.test.ts (3 tests | 2 failed) 57ms
    ❯ annuitization-sweep-point — Annuitization sweep point: premium, annual income and effective allocation (3)
