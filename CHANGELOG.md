@@ -47,7 +47,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `usc-42-403-f-3-fra-year-months-before-fra`, `cfr-20-404-412-b-arf-effective-fra-month`,
   `poms-rs-00615-320-b-2-c-deceased-crediting-months`, `usc-42-403-f-5-earnings-counted` and
   `usc-42-402-b-1-C-divorced-spouse-after-widowhood`; the earnings-test, crediting and
-  analysis records restated, all unreviewed.
+  analysis records restated, all unreviewed. After the review of pull request 769: a
+  worker also paid a survivor benefit on a former spouse's record has a month his excess
+  only partly covers charged to each record in proportion to what it pays him, and only
+  what is left on his own record is shared two to one (POMS RS 02501.145 B.2; 20 CFR
+  404.439), where the engine shared two to one over everything he was paid (a worker
+  earning $60,000 at 62 with a $2,389.29 widower's benefit, whose wife is paid $390 on his
+  record: 2026 pays him $13,277.54 and her $5,673.89, where it paid $13,251.43 and
+  $5,700); a person paid on two records has her own excess charged on both in proportion,
+  so both benefits have a crediting month, as the engine already credited them (RS
+  02501.145 B.2; RS 00615.482 B.3 note); the claim-milestone insight prices a former
+  spouse's survivor benefit as the ledger does; the other-income note on the analysis
+  page follows each claimant's full retirement age; and the benefits-only ranking keeps
+  nothing between calls. The engine adds `priceBenefitsOnlyRanking(plan, startYear)` and
+  `weighBenefitsOnlyRanking(priced, discountRate)`; `benefitsOnlyRanking` keeps its
+  signature and now prices on every call, so a host that re-weights one plan at several
+  rates prices once and weighs each rate. No exported signature changes. None of the 29
+  examples moves further: every ledger year, Monte Carlo rate and analysis row equals the
+  branch before the review.
 
 - **Fixed: what 1 January 2027 would have changed without a word, now held or said (decision
   D-2027-ROLLOVER; derivation and independent check in the validation program's staging,
