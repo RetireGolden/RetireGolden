@@ -66,9 +66,11 @@ function spouseCouple(lowerWagesEndAge: number): (year: number) => number {
 
 describe('402(q)(7) credit for a current spouse benefit', () => {
   it('does not credit months withheld from the own benefit before the spouse benefit began (40,853.33 in 2030, not 41,086.67)', () => {
-    // 2026 only: the 7,760 excess withholds all of her 7,680 own benefit. Her
-    // claim at 64y0m is entitled from June 2026, so June-December are her 7 own
-    // crediting months. From her June 2029 FRA month her own reduction is
+    // 2026 only: her claim at 64y0m is entitled from June 2026, so only June to
+    // December can be charged (403(f)(1)(A)); January to May are paid in full
+    // under the claim-year convention. The 7,760 excess takes all seven entitled
+    // months, 7 x 640 = 4,480, and the rest lapses, so June-December are her 7
+    // own crediting months. From her June 2029 FRA month her own reduction is
     // credited, 768 + 7 = 775 months, 29 months early, factor 0.838889, 671.11;
     // her spouse reduction keeps its 780 months, since no spouse month was
     // withheld. She is paid min(671.11, 800) + 333.33 = 1,004.44 a month in 2030,
