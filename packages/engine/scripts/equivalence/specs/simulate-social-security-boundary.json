@@ -295,21 +295,21 @@
       "label": "excess earnings: half above the lower exempt amount, a third of the months before the FRA month above the higher, the dollar floor",
       "file": "socialSecurity/earningsTest.ts",
       "lines": [
-        87,
-        100
+        98,
+        111
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 87,
+          "line": 98,
           "text": "const { wages, fraMonthIndex, year, belowFraExemptAnnual, fraYearExemptAnnual } = input"
         },
         {
-          "line": 92,
+          "line": 103,
           "text": "excess = (wages - belowFraExemptAnnual) / 2"
         },
         {
-          "line": 96,
+          "line": 107,
           "text": "excess = ((wages * monthsBefore) / 12 - fraYearExemptAnnual) / 3"
         }
       ]
@@ -319,22 +319,46 @@
       "label": "the month-by-month charge: the family charge, the partial month and each crediting month",
       "file": "socialSecurity/earningsTest.ts",
       "lines": [
-        187,
-        309
+        207,
+        350
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 187,
+          "line": 207,
           "text": "const { people, workerId } = input"
         },
         {
-          "line": 194,
+          "line": 214,
           "text": "const paidByMonth = new Map<string, number[]>()"
         },
         {
-          "line": 253,
+          "line": 287,
           "text": "let workerShare = (left * 2) / 3"
+        }
+      ]
+    },
+    {
+      "id": "K3.charged-to-other-record",
+      "label": "a person paid on two records: the part of a partial month's charge that falls on the other record",
+      "file": "socialSecurity/earningsTest.ts",
+      "lines": [
+        193,
+        199
+      ],
+      "note": "ADDED on 2026-09-29 after the review of pull request 769 (decision D-SS-ANALYSIS-EARNINGS-TEST): a person paid on her own record and on another is charged her own excess on both, a partial month in proportion to the benefits due on each before any deduction for work, the other record no more than what the worker's charge left of it (POMS RS 02501.145 B.2, RS 02501.150 A.2). Measured on the blocks corpus: 5 of 127 members reach it, no whole line is cold, and the reported cold regions are the unentitled-benefit branches (a zero basis), which the ledger reaches only in a month the claim-year convention pays before entitlement.",
+      "anchors": [
+        {
+          "line": 193,
+          "text": "function chargedToOtherRecord(position: MonthPosition, due: EarningsTestMonthlyDue, charged: number): number {"
+        },
+        {
+          "line": 198,
+          "text": "return Math.min(position.auxiliary, (charged * auxiliaryBasis) / (ownBasis + auxiliaryBasis))"
+        },
+        {
+          "line": 199,
+          "text": "}"
         }
       ]
     },
