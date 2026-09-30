@@ -66,12 +66,13 @@ this package's source.
 npm install @retiregolden/planner-ui react react-dom react-router
 ```
 
-Current source requires `@retiregolden/engine` **0.3.1** for the shared
-modeled survivor record predicates (`passesModeledOrdinaryWidowRecordGates`,
-`passesModeledSurvivingDivorcedRecordGates`).
+Current source requires the `@retiregolden/engine` version that
+`package.json` declares as its floor: it reads the engine's current plan schema
+and engine figures that older engines never exported. The engine and this
+range move as a pair.
 Development pack smoke may substitute a version-matched local engine tarball
 when the registry does not yet list that exact version; before a future
-planner-ui release, engine **0.3.1** must already be published.
+planner-ui release, that engine version must already be published.
 
 The host owns the router and mounts the planner under it:
 
