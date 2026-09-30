@@ -182,6 +182,7 @@ export function annualInheritedIraDistributions(
   const deadlineObservationIssues: { accountId: string; reason: string }[] = []
   const completedDeadlineAssessments: Extract<ReturnType<typeof coordinateInheritedDeadlineAnnualRuntime>, { status: 'coordinated' }>[] = []
   const completedDeadlineAccountIds = new Set<string>()
+  const completedDeadlineObligationByAccountId = new Map<string, RmdShortfallObligation>()
   const logicalIds = new Set<string>()
   for (const state of input.balances) {
     if (logicalIds.has(state.account.id)) {
@@ -363,8 +364,10 @@ export function annualInheritedIraDistributions(
             openingBenefit: completed.openingBenefit, distributedByDeadline: completed.distributedByDeadline,
             obligationId: rmdShortfallObligationId(applicablePlan, input.year), applicablePlan, relief: completed.relief })
         : { status: 'refusal' as const, reason: 'completedDeadlineObservationIncomplete' }
-      if (coordinated.status === 'coordinated') completedDeadlineAssessments.push(coordinated)
-      else deadlineObservationIssues.push({ accountId: state.account.id, reason: coordinated.reason })
+      if (coordinated.status === 'coordinated') {
+        completedDeadlineAssessments.push(coordinated)
+        completedDeadlineObligationByAccountId.set(state.account.id, coordinated.obligation)
+      } else deadlineObservationIssues.push({ accountId: state.account.id, reason: coordinated.reason })
       addRow(balanceIndex, state, {
         accountId: state.account.id, ownerPersonId: cache.ownerPersonId,
         regime: 'non-designated-five-year', matrixRow: 'X3',
@@ -510,13 +513,18 @@ export function annualInheritedIraDistributions(
     Set<RmdShortfallObligation['requirementKind']>
   >()
   const applicablePlanByKey = new Map<string, RmdApplicablePlan>()
-  const deadlineObligations: RmdShortfallObligation[] = completedDeadlineAssessments.map((row) => row.obligation)
+  // Treas. Reg. 1.408-8(c)(3) and (e)(2)(i): in the year an election takes
+  // effect after the death year, the account owes its owner RMD, priced by
+  // the caller, and leaves the beneficiary's same-decedent group. The check
+  // comes before every deadline branch, so the account enters no five-year
+  // deadline obligation either, completed (here) or live (in the loop).
+  const electionYear = (accountId: string): boolean =>
+    input.suppressForcedDistributionAccountIds?.has(accountId) === true
+  const deadlineObligations: RmdShortfallObligation[] = [...completedDeadlineObligationByAccountId]
+    .flatMap(([accountId, obligation]) => electionYear(accountId) ? [] : [obligation])
   for (const { evidence, balanceIndex } of rows) {
+    if (electionYear(evidence.accountId)) continue
     if (completedDeadlineAccountIds.has(evidence.accountId)) continue
-    // Treas. Reg. 1.408-8(c)(3) and (e)(2)(i): in the year an election takes
-    // effect after the death year, the account owes its owner RMD, priced by
-    // the caller, and leaves the beneficiary's same-decedent group.
-    if (input.suppressForcedDistributionAccountIds?.has(evidence.accountId) === true) continue
     if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
     const account = input.balances[balanceIndex]?.account
     if (

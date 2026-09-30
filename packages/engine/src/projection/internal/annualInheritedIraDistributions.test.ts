@@ -144,6 +144,7 @@ function classEntry(
 
 function run(input: {
   completedDeadlineObservations?: Parameters<typeof annualInheritedIraDistributions>[0]['completedDeadlineObservations']
+  suppressForcedDistributionAccountIds?: ReadonlySet<string>
   year?: number
   ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   startYear?: number
@@ -159,6 +160,9 @@ function run(input: {
   return annualInheritedIraDistributions({
     year,
     completedDeadlineObservations: input.completedDeadlineObservations,
+    ...(input.suppressForcedDistributionAccountIds === undefined
+      ? {}
+      : { suppressForcedDistributionAccountIds: input.suppressForcedDistributionAccountIds }),
     isTreatAsOwnEffectiveForYear: (account) =>
       isTreatAsOwnEffective(account, year, input.ownerTreatmentRouting),
     startYear: input.startYear ?? YEAR,
@@ -804,6 +808,33 @@ describe('completed post-deadline annual observation reconciliation', () => {
     expect(corrected.rmdShortfallObligations).toHaveLength(1)
     expect(corrected.totals).toEqual(ordinary.totals)
     expect(corrected.rows[0]?.distribution).toBeNull()
+  })
+  it('puts an election-year account in no deadline obligation, completed or live', () => {
+    // Treas. Reg. 1.408-8(c)(3): the year an election takes effect owes only
+    // the owner RMD, which the caller prices. The election-year check comes
+    // before the deadline branches, so neither the completed observation nor
+    // the live five-year coordinator adds an obligation for the account. A
+    // parsed plan cannot build this account (a treat-as-own election needs a
+    // designated-individual surviving spouse, the five-year regime an estate,
+    // trust or entity), so this pins the order, not a reachable plan.
+    const election = new Set(['estate'])
+    const completed = run({
+      year: 2027, balances: [{ account: estate, balance: 10000 }], classEntries: [classEntry(estate)],
+      completedDeadlineObservations: new Map([['estate', observed]]),
+      suppressForcedDistributionAccountIds: election,
+    })
+    expect(completed.rmdShortfallObligations).toEqual([])
+    expect(completed.rows[0]?.distribution).toBeNull()
+    const live = run({
+      year: 2026, balances: [{ account: estate, balance: 10000 }], classEntries: [classEntry(estate)],
+      suppressForcedDistributionAccountIds: election,
+    })
+    expect(live.rmdShortfallObligations).toEqual([])
+    const unsuppressed = run({
+      year: 2026, balances: [{ account: estate, balance: 10000 }], classEntries: [classEntry(estate)],
+    })
+    expect(unsuppressed.rmdShortfallObligations).toEqual([expect.objectContaining({
+      requirementKind: 'inheritedFinalSweep', requiredAmount: 10000 })])
   })
   it('refuses unknown history or a premature observation instead of certifying zero excise', () => {
     for (const observation of [{ ...observed, openingBenefit: 'unknown' as const },
