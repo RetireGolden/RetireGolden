@@ -187,7 +187,11 @@ describe('B2-P1 slice 4 on the 29 example plans', () => {
     // On SSA's 2023 period table (D-LIFE-TABLE-2023); on the 2022 table's
     // identity they were 70/62 $841k, 64/69 $853k, 70/63 $784k twice and
     // 70/62 $425k twice. The two 401(k) couples are two 'average' people each.
-    expect(headline('example-couple')).toBe('70/62 $865k')
+    // Example-couple's 70/62 was $865k until the earnings test was counted
+    // (D-SS-ANALYSIS-EARNINGS-TEST): Sam's claims at 62 and 63 are withheld from
+    // their first month of entitlement while she works, the months of the claim
+    // year before it paid in full (403(f)(1)(A)).
+    expect(headline('example-couple')).toBe('70/63 $860k')
     expect(headline('survivor-years')).toBe('64/70 $876k')
     expect(headline('annuity-purchases-estate')).toBe('70/63 $805k')
     expect(headline('no-annuity-brokerage')).toBe('70/63 $805k')

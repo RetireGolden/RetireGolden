@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 5d156cf4b2f65ca52d3afbbde380838dc3a72f42.
+ * Output field coverage imported from the output-family census at commit 3e88f1862d7d80ca276b0f137bb90325b73d1813.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -7549,6 +7549,16 @@ const coverageCensus = [
     "tsType": "Readonly<Record<number, number>>"
   },
   {
+    "source": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "owner": "ClaimBreakEvenResult",
+    "field": "withheldClaimAges",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The compared claim ages at which the person's wages have the earnings test hold back part of the benefit, printed in the sentence that names the person.",
+    "tsType": "readonly number[]"
+  },
+  {
     "source": "engine/src/socialSecurity/analysis/credits.ts",
     "owner": "CreditEstimate",
     "field": "credits",
@@ -13382,6 +13392,14 @@ const exclusionCensus = [
     "field": "year",
     "reasonKind": "dimension-coordinate",
     "reason": "The calendar year of each chart point, whose COLA factor and haircut the benefits carry."
+  },
+  {
+    "id": "field-engine-src-socialsecurity-analysis-breakeven-ts-claimbreakevenresult-withheldclaimages",
+    "path": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "symbol": "ClaimBreakEvenResult",
+    "field": "withheldClaimAges",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The compared claim ages at which the person's wages have the earnings test hold back part of the benefit, printed in the sentence that names the person."
   },
   {
     "id": "field-engine-src-socialsecurity-analysis-credits-ts-estimatecredits-override",

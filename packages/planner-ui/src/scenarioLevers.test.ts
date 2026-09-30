@@ -590,7 +590,10 @@ describe('scenario lever contract', () => {
   it('requires post-withholding Social Security benefits for cut and claim-age levers', () => {
     const plan = buildExampleCouple()
     const person = plan.household.people[0]!
-    person.dob = '1964-06-15'
+    // Born in January, so each claim is entitled from January and the wages
+    // withhold every month paid: no month is paid before entitlement, which
+    // the earnings test cannot charge (403(f)(1)(A)).
+    person.dob = '1964-01-15'
     person.retirementAge = 67
     person.longevity.planningAge = 66
     const stream = plan.incomes

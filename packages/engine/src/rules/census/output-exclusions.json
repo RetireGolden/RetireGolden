@@ -3378,6 +3378,14 @@
     "reason": "The later of the two claim ages a crossing compares, printed as the callout's second age."
   },
   {
+    "id": "field-engine-src-socialsecurity-analysis-breakeven-ts-claimbreakevenresult-withheldclaimages",
+    "path": "engine/src/socialSecurity/analysis/breakEven.ts",
+    "symbol": "ClaimBreakEvenResult",
+    "field": "withheldClaimAges",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The compared claim ages at which the person's wages have the earnings test hold back part of the benefit, printed in the sentence that names the person."
+  },
+  {
     "id": "field-engine-src-socialsecurity-analysis-expectedvalue-ts-benefitspvrow-claimbypersonid",
     "path": "engine/src/socialSecurity/analysis/expectedValue.ts",
     "symbol": "BenefitsPvRow",

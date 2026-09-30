@@ -47,7 +47,7 @@ export const blocks: ArticleBlock[] = [
     caption: 'The two Social Security analysis lenses answer different questions.',
     columns: ['Lens', 'Includes', 'Leaves out'],
     rows: [
-      ['Benefits only', 'Benefit size, survival odds, real discount rate, and the plan\'s spousal and survivor rules, with one claim age per person', 'The earnings test (benefits held back while working count as paid), a former spouse\'s record for a person in a couple, taxes, withdrawals, Roth conversions, IRMAA, ACA, RMDs, estate value'],
+      ['Benefits only', 'Benefit size, survival odds, real discount rate, and the plan\'s Social Security rules: spousal, survivor and former-spouse benefits and the earnings test on the plan\'s wages, with one claim age per person', 'Taxes, withdrawals, Roth conversions, IRMAA, ACA, RMDs, estate value'],
       ['In your plan', 'The full projection and ending after-tax estate', 'It depends on the quality of all plan inputs'],
       ['Break-even', 'Cumulative benefit timing', 'Mortality odds and most whole-plan interactions'],
     ],
@@ -67,7 +67,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'The **Social Security analysis** page separates the benefits-only actuarial view from the full projection. For couples, the benefits-only view prices each year with the projection\'s spousal and survivor rules and assumes independent lifetimes. It leaves out two rules the projection applies: there is no earnings test, so benefits the plan would hold back while someone is still working are counted as paid, and a former spouse\'s record is not counted for a person in a couple. Each person has one claim age in both views. When the plan\'s wages would trigger the earnings test at a claim age the page shows, the page names the person. The full in-your-plan view reruns the actual plan for each claiming strategy.',
+    md: 'The **Social Security analysis** page separates the benefits-only actuarial view from the full projection. The benefits-only view prices each year with the projection\'s own Social Security rules: spousal and survivor benefits, a former spouse\'s record, and the earnings test on the plan\'s wages, which holds back part of a benefit claimed before full retirement age while someone is still working and raises the benefit later for the months held back. For couples it assumes independent lifetimes. Each person has one claim age in both views. When the plan\'s wages hold back part of a benefit at a claim age the page ranks, the page names the person. The full in-your-plan view reruns the actual plan for each claiming strategy.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

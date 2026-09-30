@@ -110,7 +110,7 @@ describeCalculation(
       expect(result.ratio!.toFixed(2)).toBe('1.59')
     })
 
-    it('in a couple, a divorced spouse\'s benefit is not in the get-back, as the ledger pays it only to a single claimant', () => {
+    it('in a couple, a divorced spouse\'s benefit enters the get-back only after the spouse\'s death, as the ledger pays it to an unmarried claimant', () => {
       const ex: FormerSpouse = { id: 'ex', relationship: 'divorced', dob: '1960-01-10', piaMonthly: 4_000, marriageYears: 15, remarriedAtAge: null }
       const plan = couplePlan({ p1Dob: '1960-05-01', p2Dob: '1962-05-01' })
       plan.household.people[0] = { ...plan.household.people[0]!, sex: 'male' }
@@ -129,7 +129,11 @@ describeCalculation(
         formerSpouses: [ex],
       }
       const options = { startYear: 2026, discountRate: 0.02, assumptions: couple.assumptions }
-      expect(result.getBackPv).toBe(expectedPvSingle(claimant, { single: false }, options))
+      const spouse = couple.household.people[1]!
+      const widowed = expectedPvSingle(claimant, { single: false, spouse: { id: spouse.id, sex: spouse.sex, dob: { year: 1962, month: 5, day: 1 } } }, options)
+      expect(result.getBackPv).toBeCloseTo(widowed, 6)
+      // Married throughout it would be the own benefit alone; living alone, the divorced-spouse benefit from the start.
+      expect(result.getBackPv).toBeGreaterThan(expectedPvSingle(claimant, { single: false }, options))
       expect(result.getBackPv).toBeLessThan(expectedPvSingle(claimant, { single: true }, options))
     })
 

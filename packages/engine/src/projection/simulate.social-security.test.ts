@@ -821,7 +821,7 @@ describe('social security', () => {
     expect(survivorIncome).toBeCloseTo(28_800, 6)
   })
 
-  it('pays survivor on a deceased former spouse but forfeits it after remarriage before 60', () => {
+  it('pays survivor on a deceased former spouse, and a remarriage before 60 bars it only while the later marriage lasts', () => {
     const deceased = (remarriedAtAge: number | null): IncomeStream => ({
       type: 'socialSecurity',
       id: 'ss-surv',
@@ -840,27 +840,48 @@ describe('social security', () => {
     )!.incomes.socialSecurity
     expect(survivorIncome).toBeCloseTo(28_800, 6) // 2400×12, beats own 12,000
 
-    const forfeited = basePlan()
-    forfeited.incomes = [deceased(55)]
-    forfeited.accounts = [cash(2_000_000)]
-    const ownOnly = simulatePlan(validate(forfeited), { startYear: 2026, taxCalculator: noTax }).years.find(
+    // Living alone, she is unmarried: the later marriage has ended, and a
+    // remarriage before 60 no longer bars the benefit (POMS RS 00207.003 A).
+    const endedLaterMarriage = basePlan()
+    endedLaterMarriage.incomes = [deceased(55)]
+    endedLaterMarriage.accounts = [cash(2_000_000)]
+    const unmarried = simulatePlan(validate(endedLaterMarriage), { startYear: 2026, taxCalculator: noTax }).years.find(
       (y) => y.year === 2033,
     )!.incomes.socialSecurity
-    expect(ownOnly).toBeCloseTo(12_000, 6)
+    expect(unmarried).toBeCloseTo(28_800, 6)
+
+    // In a couple the remarriage age is the current marriage: the bar holds while
+    // the current spouse lives and lifts from January after the death. He has no
+    // benefit, dies at 70 in December 2035, and she is paid her own 12,000, then
+    // the 28,800 survivor benefit from 2036.
+    const married = basePlan()
+    married.household.filingStatus = 'marriedFilingJointly'
+    married.household.people.push({ id: 'p2', name: 'Lee', dob: '1965-03-10', sex: 'average', retirementAge: null, longevity: { planningAge: 70, source: 'manual' } })
+    married.incomes = [deceased(55)]
+    married.accounts = [cash(2_000_000)]
+    const years = simulatePlan(validate(married), { startYear: 2026, taxCalculator: noTax }).years
+    expect(years.find((y) => y.year === 2035)!.incomes.socialSecurity).toBeCloseTo(12_000, 6)
+    expect(years.find((y) => y.year === 2036)!.incomes.socialSecurity).toBeCloseTo(28_800, 6)
   })
 
   // 42 U.S.C. 403(f)(3): 50% above the lower exempt amount before FRA, 33 1/3%
-  // above the higher exempt amount in the FRA-attainment year. Below FRA:
+  // above the higher exempt amount in the FRA-attainment year, counting there
+  // only the earnings of the months before the FRA month; the excess is reduced
+  // to the next lower dollar. Below FRA:
   //   (40,000 - 24,480) / 2 = 7,760
-  // FRA year with wages above the higher exempt amount:
-  //   (70,000 - 65,160) / 3 = 1,613.3333333333333
-  // Flat /2 on the FRA-year excess would be 2,420; omitting the FRA-year rate is 0.
+  // FRA year (FRA month June 2027, five months before it) on 180,000 of wages:
+  //   (180,000 x 5/12 - 65,160) / 3 = (75,000 - 65,160) / 3 = 3,280,
+  // charged to January (1,400), February (1,400) and March (480).
+  // Flat /2 on that excess would be 4,920; omitting the FRA-year rate is 0; the
+  // whole year's wages, (180,000 - 65,160) / 3 = 38,280, would withhold all five
+  // months before the FRA month, 7,000.
   describeRule('usc-42-403-f-3-retirement-earnings-test', {
     readings: {
-      statutoryRates: { belowFra: 7_760, fraYear: 1_613.3333333333333 },
-      fraYearTreatmentAppliedEarly: { belowFra: 0, fraYear: 1_613.3333333333333 },
-      flatHalfRate: { belowFra: 7_760, fraYear: 2_420 },
+      statutoryRates: { belowFra: 7_760, fraYear: 3_280 },
+      fraYearTreatmentAppliedEarly: { belowFra: 0, fraYear: 3_280 },
+      flatHalfRate: { belowFra: 7_760, fraYear: 4_920 },
       noFraYearWithholding: { belowFra: 7_760, fraYear: 0 },
+      wholeYearWagesInTheFraYear: { belowFra: 7_760, fraYear: 7_000 },
     },
     accepted: 'statutoryRates',
   }, ({ accepted, readings }) => {
@@ -887,7 +908,7 @@ describe('social security', () => {
         retirementAge: 68,
       }
       fraYearPlan.incomes = [
-        wages(70_000),
+        wages(180_000),
         { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
       ]
       fraYearPlan.accounts = [cash(2_000_000)]
@@ -905,6 +926,10 @@ describe('social security', () => {
       expect(observed).not.toEqual(readings.fraYearTreatmentAppliedEarly)
       expect(observed.fraYear).not.toBeCloseTo(readings.flatHalfRate.fraYear, 6)
       expect(observed.fraYear).not.toBeCloseTo(readings.noFraYearWithholding.fraYear, 6)
+      expect(observed.fraYear).not.toBeCloseTo(readings.wholeYearWagesInTheFraYear.fraYear, 6)
+      // Three crediting months take the benefit from 1,400 to 1,425 from July:
+      // 7,000 - 3,280 = 3,720 in January-May and 7 x 1,425 = 9,975 after.
+      expect(fraYearObserved.incomes.socialSecurity).toBeCloseTo(13_695, 6)
     })
   })
 
@@ -922,21 +947,29 @@ describe('social security', () => {
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // Claim at 62 -> 70% of PIA = 16,800/yr. Below FRA: withhold (60k−24,480)/2
-    // = 17,760, which exceeds the benefit -> fully withheld.
+    // Claim at 62 -> 70% of PIA = 1,400 a month, entitled from June 2026 (she
+    // attains 62 on June 14). Below FRA the excess is (60k−24,480)/2 = 17,760.
+    // January-May are paid under the claim-year convention and, before the first
+    // month of entitlement, cannot be charged (403(f)(1)(A)): 7,000 is paid, and
+    // June-December, 9,800, are withheld.
     const age62 = result.years.find((y) => y.year === 2026)!
-    expect(age62.incomes.socialSecurity).toBe(0)
-    expect(age62.ssEarningsTestWithheld).toBeCloseTo(16_800, 6)
+    expect(age62.incomes.socialSecurity).toBeCloseTo(7_000, 6)
+    expect(age62.ssEarningsTestWithheld).toBeCloseTo(9_800, 6)
 
     const age66 = result.years.find((y) => y.year === 2030)!
     expect(age66.incomes.socialSecurity).toBe(0)
 
-    // FRA year (67): exempt amount 65,160 > wages -> no withholding. All 60
-    // months (62-66) were fully withheld, so the benefit is recomputed as if
-    // claimed at FRA -> full PIA = 24,000.
+    // FRA year (FRA month June 2031): the five months before it earn 25,000,
+    // under 65,160 -> no withholding. The 62 claim is entitled from June 2026,
+    // so the months withheld from then through 2030 are the crediting months,
+    // 7 + 48 = 55 (January-May 2026 are paid under the claim-year convention but
+    // are not in the reduction period). From June 2031 the benefit is priced at
+    // 744 + 55 = 799 months, 5 early: 2,000 x 0.972222 = 1,944.44. 2031 pays
+    // 5 x 1,400 + 7 x 1,944.44 = 20,611.11, and 2032 23,333.33.
     const age67 = result.years.find((y) => y.year === 2031)!
-    expect(age67.incomes.socialSecurity).toBeCloseTo(24_000, 6)
+    expect(age67.incomes.socialSecurity).toBeCloseTo(20_611.111111, 5)
     expect(age67.ssEarningsTestWithheld).toBe(0)
+    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(23_333.333333, 5)
 
     expect(result.warnings.join(' ')).toContain('earnings test')
   })
@@ -953,12 +986,15 @@ describe('social security', () => {
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // 62-66: fully withheld.
-    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBe(0)
+    // 62-66: fully withheld from the June 2026 entitlement month; January-May
+    // 2026 are paid under the claim-year convention and not charged.
+    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBeCloseTo(5 * 1_400, 6)
     expect(result.years.find((y) => y.year === 2030)!.incomes.socialSecurity).toBe(0)
-    // 67+: 60 withheld months credit the claim from 62 up to FRA -> full PIA.
-    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(24_000, 6)
-    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(24_000, 6)
+    // From the June 2031 FRA month: the 55 months withheld in the reduction
+    // period (June 2026 on) credit the claim from 744 to 799 months, 1,944.44 a
+    // month; the months before June are paid at the 62 rate.
+    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(20_611.111111, 5)
+    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(23_333.333333, 5)
   })
 
   it('applies the earnings test to a marital-history benefit (not just own)', () => {
@@ -980,14 +1016,21 @@ describe('social security', () => {
     ]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    // Divorced-spousal (~$15.6k) lifts the benefit, but high wages fully withhold it.
-    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBe(0)
+    // Divorced-spousal (560 + 1,200 x 0.65 = 1,340 a month) lifts the benefit,
+    // entitled from June 2026 (born July 1, she attains 62 on June 30); the high
+    // wages withhold every month from June. January-May are paid under the
+    // claim-year convention and not charged (403(f)(1)(A)).
+    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBeCloseTo(5 * 1_340, 6)
+    expect(result.years.find((y) => y.year === 2027)!.incomes.socialSecurity).toBe(0)
   })
 
-  it('credits a mid-year first claim only for its payable months', () => {
+  it('credits a mid-year first claim only for the months of its reduction period', () => {
     // Claim 62y6m, work (and be fully withheld) only the partial first year,
-    // retiring at 63. Just 6 payable months are withheld, so the FRA credit moves
-    // the claim from 62y6m to 63y0m (0.75 PIA), not 63y6m.
+    // retiring at 63. The claim-year convention pays July-December, but a person
+    // born on July 1 attains 62y6m in December 2026, the first month of the
+    // reduction period: of the six months withheld only December is credited, so
+    // from the June 2031 FRA month the claim is priced at 751 months, 53 early:
+    // 2,000 x 0.729167 = 1,458.33. 2031 pays 5 x 1,450 + 7 x 1,458.33 = 17,458.33.
     const plan = basePlan()
     plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-07-01', retirementAge: 63 }
     plan.incomes = [
@@ -996,8 +1039,8 @@ describe('social security', () => {
     ]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    // 67+: credited claim 62y6m + 6mo = 63y0m -> 48 months early -> 0.75 × PIA.
-    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(18_000, 6)
+    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(17_458.333333, 5)
+    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(17_500, 6)
   })
 
   it('credits only the months actually withheld (partial)', () => {
@@ -1014,13 +1057,16 @@ describe('social security', () => {
 
     // 64-66 (before FRA, no wages): the original reduced 62 benefit, 0.70 × PIA.
     expect(result.years.find((y) => y.year === 2028)!.incomes.socialSecurity).toBeCloseTo(16_800, 6)
-    // 67+: claim credited 62 -> 64 (24 months), 36 months early -> 0.80 × PIA.
-    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(19_200, 6)
+    // From the June 2031 FRA month: 7 + 12 = 19 crediting months (June 2026 on),
+    // 763 months, 41 early -> 0.779167 × PIA = 1,558.33; 2031 pays
+    // 5 × 1,400 + 7 × 1,558.33 = 17,908.33 and 2032 18,700.
+    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(17_908.333333, 5)
+    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(18_700, 6)
   })
 
-  function partialDeductionArfIncomeAfterFra(): number {
+  function partialDeductionArfIncomeAfterFra(dob = '1964-01-15'): number {
     const plan = basePlan()
-    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge: 67 }
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob, retirementAge: 67 }
     plan.incomes = [
       // 28,480 - 24,480 = 4,000; the annual test withholds 2,000 dollars in
       // each below-FRA year the wages run (2026 through 2030).
@@ -1029,31 +1075,41 @@ describe('social security', () => {
     ]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    // 2032 is the first full calendar year after the June-2031 FRA, so the
-    // observable carries the ARF-adjusted rate without FRA-year proration.
+    // 2032 is a full calendar year after the FRA month, so the observable carries
+    // the ARF-adjusted rate without FRA-year proration.
     return socialSecurityIncomeIn(result, 2032)
   }
 
-  // Each of the five below-FRA working years (2026-2030) carries a
-  // 2,000-dollar annual deduction, charged 1,400 dollars to the first payable
-  // month and 600 to the second. POMS credits both the full and the partial
-  // work-deduction month — ten crediting months in all: the 60 reduction
-  // months from a 62y0m claim shrink to 50, the reduction is
+  // A person born 1964-01-15, entitled from January 2026, in each of the five
+  // below-FRA working years (2026-2030) carries a 2,000-dollar excess, charged
+  // 1,400 dollars to January and 600 to February. POMS credits both the full and
+  // the partial work-deduction month, ten crediting months in all: the 60
+  // reduction months from a 62y0m claim shrink to 50, the reduction is
   // 36 x 5/9% + 14 x 5/12% = 25.8333%, and a post-FRA year pays
-  // 24,000 x 0.7416667 = 17,800. The engine's annual ratio proxy instead
-  // rounds (2,000 / benefit) x payable months to one crediting month per year.
+  // 24,000 x 0.7416667 = 17,800. Counting only full months, or the annual ratio
+  // the engine rounded to one crediting month a year until 2026-09-29, pays
+  // 17,300.
   describeRule('poms-rs-00615-482-arf-crediting-months', {
     readings: {
       pomsCreditsFullAndPartialWorkDeductionMonths: 17_800,
       annualRatioRoundsToOneCreditingMonthPerYear: 17_300,
     },
     accepted: 'pomsCreditsFullAndPartialWorkDeductionMonths',
-    produced: 'annualRatioRoundsToOneCreditingMonthPerYear',
-  }, ({ accepted, produced }) => {
-    it('rounds annual withholding to one ARF crediting month per year', () => {
+  }, ({ accepted, readings }) => {
+    it('credits the full and the partial deduction month of each working year', () => {
       const postFraIncome = partialDeductionArfIncomeAfterFra()
-      expect(postFraIncome).toBeCloseTo(produced, 6)
-      expect(postFraIncome).not.toBeCloseTo(accepted, 6)
+      expect(postFraIncome).toBeCloseTo(accepted, 6)
+      expect(postFraIncome).not.toBeCloseTo(readings.annualRatioRoundsToOneCreditingMonthPerYear, 6)
+    })
+
+    it('charges from the first month of entitlement: a June birth\'s January-May 2026 are paid under the claim-year convention and not charged, so June and July are the deduction months', () => {
+      // Born 1964-06-15, entitled from June 2026: January-May cannot be charged
+      // (403(f)(1)(A)), so 2026's excess is charged to June and July, both
+      // crediting months: 10 in all, 50 months early, 24,000 x 0.7416667 =
+      // 17,800. Charging January and February, before entitlement, and crediting
+      // neither (the engine until the implementation review) paid 17,600.
+      expect(partialDeductionArfIncomeAfterFra('1964-06-15')).toBeCloseTo(17_800, 6)
+      expect(partialDeductionArfIncomeAfterFra('1964-06-15')).not.toBeCloseTo(17_600, 6)
     })
   })
 
@@ -1065,13 +1121,12 @@ describe('social security', () => {
       annualFractionRoundedToOneMonthPerYear: 17_300,
     },
     accepted: 'firstThenSucceedingMonthCharging',
-    produced: 'annualFractionRoundedToOneMonthPerYear',
     note: 'shares the ARF observable',
-  }, ({ accepted, produced }) => {
-    it('collapses the charging sequence into the annual ratio', () => {
+  }, ({ accepted, readings }) => {
+    it('charges the first month and then the next, each a deduction month', () => {
       const postFraIncome = partialDeductionArfIncomeAfterFra()
-      expect(postFraIncome).toBeCloseTo(produced, 6)
-      expect(postFraIncome).not.toBeCloseTo(accepted, 6)
+      expect(postFraIncome).toBeCloseTo(accepted, 6)
+      expect(postFraIncome).not.toBeCloseTo(readings.annualFractionRoundedToOneMonthPerYear, 6)
     })
   })
 
@@ -1079,9 +1134,11 @@ describe('social security', () => {
   // annual wage projection stands against both authority limbs below. That
   // collapse is the approximation — not a birthday-relative stop encoded by
   // a fractional retirementAge.
+  // Born 1964-01-15, so the claim at 62 is entitled from January 2026 and no
+  // month is paid under the claim-year convention before it.
   function graceYearAnnualIncome(): number {
     const plan = basePlan()
-    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge: 67 }
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-01-15', retirementAge: 67 }
     plan.incomes = [
       wages(60_000),
       { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
@@ -1654,15 +1711,21 @@ describe('social security', () => {
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
     const highAnnual = 4_000 * 12 * claimFactor(1959, 6, 15, { years: 62, months: 0 })
 
-    // Low earner's spousal benefit beats their own benefit at 62, but their wages
-    // fully withhold it. The household still receives the high earner's benefit.
+    // Low earner's spousal benefit (560 + 1,200 x 0.65 = 1,340) beats their own
+    // benefit at 62, but their wages withhold it from June 2026, the first month
+    // of entitlement to both; January-May are paid under the claim-year
+    // convention and not charged (403(f)(1)(A)). The household still receives
+    // the high earner's benefit.
     const y2026 = result.years.find((y) => y.year === 2026)!
-    expect(y2026.incomes.socialSecurity).toBeCloseTo(highAnnual, 6)
-    expect(y2026.ssEarningsTestWithheld).toBeGreaterThan(15_000)
+    expect(y2026.incomes.socialSecurity).toBeCloseTo(highAnnual + 1_340 * 5, 6)
+    expect(y2026.ssEarningsTestWithheld).toBeCloseTo(1_340 * 7, 6)
 
-    // At FRA, all 60 withheld months credit the low earner's spousal factor to 1.0.
-    const y2031 = result.years.find((y) => y.year === 2031)!
-    expect(y2031.incomes.socialSecurity).toBeCloseTo(highAnnual + 0.5 * 4_000 * 12, 6)
+    // From the June 2031 FRA month, the 55 months withheld in the reduction
+    // period (June 2026 on) credit both reductions to 799 months: own
+    // 800 x 0.972222 = 777.78, spouse excess 1,200 x 0.965278 = 1,158.33.
+    const y2032 = result.years.find((y) => y.year === 2032)!
+    expect(y2032.incomes.socialSecurity).toBeCloseTo(highAnnual + (777.7777777777778 + 1_158.3333333333333) * 12, 6)
+    expect(y2032.incomes.socialSecurity - highAnnual).toBeCloseTo(23_233.333333, 5)
   })
 
   it('leaves a spouse uncapped by the family maximum when the worker delays: the room is above his PIA, not his benefit (20 CFR 404.404)', () => {
@@ -1729,14 +1792,20 @@ describe('social security', () => {
     plan.accounts = [cash(5_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
+    // The widow(er) benefit, 3,000 x 0.796429 = 2,389.29 at 744 months, is
+    // entitled from June 2026, her claim month (the death was in 2025); the
+    // claim-year convention pays January-May, which cannot be charged.
     const y2026 = result.years.find((y) => y.year === 2026)!
-    expect(y2026.incomes.socialSecurity).toBe(0)
-    expect(y2026.ssEarningsTestWithheld).toBeGreaterThan(20_000)
+    expect(y2026.incomes.socialSecurity).toBeCloseTo(5 * 3_000 * (1 - 0.285 * 60 / 84), 6)
+    expect(y2026.ssEarningsTestWithheld).toBeCloseTo(7 * 3_000 * (1 - 0.285 * 60 / 84), 6)
 
-    // The deceased claimed early, so RIB-LIM floors the survivor base at 82.5%
-    // of PIA. Withheld months credit the survivor reduction away by FRA.
-    const y2031 = result.years.find((y) => y.year === 2031)!
-    expect(y2031.incomes.socialSecurity).toBeCloseTo(0.825 * 3_000 * 12, 6)
+    // The deceased claimed early, so RIB-LIM holds the survivor benefit at 82.5%
+    // of the PIA. From the June 2031 survivor FRA month, the 55 months withheld
+    // in the widow(er) reduction period (June 2026 on) credit the reduction to
+    // 799 months, whose 2,949.11 the limit holds at 2,475; before June she is
+    // paid 2,389.29, reduced at 744 months: 29,271.43 in 2031, 29,700 after.
+    expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(29_271.428571, 5)
+    expect(result.years.find((y) => y.year === 2032)!.incomes.socialSecurity).toBeCloseTo(0.825 * 3_000 * 12, 6)
   })
 
   it('applies the trust-fund haircut from its start year', () => {

@@ -79,8 +79,9 @@ describe('marital-benefit menu golden worksheets', () => {
     expectMoney(maritalBenefitFor({ ...deceased, remarriedAtAge: 61 }, baseCtx)!.monthly, 2_400)
   })
 
-  it('forfeits the survivor benefit when remarriage is before 60', () => {
-    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 59 }, baseCtx)).toBeNull()
+  it('bars the survivor benefit after a remarriage before 60 while that marriage lasts, and pays it once the claimant is unmarried', () => {
+    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 59 }, { ...baseCtx, claimantIsSingle: false })).toBeNull()
+    expectMoney(maritalBenefitFor({ ...deceased, remarriedAtAge: 59 }, baseCtx)!.monthly, 2_400)
     // Also gated by the >=9-month marriage minimum.
     expect(maritalBenefitFor({ ...deceased, marriageYears: 0.5 }, baseCtx)).toBeNull()
   })

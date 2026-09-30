@@ -6,6 +6,7 @@ Kind: model. `socialSecurity/analysis/expectedValue.ts` publishes the survival-w
 - **Couple** (`#expectedPvCouple`): EV = Σ_t (1 + r)^−t scale(y) [S_A(t) S_B(t) both(t) + Σ_{k<t} S_A(t) D_B(k) alone_A(t, k) + Σ_{k<t} S_B(t) D_A(k) alone_B(t, k)], with D(k) the probability of dying in year k (alive through year k, the ledger's death convention), independent lives. While both are alive, the lower earner (by PIA; the second person on a tie, as the ledger) is paid the own benefit plus the reduced spouse excess for the months both are paid (`dual-entitlement-composition`, the excess reduced for the lower earner's age in the first month of the spouse benefit, the later of the two claims, and capped by the worker's family maximum as the ledger caps it). After a death in year k the survivor is paid, from the next year and once their own claim has started, the larger of the own benefit and the widow(er) benefit: on the deceased's claimed benefit if the deceased's claim year had come by the death, otherwise on the benefit for the month before a December death (`neverClaimedDeceasedFactor`); reduced for the survivor's age in the first month of widow(er) entitlement, the later of the survivor's own claim and January after the death (`survivor-reduction-entitlement-month`); then held to the widow's limit when the deceased claimed before full retirement age (`survivor-benefit-rib-lim`).
 - **scale(y)** is the ledger's COLA factor over its inflation factor, times the haircut (`socialSecurity/colaFactor.ts`): exactly 1 when the COLA matches inflation and there is no haircut, so the value is in the start year's dollars; a fixed COLA below inflation or a haircut lowers later years.
 - S is the engine's one survival curve (`montecarlo/survival.ts#survivalCurve`).
+- **Every year of every path is the ledger's year** (decision D-SS-ANALYSIS-EARNINGS-TEST, 2026-09-29). Each path the value weights, both people alive or one surviving a death in year k, is priced year by year by the ledger's own year function (`socialSecurity/householdYear.ts#socialSecurityYear`, through `analysis/householdPaths.ts`), with the plan's wage rows. So the retirement earnings test withholds benefits before full retirement age, the worker's excess first against the family benefit on his record, and the months withheld raise each benefit from its full-retirement-age month, counting only months of that benefit's reduction period. A widow(er)'s limit is on the deceased's benefit with his own crediting months. A couple member is paid on a former spouse's record as the ledger pays it: a deceased or surviving-divorced record while married, and a living ex's from the January after the spouse's death, when she is unmarried.
 
 `#benefitsOnlyRanking` prices every whole-year claim-age combination (62 to 70, none before the age reached in the start year, 70 alone for someone past it) for the plan's one or two claimants, on the PIA the projection pays from, and ranks them highest first; a claimant whose benefit the ledger pays as a disability benefit from its onset is named and nothing is ranked. A claim already made, whose claim year (birth year plus claim years) is before the start year, is held at its own claim age with its months and named, and only the open claims are ranked; when every claim is already made nothing is ranked (B2-P1 slice 5: the claim-age searches' one test, `socialSecurity/openClaims.ts#isClaimAlreadyMade`, whose sources and limits are on `social-security-claim-age-sweep`). Until then the bracket-fill couple, who claimed in 2020 and 2022, were shown "Highest expected value: claim at 70 / 70" with an Apply button.
 
@@ -35,6 +36,8 @@ Every case starts in 2026 at a 2% real rate, with the COLA matching 2.5% inflati
 | C-C | W female 1962-06-15 (64), PIA 1,000; H male 1960-06-15 (66), PIA 3,000 (the survivor-years plan's people) | W 67y0m, H 70y0m |
 | C-D | W female 1959-03-10 (67), PIA 500; H male 1964-02-10 (62), PIA 2,000 | W 67y0m, H 62y0m |
 | C-E | W female 1964-06-15 (62), PIA 100; H male 1964-01-15 (62), PIA 1,000 | W 67y0m, H 70y0m |
+| C-F | example-couple: Alex male 1962-04-15 (64), PIA 2,900, $140,000 of wages a year to his retirement age 66; Sam female 1964-09-02 (62), PIA 1,950, $85,000 to 64 | the ranking's rows 70/64, 70/62, and Alex at 64 and 65 with Sam at 62 to 70 |
+| C-G | H male 1962-03-20 (64), PIA 2,200; J female 1964-02-10 (62), PIA 1,200, with a deceased first husband born 1958-05-10, PIA 3,000, claimed at his full retirement age, married 20 years; J remarried at 61 | 67/67 and 70/62 |
 
 ## Arithmetic
 
@@ -55,6 +58,10 @@ Factors for births in 1964 (full retirement age 67, 804 months): own at 62 = 0.7
 **C-D (a death in the claim year).** H claims at 62 in 2026, reduced to 1,400. If he dies in December 2026, his claim year, he had claimed, so W's widow(er) benefit is on his reduced benefit: in January 2027 she is 814 months old, past her survivor full retirement age (66y6m for 1959), so the factor is 1 and 2,000 is held to the widow's limit max(1,400, 1,650) = 1,650. Read as a death before claiming, it would be 2,000 with no limit.
 
 **C-E (the family maximum, 20 CFR 404.404).** H's PIA of 1,000 is below the first family-maximum bend point, so his family maximum is 150%, 1,500. W's spouse excess at her full retirement age is 0.5 × 1,000 − 100 = 400. Counting his PIA, the room is 1,500 − 1,000 = 500 and she is paid the full 400; the ledger counts his benefit at 70, 1,240, leaving 260. The value below is the rule's, 400 paid (the model of the review, which applies no cap, since 400 is within the room), and the engine's since #756; before it the engine gave 237,350.59 on the 2023 table (229,976.29 on the 2022 table).
+
+**C-F (example-couple, the earnings test).** Sam's full-retirement-age month is September 2031 (she attains 67 on September 1). A claim at 62 pays 0.70 × 1,950 = 1,365 a month, 16,380 a year in 2026 dollars, all of 2026 by the payable-months convention; her entitlement month is September 2026, so January to August are paid in full and cannot be charged (42 U.S.C. 403(f)(1)(A)). Her 2026 excess is floor((85,000 − 24,480)/2) = 30,260, more than September to December's benefit, which it withholds; in 2027 her wages are 87,125 against a lower exempt amount of 25,092 at the plan's inflation, and all 12 months are withheld. So 2026 pays 8 × 1,365 = 10,920, 2027 nothing, and 4 + 12 = 16 months are crediting months. From September 2031 she is paid 60 − 16 = 44 months early, 1 − 36 × 5/9% − 8 × 5/12% = 0.766667, 1,495 a month: 2031 pays 8 × 1,365 + 4 × 1,495 = 16,900 in 2026 dollars and each later year 17,940. A claim at 63 is entitled from September 2027: January to August 2027 are paid under the convention, 8 × 1,462.50 = 11,700, and September to December are withheld, 4 crediting months, so from September 2031 it too is paid 44 months early, 1,495 a month. A claim at 64 (2028, after her wages end) pays 0.80 × 1,950 = 1,560 a month, 18,720 a year, and nothing is withheld. The ranking's first row at 2% is 70/63 and at 4% 69/63 (paid in full it was 70/62 and 69/62). Alex's claims at 64 and 65 are withheld in full from their first month of entitlement while he works, through 2027 (his excess, floor((140,000 − 24,480)/2) = 57,760, is more than the year's benefit); the months before it in the claim year are paid under the convention and not charged. At 64 his entitlement month is April 2026, so 9 + 12 = 21 months are credited; at 65 it is April 2027, so 9 are. Either way, from his full-retirement-age month, April 2029, he is paid 15 months early: 1 − 15 × 5/9% = 0.916667, 2,658.33 a month. If he then dies, Sam's widow's limit is on that credited benefit, 2,658.33, not on his claimed 2,320 or 82.5% of his PIA, 2,392.50 (POMS RS 00615.320 B.2.c, RS 00615.598), which lifts each of those rows. The values are survival-weighted sums over every path, by the independent model described under Provenance.
+
+**C-G (a couple member's deceased former spouse).** J's first husband died; she remarried at 61, which is deemed not to have occurred (42 U.S.C. 402(e)(3)(A)), and they were married 20 years. Her survivor full retirement age is 67 (804 months), so a widow(er) benefit claimed at 67 is unreduced, and he claimed at his full retirement age, so no widow's limit applies: 3,000 a month from 2031, above her own 1,200. Half H's PIA (1,100) is below hers, so there is no spouse benefit. Until this decision the value priced a couple member's former-spouse records at nothing and counted her own 1,200.
 
 **C-C (never claimed).** If H dies at 68 in December 2028 before claiming, W is paid from 2029 on 3,000 × (1 + 18 × 2/3 %) = 3,360; her widow(er) benefit starts with her own claim at 67 (June 2029, 804 months), so it is unreduced. The retired model paid her own 1,000 until H "would have" turned 70 and then 3,720.
 
@@ -78,8 +85,35 @@ Factors for births in 1964 (full retirement age 67, 804 months): own at 62 = 0.7
 | S-C monthly from 2028 | 707.5 | 650 |
 | C-B lower earner monthly from 2034 | 960 | 780 |
 | C-C survivor base monthly, death 2028 | 3,360.0000000000005 | 3,720 |
+| C-F 70/63 | 860,375.9742084525 | |
+| C-F 70/64 | 859,491.0830312939 | |
+| C-F 70/62 | 856,075.9277281811 | |
+| C-F 64/62 | 811,011.8018759304 | |
+| C-F 64/63 | 815,300.0536573473 | |
+| C-F 64/64 | 814,153.5712787987 | |
+| C-F 64/65 | 813,035.1926275933 | |
+| C-F 64/66 | 808,911.5965605836 | |
+| C-F 64/67 | 802,547.8190439442 | |
+| C-F 64/68 | 796,645.2719683956 | |
+| C-F 64/69 | 788,444.6171024581 | |
+| C-F 64/70 | 778,173.0496310056 | |
+| C-F 65/62 | 814,038.0801285339 | |
+| C-F 65/63 | 818,338.1266088053 | |
+| C-F 65/64 | 817,445.8265474185 | |
+| C-F 65/65 | 816,615.8840367064 | |
+| C-F 65/66 | 812,761.9922719517 | |
+| C-F 65/67 | 806,644.3765801400 | |
+| C-F 65/68 | 800,672.8045405216 | |
+| C-F 65/69 | 792,405.2671235913 | |
+| C-F 65/70 | 782,068.9509823772 | |
+| C-F 69/63 at 4% | 659,710.8528273264 | |
+| C-F 69/64 at 4% | 657,356.2313179960 | |
+| C-G 67/67 | 831,489.0170119517 | |
+| C-G 70/62 | 878,231.4248894261 | |
 
 Tolerance: 1e−12 relative on the present values, 1e−9 absolute on the monthly and yearly amounts.
+
+C-F and C-G are new with decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) and have no retired-model value. Before it the value paid every benefit in full and priced no former-spouse record for a couple member: C-F 70/62 was 864,531.25 and ranked first, above 70/63 at 862,820.99 and 70/64 at 859,491.08 (which nothing withholds, so it does not move); C-G 67/67 was 594,699.99 and 70/62 625,582.54.
 
 The derivation's values for S-C, C-A and C-B (149,916.64, 474,856.84 and 598,835.28) used the month of death, December, as the widow(er) benefit's first month and the month the ex attains 62 as a divorced spouse's; the Social Security law change the slice sits on settled both on review (D-SS-LAW-2): January after the death, the first month the ledger pays, and the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a).
 
@@ -96,6 +130,11 @@ Revision 2026-09-27 (D-LIFE-TABLE-2023): the expected values are on SSA's publis
 - A death in the claim year read as a death before claiming: C-D's widow(er) benefit 2,000 with no limit, against 1,650.
 - The family maximum's room net of the worker's benefit with delayed credits rather than his PIA: C-E 260 of the 400 excess paid (the ledger before #756), 237,350.59 on the 2023 table (229,976.29 on the 2022 table).
 - Survival as a ratio of products from age 0 with rounded ages: equal at integer ages to float error, different at fractional ones.
+- Every benefit paid in full while its person works before full retirement age: C-F 70/62 864,531.25, ranked above 70/64.
+- Every month withheld credited, including the months of the claim year before the entitlement month that the payable-months convention pays: C-F 70/62 851,566.83 (Sam's 24 months, 1,560 a month from September 2031, against the reduction period's 16).
+- Those months charged but not credited (this decision's first implementation, until the implementation review's F1): C-F 70/62 845,155.93 and the first row 70/64, 859,491.08. 42 U.S.C. 403(f)(1)(A) charges no month "for which such individual was not entitled to a benefit".
+- The widow's limit on the deceased's benefit as claimed, without his crediting months: every C-F row with Alex at 64 or 65 falls (the rule's own case, `poms-rs-00615-320-b-2-c-deceased-crediting-months`: 19,800 a year against 20,800).
+- A couple member's former-spouse records left unpriced: C-G 67/67 594,699.99.
 
 ## Family
 
@@ -106,5 +145,7 @@ feeds: `social-security-fica-return-ratio`.
 ## Provenance
 
 Derived by: claude (opus 5.5), 2026-09-27, B2-P1 slice 4 derivation, worksheet `social-security-expected-present-value.md` (S-E and the C-A pieces by hand, totals by its independent model, the couple formula by direct simulation); independently checked (the check's C2: every value reproduced to 1e−15 by its own model, and by its own simulation). The three values the base's review conventions move were recomputed by the derivation's model with those conventions (`C:/rgwt/staging/b2p1-s4/impl/model/run-base.mjs`). Cases C-D and C-E are the slice review's (F16's EV5 and F3), their values by the review's independent model (`ssmodel.py`, January start; it imports nothing from the engine). Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+
+Cases C-F and C-G, and the Claim's last paragraph, are new with decision D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29): derived by claude (opus 5.5) as the derivation's cases E8 and E10, whose per-year figures are hand arithmetic; checked by a second claude (opus 5.5) instance, which is the same model family and so not the catalog's review. The C-F values are that check's independent model (written from the law; it imports nothing from the engine) with the check's own finding applied, that a month is credited only in the benefit's reduction period, to every crediting count, and, after the implementation review (a third claude instance, same family), its finding F1 applied to every charge: no month before a benefit's first month of entitlement is charged. That model equals the implementation review's own model (which prices the rows with Alex at 66 to 70) on all 135 of those rows at 0%, 2% and 4% to 1.1e−15; the C-G values are the derivation's model, which uses the engine's claim-factor, survivor and marital helpers but not its earnings test. The engine reproduces every value to 1e−12 relative. Implemented by: claude (opus 5.5), 2026-09-29. Reviewed by: not yet reviewed.
 
 Revision 2026-09-27 (D-LIFE-TABLE-2023): the survival-weighted values restated on SSA's published 2023 q(x) by claude (opus 5.5), with the slice review's independent model (`ssmodel.py`, which imports nothing from the engine) given SSA's 2023 column in place of its q(x) and 'average' as the mixture of the two sexes' curves, cross-checked against the D-LIFE-TABLE-2023 derivation's model and its independent check (both in RetireGolden-Docs, `calculations/bidirectional-validation-plan-2026-09-13/evidence/life-table-2023-derivation.md` and `calculations/bidirectional-validation-plan-2026-09-13/evidence/life-table-2023-check.md`, at commit `75e1cf87`) where they overlap; not yet reviewed.

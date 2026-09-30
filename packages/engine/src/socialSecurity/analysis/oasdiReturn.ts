@@ -22,10 +22,11 @@
  *
  * Get back: the expected present value of the person's benefits from the
  * start year (analysis/expectedValue.ts, at the stream's claim age with its
- * months and the former-spouse benefits the ledger would pay), plus the
- * benefits already received from the claim year to the year before the start,
- * at the start-year amount (a constant real amount, the same price-only basis
- * as paid-in).
+ * months, the former-spouse benefits the ledger would pay and the earnings
+ * test on the person's wages), plus the benefits already received from the
+ * claim year to the year before the start, at the start-year amount (a
+ * constant real amount, the same price-only basis as paid-in), paid in full:
+ * the plan does not carry the months withheld before the start.
  *
  * @see DOCS/calculations/social-security/oasdi-paid-in-today-dollars.md
  * @see DOCS/calculations/social-security/benefits-to-contributions-ratio.md
@@ -44,9 +45,11 @@ import { wageBaseForYearOrLatest } from '../ssaWageData.js'
 import {
   disabilityReplacesClaimAge,
   expectedPvSingle,
+  personWagesInYear,
   singleBenefitInYear,
   socialSecurityClaimants,
   type ExpectedValueClaimant,
+  type ExpectedValueHousehold,
 } from './expectedValue.js'
 
 /** The first year self-employment income was taxed for Social Security. */
@@ -212,21 +215,31 @@ export function oasdiReturnForPerson(plan: Plan, personId: string, options: Oasd
   if (disabilityReplacesClaimAge(entry.stream, entry.person)) return null
   const { y, m, d } = socialSecurityDobParts(entry.person)
   const claimant: ExpectedValueClaimant = {
+    id: entry.person.id,
     dob: { year: y, month: m, day: d },
     sex: entry.person.sex,
     piaMonthly: entry.piaMonthly,
     claimAge: entry.stream.claimAge,
     formerSpouses: entry.stream.formerSpouses ?? [],
+    wages: personWagesInYear(plan, entry.person.id, options.startYear),
   }
-  const household = { single: plan.household.people.length === 1 }
+  // A person in a couple is married while the spouse lives: the spouse's death
+  // leaves the person unmarried, which a former spouse's record can turn on.
+  const spouse = plan.household.people.find((person) => person.id !== personId)
+  const spouseDob = spouse === undefined ? null : socialSecurityDobParts(spouse)
+  const household: ExpectedValueHousehold = spouse === undefined || spouseDob === null
+    ? { single: true }
+    : { single: false, spouse: { id: spouse.id, sex: spouse.sex, dob: { year: spouseDob.y, month: spouseDob.m, day: spouseDob.d } } }
   const getBackPv = expectedPvSingle(claimant, household, {
     startYear: options.startYear,
     discountRate: options.discountRate,
     assumptions: plan.assumptions,
   })
+  // The benefits already received are priced as paid in full: the plan does not
+  // carry the months the earnings test withheld before the start year.
   let receivedBeforeStart = 0
   for (let year = y + entry.stream.claimAge.years; year < options.startYear; year++) {
-    receivedBeforeStart += singleBenefitInYear(claimant, household, year)
+    receivedBeforeStart += singleBenefitInYear(claimant, household.single ? household : { single: false }, year)
   }
   const resolved = resolveStreamPiaMonthly(entry.stream, entry.person, null)
   const projectedEarnings =

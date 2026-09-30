@@ -75,32 +75,36 @@ function singlePlan(dob: string, sex: 'male' | 'female', stream: Record<string, 
 }
 
 describe('Social Security analysis page on the engine models', () => {
-  it('benefits only, example-couple: the 2% headline is the engine\'s (70 / 62, $865k) and the couple copy states the rules', async () => {
+  it('benefits only, example-couple: the 2% headline is the engine\'s (70 / 63, $860k) and the couple copy states the rules', async () => {
     await render(getExampleById('example-couple')!.build())
     await openTab('Benefits only')
     const page = text()
-    expect(page).toContain('Highest expected value: claim at 70 / 62')
-    expect(page).toContain('expected PV $865k')
+    // 70 / 62 at $865k until the earnings test was counted, and 70 / 64 at $859k
+    // while the claim-year months before entitlement were charged
+    // (D-SS-ANALYSIS-EARNINGS-TEST and its implementation review).
+    expect(page).toContain('Highest expected value: claim at 70 / 63')
+    expect(page).toContain('expected PV $860k')
     expect(page).toContain('the lower earner receives their own benefit plus a reduced spousal top-up once both have claimed')
     expect(page).not.toContain('larger of their reduced own benefit or a reduced half')
   })
 
-  it('benefits only names what it leaves out, and names each person whose wages would trigger the earnings test', async () => {
+  it('benefits only counts the earnings test on the plan\'s wages, and names each person whose wages hold part of a benefit back', async () => {
     await render(getExampleById('example-couple')!.build())
     await openTab('Benefits only')
     const page = text()
-    expect(page).toContain('There is no earnings test, so benefits the plan would hold back while someone is still working are counted as paid.')
-    expect(page).toContain('A former spouse\'s record is not counted for a person in a couple. And each person has one claim age.')
-    expect(page).not.toContain('the difference comes from taxes, portfolio growth, and the plan\'s fixed planning ages')
+    expect(page).toContain("Each year's benefits follow the In-your-plan tab's Social Security rules, including the earnings test on the plan's wages and a former spouse's record, with one claim age per person.")
+    expect(page).toContain('Wages count as whole years spread evenly over their months, so a job that ends partway through a year is tested as if it ran all year.')
+    expect(page).not.toContain('There is no earnings test')
+    expect(page).not.toContain('A former spouse\'s record is not counted for a person in a couple.')
     // Alex works to 66 and Sam to 64: the ledger withholds while each works before full retirement age.
-    expect(page).toContain("Alex's wages in this plan would have part of their benefit held back under the earnings test if they claimed at 64 or 65.")
-    expect(page).toContain("Sam's wages in this plan would have part of their benefit held back under the earnings test if they claimed at 62 or 63.")
+    expect(page).toContain("Alex's wages in this plan hold back part of the benefits before full retirement age at a claim of 64 or 65. The values here count that, and the months held back raise the benefit from full retirement age, as in the In-your-plan tab.")
+    expect(page).toContain("Sam's wages in this plan hold back part of the benefits before full retirement age at a claim of 62 or 63.")
     // The chart compares Alex at 67 and 70, which the test does not reach; Sam's chart starts at 62.
     await openTab('Break-even')
     expect(text()).not.toContain("Alex's wages in this plan")
     const sam = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Person"] button')].find((b) => b.textContent === 'Sam')!
     await act(async () => sam.click())
-    expect(text()).toContain("Sam's wages in this plan would have part of their benefit held back under the earnings test if they claimed at 62.")
+    expect(text()).toContain("Sam's wages in this plan hold back part of the benefits before full retirement age at a claim of 62. The chart counts that, and the months held back raise the benefit from full retirement age, as in the In-your-plan tab.")
   })
 
   it('break-even, example-couple: the callout rounds the engine\'s crossing and the chart is in the plan\'s dollars', async () => {
@@ -212,12 +216,15 @@ describe('Social Security analysis page on the engine models', () => {
     expect(text()).toContain('$423k')
   })
 
-  it('the divorced-spouse note shows only where the ranking prices the record: a claimant living alone, not a couple (PR #757 review 1)', async () => {
+  it('the divorced-spouse note says when the ranking prices the record: living alone, or in a couple from the January after the spouse\'s death', async () => {
     const ex: FormerSpouse = { id: 'ex', relationship: 'divorced', dob: '1966-02-10', piaMonthly: 2_000, marriageYears: 12, remarriedAtAge: null }
     const note = 'With a living ex-spouse, this ranking pays what the plan pays'
+    const couple = ": for a person in a couple, from the January after the current spouse's death, weighted by the chance of that death"
     await render(singlePlan('1964-06-15', 'female', { piaMonthly: 800, formerSpouses: [ex] }))
     await openTab('Benefits only')
     expect(text()).toContain(note)
+    expect(text()).toContain('only while you are unmarried after a marriage of at least ten years; neither tab checks the full SSA entitlement rules.')
+    expect(text()).not.toContain(couple)
 
     const draft = createEmptyPlan({ newId: id })
     draft.household.filingStatus = 'marriedFilingJointly'
@@ -233,8 +240,35 @@ describe('Social Security analysis page on the engine models', () => {
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
     await render(parsed.plan)
     await openTab('Benefits only')
-    expect(text()).toContain('A former spouse\'s record is not counted for a person in a couple.')
-    expect(text()).not.toContain(note)
+    // Until D-SS-ANALYSIS-EARNINGS-TEST a couple's ranking priced no former-spouse record.
+    expect(text()).toContain(note)
+    expect(text()).toContain(couple + '; neither tab checks the full SSA entitlement rules.')
+  })
+
+  it('names the limit for a person living alone who remarried before 60 on a former spouse\'s survivor record', async () => {
+    const first: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 55 }
+    await render(singlePlan('1964-02-10', 'female', { piaMonthly: 600, claimAge: { years: 62, months: 0 }, formerSpouses: [first] }))
+    await openTab('Benefits only')
+    expect(text()).toContain("Pat remarried before 60. The plan can't say when that later marriage ended, so it's taken to have ended before Pat's claim, and the survivor benefit on the former spouse's record is reduced for Pat's age at the claim.")
+  })
+
+  it('says a couple member\'s survivor benefit freed by the current spouse\'s death is reduced for the age in that January', async () => {
+    const first: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 55 }
+    const draft = createEmptyPlan({ newId: id })
+    draft.household.filingStatus = 'marriedFilingJointly'
+    draft.household.people = [
+      { id: 'p1', name: 'Jo', dob: '1964-02-10', sex: 'female', retirementAge: null, longevity: { planningAge: 92, source: 'manual' } },
+      { id: 'p2', name: 'Hal', dob: '1962-03-20', sex: 'male', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+    ]
+    draft.incomes = [
+      { type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: 600, earnings: null, claimAge: { years: 62, months: 0 }, formerSpouses: [first] },
+      { type: 'socialSecurity', id: id(), personId: 'p2', piaMonthly: 1_000, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    const parsed = parsePlan(draft)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    await render(parsed.plan)
+    await openTab('Benefits only')
+    expect(text()).toContain("Jo remarried before 60, which is read as the current marriage: the survivor benefit on the former spouse's record is counted only from the January after the current spouse's death, reduced for Jo's age in that January.")
   })
 
   it('the couple primer calls PIA x 12 the full-retirement-age benefit', async () => {

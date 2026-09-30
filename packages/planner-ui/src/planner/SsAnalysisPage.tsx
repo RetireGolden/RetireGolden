@@ -36,11 +36,12 @@ import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { Person, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 import { DEFAULT_MONTE_CARLO_SEED } from '@retiregolden/engine/montecarlo/rng'
 import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
-import { earningsTestReach } from '@retiregolden/engine/socialSecurity/analysis/earningsTestReach'
 import {
-  benefitsOnlyClaimAges,
-  benefitsOnlyRanking,
   disabilityReplacesClaimAge,
+  personWagesInYear,
+  priceBenefitsOnlyRanking,
+  weighBenefitsOnlyRanking,
+  type BenefitsOnlyRanking,
 } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
 import { socialSecurityStreamFor } from '@retiregolden/engine/socialSecurity/analysis/claimants'
 import { oasdiPaidIn, oasdiReturnForPerson, type OasdiPaidIn } from '@retiregolden/engine/socialSecurity/analysis/oasdiReturn'
@@ -71,6 +72,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { projectionStartYear, projectPlan, taxCalculatorFor, useProjection, startYearDollarsWord } from './useProjection'
 import { claimingPeople, dobParts, piaAsOfPlan, planWithClaimAges } from './ssAnalysis'
+import { benefitsOnlyPlanLimits } from './benefitsOnlyPlanLimits'
 import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
 import { chartTooltipStyle } from './chartStyle'
@@ -1103,7 +1105,16 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
   const claimAges = breakEvenClaimAges(dob, startYear)
   const result =
     !disability && claimAges.length >= 2
-      ? claimBreakEven({ dob, piaMonthly: pia, claimAges, startYear, assumptions: plan.assumptions, growthPct, throughAge })
+      ? claimBreakEven({
+          dob,
+          piaMonthly: pia,
+          claimAges,
+          startYear,
+          assumptions: plan.assumptions,
+          growthPct,
+          throughAge,
+          wagesInYear: personWagesInYear(plan, person.id, startYear),
+        })
       : null
 
   const personSelect =
@@ -1155,13 +1166,17 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
         Claim early and collect sooner, or wait for a bigger check? This compares the cumulative lifetime benefit from{' '}
         {personName(selectedId)}'s own retirement benefit at each claim age, in the plan's dollars for each year ({colaText}
         {cutText}), with checks invested at the chosen return{' '}
-        <HelpTip text="Pedagogical view. It ignores spousal and survivor benefits, the earnings test, taxes, and the rest of your portfolio; the In-your-plan sweep is the complete answer. Each year's benefit is the amount the projection pays that year. A higher assumed return rewards claiming early, pushing break-even later." />.
+        <HelpTip text="Pedagogical view. It shows this person's own benefit alone, leaving out spousal and survivor benefits, taxes, and the rest of your portfolio; the In-your-plan sweep is the complete answer. Each year's benefit is the amount the projection pays that year. The earnings test counts this person's own wages against this benefit only. In the projection, a worker's wages are charged against all the benefits paid on the worker's record, a spouse's benefit included, so when a spouse is paid on this person's record the chart can show more held back from the worker's own benefit than the plan does. A higher assumed return rewards claiming early, pushing break-even later." />.
         It's the simple lens. The In-your-plan tab is the complete one.
       </p>
 
       {personSelect}
 
-      <EarningsTestNotice claimAgesByPersonId={{ [person.id]: claimAges }} personName={personName} />
+      <WagesWithholdNote
+        entries={result.withheldClaimAges.length > 0 ? [{ personId: person.id, claimAges: result.withheldClaimAges }] : []}
+        personName={personName}
+        counted="The chart counts that"
+      />
 
       <div className="seg mb-md" role="group" aria-label="Investment return on benefits">
         {[0, 3, 5, 7].map((g) => (
@@ -1258,32 +1273,49 @@ function ageListText(ages: readonly number[]): string {
 }
 
 /**
- * Names each person whose wages in the plan would have part of their benefit
- * withheld under the earnings test at a claim age this tab shows. The
- * benefits-only views count those benefits as paid; the engine tests each year
- * with the ledger's own earnings-test function.
+ * Names each person whose wages in the plan hold back part of a benefit under
+ * the earnings test at a claim age this tab shows. The engine's models price
+ * the test the way the projection does (its one year function), and report the
+ * claim ages at which it withholds; the page only names them.
  */
-function EarningsTestNotice({
-  claimAgesByPersonId,
+function WagesWithholdNote({
+  entries,
   personName,
+  counted,
 }: {
-  claimAgesByPersonId: Readonly<Record<string, readonly number[]>>
+  entries: readonly { personId: string; claimAges: readonly number[] }[]
   personName: (id: string) => string
+  counted: string
 }) {
-  const { plan } = usePlan()
-  const reach = earningsTestReach(plan, claimAgesByPersonId, projectionStartYear(plan))
-  if (reach.length === 0) return null
+  if (entries.length === 0) return null
   return (
     <div className="callout callout--note" role="note">
-      {reach.map(({ personId, claimAges }) => (
+      {entries.map(({ personId, claimAges }) => (
         <p key={personId} style={{ margin: 0 }}>
-          {personName(personId)}'s wages in this plan would have part of their benefit held back under the earnings test
-          if they claimed at {ageListText(claimAges)}. This view counts those benefits as paid; the In-your-plan tab holds
-          them back.
+          {personName(personId)}'s wages in this plan hold back part of the benefits before full retirement age at a
+          claim of {ageListText(claimAges)}. {counted}, and the months held back raise the benefit from full
+          retirement age, as in the In-your-plan tab.
         </p>
       ))}
     </div>
   )
+}
+
+/** For each person whose wages the ranking charges, the claim ages of that person at which they do, in order. */
+function rankingWithheldAt(ranking: BenefitsOnlyRanking): { personId: string; claimAges: number[] }[] {
+  const byPerson = new Map<string, Set<number>>()
+  for (const row of ranking.rows) {
+    for (const personId of row.withheldBy) {
+      const age = row.claimByPersonId[personId]
+      if (age === undefined) continue
+      const ages = byPerson.get(personId) ?? new Set<number>()
+      ages.add(age)
+      byPerson.set(personId, ages)
+    }
+  }
+  return ranking.personIds
+    .filter((personId) => byPerson.has(personId))
+    .map((personId) => ({ personId, claimAges: [...byPerson.get(personId)!].sort((a, b) => a - b) }))
 }
 
 /**
@@ -1302,37 +1334,42 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const { plan } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const [discountPct, setDiscountPct] = useState(2)
-  const ranking = useMemo(
-    () => benefitsOnlyRanking(plan, discountPct / 100, projectionStartYear(plan)),
-    [plan, discountPct],
-  )
+  // The paths are priced once per plan and start year; the discount slider
+  // only re-weights them.
+  const startYear = projectionStartYear(plan)
+  const priced = useMemo(() => priceBenefitsOnlyRanking(plan, startYear), [plan, startYear])
+  const ranking = useMemo(() => weighBenefitsOnlyRanking(priced, discountPct / 100), [priced, discountPct])
+  const withheldAt = useMemo(() => rankingWithheldAt(ranking), [ranking])
+  const planLimits = useMemo(() => benefitsOnlyPlanLimits(plan, personName, startYear), [plan, personName, startYear])
   // The ranking's own people: its open claims (a claim already made is held
   // at its own age and not ranked).
   const rankedIds = ranking.personIds
   const best = ranking.ranked[0]
   const currentKey = currentClaimKey(plan, rankedIds)
   const keyOf = (claim: Readonly<Record<string, number>>) => rankedIds.map((id) => claim[id]).join('-')
-  // The ranking prices a living ex's record only for a claimant living alone:
-  // a couple's model does not read former-spouse records, and a lone claimant
-  // in a two-person household is not single. The note is shown only when the
-  // record is priced.
-  const rankingPricesDivorcedRecord =
-    plan.household.people.length === 1 &&
-    rankedIds.length === 1 &&
-    plan.incomes.some(
-      (s) =>
-        s.type === 'socialSecurity' &&
-        s.personId === rankedIds[0] &&
-        (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
-    )
+  // The ranking prices a living ex's record as the projection does: for a
+  // claimant living alone from the start, and for a person in a couple from the
+  // January after the current spouse's death.
+  const rankingPricesDivorcedRecord = plan.incomes.some(
+    (s) =>
+      s.type === 'socialSecurity' &&
+      rankedIds.includes(s.personId) &&
+      (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
+  )
+  const livesAlone = plan.household.people.length === 1
 
   return (
     <div>
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth. Benefits are in today's dollars; a cost-of-living increase below inflation, or a benefit cut in the plan's assumptions, lowers the later years." />. It uses most of the In-your-plan tab's Social Security rules, but not all of them. There is no earnings test, so benefits the plan would hold back while someone is still working are counted as paid. A former spouse's record is not counted for a person in a couple. And each person has one claim age. Beyond those, the two tabs differ by taxes, portfolio growth, and the plan's fixed planning ages, which this view replaces with the chance of being alive.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth. Benefits are in today's dollars; a cost-of-living increase below inflation, or a benefit cut in the plan's assumptions, lowers the later years." />. Each year's benefits follow the In-your-plan tab's Social Security rules, including the earnings test on the plan's wages and a former spouse's record, with one claim age per person. The two tabs differ by taxes, portfolio growth, and the plan's fixed planning ages, which this view replaces with the chance of being alive. Wages count as whole years spread evenly over their months, so a job that ends partway through a year is tested as if it ran all year.
       </p>
+      {planLimits.map((limit) => (
+        <p key={limit} className="card-hint">
+          {limit}
+        </p>
+      ))}
       {personIds.length === 2 ? (
         <p className="card-hint">
           For couples, benefits are priced year by year. While both are alive, the lower earner receives their own
@@ -1361,21 +1398,16 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       </div>
 
-      <EarningsTestNotice
-        claimAgesByPersonId={Object.fromEntries(
-          plan.household.people
-            .filter((person) => personIds.includes(person.id))
-            .map((person) => [person.id, benefitsOnlyClaimAges(person, projectionStartYear(plan))]),
-        )}
-        personName={personName}
-      />
+      <WagesWithholdNote entries={withheldAt} personName={personName} counted="The values here count that" />
 
       {rankingPricesDivorcedRecord ? (
         <div className="callout callout--note" role="note">
           With a living ex-spouse, this ranking pays what the plan pays once the spouse benefit starts: your own benefit
           plus the part of half the ex&apos;s PIA above your own PIA, reduced for your age in the first month the ex is 62
           throughout. As in the In-your-plan tab, it pays that from the year that month falls in, and only while you are
-          unmarried after a marriage of at least ten years; neither tab checks the full SSA entitlement rules.
+          unmarried after a marriage of at least ten years
+          {livesAlone ? '' : ": for a person in a couple, from the January after the current spouse's death, weighted by the chance of that death"}
+          ; neither tab checks the full SSA entitlement rules.
         </div>
       ) : null}
 
@@ -1388,7 +1420,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       {ranking.alreadyClaimed.length > 0 && ranking.disabilityPersonIds.length === 0 ? (
         <div className="callout callout--note" role="note">
           {rankedIds.length === 0 ? <strong>Every claim here is already made. </strong> : null}
-          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {projectionStartYear(plan)}
+          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {startYear}
           {rankedIds.length === 0
             ? `, so there is no claim age left to compare. ${ALREADY_CLAIMED_LIMITS}`
             : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is held as it is' : 'those claims are held as they are'} below.`}
@@ -1553,8 +1585,9 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
                 At a {discountPct}% real discount rate. Paid in uses each year's tax rate and wage cap, adjusted to{' '}
                 {startYear} dollars for price inflation with no interest added. The projected work is the earnings your
                 benefit estimate assumes, taxed the same way (today's rate and wage cap for a year not yet set). The ratio
-                divides by both. Excludes Medicare tax,
-                disability and survivor insurance value, and benefits paid to others on your record.
+                divides by both. Benefits from {startYear} on count the earnings test on the plan's wages; benefits already
+                received count as paid in full, since the plan doesn't record what was held back before it starts. Excludes
+                Medicare tax, disability and survivor insurance value, and benefits paid to others on your record.
               </p>
             </div>
           )
@@ -1639,7 +1672,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
         growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value in
         {startYearDollarsWord(plan)} dollars at {discountPct}%, with the plan's cost-of-living increases and any benefit cut{' '}
-        <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed, and strategies that pay the same benefits are shown once." />.
+        <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection uses. Only one benefit is paid at a time, the larger of those claimed, and strategies that pay the same benefits are shown once. With wages in the plan, the earnings test holds back part of the benefit before full retirement age, and the months held back raise each benefit from its own full retirement age." />.
       </p>
       <ScrollRegion label="Survivor vs. personal timing" style={{ border: 'none' }}>
         <table className="claim-table">

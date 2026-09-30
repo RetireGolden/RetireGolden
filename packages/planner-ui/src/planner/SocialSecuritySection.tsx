@@ -755,9 +755,10 @@ export function SocialSecuritySection() {
         ))}
         <div className="callout callout--info mt-md">
           <strong>Claiming early while still working?</strong> The earnings test withholds part of the benefit above an
-          annual wage limit before full retirement age. RetireGolden models that withholding, and credits the withheld
-          months back at full retirement age (recomputing the benefit as if you'd claimed that many months later), as an
-          annual approximation.
+          annual wage limit before full retirement age, month by month from the first month you're entitled, including a
+          spouse's benefit on a working spouse's record. RetireGolden models that withholding, and from the month you
+          reach full retirement age raises the benefit for each month held back, as if you'd claimed that many months
+          later. Wages count as whole years spread evenly over their months.
         </div>
         <p className="muted small mt-ms">
           Not sure when to claim?{' '}

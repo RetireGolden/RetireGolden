@@ -2003,6 +2003,135 @@ function blockL() {
     )
   }
 
+  {
+    // Both claim at 62 in January and both work (D-SS-ANALYSIS-EARNINGS-TEST,
+    // worksheet cases E5 and E7b): the worker's excess is charged first against
+    // his benefit and the spouse benefit on his record, the October remainder
+    // shared two to one; her own excess then takes what is left of her own and
+    // spouse benefits, and each benefit's crediting months raise it from the
+    // January 2031 full-retirement-age month.
+    const plan = couplePlan({
+      p1Dob: '1964-01-15',
+      p2Dob: '1964-01-20',
+      p1PlanningAge: 85,
+      p2PlanningAge: 85,
+    })
+    plan.accounts = [cash('ss-family-charge-cash', 2_000_000)]
+    plan.incomes = [
+      wages('ss-family-charge-wages-w', 'p1', 60_000, { endAge: 63 }),
+      wages('ss-family-charge-wages-s', 'p2', 36_000, { endAge: 63 }),
+      socialSecurity('ss-family-charge-w', 'p1', 2_000, 62),
+      socialSecurity('ss-family-charge-s', 'p2', 400, 62),
+    ]
+    out.push(
+      member(
+        'l10-familyChargeTwoToOne',
+        'L: worker excess against the family benefit on his record, the two-to-one partial month, her own excess after his, and crediting from the FRA month',
+        plan,
+        { horizonEndYear: START_YEAR + 5 },
+      ),
+    )
+  }
+
+  {
+    // A couple member with a living ex (D-SS-ANALYSIS-EARNINGS-TEST, L11): the
+    // divorced-spouse benefit is priced from the January after the spouse's
+    // death, when she is unmarried. The spouse dies at 66 before his claim at
+    // 70, so he never claimed and is priced for the month before his death.
+    const plan = couplePlan({
+      p1Dob: '1961-02-15',
+      p2Dob: '1962-02-15',
+      p1PlanningAge: 66,
+      p2PlanningAge: 85,
+    })
+    plan.accounts = [cash('ss-couple-former-cash', 2_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-couple-former-h', 'p1', 800, 70),
+      socialSecurity('ss-couple-former-j', 'p2', 400, 64, {
+        formerSpouses: [{
+          id: 'ss-couple-former-ex',
+          relationship: 'divorced',
+          dob: '1958-06-15',
+          piaMonthly: 4_000,
+          marriageYears: 12,
+          remarriedAtAge: null,
+        }],
+      }),
+    ]
+    out.push(
+      member(
+        'l11-coupleFormerSpouseAfterDeath',
+        'L: a couple member unmarried from the January after the spouse\'s death, a living ex\'s record then, and a spouse who died before his claim',
+        plan,
+        { horizonEndYear: START_YEAR + 3 },
+      ),
+    )
+  }
+
+  {
+    // A disability onset at the full retirement age leaves no disability month
+    // before it, so the stream is priced as a retirement claim and the ledger
+    // says so, naming the person.
+    const plan = singlePersonPlan({ dob: '1960-03-15', planningAge: 80 })
+    plan.accounts = [cash('ss-ssdi-at-fra-cash', 2_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-ssdi-at-fra', 'p1', 1_500, 67, {
+        disability: { onsetAge: 67 },
+      }),
+    ]
+    out.push(
+      member(
+        'l12-ssdiOnsetAtFra',
+        'L: an SSDI onset with no disability month before full retirement age, priced as a retirement claim with its warning',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  // Three couples for the family charge's partial month (20 CFR 404.439 and
+  // 404.440): the worker's excess leaves part of a month's family benefit, and
+  // the rest is shared two to one on the original benefits, each share held to
+  // what that person is due.
+  for (const { id, label, spouseDob, spousePia, spouseClaim, workerWages } of [
+    {
+      // Half the worker's PIA is below hers: no spouse benefit on his record,
+      // so his partial month is his alone.
+      id: 'l13-workerPartialMonthNoSpouseBenefit',
+      label: 'L: the worker\'s partial month with no spouse benefit on his record',
+      spouseDob: '1964-01-20', spousePia: 1_500, spouseClaim: 62, workerWages: 40_000,
+    },
+    {
+      // A 32.50 spouse benefit: a third of the month's remainder is more than
+      // she is due, so hers is held to 32.50 and the rest is his.
+      id: 'l14-familyChargeSpouseShareCap',
+      label: 'L: the spouse\'s share of the partial month held to her benefit, the rest to the worker',
+      spouseDob: '1964-01-20', spousePia: 950, spouseClaim: 62, workerWages: 45_000,
+    },
+    {
+      // A 898.67 spouse benefit on his record beside his 1,400, both entitled
+      // from January 2026: two thirds of April's 2,194.67 remainder is more than
+      // he is due, so his is held to 1,400.
+      id: 'l15-familyChargeWorkerShareCap',
+      label: 'L: the worker\'s share of the partial month held to his benefit, the rest to the spouse',
+      spouseDob: '1959-01-20', spousePia: 100, spouseClaim: 67, workerWages: 38_480,
+    },
+  ]) {
+    const plan = couplePlan({
+      p1Dob: '1964-01-15',
+      p2Dob: spouseDob,
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+    })
+    plan.accounts = [cash(`${id}-cash`, 2_000_000)]
+    plan.incomes = [
+      wages(`${id}-wages`, 'p1', workerWages, { endAge: 63 }),
+      socialSecurity(`${id}-w`, 'p1', 2_000, 62),
+      socialSecurity(`${id}-s`, 'p2', spousePia, spouseClaim),
+    ]
+    out.push(member(id, label, plan, { horizonEndYear: START_YEAR + 1 }))
+  }
+
   return out
 }
 

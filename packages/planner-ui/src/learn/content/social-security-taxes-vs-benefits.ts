@@ -70,7 +70,7 @@ export const blocks: ArticleBlock[] = [
       '**Insurance value:** the payroll tax also buys disability and survivor protection you may never draw but that has real expected value.',
       '**Benefits paid to others on your record:** a current spouse or a child can receive benefits on your record, which the individual ratio leaves out.',
       '**Employer share:** if you’re an employee, your employer paid half the OASDI tax, not "your" contribution, but part of the cost of your labor.',
-      '**The earnings test:** like the rest of the Benefits-only tab, the expected value counts benefits as paid even in years your wages would hold some back.',
+      '**Benefits already received:** they count as paid in full, since the plan doesn’t record what the earnings test held back before it starts. From the plan’s first year on, the expected value counts what your wages hold back.',
       '**Medicare:** the HI tax funds Medicare, which is excluded from both sides here.',
     ],
   },

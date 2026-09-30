@@ -268,6 +268,10 @@ describe('flat objective (#454)', () => {
     // refused before any ranking (its own note), and this test is about a
     // ranking that cannot separate the claim ages.
     plan.expenses.healthcare = { ...plan.expenses.healthcare, applyAcaCredit: false, acaYears: undefined }
+    // Born in January, so each whole-age claim is entitled from January and the
+    // claim-year convention pays no month before it: the wages withhold every
+    // early claim's working years in full, and no claim age changes the plan.
+    plan.household.people = plan.household.people.map((person) => ({ ...person, dob: `${person.dob.slice(0, 4)}-01-15` }))
     await act(async () => {
       root.render(
         <MemoryRouter>

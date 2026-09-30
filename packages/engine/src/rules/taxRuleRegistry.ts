@@ -423,7 +423,7 @@ const registry = {
 // describeRule's produced-pin conditionals keep working. If a future edit
 // reintroduces widening, these lines fail to compile before any fixture does.
 type _ApproximatedStaysLiteral =
-  (typeof registry)['poms-rs-00615-482-arf-crediting-months']['classification'] extends 'approximated'
+  (typeof registry)['cfr-20-404-435-grace-year-monthly-earnings-test']['classification'] extends 'approximated'
     ? true
     : never
 type _SettledStaysLiteral =

@@ -104,13 +104,17 @@ Benefits-only analysis separately illustrates survivor switching
   `usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month`). The survivor FRA follows the age-60-attainment statute: the retirement
   schedule two birth years later, from 65y2m for 1940 to 67 for 1962 and later
   (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). The $255 lump-sum death payment is absent
-  (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
-  withheld for a working survivor and credited back through the same ARF path, which counts only the months the
-  widow(er) benefit itself was withheld, not months of the survivor's own benefit before the death or of a widow(er) or spouse benefit on another record (402(q)(7)). The
+  (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings test, so they can be
+  withheld for a working survivor and credited back through the same ARF path, which counts only the months of the
+  widow(er) benefit's reduction period (before the survivor full-retirement-age month) in which that benefit itself was withheld, not months of the survivor's own benefit before the death or of a widow(er) or spouse benefit on another record (402(q)(7)). The widow's limit is on the deceased's benefit with the deceased's own crediting months, as if still living (POMS RS 00615.320 B.2.c, RS 00615.598; `poms-rs-00615-320-b-2-c-deceased-crediting-months`). The
   former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex calendar-year age 62+ — the ex need not
-  have filed), priced by the same own-plus-reduced-excess composition as above. The engine does not carry worker entitlement, fully-insured status, or years since divorce,
+  have filed), priced by the same own-plus-reduced-excess composition as above. A claimant living alone is
+  unmarried; a person in a couple is unmarried from the January after the current spouse's death, and the ex's
+  record is priced from then (42 U.S.C. 402(b)(1)(C); POMS RS 00202.046;
+  `usc-42-402-b-1-C-divorced-spouse-after-widowhood`). Until 2026-09-29 a couple member was never paid on a living
+  ex's record. The engine does not carry worker entitlement, fully-insured status, or years since divorce,
   so an already-disability-entitled ex under 62 is refused and a not-yet-entitled age-62 ex divorced only
   one year is admitted (`cfr-20-404-331-living-divorced-spouse-eligibility`). **Former-spouse survivor
   benefits** use two explicit record types. A **`deceased`** record follows the ordinary-widow path: the
@@ -123,8 +127,14 @@ Benefits-only analysis separately illustrates survivor switching
   record types share the same remaining modeled limits: the other entitlement requirements (fully insured,
   valid marriage, application — which may already be met under 404.335(b)(1)–(4) or 404.336(b)(1)–(4)
   without a new application — and the own-old-age-benefit restriction) are not adjudicated; the candidate
-  menu does not compare own PIA or own benefit. Historical remarriage before 60 is treated as an
-  unconditional forfeiture even when the claimant is now single. A schema-valid coupled household with
+  menu does not compare own PIA or own benefit. A remarriage before 60 bars the survivor benefit while
+  that later marriage lasts, and no longer once it has ended (POMS RS 00207.003): a claimant living alone is taken
+  to be unmarried now, and a couple member to be married to the current spouse until the January after that
+  spouse's death. Entitlement can begin only in the month that marriage ends, so the widow(er) reduction is
+  measured from that January, not from the claimant's earlier own claim (402(q)(6)(A)(iii);
+  `maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths`). The plan cannot say when a person living alone
+  ended a later marriage, so it is taken to have ended before the claim; the analysis page says so when it
+  applies. Until 2026-09-29 it was an unconditional forfeiture even for a claimant now single. A schema-valid coupled household with
   `remarriedAtAge: null` still receives a candidate without establishing a remarriage exception
   (`cfr-20-404-335-ordinary-widow-eligibility`). The nine-month statutory duration exceptions, the
   alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
@@ -133,18 +143,70 @@ Benefits-only analysis separately illustrates survivor switching
   `cfr-20-404-332-b-3-divorced-spouse-remarriage-continuation`). A current spouse's later remarriage after
   the worker dies has no Plan input and is out of scope (`usc-42-402-e-1-a-current-survivor-remarriage-before-60`). A benefits-only
   **survivor↔personal switching** illustration (claim one benefit early, switch to the other
-  later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
+  later), with the earnings test on the widow(er)'s wages charged against the larger claimed benefit and each
+  benefit credited from its own full retirement age, the widow(er) benefit also at 62 for the months withheld
+  before 62 (20 CFR 404.412(b)). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
   Survivors are exempt from deemed filing, so the switch is legally available; its absence from the Plan is
   registered as out of scope (`usc-42-402-r-survivor-deemed-filing-exemption`).
 - Ex/deceased-spouse PIA is a simple user estimate (those earnings records are impractical to reconstruct).
 
+## The earnings test
+
+The year's Social Security is composed by one year function the projection and the Social Security analysis
+models share ([socialSecurity/householdYear.ts](../../packages/engine/src/socialSecurity/householdYear.ts),
+`social-security-benefit-annual`), month by month where a month can differ: a stream's first paying month, the
+months both spouses are paid, and each full-retirement-age month. The earnings test
+([socialSecurity/earningsTest.ts](../../packages/engine/src/socialSecurity/earningsTest.ts)) then works as the law
+does (42 U.S.C. 403(b) and (f); 20 CFR 404.415 to 404.440), decided under D-SS-ANALYSIS-EARNINGS-TEST
+(2026-09-29):
+
+- **Excess earnings.** Before the calendar year of full retirement age, half the wages above the lower exempt
+  amount; in that year, a third of the wages of the months before the full-retirement-age month above the higher
+  amount; nothing from that month on. The excess is reduced to the next lower dollar (403(f)(3);
+  `usc-42-403-f-3-retirement-earnings-test`, `usc-42-403-f-3-fra-year-months-before-fra`). The full-retirement-age
+  month comes from the date of birth, so for the 1955 to 1959 cohorts it can fall in the year after the whole-year
+  age.
+- **Charged month by month from January** (403(f)(1); `usc-42-403-f-1-earnings-test-month-charging`). In a couple the
+  worker, the higher PIA, is charged first against all of his benefits and the family benefit on his record: his
+  old-age benefit, any benefit he is paid on a former spouse's record, and the spouse benefit on his record
+  (403(b)(1); POMS RS 02501.145). A month his excess only partly covers is charged to each record in proportion to
+  what that record pays him (RS 02501.145 B.2), and what is left of the family benefit on his own record is
+  shared two to one on the benefits before any reduction, each share held to what that person is due (20 CFR
+  404.434(b), 404.439, 404.440; `usc-42-403-b-1-worker-excess-charged-to-family`). Each person's own excess is
+  then charged against what is left of that person's benefits, the own old-age benefit included in months his
+  excess took her spouse benefit (POMS RS 02501.150 A.1). A person paid on two records is charged on both: a
+  partial month in proportion to the benefits due on each before any deduction for work, the other record no
+  more than what the worker's charge left of it (RS 02501.145 B.2, RS 02501.150 A.2). So both of that person's
+  benefits have a deduction, and a crediting month, in any month the person's own excess is charged.
+- **Crediting months.** Each month with a full or partial deduction in a benefit's reduction period, from the
+  claim's first month to the month before full retirement age (the survivor one for a widow(er) benefit), is a
+  crediting month for that benefit (402(q)(7); POMS RS 00615.482; `poms-rs-00615-482-arf-crediting-months`), and
+  the adjustment takes effect in the full-retirement-age month, not in January (20 CFR 404.412(b);
+  `cfr-20-404-412-b-arf-effective-fra-month`). A month the claim-year convention pays before a benefit's first
+  month of entitlement is paid in full and never charged (403(f)(1)(A): no excess is charged to a month "for
+  which such individual was not entitled to a benefit"), so every month charged before full retirement age is
+  credited, except a widow(er) benefit's months after the survivor full retirement age. A widow(er) benefit
+  that starts before 62 is also adjusted at 62 for the months withheld before it (404.412(b)); only the survivor
+  switching panel has such a benefit, since a claim age is at least 62.
+- **Rounding.** Only the excess is rounded. Benefits and the partial-month shares are not: SSA reduces each
+  monthly benefit to the next lower dollar after all deductions (20 CFR 404.304(f)), so a month here can be up to
+  a dollar above SSA's.
+- **Stated limits.** Wages are the plan's wage rows, whole calendar years spread evenly over their months, so a
+  job that ends partway through a year is tested as if it ran all year, and there is no grace year or
+  non-service month (`cfr-20-404-435-grace-year-monthly-earnings-test`). Only wage streams are earnings: income
+  entered as other income, such as part-time work, names no person and is not tested
+  (`usc-42-403-f-5-earnings-counted`). After the latest published year the exempt amounts grow at the plan's
+  inflation (`usc-42-403-f-8-earnings-test-exempt-amounts`). A disability beneficiary is tested against
+  substantial gainful activity instead.
+
+Until 2026-09-29 the test was one annual amount against the person's own benefit: the worker's wages never
+reduced his spouse's benefit, the whole of the full-retirement-age year was tested, the months withheld were a
+rounded share of the year, and the adjustment took effect in January.
+
 ## Program parameters
 
 COLA (data-driven, 2.8% for 2026), the taxable wage base, the **earnings test** for claimants working
-before FRA (own, spousal, former-spouse, and survivor benefits withheld over the annual limit) **with the FRA
-credit** — withheld months are credited back at FRA by recomputing the relevant retirement/spousal/survivor
-factor as if claimed that many months later (SSA's adjustment of the reduction factor), on an annual
-approximation — and an optional **trust-fund haircut** toggle (~17%
+before FRA **with the FRA credit**, and an optional **trust-fund haircut** toggle (~17%
 benefit reduction from ~2034 per the 2026 Trustees Report, user-adjustable year and %). **WEP/GPO are not modeled.**
 The Social Security Fairness Act repeal makes that absence correct for benefits payable in the planner's
 2026+ projection horizon (`pl-118-273-sec-2-3-wep-gpo-repeal`). Benefit taxation (provisional-income 0/50/85% tiers) lives in
@@ -207,27 +269,30 @@ The headline capability. Two complementary views, mirroring the two questions in
   ([socialSecurity/analysis/expectedValue.ts](../../packages/engine/src/socialSecurity/analysis/expectedValue.ts),
   `social-security-expected-value`). It needs no accounts and serves as the cross-check against Open Social
   Security. Since B2-P1 slice 4 (owner decision R7) each year's benefits follow the ledger's own Social Security
-  rules: the claim factor with its months; while both spouses are alive, the lower earner's own benefit plus the
-  spouse excess reduced for their age when the spouse benefit starts; after the first death, the larger of the
-  survivor's own benefit and the widow(er) benefit on the deceased's actual benefit (or, if the deceased had not
-  claimed, the benefit for the month before the death), reduced for the survivor's age in the first month of
-  widow(er) entitlement and held to the widow's limit when the deceased claimed early; for a single person, a
-  divorced-spouse benefit only from the year of the first month the ex is 62 throughout, as the ledger pays it
-  (the same dual-entitlement composition). A COLA below the plan's inflation, or a benefit cut,
-  lowers the later years. Each person keeps one claim age, so a survivor cannot take the survivor benefit first and
-  their own later in this view (the switching panel covers a widow(er) living alone), and former-spouse records of
-  a person in a couple are not priced here. A benefit the ledger pays as a disability benefit from its onset has no
-  claim age to rank, and the page says so.
+  rules, and since D-SS-ANALYSIS-EARNINGS-TEST (2026-09-29) each path the value weights, both spouses alive or one
+  surviving a death in a given year, is priced year by year by the ledger's own year function
+  ([analysis/householdPaths.ts](../../packages/engine/src/socialSecurity/analysis/householdPaths.ts)): the claim
+  factor with its months; while both spouses are alive, the lower earner's own benefit plus the spouse excess
+  reduced for their age when the spouse benefit starts; after the first death, the larger of the survivor's own
+  benefit and the widow(er) benefit on the deceased's actual benefit (or, if the deceased had not claimed, the
+  benefit for the month before the death), reduced for the survivor's age in the first month of widow(er)
+  entitlement and held to the widow's limit when the deceased claimed early; the former-spouse benefits the ledger
+  pays, for a couple member as for a person living alone; and the earnings test on the plan's wages, with its
+  crediting months. A COLA below the plan's inflation, or a benefit cut, lowers the later years. Each person keeps
+  one claim age, so a survivor cannot take the survivor benefit first and their own later in this view (the
+  switching panel covers a widow(er) living alone). A benefit the ledger pays as a disability benefit from its
+  onset has no claim age to rank, and the page says so.
 
-The benefits-only view uses most of the plan's Social Security rules, not all of them. It has no earnings test,
-so benefits the plan would hold back while someone is still working are counted as paid; it does not count a
-former spouse's record for a person in a couple; and each person has one claim age. When the plan's wages would
-have the earnings test withhold part of someone's benefit at a claim age the page shows, the page names that
-person (`socialSecurity/analysis/earningsTestReach.ts`, which tests each year with the ledger's own
-`socialSecurity/earningsTest.ts#earningsTestWithheldAnnual`). Beyond those, the two views differ by taxes,
-portfolio growth and the plan's fixed planning ages, which the benefits-only view replaces with survival odds.
-Modeling the earnings test and those records in the benefits-only models is a separate decision
-(D-SS-ANALYSIS-EARNINGS-TEST).
+The benefits-only view uses the plan's Social Security rules. When the plan's wages hold back part of someone's
+benefit at a claim age the ranking prices, the page names that person and the claim ages (each ranking row carries
+`withheldBy`); the values count it. The two views differ by taxes, portfolio growth and the plan's fixed planning
+ages, which the benefits-only view replaces with survival odds, and by one claim age per person. Two limits the
+page states when they apply: income entered as other income is not tested, and a couple member's former-spouse
+record with a remarriage before 60 is read as the current marriage (blank, it is priced as no remarriage). On
+example-couple the 2% headline moved from 70/62 ($865k) to 70/63 ($860k): Sam's claims at 62 and 63 are withheld
+from their first month of entitlement while she works to 64, and the months of each claim year before it are paid.
+The five other couple examples' ranking rows differ from before this decision by at most 2e-15 of their value,
+because the paths are summed in a different order; no displayed figure moves.
 
 The Roth & Tax Optimizer can also **co-optimize the claim age jointly with a conversion schedule** — a
 default-off "Also optimize Social Security claim age" toggle on the Optimize tab runs a full optimize per
@@ -243,6 +308,9 @@ pedagogical lens *alongside* the whole-plan sweep
 `social-security-claim-break-even`). Its dollars are the plan's (owner decision R6): each year's benefit is the
 start-year PIA times the claim factor times the ledger's own cost-of-living factor and benefit cut for that
 year, the same factors the projection multiplies by, and the crossing ages are found on the unrounded totals.
+Each year is priced by the ledger's year function for the person's own benefit alone, so the person's wages have
+the earnings test hold back part of it before full retirement age and the months held back raise it from then;
+the page names the person at those claim ages. Nothing else on the record is charged.
 The Social Security step's AIME explainer counts the averaged $0 years from the engine's computation and
 recomputes the gain from replacing the latest $0 year exactly through the benefit formula
 (`zero-year-replacement-gain`, R9), in the dollars of the PIA the step shows (with the cost-of-living increases
@@ -265,8 +333,10 @@ effective rate (SSA's table, [oasdiTaxRates.ts](../../packages/engine/src/social
 year's wage base from 1937, OASDI-only (not the 1.45% Medicare HI), and restates it in today's dollars by the
 BLS CPI-U annual averages ([cpiU.ts](../../packages/engine/src/socialSecurity/cpiU.ts)) with no interest. Beside it
 are the benefits the person is paid (on their own record, or a former spouse's when larger): those already
-received (at the start-year amount) and the survival-weighted expected PV of the rest at the stream's claim age,
-and their ratio to the tax paid. A benefit paid as a disability benefit from its onset has no claim age to price,
+received (at the start-year amount, in full, since the plan does not record what was held back before it
+starts) and the survival-weighted expected PV of the rest at the stream's claim age, with the earnings test on
+the person's wages and, in a couple, a living ex's record from the January after the spouse's death, and their
+ratio to the tax paid. A benefit paid as a disability benefit from its onset has no claim age to price,
 and the panel says so instead of showing a ratio. Shown as a
 collapsible panel on the Social Security analysis page with a self-employed toggle and caveats (individual
 illustration, not the program's actuarial return; excludes disability and survivor insurance value, benefits paid
@@ -289,7 +359,7 @@ the FRA month), and is taxed under the same provisional-income tiers as retireme
 payable month is at or after the month FRA is attained there is no disability benefit: the stream is priced
 as a retirement claim at its claim age and the projection says so. An off-by-default `disability` input on
 the SS stream drives the pure `socialSecurity/disability.ts` helper (`ssdiSchedule`, `ssdiMonthsInYear`) and
-the `projection/internal/annualSocialSecurity.ts` annual phase; `simulatePlan` still owns the annual
+the year function `socialSecurity/householdYear.ts` (called by the `projection/internal/annualSocialSecurity.ts` annual phase); `simulatePlan` still owns the annual
 input/effect wiring, and SGA lives in the parameter pack. Documented simplifications / registered gaps: the
 onset date changes the SSDI payment path but does not change the earnings helper's ordinary retirement
 indexing year, computation-year count, or bend points — it is a planning assumption, not an SSA disability

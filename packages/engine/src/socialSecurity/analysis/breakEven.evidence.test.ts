@@ -147,6 +147,31 @@ describeCalculation(
       }
     })
 
+    // Case E: wages before full retirement age. The earnings test withholds
+    // 12,760 of the claim at 62 in 2026 and 2027 (10 months each), and the 20
+    // months withheld raise it from January 2031, 40 months early.
+    it('case E: $50,000 of wages at 62 and 63 move the crossings to 79.482 and 77.246, and name the claim at 62', () => {
+      const withoutWages: ClaimBreakEvenInput = {
+        dob: { year: 1964, month: 1, day: 15 },
+        piaMonthly: 2_000,
+        claimAges: [62, 67, 70],
+        startYear: 2026,
+        assumptions: { inflationPct: 0, ssCola: { mode: 'matchInflation' }, ssHaircut: null },
+        growthPct: 0,
+        throughAge: 95,
+      }
+      const caseE: ClaimBreakEvenInput = { ...withoutWages, wagesInYear: (year) => (year <= 2027 ? 50_000 : 0) }
+      expectCrossings(caseE, ['E crossing 62 vs 67', 'E crossing 62 vs 70', 'E crossing 67 vs 70'])
+      expectDollars(atAge(caseE, 63)[62]!, value('E age 63 claim 62'), 'E 63/62')
+      expectDollars(atAge(caseE, 67)[62]!, value('E age 67 claim 62'), 'E 67/62')
+      expectDollars(atAge(caseE, 80)[62]!, value('E age 80 claim 62'), 'E 80/62')
+      expect(claimBreakEven(caseE).withheldClaimAges).toEqual([62])
+      // Paid in full, as the chart was until D-SS-ANALYSIS-EARNINGS-TEST: 62 v 70 at 79.370.
+      const unwithheld = claimBreakEven(withoutWages)
+      expect(unwithheld.withheldClaimAges).toEqual([])
+      expect(Math.abs(unwithheld.crossings[1]!.age! - 79.370)).toBeLessThan(1e-3)
+    })
+
     it('offers 62, the full-retirement-age year and 70, none already past, and refuses a claim age before the start year', () => {
       expect(breakEvenClaimAges({ year: 1964, month: 9, day: 2 }, 2026)).toEqual([62, 67, 70])
       expect(breakEvenClaimAges({ year: 1958, month: 6, day: 1 }, 2026)).toEqual([70])

@@ -1,15 +1,15 @@
 # Mutation receipt: oasdi-paid-in-today-dollars
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b610eddc` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1b86d6af` (branch `claude/b2p1-slice4-ss-models`, pull request #757), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/oasdiReturn.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts b/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
-index a429129e..8b7b610f 100644
+index d985dfe4..565c349b 100644
 --- a/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
 +++ b/packages/engine/src/socialSecurity/analysis/oasdiReturn.ts
-@@ -140,7 +140,7 @@ export function oasdiPaidIn(earnings: readonly YearEarning[], options: OasdiPaid
+@@ -143,7 +143,7 @@ export function oasdiPaidIn(earnings: readonly YearEarning[], options: OasdiPaid
    const years = [...new Set([...entered.keys(), ...projected.keys()])].sort((a, b) => a - b)
    for (const year of years) {
      const rates = ratesForYear(year)
@@ -30,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Its production file's lines moved when the latest tax-rate year became a constant (PR #757 review 5), so it is re-executed on the current code. The baseline is green (oasdiReturn.paidIn.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The Social Security year moved into one function the ledger and the analysis models share, with the earnings test charged month by month (decision D-SS-ANALYSIS-EARNINGS-TEST), so the mutation is re-executed on that code. The baseline is green (oasdiReturn.paidIn.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 packages/engine
 
  ❯ src/socialSecurity/analysis/oasdiReturn.paidIn.evidence.test.ts (8 tests | 2 failed) 7ms
    ❯ oasdi-paid-in-today-dollars — Social Security tax paid in, in today's dollars (8)
