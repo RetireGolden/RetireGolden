@@ -12,8 +12,9 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planner/planContextCore'
 import { PrivacyProvider } from '../planner/privacyContext'
+import { fmtMoney } from '../planner/format'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'
-import { buildHouseholdGraph, enteredTotalsOfNodes } from './householdGraph'
+import { accountNodeId, buildHouseholdGraph, enteredTotalsOfNodes } from './householdGraph'
 import { buildMapViewModel } from './mapViewModel'
 import { HouseholdMapPage } from './HouseholdMapPage'
 
@@ -67,19 +68,37 @@ function selectFocus(el: HTMLElement, value: string) {
   })
 }
 
+/** Stored balances summed straight off plan accounts, independent of the graph and the engine. */
+function sheetOf(accounts: Plan['accounts']) {
+  const investable = accounts
+    .filter((a) => ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'].includes(a.type))
+    .reduce((sum, a) => sum + ('balance' in a ? a.balance : 0), 0)
+  const property = accounts.reduce((sum, a) => sum + (a.type === 'property' ? a.value : 0), 0)
+  const liabilities = accounts.reduce((sum, a) => sum + (a.type === 'debt' ? a.balance : 0), 0)
+  return { assets: investable + property, liabilities, netWorth: investable + property - liabilities }
+}
+
 describe('view model scope', () => {
   it('totals follow the person focus and the flag says the view is scoped', () => {
-    const graph = buildHouseholdGraph(buildExampleCouple())
+    const plan = buildExampleCouple()
+    const graph = buildHouseholdGraph(plan)
     const whole = buildMapViewModel(graph)
     expect(whole.scope).toBe('household')
     const sam = graph.nodes.find((n) => n.kind === 'person' && n.label === 'Sam')!
     const focused = buildMapViewModel(graph, { focusPersonId: sam.id.replace(/^person:/, '') })
     expect(focused.scope).toBe('shown')
-    // The scoped totals are the engine's entered totals of the accounts left
-    // on the map — never the whole-household number.
-    const expected = enteredTotalsOfNodes(graph, new Set(focused.nodes.map((v) => v.id)))
+    // The scoped totals are the entered balance sheet of the accounts left on
+    // the map, never the whole-household number: summed here off the plan's
+    // accounts whose nodes are shown, not read from the function under test.
+    const shownIds = new Set(focused.nodes.map((v) => v.id))
+    const expected = sheetOf(plan.accounts.filter((a) => shownIds.has(accountNodeId(a.id))))
+    expect(focused.totals).toEqual({
+      assetsText: fmtMoney(expected.assets),
+      liabilitiesText: fmtMoney(expected.liabilities),
+      netWorthText: fmtMoney(expected.netWorth),
+    })
+    expect(expected.assets).toBeLessThan(sheetOf(plan.accounts).assets)
     expect(focused.totals!.assetsText).not.toBe(whole.totals!.assetsText)
-    expect(expected.assets).toBeLessThan(graph.totals.assets)
     // Alex's own accounts are out; the joint ones and Sam's stay.
     expect(focused.nodes.map((n) => n.label)).not.toContain('Alex 401(k)')
     expect(focused.nodes.map((n) => n.label)).toContain('Sam IRA')
