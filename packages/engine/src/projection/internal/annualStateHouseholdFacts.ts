@@ -127,10 +127,15 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
     ...(federal.seniorDeduction === undefined ? {} : { federalSeniorDeduction: federal.seniorDeduction }),
     householdGrossSocialSecurity: grossSs,
     federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
-    // The modeled SS stream enters Utah's federal-AGI base. A complete
-    // empty RRA ledger proves there is no overlapping railroad subtraction.
+    // The modeled SS stream enters Utah's federal-AGI base. Only a tier 1
+    // railroad benefit can be a Social Security benefit (IRC 86(d)(1)(B),
+    // (d)(4)); a tier II or other Railroad Retirement Act annuity is pension
+    // income. So a complete RRA ledger with no tier 1 row proves that the
+    // Utah Code 59-10-114(2)(d) subtraction removes none of the Social
+    // Security benefit included in Utah taxable income, the 59-10-1042(2)
+    // credit base: the overlap is 0.
     // Outside-engine section114 additions remain separately asserted facts.
-    ...(railroad?.length === 0 ? {
+    ...(knownNoTier1 ? {
       socialSecurityIncludedInUtahTaxableIncome: federal.taxableSocialSecurity,
       railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome: 0,
     } : {}),

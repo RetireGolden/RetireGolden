@@ -53,6 +53,20 @@ describe('annual state household source facts', () => {
     expect(result.householdFacts.railroadRetirementActBenefitsIncludedInFederalAgi).toBe(20000)
     expect(result.householdFacts.federallyIncludedRailroadTier1).toBe(12000)
   })
+  it('gives Utah its Social Security credit base beside a tier II annuity, not beside tier 1', () => {
+    // Only tier 1 can be a Social Security benefit (IRC 86(d)(1)(B)), so a
+    // ledger with no tier 1 row overlaps none of the 17k included federally.
+    const tierTwo = buildAnnualStateHouseholdFacts({ plan: plan(), taxYear: 2026,
+      socialSecurityStreams: [stream('p1', 20000)], federal,
+      railroadBenefits: [{ ownerPersonId: 'p1', kind: 'tier2', grossAmount: 10000, federallyIncludedAmount: 10000 }] })
+    expect(tierTwo.householdFacts).toMatchObject({ socialSecurityIncludedInUtahTaxableIncome: 17000,
+      railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome: 0 })
+    const tierOne = buildAnnualStateHouseholdFacts({ plan: plan(), taxYear: 2026,
+      socialSecurityStreams: [stream('p1', 20000)], federal,
+      railroadBenefits: [{ ownerPersonId: 'p1', kind: 'tier1', grossAmount: 10000, federallyIncludedAmount: 8500 }] })
+    expect(tierOne.householdFacts.socialSecurityIncludedInUtahTaxableIncome).toBeUndefined()
+    expect(tierOne.householdFacts.railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome).toBeUndefined()
+  })
   it('rejects a stored recipient allocation when a candidate changes the federal inclusion', () => {
     const inputPlan = plan()
     inputPlan.stateTaxFacts.householdYearFacts = [{ year: 2026, recipientSocialSecurity: [
