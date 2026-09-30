@@ -1772,7 +1772,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points of the actuarial rate; CMS applies it to the unrounded rate and publishes each tier's total. The engine does not re-derive a total from the percentage, which misses the published one by up to 8 cents a month (2026 tier 4: 649.28 against 649.20): it reads CMS's totals (params/data/year2026.ts, partBTotalMonthly), and a year after the latest CMS publication grows them by the Medicare figures' projection factor (the cmsMedicare component), as it grows the standard premium. The applicable percentages stay in the 2026 figures as the statute's tier structure.",
+      "conventionRationale": "The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points times the unsubsidized premium amount built on the monthly actuarial rate; CMS applies it to the unrounded rate and publishes each tier's total. The engine does not re-derive a total from the percentage: scaling the rounded standard premium by the percentage over 25 misses the published total by up to 8 cents a month (2026 tier 4: 649.28 against 649.20). It reads CMS's totals (params/data/year2026.ts, partBTotalMonthly), and a year after the latest CMS publication grows them by the Medicare figures' projection factor (the cmsMedicare component), as it grows the standard premium. The applicable percentages stay in the 2026 figures as the statute's tier structure.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -1810,12 +1810,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/medicare.test.ts",
-          "line": 28,
+          "line": 29,
           "note": null,
           "tests": [
             {
-              "title": "prices the first tier at 35/25 of the standard premium, as CMS publishes it",
-              "line": 32
+              "title": "prices the first tier at the total CMS publishes for it, $284.10 a month",
+              "line": 33
             }
           ]
         }

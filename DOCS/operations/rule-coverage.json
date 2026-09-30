@@ -2466,6 +2466,16 @@
             "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part D income-related monthly adjustment amounts"
           }
         ]
+      },
+      {
+        "on": "2026-09-30",
+        "note": "After the round-one review of pull request 770, usc-42-1395r-i-irmaa-applicable-percentage states the statute’s adjustment as the product of the applicable percentage minus 25 percentage points and the unsubsidized Part B premium amount, so its 42 U.S.C. 1395r(i)(3)(A) quote now runs on through clause (ii)(II). The row was verified on 2026-09-30 with verify-quotes.mjs --refresh, filtered to the record: EXACT, and the record’s other four rows kept their verdicts.",
+        "entries": [
+          {
+            "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+            "citation": "42 U.S.C. 1395r(i)(3)(A)"
+          }
+        ]
       }
     ]
   }

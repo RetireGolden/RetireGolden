@@ -15,33 +15,36 @@ const packWithUnverifiedTier2PartD = {
 }
 
 describe('IRMAA applicable percentage', () => {
-  // 42 U.S.C. 1395r(i) makes the applicable percentage the beneficiary's SHARE
-  // OF PROGRAM COST, where the standard premium is 25 percent of that cost. So
-  // the first tier at 35 percent means paying 35/25 of the standard premium --
-  // a multiplier of 1.4 -- not the standard premium plus 35 percent.
-  //
-  // Reading the percentage as a surcharge is the natural error and understates
-  // every tier: 1.35 rather than 1.4 at the first, and it gets worse higher up.
-  // The engine reads CMS's published tier total ($284.10), which CMS derives
-  // from the unrounded actuarial rate, so the ratio is 1.4 to three places, not
-  // exactly (202.90 x 1.4 = 284.06).
+  // 42 U.S.C. 1395r(i)(3)(A) sets the monthly adjustment as the applicable
+  // percentage minus 25 percentage points, times the unsubsidized Part B premium
+  // amount (200 percent of the monthly actuarial rate). The percentage is the
+  // beneficiary's share of program cost, where the standard premium is 25
+  // percent of it, and CMS applies it to the unrounded actuarial rate and
+  // publishes each tier's total. The engine reads that total: $284.10 a month
+  // at the 2026 first tier. Two readings of the rule miss it:
+  //   - the rounded standard premium scaled by 35/25, 202.90 x 1.4 = 284.06,
+  //     the engine's rule until 2026-09-29 and 48 cents a year low;
+  //   - the percentage as a surcharge on the standard premium,
+  //     202.90 x 1.35 = 273.915, which understates every tier.
   describeRule('usc-42-1395r-i-irmaa-applicable-percentage', {
-    readings: { shareOfProgramCost: 1.4, percentageAsSurcharge: 1.35 },
-    accepted: 'shareOfProgramCost',
+    readings: { cmsPublishedTotal: 284.1, standardTimes35Over25: 284.06, percentageAsSurcharge: 273.915 },
+    accepted: 'cmsPublishedTotal',
   }, ({ accepted, readings }) => {
-    it('prices the first tier at 35/25 of the standard premium, as CMS publishes it', () => {
-      const standard = medicareAnnualPremiumPerPerson(pack, 0, 'single')
-      const firstTier = medicareAnnualPremiumPerPerson(
-        pack,
-        pack.medicare.irmaaTiers[0]!.magiOver.single + 1,
-        'single',
-      )
+    it('prices the first tier at the total CMS publishes for it, $284.10 a month', () => {
+      const tier = pack.medicare.irmaaTiers[0]!
+      const standardMonthly = medicareAnnualPremiumPerPerson(pack, 0, 'single').partBAnnual / 12
+      const firstTier = medicareAnnualPremiumPerPerson(pack, tier.magiOver.single + 1, 'single')
 
-      const ratio = firstTier.partBAnnual / standard.partBAnnual
-      expect(ratio).toBeCloseTo(accepted, 3)
-      expect(ratio).not.toBeCloseTo(readings.percentageAsSurcharge, 3)
-      expect(firstTier.partBAnnual).toBe(pack.medicare.irmaaTiers[0]!.partBTotalMonthly * 12)
+      expect(tier.partBTotalMonthly).toBe(accepted)
+      expect(firstTier.partBAnnual).toBe(tier.partBTotalMonthly * 12)
+      expect(firstTier.partBAnnual).toBe(284.1 * 12)
       expect(firstTier.irmaaTier).toBe(1)
+      // The rejected readings are what the standard premium gives, and the
+      // published total is neither of them.
+      expect(standardMonthly * tier.applicablePct / 25).toBeCloseTo(readings.standardTimes35Over25, 6)
+      expect(standardMonthly * (1 + tier.applicablePct / 100)).toBeCloseTo(readings.percentageAsSurcharge, 6)
+      expect(firstTier.partBAnnual / 12).not.toBeCloseTo(readings.standardTimes35Over25, 2)
+      expect(firstTier.partBAnnual / 12).not.toBeCloseTo(readings.percentageAsSurcharge, 2)
     })
   })
 })
