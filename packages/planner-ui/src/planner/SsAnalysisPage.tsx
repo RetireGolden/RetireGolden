@@ -72,6 +72,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { projectionStartYear, projectPlan, taxCalculatorFor, useProjection, startYearDollarsWord } from './useProjection'
 import { claimingPeople, dobParts, piaAsOfPlan, planWithClaimAges } from './ssAnalysis'
+import { benefitsOnlyPlanLimits } from './benefitsOnlyPlanLimits'
 import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
 import { chartTooltipStyle } from './chartStyle'
@@ -1318,55 +1319,6 @@ function rankingWithheldAt(ranking: BenefitsOnlyRanking): { personId: string; cl
 }
 
 /**
- * The limits of the benefits-only view that bind for this plan, each named
- * only when it applies: work income entered as other income, and a
- * remarriage age for a survivor benefit of a person in a couple.
- */
-function benefitsOnlyPlanLimits(plan: Plan, personName: (id: string) => string): string[] {
-  const out: string[] = []
-  const startYear = projectionStartYear(plan)
-  const claimants = plan.household.people.filter((person) => socialSecurityStreamFor(plan, person.id) !== undefined)
-  const lastYearBeforeFullRetirement = Math.max(...claimants.map((person) => Number(person.dob.slice(0, 4)) + 67), startYear)
-  const otherIncomeWhileWorkingAge = plan.incomes.some(
-    (income) =>
-      income.type === 'recurring' &&
-      (income.startYear === null || income.startYear <= lastYearBeforeFullRetirement) &&
-      (income.endYear === null || income.endYear >= startYear),
-  )
-  if (claimants.length > 0 && otherIncomeWhileWorkingAge) {
-    out.push(
-      "Income entered as other income, such as part-time work, doesn't count as earnings for the earnings test here or in the projection: only wages do.",
-    )
-  }
-  const livesAlone = plan.household.people.length === 1
-  for (const person of claimants) {
-    const stream = socialSecurityStreamFor(plan, person.id)!
-    const name = personName(person.id)
-    for (const record of stream.formerSpouses ?? []) {
-      if (record.relationship === 'divorced') continue
-      if (livesAlone) {
-        if (record.remarriedAtAge !== null && record.remarriedAtAge < 60) {
-          out.push(
-            `${name} remarried before 60. The plan can't say when that later marriage ended, so it's taken to have ended before ${name}'s claim, and the survivor benefit on the former spouse's record is reduced for ${name}'s age at the claim. If it ended later, the benefit would start later and be reduced for the age then.`,
-          )
-        }
-        continue
-      }
-      if (record.remarriedAtAge === null) {
-        out.push(
-          `${name}'s remarriage age is blank on a former spouse's record, so the survivor benefit on it is counted while ${name} is married. The law pays it during a marriage only when that marriage began at 60 or later.`,
-        )
-      } else if (record.remarriedAtAge < 60) {
-        out.push(
-          `${name} remarried before 60, which is read as the current marriage: the survivor benefit on the former spouse's record is counted only from the January after the current spouse's death, reduced for ${name}'s age in that January.`,
-        )
-      }
-    }
-  }
-  return out
-}
-
-/**
  * The key of the ranking's whole-year row that is the plan's own claim, or null
  * when a claim carries months: a 67y 6m claim is not the 67 row, so no row is
  * current and every row can be applied (as the In-your-plan tab compares with
@@ -1388,7 +1340,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const priced = useMemo(() => priceBenefitsOnlyRanking(plan, startYear), [plan, startYear])
   const ranking = useMemo(() => weighBenefitsOnlyRanking(priced, discountPct / 100), [priced, discountPct])
   const withheldAt = useMemo(() => rankingWithheldAt(ranking), [ranking])
-  const planLimits = useMemo(() => benefitsOnlyPlanLimits(plan, personName), [plan, personName])
+  const planLimits = useMemo(() => benefitsOnlyPlanLimits(plan, personName, startYear), [plan, personName, startYear])
   // The ranking's own people: its open claims (a claim already made is held
   // at its own age and not ranked).
   const rankedIds = ranking.personIds
