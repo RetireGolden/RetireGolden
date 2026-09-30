@@ -83,10 +83,13 @@ function walk(root, directory, into) {
     return
   }
   for (const entry of entries) {
-    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+    // Installed dependencies and dot-directories (.git, caches) are never
+    // evidence; a dotfile such as a tracked .gitattributes is, as the index lists it.
+    if (entry.name === 'node_modules') continue
     const path = `${directory}/${entry.name}`
-    if (entry.isDirectory()) walk(root, path, into)
-    else if (entry.isFile()) into.push(path)
+    if (entry.isDirectory()) {
+      if (!entry.name.startsWith('.')) walk(root, path, into)
+    } else if (entry.isFile()) into.push(path)
   }
 }
 

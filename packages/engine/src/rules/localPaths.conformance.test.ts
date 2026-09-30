@@ -102,6 +102,16 @@ describe('local machine paths in committed files', () => {
     expect(disk.paths).toContain(THIS_FILE)
     expect(disk.paths).toContain('DOCS/operations/quote-fidelity-ledger.json')
     expect(disk.paths.filter((path) => path.includes('/node_modules/'))).toEqual([])
+    // The disk walk is held to the git listing: the same trees, and every
+    // in-scope tracked file among what the disk lists. A file on disk that git
+    // does not track (a local scratch file) may be extra, never a tracked one
+    // missing, so a walker that dropped a tree or a kind of file fails here.
+    expect(scan.source).toBe('git')
+    const depth = (path: string) => (path.startsWith('packages/') ? 3 : path.startsWith('app/') ? 2 : 1)
+    const tree = (path: string) => path.split('/').slice(0, depth(path)).join('/')
+    expect([...new Set(disk.paths.map(tree))].sort()).toEqual([...new Set(scan.paths.map(tree))].sort())
+    const listed = new Set(disk.paths)
+    expect(scan.paths.filter((path) => !listed.has(path))).toEqual([])
   })
 
   it('finds no local path outside the allowed list', () => {
