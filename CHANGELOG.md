@@ -8,7 +8,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   its engine dependency is now `^0.4.0`. A host on planner-ui 0.10.0 resolves engine 0.3.x
   for the planner, which refuses the schema 7 plans engine 0.4.0 writes. So RetireGolden-MCP
   and RetireGolden-Pro can move to engine 0.4.0 only together with this release. It carries
-  every planner-ui change in this file since 0.10.0 (2026-09-04). Its exports map and peer
+  every planner-ui change in this file since 0.10.0, which npm has served since 2026-09-04
+  (tag `planner-ui-v0.10.0`). Its exports map and peer
   ranges are unchanged. **Not yet published**; the owner tags `planner-ui-v0.11.0` and
   approves the `npm-publish` environment. The publish job's pack smoke resolves engine 0.4.0
   from npm.
@@ -19,7 +20,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   published and is folded in here. **Published 2026-10-06** from the tag `engine-v0.4.0` on
   c9444031, with npm provenance.
 - **The planner-ui range moves to `^0.4.0`**, the same coordinated floor as 0.3.0 and
-  0.3.1. Its own version is not bumped here. Its source reads schema 7 plans and the
+  0.3.1. Its own version moves to 0.11.0 in the entry above. Its source reads schema 7 plans and the
   engine figures relocated from the UI (`enteredBalanceSheet`,
   `MonteCarloSummary.medianFirstDepletionYear`, `bridgeLaddersTotalCost` and others), which
   0.3.x never exported. Its README now names the floor by reference to `package.json`
@@ -27,9 +28,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   start-age constants from `model/plan.ts` instead of restating them: its comment gated
   that on an engine with the constants reaching npm, and 0.3.0 did.
 - **Downstream to coordinate:** RetireGolden-MCP and RetireGolden-Pro move their engine
-  pins to 0.4.0 once it is on npm. Until a host moves, a plan saved by 0.4.0 does not open
-  in it. planner-ui's pack smoke in `auto` mode packs the local engine only while npm lacks
-  0.4.0, and switches to the registry once the tag publishes it.
+  pin to 0.4.0 together with planner-ui 0.11.0 (the entry above), never the engine pin
+  alone: a host that keeps planner-ui 0.10.0 runs its planner on engine 0.3.x. Until a
+  host moves, a plan saved by 0.4.0 does not open in it. Now that npm serves 0.4.0,
+  planner-ui's pack smoke in `auto` mode resolves it from the registry.
 - **Changed: every one of the 237 frozen output families is complete** (2026-09-30). The
   output census froze at 237 families (RetireGolden-Docs 5881834); every family has a record,
   every record passes every catalog gate, and every record has an independent review from a
@@ -2700,7 +2702,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   observed modeled long-horizon deltas, not independent statutory oracles.
 - Prepared **`@retiregolden/engine` 0.3.1** — a **patch** bump exporting the
   shared `passesModeledOrdinaryWidowRecordGates` helper so modeled ordinary
-  widow record gates are not duplicated across callers. **Not yet published.**
+  widow record gates are not duplicated across callers. **Never published**: it is folded
+  into 0.4.0 (the entry at the top of this section).
 - **The planner-ui range moves to `^0.3.1`**, same coordinated-floor pattern as
   the 0.3.0 entry in **2026-09-04** — `@retiregolden/planner-ui` now declares
   `^0.3.1`. Its own version is not bumped here. The new floor stops packaged
