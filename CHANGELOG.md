@@ -4,12 +4,20 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/planner-ui` 0.11.0** (2026-10-06) — a **minor** bump, because
+  its engine dependency is now `^0.4.0`. A host on planner-ui 0.10.0 resolves engine 0.3.x
+  for the planner, which refuses the schema 7 plans engine 0.4.0 writes. So RetireGolden-MCP
+  and RetireGolden-Pro can move to engine 0.4.0 only together with this release. It carries
+  every planner-ui change in this file since 0.10.0 (2026-09-04). Its exports map and peer
+  ranges are unchanged. **Not yet published**; the owner tags `planner-ui-v0.11.0` and
+  approves the `npm-publish` environment. The publish job's pack smoke resolves engine 0.4.0
+  from npm.
 - Prepared **`@retiregolden/engine` 0.4.0** (2026-09-30) — a **minor** bump, because
   plans it writes carry `schemaVersion` 7 and engine 0.3.x refuses them as
   `newer_than_app` (it migrates only up to 5). It carries every engine change in this file
   since 0.3.0 (2026-09-04), including the 0.3.1 patch, which was prepared but never
-  published and is folded in here. **Not yet published**; the owner tags `engine-v0.4.0` and
-  approves the `npm-publish` environment, and npm serves 0.3.0 until they do.
+  published and is folded in here. **Published 2026-10-06** from the tag `engine-v0.4.0` on
+  c9444031, with npm provenance.
 - **The planner-ui range moves to `^0.4.0`**, the same coordinated floor as 0.3.0 and
   0.3.1. Its own version is not bumped here. Its source reads schema 7 plans and the
   engine figures relocated from the UI (`enteredBalanceSheet`,
