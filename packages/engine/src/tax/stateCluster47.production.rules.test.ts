@@ -455,7 +455,9 @@ describeRule('ks-stat-79-32-117-public-pension-exclusion', { readings: { namedPu
       expect(bare.status, label).toBe('incomplete')
       const warning = bare.warnings.find((item) => item.code === 'ks-plan-code-unknown')
       expect(warning?.ruleId, label).toBe('ks-stat-79-32-117-public-pension-exclusion')
-      expect(warning?.missingFacts, label).toEqual(['planSystemCode', 'qualifiedPlanType'])
+      // A declared 403(b) clears only with its code; a row of other, unknown
+      // or undeclared type also clears with a type no named system pays.
+      expect(warning?.missingFacts, label).toEqual(qualifiedPlanType === '403b' ? ['planSystemCode'] : ['planSystemCode', 'qualifiedPlanType'])
       expect(exclusion('KS', [fact(change)]), label).toBe(0)
       const washburn = annual('KS', { retirementDistributions: [fact({ ...change, planSystemCode: 'KS-WASHBURN' })] })
       expect(washburn.status, label).toBe('complete')
@@ -478,7 +480,16 @@ describeRule('ks-stat-79-32-117-public-pension-exclusion', { readings: { namedPu
       // The warning names the registered record, so a reader can follow it.
       expect(bare.warnings.find((warning) => warning.code === 'ks-plan-code-unknown')?.ruleId, sourceKind)
         .toBe('ks-stat-79-32-117-public-pension-exclusion')
+      // It lists what clears it: the code, and for a source of unknown kind
+      // the source too.
+      expect(bare.warnings.find((warning) => warning.code === 'ks-plan-code-unknown')?.missingFacts, sourceKind)
+        .toEqual(sourceKind === 'unknownPublic' ? ['sourceKind', 'planSystemCode'] : ['planSystemCode'])
     }
+    // A source of unknown kind stays incomplete with a listed code, which
+    // cannot clear it: only characterizing the source can.
+    const coded = annual('KS', { retirementDistributions: [fact({ sourceKind: 'unknownPublic', planSystemCode: 'KPERS' })] })
+    expect(coded.status).toBe('incomplete')
+    expect(coded.warnings.find((warning) => warning.code === 'ks-plan-code-unknown')?.missingFacts).toEqual(['sourceKind'])
     expect(exclusion('KS', [fact({ sourceKind: 'federalCivilService', planSystemCode: 'US-FERS' })])).toBe(accepted)
   })
 })

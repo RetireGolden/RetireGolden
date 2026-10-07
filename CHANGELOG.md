@@ -67,8 +67,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   ($100,000 joint), stepping to none at $100,000 ($150,000 joint); the engine subtracted every
   IRA dollar at any AGI. A single filer's $30,000 IRA distribution: at $78,000 of federal AGI
   $21,000 comes off, was $30,000; at $120,000 none, was $30,000; joint at $112,000, $16,500.
-  A conversion follows the same schedule. Pensions keep the unconditional rule, which the
-  identical (xxi) and (xxii) schedules would also limit
+  A conversion, a row of the traditional IRA it leaves, follows the same schedule. Both clauses
+  except a Roth IRA, so a Roth IRA's taxable earnings get nothing: an inherited Roth's $30,000
+  of earnings taxed before its five-year clock, at $60,000 of federal AGI, now has $0
+  subtracted, was $30,000. The schedule reads the year's whole federal AGI. A year split
+  between states never reaches it: each slice is priced without the characterized rows, so the
+  Connecticut slice still takes its share of the private retirement income off in full at any
+  AGI, and the year stays marked incomplete; the record states the limit. Pensions keep the
+  unconditional rule, which the identical (xxi) and (xxii) schedules would also limit
   (`ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule`).
 - **Fixed: New Jersey's pension exclusion is income-tested and per return** (2026-10-06).
   N.J.S.A. 54A:6-10(b) and NJ-1040 line 28a allow it only at New Jersey gross income of $150,000
@@ -136,9 +142,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   income in full, was taxed; no other code subtracts an employer plan (whether a federal Thrift
   Savings Plan or a KPERS 457 account is subtracted is a stated limit). A 403(b), or an
   employer plan of other, unknown or undeclared type, with a taxable amount and no code is
-  still flagged. A projected employer account now passes its declared `employerPlanType` to
-  the state row as `qualifiedPlanType` when the state evidence gives none, as the annuity path
-  already did, so a declared 401(k) or 457(b) is complete and an undeclared one is flagged.
+  still flagged; the warning's `missingFacts` lists what clears it, `planSystemCode` for a
+  declared 403(b) and `planSystemCode` or `qualifiedPlanType` for the others. A projected
+  employer account now passes its declared `employerPlanType` to the state row as
+  `qualifiedPlanType` when the state evidence gives none, as the annuity path already did, so
+  a declared 401(k) or 457(b) is complete and an undeclared one is flagged.
   The same plan type lets Virginia's subtraction for basis taxed by a prior state treat a
   declared 401(k) or 457(b) account as the §401 or §457 plan Va. Code §58.1-322.02(11)
   enumerates, as it already did an annuity's; that needs prior-state basis evidence, which no
@@ -148,7 +156,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   $4,000 subtracted. It now gets none, and only 401(a), 401(k), 457(b) and IRA types qualify
   (`va-code-58-1-322-02-11-basis`). A public, federal civil service, military or
   government survivor pension without a code, or one of unknown public source, is flagged as
-  before. No library example is in Kansas.
+  before; a pension of unknown public source now lists `sourceKind` among its missing facts,
+  and only `sourceKind` once it carries a code, which cannot clear it. No library example is
+  in Kansas.
 - Prepared **`@retiregolden/planner-ui` 0.11.0** (2026-10-06) — a **minor** bump, because
   its engine dependency is now `^0.4.0`. A host on planner-ui 0.10.0 resolves engine 0.3.x
   for the planner, which refuses the schema 7 plans engine 0.4.0 writes. So RetireGolden-MCP

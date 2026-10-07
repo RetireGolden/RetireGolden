@@ -133,12 +133,17 @@ describeRule('ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule', {
     // schedule: $112,000 is in $110,000 to $114,999, 55%, 16,500. A
     // qualifying surviving spouse at $112,000 reads the unmarried schedule:
     // none. A $30,000 conversion at $78,000: 21,000, as any IRA distribution.
+    // An inherited Roth IRA whose $30,000 of earnings are taxable (no
+    // five-year clock) at $60,000: none, since both clauses read "other than
+    // a Roth individual retirement account".
     schedulesOfXxviiiAndXxix: {
       at60k: 30_000, at78k: 21_000, at99k: 750, at120k: 0, joint112k: 16_500, survivingSpouse112k: 0, conversionAt78k: 21_000,
+      inheritedRothAt60k: 0,
     },
     // Every IRA dollar subtracted at any AGI, as before 2026-10-06.
     fullSubtractionAtAnyAgi: {
       at60k: 30_000, at78k: 30_000, at99k: 30_000, at120k: 30_000, joint112k: 30_000, survivingSpouse112k: 30_000, conversionAt78k: 30_000,
+      inheritedRothAt60k: 30_000,
     },
   },
   accepted: 'schedulesOfXxviiiAndXxix',
@@ -161,6 +166,25 @@ describeRule('ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule', {
     // A private pension keeps the unconditional subtraction, registered as
     // approximated at ct-cgs-12-701-20-b-social-security-retirement.
     expect(subtracted('CT', [row({ accountId: 'pension', sourceKind: 'ordinaryPrivatePension' })], household({ federalAgi: 120_000 }))).toBe(30_000)
+  })
+  it('excepts a Roth IRA, and keeps a conversion off the traditional account', () => {
+    const inheritedRoth = row({ accountId: 'roth', accountTaxTreatment: 'roth', cause: 'death' })
+    expect(subtracted('CT', [inheritedRoth], household({ federalAgi: 60_000 }))).toBe(accepted.inheritedRothAt60k)
+    expect(subtracted('CT', [row({ accountTaxTreatment: 'traditional' })], household({ federalAgi: 60_000 }))).toBe(accepted.at60k)
+    expect(subtracted('CT', [conversion(30_000, { accountTaxTreatment: 'traditional' })], household({ federalAgi: 78_000 }))).toBe(accepted.conversionAt78k)
+  })
+  it('never reaches a split year, which prices each slice without the rows and is incomplete', () => {
+    // Six months in Connecticut, six in Florida, $150,000 of federal AGI with
+    // a $30,000 IRA distribution: the schedule allows nothing at that AGI,
+    // but the Connecticut slice is priced on the coarse inputs, where the
+    // pack's full rule takes its share of the private retirement income off.
+    const split = { stateResidency: [{ state: 'CT', months: 6 }, { state: 'FL', months: 6 }], ordinaryIncome: 150_000 }
+    const options = { retirementDistributions: [row()], householdFacts: household({ federalAgi: 150_000 }) }
+    const withRetirement = computeStateTaxYearResult(input('CT', { ...split, privateRetirementIncome: 30_000 }), options)
+    const withoutRetirement = computeStateTaxYearResult(input('CT', split), options)
+    expect(withRetirement.status).toBe('incomplete')
+    expect(withRetirement.warnings.map((warning) => warning.code)).toContain('state-rich-split-year-adapter-required')
+    expect(withRetirement.amount).toBeLessThan(withoutRetirement.amount)
   })
 })
 

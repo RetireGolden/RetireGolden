@@ -163,7 +163,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -242,11 +242,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -409,7 +409,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -499,11 +499,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -514,12 +514,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 889,
+          "line": 900,
           "note": null,
           "tests": [
             {
               "title": "keeps the legacy approximation distinguishable from the characterized result",
-              "line": 892
+              "line": 903
             }
           ]
         }
@@ -577,7 +577,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -666,11 +666,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -756,7 +756,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -830,7 +830,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -925,7 +925,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1013,7 +1013,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1091,7 +1091,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1166,11 +1166,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -1205,12 +1205,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 903,
+          "line": 914,
           "note": null,
           "tests": [
             {
               "title": "Maryland qualifies employer-plan income and offsets gross SS rather than taxable SS",
-              "line": 904
+              "line": 915
             }
           ]
         }
@@ -1275,7 +1275,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1407,7 +1407,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -1497,7 +1497,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -1773,7 +1773,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1841,7 +1841,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2050,7 +2050,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2168,11 +2168,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -2183,16 +2183,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 547,
+          "line": 558,
           "note": null,
           "tests": [
             {
               "title": "grants $10,000 pension plus $5,000 residual age65 allowance",
-              "line": 548
+              "line": 559
             },
             {
               "title": "tracks two eligible owners separately",
-              "line": 552
+              "line": 563
             }
           ]
         }
@@ -2242,11 +2242,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -2273,12 +2273,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 914,
+          "line": 925,
           "note": null,
           "tests": [
             {
               "title": "grants ordinary private and public retirement only the under65 statutory cap",
-              "line": 915
+              "line": 926
             }
           ]
         }
@@ -2419,11 +2419,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -2435,16 +2435,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 923,
+          "line": 934,
           "note": null,
           "tests": [
             {
               "title": "excludes qualifying military fully while ordinary public retirement remains capped",
-              "line": 924
+              "line": 935
             },
             {
               "title": "SC survivor military deduction does not consume the survivor’s own age65 room",
-              "line": 928
+              "line": 939
             }
           ]
         },
@@ -2615,11 +2615,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -2630,12 +2630,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 557,
+          "line": 568,
           "note": null,
           "tests": [
             {
               "title": "reduces $15,000 by floor(($10k/$55k)*$15k / $10)*$10",
-              "line": 558
+              "line": 569
             }
           ]
         }
@@ -2684,15 +2684,15 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             },
             {
               "name": "virginiaEnumeratedEmployerPlan",
-              "line": 2102
+              "line": 2104
             }
           ]
         },
@@ -2712,16 +2712,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 721,
+          "line": 732,
           "note": null,
           "tests": [
             {
               "title": "recovers only documented prior-state contributions once across annual events",
-              "line": 722
+              "line": 733
             },
             {
               "title": "recovers it from a 401 or 457 plan, not from a 403(b), which 58.1-322.02(11) does not enumerate",
-              "line": 729
+              "line": 740
             }
           ]
         }
@@ -2770,11 +2770,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         },
@@ -2794,12 +2794,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 702,
+          "line": 713,
           "note": null,
           "tests": [
             {
               "title": "uses $40,000 per recipient at any age from2025, including qualified survivors",
-              "line": 703
+              "line": 714
             }
           ]
         }
@@ -2848,11 +2848,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         },
@@ -2872,12 +2872,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 710,
+          "line": 721,
           "note": null,
           "tests": [
             {
               "title": "selects Tier I and does not claim ordinary annuity or Tier II under paragraph3",
-              "line": 711
+              "line": 722
             }
           ]
         }
@@ -2935,11 +2935,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             },
             {
               "name": "prorateParams",
-              "line": 1806
+              "line": 1808
             },
             {
               "name": "virginiaAgedTaxpayerCount",
@@ -3060,7 +3060,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             },
             {
               "name": "virginiaAdjustedFederalAgi",
@@ -3340,7 +3340,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3511,11 +3511,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -3526,12 +3526,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 858,
+          "line": 869,
           "note": null,
           "tests": [
             {
               "title": "removes included Tier I while a private pension remains taxable",
-              "line": 859
+              "line": 870
             }
           ]
         }
@@ -3580,7 +3580,7 @@
           "functions": [
             {
               "name": "westVirginiaPublicMilitary",
-              "line": 405
+              "line": 419
             }
           ]
         },
@@ -3589,11 +3589,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -3604,16 +3604,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 835,
+          "line": 846,
           "note": null,
           "tests": [
             {
               "title": "grants the $2,000 PERS or Teachers cap without a federal pension masking it",
-              "line": 836
+              "line": 847
             },
             {
               "title": "shares the public/federal limit and separates full police/fire benefits",
-              "line": 843
+              "line": 854
             }
           ]
         }
@@ -3662,7 +3662,7 @@
           "functions": [
             {
               "name": "westVirginiaPublicMilitary",
-              "line": 405
+              "line": 419
             }
           ]
         },
@@ -3671,11 +3671,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -3686,16 +3686,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 850,
+          "line": 861,
           "note": null,
           "tests": [
             {
               "title": "excludes military retirement without the historical $20,000 cap",
-              "line": 851
+              "line": 862
             },
             {
               "title": "excludes military survivor income without the historical $20,000 cap",
-              "line": 854
+              "line": 865
             }
           ]
         }
@@ -3744,7 +3744,7 @@
           "functions": [
             {
               "name": "westVirginiaSocialSecuritySubtraction",
-              "line": 454
+              "line": 468
             }
           ]
         },
@@ -3753,11 +3753,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -3768,12 +3768,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 864,
+          "line": 875,
           "note": null,
           "tests": [
             {
               "title": "selects 35 percent 65 percent and full Social Security relief in 2024 2025 and 2026",
-              "line": 865
+              "line": 876
             }
           ]
         }
@@ -3822,7 +3822,7 @@
           "functions": [
             {
               "name": "westVirginiaAge65Modification",
-              "line": 387
+              "line": 401
             }
           ]
         },
@@ -3831,11 +3831,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -3846,12 +3846,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 827,
+          "line": 838,
           "note": null,
           "tests": [
             {
               "title": "subtracts prior named modifications from each eligible owner’s $8,000 room",
-              "line": 828
+              "line": 839
             }
           ]
         }
@@ -3899,7 +3899,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -4064,7 +4064,7 @@
           "functions": [
             {
               "name": "westVirginiaExemptions",
-              "line": 333
+              "line": 347
             }
           ]
         },
@@ -4073,11 +4073,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -4088,12 +4088,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 818,
+          "line": 829,
           "note": null,
           "tests": [
             {
               "title": "distinguishes §151(d)(2) and the surviving-spouse two-year addition",
-              "line": 819
+              "line": 830
             }
           ]
         }

@@ -134,6 +134,17 @@ describe('Pennsylvania, a conversion before 60 through the projection', () => {
   })
 })
 
+describe('Connecticut, a conversion through the projection', () => {
+  it('keeps the conversion on the traditional account inside the IRA schedule', () => {
+    // Born 1960-01-01. The $30,000 conversion is the year's only income, so
+    // federal AGI is under $75,000 and (xxviii) subtracts 100%. The row is the
+    // traditional IRA's, not the Roth's, so the Roth exception leaves it in.
+    const result = year(strategyConversionPlan('CT', '1960-01-01', 30_000))
+    expect(rows(result)).toEqual([expect.objectContaining({ accountTaxTreatment: 'traditional', rothConversionAmount: 30_000 })])
+    expect(stateSubtraction(result)).toBeCloseTo(30_000, 6)
+  })
+})
+
 describeRule('mi-treasury-roth-conversion-at-59-and-a-half', {
   readings: {
     // Born 1966-08-01, 59 and a half on 2026-02-01, converting $30,000

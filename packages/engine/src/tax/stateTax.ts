@@ -1082,9 +1082,11 @@ function characterizedRetirementDelta(
     }
     // Connecticut subtracts IRA distributions, a conversion among them, on its
     // own federal-AGI schedule (12-701(a)(20)(B)(xxviii) and (xxix)); the
-    // other retirement income stays with the pack's rule below.
+    // other retirement income stays with the pack's rule below. The clauses
+    // except a Roth IRA, so a Roth row's taxable earnings get nothing; a
+    // conversion sits on the traditional account it leaves.
     if (code === 'CT' && params.connecticutIraDistributionSchedule) {
-      const iraIncluded = rows.filter((row) => row.sourceKind === 'ira').reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+      const iraIncluded = rows.filter((row) => row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth').reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
       taxableIncomeDelta -= iraIncluded * connecticutIraSubtractionFraction(
         params.connecticutIraDistributionSchedule,
         context.married,

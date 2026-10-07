@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -138,7 +138,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 877,
+          "line": 888,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 878
+              "line": 889
             }
           ]
         }
@@ -323,7 +323,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 880,
+          "line": 891,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 881
+              "line": 892
             }
           ]
         }
@@ -407,7 +407,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -567,7 +567,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -654,7 +654,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -749,7 +749,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -822,7 +822,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -905,7 +905,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -1017,7 +1017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1084,7 +1084,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -1170,7 +1170,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -1245,7 +1245,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1421,7 +1421,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1487,7 +1487,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1569,7 +1569,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1581,12 +1581,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 485,
+          "line": 496,
           "note": null,
           "tests": [
             {
               "title": "deducts $3,360 once from $10,000 on a joint return",
-              "line": 486
+              "line": 497
             }
           ]
         },
@@ -1654,7 +1654,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -1771,7 +1771,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1870,7 +1870,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -2044,7 +2044,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -2132,7 +2132,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -2228,7 +2228,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2317,7 +2317,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2455,7 +2455,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -2585,7 +2585,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2669,7 +2669,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -2764,7 +2764,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2844,7 +2844,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -2944,7 +2944,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -3017,7 +3017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3090,7 +3090,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3158,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }

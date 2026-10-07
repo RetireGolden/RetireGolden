@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -109,7 +109,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -373,7 +373,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -451,7 +451,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -538,7 +538,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -612,7 +612,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
@@ -701,7 +701,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -789,7 +789,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -956,7 +956,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1034,7 +1034,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1190,7 +1190,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1348,7 +1348,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1359,12 +1359,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 883,
+          "line": 894,
           "note": null,
           "tests": [
             {
               "title": "selects the statutory age65 pension limit",
-              "line": 884
+              "line": 895
             }
           ]
         }
@@ -1432,7 +1432,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -1511,7 +1511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1522,12 +1522,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 886,
+          "line": 897,
           "note": null,
           "tests": [
             {
               "title": "raises subtraction room for fully excludable Social Security",
-              "line": 887
+              "line": 898
             }
           ]
         }
@@ -1725,7 +1725,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -1790,7 +1790,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -1935,7 +1935,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2034,7 +2034,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2124,7 +2124,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2198,7 +2198,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2263,7 +2263,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -2350,7 +2350,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1145
+              "line": 1147
             }
           ]
         }
@@ -2428,7 +2428,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2511,7 +2511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -2531,16 +2531,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 580,
+          "line": 591,
           "note": null,
           "tests": [
             {
               "title": "uses distinct HOH and MFS ordinary thresholds and stacks gains across their edges",
-              "line": 581
+              "line": 592
             },
             {
               "title": "stacks $1,000 gain after $47,000 ordinary taxable income",
-              "line": 593
+              "line": 604
             }
           ]
         }
@@ -2740,7 +2740,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2839,7 +2839,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -2935,7 +2935,7 @@
             },
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -3025,7 +3025,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3089,7 +3089,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3158,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -3178,24 +3178,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 602,
+          "line": 613,
           "note": null,
           "tests": [
             {
               "title": "includes IRA federal public and Armed Forces pension sources under section 316.157",
-              "line": 603
+              "line": 614
             },
             {
               "title": "offsets Tier I but not Tier II and cannot borrow an older nonpension recipient age",
-              "line": 610
+              "line": 621
             },
             {
               "title": "credits 9% of the $7,500 ceiling for a qualifying age62 taxpayer",
-              "line": 620
+              "line": 631
             },
             {
               "title": "offsets SS and excess household income, and never refunds unused credit",
-              "line": 625
+              "line": 636
             }
           ]
         }
@@ -3253,7 +3253,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -3323,7 +3323,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3529,7 +3529,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -3603,7 +3603,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -3677,7 +3677,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -3697,12 +3697,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 676,
+          "line": 687,
           "note": null,
           "tests": [
             {
               "title": "uses the return-level $900 maximum less $200 phaseout",
-              "line": 677
+              "line": 688
             }
           ]
         }
@@ -3830,7 +3830,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -3854,16 +3854,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 641,
+          "line": 652,
           "note": null,
           "tests": [
             {
               "title": "limits the $890 military credit to $500 of precredit Utah liability",
-              "line": 642
+              "line": 653
             },
             {
               "title": "credits the current 4.45% of $20,000 qualifying military income",
-              "line": 653
+              "line": 664
             }
           ]
         }
@@ -3912,7 +3912,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -3932,12 +3932,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 684,
+          "line": 695,
           "note": null,
           "tests": [
             {
               "title": "subtracts only federally included Railroad Retirement and requires SS overlap facts",
-              "line": 685
+              "line": 696
             }
           ]
         }
@@ -3991,7 +3991,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         },
@@ -4011,12 +4011,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 692,
+          "line": 703,
           "note": null,
           "tests": [
             {
               "title": "recovers documented other-state §401(a) basis once and excludes 403b/IRA substitutes",
-              "line": 693
+              "line": 704
             }
           ]
         }
@@ -4064,7 +4064,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -4076,16 +4076,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 660,
+          "line": 671,
           "note": null,
           "tests": [
             {
               "title": "uses $5,350 federally taxable SS, not the $10,000 gross benefit",
-              "line": 661
+              "line": 672
             },
             {
               "title": "includes otherwise-excluded interest in statutory MAGI phaseout",
-              "line": 669
+              "line": 680
             }
           ]
         },
@@ -4154,7 +4154,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1526
+              "line": 1528
             }
           ]
         }
@@ -4233,7 +4233,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -4336,7 +4336,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1548
+              "line": 1550
             }
           ]
         }
@@ -4410,7 +4410,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2174
+              "line": 2176
             }
           ]
         }
@@ -4517,7 +4517,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
@@ -4582,7 +4582,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1534
+              "line": 1536
             }
           ]
         }
