@@ -51,7 +51,7 @@ Each figure is law in force on 2026-09-28 that names the year, with no condition
 
 ### Not loaded: a condition decides them, on a known date
 
-- Colorado's TABOR temporary rate cut: the executive director's estimate due October 1, 2026 (C.R.S. 39-22-627).
+- Colorado's TABOR temporary rate cut (C.R.S. 39-22-627): none for 2026, because the State Controller certified on September 8, 2026 that revenue fell $175.9 million short of the Referendum C cap (Legislative Council Staff, Economic & Revenue Forecast, September 2026); the next estimate is due October 1, 2027.
 - Georgia's rate cut, standard deduction and dependent exemption steps (HB 463): the Office of Planning and Budget's determination as of December 1, 2026, and each December 1 after.
 - Minnesota's one-year first-tier cut: the commissioner, by December 15, 2026 (Minn. Stat. 290.036).
 - Oklahoma's quarter-point cuts: the State Board of Equalization, preliminary in December 2026 and final in February 2027, for 2028 at the earliest (68 O.S. 2355).

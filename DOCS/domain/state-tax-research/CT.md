@@ -25,3 +25,11 @@ Source records above require discriminating positive and negative fixtures throu
 - https://cga.ct.gov/2024/rpt/pdf/2024-R-0130.pdf — CT OLR "A Guide to Connecticut's Personal Income Tax" (brackets, no standard deduction).
 - https://www.cga.ct.gov/2025/rpt/pdf/2025-R-0152.pdf — IRA deduction phase-in (75% in 2025, 100% in 2026); pension/annuity & SS AGI thresholds $75k/$100k.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — Tax Foundation 2025 cross-check (CT 2%–6.99%).
+
+## IRA distributions follow the federal AGI schedule (2026-10-06)
+
+Record: `ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule`. Classification: `settled`.
+
+From 2026 Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix) subtract any distribution from a non-Roth IRA at a percentage of federal AGI: 100% below $75,000 ($100,000 joint), stepping through 85%, 70%, 55%, 40%, 25%, 10%, 5% and 2.5% to none at $100,000 ($150,000 joint). A Roth conversion is such a distribution. The engine applies the schedule to every IRA row except a Roth IRA's, at the year's federal AGI, a qualifying surviving spouse reading the unmarried schedule; until 2026-10-06 it subtracted every IRA dollar at any AGI. A conversion is a row of the traditional IRA it leaves, so it stays in; a Roth IRA's taxable earnings, such as an inherited Roth's before its five-year clock, get no subtraction. A year split between states never reaches the schedule: each slice is priced on the coarse inputs without the characterized rows, so the Connecticut slice takes its share of the year's private retirement income off in full at any federal AGI, and the year is marked incomplete (`state-rich-split-year-adapter-required`). The year's federal AGI is available on that path, but the characterized rows are not allocated to the slice. Pensions and annuities follow the identical schedules of (xxi) and (xxii), which the engine does not yet apply (`ct-cgs-12-701-20-b-social-security-retirement`).
+
+Authority: [Conn. Gen. Stat. 12-701](https://www.cga.ct.gov/current/pub/chap_229.htm).

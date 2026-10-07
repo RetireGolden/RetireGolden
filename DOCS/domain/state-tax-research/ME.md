@@ -135,3 +135,11 @@ $73.2875 of tax, not the full $2,050 / $146.575.
 - https://legislature.maine.gov/statutes/36/title36sec5122.html — 36 M.R.S. §5122(2)(M-2) pension deduction; (M-3) AGI phaseout.
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2025.pdf — 2025 schedules (historical).
 - Tax Foundation, State Individual Income Tax Rates and Brackets — ME rates context.
+
+## A Roth conversion gets no pension income deduction (2026-10-06)
+
+Record: `me-1040me-roth-conversion-not-pension-income`. Classification: `settled`.
+
+The 2025 Form 1040ME instructions: a conversion of benefits from one account to another does not qualify for the pension income deduction, a traditional IRA converted to a Roth IRA being their example, because the taxpayer receives no retirement or IRA benefit at the conversion. The engine leaves the conversion part of every retirement row out of Maine's pension pool, an in-plan Roth rollover included. Until 2026-10-06 a $30,000 conversion by a 70-year-old was deducted in full.
+
+Authority: [2025 Form 1040ME instructions](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf), Schedule 1S, pension income deduction.

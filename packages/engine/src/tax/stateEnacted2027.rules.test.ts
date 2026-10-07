@@ -659,11 +659,15 @@ describeRule('ri-h7127-2027-social-security-modification-without-age-test', {
 // Virginia's personal exemptions (58.1-322.03(2)), a 2026 correction: $930 for
 // each exemption the filer could claim federally, plus $800 for each taxpayer
 // 65 or older. A single filer aged 65 and a couple both 65, each well inside
-// the 5.75% band, pay 5.75% less on $1,730 and $3,460.
+// the 5.75% band, pay 5.75% less on $1,730 and $3,460. Both have enough
+// income that the 58.1-322.03(5) age deduction is gone ($70,000 is $20,000
+// over the $50,000 single limit, $120,000 is $45,000 over the $75,000 joint
+// one, each more than the $12,000 or $24,000 it could reduce), so the
+// exemptions are the only difference between the two readings.
 describeRule('va-code-58-1-322-03-2-personal-exemptions', {
   readings: {
-    exemptionsAllowed: { single65: (60_000 - 8_750 - 930 - 800 - 17_000) * 0.0575 + 720, joint65: (120_000 - 17_500 - 2 * 930 - 2 * 800 - 17_000) * 0.0575 + 720 },
-    noExemptions: { single65: (60_000 - 8_750 - 17_000) * 0.0575 + 720, joint65: (120_000 - 17_500 - 17_000) * 0.0575 + 720 },
+    exemptionsAllowed: { single65: (70_000 - 8_750 - 930 - 800 - 17_000) * 0.0575 + 720, joint65: (120_000 - 17_500 - 2 * 930 - 2 * 800 - 17_000) * 0.0575 + 720 },
+    noExemptions: { single65: (70_000 - 8_750 - 17_000) * 0.0575 + 720, joint65: (120_000 - 17_500 - 17_000) * 0.0575 + 720 },
   },
   accepted: 'exemptionsAllowed',
 }, ({ accepted, readings }) => {
@@ -671,7 +675,7 @@ describeRule('va-code-58-1-322-03-2-personal-exemptions', {
   const retiree = (joint: boolean): TaxYearInput => ({
     year: 2026,
     filingStatus: joint ? 'marriedFilingJointly' : 'single',
-    ordinaryIncome: joint ? 120_000 : 60_000,
+    ordinaryIncome: joint ? 120_000 : 70_000,
     capitalGains: 0,
     ssBenefits: 0,
     peopleAged65Plus: joint ? 2 : 1,

@@ -1247,7 +1247,7 @@ export const midwestStateRecords = {
 
   'ks-stat-79-32-117-public-pension-exclusion': {
     title: 'Kansas exempts named retirement systems',
-    statement: 'Kansas subtracts the named statutory systems, including federal civil service and armed forces, KPERS, qualifying city and public-utility plans, Washburn University, and the Overland Park police and fire plans. The characterized selector requires an eligible named plan code; private and unlisted public plans receive no named-plan subtraction. Unknown public identity remains incomplete. Generic public income does not establish eligibility.',
+    statement: 'Kansas subtracts the named statutory systems, including federal civil service and armed forces, KPERS, qualifying city and public-utility plans, Washburn University, and the Overland Park police and fire plans. The characterized selector requires an eligible named plan code on a public, federal civil service, military or government survivor pension; private and unlisted public plans receive no named-plan subtraction. Unknown public identity, or a public pension without a code, remains incomplete. Generic public income does not establish eligibility. Washburn University’s retirement plan, which (c)(xix) names, is an employer plan: the Department of Revenue’s Notice 08-06 describes its basic plan as a 403(b) and allows the subtraction for it and for the university’s supplemental retirement annuity. An employer-plan row coded KS-WASHBURN therefore has its federally included amount subtracted (no other code subtracts an employer plan; the engine applies the other named systems to pensions, so whether a federal Thrift Savings Plan or a KPERS 457 account entered as an employer plan is subtracted is not determined here, and the engine subtracts neither), and one with a taxable amount and no code is incomplete unless its plan type is 401(k), 401(a) or 457(b), which no named system is. A projected employer account takes its declared 401(k), 403(b) or 457(b) class as that plan type when the state evidence gives none, so an undeclared employer account is incomplete in a Kansas year it pays out (stateMidwestExtras.ts#kansasNamedPlanExclusion, projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts). An IRA and a private pension receive no named-plan subtraction whatever code they carry, and neither does a 401(k), 401(a) or 457(b), so a missing code on them is not flagged; before 2026-10-06 it was, and every Kansas year with an IRA or 401(k) withdrawal was marked incomplete for a fact that could not change its tax.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1278,6 +1278,12 @@ export const midwestStateRecords = {
       quotedText:
         'Amounts received by retired employees of Washburn university as retirement and pension benefits under the university\'s retirement plan.',
     }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available',
+      url: 'https://www.ksrevenue.gov/taxnotices/notice08-06.pdf',
+      quotedText:
+        'According to information published by Washburn University, the university’s basic retirement plan is a defined contribution plan operating under Section 403(b) of the Internal Revenue Code.',
+    }, {
       kind: 'statute',
       citation: 'K.S.A. 79-32,117(c)(xxiii)',
       url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
@@ -1287,16 +1293,54 @@ export const midwestStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-10-06',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/tax/stateMidwestExtras.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.KS',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateMidwestExtras.ts#kansasNamedPlanExclusion',
+    ],
+  },
+
+  'mi-treasury-roth-conversion-at-59-and-a-half': {
+    title: 'Michigan counts a Roth conversion toward its retirement deduction only if the owner is 59 and a half at the rollover, read on January 1 when the plan gives no conversion date',
+    statement:
+      'Michigan Treasury says the rollover distribution from a regular IRA to a Roth IRA qualifies for the pension subtraction, within the limitations of the statute, if the individual is at least 59 and a half when the rollover occurs. The engine counts the conversion part of a row toward Michigan’s combined limit only when it is marked as converted at 59 and a half or older (`rothConversionAmountAtAge59HalfOrOlder`): a named conversion is tested on its execution date when the plan gives one, every other conversion on January 1 of the year, the earliest it could have happened (projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts, tax/stateTax.ts#characterizedRetirementDelta). The plan holds no date for the conversions the aggregate strategy makes, so in the year the owner reaches 59 and a half such a conversion gets no subtraction even when it came after the half birthday, overstating Michigan tax by up to the tax on the conversion. Until 2026-10-06 the engine subtracted a conversion at any age: $30,000 converted at 55 came off in full, understating Michigan tax by 4.25% of it. An in-plan Roth rollover is held to the same age; whether Michigan allows one at all, when it excludes a plan that lets the employee set the deferral, is not determined. The combined limit itself stays with mi-mcl-206-30-retirement-and-ss.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MI',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax',
+      url: 'https://www.michigan.gov/taxes/questions/iit/accordion/roth/are-conversions-from-a-regular-ira-to-a-roth-ira-subject-to-michigan-individual-income-tax-1',
+      quotedText:
+        'the rollover distribution from a regular IRA qualifies for the pension subtraction, within the limitations of the statute, if the individual is at least 59 1/2 years of age when the rollover occurs.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
+      'packages/engine/src/tax/stateRetirementFacts.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.MI',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
+      'packages/engine/src/tax/stateRetirementFacts.ts#rothConversionPartAtAge59HalfOrOlder',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
@@ -1373,7 +1417,7 @@ export const midwestStateRecords = {
   'mi-mcl-206-30-retirement-and-ss': {
     title: 'Michigan\'s 2026 ordinary retirement deduction is a combined ceiling, not a full exemption',
     statement:
-      'For the 2026 tax year MCL 206.30(10)(d) lets a Michigan taxpayer deduct retirement or pension benefits as provided under subsection (1)(f), except that amounts deductible under (1)(f)(i) and (ii) combined are subject to the same maximum (1)(f)(iv) allows for a single return and a joint return for that same tax year. Treasury RAB 2026-1 states that for tax year 2026 and each year thereafter, regardless of year of birth, taxpayers may deduct combined public and private retirement benefits up to the inflation-adjusted private retirement maximum under (1)(f)(iv), and that the inflation-adjusted maximum does not apply to the public retirement benefits of taxpayers born before 1946. The 2026 Withholding Guide (Form 446) publishes that ordinary post-1945 qualifying maximum as $67,610 if single or married filing separately, or $135,220 if married filing jointly, and separately that recipients born before 1946 are not taxed on qualifying public benefits. The “payments are made for life to a senior citizen” phrase in (1)(f)(iv) attaches to the retirement-annuity-policy branch, not to every private pension; private benefits include senior-citizen annuities as one private source, and the 2026 ordinary path is not an automatic full exemption of all retirement income. The pack encoding of that ordinary combined ceiling is `{ kind: \'capped\', capPerPerson: 67610 }` with no birth-year test, no public/private split, and no election among subsections (9), (10), and (11). Approximated both directions: a pre-1946 qualifying federal or Michigan public benefit above $67,610 is under-excluded at the shared cap; a nonqualifying amount placed in the retirement bucket is over-excluded; an unrepresented, more favorable subsection-(9) election can be under-excluded; and the per-person `agesAlive` proxy can over- or under-exclude when it does not match the return-level filing-status ceiling. Social Security is a different (1)(f) limb and is registered separately at mi-mcl-206-30-f-iii-social-security.',
+      'For the 2026 tax year MCL 206.30(10)(d) lets a Michigan taxpayer deduct retirement or pension benefits as provided under subsection (1)(f), except that amounts deductible under (1)(f)(i) and (ii) combined are subject to the same maximum (1)(f)(iv) allows for a single return and a joint return for that same tax year. Treasury RAB 2026-1 states that for tax year 2026 and each year thereafter, regardless of year of birth, taxpayers may deduct combined public and private retirement benefits up to the inflation-adjusted private retirement maximum under (1)(f)(iv), and that the inflation-adjusted maximum does not apply to the public retirement benefits of taxpayers born before 1946. The 2026 Withholding Guide (Form 446) publishes that ordinary post-1945 qualifying maximum as $67,610 if single or married filing separately, or $135,220 if married filing jointly, and separately that recipients born before 1946 are not taxed on qualifying public benefits. The “payments are made for life to a senior citizen” phrase in (1)(f)(iv) attaches to the retirement-annuity-policy branch, not to every private pension; private benefits include senior-citizen annuities as one private source, and the 2026 ordinary path is not an automatic full exemption of all retirement income. The pack encoding of that ordinary combined ceiling is `{ kind: \'capped\', capPerPerson: 67610 }` with no birth-year test, no public/private split, and no election among subsections (9), (10), and (11). Approximated both directions: a pre-1946 qualifying federal or Michigan public benefit above $67,610 is under-excluded at the shared cap; a nonqualifying amount placed in the retirement bucket is over-excluded; an unrepresented, more favorable subsection-(9) election can be under-excluded; and the per-person `agesAlive` proxy can over- or under-exclude when it does not match the return-level filing-status ceiling. Social Security is a different (1)(f) limb and is registered separately at mi-mcl-206-30-f-iii-social-security. A Roth conversion counts toward the limit only if made at 59 and a half or older, registered at mi-treasury-roth-conversion-at-59-and-a-half.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -1881,7 +1925,7 @@ export const midwestStateRecords = {
   'oh-rev-code-5747-01-social-security-and-public-pension': {
     title: 'Ohio subtracts Social Security and uniformed-services retirement, but uses a separate retirement-income credit',
     statement:
-      'Ohio expressly deducts Title II Social Security benefits and tier 1 railroad retirement from Ohio adjusted gross income. Its separate retirement deduction reaches retired personnel pay for uniformed service (and only the attributable uniformed-service portion of a related federal civil-service annuity), while section 5747.055 supplies a capped retirement-income credit for returns with modified AGI below $100,000. The pack instead gives every public-pension dollar a full exclusion and carries no credit, so it understates tax for non-uniformed public pensions but overstates tax when a taxpayer qualifies for the omitted credit; those are the two approximation directions this record pins.',
+      'Ohio expressly deducts Title II Social Security benefits and tier 1 railroad retirement from Ohio adjusted gross income. Its separate retirement deduction reaches retired personnel pay for uniformed service (and only the attributable uniformed-service portion of a related federal civil-service annuity), while section 5747.055 supplies a capped retirement-income credit for returns with modified AGI below $100,000. The pack instead gives every public-pension dollar a full exclusion and carries no credit, so it understates tax for non-uniformed public pensions but overstates tax when a taxpayer qualifies for the omitted credit; those are the two approximation directions this record pins. Whether a Roth conversion is income received on account of retirement, which the omitted credit requires, is not determined.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',

@@ -15,7 +15,7 @@ export const northeastStateRecords = {
   'pa-pit-retirement-benefits-not-compensation': {
     title: 'Pennsylvania does not tax a retired employee’s plan distributions',
     statement:
-      'A distribution from an old age or retirement benefit plan — the regulation names IRAs, SEPs, Keoghs and federally qualified employer plans — is outside Pennsylvania compensation when it is made upon or after the recipient\'s retirement from service after reaching a specific age or after a stated period of employment. The test is the PLAN\'s age or service condition, not any single age fixed by Pennsylvania law. Approximated: the pack encodes it as `{ kind: \'full\', minAge: 60 }`, a flat age test, which is why a Pennsylvania retiree pays no state tax on retirement income here at all.',
+      'A distribution from an old age or retirement benefit plan — the regulation names IRAs, SEPs, Keoghs and federally qualified employer plans — is outside Pennsylvania compensation when it is made upon or after the recipient\'s retirement from service after reaching a specific age or after a stated period of employment. The test is the PLAN\'s age or service condition, not any single age fixed by Pennsylvania law. Approximated: the pack encodes it as `{ kind: \'full\', minAge: 60 }`, a flat age test, which is why a Pennsylvania retiree pays no state tax on retirement income here at all. A traditional IRA converted in full to a Roth IRA is not taxed at any age, registered at pa-40-roth-ira-conversion-not-taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -115,10 +115,170 @@ export const northeastStateRecords = {
     ],
   },
 
+  'me-1040me-roth-conversion-not-pension-income': {
+    title: 'Maine gives no pension income deduction for a Roth conversion',
+    statement:
+      'Maine’s pension income deduction reaches retirement benefits a taxpayer receives. The 2025 Form 1040ME instructions say a conversion of benefits from one account to another does not qualify for it, a traditional IRA converted to a Roth IRA being their example, because the taxpayer receives no retirement or IRA benefit at the conversion. The engine leaves the conversion part of a retirement row (`rothConversionAmount`, marked on both conversion paths by projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts) out of Maine’s pension pool (tax/stateTax.ts#characterizedRetirementDelta), an in-plan Roth rollover included, since the instruction speaks of any account. Until 2026-10-06 the engine deducted a conversion like a withdrawal: $30,000 converted by a 70-year-old was deducted in full under the $49,824 maximum, understating Maine tax by the tax on $30,000. Settled for conversions; the pension deduction’s own limits stay with me-mrs-36-5122-2-m2-m3-2026-pension-deduction, and a year split between states, priced without the characterized rows, still deducts a conversion.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf',
+      quotedText:
+        'Note that a conversion of benefits from one account to another does not qualify for the pension income deduction. For example, a deduction may not be taken when a taxpayer converts a traditional IRA to a Roth IRA. The taxpayer, in this case, does not receive a retirement or IRA benefit at the time of conversion.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
+      'packages/engine/src/tax/stateRetirementFacts.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.ME',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
+      'packages/engine/src/tax/stateRetirementFacts.ts#rothConversionPart',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'pa-40-roth-ira-conversion-not-taxable': {
+    title: 'Pennsylvania does not tax a traditional IRA converted in full to a Roth IRA, at any age',
+    statement:
+      'The 2025 PA-40 instructions say no Pennsylvania tax is due on the difference between the amount distributed from a traditional IRA and the previous contributions when the entire withdrawal is rolled over trustee to trustee to a Roth IRA, or the entire amount received is invested in a Roth IRA within 60 days; federal tax withheld from the rollover must also be put into the new IRA. The rule has no age condition. The engine subtracts the conversion part of every `ira` row (`rothConversionAmount`) at any age, ahead of the age-60 retirement rule (tax/stateTax.ts#characterizedRetirementDelta); the engine converts whole amounts and pays the tax from other money, so the whole conversion reaches the Roth. Until 2026-10-06 it taxed the conversion of an owner under 60 at 3.07%, $1,228 on $40,000, and before #710 at every age. Settled for IRA conversions. Not covered: an in-plan Roth rollover from a 401(k), 403(b) or 457(b) plan, which the instructions do not address and 61 Pa. Code 101.6(c)(8)(iii)(A)(II) exempts only when not included in federal income, so the engine keeps such a row under the age-60 rule and whether Pennsylvania taxes it is not determined; and a year split between states, priced without the characterized rows, which still taxes a conversion under 60.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:PA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover',
+      url: 'https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf',
+      quotedText:
+        'Roth IRA Rollover You do not have to pay PA tax on the difference between the amount distributed from your traditional IRA and your previous contributions: 1. If you rolled over the entire withdrawal directly (trustee to trustee) from the traditional IRA to the Roth IRA; or 2. If you withdrew from the traditional IRA and within 60 days invested the entire (100 percent) amount you received into a Roth IRA.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld',
+      url: 'https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf',
+      quotedText:
+        'CAUTION: If federal tax is withheld from a rollover distribution, the amount of federal tax withheld must also be reimbursed into the new IRA account in order for the rollover to be considered nontaxable for PA PIT purposes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
+      'packages/engine/src/tax/stateRetirementFacts.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.PA',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
+      'packages/engine/src/tax/stateRetirementFacts.ts#rothConversionPart',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half': {
+    title: 'New York excludes Roth conversion income only if the taxpayer is 59 and a half at the conversion, read on January 1 when the plan gives no conversion date',
+    statement:
+      'TSB-M-98(7)I lets a taxpayer exclude up to $20,000 of conversion income under the pension and annuity exclusion only if the taxpayer is 59 and a half at the time of the conversion. The engine counts the conversion part of a row toward the $20,000 only when it is marked as converted at 59 and a half or older (`rothConversionAmountAtAge59HalfOrOlder`): a named conversion is tested on its execution date when the plan gives one, every other conversion on January 1 of the year, the earliest it could have happened (projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts, tax/stateTax.ts#characterizedRetirementDelta). The plan holds no date for the conversions the aggregate strategy makes, so in the year the owner reaches 59 and a half such a conversion gets no exclusion even when it came after the half birthday, overstating New York tax by up to the tax on $20,000. Until 2026-10-06 the engine excluded a conversion whenever the owner was 59 at the end of the year: $30,000 converted at 59 and a quarter had $20,000 excluded. The six months the pack cannot see for other distributions stay with ny-tax-612-c-3-a-pension-annuity-exclusion. An in-plan Roth rollover is held to the same age; whether New York excludes it at all, when its instructions allow only periodic payments from a 401(k) plan, is not determined.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:NY',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition',
+      url: 'https://www.tax.ny.gov/pdf/memos/income/m98_7i.pdf',
+      quotedText:
+        'If a taxpayer rolls over or converts a traditional IRA to a Roth IRA, and does not qualify or does not elect to report the conversion income over a four-year period, the taxpayer can exclude up to $20,000 of the conversion income if the taxpayer is age 59 ½ at the time of the conversion.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
+      'packages/engine/src/tax/stateRetirementFacts.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.NY',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
+      'packages/engine/src/tax/stateRetirementFacts.ts#rothConversionPartAtAge59HalfOrOlder',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule': {
+    title: 'Connecticut subtracts IRA distributions, a Roth conversion included, on a federal AGI schedule that reaches zero at $100,000, or $150,000 on a joint return',
+    statement:
+      'From 2026 Connecticut subtracts any distribution from an individual retirement account other than a Roth IRA, to the extent included in federal AGI, by the schedule of 12-701(a)(20)(B)(xxviii) for an unmarried individual, a married individual filing separately or a head of household: 100% below $75,000 of federal AGI, then 85%, 70%, 55%, 40%, 25% and 10% for each $2,500 band to $89,999, 5% to $94,999, 2.5% to $99,999 and none from $100,000; and (xxix) for a joint return: 100% below $100,000, the same steps for each $5,000 band to $129,999, 5% to $139,999, 2.5% to $149,999 and none from $150,000. A Roth conversion is a distribution from a traditional IRA, so it follows the same schedule. The engine applies the schedule to every `ira` row but a Roth IRA’s, at the year’s federal AGI (tax/stateNortheastExtras.ts#connecticutIraSubtractionFraction, tax/stateTax.ts#characterizedRetirementDelta): a conversion is a row of the traditional IRA it leaves and stays in, while a row whose account is a Roth IRA, such as an inherited Roth’s earnings taxed before its five-year clock, gets no subtraction. That federal AGI is the year’s whole figure, the projection’s household facts or the federal computation of the full-year input (tax/stateTax.ts#federalFactsFor). A qualifying surviving spouse, being unmarried, reads the first schedule, as the 2025 Form CT-1040 phase-out table lists only single, married-separate and head-of-household returns beside joint ones. Until 2026-10-06 the engine subtracted every IRA dollar at any AGI: a single filer with $78,000 of federal AGI and a $30,000 IRA distribution had $30,000 subtracted where the law allows $21,000, and at $120,000 where it allows none. Pensions and annuities follow the identical schedules of (xxi) and (xxii) by statute, but the engine still subtracts them in full, as registered at ct-cgs-12-701-20-b-social-security-retirement. A year split between states never reaches the schedule: each state’s slice is priced on the coarse inputs without the characterized rows (tax/stateTax.ts#computeStateTaxYearTotal), so the Connecticut slice takes its share of the year’s private retirement income off in full through the pack’s rule at any federal AGI, and the year is marked incomplete (state-rich-split-year-adapter-required). Applying the schedule there would need the characterized rows allocated to the slice; the year’s federal AGI is available on that path, but the rows are not.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:CT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'To the extent properly includable in gross income for federal income tax purposes, for a person who files a return under the federal income tax as an unmarried individual whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars, or as a married individual filing separately whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars, or as a head of household whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars, … (III) for the taxable year commencing January 1, 2026, and each taxable year thereafter, any distribution from an individual retirement account other than a Roth individual retirement account. The subtraction under this clause shall be made in accordance with the following schedule:',
+    }, {
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'To the extent properly includable in gross income for federal income tax purposes, for married individuals who file a return under the federal income tax as married individuals filing jointly whose federal adjusted gross income for such taxable year is less than one hundred fifty thousand dollars, … (III) for the taxable year commencing January 1, 2026, and each taxable year thereafter, any distribution from an individual retirement account other than a Roth individual retirement account. The subtraction under this clause shall be made in accordance with the following schedule:',
+    }, {
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'Less than $75,000 100.0% $75,000 but not over $77,499 85.0% $77,500 but not over $79,999 70.0% $80,000 but not over $82,499 55.0% $82,500 but not over $84,999 40.0% $85,000 but not over $87,499 25.0% $87,500 but not over $89,999 10.0% $90,000 but not over $94,999 5.0% $95,000 but not over $99,999 2.5% $100,000 and over 0.0%',
+    }, {
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'Less than $100,000 100.0% $100,000 but not over $104,999 85.0% $105,000 but not over $109,999 70.0% $110,000 but not over $114,999 55.0% $115,000 but not over $119,999 40.0% $120,000 but not over $124,999 25.0% $125,000 but not over $129,999 10.0% $130,000 but not over $139,999 5.0% $140,000 but not over $149,999 2.5% $150,000 and over 0.0%',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateNortheastExtras.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#CT',
+      'packages/engine/src/tax/stateNortheastExtras.ts#connecticutIraSubtractionFraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
   'ny-tax-612-c-3-a-pension-annuity-exclusion': {
     title: 'New York’s $20,000 pension exclusion requires attaining 59½',
     statement:
-      'New York subtracts up to $20,000 of pension and annuity income, including IRA and self-employed plan distributions, received by an individual who has ATTAINED THE AGE OF FIFTY-NINE AND ONE-HALF. Half a year is the whole of the condition, and the pack cannot express it: `StateRetirementExclusion.minAge` is compared against an integer age, so `{ capPerPerson: 20000, minAge: 59 }` grants the full exclusion from the birthday rather than six months later. A New Yorker who is 59 but not yet 59½ is given a $20,000 subtraction the statute does not allow them, and the engine reports less New York tax than they owe.',
+      'New York subtracts up to $20,000 of pension and annuity income, including IRA and self-employed plan distributions, received by an individual who has ATTAINED THE AGE OF FIFTY-NINE AND ONE-HALF. Half a year is the whole of the condition, and the pack cannot express it: `StateRetirementExclusion.minAge` is compared against an integer age, so `{ capPerPerson: 20000, minAge: 59 }` grants the full exclusion from the birthday rather than six months later. A New Yorker who is 59 but not yet 59½ is given a $20,000 subtraction the statute does not allow them, and the engine reports less New York tax than they owe. A Roth conversion is tested on the age at the conversion instead, registered at ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -571,7 +731,7 @@ export const northeastStateRecords = {
   'me-mrs-36-5122-2-m2-m3-2026-pension-deduction': {
     title: 'Maine’s 2026 nonmilitary pension deduction maximum is $49,824 before offset and phaseout',
     statement:
-      'For tax year 2026, Maine\'s nonmilitary pension deduction amount is $49,824 before the statutory Social Security and Railroad Retirement reduction and the federal-adjusted-gross-income phaseout in §5122(2)(M-3), and the deductible amount may not exceed qualifying retirement-plan benefits included in federal adjusted gross income. Approximated: the pack models retirement as one flat per-person cap at the published maximum and cannot classify every eligible distribution, subtract gross Social Security or Railroad Retirement from the nonmilitary maximum, apply the separate full military deduction, or enforce the M-3 phaseout — so it can misstate tax in either direction outside isolated fixtures where federal AGI is below the unindexed M-3 applicable-amount base for the filing status, a single qualifying primary recipient is represented, and there is no gross Social Security or Railroad Retirement. Approximated further: on MFJ returns `retirementExclusion` multiplies `capPerPerson` by `agesAlive.length` because the plan schema cannot attribute retirement income to each spouse separately, so a one-recipient household can be over-excluded when both spouses are marked alive.',
+      'For tax year 2026, Maine\'s nonmilitary pension deduction amount is $49,824 before the statutory Social Security and Railroad Retirement reduction and the federal-adjusted-gross-income phaseout in §5122(2)(M-3), and the deductible amount may not exceed qualifying retirement-plan benefits included in federal adjusted gross income. Approximated: the pack models retirement as one flat per-person cap at the published maximum and cannot classify every eligible distribution, subtract gross Social Security or Railroad Retirement from the nonmilitary maximum, apply the separate full military deduction, or enforce the M-3 phaseout — so it can misstate tax in either direction outside isolated fixtures where federal AGI is below the unindexed M-3 applicable-amount base for the filing status, a single qualifying primary recipient is represented, and there is no gross Social Security or Railroad Retirement. Approximated further: on MFJ returns `retirementExclusion` multiplies `capPerPerson` by `agesAlive.length` because the plan schema cannot attribute retirement income to each spouse separately, so a one-recipient household can be over-excluded when both spouses are marked alive. A Roth conversion never qualifies, registered at me-1040me-roth-conversion-not-pension-income.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -657,7 +817,7 @@ export const northeastStateRecords = {
   'ct-cgs-12-701-20-b-social-security-retirement': {
     title: 'Connecticut’s Social Security and pension subtractions are income-tested',
     statement:
-      'Connecticut subtracts all federally taxable Social Security for a single filer with federal adjusted gross income below $75,000, but above that threshold subtracts only the difference between the federally includable amount and the lesser of twenty-five percent of benefits received or twenty-five percent of the IRC §86(b)(1) excess — so a high-AGI filer retains part of the federally taxable share in Connecticut adjusted gross income rather than receiving a full exclusion or keeping the entire federally taxable amount. Its pension and annuity schedule likewise allows 100 percent below $75,000 and zero at $100,000 and over for a single filer. Approximated in both directions: the pack always taxes federally taxable Social Security without the above-threshold partial subtraction, overstating tax relative to the statutory partial-exclusion limb and also overstating tax for the low-income full-subtraction limb; its unconditional `{ kind: \'full\' }` retirement exclusion removes a high-income pension that the schedule taxes, understating tax. The engine has no state AGI-band or retirement-subtraction-percentage field, so it cannot select either schedule from an accepted input.',
+      'Connecticut subtracts all federally taxable Social Security for a single filer with federal adjusted gross income below $75,000, but above that threshold subtracts only the difference between the federally includable amount and the lesser of twenty-five percent of benefits received or twenty-five percent of the IRC §86(b)(1) excess — so a high-AGI filer retains part of the federally taxable share in Connecticut adjusted gross income rather than receiving a full exclusion or keeping the entire federally taxable amount. Its pension and annuity schedule likewise allows 100 percent below $75,000 and zero at $100,000 and over for a single filer. Approximated in both directions: the pack always taxes federally taxable Social Security without the above-threshold partial subtraction, overstating tax relative to the statutory partial-exclusion limb and also overstating tax for the low-income full-subtraction limb; its unconditional `{ kind: \'full\' }` retirement exclusion removes a high-income pension that the schedule taxes, understating tax. The engine has no state AGI-band or retirement-subtraction-percentage field, so it cannot select either schedule from an accepted input. IRA distributions, a Roth conversion included, follow their own schedule, registered at ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule; the identical pension schedule of (xxi) and (xxii) is still not applied.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -843,12 +1003,12 @@ export const northeastStateRecords = {
   },
 
   'nj-stat-54a-6-10-retirement-income-exclusion': {
-    title: 'New Jersey\'s pension exclusion is age-62, per-return, and AGI-capped; the modeled state rules apply a flat $50,000',
+    title: 'New Jersey’s pension exclusion is for a person 62 or older, only with gross income of $150,000 or less, and steps down above $100,000',
     statement:
-      'From 2021 New Jersey excludes pension, disability, or retirement-plan payments received by a person 62 or older, but only if gross income for the year is not more than $150,000, and the dollar ceiling for a taxpayer at or below $100,000 of gross income is $100,000 joint / $75,000 single / $50,000 married-filing-separately. Between $100,000 and $150,000 the exclusion is a percentage of the payments rather than those ceilings. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 50000, minAge: 62 }` with no AGI test, so a household over $150,000 is given a $50,000 subtraction the statute withholds (understating tax) and a single filer under $100,000 is given $50,000 rather than $75,000 (overstating tax). Social Security is registered separately at nj-njit12-social-security-exclusion.',
-    classification: 'approximated',
+      'From 2021 New Jersey excludes pension, annuity and retirement plan payments, IRA distributions included, received by a person 62 or older, or by one disabled as the Social Security Act defines it, but only if gross income for the year is not more than $150,000. At or below $100,000 of gross income the exclusion is the payments up to $100,000 on a joint return or $75,000 on a single, head of household or surviving spouse return; above $100,000 it is 50% (joint) or 37.5% (other returns) of the payments to $125,000, and 25% or 18.75% to $150,000. The NJ-1040 line 28a worksheet takes the lesser of the qualifying payments and that amount, and on a joint return counts only the payments of a spouse who qualifies, as the statute’s payments received by any person who is 62 or older require. The engine computes the exclusion after every other New Jersey adjustment and tests the base at that point as gross income (tax/stateTax.ts#computeStateTaxableIncomeResult, tax/stateNortheastExtras.ts#newJerseyPensionExclusion); it reads each recipient’s age on the last day of the year, as line 28a does, and counts a Roth conversion like any other IRA distribution, as GIT-2 reports it on line 20a. Until 2026-10-06 the engine gave $50,000 for each household member 62 or older with no income test: a single filer of 65 with $200,000 of gross income including an $80,000 pension had $50,000 excluded where the law allows none, and one whose whole $80,000 income was pension had $50,000 excluded where the law allows $75,000. Settled for the age, income and payment tests. Not modeled: the unclaimed exclusion of line 28b and the special exclusion for a retiree outside Social Security; married filing separately, not a plan filing status; the New Jersey basis of a distribution whose state taxable amount differs from the federal one; and a QCD New Jersey taxes, which enters gross income but not the payments counted. A year split between states prorates the maximum and tests the slice against bounds scaled with it. The slice’s brackets are scaled with the months too, which taxes the year’s income as a full-year resident and keeps the resident share, while NJ-1040 taxes a part-year resident’s resident-period income on the ordinary tax table; the engine therefore overstates New Jersey tax on a split year with income above the lowest band, a limit va-code-58-1-322-03-2-personal-exemptions states for every state but Virginia. Social Security is registered separately at nj-njit12-social-security-exclusion.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:NJ',
     authority: [{
@@ -885,15 +1045,18 @@ export const northeastStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2021,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-10-06',
     implementedBy: [
-      'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateNortheastExtras.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#NJ',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/tax/stateNortheastExtras.ts#newJerseyPensionExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateTax.ts#newJerseyPensionPayments',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1011,7 +1174,7 @@ export const northeastStateRecords = {
   'ri-gen-laws-44-30-12-social-security-and-pension-modification': {
     title: 'Rhode Island allows the pension modification only below its federal-AGI limits, and not for IRA distributions',
     statement:
-      'Rhode Island’s pension and annuity modification, 44-30-12(c)(9), up to $50,000 of taxable pension and annuity income from tax year 2025, is allowed only to a filer at full retirement age whose federal AGI is less than the amount the Social Security modification uses in (c)(8)(i)(A) for an unmarried, head-of-household or married-separate filer and (c)(8)(i)(B) for a joint filer or qualifying widow(er): the statute starts at $80,000 and $100,000 and indexes them, and the Division of Taxation prints $107,000 and $133,750 for tax year 2025, the latest it has published. The Division’s 2025 RI-1040 instructions add that the modification does not include IRA distributions. The engine applies both: at or above the limit for the filing status the modification is zero (tax/stateEnactedLaw.ts#rhodeIslandPensionModificationAllowed, reading the limits the figures carry for the Social Security modification), and a characterized IRA distribution does not count toward it. A single filer at 67 with $150,000 of federal AGI including a $60,000 pension pays $5,772.50 for 2026; with the $50,000 cap and no AGI test the engine charged $3,397.50, and at the earlier $20,000 cap $4,822.50. Before the round-three review of 2026-09-28 this record was approximated. Settled for the AGI test and the IRA exclusion on characterized distributions; the aggregate retirement income a caller supplies without characterized distributions cannot tell a pension from an IRA and still counts both, the limits for years after 2025 are held at the 2025 amounts, and military pensions, which (c)(11) subtracts separately, are the record ri-code-44-30-12-c-11-military-pension-not-modeled.',
+      'Rhode Island’s pension and annuity modification, 44-30-12(c)(9), up to $50,000 of taxable pension and annuity income from tax year 2025, is allowed only to a filer at full retirement age whose federal AGI is less than the amount the Social Security modification uses in (c)(8)(i)(A) for an unmarried, head-of-household or married-separate filer and (c)(8)(i)(B) for a joint filer or qualifying widow(er): the statute starts at $80,000 and $100,000 and indexes them, and the Division of Taxation prints $107,000 and $133,750 for tax year 2025, the latest it has published. The Division’s 2025 RI-1040 instructions add that the modification does not include IRA distributions. The engine applies both: at or above the limit for the filing status the modification is zero (tax/stateEnactedLaw.ts#rhodeIslandPensionModificationAllowed, reading the limits the figures carry for the Social Security modification), and a characterized IRA distribution does not count toward it. A single filer at 67 with $150,000 of federal AGI including a $60,000 pension pays $5,772.50 for 2026; with the $50,000 cap and no AGI test the engine charged $3,397.50, and at the earlier $20,000 cap $4,822.50. Before the round-three review of 2026-09-28 this record was approximated. Settled for the AGI test and the IRA exclusion on characterized distributions; the aggregate retirement income a caller supplies without characterized distributions cannot tell a pension from an IRA and still counts both, the limits for years after 2025 are held at the 2025 amounts, and military pensions, which (c)(11) subtracts separately, are the record ri-code-44-30-12-c-11-military-pension-not-modeled. The Division’s retirement income guide excludes every kind of IRA, so an IRA converted to a Roth IRA gets no modification. Whether an in-plan Roth rollover from a 401(k), 403(b) or 457(b) plan qualifies is not determined; the engine counts it like a pension.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

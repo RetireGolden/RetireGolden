@@ -1,7 +1,8 @@
 /**
  * Proved-zero state worksheet relief: actual simulatePlan paths shed only the
  * immaterial CT/WI/IA/VT/IL relief-fact warnings while positive-income and
- * unrelated diagnostics stay incomplete.
+ * unrelated diagnostics stay incomplete. Kansas sheds its named-plan code
+ * warning only for the source kinds no named system pays.
  */
 import { describe, expect, it } from 'vitest'
 import type { Account } from '../model/plan.js'
@@ -17,6 +18,7 @@ import {
 import {
   computeStateTaxableIncomeResult,
   createStateTaxCalculator,
+  type StateTaxComputationResult,
 } from '../tax/stateTax.js'
 import type { StateRetirementDistributionFact } from '../tax/stateRetirementFacts.js'
 import type { TaxYearInput } from './types.js'
@@ -24,6 +26,8 @@ import { simulatePlan } from './simulate.js'
 
 const calc = createStateTaxCalculator()
 const stateCalc = createStateTaxCalculator()
+/** The same calculator, typed for the state detail its results carry. */
+const stateDetail: { computeResult(input: TaxYearInput): StateTaxComputationResult } = stateCalc
 const taxCalculator = productionTaxCalculator()
 
 function rothAccount(id: string, balance = 0, ownerPersonId = 'p1'): Account {
@@ -316,6 +320,110 @@ describe('simulate — Iowa alternate/minimum tax zero materiality', () => {
     expect(year.taxComputation?.status).toBe('incomplete')
   })
 
+})
+
+describe('simulate — Kansas named-plan code materiality', () => {
+  // K.S.A. 79-32,117 subtracts named retirement systems: KPERS, federal civil
+  // service and military, and the listed city, utility, Washburn and Overland
+  // Park plans. An IRA or a declared 401(k) is none of them, so the engine
+  // gives those withdrawals no Kansas subtraction whatever plan code they
+  // carry, and an unknown code is no reason to call the year incomplete.
+  // Washburn's plan is a 403(b), so an employer plan declared 403(b), or not
+  // declared at all, needs its code.
+  function iraAnd401kPlan(employerPlanType: '401k' | '403b' | null = '401k') {
+    const plan = singlePersonPlan({ dob: '1956-01-01', planningAge: 90, state: 'KS' })
+    plan.accounts = [
+      traditionalAccount('ira', 10_000, 'p1', 'ira'),
+      { ...traditionalAccount('401k', 200_000, 'p1', 'employer'), ...(employerPlanType === null ? {} : { employerPlanType }) },
+    ]
+    plan.expenses.baseAnnual = 30_000
+    return plan
+  }
+
+  function publicPensionPlan(planSystemCode?: string) {
+    const plan = cashFundedPlan('KS')
+    plan.accounts.push({
+      type: 'pension',
+      id: 'state-pension',
+      name: 'State pension',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 0,
+      source: 'stateLocalPublic',
+      ...(planSystemCode === undefined ? {} : { stateEligibility: { planSystemCode } }),
+    })
+    // Other income keeps Kansas taxable income above zero either way.
+    plan.incomes = [recurringOrdinaryIncome('wages', 50_000)]
+    return plan
+  }
+
+  it('keeps a year with only IRA and 401(k) withdrawals complete', () => {
+    const year = simulateOneYear(iraAnd401kPlan())
+    const rows = year.acceptedTaxInput?.stateRetirementDistributions ?? []
+    expect(rows.map((row) => row.sourceKind).sort()).toEqual(['employerPlan', 'ira'])
+    // The account's declared class reaches the row as its plan type.
+    expect(rows.find((row) => row.sourceKind === 'employerPlan')?.qualifiedPlanType).toBe('401k')
+    expect(rows.every((row) => row.planSystemCode === undefined)).toBe(true)
+    expect(stateTaxOnly(year)).toBeGreaterThan(0)
+    expect(issueCodes(year)).not.toContain('ks-plan-code-unknown')
+    expect(year.taxComputation?.status).toBe('complete')
+  })
+
+  it('prices those withdrawals the same whatever plan code they carry', () => {
+    const input = simulateOneYear(iraAnd401kPlan()).acceptedTaxInput
+    if (input?.stateRetirementDistributions === undefined) throw new Error('state retirement rows missing')
+    const bare = stateDetail.computeResult(input)
+    for (const planSystemCode of ['KPERS', 'US-FERS', 'KS-WASHBURN', 'NOT-A-KANSAS-PLAN']) {
+      const coded = stateDetail.computeResult({
+        ...input,
+        stateRetirementDistributions: input.stateRetirementDistributions.map((row) => ({ ...row, planSystemCode })),
+      })
+      expect(coded.amount, planSystemCode).toBe(bare.amount)
+      expect(coded.taxableIncome, planSystemCode).toBe(bare.taxableIncome)
+    }
+  })
+
+  it('flags a 403(b) or undeclared employer plan, and subtracts it under KS-WASHBURN', () => {
+    for (const employerPlanType of ['403b', null] as const) {
+      const label = employerPlanType ?? 'undeclared'
+      const year = simulateOneYear(iraAnd401kPlan(employerPlanType))
+      expect(issueCodes(year), label).toContain('ks-plan-code-unknown')
+      expect(year.taxComputation?.status, label).toBe('incomplete')
+      const input = year.acceptedTaxInput
+      if (input?.stateRetirementDistributions === undefined) throw new Error('state retirement rows missing')
+      const employerRow = input.stateRetirementDistributions.find((row) => row.sourceKind === 'employerPlan')
+      if (employerRow === undefined) throw new Error('employer row missing')
+      expect(employerRow.federallyIncludedAmount, label).toBeGreaterThan(0)
+      const bare = stateDetail.computeResult(input)
+      const washburn = stateDetail.computeResult({
+        ...input,
+        stateRetirementDistributions: input.stateRetirementDistributions.map((row) =>
+          row.sourceKind === 'employerPlan' ? { ...row, planSystemCode: 'KS-WASHBURN' } : row),
+      })
+      // 79-32,117(c)(xix): the whole federally included amount comes off.
+      expect(bare.taxableIncome - washburn.taxableIncome, label).toBeCloseTo(employerRow.federallyIncludedAmount, 6)
+      expect(washburn.status, label).toBe('complete')
+    }
+  })
+
+  it('still flags a public pension without a code, where the code decides the subtraction', () => {
+    // $24,000 a year from a state or local plan. Unnamed, it is incomplete;
+    // named KPERS, 79-32,117 subtracts all $24,000 and the year is complete.
+    const unnamed = simulateOneYear(publicPensionPlan())
+    expect(issueCodes(unnamed)).toContain('ks-plan-code-unknown')
+    expect(unnamed.taxComputation?.status).toBe('incomplete')
+
+    const named = simulateOneYear(publicPensionPlan('KPERS'))
+    expect(issueCodes(named)).not.toContain('ks-plan-code-unknown')
+    expect(named.taxComputation?.status).toBe('complete')
+    const unnamedInput = unnamed.acceptedTaxInput
+    const namedInput = named.acceptedTaxInput
+    if (unnamedInput === undefined || namedInput === undefined) throw new Error('acceptedTaxInput missing')
+    expect(stateDetail.computeResult(unnamedInput).taxableIncome - stateDetail.computeResult(namedInput).taxableIncome).toBe(24_000)
+  })
 })
 
 describe('direct-call zero-materiality controls', () => {

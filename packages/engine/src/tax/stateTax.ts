@@ -56,6 +56,8 @@ import {
   isMilitarySource,
   isRailroadSource,
   mapStateIncomeComponents,
+  rothConversionPart,
+  rothConversionPartAtAge59HalfOrOlder,
   type StateHsaAccountYearFacts,
   type StateHouseholdTaxFacts,
   type StateHsaYearFacts,
@@ -94,6 +96,7 @@ import {
   stateDirectQcdCollectionAdjustment,
 } from './stateQcdHsa.js'
 import {
+  connecticutIraSubtractionFraction,
   connecticutPersonalExemption,
   dcGovernmentSurvivorExclusion,
   delawareUnder60PensionDeduction,
@@ -101,6 +104,7 @@ import {
   massachusettsRetirementAdjustment,
   massachusettsTaxOnTaxableIncome,
   newJerseyMilitaryExemption,
+  newJerseyPensionExclusion,
 } from './stateNortheastExtras.js'
 import {
   hawaiiTaxForStatus,
@@ -115,6 +119,7 @@ import {
   virginiaSsTier1Subtraction,
   utahRetirementCredit,
   utahSocialSecurityCredit,
+  virginiaAgeDeduction,
   virginiaMilitarySubtraction,
   virginiaPriorStateBasisSubtraction,
   vermontCivilServiceExclusion,
@@ -176,6 +181,141 @@ function derivedAge65EligibleCount(facts: StateHouseholdTaxFacts | undefined, ta
   const ages = facts.claimantDatesOfBirth.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
   if (ages.some((age) => age === undefined)) return undefined
   return ages.filter((age) => age !== undefined && age >= 65).length
+}
+
+/**
+ * Virginia's count of taxpayers 65 or older for the $800 additional personal
+ * exemption of 58.1-322.03(2)(b). Form 760 counts a taxpayer who was 65 on or
+ * before January 1 of the following year, so a January 1 birthday counts for
+ * the year before it. From the claimants' dates of birth when the year carries
+ * them, which every projected year does; otherwise the shared count of people
+ * 65 or older at the end of the year, then the household's.
+ */
+function virginiaAgedTaxpayerCount(input: TaxYearInput, facts: StateHouseholdTaxFacts | undefined): number {
+  const dates = facts?.claimantDatesOfBirth
+  const agesOnJanuary1 = dates?.map((dob) => ageOnDate(dob, `${input.year + 1}-01-01`))
+  if (agesOnJanuary1 !== undefined && agesOnJanuary1.every((age) => age !== undefined)) {
+    return agesOnJanuary1.filter((age) => age !== undefined && age >= 65).length
+  }
+  return derivedAge65EligibleCount(facts, input.year) ?? Math.max(0, input.peopleAged65Plus)
+}
+
+/**
+ * New Jersey NJ-1040 line 20a and line A: the year's pension, annuity and IRA
+ * payments, and the part paid to a spouse who qualifies for the exclusion (62
+ * or older, or disabled, on the last day of the year). Military pensions are
+ * exempt on their own and Railroad Retirement Act annuities came off under
+ * 45 U.S.C. 231m, so neither is counted, and a public pension of unknown source
+ * is left out because it may be military. From the characterized rows when the
+ * year has them; otherwise from the coarse retirement fields, which name no
+ * recipient, so all of it qualifies when anyone in the household is old enough.
+ */
+function newJerseyPensionPayments(
+  minAge: number,
+  input: TaxYearInput,
+  distributions: readonly StateRetirementDistributionFact[] | undefined,
+): { payments: number; qualifyingPayments: number; warnings: StateTaxExactnessWarning[] } {
+  if (distributions === undefined) {
+    const payments =
+      Math.max(0, input.privateRetirementIncome ?? input.retirementIncome ?? 0) + Math.max(0, input.publicPensionIncome ?? 0)
+    const anyoneQualifies = (input.agesAlive ?? []).some((age) => age >= minAge)
+    return { payments, qualifyingPayments: anyoneQualifies ? payments : 0, warnings: [] }
+  }
+  let payments = 0
+  let qualifyingPayments = 0
+  const warnings: StateTaxExactnessWarning[] = []
+  for (const fact of distributions) {
+    if (isMilitarySource(fact.sourceKind) || isRailroadSource(fact.sourceKind) || fact.sourceKind === 'unknownPublic') continue
+    const included = Math.max(0, fact.federallyIncludedAmount)
+    payments += included
+    if (fact.recipientDisabled === true) {
+      qualifyingPayments += included
+    } else if (fact.recipientAgeKnown === false) {
+      warnings.push({
+        code: 'nj-pension-recipient-age-unknown',
+        ruleId: 'nj-stat-54a-6-10-retirement-income-exclusion',
+        message: 'New Jersey pension exclusion requires the recipient age on the last day of the year.',
+        missingFacts: ['recipientAgeYears'],
+      })
+    } else if (fact.recipientAgeYears >= minAge) {
+      qualifyingPayments += included
+    }
+  }
+  return { payments, qualifyingPayments, warnings }
+}
+
+type VirginiaAgeDeductionConfig = NonNullable<StateTaxParams['virginiaAgeDeduction']>
+
+/**
+ * Who on the return takes Virginia's age deduction, and under which limb of
+ * Va. Code 58.1-322.03(5). From the claimants' dates of birth when the year
+ * carries them: a claimant born on or before the (5)(a) date takes the full
+ * amount, and a later-born claimant has attained 65 when 65 by January 1 of the
+ * following year, the cohort Form 760 names (for 2025, born on or before
+ * January 1, 1961). Without dates of birth, from the year-end ages: 65 or older
+ * qualifies, and a birth year before the (5)(a) year takes the full amount, so
+ * a claimant born on January 1, 1939 is read as income-tested and one turning
+ * 65 on the next January 1 as not yet 65. Without ages either, every person 65
+ * or older is income-tested.
+ */
+function virginiaAgeDeductionClaimants(
+  config: VirginiaAgeDeductionConfig,
+  input: TaxYearInput,
+  facts: StateHouseholdTaxFacts | undefined,
+): { fullAmount: number; incomeTested: number } {
+  let fullAmount = 0
+  let incomeTested = 0
+  const dates = facts?.claimantDatesOfBirth
+  const agesOnJanuary1 = dates?.map((dob) => ageOnDate(dob, `${input.year + 1}-01-01`))
+  if (dates !== undefined && agesOnJanuary1 !== undefined && agesOnJanuary1.every((age) => age !== undefined)) {
+    dates.forEach((dob, index) => {
+      if (agesOnJanuary1[index]! < config.minAge) return
+      if (dob <= config.fullAmountBornOnOrBefore) fullAmount += 1
+      else incomeTested += 1
+    })
+    return { fullAmount, incomeTested }
+  }
+  if (input.agesAlive !== undefined) {
+    const fullAmountBirthYear = Number(config.fullAmountBornOnOrBefore.slice(0, 4))
+    for (const age of input.agesAlive) {
+      if (age < config.minAge) continue
+      if (input.year - Math.floor(age) < fullAmountBirthYear) fullAmount += 1
+      else incomeTested += 1
+    }
+    return { fullAmount, incomeTested }
+  }
+  return { fullAmount: 0, incomeTested: Math.max(0, input.peopleAged65Plus) }
+}
+
+/**
+ * Virginia's adjusted federal AGI (Form 760 Age Deduction Worksheet, lines 2
+ * to 8): federal AGI less the taxable Social Security and Tier 1 Railroad
+ * Retirement benefits in it. The engine models no Virginia conformity
+ * adjustment, so worksheet lines 3 and 5 are zero. Federal AGI and taxable
+ * Social Security come from the year's household facts when the projection
+ * supplies them, else from the federal calculation on the same input. Tier 1
+ * is the federally included amount of the year's railroad tier I rows, the
+ * figure Virginia also subtracts under 58.1-322.02(3).
+ */
+function virginiaAdjustedFederalAgi(
+  input: TaxYearInput,
+  facts: StateHouseholdTaxFacts | undefined,
+  distributions: readonly StateRetirementDistributionFact[] | undefined,
+): number {
+  let agi: number
+  let taxableSocialSecurity: number
+  if (facts?.federalAgi !== undefined && facts.federallyIncludedSocialSecurity !== undefined) {
+    agi = facts.federalAgi
+    taxableSocialSecurity = facts.federallyIncludedSocialSecurity
+  } else {
+    const federal = computeFederalTax(input)
+    agi = federal.agi
+    taxableSocialSecurity = federal.taxableSocialSecurity
+  }
+  const tier1 = (distributions ?? [])
+    .filter((fact) => fact.sourceKind === 'railroadTier1')
+    .reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
+  return agi - Math.max(0, taxableSocialSecurity) - tier1
 }
 
 function vermontCompetingBenefitsProvedZero(
@@ -411,7 +551,13 @@ function characterizedRetirementDelta(
   distributions: readonly StateRetirementDistributionFact[],
   agesAlive: number[],
   opts: ComputeStateTaxOptions,
-  context: { federal: () => FederalFactsForState; joint: boolean },
+  context: {
+    federal: () => FederalFactsForState
+    /** Joint tax parameters: a joint return or a qualifying surviving spouse. */
+    joint: boolean
+    /** A joint return of a married couple; a qualifying surviving spouse is unmarried. */
+    married: boolean
+  },
 ): { taxableIncomeDelta: number; taxCredit: number; warnings: StateTaxExactnessWarning[] } {
   const warnings: StateTaxExactnessWarning[] = []
   let taxableIncomeDelta = 0
@@ -561,19 +707,9 @@ function characterizedRetirementDelta(
     const military = newJerseyMilitaryExemption(distributions)
     taxableIncomeDelta += military.taxableIncomeDelta
     warnings.push(...military.warnings)
-    // Remaining ordinary NJ pension cap stays on the coarse path when only
-    // military facts are characterized; integrator should supply full components.
-    // Railroad sources came off in full above (45 U.S.C. 231m), so they stay
-    // out of the pension exclusion.
-    const nonMilitary = distributions.filter(
-      (f) => f.sourceKind !== 'militaryRetirement' && f.sourceKind !== 'militarySurvivor' && !isRailroadSource(f.sourceKind),
-    )
-    if (nonMilitary.length > 0) {
-      const privateAmt = nonMilitary
-        .filter((f) => f.sourceKind !== 'unknownPublic')
-        .reduce((s, f) => s + Math.max(0, f.federallyIncludedAmount), 0)
-      taxableIncomeDelta -= retirementExclusion(params.retirementPrivate, privateAmt, agesAlive)
-    }
+    // The pension exclusion of 54A:6-10(b) tests New Jersey gross income
+    // after every other adjustment, so it is taken later in
+    // computeStateTaxableIncomeResult (newJerseyPensionPayments), not here.
     return { taxableIncomeDelta, taxCredit, warnings }
   }
 
@@ -673,7 +809,7 @@ function characterizedRetirementDelta(
     const remainingBasis = new Map<string, number>()
     for (const fact of distributions) {
       const enumerated =
-        (fact.sourceKind === 'employerPlan' && fact.qualifiedPlanType !== undefined && fact.qualifiedPlanType !== 'other' && fact.qualifiedPlanType !== 'unknown') ||
+        virginiaEnumeratedEmployerPlan(fact) ||
         fact.sourceKind === 'ira' ||
         fact.sourceKind === 'federalCivilService'
       const basisKey = `${fact.ownerPersonId}:${fact.accountId ?? fact.planSystemCode ?? fact.qualifiedPlanType ?? fact.sourceKind}`
@@ -937,7 +1073,44 @@ function characterizedRetirementDelta(
     byOwner.set(key, rows)
   }
   for (const rows of byOwner.values()) {
-    const privateAmt = rows.filter((row) => ['ordinaryPrivatePension', 'ira', 'employerPlan', 'unknownPrivate'].includes(row.sourceKind)).reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+    // Pennsylvania does not tax a traditional IRA converted to a Roth IRA when
+    // the whole amount goes into the Roth (2025 PA-40 instructions), at any
+    // age, so it comes off before the age-60 exclusion below and stays out of
+    // that pool (pa-40-roth-ira-conversion-not-taxable).
+    if (code === 'PA') {
+      taxableIncomeDelta -= rows.filter((row) => row.sourceKind === 'ira').reduce((sum, row) => sum + rothConversionPart(row), 0)
+    }
+    // Connecticut subtracts IRA distributions, a conversion among them, on its
+    // own federal-AGI schedule (12-701(a)(20)(B)(xxviii) and (xxix)); the
+    // other retirement income stays with the pack's rule below. The clauses
+    // except a Roth IRA, so a Roth row's taxable earnings get nothing; a
+    // conversion sits on the traditional account it leaves.
+    if (code === 'CT' && params.connecticutIraDistributionSchedule) {
+      const iraIncluded = rows.filter((row) => row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth').reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+      taxableIncomeDelta -= iraIncluded * connecticutIraSubtractionFraction(
+        params.connecticutIraDistributionSchedule,
+        context.married,
+        context.federal().agi,
+      )
+    }
+    const poolAmount = (row: StateRetirementDistributionFact): number => {
+      const included = Math.max(0, row.federallyIncludedAmount)
+      const conversion = rothConversionPart(row)
+      if (conversion === 0) return included
+      // Maine: a conversion is not a retirement benefit received
+      // (me-1040me-roth-conversion-not-pension-income).
+      if (code === 'ME') return included - conversion
+      // Michigan and New York: a conversion counts only if the owner was 59
+      // and a half when it happened (mi-treasury-roth-conversion-at-59-and-a-half,
+      // ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half).
+      if (code === 'MI' || code === 'NY') return included - conversion + rothConversionPartAtAge59HalfOrOlder(row)
+      if (code === 'PA' && row.sourceKind === 'ira') return included - conversion
+      return included
+    }
+    const privateAmt = rows
+      .filter((row) => ['ordinaryPrivatePension', 'ira', 'employerPlan', 'unknownPrivate'].includes(row.sourceKind))
+      .filter((row) => !(code === 'CT' && params.connecticutIraDistributionSchedule && row.sourceKind === 'ira'))
+      .reduce((sum, row) => sum + poolAmount(row), 0)
     const publicAmt = rows.filter((row) => ['federalCivilService', 'stateLocalPublic', 'militaryRetirement', 'militarySurvivor', 'unknownPublic'].includes(row.sourceKind)).reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
     const ages = [...new Set(rows.filter((row) => row.recipientAgeKnown !== false).map((row) => row.recipientAgeYears))]
     const ageRequired = (privateAmt > 0 && params.retirementPrivate.minAge !== undefined) || (publicAmt > 0 && params.retirementPublic.minAge !== undefined)
@@ -1042,7 +1215,7 @@ export function computeStateTaxableIncomeResult(
   const agesAlive = input.agesAlive ?? []
   const distributions = resolvedDistributions(opts)
   if (distributions !== undefined) {
-    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint })
+    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint, married: input.filingStatus === 'marriedFilingJointly' })
     accumulateLeaf(acc, {
       taxableIncomeDelta: characterized.taxableIncomeDelta,
       taxCredit: characterized.taxCredit,
@@ -1121,6 +1294,21 @@ export function computeStateTaxableIncomeResult(
     acc.warnings.push({ code: 'co-federal-agi-unknown', ruleId: 'co-high-agi-federal-deduction-addback', message: 'Colorado high-AGI federal deduction addback requires federal AGI and deduction facts.', missingFacts: ['federalAgi', 'federalDeductionUsed'] })
   }
 
+  // New Jersey 54A:6-10(b): the pension exclusion tests New Jersey gross
+  // income (NJ-1040 line 27), read here as the base after every adjustment
+  // above, so it comes after them.
+  if (params.newJerseyPensionExclusion) {
+    const payments = newJerseyPensionPayments(params.newJerseyPensionExclusion.minAge, input, distributions)
+    acc.warnings.push(...payments.warnings)
+    accumulateLeaf(acc, newJerseyPensionExclusion({
+      config: params.newJerseyPensionExclusion,
+      married: input.filingStatus === 'marriedFilingJointly',
+      grossIncome: taxable + acc.taxableIncomeDelta,
+      payments: payments.payments,
+      qualifyingPayments: payments.qualifyingPayments,
+    }))
+  }
+
   const preExemptionReliefBound = taxable + acc.taxableIncomeDelta
   const standardDeductionOverrideAllowsZeroProof =
     opts.standardDeductionAllowedOverride === undefined || opts.standardDeductionAllowedOverride >= 0
@@ -1194,8 +1382,27 @@ export function computeStateTaxableIncomeResult(
     accumulateLeaf(acc, virginiaPersonalExemptions({
       config: params.virginiaPersonalExemptions,
       exemptionCount: opts.householdFacts?.exemptionTaxpayerCount ?? (joint ? 2 : 1),
-      agedTaxpayerCount: derivedAge65EligibleCount(opts.householdFacts, input.year) ?? Math.max(0, input.peopleAged65Plus),
+      agedTaxpayerCount: virginiaAgedTaxpayerCount(input, opts.householdFacts),
     }))
+  }
+
+  // Virginia 58.1-322.03(5): the age deduction comes off income of every
+  // kind, so it runs whether or not the year has characterized retirement
+  // rows. A qualifying surviving spouse is not married, so the single
+  // threshold applies to that return.
+  if (params.virginiaAgeDeduction) {
+    const claimants = virginiaAgeDeductionClaimants(params.virginiaAgeDeduction, input, opts.householdFacts)
+    if (claimants.fullAmount + claimants.incomeTested > 0) {
+      accumulateLeaf(acc, virginiaAgeDeduction({
+        config: params.virginiaAgeDeduction,
+        married: input.filingStatus === 'marriedFilingJointly',
+        fullAmountClaimants: claimants.fullAmount,
+        incomeTestedClaimants: claimants.incomeTested,
+        adjustedFederalAgi: claimants.incomeTested > 0
+          ? virginiaAdjustedFederalAgi(input, opts.householdFacts, distributions)
+          : 0,
+      }))
+    }
   }
 
   if (params.code === 'WV' && opts.householdFacts) {
@@ -1617,7 +1824,12 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
             marriedFilingJointly: age65.marriedFilingJointly * scale,
           },
         }),
-    brackets: {
+    // Scaling the brackets with the months taxes the year's income as a
+    // resident and keeps the resident share. A state whose part-year return
+    // taxes the resident-period income on its ordinary rate schedule
+    // (Virginia's Form 760PY) carries `partYearRateSchedule: 'unscaled'` and
+    // keeps its brackets.
+    brackets: params.partYearRateSchedule === 'unscaled' ? params.brackets : {
       single: params.brackets.single.map((b) => ({
         ...b,
         lowerBound: b.lowerBound * scale,
@@ -1631,6 +1843,51 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
     },
     retirementPrivate: scaleExclusion(params.retirementPrivate, scale),
     retirementPublic: scaleExclusion(params.retirementPublic, scale),
+    // Form 760PY multiplies the full-year age deduction by the residency
+    // ratio. Scaling the amount and both thresholds with the prorated income
+    // the slice prices does the same: the slice's adjusted federal AGI, which
+    // excludes Social Security, is the year's figure times the same scale.
+    ...(params.virginiaAgeDeduction === undefined
+      ? {}
+      : {
+          virginiaAgeDeduction: {
+            ...params.virginiaAgeDeduction,
+            amount: params.virginiaAgeDeduction.amount * scale,
+            singleAfagiThreshold: params.virginiaAgeDeduction.singleAfagiThreshold * scale,
+            marriedAfagiThreshold: params.virginiaAgeDeduction.marriedAfagiThreshold * scale,
+          },
+        }),
+    // NJ-1040 line 28a for a part-year resident: the income test is on the
+    // whole year's income and the dollar maximum is prorated by the months
+    // resident. Scaling the income bounds with the slice's prorated income
+    // tests the whole year; scaling the maximum prorates it; a tier's percent
+    // of the slice's payments needs no change.
+    ...(params.newJerseyPensionExclusion === undefined
+      ? {}
+      : {
+          newJerseyPensionExclusion: {
+            ...params.newJerseyPensionExclusion,
+            grossIncomeLimit: params.newJerseyPensionExclusion.grossIncomeLimit * scale,
+            fullThrough: params.newJerseyPensionExclusion.fullThrough * scale,
+            maximum: {
+              unmarried: params.newJerseyPensionExclusion.maximum.unmarried * scale,
+              marriedFilingJointly: params.newJerseyPensionExclusion.maximum.marriedFilingJointly * scale,
+            },
+            tiers: params.newJerseyPensionExclusion.tiers.map((tier) => ({ ...tier, grossIncomeAbove: tier.grossIncomeAbove * scale })),
+          },
+        }),
+    // Form 760PY's Prorated Exemption Worksheet reduces the personal
+    // exemptions in proportion to the time resident; the $800 for a taxpayer
+    // 65 or older is an additional personal exemption under 58.1-322.03(2)(b),
+    // so it is prorated with them.
+    ...(params.virginiaPersonalExemptions === undefined
+      ? {}
+      : {
+          virginiaPersonalExemptions: {
+            perExemption: params.virginiaPersonalExemptions.perExemption * scale,
+            perAgedTaxpayer: params.virginiaPersonalExemptions.perAgedTaxpayer * scale,
+          },
+        }),
   }
 }
 
@@ -1837,6 +2094,18 @@ function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): 
   }
 }
 
+/**
+ * The employer-plan types Va. Code 58.1-322.02(11) enumerates: a 401 plan
+ * (401(a), 401(k)), a 408 IRA and a 457 plan. A 403(b) is none of them, and
+ * an other, unknown or undeclared type proves no enumerated plan.
+ */
+const VIRGINIA_ENUMERATED_EMPLOYER_PLAN_TYPES: readonly NonNullable<StateRetirementDistributionFact['qualifiedPlanType']>[] = ['401a', '401k', '457b', 'ira']
+
+function virginiaEnumeratedEmployerPlan(fact: StateRetirementDistributionFact): boolean {
+  return fact.sourceKind === 'employerPlan' && fact.qualifiedPlanType !== undefined &&
+    VIRGINIA_ENUMERATED_EMPLOYER_PLAN_TYPES.includes(fact.qualifiedPlanType)
+}
+
 function pensionBasisPools(state: string, facts: readonly StateRetirementDistributionFact[] | undefined): readonly StatePensionBasisPoolResult[] | undefined {
   if (facts === undefined || !['MA', 'VA', 'UT'].includes(state)) return undefined
   const pools = new Map<string, StatePensionBasisPoolResult>()
@@ -1844,7 +2113,7 @@ function pensionBasisPools(state: string, facts: readonly StateRetirementDistrib
     const eligible = state === 'UT' ? fact.qualifiedPlanType === '401a'
       : state === 'MA' ? ['ordinaryPrivatePension', 'ira', 'employerPlan'].includes(fact.sourceKind)
         : Boolean(fact.priorTaxState) && fact.priorTaxState !== 'VA' && fact.planSystemCode !== 'VRS' && (fact.sourceKind === 'ira' || fact.sourceKind === 'federalCivilService' ||
-          (fact.sourceKind === 'employerPlan' && fact.qualifiedPlanType !== undefined && !['other', 'unknown'].includes(fact.qualifiedPlanType)))
+          virginiaEnumeratedEmployerPlan(fact))
     if (!eligible) continue
     const kind = state === 'MA' ? 'pension' : state === 'VA' ? 'eligiblePlan' : 'otherState401a'
     const key = `${fact.ownerPersonId}:${fact.accountId ?? fact.planSystemCode ?? fact.qualifiedPlanType ?? fact.sourceKind}`

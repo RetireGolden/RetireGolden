@@ -304,9 +304,49 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'sc-code-12-6-1170-roth-conversion-not-premature': {
+    title: 'South Carolina counts a Roth conversion toward its retirement deduction at any age, because no premature distribution penalty applies to one',
+    statement:
+      'S.C. Code 12-6-1170(A)(2) counts as retirement income the otherwise taxable income from plans under IRC 401, 403, 408 and 457 that is not subject to a penalty for premature distribution. IRC 408A(d)(3)(A)(ii) says section 72(t) does not apply to a conversion, so a conversion is never penalized and counts toward the $3,000 deduction, $10,000 from 65, whatever the owner’s age. The engine counts the conversion part of a row (`rothConversionAmount`) before the premature distribution test (tax/stateSouthCarolinaRetirement.ts#scSection1170Deduction). Until 2026-10-06 it withheld a conversion by an owner under 59 and a half on January 1 as of unknown premature status, so the year lost up to $3,000 of deduction, $156.30 of tax in the 5.21% band, and was marked incomplete. Settled for conversions; the deduction’s other conditions stay with sc-code-12-6-1170-retirement-income-deduction.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.C. Code §12-6-1170(A)(2)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        '(2) The term "retirement income", as used in this subsection, means the total of all otherwise taxable income not subject to a penalty for premature distribution received by the taxpayer or the taxpayer\'s surviving spouse in a taxable year from qualified retirement plans which include those plans defined in Internal Revenue Code Sections 401, 403, 408, and 457,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(A)(i)-(ii)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'in the case of any distribution to which this paragraph applies— (i) there shall be included in gross income any amount which would be includible were it not part of a qualified rollover contribution, (ii) section 72(t) shall not apply,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-06',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
+      'packages/engine/src/tax/stateRetirementFacts.ts',
+      'packages/engine/src/tax/stateSouthCarolinaRetirement.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.SC',
+      'packages/engine/src/projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts',
+      'packages/engine/src/tax/stateRetirementFacts.ts#rothConversionPart',
+      'packages/engine/src/tax/stateSouthCarolinaRetirement.ts#scSection1170Deduction',
+    ],
+  },
+
   "sc-code-12-6-1170-retirement-income-deduction": {
     "title": "South Carolina ordinary retirement deduction has owner, age and penalty gates",
-    "statement": "An original account owner may deduct up to $3,000 of qualifying included retirement income, increasing to $10,000 in the year the owner turns 65. Premature-penalty distributions do not qualify. Surviving-spouse income attributable to the decedent retains its separate statutory treatment. Ordinary nonmilitary public income belongs in this capped pool, not the full military exclusion. Legacy aggregate classification remains approximate when source and penalty facts are unavailable.",
+    "statement": "An original account owner may deduct up to $3,000 of qualifying included retirement income, increasing to $10,000 in the year the owner turns 65. Premature-penalty distributions do not qualify. Surviving-spouse income attributable to the decedent retains its separate statutory treatment. Ordinary nonmilitary public income belongs in this capped pool, not the full military exclusion. Legacy aggregate classification remains approximate when source and penalty facts are unavailable. A Roth conversion counts at any age, registered at sc-code-12-6-1170-roth-conversion-not-premature.",
     "classification": "approximated",
     "contraryReading": null,
     "errorDirection": "bothDirections",
@@ -542,7 +582,7 @@ export const southAtlanticStateRecords = {
   'ga-code-48-7-27-retirement-and-social-security-exclusion': {
     title: 'Georgia has a $35,000 retirement-income tier at ages 62-64 and separately subtracts taxable Social Security',
     statement:
-      'Georgia DOR\'s filing instructions make taxable Social Security a subtraction and direct retirees to the official IT-511 worksheet. That worksheet allows $35,000 at ages 62-64 and $65,000 at age 65 or older. From 2027, HB 463 raises the amount at 65 or older to $70,000 (ga-hb-463-2027-retirement-exclusion). Approximated: the pack preserves the age-65 cap, $65,000 for 2026, and separately excludes federally taxable Social Security, but has no $35,000 62-64 tier. It therefore leaves that source-covered retirement income in the base and overstates tax for the 62-64 limb. The DOR page also says retirement income reaches investment sources and up to $5,000 of earned income; the two retirement buckets cannot represent that broader base, so the record does not pretend that the age-65 bucket alone exhausts Georgia\'s exclusion.',
+      'Georgia DOR\'s filing instructions make taxable Social Security a subtraction and direct retirees to the official IT-511 worksheet. That worksheet allows $35,000 at ages 62-64 and $65,000 at age 65 or older. From 2027, HB 463 raises the amount at 65 or older to $70,000 (ga-hb-463-2027-retirement-exclusion). Approximated: the pack preserves the age-65 cap, $65,000 for 2026, and separately excludes federally taxable Social Security, but has no $35,000 62-64 tier. It therefore leaves that source-covered retirement income in the base and overstates tax for the 62-64 limb. The DOR page also says retirement income reaches investment sources and up to $5,000 of earned income; the two retirement buckets cannot represent that broader base, so the record does not pretend that the age-65 bucket alone exhausts Georgia\'s exclusion. The missing tier reaches a Roth conversion too: the IT-511 says the taxability of a conversion from a traditional IRA to a Roth IRA is the same for Georgia as for the IRS, and the exclusion worksheet counts taxable IRA distributions, so the engine taxes in full a conversion by a filer of 62 to 64 that Georgia would exclude up to $35,000 (medium confidence: the instructions, not a rule written for conversions).',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -835,7 +875,7 @@ export const southAtlanticStateRecords = {
 
   "md-tax-10-209-pension-exclusion": {
     "title": "Maryland TY2026 pension maximum is $40,600 before the benefit offset",
-    "statement": "For TY2026 the published maximum is $40,600 per qualifying recipient. Section 10-209 permits the lesser of included qualifying employee-plan income and the maximum less all Social Security/Railroad Retirement benefits received, including nontaxable benefits. IRAs, Roth IRAs, rollover IRAs, SEPs and ineligible deferred compensation do not qualify. Age 65, total disability, or a totally disabled spouse supplies the ordinary eligibility gate. The current coarse cap does not establish source eligibility, disability or the recipient-specific gross-benefit offset and remains approximated; $50,000 qualifying pension and $20,000 benefits require $20,600, not $40,600.",
+    "statement": "For TY2026 the published maximum is $40,600 per qualifying recipient. Section 10-209 permits the lesser of included qualifying employee-plan income and the maximum less all Social Security/Railroad Retirement benefits received, including nontaxable benefits. IRAs, Roth IRAs, rollover IRAs, SEPs and ineligible deferred compensation do not qualify. Age 65, total disability, or a totally disabled spouse supplies the ordinary eligibility gate. The current coarse cap does not establish source eligibility, disability or the recipient-specific gross-benefit offset and remains approximated; $50,000 qualifying pension and $20,000 benefits require $20,600, not $40,600. An IRA converted to a Roth IRA does not qualify, as no IRA does, and the engine counts no IRA row. Whether an in-plan Roth rollover from an employee retirement system qualifies is not determined; the engine counts such an employer plan row at 65 or older like any plan distribution.",
     "classification": "approximated",
     "contraryReading": null,
     "errorDirection": "understatesTax",
@@ -1223,12 +1263,12 @@ export const southAtlanticStateRecords = {
   },
 
   'va-code-58-1-322-03-age-deduction-and-social-security': {
-    title: 'Virginia phases the age-65 deduction out against adjusted federal AGI',
+    title: 'Virginia deducts $12,000 at 65 from income of every kind, reduced above $50,000 or $75,000 of adjusted federal AGI',
     statement:
-      'Virginia grants an age-65 deduction of $12,000, but reduces it dollar-for-dollar when adjusted federal AGI exceeds $50,000 for a single taxpayer or $75,000 for a married taxpayer, with a combined-AGI rule for married-separate returns. The statute defines adjusted federal AGI by subtracting Title II Social Security benefits and other benefits taxable solely under Internal Revenue Code section 86. The pack maps the $12,000 amount to a retirement-income cap and does not carry the phase-out or the wage-only age deduction, so exposure can run in both directions: high-income retirees receive a deduction the statute has phased away, while low-income age-65 filers with no modeled retirement distribution receive none.',
-    classification: 'approximated',
+      'Va. Code 58.1-322.03(5) allows a deduction of $12,000 for each taxpayer born on or before January 1, 1939, and $12,000 for each later-born taxpayer who has attained 65, reduced $1 for each $1 by which the taxpayer\'s adjusted federal AGI exceeds $50,000 for a single taxpayer or $75,000 for married taxpayers. Form 760\'s instructions and its Age 65 and Older Deduction Worksheet settle what the subsection leaves open, and the engine follows them (tax/stateWestExtras.ts#virginiaAgeDeduction): adjusted federal AGI is federal AGI less the taxable Social Security and Tier 1 Railroad Retirement benefits in it, not less the gross benefits; a married couple\'s adjusted federal AGI is their joint figure, and when both spouses are income-tested the reduction comes once off their combined $24,000, which is then split evenly; and a taxpayer has attained 65 for a year when born on or before January 1 of the year 64 years earlier (for 2025, January 1, 1961). The deduction is Form 760 line 4, taken against income of every kind, so the engine applies it to wages, interest and gains as well as to pensions and IRA distributions (tax/stateTax.ts#computeStateTaxableIncomeResult). For a couple both 70 with $60,000 of pensions and no Social Security in 2026 it is $24,000, and their Virginia tax is $622.00. Until 2026-10-06 the pack carried the $12,000 as a retirement-income exclusion with no income test, and from #710 (2026-09-13) every projected year lost even that, because the projection always supplies characterized retirement rows and Virginia\'s branch for them had no age deduction; that couple was charged $1,987.30. A qualifying surviving spouse is unmarried and is held to the $50,000 threshold, and a part-year resident\'s deduction is prorated with the months of residence, as the standard deduction is (Form 760PY multiplies it by a ratio of days), while the Virginia slice is taxed on the unscaled rate schedule (va-code-58-1-322-03-2-personal-exemptions). Settled for the deduction, its income test and its cohorts. The engine models no Virginia conformity adjustment to federal AGI (worksheet lines 3 and 5), does not offer the disability income subtraction or the credits for low-income individuals and earned income that a taxpayer may claim instead of the deduction, and does not compute separate returns for a married couple; whole-return accuracy is outside this record.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:VA',
     authority: [{
@@ -1237,19 +1277,46 @@ export const southAtlanticStateRecords = {
       url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
       quotedText:
         '5. a. A deduction in the amount of $ 12,000 for individuals born on or before January 1, 1939. b. A deduction in the amount of $ 12,000 for individuals born after January 1, 1939, who have attained the age of 65. This deduction shall be reduced by $ 1 for every $ 1 that the taxpayer\'s adjusted federal adjusted gross income exceeds $ 50,000 for single taxpayers or $ 75,000 for married taxpayers. For married taxpayers filing separately, the deduction shall be reduced by $ 1 for every $ 1 that the total combined adjusted federal adjusted gross income of both spouses exceeds $ 75,000. For the purposes of this subdivision, "adjusted federal adjusted gross income" means federal adjusted gross income minus any benefits received under Title II of the Social Security Act and other benefits subject to federal income taxation solely pursuant to § 86 of the Internal Revenue Code, as amended.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        'Are you eligible to claim an age deduction? For the 2025 taxable year, taxpayers born on or before January 1, 1961, may qualify to claim an age deduction based on their birth date, filing status and income.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        'Your age deduction is based on your income. A taxpayer’s income, for purposes of determining an income-based age deduction, is the taxpayer’s adjusted federal adjusted gross income or “AFAGI.” A taxpayer’s AFAGI is the taxpayer’s federal adjusted gross income, modified for any conformity adjustments and reduced by any taxable Social Security and Tier 1 Railroad Benefits.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        'For all married taxpayers, whether filing jointly or separately, the maximum allowable age deduction of $12,000 each is reduced $1 for every $1 the married taxpayers’ joint AFAGI exceeds $75,000.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        'If both spouses are claiming an income-based age deduction, regardless of whether filing jointly or separately, the married taxpayers must compute a joint age deduction first, then allocate half of the joint deduction to each spouse.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-10-06',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateWestExtras.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#VA',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateTax.ts#virginiaAdjustedFederalAgi',
+      'packages/engine/src/tax/stateTax.ts#virginiaAgeDeductionClaimants',
+      'packages/engine/src/tax/stateWestExtras.ts#virginiaAgeDeduction',
     ],
   },
 
@@ -1345,7 +1412,7 @@ export const southAtlanticStateRecords = {
   'va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction': {
     title: 'The optimizer prices a state’s brackets on federal taxable income, so a state deduction smaller than the federal one and the state’s exemptions are left out of its in-solve state tax (Virginia is the pinned case)',
     statement:
-      'The optimizer’s linear program lays a state’s brackets over its own taxable ordinary income, which is gross ordinary income less the federal deduction (projection/optimizePlan.ts#stateBracketSegmentsFor, strategies/optimizer.ts#buildOptimizerModel). It therefore uses the federal deduction in place of the state’s own deduction and ignores the state’s personal exemptions. Where the state’s own deduction is larger than the federal one, the difference is added as a zero-rate band, which is Washington’s $1,000,000 alone today (wa-essb-6346-s316-standard-deduction-indexing). Every other state’s deduction and exemptions together are smaller than the federal deduction, so the solve starts the state’s brackets too high and understates its state tax, most in the lower bands. Virginia is the pinned case: for 2026 Va. Code 58.1-322.03 allows $8,750 single plus a $930 exemption, where the LP subtracts the federal $16,100; on $60,000 of ordinary income the LP charges $2,266.75 of Virginia tax where the law charges $2,635.90, $369.15 less, which is the $6,420 between the two deductions at 5.75%. The marginal rate the solve sees is the state’s own except within that width of a bracket boundary, and the exact projection re-prices every schedule the solve proposes, so the gap reaches a recommendation only through the schedule it proposes. A deduction tagged as the federal one is exact already. State retirement exclusions are also left to the exact projection, as the model states.',
+      'The optimizer’s linear program lays a state’s brackets over its own taxable ordinary income, which is gross ordinary income less the federal deduction (projection/optimizePlan.ts#stateBracketSegmentsFor, strategies/optimizer.ts#buildOptimizerModel). It therefore uses the federal deduction in place of the state’s own deduction and ignores the state’s personal exemptions. Where the state’s own deduction is larger than the federal one, the difference is added as a zero-rate band, which is Washington’s $1,000,000 alone today (wa-essb-6346-s316-standard-deduction-indexing). Every other state’s deduction and exemptions together are smaller than the federal deduction, so the solve starts the state’s brackets too high and understates its state tax, most in the lower bands. Virginia is the pinned case: for 2026 Va. Code 58.1-322.03 allows $8,750 single plus a $930 exemption, where the LP subtracts the federal $16,100; on $60,000 of ordinary income the LP charges $2,266.75 of Virginia tax where the law charges $2,635.90, $369.15 less, which is the $6,420 between the two deductions at 5.75%. The marginal rate the solve sees is the state’s own except within that width of a bracket boundary, and the exact projection re-prices every schedule the solve proposes, so the gap reaches a recommendation only through the schedule it proposes. A deduction tagged as the federal one is exact already. State retirement exclusions are also left to the exact projection, as the model states, and so is Virginia’s age deduction at 65 (va-code-58-1-322-03-age-deduction-and-social-security), which the pinned filer, under 65, does not take.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -1384,7 +1451,7 @@ export const southAtlanticStateRecords = {
   'va-code-58-1-322-03-2-personal-exemptions': {
     title: 'Virginia deducts $930 for each personal exemption and $800 more for each taxpayer 65 or older',
     statement:
-      'Va. Code 58.1-322.03(2)(a) deducts $930 for each personal exemption allowable to the taxpayer for federal income tax purposes, and (2)(b) gives each blind or aged taxpayer, as IRC 63(f) defines them, an additional $800. Both apply whether or not the taxpayer itemizes. The 2026 figures (params/state/data/year2026.ts) carry them: one exemption for a single filer and two on a joint return, plus $800 for each taxpayer 65 or older. Before the survey of 2026-09-28 the engine allowed neither, overstating Virginia tax by $99.48 for a single filer aged 65 and $198.95 for a couple both 65 in the 5.75% band. Settled for the taxpayer and spouse exemptions and the age addition; dependents are not collected by the plan, blindness is not modeled, and whole-return accuracy is outside this record.',
+      'Va. Code 58.1-322.03(2)(a) deducts $930 for each personal exemption allowable to the taxpayer for federal income tax purposes, and (2)(b) gives each blind or aged taxpayer, as IRC 63(f) defines them, an additional $800. Both apply whether or not the taxpayer itemizes. The 2026 figures (params/state/data/year2026.ts) carry them: one exemption for a single filer and two on a joint return, plus $800 for each taxpayer 65 or older. Before the survey of 2026-09-28 the engine allowed neither, overstating Virginia tax by $99.48 for a single filer aged 65 and $198.95 for a couple both 65 in the 5.75% band. The $800 goes to a taxpayer 65 on or before January 1 of the following year, as Form 760 counts it, read from the claimants’ dates of birth (stateTax.ts#virginiaAgedTaxpayerCount); until 2026-10-06 the engine counted the age at the end of the year, so a taxpayer whose 65th birthday is January 1 lost the $800 for the year before it, $46 of tax in the 5.75% band. A part-year resident’s $930 and $800 are prorated with the months of residence, as Form 760PY’s Prorated Exemption Worksheet prorates the personal exemptions by days resident and the $800 is an additional personal exemption (stateTax.ts#prorateParams); until 2026-10-06 the engine gave the Virginia slice of the year the whole exemptions. The slice is taxed on the ordinary rate schedule, unscaled, because Form 760PY computes the tax on its Virginia taxable income from the same Tax Rate Schedule a full-year resident uses, and prorates only the standard deduction, the exemptions and the age deduction (the pack’s partYearRateSchedule, stateTax.ts#prorateParams). Until 2026-10-06 the engine scaled the brackets with the months as well: a single filer under 65, resident six months with $60,000 of ordinary income, paid $1,317.95 of Virginia tax where 760PY gives $1,189.20. The engine spreads the year’s income evenly over the months, so it prorates by months where 760PY prorates the standard deduction by the share of federal AGI received while resident and the exemptions by days; a year whose income fell unevenly across the move is outside this record. Every other state’s slice still scales its brackets with the months, which is the same as taxing the year’s income as a full-year resident and keeping the resident share; that overstates the tax of a state whose part-year return taxes the resident-period income on its ordinary schedule, as New Jersey’s does, and no other state’s part-year method has been reviewed. Settled for the taxpayer and spouse exemptions and the age addition; dependents are not collected by the plan, blindness is not modeled, and whole-return accuracy is outside this record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1402,11 +1469,35 @@ export const southAtlanticStateRecords = {
       url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
       quotedText:
         'b. Each blind or aged taxpayer as defined under § 63(f) of the Internal Revenue Code shall be entitled to an additional personal exemption in the amount of $ 800. The additional deduction for blind or aged taxpayers allowed under this subdivision shall be allowable regardless of whether the taxpayer itemizes deductions for the taxable year for federal income tax purposes.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        '65 or Older: To qualify for the additional personal exemption for age 65 or older, you must have been age 65 or older on or before January 1, 2026.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf',
+      quotedText:
+        'The prorated exemptions worksheet is used to reduce your personal and dependent exemptions to an amount which is proportional to the number of days you resided in Virginia during the taxable year.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf',
+      quotedText:
+        'If Line 16 exceeds the amount listed in the Tax Table included in these instructions, compute the tax from the Tax Rate Schedule for You on Line 17a and Spouse on Line 17b.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf',
+      quotedText:
+        'If your taxable income is $90,000, your tax is $720 + 5.75% of the amount over $17,000.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-10-06',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -1415,6 +1506,8 @@ export const southAtlanticStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.VA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/tax/stateTax.ts#virginiaAgedTaxpayerCount',
       'packages/engine/src/tax/stateEnactedLaw.ts#virginiaPersonalExemptions',
     ],
   },
@@ -1469,7 +1562,7 @@ export const southAtlanticStateRecords = {
 
   "de-early-distribution-gate": {
     "title": "Delaware early-distribution gate applies before pension exclusions",
-    "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published.",
+    "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published. A Roth conversion carries no premature distribution penalty (IRC 408A(d)(3)(A)(ii)), but the engine holds no date for the conversions its conversion strategy makes and marks an undated conversion of unknown early status unless the owner is 59 and a half on January 1. Such a conversion by a younger owner is withheld from the exclusion and the year marked incomplete, and one by an owner who turns 60 during the year but was under 59 and a half on January 1 gets no exclusion even when it came later; both overstate Delaware tax.",
     "classification": "unsettled",
     "contraryReading": "Final TY2026 administrative instructions may clarify or revise the carried-forward classification.",
     "errorDirection": null,
@@ -1632,7 +1725,7 @@ export const southAtlanticStateRecords = {
 
   "va-code-58-1-322-02-11-basis": {
     "title": "Virginia recovers contributions previously taxed by another state",
-    "statement": "The subtraction covers included distributions from the enumerated §401, §408, §457 and federal retirement arrangements only to the extent contributions were federally deductible but taxed by another state. A Virginia-only contribution history is not sufficient. Require the prior taxing jurisdiction, qualifying plan and remaining unrecovered contribution basis; reduce the basis ledger only by accepted recovery.",
+    "statement": "The subtraction covers included distributions from the enumerated §401, §408, §457 and federal retirement arrangements only to the extent contributions were federally deductible but taxed by another state. A Virginia-only contribution history is not sufficient. Require the prior taxing jurisdiction, qualifying plan and remaining unrecovered contribution basis; reduce the basis ledger only by accepted recovery. An employer plan qualifies when its plan type is 401(a), 401(k), 457(b) or an IRA (stateTax.ts#virginiaEnumeratedEmployerPlan). A 403(b) is not enumerated: it is not a §401 plan, a §408 IRA or a §457 plan, so a 403(b) distribution gets no subtraction whatever basis another state taxed, and neither does an employer plan of other, unknown or undeclared type. Until 2026-10-06 the engine accepted every declared employer-plan type but other and unknown, so a 403(b) with $4,000 federally included and $6,000 of basis taxed by another state had $4,000 subtracted. The statute's separate federal-government-retirement-program limb is reached through a federal civil service source, never through the 403(b) label.",
     "classification": "settled",
     "contraryReading": null,
     "errorDirection": null,
@@ -1649,7 +1742,7 @@ export const southAtlanticStateRecords = {
     "volatility": "staticStatute",
     "effectiveFrom": 2026,
     "effectiveThrough": null,
-    "verifiedOn": "2026-09-12",
+    "verifiedOn": "2026-10-06",
     "implementedBy": [
       "packages/engine/src/tax/stateTax.ts",
       "packages/engine/src/params/state/data/year2026.ts",
@@ -1659,6 +1752,7 @@ export const southAtlanticStateRecords = {
       "packages/engine/src/params/state/data/year2026.ts#VA",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateTax.ts#virginiaEnumeratedEmployerPlan",
       "packages/engine/src/tax/stateWestExtras.ts#virginiaPriorStateBasisSubtraction"
     ]
   },

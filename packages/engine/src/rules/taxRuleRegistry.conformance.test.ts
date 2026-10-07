@@ -982,6 +982,9 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   ],
   PA: [
     'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+    // Verified 2026-10-06: the Department of Revenue's 2025 PA-40 instructions,
+    // quoted for the Roth IRA rollover; admit only this publication.
+    'https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf',
   ],
   SC: [
     // Verified TY2025 SC1040 instructions, line o; admit only this publication.
@@ -992,6 +995,13 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // quoted for Tier 1/2 railroad guidance; law.lis.virginia.gov remains the
     // Code publisher.
     'https://www.tax.virginia.gov/subtractions',
+    // Verified 2026-10-06: the Department's 2025 Form 760 instructions, quoted
+    // for the age deduction (line 4, Taxpayers Age 65 and Older); admit only
+    // this publication.
+    'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+    // Verified 2026-10-06: the 2025 Form 760PY instructions, quoted for the
+    // prorated personal exemptions of a part-year resident.
+    'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf',
   ],
   MO: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
@@ -1033,6 +1043,9 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   KS: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
     'https://www.sos.ks.gov/publications/sessionlaws/2026/Chapter-154-SB-300.html',
+    // Verified 2026-10-06: Department of Revenue Notice 08-06, quoted for
+    // Washburn University's 403(b) retirement plan; admit only this notice.
+    'https://www.ksrevenue.gov/taxnotices/notice08-06.pdf',
   ],
   MA: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
@@ -2599,7 +2612,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-30')
+    expect(latestDueOn).toBe('2027-10-06')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

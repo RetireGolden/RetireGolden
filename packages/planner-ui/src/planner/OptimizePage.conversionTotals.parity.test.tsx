@@ -136,7 +136,12 @@ describe('the Optimize page reads the published totals (B2-P1 slice 3)', () => {
 
   for (const [id, cleanedPrinted] of [
     ['bridge-early-retirement', '$1,135,975'],
-    ['trump-account-head-start', '$4,053,361'],
+    // Was $4,053,361 before engine 0.4.1. The example is in Michigan and its
+    // owner, born 2004, converts before 59 and a half; Michigan now counts a
+    // conversion toward its retirement deduction only from 59 and a half
+    // (mi-treasury-roth-conversion-at-59-and-a-half), so 2027's conversion
+    // executes $13,180.74 where it executed $16,465.61. Nothing else moves.
+    ['trump-account-head-start', '$4,050,076'],
   ] as const) {
     it(`${id}: the mismatch sentence prints the cleaned schedule's total, and the hero names the unpriced credit`, async () => {
       const plan = appExamplePlanById(id)

@@ -1,5 +1,5 @@
 import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
-import { qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
+import { ageOnDate, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
 import type { Account, Person, Plan } from '../../model/plan.js'
@@ -2155,6 +2155,31 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
    * summed only where the year publishes one conversion figure.
    */
   const stateNamedConversionGrossByAccount = new Map<string, number>()
+  /**
+   * The same conversions' taxable dollars, and the part converted when the
+   * owner was 59 and a half or older, so the state facts can mark the
+   * conversion inside each account's `forced` event without splitting it.
+   * The owner's age is read on the request's execution date when the plan
+   * gives one in the year, otherwise on January 1, the earliest the
+   * conversion could have run.
+   */
+  const stateNamedConversionTaxableByAccount = new Map<string, number>()
+  const stateNamedConversionAt59HalfByAccount = new Map<string, number>()
+  const recordStateNamedConversionTaxable = (accountId: string, taxable: number, at59Half: boolean) => {
+    stateNamedConversionTaxableByAccount.set(accountId, (stateNamedConversionTaxableByAccount.get(accountId) ?? 0) + taxable)
+    if (at59Half) {
+      stateNamedConversionAt59HalfByAccount.set(accountId, (stateNamedConversionAt59HalfByAccount.get(accountId) ?? 0) + taxable)
+    }
+  }
+  const namedConversionAt59Half = (actionId: string, ownerPersonId: string): boolean => {
+    const owner = personById.get(ownerPersonId)
+    if (owner === undefined) return false
+    const request = passRetirementActions.find((action) => action.actionId === actionId)
+    const executionDate = request !== undefined && 'executionDate' in request ? request.executionDate : undefined
+    const onDate = executionDate !== undefined && executionDate.startsWith(`${year}-`) ? executionDate : `${year}-01-01`
+    const age = ageOnDate(owner.dob, onDate)
+    return age !== undefined && age >= 59.5
+  }
   let namedRothConversionExecuted = 0
   /**
    * The Form 8606 line-8 basis return riding on those dollars. It is the
@@ -2310,6 +2335,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         }
         stateNamedConversionGrossByAccount.set(state.account.id, (stateNamedConversionGrossByAccount.get(state.account.id) ?? 0) + move.amount)
         recordStateForcedTaxable(state.account.id, move.amount)
+        const moveAt59Half = namedConversionAt59Half(move.actionId, state.account.ownerPersonId ?? primary.id)
+        recordStateNamedConversionTaxable(state.account.id, move.amount, moveAt59Half)
         const kind = 'namedRothConversion' as const
         // Five members. The action and allocation are what make this key
         // incapable of colliding with an aggregate conversion that merely
@@ -2398,6 +2425,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
               committedAction.nontaxableAmountPlanDollars += split.nontaxable
               namedRothConversionNontaxable += split.nontaxable
               recordStateForcedTaxable(state.account.id, -split.nontaxable)
+              recordStateNamedConversionTaxable(state.account.id, -split.nontaxable, moveAt59Half)
             } else {
               noteForm8606Taxable(ownerId, move.amount, 'conversions')
             }
@@ -2472,7 +2500,10 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   return {
     stateQcdEventFacts: qcdEventFactsForYear(plan, year, stateQcdEvents),
     stateRetirementDistributionFacts: [
-      ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount),
+      ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount, {
+        taxableByAccount: stateNamedConversionTaxableByAccount,
+        atAge59HalfOrOlderByAccount: stateNamedConversionAt59HalfByAccount,
+      }),
       ...stateQcdEvents.flatMap((event) => retirementDistributionFactsForYear(plan, year, [{
         eventId: event.eventId, accountId: event.accountId,
         sourceOwnerPersonId: event.ownerPersonId, recipientPersonId: event.ownerPersonId,

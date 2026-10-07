@@ -74,7 +74,7 @@ U: 10,000.25 + 20,000.5 = 30,000.75; + 30,000.75 = 60,001.5 (every partial sum e
 
 Tolerance exact (`{ abs: 0 }`); a non-finite amount throws a `RangeError`.
 
-Example library (scratch run at `4a80669e`, every example as the app opens it, objective max-after-tax-estate, claim co-optimization off, start 2026; re-measured at `cb72713e`, after main's #753 gave the bracket-fill household's second spouse a Roth IRA, which moved only bracket-fill-roth's row, shown here at `cb72713e`). Raw total (entries), cleaned total, displayed total and the tournament winner's total; every one equals the retired reduce bit for bit, the raw total equals `rawValidation.requestedConversionTotal` on all 15 examples that post-process (and the cleaned total `cleanedValidation.requestedConversionTotal`), no schedule has a zero-amount entry, and no infeasible or timed-out solve has a raw conversion:
+Example library (scratch run at `4a80669e`, every example as the app opens it, objective max-after-tax-estate, claim co-optimization off, start 2026; re-measured at `cb72713e`, after main's #753 gave the bracket-fill household's second spouse a Roth IRA, which moved only bracket-fill-roth's row, shown here at `cb72713e`; re-measured again at `624309ae`, engine 0.4.1, after Michigan began counting a Roth conversion toward its retirement deduction only from 59 and a half (`mi-treasury-roth-conversion-at-59-and-a-half`): trump-account-head-start's owner, born 2004, converts before then, so 2027's request of $40,801.60 executes $13,180.74 instead of $16,465.61 and its cleaned total moves from $4,053,361 to $4,050,076, shown here at `624309ae`; its raw, displayed and winner totals and every other row are unchanged). Raw total (entries), cleaned total, displayed total and the tournament winner's total; every one equals the retired reduce bit for bit, the raw total equals `rawValidation.requestedConversionTotal` on all 15 examples that post-process (and the cleaned total `cleanedValidation.requestedConversionTotal`), no schedule has a zero-amount entry, and no infeasible or timed-out solve has a raw conversion:
 
 | Example | Status | Winner | Raw | Cleaned | Displayed | Winner |
 |---|---|---|---|---|---|---|
@@ -94,7 +94,7 @@ Example library (scratch run at `4a80669e`, every example as the app opens it, o
 | no-annuity-brokerage | optimal | incumbent | $1,430,974 (24) | $1,430,974 | $1,094,846 (13, withheld) | $1,230,831 (3) |
 | static-allocation-control | optimal | incumbent | $1,258,410 (28) | $680,159 | $176,940 (6, withheld) | $759,850 (6) |
 | no-head-start-grad | optimal | none | $1,516,996 (33) | $1,516,996 | $0 | $0 |
-| trump-account-head-start | optimal | none | $4,127,103 (41) | $4,053,361 | $0 | $0 |
+| trump-account-head-start | optimal | none | $4,127,103 (41) | $4,050,076 | $0 | $0 |
 
 The other twelve examples (under-saved-single, inherited-ira-beneficiary, survivor-years, ltc-shock, guardrails-flex-goals, fixed-target-spending, brokerage-no-hsa, all-401k-no-bridge and brokerage-bridge-401k infeasible; moving-state-tax, hsa-stealth-retirement and salary-growth-escalation optimal with no conversion) have every total $0.
 
@@ -105,7 +105,7 @@ When the tournament recommends nothing (`winnerSource: 'none'`, no readiness vet
 - bridge-early-retirement: "Raw optimizer request: $1,184,611. Cleaned executable schedule: $0. Executed after cleaning: $1,135,975 (100%). First raw shortfall: 2055."
 - trump-account-head-start: "Raw optimizer request: $4,127,103. Cleaned executable schedule: $0. Executed after cleaning: $4,053,361 (100%). First raw shortfall: 2027."
 
-Rule 2 (a label must be right for its reader): the sentence prints `postProcessed.cleanedSchedule.conversionTotal` ($1,135,975 and $4,053,361). In every other state where the sentence shows, the displayed list is the cleaned schedule, so the two readings agree.
+Rule 2 (a label must be right for its reader): the sentence prints `postProcessed.cleanedSchedule.conversionTotal` ($1,135,975 and $4,053,361 at `4a80669e`; trump-account-head-start's is $4,050,076 from `624309ae`). In every other state where the sentence shows, the displayed list is the cleaned schedule, so the two readings agree.
 
 The hero above that sentence told the same two readers, and five others (early-career-match, aggressive-saver, coast-fire, lean-fat-fire, no-head-start-grad), "The optimizer proposed converting $X, but only $X could actually be converted. The traditional balance it counted on is not available in the plan years shown", with equal amounts: requested equals executed and no year is materially unexecuted; the schedule is held back because the marketplace (ACA) credit is not priced in some years (check correction 8). The hero now names the cause the result carries: a schedule with no materially unexecuted year reads "This conversion schedule is shown as a diagnostic." and "Your full projection converts all $X requested, but the marketplace (ACA) premium tax credit isn't priced in some of the plan's years, and conversion income changes that credit, so the schedule is shown as a diagnostic, not a recommendation. The ACA note below names the years." (or, for incomplete tax years, names those years; otherwise says the schedule cannot be applied as it stands). A real shortfall keeps the old sentence.
 

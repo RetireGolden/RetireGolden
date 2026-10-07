@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -47,20 +47,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1711,
+          "line": 1712,
           "note": null,
           "tests": [
             {
               "title": "measures a 2026 Arkansan against the schedule the department published",
-              "line": 1720
+              "line": 1721
             },
             {
               "title": "would over-tax the same household on the schedule the pack used to carry",
-              "line": 1725
+              "line": 1726
             },
             {
               "title": "opens with a zero bracket, which the schedule it replaced does not",
-              "line": 1742
+              "line": 1743
             }
           ]
         }
@@ -138,11 +138,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -153,16 +153,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1826,
+          "line": 1827,
           "note": null,
           "tests": [
             {
               "title": "taxes an ATRS pension above $6,000",
-              "line": 1845
+              "line": 1846
             },
             {
               "title": "would exempt the whole pension under the override the pack used to carry",
-              "line": 1849
+              "line": 1850
             }
           ]
         }
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 806,
+          "line": 888,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 807
+              "line": 889
             }
           ]
         }
@@ -323,7 +323,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 809,
+          "line": 891,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 810
+              "line": 892
             }
           ]
         }
@@ -407,11 +407,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -422,16 +422,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1790,
+          "line": 1791,
           "note": null,
           "tests": [
             {
               "title": "exempts $6,000 across both pensions rather than $6,000 of each",
-              "line": 1807
+              "line": 1808
             },
             {
               "title": "would grant two exemptions if the public bucket carried a rule of its own",
-              "line": 1813
+              "line": 1814
             }
           ]
         }
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -500,16 +500,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1869,
+          "line": 1870,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Arkansan’s Social Security out of the state base",
-              "line": 1884
+              "line": 1885
             },
             {
               "title": "would pull 34,000 of benefit into the base if Arkansas taxed it",
-              "line": 1890
+              "line": 1891
             }
           ]
         }
@@ -567,7 +567,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -578,20 +578,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1751,
+          "line": 1752,
           "note": null,
           "tests": [
             {
               "title": "deducts the amount the department published for 2026",
-              "line": 1760
+              "line": 1761
             },
             {
               "title": "would carry a two-year-stale figure on the amount the pack used to hold",
-              "line": 1766
+              "line": 1767
             },
             {
               "title": "is Arkansas’s own figure, so the federal conformity indexer must not touch it",
-              "line": 1772
+              "line": 1773
             }
           ]
         }
@@ -654,7 +654,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -665,20 +665,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1901,
+          "line": 1902,
           "note": null,
           "tests": [
             {
               "title": "leaves half of a capital gain out of the Arkansas base",
-              "line": 1917
+              "line": 1918
             },
             {
               "title": "would tax the whole gain with the included share left at its default",
-              "line": 1923
+              "line": 1924
             },
             {
               "title": "still taxes the included half at ordinary Arkansas rates",
-              "line": 1928
+              "line": 1929
             }
           ]
         }
@@ -749,7 +749,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -822,7 +822,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -833,16 +833,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4792,
+          "line": 5005,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 4808
+              "line": 5021
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 4815
+              "line": 5028
             }
           ]
         }
@@ -905,11 +905,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -920,36 +920,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4830,
+          "line": 5043,
           "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
               "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
-              "line": 4860
+              "line": 5073
             },
             {
               "title": "withholds the exclusion below age 65",
-              "line": 4869
+              "line": 5082
             },
             {
               "title": "doubles the cap on a joint return when both spouses are 65",
-              "line": 4881
+              "line": 5094
             },
             {
               "title": "grants only one $6,000 cap when one spouse is below 65",
-              "line": 4895
+              "line": 5108
             },
             {
               "title": "reaches the no-exclusion counterfactual once the cap is withheld",
-              "line": 4909
+              "line": 5122
             },
             {
               "title": "reaches the doubled-cap counterfactual under a doubled cap",
-              "line": 4917
+              "line": 5130
             },
             {
               "title": "reaches the no-age-gate counterfactual once minAge is dropped",
-              "line": 4925
+              "line": 5138
             }
           ]
         }
@@ -1017,7 +1017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1084,11 +1084,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1099,20 +1099,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1604,
+          "line": 1544,
           "note": "private-bucket defined-benefit limb",
           "tests": [
             {
               "title": "taxes a private-employer 414(j) pension above the $6,000 private-bucket cap",
-              "line": 1631
+              "line": 1571
             },
             {
               "title": "taxes the whole pension for an under-65 private defined-benefit retiree",
-              "line": 1639
+              "line": 1579
             },
             {
               "title": "reaches the booklet for the private pension once that bucket is full",
-              "line": 1654
+              "line": 1594
             }
           ]
         }
@@ -1170,11 +1170,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1185,12 +1185,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4762,
+          "line": 4975,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 4778
+              "line": 4991
             }
           ]
         }
@@ -1245,7 +1245,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1256,12 +1256,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1725,
+          "line": 1665,
           "note": null,
           "tests": [
             {
               "title": "charges tax on the exemption dollars every Alabama return subtracts",
-              "line": 1744
+              "line": 1684
             }
           ]
         }
@@ -1343,7 +1343,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 409
+              "line": 549
             }
           ]
         }
@@ -1421,7 +1421,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1432,12 +1432,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4734,
+          "line": 4947,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 4751
+              "line": 4964
             }
           ]
         }
@@ -1487,7 +1487,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1498,20 +1498,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1664,
+          "line": 1604,
           "note": null,
           "tests": [
             {
               "title": "grants the $3,000 single maximum where the chart has slid to $2,500",
-              "line": 1686
+              "line": 1626
             },
             {
               "title": "reaches the chart once the pack deduction is replaced with the slid amount",
-              "line": 1694
+              "line": 1634
             },
             {
               "title": "grants the $8,500 joint maximum where the chart row reads $5,000",
-              "line": 1705
+              "line": 1645
             }
           ]
         }
@@ -1560,7 +1560,7 @@
           "functions": [
             {
               "name": "states.KY",
-              "line": 504
+              "line": 527
             }
           ]
         },
@@ -1569,7 +1569,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1581,27 +1581,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 429,
+          "line": 496,
           "note": null,
           "tests": [
             {
               "title": "deducts $3,360 once from $10,000 on a joint return",
-              "line": 430
+              "line": 497
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 5014,
+          "line": 5227,
           "note": null,
           "tests": [
             {
               "title": "applies $3,360 once on an MFJ return",
-              "line": 5021
+              "line": 5234
             },
             {
               "title": "rejects doubling the deduction for two spouses on one joint return",
-              "line": 5030
+              "line": 5243
             }
           ]
         }
@@ -1645,7 +1645,7 @@
           "functions": [
             {
               "name": "KY",
-              "line": 504
+              "line": 527
             }
           ]
         },
@@ -1654,11 +1654,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1669,46 +1669,46 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3251,
+          "line": 3252,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "keeps Social Security out of Kentucky adjusted gross income",
-              "line": 3267
+              "line": 3268
             },
             {
               "title": "would pull the federally taxable share in if Kentucky taxed it",
-              "line": 3273
+              "line": 3274
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3282,
+          "line": 3283,
           "note": "retirement-distribution limb",
           "tests": [
             {
               "title": "excludes $31,110 of a private IRA distribution with no age gate",
-              "line": 3301
+              "line": 3302
             },
             {
               "title": "would charge more if private retirement were left in the base",
-              "line": 3307
+              "line": 3308
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3318,
+          "line": 3319,
           "note": "flat-rate limb",
           "tests": [
             {
               "title": "taxes net income at three and one-half percent for 2026",
-              "line": 3333
+              "line": 3334
             },
             {
               "title": "would charge more at the former four percent rate",
-              "line": 3337
+              "line": 3338
             }
           ]
         }
@@ -1762,7 +1762,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 512
+              "line": 535
             }
           ]
         },
@@ -1771,7 +1771,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1852,7 +1852,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 512
+              "line": 535
             }
           ]
         },
@@ -1870,11 +1870,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1901,16 +1901,16 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4962,
+          "line": 5175,
           "note": null,
           "tests": [
             {
               "title": "applies the TY2026 indexed $12,324 exemption",
-              "line": 4977
+              "line": 5190
             },
             {
               "title": "would under-exempt at the frozen $12,000 starting amount",
-              "line": 4983
+              "line": 5196
             }
           ]
         }
@@ -1970,7 +1970,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1981,12 +1981,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1539,
+          "line": 1479,
           "note": null,
           "tests": [
             {
               "title": "still fully exempts aggregate publicPensionIncome via the coarse override",
-              "line": 1556
+              "line": 1496
             }
           ]
         }
@@ -2026,7 +2026,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 512
+              "line": 535
             }
           ]
         },
@@ -2044,11 +2044,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -2071,20 +2071,20 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3360,
+          "line": 3361,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of the Louisiana base",
-              "line": 3374
+              "line": 3375
             },
             {
               "title": "would pull the federally taxable share in if Louisiana taxed it",
-              "line": 3380
+              "line": 3381
             },
             {
               "title": "also exempts a United States Government retirement annuity in the public bucket",
-              "line": 3386
+              "line": 3387
             }
           ]
         }
@@ -2123,7 +2123,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2132,11 +2132,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -2147,20 +2147,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2304,
+          "line": 2305,
           "note": null,
           "tests": [
             {
               "title": "leaves a private pension out of the Mississippi base entirely",
-              "line": 2319
+              "line": 2320
             },
             {
               "title": "reaches paragraph (k) income on the same terms as paragraph (l) income",
-              "line": 2325
+              "line": 2326
             },
             {
               "title": "would tax the pension if the exclusion were dropped",
-              "line": 2341
+              "line": 2342
             }
           ]
         }
@@ -2219,7 +2219,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2228,7 +2228,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2239,20 +2239,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2352,
+          "line": 2353,
           "note": null,
           "tests": [
             {
               "title": "deducts Mississippi’s own statutory amount",
-              "line": 2368
+              "line": 2369
             },
             {
               "title": "is untagged, so the federal conformity indexer moves neither it nor an age-65 addition",
-              "line": 2374
+              "line": 2375
             },
             {
               "title": "would drift away from the statute in every projected year if it were tagged",
-              "line": 2385
+              "line": 2386
             }
           ]
         }
@@ -2299,7 +2299,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2317,7 +2317,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2437,7 +2437,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2455,7 +2455,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -2489,20 +2489,20 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2261,
+          "line": 2262,
           "note": null,
           "tests": [
             {
               "title": "exempts the first $10,000 of taxable income and charges 4% above it",
-              "line": 2273
+              "line": 2274
             },
             {
               "title": "costs exactly the zero band times the rate less than a bandless schedule",
-              "line": 2278
+              "line": 2279
             },
             {
               "title": "charges nothing at all below the band",
-              "line": 2290
+              "line": 2291
             }
           ]
         }
@@ -2576,7 +2576,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2585,7 +2585,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2596,20 +2596,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2402,
+          "line": 2403,
           "note": null,
           "tests": [
             {
               "title": "puts the whole gain in the base at the ordinary rate",
-              "line": 2417
+              "line": 2418
             },
             {
               "title": "prices a gain exactly as it prices the same amount of ordinary income",
-              "line": 2422
+              "line": 2423
             },
             {
               "title": "would exclude half the gain if the included share were set as Arkansas’s is",
-              "line": 2429
+              "line": 2430
             }
           ]
         }
@@ -2651,7 +2651,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2669,7 +2669,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -2746,7 +2746,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 619
+              "line": 642
             }
           ]
         },
@@ -2764,7 +2764,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2835,7 +2835,7 @@
           "functions": [
             {
               "name": "OK",
-              "line": 847
+              "line": 887
             }
           ]
         },
@@ -2844,11 +2844,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -2859,24 +2859,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4156,
+          "line": 4157,
           "note": null,
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 4193
+              "line": 4194
             },
             {
               "title": "subtracts federally taxable Social Security to the extent included under IRC 86",
-              "line": 4202
+              "line": 4203
             },
             {
               "title": "caps ordinary qualifying retirement at Schedule 511-A line 6 $10,000",
-              "line": 4213
+              "line": 4214
             },
             {
               "title": "pins the missing qualifying CSRS-in-lieu exclusion on Schedule 511-A line 3",
-              "line": 4225
+              "line": 4226
             }
           ]
         }
@@ -2935,7 +2935,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 956
+              "line": 996
             }
           ]
         },
@@ -2944,7 +2944,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -2955,16 +2955,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1582,
+          "line": 1583,
           "note": null,
           "tests": [
             {
               "title": "keeps a Tennessee wage earner’s payroll out of any state base",
-              "line": 1594
+              "line": 1595
             },
             {
               "title": "would tax the same payroll without the constitutional bar",
-              "line": 1599
+              "line": 1600
             }
           ]
         }
@@ -3008,7 +3008,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 956
+              "line": 996
             }
           ]
         },
@@ -3017,7 +3017,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3028,16 +3028,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1606,
+          "line": 1607,
           "note": null,
           "tests": [
             {
               "title": "leaves a Tennessee retiree’s interest and dividends untaxed",
-              "line": 1625
+              "line": 1626
             },
             {
               "title": "would reach every dollar of it if the Hall tax had survived",
-              "line": 1630
+              "line": 1631
             }
           ]
         }
@@ -3081,7 +3081,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 961
+              "line": 1001
             }
           ]
         },
@@ -3090,7 +3090,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3101,16 +3101,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 693,
+          "line": 694,
           "note": null,
           "tests": [
             {
               "title": "leaves a Texas retiree’s pension and IRA income out of any state base",
-              "line": 710
+              "line": 711
             },
             {
               "title": "would carry all of it if the legislature could reach net income",
-              "line": 715
+              "line": 716
             }
           ]
         }
@@ -3149,7 +3149,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 961
+              "line": 1001
             }
           ]
         },
@@ -3158,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3169,16 +3169,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 722,
+          "line": 723,
           "note": null,
           "tests": [
             {
               "title": "leaves a realized gain outside any Texas base",
-              "line": 735
+              "line": 736
             },
             {
               "title": "would put the gain in the base under the question section 24-a left open",
-              "line": 739
+              "line": 740
             }
           ]
         }

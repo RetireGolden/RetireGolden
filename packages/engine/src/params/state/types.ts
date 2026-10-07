@@ -169,6 +169,12 @@ export interface StateTaxParams {
    */
   retirementRuleShared?: boolean
   /**
+   * `unscaled` when a part-year resident's return taxes the resident-period
+   * income on the ordinary rate schedule (Virginia's Form 760PY). Left out,
+   * the split-year slice scales the brackets with the resident months.
+   */
+  partYearRateSchedule?: 'unscaled'
+  /**
    * Direct QCD conformity metadata. `unknown` fails closed for exact state QCD
    * results; never infer addback from silence. Pack policy is authoritative.
    */
@@ -231,6 +237,35 @@ export interface StateTaxParams {
     'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse',
     { maximum: number; phaseoutStart: number; phaseoutStep: number; reductionPerStep: number }
   >
+  /**
+   * Connecticut 12-701(a)(20)(B)(xxviii) and (xxix): the share of IRA
+   * distributions (other than from a Roth IRA) subtracted, by federal AGI. Each
+   * row's `percent` applies from `federalAgiAtLeast` up to the next row's.
+   * `unmarried` serves single, married-separate and head-of-household returns;
+   * `marriedFilingJointly` serves a joint return.
+   */
+  connecticutIraDistributionSchedule?: Record<
+    'unmarried' | 'marriedFilingJointly',
+    readonly { readonly federalAgiAtLeast: number; readonly percent: number }[]
+  >
+  /**
+   * New Jersey 54A:6-10(b): the pension exclusion for a taxpayer 62 or older
+   * (or disabled), allowed only when New Jersey gross income is at most
+   * `grossIncomeLimit`. At or below `fullThrough` it is the payments up to the
+   * dollar maximum; in each later tier it is that tier's percent of the
+   * payments. `unmarried` serves single, head-of-household and surviving
+   * spouse returns.
+   */
+  newJerseyPensionExclusion?: {
+    minAge: number
+    grossIncomeLimit: number
+    fullThrough: number
+    maximum: Record<'unmarried' | 'marriedFilingJointly', number>
+    tiers: readonly {
+      readonly grossIncomeAbove: number
+      readonly percent: Record<'unmarried' | 'marriedFilingJointly', number>
+    }[]
+  }
   /** South Carolina TY2026 SCIAD standard-deduction phaseout schedule. */
   southCarolinaSciad?: Record<
     'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse',
@@ -369,6 +404,21 @@ export interface StateTaxParams {
   virginiaPersonalExemptions?: {
     perExemption: number
     perAgedTaxpayer: number
+  }
+  /**
+   * Virginia 58.1-322.03(5) age deduction, taken against income of every kind:
+   * `amount` for each taxpayer born on or before `fullAmountBornOnOrBefore`,
+   * and `amount` for each later-born taxpayer who has attained `minAge`,
+   * reduced $1 for each $1 of adjusted federal AGI above the single or married
+   * threshold. Form 760's Age Deduction Worksheet sets how the reduction is
+   * taken; see `virginiaAgeDeduction` in tax/stateWestExtras.ts.
+   */
+  virginiaAgeDeduction?: {
+    amount: number
+    minAge: number
+    fullAmountBornOnOrBefore: string
+    singleAfagiThreshold: number
+    marriedAfagiThreshold: number
   }
   /**
    * Maryland Tax-General 10-105(a)(3)-(4): an additional state rate on the net

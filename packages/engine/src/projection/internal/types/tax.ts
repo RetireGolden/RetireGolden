@@ -227,6 +227,20 @@ export interface StateRetirementDistributionFactInput {
   qualifiedPlanType?: '401a' | '401k' | '403b' | '457b' | 'ira' | 'other' | 'unknown'
   deathOrDisabilitySurvivorUnder55?: boolean
   taxableSocialSecurityAllocated?: number
+  /**
+   * The part of `federallyIncludedAmount` that is a taxable Roth conversion: an
+   * IRA converted to a Roth IRA on an `ira` row, an in-plan Roth rollover on an
+   * `employerPlan` row. Absent means none. The event is not split, so an
+   * account's row can carry its RMD and a named conversion together.
+   */
+  rothConversionAmount?: number
+  /**
+   * The part of `rothConversionAmount` converted when the owner was 59 and a
+   * half or older: at a named conversion's execution date when the plan gives
+   * one, otherwise at January 1 of the year, the earliest the conversion could
+   * have happened.
+   */
+  rothConversionAmountAtAge59HalfOrOlder?: number
 }
 
 export interface StateHouseholdTaxFactsInput {

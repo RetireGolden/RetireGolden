@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -47,16 +47,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2172,
+          "line": 2173,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Hoosier’s Social Security out of the Indiana base",
-              "line": 2186
+              "line": 2187
             },
             {
               "title": "would pull 34,000 of benefit into the base if Indiana taxed it",
-              "line": 2191
+              "line": 2192
             }
           ]
         }
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -216,7 +216,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -234,7 +234,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -261,20 +261,20 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2124,
+          "line": 2125,
           "note": null,
           "tests": [
             {
               "title": "charges the 2026 step of the ramp, not the 2025 one",
-              "line": 2137
+              "line": 2138
             },
             {
               "title": "would over-charge by the ramp step if the prior year were held forward",
-              "line": 2142
+              "line": 2143
             },
             {
               "title": "is filing-status blind, with no married-filing-jointly doubling",
-              "line": 2154
+              "line": 2155
             }
           ]
         }
@@ -341,7 +341,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -359,7 +359,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -454,7 +454,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -518,7 +518,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -527,11 +527,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -554,20 +554,20 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2206,
+          "line": 2207,
           "note": null,
           "tests": [
             {
               "title": "taxes a TRF pension in full",
-              "line": 2220
+              "line": 2221
             },
             {
               "title": "taxes a private pension and an IRA distribution the same way",
-              "line": 2225
+              "line": 2226
             },
             {
               "title": "would exempt the whole pension under the override the pack used to carry",
-              "line": 2237
+              "line": 2238
             }
           ]
         }
@@ -625,7 +625,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 446
+              "line": 469
             }
           ]
         },
@@ -643,7 +643,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -736,7 +736,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 974
+              "line": 1147
             }
           ]
         }
@@ -747,12 +747,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 967,
+          "line": 971,
           "note": null,
           "tests": [
             {
               "title": "allows $1,000 from 2029, $95.29 more tax than the 2026 amount held",
-              "line": 977
+              "line": 981
             }
           ]
         }
@@ -796,7 +796,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 434
+              "line": 457
             }
           ]
         },
@@ -805,11 +805,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -840,16 +840,16 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 914,
+          "line": 915,
           "note": null,
           "tests": [
             {
               "title": "subtracts an Illinois retiree’s IRA income at 58",
-              "line": 930
+              "line": 931
             },
             {
               "title": "would tax all of it if the subtraction carried the usual age gate",
-              "line": 934
+              "line": 935
             }
           ]
         }
@@ -893,7 +893,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 434
+              "line": 457
             }
           ]
         },
@@ -902,7 +902,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -913,12 +913,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 948,
+          "line": 949,
           "note": null,
           "tests": [
             {
               "title": "subtracts Social Security included under IRC section 86",
-              "line": 967
+              "line": 968
             }
           ]
         }
@@ -958,7 +958,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 434
+              "line": 457
             }
           ]
         },
@@ -976,7 +976,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -1037,7 +1037,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 482
+              "line": 505
             }
           ]
         },
@@ -1055,7 +1055,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -1142,7 +1142,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 482
+              "line": 505
             }
           ]
         },
@@ -1164,7 +1164,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -1191,16 +1191,16 @@
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1118,
+          "line": 1119,
           "note": null,
           "tests": [
             {
               "title": "excludes an Iowa retiree’s pension in full at 56",
-              "line": 1133
+              "line": 1134
             },
             {
               "title": "would tax it under the sixty-five gate most states use",
-              "line": 1137
+              "line": 1138
             }
           ]
         }
@@ -1239,7 +1239,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 482
+              "line": 505
             }
           ]
         },
@@ -1248,7 +1248,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1259,12 +1259,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1151,
+          "line": 1152,
           "note": null,
           "tests": [
             {
               "title": "subtracts Social Security taxable under IRC section 86 to the extent included",
-              "line": 1170
+              "line": 1171
             }
           ]
         }
@@ -1304,7 +1304,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 489
+              "line": 512
             }
           ]
         },
@@ -1322,7 +1322,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -1365,10 +1365,11 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-12",
-      "dueOn": "2027-09-12",
+      "verifiedOn": "2026-10-06",
+      "dueOn": "2027-10-06",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualStateRetirementEvents.ts",
         "packages/engine/src/tax/stateMidwestExtras.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
@@ -1378,7 +1379,16 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 489
+              "line": 512
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualStateRetirementEvents.ts",
+          "functions": [
+            {
+              "name": "stateRetirementEventsFromAccountAmounts",
+              "line": 27
             }
           ]
         },
@@ -1387,7 +1397,7 @@
           "functions": [
             {
               "name": "kansasNamedPlanExclusion",
-              "line": 71
+              "line": 117
             }
           ]
         },
@@ -1396,7 +1406,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -1417,6 +1427,18 @@
             {
               "title": "requires a named system such as KPERS",
               "line": 423
+            },
+            {
+              "title": "does not flag a missing code on a source no named system pays",
+              "line": 428
+            },
+            {
+              "title": "flags an employer plan that may be Washburn University's 403(b), and subtracts it under KS-WASHBURN",
+              "line": 447
+            },
+            {
+              "title": "flags a missing code on a public source, where the code decides it",
+              "line": 475
             }
           ]
         }
@@ -1443,6 +1465,11 @@
           "kind": "statute",
           "citation": "K.S.A. 79-32,117(c)(xix)",
           "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available",
+          "url": "https://www.ksrevenue.gov/taxnotices/notice08-06.pdf"
         },
         {
           "kind": "statute",
@@ -1475,7 +1502,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 489
+              "line": 512
             }
           ]
         },
@@ -1484,7 +1511,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1495,12 +1522,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3169,
+          "line": 3170,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 3185
+              "line": 3186
             }
           ]
         }
@@ -1579,7 +1606,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 596
+              "line": 619
             }
           ]
         },
@@ -1588,7 +1615,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1599,16 +1626,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3477,
+          "line": 3478,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 3491
+              "line": 3492
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 3496
+              "line": 3497
             }
           ]
         }
@@ -1659,7 +1686,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 596
+              "line": 619
             }
           ]
         },
@@ -1668,11 +1695,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1734,6 +1761,107 @@
       ]
     },
     {
+      "id": "mi-treasury-roth-conversion-at-59-and-a-half",
+      "title": "Michigan counts a Roth conversion toward its retirement deduction only if the owner is 59 and a half at the rollover, read on January 1 when the plan gives no conversion date",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "the date of each Roth conversion the conversion strategy makes"
+      },
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-06",
+      "dueOn": "2027-10-06",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+        "packages/engine/src/projection/internal/annualStateRetirementEvents.ts",
+        "packages/engine/src/tax/stateRetirementFacts.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MI",
+              "line": 619
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 354
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualStateRetirementEvents.ts",
+          "functions": [
+            {
+              "name": "stateRetirementEventsFromAccountAmounts",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRetirementFacts.ts",
+          "functions": [
+            {
+              "name": "rothConversionPartAtAge59HalfOrOlder",
+              "line": 158
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.stateRothConversion.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.stateRothConversion.test.ts",
+          "line": 148,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives an undated conversion in the half-birthday year no subtraction",
+              "line": 161
+            },
+            {
+              "title": "subtracts a conversion at 59 and a half, dated or by January 1, and none before",
+              "line": 166
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax",
+          "url": "https://www.michigan.gov/taxes/questions/iit/accordion/roth/are-conversions-from-a-regular-ira-to-a-roth-ira-subject-to-michigan-individual-income-tax-1"
+        }
+      ]
+    },
+    {
       "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
       "title": "Minnesota publishes TY2026 single/MFJ deductions and income-tax bands",
       "classification": "settled",
@@ -1757,7 +1885,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 602
+              "line": 625
             }
           ]
         },
@@ -1766,11 +1894,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -1781,12 +1909,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2536,
+          "line": 2537,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the DOR TY2026 deduction and schedule",
-              "line": 2550
+              "line": 2551
             }
           ]
         }
@@ -1840,7 +1968,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 602
+              "line": 625
             }
           ]
         },
@@ -1849,11 +1977,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -1864,16 +1992,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2502,
+          "line": 2503,
           "note": null,
           "tests": [
             {
               "title": "taxes resident private pension before the TY2026 standard deduction",
-              "line": 2522
+              "line": 2523
             },
             {
               "title": "would drop the pension only under a counterfactual full exclusion",
-              "line": 2529
+              "line": 2530
             }
           ]
         }
@@ -1919,7 +2047,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 602
+              "line": 625
             }
           ]
         },
@@ -1928,7 +2056,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2015,7 +2143,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 660
+              "line": 683
             }
           ]
         },
@@ -2024,11 +2152,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2152,7 +2280,7 @@
           "functions": [
             {
               "name": "states.MO",
-              "line": 660
+              "line": 683
             }
           ]
         },
@@ -2161,15 +2289,15 @@
           "functions": [
             {
               "name": "missouriMilitaryAndRailroad",
-              "line": 134
+              "line": 207
             },
             {
               "name": "missouriPrivatePensionDeduction",
-              "line": 105
+              "line": 178
             },
             {
               "name": "missouriPublicPensionDeduction",
-              "line": 124
+              "line": 197
             }
           ]
         },
@@ -2178,7 +2306,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -2189,16 +2317,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 511,
+          "line": 578,
           "note": null,
           "tests": [
             {
               "title": "phases private pension dollar-for-dollar above $25,000 single",
-              "line": 512
+              "line": 579
             },
             {
               "title": "uses a different public limit and independent military/RRB exclusions",
-              "line": 516
+              "line": 583
             }
           ]
         }
@@ -2242,7 +2370,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 660
+              "line": 683
             }
           ]
         },
@@ -2251,7 +2379,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2262,16 +2390,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 998,
+          "line": 999,
           "note": null,
           "tests": [
             {
               "title": "leaves the whole capital gain out of the Missouri base",
-              "line": 1007
+              "line": 1008
             },
             {
               "title": "would tax it like every other income-tax state in the pack",
-              "line": 1012
+              "line": 1013
             }
           ]
         }
@@ -2315,7 +2443,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 811
+              "line": 851
             }
           ]
         },
@@ -2324,7 +2452,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1536
             }
           ]
         }
@@ -2335,20 +2463,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 134,
+          "line": 135,
           "note": null,
           "tests": [
             {
               "title": "measures a 2026 North Dakotan against the 2026 schedule the commissioner published",
-              "line": 143
+              "line": 144
             },
             {
               "title": "would over-tax the same household on the schedule the pack used to carry",
-              "line": 148
+              "line": 149
             },
             {
               "title": "carries the joint schedule too, which indexes by a different amount",
-              "line": 165
+              "line": 166
             }
           ]
         }
@@ -2424,7 +2552,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2535,11 +2663,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 822
+              "line": 862
             },
             {
               "name": "states.ND",
-              "line": 811
+              "line": 851
             }
           ]
         },
@@ -2557,7 +2685,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2621,7 +2749,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 822
+              "line": 862
             }
           ]
         },
@@ -2630,7 +2758,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2641,20 +2769,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 310,
+          "line": 311,
           "note": null,
           "tests": [
             {
               "title": "leaves forty percent of a long-term gain out of the North Dakota base",
-              "line": 331
+              "line": 332
             },
             {
               "title": "would tax the whole gain with the included share left at its default",
-              "line": 338
+              "line": 339
             },
             {
               "title": "still taxes the included sixty percent at ordinary North Dakota rates",
-              "line": 345
+              "line": 346
             }
           ]
         }
@@ -2707,11 +2835,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -2722,20 +2850,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 235,
+          "line": 236,
           "note": null,
           "tests": [
             {
               "title": "takes the whole military pension out of a North Dakota base",
-              "line": 251
+              "line": 252
             },
             {
               "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
-              "line": 256
+              "line": 257
             },
             {
               "title": "does not spill the exclusion onto private retirement income",
-              "line": 261
+              "line": 262
             }
           ]
         }
@@ -2779,7 +2907,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 811
+              "line": 851
             }
           ]
         },
@@ -2788,7 +2916,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2799,16 +2927,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 191,
+          "line": 192,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income North Dakotan’s Social Security out of the state base",
-              "line": 210
+              "line": 211
             },
             {
               "title": "would pull 34,000 of benefit into the base under the pre-2021 threshold rule",
-              "line": 216
+              "line": 217
             }
           ]
         }
@@ -2866,11 +2994,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -2881,16 +3009,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 280,
+          "line": 281,
           "note": null,
           "tests": [
             {
               "title": "takes a retired officer’s benefit out of a North Dakota base in full",
-              "line": 296
+              "line": 297
             },
             {
               "title": "would tax it as ordinary retirement income without the subdivision",
-              "line": 300
+              "line": 301
             }
           ]
         }
@@ -2940,7 +3068,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 811
+              "line": 851
             }
           ]
         },
@@ -2958,7 +3086,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -2969,16 +3097,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 72,
+          "line": 73,
           "note": null,
           "tests": [
             {
               "title": "moves North Dakota’s deduction with the federal figure it is a copy of",
-              "line": 81
+              "line": 82
             },
             {
               "title": "would freeze it if the conformity tag were dropped, which is the reading the statute rejects",
-              "line": 87
+              "line": 88
             }
           ]
         }
@@ -3022,7 +3150,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 713
+              "line": 736
             }
           ]
         },
@@ -3031,11 +3159,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3046,16 +3174,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3656,
+          "line": 3657,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 schedule and supported single standard deduction to cents",
-              "line": 3677
+              "line": 3678
             },
             {
               "title": "prices MFJ on the $17,700 deduction and $8,250 / $49,530 bracket cells",
-              "line": 3690
+              "line": 3691
             }
           ]
         }
@@ -3165,11 +3293,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -3242,7 +3370,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 713
+              "line": 736
             }
           ]
         },
@@ -3251,7 +3379,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3262,16 +3390,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3710,
+          "line": 3711,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 3726
+              "line": 3727
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 3732
+              "line": 3733
             }
           ]
         }
@@ -3339,7 +3467,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         }
@@ -3423,7 +3551,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 1907
+              "line": 2176
             }
           ]
         }
@@ -3434,12 +3562,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1335,
+          "line": 1339,
           "note": "a statutorily indexed state bracket held nominal for twenty years",
           "tests": [
             {
               "title": "holds Nebraska’s 2046 brackets at the 2026 amounts, overstating the tax on $100,000",
-              "line": 1352
+              "line": 1356
             }
           ]
         }
@@ -3494,11 +3622,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -3509,23 +3637,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4028,
+          "line": 4029,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 4047
+              "line": 4048
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4054,
+          "line": 4055,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 4068
+              "line": 4069
             }
           ]
         }
@@ -3574,7 +3702,7 @@
           "functions": [
             {
               "name": "states.OH",
-              "line": 836
+              "line": 876
             }
           ]
         },
@@ -3583,7 +3711,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         }
@@ -3594,16 +3722,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4098,
+          "line": 4099,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 4109
+              "line": 4110
             },
             {
               "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
-              "line": 4121
+              "line": 4122
             }
           ]
         }
@@ -3657,7 +3785,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 951
+              "line": 991
             }
           ]
         },
@@ -3666,7 +3794,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3677,16 +3805,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1548,
+          "line": 1549,
           "note": null,
           "tests": [
             {
               "title": "leaves a South Dakota retiree with no state base at all",
-              "line": 1567
+              "line": 1568
             },
             {
               "title": "would build a base the day the Legislature exercised the power it holds",
-              "line": 1572
+              "line": 1573
             }
           ]
         }
@@ -3731,7 +3859,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1092
+              "line": 1149
             }
           ]
         },
@@ -3740,11 +3868,11 @@
           "functions": [
             {
               "name": "wisconsinPersonalExemption",
-              "line": 232
+              "line": 305
             },
             {
               "name": "wisconsinStandardDeduction",
-              "line": 194
+              "line": 267
             }
           ]
         },
@@ -3753,7 +3881,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1550
             }
           ]
         }
@@ -3764,20 +3892,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 717,
+          "line": 799,
           "note": null,
           "tests": [
             {
               "title": "matches Form 1-ES cumulative taxes at all Schedule A B and C band edges",
-              "line": 718
+              "line": 800
             },
             {
               "title": "adds the age65 exemption to the $700 personal allowance",
-              "line": 733
+              "line": 815
             },
             {
               "title": "uses the published2026 rates and floors the standard deduction at zero",
-              "line": 740
+              "line": 822
             }
           ]
         }
@@ -3818,7 +3946,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1092
+              "line": 1149
             }
           ]
         },
@@ -3849,7 +3977,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 409
+              "line": 549
             }
           ]
         }
@@ -3930,7 +4058,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1092
+              "line": 1149
             }
           ]
         },
@@ -3939,7 +4067,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             }
           ]
         }
@@ -3950,12 +4078,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4639,
+          "line": 4852,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 4652
+              "line": 4865
             }
           ]
         }
@@ -4002,7 +4130,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1092
+              "line": 1149
             }
           ]
         },
@@ -4011,11 +4139,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1528
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -4026,20 +4154,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4659,
+          "line": 4872,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 4683
+              "line": 4896
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 4692
+              "line": 4905
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 4708
+              "line": 4921
             }
           ]
         }

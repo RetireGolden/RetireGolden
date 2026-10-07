@@ -68,6 +68,52 @@ export const KANSAS_NAMED_PLAN_CODES_2026: ReadonlySet<string> = new Set([
   'RRB',
 ])
 
+/**
+ * The source kinds a named Kansas system can pay: public, federal civil
+ * service, military and government survivor benefits. K.S.A. 79-32,117 names
+ * retirement systems, so a private pension or an IRA gets no named-plan
+ * subtraction whatever code it carries. An employer plan is decided by its
+ * plan type: see KANSAS_EMPLOYER_PLAN_TYPES_NO_NAMED_SYSTEM.
+ */
+const KANSAS_NAMED_PLAN_SOURCE_KINDS: readonly StateRetirementDistributionFact['sourceKind'][] = [
+  'stateLocalPublic',
+  'federalCivilService',
+  'militaryRetirement',
+  'militarySurvivor',
+  'governmentSurvivor',
+]
+
+/**
+ * Employer-plan types no named Kansas system pays. Washburn University's
+ * retirement plan, 79-32,117(c)(xix), is a 403(b), so a 403(b) row, or one
+ * whose type is other, unknown or not given, can be a named system and needs
+ * its code.
+ */
+const KANSAS_EMPLOYER_PLAN_TYPES_NO_NAMED_SYSTEM: readonly NonNullable<StateRetirementDistributionFact['qualifiedPlanType']>[] = [
+  '401k',
+  '401a',
+  '457b',
+  'ira',
+]
+
+/**
+ * The named systems an employer-plan row can be: Washburn's 403(b) only. The
+ * other codes name pensions, which are entered as pensions; on an employer
+ * plan they subtract nothing.
+ */
+const KANSAS_EMPLOYER_PLAN_NAMED_CODES: ReadonlySet<string> = new Set(['KS-WASHBURN'])
+
+/**
+ * K.S.A. 79-32,117 named-plan subtraction for one characterized row. Railroad
+ * Retirement Act annuities come off in full. A row of a kind no named system
+ * pays (a private pension, an IRA, or a 401(k), 401(a) or 457(b) employer
+ * plan) returns nothing and is not flagged, because no plan code could change
+ * that. A public row without a code, a public row of unknown kind, and an
+ * employer-plan row that could be Washburn's 403(b) with no code and a
+ * nonzero amount are incomplete, with the warning code ks-plan-code-unknown.
+ * An employer-plan row coded KS-WASHBURN is subtracted; any other code on one
+ * subtracts nothing.
+ */
 export function kansasNamedPlanExclusion(
   fact: StateRetirementDistributionFact,
   namedCodes: ReadonlySet<string> | readonly string[] = KANSAS_NAMED_PLAN_CODES_2026,
@@ -77,25 +123,52 @@ export function kansasNamedPlanExclusion(
   if (isRailroadSource(fact.sourceKind)) {
     return { taxableIncomeDelta: amount === 0 ? 0 : -amount, taxCredit: 0, warnings: [] }
   }
-  if (fact.sourceKind === 'unknownPublic' || !fact.planSystemCode) {
-    return {
-      taxableIncomeDelta: 0,
-      taxCredit: 0,
-      warnings: [
-        {
-          code: 'ks-plan-code-unknown',
-          ruleId: 'ks-named-public-pension-exclusion',
-          message: 'Kansas named-plan exclusion fails closed without a statutory planSystemCode.',
-          missingFacts: ['planSystemCode'],
-        },
-      ],
+  if (fact.sourceKind === 'employerPlan') {
+    if (fact.qualifiedPlanType !== undefined && KANSAS_EMPLOYER_PLAN_TYPES_NO_NAMED_SYSTEM.includes(fact.qualifiedPlanType)) {
+      return emptyLeafAdjustment()
     }
+    if (amount === 0) return emptyLeafAdjustment()
+  } else if (fact.sourceKind !== 'unknownPublic' && !KANSAS_NAMED_PLAN_SOURCE_KINDS.includes(fact.sourceKind)) {
+    return emptyLeafAdjustment()
   }
-  if (!['stateLocalPublic', 'federalCivilService', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor'].includes(fact.sourceKind)) return emptyLeafAdjustment()
+  if (fact.sourceKind === 'unknownPublic' || !fact.planSystemCode) {
+    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [kansasPlanCodeWarning(fact)] }
+  }
   if (!codes.has(fact.planSystemCode)) {
     return emptyLeafAdjustment()
   }
+  if (fact.sourceKind === 'employerPlan' && !KANSAS_EMPLOYER_PLAN_NAMED_CODES.has(fact.planSystemCode)) {
+    return emptyLeafAdjustment()
+  }
   return { taxableIncomeDelta: amount === 0 ? 0 : -amount, taxCredit: 0, warnings: [] }
+}
+
+/**
+ * ks-plan-code-unknown, listing the facts that clear it for this row. A
+ * public row of unknown kind needs its source characterized (and its code,
+ * when it has none); a declared 403(b) needs only its code; an employer plan
+ * of other, unknown or undeclared type clears with a code or with a plan type
+ * no named system pays; any other public row needs its code.
+ */
+function kansasPlanCodeWarning(fact: StateRetirementDistributionFact): StateTaxExactnessWarning {
+  const warning = (message: string, missingFacts: string[]): StateTaxExactnessWarning => ({
+    code: 'ks-plan-code-unknown',
+    ruleId: 'ks-stat-79-32-117-public-pension-exclusion',
+    message,
+    missingFacts,
+  })
+  if (fact.sourceKind === 'unknownPublic') {
+    return warning(
+      'Kansas named-plan exclusion fails closed for a public pension of unknown source; the source decides whether a named system can pay it.',
+      fact.planSystemCode ? ['sourceKind'] : ['sourceKind', 'planSystemCode'],
+    )
+  }
+  if (fact.sourceKind === 'employerPlan') {
+    return fact.qualifiedPlanType === '403b'
+      ? warning('Kansas named-plan exclusion fails closed for a 403(b), which may be Washburn University\'s plan, without a statutory planSystemCode.', ['planSystemCode'])
+      : warning('Kansas named-plan exclusion fails closed for an employer plan that may be Washburn University\'s 403(b) without a statutory planSystemCode or a 401(k), 401(a) or 457(b) plan type.', ['planSystemCode', 'qualifiedPlanType'])
+  }
+  return warning('Kansas named-plan exclusion fails closed without a statutory planSystemCode.', ['planSystemCode'])
 }
 
 /** @deprecated Prefer pack.missouriRetirement. */
