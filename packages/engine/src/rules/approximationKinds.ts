@@ -142,6 +142,24 @@
  *   the authority's and the record is settled (TaxRuleClassification); its
  *   yearly re-verification stays with volatility annuallyIndexed.
  *
+ * Registered as approximated on 2026-10-06, with the state treatment of Roth
+ * conversions, both needs-fact: mi-treasury-roth-conversion-at-59-and-a-half
+ * and ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half. Each state counts a
+ * conversion only if the owner is 59 and a half when it happens, and the plan
+ * holds no date for the conversions the conversion strategy makes, so in the
+ * year the owner reaches that age the engine reads January 1 and gives none.
+ *
+ * Fixed, settled and removed from this list (2026-10-06):
+ * - nj-stat-54a-6-10-retirement-income-exclusion, a fix until then: the
+ *   engine applies the gross-income limit, the tiers above $100,000, the
+ *   dollar maximum for the filing status and the qualifying spouse’s
+ *   payments, where it had given $50,000 to each household member 62 or older.
+ * - va-code-58-1-322-03-age-deduction-and-social-security, a fix until then:
+ *   the engine applies Va. Code 58.1-322.03(5) as Form 760's Age 65 and Older
+ *   Deduction Worksheet computes it, against income of every kind and with its
+ *   income test, where the pack had carried the $12,000 as a retirement-income
+ *   exclusion and, from #710, the projection applied none of it.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -245,6 +263,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'md-tg-10-217-2026-indexed-standard-deduction': { kind: 'convention', reason: 'the Comptroller has printed two different 2026 amounts, so the engine keeps the withholding guide and the statute rule until the 2026 Form 502 instructions settle it' },
   'me-mrs-36-5122-2-m2-m3-2026-pension-deduction': { kind: 'fix' },
   'mi-mcl-206-30-retirement-and-ss': { kind: 'fix' },
+  'mi-treasury-roth-conversion-at-59-and-a-half': { kind: 'needs-fact', missingInput: 'the date of each Roth conversion the conversion strategy makes' },
   'mn-stat-290-0132-subd-26-social-security-inclusion': { kind: 'fix' },
   'mo-dor-2026-rate-schedule-and-standard-deduction': { kind: 'fix' },
   'ms-27-7-21-personal-and-age-65-exemptions': { kind: 'fix' },
@@ -255,13 +274,13 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': { kind: 'fix' },
   'ne-stat-77-2716-public-pension-exemption': { kind: 'fix' },
   'neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal': { kind: 'fix' },
-  'nj-stat-54a-6-10-retirement-income-exclusion': { kind: 'fix' },
   'nm-stat-7-2-5-14-social-security-and-federal-standard': { kind: 'fix' },
   'notice-2004-50-a-39-prior-section-213-deduction': { kind: 'needs-fact', missingInput: 'per-expense prior-section-213-deduction status' },
   'notice-2008-59-a-41-hsa-establishment-date-per-account': { kind: 'needs-fact', missingInput: 'HSA establishment date and relate-back facts per account' },
   'notice-2022-6-3-02-e-1-projection-contribution-during-series': { kind: 'fix' },
   'ny-government-pension-issuer-qualification-not-modeled': { kind: 'fix' },
   'ny-tax-612-c-3-a-pension-annuity-exclusion': { kind: 'convention', reason: 'annual pension income has no payment date for an honest intra-year 59.5 gate' },
+  'ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half': { kind: 'needs-fact', missingInput: 'the date of each Roth conversion the conversion strategy makes' },
   'oh-rev-code-5747-01-social-security-and-public-pension': { kind: 'fix' },
   'ok-stat-68-2358-retirement-and-social-security': { kind: 'fix' },
   'or-lro-2026-rate-schedule-and-standard-deduction': { kind: 'fix' },
@@ -288,7 +307,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': { kind: 'fix' },
   'usc-42-423-c-2-ssdi-five-month-waiting-period': { kind: 'convention', reason: 'the plan asks for the month a disability began but not the day, so the month is read as a start after the 1st, and a blank month as January 1, the earliest start and so the largest amount the law allows for that year' },
-  'va-code-58-1-322-03-age-deduction-and-social-security': { kind: 'fix' },
   'va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction': { kind: 'fix' },
   'vt-stat-32-5830e-social-security-inclusion': { kind: 'fix' },
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': { kind: 'fix' },

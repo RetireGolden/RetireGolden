@@ -106,3 +106,11 @@ Evidence limb of `mi-mcl-206-30-f-iii-social-security`; not a separate claim to 
 
 
 Evidence completion (2026-09-12): The separate mi-mcl-206-30-9-e-nonconditioning evidence record is bounded to TY2026–2028 and taxpayers born after 1952 reaching 67. Full Issue 11 source also preserves the pre-2026/post-2028 reduction rule and the remaining personal-exemption/railroad/military reductions. Elective subsection (9) standard-deduction calculation is explicitly out of scope; permanent Social Security remains indefinite.
+
+## A Roth conversion counts only at 59 and a half (2026-10-06)
+
+Record: `mi-treasury-roth-conversion-at-59-and-a-half`. Classification: `approximated` (needs a conversion date).
+
+Michigan Treasury: the rollover from a regular IRA to a Roth IRA qualifies for the pension subtraction, within the statute's limits, if the individual is at least 59 and a half when the rollover occurs. The engine tests a named conversion on its execution date when the plan gives one and every other conversion on January 1, the earliest it could have happened; in the year the owner reaches 59 and a half an undated conversion therefore gets no subtraction, which can overstate Michigan tax. Until 2026-10-06 the engine subtracted a conversion at any age. Whether an in-plan Roth rollover qualifies at all is not determined.
+
+Authority: [Michigan Treasury FAQ](https://www.michigan.gov/taxes/questions/iit/accordion/roth/are-conversions-from-a-regular-ira-to-a-roth-ira-subject-to-michigan-individual-income-tax-1).

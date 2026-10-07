@@ -4,11 +4,11 @@
   "urlCount": 434,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1796,
+  "entryCount": 1816,
   "counts": {
-    "EXACT": 1220,
-    "PDF-WORD-LEVEL": 415,
-    "ELISION-EXACT": 145,
+    "EXACT": 1225,
+    "PDF-WORD-LEVEL": 428,
+    "ELISION-EXACT": 147,
     "PUNCTUATION": 4,
     "ELISION-PUNCTUATION": 1,
     "UNFETCHABLE": 10,
@@ -13077,6 +13077,16 @@
       "diagnosis": null
     },
     {
+      "id": "ks-stat-79-32-117-public-pension-exclusion",
+      "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available",
+      "host": "www.ksrevenue.gov",
+      "url": "https://www.ksrevenue.gov/taxnotices/notice08-06.pdf",
+      "quoteSha256": "ca116c2af5a63ba9",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "mi-mcl-206-30-f-iii-social-security",
       "citation": "Mich. Comp. Laws 206.30(1)(f)",
       "host": "www.legislature.mi.gov",
@@ -14473,6 +14483,46 @@
       "quoteSha256": "2aa0cf93e34103d0",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "47073ee32b5de406",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "dc4fb80206039ef6",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "87e01817a86f9ea5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "30a73fe1d39c5382",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -17226,6 +17276,46 @@
       "diagnosis": null
     },
     {
+      "id": "va-code-58-1-322-03-2-personal-exemptions",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "e008a55f55255724",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-2-personal-exemptions",
+      "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf",
+      "quoteSha256": "7419a226b48d073b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-2-personal-exemptions",
+      "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf",
+      "quoteSha256": "3886c01d313f7935",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-03-2-personal-exemptions",
+      "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf",
+      "quoteSha256": "f80edca44691bb2e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "md-tg-10-217-2026-indexed-standard-deduction",
       "citation": "Md. Tax-General §10-217(b)(1) and (3)",
       "host": "mgaleg.maryland.gov",
@@ -18043,6 +18133,117 @@
       "quoteSha256": "2d2eeb3047ce5b3c",
       "verdict": "ELISION-EXACT",
       "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "me-1040me-roth-conversion-not-pension-income",
+      "citation": "Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf",
+      "quoteSha256": "7bc64731c1806d47",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "pa-40-roth-ira-conversion-not-taxable",
+      "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover",
+      "host": "www.pa.gov",
+      "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf",
+      "quoteSha256": "518dc65f022398ef",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "pa-40-roth-ira-conversion-not-taxable",
+      "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld",
+      "host": "www.pa.gov",
+      "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf",
+      "quoteSha256": "b42990a5cd49ec48",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half",
+      "citation": "New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pdf/memos/income/m98_7i.pdf",
+      "quoteSha256": "876efdc52443fdd6",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+      "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "6d1fa66c8d3fb87c",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+      "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "39e72bcf26e97cda",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+      "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "4d00b1033ccd1f34",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+      "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "a1ddc5caab813bfe",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mi-treasury-roth-conversion-at-59-and-a-half",
+      "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax",
+      "host": "www.michigan.gov",
+      "url": "https://www.michigan.gov/taxes/questions/iit/accordion/roth/are-conversions-from-a-regular-ira-to-a-roth-ira-subject-to-michigan-individual-income-tax-1",
+      "quoteSha256": "d3b503e2d0505a91",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+      "citation": "S.C. Code §12-6-1170(A)(2)",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/code/t12c006.php",
+      "quoteSha256": "0e08f57d1a64e53d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+      "citation": "IRC 408A(d)(3)(A)(i)-(ii)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm",
+      "quoteSha256": "d1495e598689c272",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     }
   ],
@@ -19996,6 +20197,110 @@
         {
           "id": "usc-45-231m-state-tax-bar",
           "citation": "45 U.S.C. 231a(b), supplemental annuity"
+        }
+      ]
+    },
+    {
+      "on": "2026-10-06",
+      "note": "Virginia age deduction: va-code-58-1-322-03-age-deduction-and-social-security, reclassified settled when the engine began applying Va. Code 58.1-322.03(5) as Form 760 computes it, gains four authorities quoting the Virginia Department of Taxation's 2025 Form 760 instructions (who qualifies on line 4, the definition of AFAGI, the married taxpayers' joint AFAGI, and the joint computation split between spouses). Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the statute row EXACT and unchanged, the four new rows PDF-WORD-LEVEL. No other entry was re-run.",
+      "entries": [
+        {
+          "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+          "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction"
+        },
+        {
+          "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+          "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income"
+        },
+        {
+          "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+          "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers"
+        },
+        {
+          "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+          "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers"
+        }
+      ]
+    },
+    {
+      "on": "2026-10-06",
+      "note": "Virginia personal exemptions: va-code-58-1-322-03-2-personal-exemptions gains two authorities, the 2025 Form 760 instructions on who counts as 65 for the additional exemption (on or before January 1 of the following year) and the 2025 Form 760PY instructions on prorating a part-year resident's exemptions. Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the two statute rows EXACT and unchanged, the two new rows PDF-WORD-LEVEL. No other entry was re-run.",
+      "entries": [
+        {
+          "id": "va-code-58-1-322-03-2-personal-exemptions",
+          "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older"
+        },
+        {
+          "id": "va-code-58-1-322-03-2-personal-exemptions",
+          "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet"
+        }
+      ]
+    },
+    {
+      "on": "2026-10-06",
+      "note": "State treatment of Roth conversions and Connecticut's IRA schedule: six new records, me-1040me-roth-conversion-not-pension-income (2025 Form 1040ME instructions), pa-40-roth-ira-conversion-not-taxable (2025 PA-40 instructions, two rows), ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half (TSB-M-98(7)I), mi-treasury-roth-conversion-at-59-and-a-half (Michigan Treasury FAQ), sc-code-12-6-1170-roth-conversion-not-premature (S.C. Code 12-6-1170(A)(2) and IRC 408A(d)(3)(A)(i)-(ii)) and ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule (Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix), clauses and schedules). Every row was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: 5 EXACT, 2 ELISION-EXACT and 4 PDF-WORD-LEVEL, nothing serious. No other entry was re-run.",
+      "entries": [
+        {
+          "id": "me-1040me-roth-conversion-not-pension-income",
+          "citation": "Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction"
+        },
+        {
+          "id": "pa-40-roth-ira-conversion-not-taxable",
+          "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover"
+        },
+        {
+          "id": "pa-40-roth-ira-conversion-not-taxable",
+          "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld"
+        },
+        {
+          "id": "ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half",
+          "citation": "New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition"
+        },
+        {
+          "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)"
+        },
+        {
+          "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)"
+        },
+        {
+          "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule"
+        },
+        {
+          "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule"
+        },
+        {
+          "id": "mi-treasury-roth-conversion-at-59-and-a-half",
+          "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax"
+        },
+        {
+          "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+          "citation": "S.C. Code §12-6-1170(A)(2)"
+        },
+        {
+          "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+          "citation": "IRC 408A(d)(3)(A)(i)-(ii)"
+        }
+      ]
+    },
+    {
+      "on": "2026-10-06",
+      "note": "Virginia part-year rate schedule and Kansas Washburn 403(b): va-code-58-1-322-03-2-personal-exemptions gains two authorities from the 2025 Form 760PY instructions (Line 17 Income Tax, and the Tax Rate Schedule example), which show a part-year resident's Virginia taxable income taxed on the ordinary schedule; ks-stat-79-32-117-public-pension-exclusion gains Kansas Department of Revenue Notice 08-06, which describes Washburn University's basic retirement plan as a 403(b). Every row of both records was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: the statute rows EXACT and unchanged, the PDF rows PDF-WORD-LEVEL. No other entry was re-run.",
+      "entries": [
+        {
+          "id": "ks-stat-79-32-117-public-pension-exclusion",
+          "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available"
+        },
+        {
+          "id": "va-code-58-1-322-03-2-personal-exemptions",
+          "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax"
+        },
+        {
+          "id": "va-code-58-1-322-03-2-personal-exemptions",
+          "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule"
         }
       ]
     }

@@ -11,20 +11,20 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 582 |
+| Total rules | 588 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 78 |
-| Classification: settled | 375 |
+| Classification: settled | 381 |
 | Classification: unsettled | 7 |
 | Approximated kind: convention | 23 |
-| Approximated kind: fix | 74 |
-| Approximated kind: needs-fact | 25 |
+| Approximated kind: fix | 72 |
+| Approximated kind: needs-fact | 27 |
 | Volatility: annuallyIndexed | 92 |
 | Volatility: awaitingGuidance | 13 |
-| Volatility: staticStatute | 468 |
+| Volatility: staticStatute | 474 |
 | Volatility: sunsetting | 9 |
 | Federal jurisdiction | 361 |
-| State jurisdiction total | 221 |
+| State jurisdiction total | 227 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -34,7 +34,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | AZ | 9 |
 | CA | 5 |
 | CO | 4 |
-| CT | 2 |
+| CT | 3 |
 | DC | 3 |
 | DE | 6 |
 | FL | 1 |
@@ -49,8 +49,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | LA | 4 |
 | MA | 5 |
 | MD | 5 |
-| ME | 4 |
-| MI | 3 |
+| ME | 5 |
+| MI | 4 |
 | MN | 3 |
 | MO | 3 |
 | MS | 7 |
@@ -62,13 +62,13 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | NJ | 5 |
 | NM | 2 |
 | NV | 1 |
-| NY | 6 |
+| NY | 7 |
 | OH | 2 |
 | OK | 1 |
 | OR | 5 |
-| PA | 3 |
+| PA | 4 |
 | RI | 7 |
-| SC | 8 |
+| SC | 9 |
 | SD | 1 |
 | TN | 2 |
 | TX | 2 |
@@ -242,16 +242,16 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/socialSecurity.json | 59 |
 | rule-coverage/socialSecurityEarnings.json | 5 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 6 |
-| rule-coverage/statesMidwest.json | 46 |
-| rule-coverage/statesNortheast.json | 39 |
-| rule-coverage/statesSouthAtlantic.json | 45 |
+| rule-coverage/statesMidwest.json | 47 |
+| rule-coverage/statesNortheast.json | 43 |
+| rule-coverage/statesSouthAtlantic.json | 46 |
 | rule-coverage/statesSouthCentral.json | 36 |
 | rule-coverage/statesWest.json | 55 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 9 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (582 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (588 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -293,7 +293,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1796 authority entries.
+Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1816 authority entries.
 Amended on 2026-09-26: 2 entries verified individually after that run (cfr-20-404-313-delayed-retirement-credit, 20 CFR 404.313(a), (b)(2); usc-42-402-e-survivor-of-worker-who-died-before-claiming, 42 U.S.C. 402(w)(2)(A)). Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.
 Amended on 2026-09-26: 16 entries verified individually after that run (rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.01; rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.02; irc-36B-d-3-B-poverty-line-for-coverage-year, IRC 36B(d)(3)(B); irc-36B-d-3-B-poverty-line-for-coverage-year, 26 CFR 1.36B-1(h); irc-36B-d-3-B-poverty-line-for-coverage-year, 45 CFR 155.410(e)(5)(i); hhs-2026-poverty-guidelines-2027-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Alaska; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Hawaii; hhs-2025-poverty-guidelines-2026-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Alaska; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Hawaii; irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e); irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e); irc-36B-c-1-A-applicable-taxpayer-range, IRC 36B(c)(1)(E)). Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.
 Amended on 2026-09-26: 3 entries verified individually after that run (cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(1); cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(3), Example 1; cfr-26-1-36B-3-g-1-applicable-percentage-rounding, Instructions for Form 8962 (2025), Worksheet 2, line 4). Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.
@@ -345,17 +345,21 @@ Amended on 2026-09-29: 2 entries verified individually after that run (usc-42-13
 Amended on 2026-09-30: 1 entry verified individually after that run (usc-42-1395r-i-irmaa-applicable-percentage, 42 U.S.C. 1395r(i)(3)(A)). After the round-one review of pull request 770, usc-42-1395r-i-irmaa-applicable-percentage states the statute’s adjustment as the product of the applicable percentage minus 25 percentage points and the unsubsidized Part B premium amount, so its 42 U.S.C. 1395r(i)(3)(A) quote now runs on through clause (ii)(II). The row was verified on 2026-09-30 with verify-quotes.mjs --refresh, filtered to the record: EXACT, and the record’s other four rows kept their verdicts.
 Amended on 2026-09-30: 42 entries verified individually after that run (wi-schedule-sb-15-railroad-benefits-not-modeled, 2025 Wisconsin Schedule SB Instructions, title page; wi-schedule-sb-15-railroad-benefits-not-modeled, 2025 Wisconsin Schedule SB Instructions, Line 15; wi-schedule-sb-15-railroad-benefits-not-modeled, 2025 Wisconsin Schedule SB Instructions, Line 4; wi-schedule-sb-15-railroad-benefits-not-modeled, 2025 Wisconsin Schedule SB Instructions, Line 16; wi-schedule-sb-15-railroad-benefits-not-modeled, 45 U.S.C. 231m(a); ny-it225-s122-non-ss-railroad-benefits-not-modeled, New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122); ny-it225-s122-non-ss-railroad-benefits-not-modeled, New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits; ny-it225-s122-non-ss-railroad-benefits-not-modeled, 45 U.S.C. 231m(a); ri-schedule-m-1d-railroad-benefits-not-modeled, Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page; ri-schedule-m-1d-railroad-benefits-not-modeled, Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d; ri-schedule-m-1d-railroad-benefits-not-modeled, Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits; ri-schedule-m-1d-railroad-benefits-not-modeled, Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d; ri-schedule-m-1d-railroad-benefits-not-modeled, 45 U.S.C. 231m(a); ri-code-44-30-12-c-11-military-pension-not-modeled, Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025); ri-code-44-30-12-c-11-military-pension-not-modeled, Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025); ri-code-44-30-12-c-11-military-pension-not-modeled, Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025); ri-code-44-30-12-c-11-military-pension-not-modeled, Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension; ri-code-44-30-12-c-11-military-pension-not-modeled, R.I. Gen. Laws §44-30-12(c)(11)(i)(A); ri-code-44-30-12-c-11-military-pension-not-modeled, R.I. Gen. Laws §44-30-12(c)(11)(ii); ri-code-44-30-12-c-11-military-pension-not-modeled, R.I. Gen. Laws §44-30-12(c)(11)(iii); sc-45-usc-231m-railroad-annuities-not-modeled, 45 U.S.C. 231m(a); sc-45-usc-231m-railroad-annuities-not-modeled, 45 U.S.C. 231m(b)(1); sc-45-usc-231m-railroad-annuities-not-modeled, 45 U.S.C. 231b(a)(1), tier I; sc-45-usc-231m-railroad-annuities-not-modeled, 45 U.S.C. 231b(b)(1), tier II; sc-45-usc-231m-railroad-annuities-not-modeled, S.C. Code 12-6-1120(4); sc-form1040-line-o-railroad-benefits-not-modeled, South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o; sc-form1040-line-o-railroad-benefits-not-modeled, South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify; sc-form1040-line-o-railroad-benefits-not-modeled, 45 U.S.C. 231m(a); va-railroad-retirement-and-unemployment-benefits-not-modeled, Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits; va-railroad-retirement-and-unemployment-benefits-not-modeled, Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits; va-railroad-retirement-and-unemployment-benefits-not-modeled, 45 U.S.C. 231m(a); al-form40-railroad-retirement-not-modeled, Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report; al-form40-railroad-retirement-not-modeled, Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable; al-form40-railroad-retirement-not-modeled, 45 U.S.C. 231m(a); or-oar-150-316-0065-railroad-benefits-not-modeled, Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page; or-oar-150-316-0065-railroad-benefits-not-modeled, Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054); or-oar-150-316-0065-railroad-benefits-not-modeled, Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065; or-oar-150-316-0065-railroad-benefits-not-modeled, Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions; or-oar-150-316-0065-railroad-benefits-not-modeled, 45 U.S.C. 231m(a); pl-118-273-sec-2-3-wep-gpo-repeal, P.L. 118-273, § 2(a); pl-118-273-sec-2-3-wep-gpo-repeal, P.L. 118-273, § 3(a); pl-118-273-sec-2-3-wep-gpo-repeal, P.L. 118-273, § 4). The railroad and military pension records of D-OOS-INPUTS group 1 and the WEP and GPO repeal record (group 5) were restated on 2026-09-30 when each moved out of scope to settled: al-form40-railroad-retirement-not-modeled, ny-it225-s122-non-ss-railroad-benefits-not-modeled, or-oar-150-316-0065-railroad-benefits-not-modeled, ri-schedule-m-1d-railroad-benefits-not-modeled, sc-45-usc-231m-railroad-annuities-not-modeled, sc-form1040-line-o-railroad-benefits-not-modeled, va-railroad-retirement-and-unemployment-benefits-not-modeled and wi-schedule-sb-15-railroad-benefits-not-modeled now also cite 45 U.S.C. 231m(a) (the South Carolina record also 231b(a)(1) and (b)(1)), and some add a line of their state's instructions; ri-code-44-30-12-c-11-military-pension-not-modeled adds Publication 2026-01's no-age-or-income-test and surviving-spouse passages and the RI-1040 line 1t note; pl-118-273-sec-2-3-wep-gpo-repeal keeps its three rows. Every row of the ten records was verified individually on 2026-09-30 with verify-quotes.mjs --refresh, filtered to its record, with pdftotext from poppler 25.07.0: 19 EXACT and 23 PDF-WORD-LEVEL, nothing serious.
 Amended on 2026-09-30: 5 entries verified individually after that run (usc-45-231m-state-tax-bar, 45 U.S.C. 231m(a); usc-45-231m-state-tax-bar, 45 U.S.C. 231m(b)(1); usc-45-231m-state-tax-bar, 45 U.S.C. 231b(a)(1), tier I; usc-45-231m-state-tax-bar, 45 U.S.C. 231b(b)(1), tier II; usc-45-231m-state-tax-bar, 45 U.S.C. 231a(b), supplemental annuity). The federal bar on state tax of a Railroad Retirement Act annuity is registered once for every state at usc-45-231m-state-tax-bar (2026-09-30), citing 45 U.S.C. 231m(a) and (b)(1), 231b(a)(1) and (b)(1), and 231a(b). Its five rows were verified individually on 2026-09-30 with verify-quotes.mjs --refresh, filtered to the record: four EXACT and one ELISION-EXACT.
+Amended on 2026-10-06: 4 entries verified individually after that run (va-code-58-1-322-03-age-deduction-and-social-security, Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction; va-code-58-1-322-03-age-deduction-and-social-security, Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income; va-code-58-1-322-03-age-deduction-and-social-security, Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers; va-code-58-1-322-03-age-deduction-and-social-security, Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers). Virginia age deduction: va-code-58-1-322-03-age-deduction-and-social-security, reclassified settled when the engine began applying Va. Code 58.1-322.03(5) as Form 760 computes it, gains four authorities quoting the Virginia Department of Taxation's 2025 Form 760 instructions (who qualifies on line 4, the definition of AFAGI, the married taxpayers' joint AFAGI, and the joint computation split between spouses). Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the statute row EXACT and unchanged, the four new rows PDF-WORD-LEVEL. No other entry was re-run.
+Amended on 2026-10-06: 2 entries verified individually after that run (va-code-58-1-322-03-2-personal-exemptions, Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older; va-code-58-1-322-03-2-personal-exemptions, Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet). Virginia personal exemptions: va-code-58-1-322-03-2-personal-exemptions gains two authorities, the 2025 Form 760 instructions on who counts as 65 for the additional exemption (on or before January 1 of the following year) and the 2025 Form 760PY instructions on prorating a part-year resident's exemptions. Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the two statute rows EXACT and unchanged, the two new rows PDF-WORD-LEVEL. No other entry was re-run.
+Amended on 2026-10-06: 11 entries verified individually after that run (me-1040me-roth-conversion-not-pension-income, Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction; pa-40-roth-ira-conversion-not-taxable, Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover; pa-40-roth-ira-conversion-not-taxable, Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld; ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half, New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition; ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule, Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III); ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule, Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III); ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule, Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule; ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule, Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule; mi-treasury-roth-conversion-at-59-and-a-half, Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax; sc-code-12-6-1170-roth-conversion-not-premature, S.C. Code §12-6-1170(A)(2); sc-code-12-6-1170-roth-conversion-not-premature, IRC 408A(d)(3)(A)(i)-(ii)). State treatment of Roth conversions and Connecticut's IRA schedule: six new records, me-1040me-roth-conversion-not-pension-income (2025 Form 1040ME instructions), pa-40-roth-ira-conversion-not-taxable (2025 PA-40 instructions, two rows), ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half (TSB-M-98(7)I), mi-treasury-roth-conversion-at-59-and-a-half (Michigan Treasury FAQ), sc-code-12-6-1170-roth-conversion-not-premature (S.C. Code 12-6-1170(A)(2) and IRC 408A(d)(3)(A)(i)-(ii)) and ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule (Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix), clauses and schedules). Every row was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: 5 EXACT, 2 ELISION-EXACT and 4 PDF-WORD-LEVEL, nothing serious. No other entry was re-run.
+Amended on 2026-10-06: 3 entries verified individually after that run (ks-stat-79-32-117-public-pension-exclusion, Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available; va-code-58-1-322-03-2-personal-exemptions, Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax; va-code-58-1-322-03-2-personal-exemptions, Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule). Virginia part-year rate schedule and Kansas Washburn 403(b): va-code-58-1-322-03-2-personal-exemptions gains two authorities from the 2025 Form 760PY instructions (Line 17 Income Tax, and the Tax Rate Schedule example), which show a part-year resident's Virginia taxable income taxed on the ordinary schedule; ks-stat-79-32-117-public-pension-exclusion gains Kansas Department of Revenue Notice 08-06, which describes Washburn University's basic retirement plan as a 403(b). Every row of both records was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: the statute rows EXACT and unchanged, the PDF rows PDF-WORD-LEVEL. No other entry was re-run.
 
-10 serious, 6 advisory, 1780 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+10 serious, 6 advisory, 1800 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 145 |
+| ELISION-EXACT | ok | 147 |
 | ELISION-PUNCTUATION | advisory | 1 |
-| EXACT | ok | 1220 |
+| EXACT | ok | 1225 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |
-| PDF-WORD-LEVEL | ok | 415 |
+| PDF-WORD-LEVEL | ok | 428 |
 | PUNCTUATION | advisory | 4 |
 | UNFETCHABLE | serious | 10 |
 

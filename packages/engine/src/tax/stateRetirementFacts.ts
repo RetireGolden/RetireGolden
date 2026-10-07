@@ -133,6 +133,30 @@ export interface StateRetirementDistributionFact {
   deathOrDisabilitySurvivorUnder55?: boolean
   /** Characterized share of federally taxable Social Security for state per-recipient caps. */
   taxableSocialSecurityAllocated?: number
+  /**
+   * The part of `federallyIncludedAmount` that is a taxable Roth conversion: an
+   * IRA converted to a Roth IRA on an `ira` row, an in-plan Roth rollover on an
+   * `employerPlan` row. Absent means none. The event is not split, so an
+   * account's row can carry its RMD and a named conversion together.
+   */
+  rothConversionAmount?: number
+  /**
+   * The part of `rothConversionAmount` converted when the owner was 59 and a
+   * half or older: at a named conversion's execution date when the plan gives
+   * one, otherwise at January 1 of the year, the earliest the conversion could
+   * have happened.
+   */
+  rothConversionAmountAtAge59HalfOrOlder?: number
+}
+
+/** The taxable Roth conversion dollars in a row, never more than the row's included amount. */
+export function rothConversionPart(fact: StateRetirementDistributionFact): number {
+  return Math.min(Math.max(0, fact.federallyIncludedAmount), Math.max(0, fact.rothConversionAmount ?? 0))
+}
+
+/** The conversion dollars in a row converted at 59 and a half or older. */
+export function rothConversionPartAtAge59HalfOrOlder(fact: StateRetirementDistributionFact): number {
+  return Math.min(rothConversionPart(fact), Math.max(0, fact.rothConversionAmountAtAge59HalfOrOlder ?? 0))
 }
 
 export type StateFilingStatusExtended =

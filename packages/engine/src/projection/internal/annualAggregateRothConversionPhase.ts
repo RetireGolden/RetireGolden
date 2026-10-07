@@ -353,11 +353,11 @@ export function annualAggregateRothConversionPhase(
     }
     : undefined
 
-  // State-tax inputs (resolved once per year, before conversions so the
-  // safety-net trim below can price a conversion's full tax bill).
-  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited −
-  // QCD; traditional spending withdrawals are added per iteration below.
-  // Roth conversions are excluded (not exclusion-eligible).
+  // State-tax inputs, resolved once per year before conversions so the safety
+  // net below can price a conversion’s full bill. The coarse retirement base
+  // (pension/annuity + taxable RMD/SEPP/inherited − QCD, withdrawals added per
+  // iteration) omits conversions; only a split-year slice reads it. Elsewhere a
+  // state rule reads each row’s `rothConversionAmount` and decides for itself.
   const residenceState = stateForYear(plan.household, year)
   const stateResidency = stateResidencySegmentsForYear(plan.household, year)
   const agesAlive = peopleStates.filter((s) => s.alive).map((s) => s.ageAttained)
@@ -555,7 +555,7 @@ export function annualAggregateRothConversionPhase(
                 amount:draw.amountPlanDollars, aggregatedIra:isAggregatedIra(draw.sourceAccount),
               })), iraProRata, ownedIraConversionTaxableFraction)
             return { taxableTotal: character.taxableTotal,
-              facts: stateRetirementEventsFromAccountAmounts(plan, year, character.taxable, 'conversion-probe', character.grossAmounts) }
+              facts: stateRetirementEventsFromAccountAmounts(plan, year, character.taxable, 'conversion-probe', character.grossAmounts, 'wholeEvent') }
           }
           let low = 0
           let high = annualIdKeyedBalances.reduce((sum, state) => sum + (yearConvertibleToRoth(state.account) ? Math.max(0, state.balance) : 0), 0)
@@ -924,7 +924,7 @@ export function annualAggregateRothConversionPhase(
     (rothConversion - conversionNontaxable) +
     (namedRothConversionExecuted - namedRothConversionNontaxable)
   return {
-    stateRetirementDistributionFacts: stateRetirementEventsFromAccountAmounts(plan, year, stateConversionTaxableByAccount, 'conversion', stateConversionGrossByAccount),
+    stateRetirementDistributionFacts: stateRetirementEventsFromAccountAmounts(plan, year, stateConversionTaxableByAccount, 'conversion', stateConversionGrossByAccount, 'wholeEvent'),
     incomeBeforeConversion,
     itemizedDeductions,
     residenceState,

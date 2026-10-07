@@ -484,6 +484,20 @@ per-person TY2026 maximum (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`,
 The flat cap does not verify plan qualification, separate military retirement, reduce by gross
 Social Security/Railroad Retirement, or apply the M-3 federal-AGI phaseout; personal exemption and whole
 Form 1040ME accuracy remain outside this bounded claim.
+Virginia's relief at 65 is not a retirement exclusion but the §58.1-322.03(5) **age deduction**: $12,000 per
+qualifying taxpayer against income of every kind, reduced $1 for each $1 of adjusted federal AGI (federal AGI
+less taxable Social Security and Tier 1) above $50,000 single or $75,000 married, computed as Form 760's
+worksheet does (`va-code-58-1-322-03-age-deduction-and-social-security`,
+[VA.md](../domain/state-tax-research/VA.md)). Its pack carries `retirement: { kind: 'none' }` and
+`virginiaAgeDeduction`.
+New Jersey's pension exclusion is the income-tested one of 54A:6-10(b), `newJerseyPensionExclusion` on the
+pack: nothing above $150,000 of New Jersey gross income, the qualifying spouse's payments up to $100,000 joint or
+$75,000 otherwise at $100,000 or less, and a percent of the payments between
+(`nj-stat-54a-6-10-retirement-income-exclusion`). Connecticut subtracts IRA distributions by its federal-AGI
+schedule, `connecticutIraDistributionSchedule` (`ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule`).
+A Roth conversion is marked on each state retirement row (`rothConversionAmount`, and the part made at 59 and a
+half or older), so a state can treat it apart from a withdrawal: Maine, Pennsylvania, South Carolina, Michigan
+and New York do (see section 9 of the domain rules reference).
 
 **2026 parameter corrections (DE, HI, RI, UT):** Delaware §1102(a)(14) 5.55%
 (`de-code-30-1102-a-14-rate-schedule`, [DE.md](../domain/state-tax-research/DE.md)), Hawaii

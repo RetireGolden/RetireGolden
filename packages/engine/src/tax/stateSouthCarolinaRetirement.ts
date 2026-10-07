@@ -11,6 +11,7 @@
 import {
   emptyLeafAdjustment,
   isMilitarySource,
+  rothConversionPart,
   type StateLeafAdjustment,
   type StateRetirementDistributionFact,
   type StateTaxExactnessWarning,
@@ -61,7 +62,10 @@ export function scMilitaryDeduction(facts: readonly StateRetirementDistributionF
 /**
  * §1170(A) retirement-income deduction for one owner.
  * Eligible qualified-plan / IRA amounts only; premature-penalty distributions
- * are excluded. Unknown premature status fails closed (no deduction).
+ * are excluded. Unknown premature status fails closed (no deduction), except
+ * for a Roth conversion: IRC 408A(d)(3)(A)(ii) says section 72(t) does not
+ * apply to one, so its dollars are never subject to a premature-distribution
+ * penalty and count at any age (sc-code-12-6-1170-roth-conversion-not-premature).
  */
 export function scSection1170Deduction(args: {
   facts: readonly StateRetirementDistributionFact[]
@@ -93,6 +97,10 @@ export function scSection1170Deduction(args: {
     ) {
       continue
     }
+    const conversion = rothConversionPart(fact)
+    eligible += conversion
+    const otherIncluded = Math.max(0, fact.federallyIncludedAmount) - conversion
+    if (otherIncluded <= 0) continue
     if (prematureDisqualified(fact)) continue
     if (prematureUnknown(fact)) {
       warnings.push({
@@ -104,7 +112,7 @@ export function scSection1170Deduction(args: {
       })
       continue
     }
-    eligible += Math.max(0, fact.federallyIncludedAmount)
+    eligible += otherIncluded
   }
 
   const cap = recipientAgeYears >= 65 ? SC_RETIREMENT_TIER_65_PLUS : SC_RETIREMENT_TIER_UNDER_65

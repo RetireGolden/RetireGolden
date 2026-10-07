@@ -60,3 +60,9 @@ Source records above require discriminating positive and negative fixtures throu
 - https://law.justia.com/codes/south-carolina/title-12/chapter-6/section-12-6-1150/ — SC Code §12-6-1150, 44% net capital gain deduction.
 - https://dor.sc.gov/tax-tips/retirees-lower-your-individual-income-tax-bill-these-five-tips — SS exempt; retirement-income and age-65 deductions.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — SC top rate 6.0%.
+
+## A Roth conversion counts toward the retirement deduction at any age (2026-10-06)
+
+Record: `sc-code-12-6-1170-roth-conversion-not-premature`. Classification: `settled`.
+
+S.C. Code 12-6-1170(A)(2) counts plan and IRA income not subject to a penalty for premature distribution, and IRC 408A(d)(3)(A)(ii) says section 72(t) does not apply to a conversion. The engine counts a conversion toward the $3,000 deduction ($10,000 from 65) whatever the owner's age; until 2026-10-06 it withheld the conversion of an owner under 59 and a half on January 1 as of unknown premature status and marked the year incomplete.

@@ -303,7 +303,30 @@ const rawStateYear2026 = {
           { lowerBound: 1000000, ratePct: 6.99 },
         ],
       },
-      retirement: { kind: 'full' }, // pension/IRA reach full exemption by 2026
+      // Pensions and annuities keep the unconditional rule
+      // (ct-cgs-12-701-20-b-social-security-retirement). IRA distributions
+      // follow their own federal-AGI schedule below.
+      retirement: { kind: 'full' },
+      // Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix), from 2026: 100%
+      // of a non-Roth IRA distribution below $75,000 of federal AGI ($100,000
+      // joint), stepping to none at $100,000 ($150,000 joint)
+      // (ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule).
+      connecticutIraDistributionSchedule: {
+        unmarried: [
+          { federalAgiAtLeast: 0, percent: 100 }, { federalAgiAtLeast: 75000, percent: 85 },
+          { federalAgiAtLeast: 77500, percent: 70 }, { federalAgiAtLeast: 80000, percent: 55 },
+          { federalAgiAtLeast: 82500, percent: 40 }, { federalAgiAtLeast: 85000, percent: 25 },
+          { federalAgiAtLeast: 87500, percent: 10 }, { federalAgiAtLeast: 90000, percent: 5 },
+          { federalAgiAtLeast: 95000, percent: 2.5 }, { federalAgiAtLeast: 100000, percent: 0 },
+        ],
+        marriedFilingJointly: [
+          { federalAgiAtLeast: 0, percent: 100 }, { federalAgiAtLeast: 100000, percent: 85 },
+          { federalAgiAtLeast: 105000, percent: 70 }, { federalAgiAtLeast: 110000, percent: 55 },
+          { federalAgiAtLeast: 115000, percent: 40 }, { federalAgiAtLeast: 120000, percent: 25 },
+          { federalAgiAtLeast: 125000, percent: 10 }, { federalAgiAtLeast: 130000, percent: 5 },
+          { federalAgiAtLeast: 140000, percent: 2.5 }, { federalAgiAtLeast: 150000, percent: 0 },
+        ],
+      },
       connecticutPersonalExemption: {
         single: { maximum: 15000, phaseoutStart: 30000, phaseoutStep: 1000, reductionPerStep: 1000 },
         marriedFilingSeparately: { maximum: 12000, phaseoutStart: 24000, phaseoutStep: 1000, reductionPerStep: 1000 },
@@ -754,7 +777,24 @@ const rawStateYear2026 = {
           { lowerBound: 500000, ratePct: 8.97 }, { lowerBound: 1000000, ratePct: 10.75 },
         ],
       },
-      retirement: { kind: 'capped', capPerPerson: 50000, minAge: 62 },
+      // The pension exclusion is the income-tested block below, not a per-person
+      // cap (nj-stat-54a-6-10-retirement-income-exclusion).
+      retirement: { kind: 'none' },
+      // N.J.S.A. 54A:6-10(b) and NJ-1040 line 28a: at 62 or older (or
+      // disabled), only with New Jersey gross income of $150,000 or less; the
+      // payments up to $100,000 joint or $75,000 otherwise at $100,000 or less,
+      // then 50% / 37.5% of the payments to $125,000 and 25% / 18.75% to
+      // $150,000. Married filing separately is not a plan filing status.
+      newJerseyPensionExclusion: {
+        minAge: 62,
+        grossIncomeLimit: 150000,
+        fullThrough: 100000,
+        maximum: { unmarried: 75000, marriedFilingJointly: 100000 },
+        tiers: [
+          { grossIncomeAbove: 100000, percent: { unmarried: 37.5, marriedFilingJointly: 50 } },
+          { grossIncomeAbove: 125000, percent: { unmarried: 18.75, marriedFilingJointly: 25 } },
+        ],
+      },
       hsaConformity: 'newJerseyCategories',
       directQcdPolicy: {
         kind: 'noGeneralFederalExclusion',
@@ -1050,12 +1090,29 @@ const rawStateYear2026 = {
           { lowerBound: 17000, ratePct: 5.75 },
         ],
       },
-      retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
+      // Virginia has no retirement-income exclusion. Its $12,000 relief at 65
+      // is the age deduction below, taken against income of every kind.
+      retirement: { kind: 'none' },
       virginiaMilitarySubtractionCap: 40000,
       // Va. Code 58.1-322.03(2)(a)-(b): $930 for each personal exemption the
       // filer could claim federally, and $800 more for each taxpayer 65 or
       // older (or blind; blindness is not modeled). Dependents are not collected.
       virginiaPersonalExemptions: { perExemption: 930, perAgedTaxpayer: 800 },
+      // Va. Code 58.1-322.03(5): $12,000 for each taxpayer born on or before
+      // January 1, 1939, and $12,000 for each later-born taxpayer who has
+      // attained 65, reduced $1 for each $1 of adjusted federal AGI above
+      // $50,000 single or $75,000 married
+      // (va-code-58-1-322-03-age-deduction-and-social-security).
+      virginiaAgeDeduction: {
+        amount: 12000,
+        minAge: 65,
+        fullAmountBornOnOrBefore: '1939-01-01',
+        singleAfagiThreshold: 50000,
+        marriedAfagiThreshold: 75000,
+      },
+      // Form 760PY taxes the resident-period income on the ordinary rate
+      // schedule; only the deductions and exemptions are prorated.
+      partYearRateSchedule: 'unscaled',
     },
     WA: {
       // No broad income tax; a 7% tax on large long-term gains is out of scope.

@@ -24,6 +24,7 @@ import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome, computeStateTaxYearTotal, computeStateTaxYearResult } from './stateTax.js'
 import { scMilitaryDeduction } from './stateSouthCarolinaRetirement.js'
+import type { StateHouseholdTaxFacts, StateRetirementDistributionFact } from './stateRetirementFacts.js'
 
 const TAX_YEAR = 2026
 
@@ -4512,85 +4513,297 @@ describeRule('vt-stat-32-5830e-social-security-inclusion', {
   })
 })
 
-// The $8,750 standard deduction plus, for these single filers aged 65, the
-// $930 personal exemption and the $800 aged exemption of 58.1-322.03(2).
-const VA_STD_DED = 8_750 + 930 + 800
-const VA_PENSION = 20_000
-const VA_SS_BENEFITS = 30_000
-// SS-adjusted FAGI limb: $56,000 total ordinary including $20,000 private
-// pension + SS $30,000 → provisional income $71,000; IRC 86 federally taxable
-// SS min($25,500, $4,500 + 85% × ($71,000 − $34,000)) = $25,500; federal AGI
-// $81,500. Va. Code §58.1-322.03(5) subtracts gross Title II benefits for
-// adjusted FAGI ($81,500 − $30,000 = $51,500), phasing the $12,000 deduction to
-// $10,500 and yielding $36,750 taxable income. Subtracting only the federally
-// taxable share would leave adjusted FAGI at $56,000, a $6,000 deduction, and
-// $41,250 taxable; using unadjusted FAGI phases the deduction to zero ($47,250).
-const VA_SS_ORDINARY = 56_000
-const VA_SS_FED_TAXABLE = 25_500
-const VA_SS_FAGI = VA_SS_ORDINARY + VA_SS_FED_TAXABLE
-const VA_SS_ADJUSTED_FAGI_GROSS = VA_SS_FAGI - VA_SS_BENEFITS
-const VA_SS_DEDUCTION_STATUTORY = 12_000 - (VA_SS_ADJUSTED_FAGI_GROSS - 50_000)
-const VA_SS_ACCEPTED = VA_SS_ORDINARY - VA_SS_DEDUCTION_STATUTORY - VA_STD_DED
-const VA_SS_PRODUCED = VA_SS_ORDINARY - 12_000 - VA_STD_DED
-const VA_SS_ADJUSTED_FAGI_TAXABLE_ONLY = VA_SS_FAGI - VA_SS_FED_TAXABLE
-const VA_SS_DEDUCTION_TAXABLE_ONLY = 12_000 - (VA_SS_ADJUSTED_FAGI_TAXABLE_ONLY - 50_000)
-const VA_SS_WRONG_TAXABLE_ONLY = VA_SS_ORDINARY - VA_SS_DEDUCTION_TAXABLE_ONLY - VA_STD_DED
-const VA_SS_WRONG_UNADJUSTED = VA_SS_ORDINARY - VA_STD_DED
+// ─── Virginia age deduction, Va. Code 58.1-322.03(5) ─────────────────────────
+//
+// Every expected value below is a hand worksheet for tax year 2026. Virginia
+// taxable income here = income (the pack never adds Social Security, and
+// 58.1-322.02(3) takes Tier 1 back out) − the age deduction − the standard
+// deduction ($8,750 single, $17,500 joint) − $930 per exemption − $800 per
+// taxpayer 65 by the next January 1 (58.1-322.03(2), as Form 760 counts it).
+//
+// The age deduction follows Form 760's Age 65 and Older Deduction Worksheet:
+//   AFAGI     = federal AGI − the taxable Social Security and Tier 1 benefits
+//               in it (lines 2 to 8; no Virginia conformity adjustment);
+//   excess    = max(0, AFAGI − $50,000 single or $75,000 married) (line 11);
+//   deduction = $12,000 × claimants born on or before January 1, 1939
+//             + max(0, $12,000 × the other claimants 65 by the next
+//               January 1 − excess) (lines 12 to 14, (5)(a) and (5)(b)).
+//
+// The deductions other than the age deduction come to 8,750 + 930 + 800 =
+// 10,480 for a single filer 65 or older, and 17,500 + 2 × 930 + 2 × 800 =
+// 20,960 for a couple both 65 or older.
+/** 70 at the end of 2026. */
+const VA_BORN_1956 = '1956-01-01'
+
+function vaFacts(datesOfBirth: string[], federalAgi: number, taxableSocialSecurity = 0): StateHouseholdTaxFacts {
+  return { claimantDatesOfBirth: datesOfBirth, federalAgi, federallyIncludedSocialSecurity: taxableSocialSecurity }
+}
+
+function vaRow(over: Partial<StateRetirementDistributionFact>): StateRetirementDistributionFact {
+  return {
+    accountId: 'pension',
+    ownerPersonId: 'p1',
+    sourceKind: 'ordinaryPrivatePension',
+    federallyIncludedAmount: 0,
+    recipientAgeYears: 70,
+    recipientAgeKnown: true,
+    cause: 'ordinary',
+    earlyDistributionDisqualifier: 'false',
+    ...over,
+  }
+}
+
+function vaTaxable(
+  over: Partial<TaxYearInput>,
+  facts: StateHouseholdTaxFacts,
+  distributions: StateRetirementDistributionFact[] = [],
+): number {
+  return computeStateTaxableIncome(pack('VA'), input({ state: 'VA', ...over }), {
+    householdFacts: facts,
+    retirementDistributions: distributions,
+  })
+}
 
 describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
+  note: 'taken against income of every kind',
   readings: {
-    statutoryAdjustedFagiPhaseout: {
-      highIncomePhaseoutTaxable: 120_000 - VA_STD_DED,
-      wageOnlyAgeDeductionTaxable: 40_000 - VA_STD_DED - 12_000,
-      socialSecurityAdjustedFagiTaxable: VA_SS_ACCEPTED,
-    },
-    packRetirementCapWithoutPhaseout: {
-      highIncomePhaseoutTaxable: 120_000 - 12_000 - VA_STD_DED,
-      wageOnlyAgeDeductionTaxable: 40_000 - VA_STD_DED,
-      socialSecurityAdjustedFagiTaxable: VA_SS_PRODUCED,
-    },
+    // Single, born 1956, $40,000 of income: AFAGI 40,000 is under $50,000, so
+    // the whole $12,000; 40,000 − 12,000 − 10,480 = 17,520, whether the
+    // $40,000 is wages or a pension, and whether the claimant is known by date
+    // of birth or only by year-end age.
+    form760LineFour: { wages: 17_520, pension: 17_520, wagesFromYearEndAge: 17_520 },
+    // The pack's old reading, a $12,000 retirement-income exclusion: wages
+    // keep all $40,000 (40,000 − 10,480 = 29,520); the pension 17,520.
+    retirementIncomeExclusion: { wages: 29_520, pension: 17_520, wagesFromYearEndAge: 29_520 },
+    // What every projected year produced from #710 to this fix: no age
+    // deduction at all, 29,520 throughout.
+    noAgeDeduction: { wages: 29_520, pension: 29_520, wagesFromYearEndAge: 29_520 },
   },
-  accepted: 'statutoryAdjustedFagiPhaseout',
-  produced: 'packRetirementCapWithoutPhaseout',
-}, ({ accepted, produced }) => {
-  const highIncome = input({
-    state: 'VA',
-    ordinaryIncome: 120_000,
-    privateRetirementIncome: 20_000,
-    agesAlive: [65],
-    peopleAged65Plus: 1,
-  })
-  const wageOnly = input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [65], peopleAged65Plus: 1 })
-  const socialSecurityAdjusted = input({
-    state: 'VA',
-    ordinaryIncome: VA_SS_ORDINARY,
-    privateRetirementIncome: VA_PENSION,
-    ssBenefits: VA_SS_BENEFITS,
-    agesAlive: [65],
-    peopleAged65Plus: 1,
+  accepted: 'form760LineFour',
+}, ({ accepted }) => {
+  it('deducts $12,000 from wages as it does from a pension', () => {
+    expect(vaTaxable({ ordinaryIncome: 40_000 }, vaFacts([VA_BORN_1956], 40_000))).toBe(accepted.wages)
+    expect(vaTaxable(
+      { ordinaryIncome: 40_000, privateRetirementIncome: 40_000 },
+      vaFacts([VA_BORN_1956], 40_000),
+      [vaRow({ federallyIncludedAmount: 40_000 })],
+    )).toBe(accepted.pension)
   })
 
-  it('pins the high-income phase-out that the retirement-cap mapping misses', () => {
-    // Worksheet: $120,000 total ordinary including $20,000 private pension →
-    // adjusted FAGI above $50,000, so §58.1-322.03(5) phases the $12,000
-    // deduction to zero.
-    const taxable = computeStateTaxableIncome(pack('VA'), highIncome)
-    expect(taxable).toBe(produced.highIncomePhaseoutTaxable)
-    expect(taxable).not.toBe(accepted.highIncomePhaseoutTaxable)
+  it('reads the claimant from the year-end age when no date of birth is known', () => {
+    // No household facts: federal AGI is the federal calculation on the same
+    // $40,000 of ordinary income.
+    const taxable = computeStateTaxableIncome(
+      pack('VA'),
+      input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [70], peopleAged65Plus: 1 }),
+    )
+    expect(taxable).toBe(accepted.wagesFromYearEndAge)
+  })
+})
+
+describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
+  note: 'income test on adjusted federal AGI',
+  readings: {
+    // (a) Single, born 1956, $55,000: AFAGI 55,000, excess 5,000, deduction
+    //     7,000; 55,000 − 7,000 − 10,480 = 37,520.
+    // (b) Single, born 1956, $56,000 of income and $30,000 of Social Security.
+    //     IRC 86: provisional income 56,000 + 15,000 = 71,000; taxable
+    //     benefits min(85% × 30,000 = 25,500, 85% × (71,000 − 34,000) + 4,500
+    //     = 35,950) = 25,500; federal AGI 81,500. Line 7 takes out the taxable
+    //     25,500: AFAGI 56,000, excess 6,000, deduction 6,000;
+    //     56,000 − 6,000 − 10,480 = 39,520.
+    // (c) Single, born 1956, $60,000 of income of which $20,000 is a Tier 1
+    //     railroad annuity the engine includes in federal AGI. 58.1-322.02(3)
+    //     subtracts the 20,000 and line 7 takes it out of AFAGI (40,000), so
+    //     the whole 12,000; 60,000 − 20,000 − 12,000 − 10,480 = 17,520.
+    form760Worksheet: { partialPhaseOut: 37_520, socialSecurity: 39_520, tierOne: 17_520 },
+    // The subsection's "benefits received" read as the gross benefits: (b)
+    // AFAGI 81,500 − 30,000 = 51,500, deduction 10,500, 35,020.
+    grossBenefitsSubtracted: { partialPhaseOut: 37_520, socialSecurity: 35_020, tierOne: 17_520 },
+    // Federal AGI with nothing taken out: (b) 81,500, no deduction, 45,520;
+    // (c) 60,000, excess 10,000, deduction 2,000, 27,520.
+    unadjustedFederalAgi: { partialPhaseOut: 37_520, socialSecurity: 45_520, tierOne: 27_520 },
+    // No income test, the old retirement-cap reading: 32,520 and 33,520.
+    noIncomeTest: { partialPhaseOut: 32_520, socialSecurity: 33_520, tierOne: 17_520 },
+  },
+  accepted: 'form760Worksheet',
+}, ({ accepted }) => {
+  it('reduces the deduction $1 for each $1 of AFAGI over $50,000', () => {
+    expect(vaTaxable({ ordinaryIncome: 55_000 }, vaFacts([VA_BORN_1956], 55_000))).toBe(accepted.partialPhaseOut)
   })
 
-  it('pins the opposite direction when an age-65 filer has wages but no modeled pension', () => {
-    const taxable = computeStateTaxableIncome(pack('VA'), wageOnly)
-    expect(taxable).toBe(produced.wageOnlyAgeDeductionTaxable)
-    expect(taxable).not.toBe(accepted.wageOnlyAgeDeductionTaxable)
+  it('takes the taxable Social Security, not the gross benefits, out of AFAGI', () => {
+    expect(vaTaxable(
+      { ordinaryIncome: 56_000, ssBenefits: 30_000 },
+      vaFacts([VA_BORN_1956], 81_500, 25_500),
+    )).toBe(accepted.socialSecurity)
   })
 
-  it('pins the age deduction against adjusted FAGI after Title II Social Security', () => {
-    const taxable = computeStateTaxableIncome(pack('VA'), socialSecurityAdjusted)
-    expect(taxable).toBe(produced.socialSecurityAdjustedFagiTaxable)
-    expect(taxable).not.toBe(accepted.socialSecurityAdjustedFagiTaxable)
-    expect(taxable).not.toBe(VA_SS_WRONG_TAXABLE_ONLY)
-    expect(taxable).not.toBe(VA_SS_WRONG_UNADJUSTED)
+  it('takes Tier 1 railroad benefits out of AFAGI', () => {
+    expect(vaTaxable(
+      { ordinaryIncome: 60_000 },
+      vaFacts([VA_BORN_1956], 60_000),
+      [vaRow({ accountId: 'tier-1', sourceKind: 'railroadTier1', federallyIncludedAmount: 20_000 })],
+    )).toBe(accepted.tierOne)
+  })
+})
+
+describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
+  note: 'a married couple takes one reduction on their joint AFAGI',
+  readings: {
+    // Joint return, $80,000: AFAGI 80,000, excess over $75,000 is 5,000.
+    // Both born 1956: line 12 is 2 × 12,000, line 14 is 24,000 − 5,000 =
+    // 19,000 (9,500 each on line 15); 80,000 − 19,000 − 20,960 = 40,040.
+    // One spouse 70, the other born 1966 (60): line 1 is 1, so
+    // 12,000 − 5,000 = 7,000; exemptions 17,500 + 1,860 + 800 = 20,160;
+    // 80,000 − 7,000 − 20,160 = 52,840.
+    form760JointWorksheet: { bothSpouses: 40_040, oneSpouse: 52_840 },
+    // Each spouse's $12,000 cut by the whole excess: 2 × 7,000 = 14,000,
+    // 45,040.
+    eachSpouseReducedByTheWholeExcess: { bothSpouses: 45_040, oneSpouse: 52_840 },
+    // The single $50,000 limit on the joint return: excess 30,000 leaves
+    // nothing; 59,040 and 59,840.
+    singleThreshold: { bothSpouses: 59_040, oneSpouse: 59_840 },
+  },
+  accepted: 'form760JointWorksheet',
+}, ({ accepted }) => {
+  it('reduces the couple\'s combined deduction once and keeps the $75,000 limit', () => {
+    const joint = { filingStatus: 'marriedFilingJointly' as const, ordinaryIncome: 80_000 }
+    expect(vaTaxable(joint, vaFacts([VA_BORN_1956, VA_BORN_1956], 80_000))).toBe(accepted.bothSpouses)
+    expect(vaTaxable(joint, vaFacts([VA_BORN_1956, '1966-01-01'], 80_000))).toBe(accepted.oneSpouse)
+  })
+})
+
+describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
+  note: 'who takes it, and under which limb',
+  readings: {
+    // (a) Single, born 1938-06-01: (5)(a), the full $12,000 with no income
+    //     test even at $120,000; 120,000 − 12,000 − 10,480 = 97,520.
+    // (b) Joint, one spouse born 1938-06-01 and one born 1950-01-01, $90,000:
+    //     line 1 counts only the income-tested spouse, so 12,000 +
+    //     max(0, 12,000 − 15,000) = 12,000; 90,000 − 12,000 − 20,960 = 57,040.
+    // (c) Single, $40,000, born January 1 or January 2, 1962. Form 760 puts
+    //     the first at 65 for the year (for 2025 it names births on or before
+    //     January 1, 1961); the second is not. The $800 aged exemption follows
+    //     the same rule (va-code-58-1-322-03-2-personal-exemptions), so the
+    //     difference is the deduction and the $800: 12,800.
+    form760Cohorts: { bornBefore1939: 97_520, mixedCouple: 57_040, januaryFirstDifference: 12_800 },
+    // Every claimant income-tested and judged by the year-end age: (a) 0, so
+    // 109,520; (b) 24,000 − 15,000 = 9,000, so 60,040; (c) neither qualifies.
+    everyoneIncomeTestedAtYearEndAge: { bornBefore1939: 109_520, mixedCouple: 60_040, januaryFirstDifference: 0 },
+  },
+  accepted: 'form760Cohorts',
+}, ({ accepted }) => {
+  it('gives the (5)(a) cohort the full amount and income-tests the rest', () => {
+    expect(vaTaxable({ ordinaryIncome: 120_000 }, vaFacts(['1938-06-01'], 120_000))).toBe(accepted.bornBefore1939)
+    expect(vaTaxable(
+      { filingStatus: 'marriedFilingJointly', ordinaryIncome: 90_000 },
+      vaFacts(['1938-06-01', '1950-01-01'], 90_000),
+    )).toBe(accepted.mixedCouple)
+  })
+
+  it('counts a claimant who is 65 by the next January 1', () => {
+    const notYet = vaTaxable({ ordinaryIncome: 40_000 }, vaFacts(['1962-01-02'], 40_000))
+    const sixtyFive = vaTaxable({ ordinaryIncome: 40_000 }, vaFacts(['1962-01-01'], 40_000))
+    expect(notYet - sixtyFive).toBe(accepted.januaryFirstDifference)
+  })
+
+  it('gives nothing to a filer under 65', () => {
+    // Born 1966, 60: 40,000 − 8,750 − 930 = 30,320.
+    expect(vaTaxable({ ordinaryIncome: 40_000 }, vaFacts(['1966-01-01'], 40_000))).toBe(30_320)
+  })
+})
+
+describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
+  note: 'a part-year resident',
+  readings: {
+    // Single, 70, six months in Virginia and six in Florida, all income
+    // ordinary. Form 760PY multiplies the full-year deduction by the
+    // residency ratio; the engine prorates by months, so by 6/12. Full year
+    // at $60,000: excess 10,000, deduction 2,000, half is 1,000. At $62,000:
+    // excess 12,000, deduction 0. The Virginia slice at $62,000 therefore
+    // has $1,000 more income and $1,000 less deduction: $2,000 more taxable,
+    // all in the 5.75% band (Form 760PY keeps the ordinary schedule, and the
+    // slice's taxable income, 23,760 and 25,760, is above $17,000 in both
+    // cases), 115.00 more tax.
+    proratedLikeTheYear: 115,
+    // Halving the $12,000 but testing the slice's income against the whole
+    // $50,000 leaves both slices the full $6,000: only the $1,000 of income
+    // differs, 57.50.
+    fullThresholdOnTheSlice: 57.5,
+  },
+  accepted: 'proratedLikeTheYear',
+}, ({ accepted }) => {
+  it('prorates the deduction and its threshold with the slice', () => {
+    const partYear = (ordinaryIncome: number) => computeStateTaxYearTotal(input({
+      state: 'VA',
+      ordinaryIncome,
+      agesAlive: [70],
+      peopleAged65Plus: 1,
+      stateResidency: [{ state: 'VA', months: 6 }, { state: 'FL', months: 6 }],
+    }))
+    expect(partYear(62_000) - partYear(60_000)).toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('va-code-58-1-322-03-2-personal-exemptions', {
+  note: 'aged by the next January 1',
+  readings: {
+    // Single, $70,000 of wages, so the age deduction is fully phased out
+    // (AFAGI $20,000 over $50,000). Born January 1, 1962: Form 760 counts a
+    // taxpayer "age 65 or older on or before January 1" of the next year, so
+    // the $800 is allowed for 2026: 70,000 − 8,750 − 930 − 800 = 59,520.
+    // Born January 2, 1962: 70,000 − 8,750 − 930 = 60,320.
+    form760JanuaryFirst: { bornJanuaryFirst: 59_520, bornJanuarySecond: 60_320 },
+    // 65 at the end of the year: neither gets the $800.
+    ageAtYearEnd: { bornJanuaryFirst: 60_320, bornJanuarySecond: 60_320 },
+  },
+  accepted: 'form760JanuaryFirst',
+}, ({ accepted }) => {
+  it('counts the $800 for a taxpayer whose 65th birthday is the next January 1', () => {
+    expect(vaTaxable({ ordinaryIncome: 70_000 }, vaFacts(['1962-01-01'], 70_000))).toBe(accepted.bornJanuaryFirst)
+    expect(vaTaxable({ ordinaryIncome: 70_000 }, vaFacts(['1962-01-02'], 70_000))).toBe(accepted.bornJanuarySecond)
+  })
+})
+
+describeRule('va-code-58-1-322-03-2-personal-exemptions', {
+  note: 'a part-year resident',
+  readings: {
+    // Single, $60,000 of ordinary income, six months in Virginia and six in
+    // Florida. The engine prorates by months (6/12); Form 760PY's Prorated
+    // Exemption Worksheet prorates the exemptions by days resident, and its
+    // standard deduction by the income ratio (here also one half). The
+    // Virginia slice: $30,000 of income, the $8,750 standard deduction
+    // halved to $4,375, and the ordinary schedule, which 760PY does not
+    // prorate (2% to 3,000, 3% to 5,000, 5% to 17,000, then 5.75%; 720
+    // through 17,000).
+    // Under 65: exemption 930 / 2 = 465; taxable 30,000 − 4,375 − 465 =
+    //   25,160; tax 720 + 8,160 × 5.75% = 1,189.20.
+    // At 70: the age deduction is 1,000 (half of 12,000 − 10,000), the
+    //   exemptions (930 + 800) / 2 = 865; taxable 30,000 − 1,000 − 4,375 −
+    //   865 = 23,760; tax 720 + 6,760 × 5.75% = 1,108.70.
+    prorated: { under65: 1_189.2, at70: 1_108.7 },
+    // Whole exemptions on the slice: 24,695 and 22,895; 1,162.4625 and
+    // 1,058.9625.
+    wholeExemptions: { under65: 1_162.4625, at70: 1_058.9625 },
+    // The prorated exemptions with the brackets halved as well (2% to 1,500,
+    // 3% to 2,500, 5% to 8,500; 360 through 8,500), which the engine did
+    // before Virginia kept its schedule: 360 + 16,660 × 5.75% = 1,317.95 and
+    // 360 + 15,260 × 5.75% = 1,237.45.
+    bracketsHalved: { under65: 1_317.95, at70: 1_237.45 },
+  },
+  accepted: 'prorated',
+}, ({ accepted }) => {
+  it('prorates the $930 and the $800 with the months resident', () => {
+    const partYear = (age: number) => computeStateTaxYearTotal(input({
+      state: 'VA',
+      ordinaryIncome: 60_000,
+      agesAlive: [age],
+      peopleAged65Plus: age >= 65 ? 1 : 0,
+      stateResidency: [{ state: 'VA', months: 6 }, { state: 'FL', months: 6 }],
+    }))
+    expect(partYear(60)).toBeCloseTo(accepted.under65, 6)
+    expect(partYear(70)).toBeCloseTo(accepted.at70, 6)
   })
 })
 

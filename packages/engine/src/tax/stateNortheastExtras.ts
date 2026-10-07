@@ -80,6 +80,65 @@ export function dcGovernmentSurvivorExclusion(fact: StateRetirementDistributionF
 }
 
 /**
+ * New Jersey 54A:6-10(b) pension exclusion, as NJ-1040 line 28a computes it:
+ * nothing when New Jersey gross income (line 27) is over the limit; otherwise
+ * the lesser of the payments of the spouses who qualify (62 or older, or
+ * disabled, on the last day of the year: line A) and the amount for the
+ * filing status and income (line B), which is the dollar maximum at or below
+ * `fullThrough` and the tier's percent of all the payments on line 20a above
+ * it.
+ */
+export function newJerseyPensionExclusion(args: {
+  config: {
+    grossIncomeLimit: number
+    fullThrough: number
+    maximum: Record<'unmarried' | 'marriedFilingJointly', number>
+    tiers: readonly { readonly grossIncomeAbove: number; readonly percent: Record<'unmarried' | 'marriedFilingJointly', number> }[]
+  }
+  married: boolean
+  grossIncome: number
+  /** Line 20a: every pension, annuity and IRA payment on the return. */
+  payments: number
+  /** Line A: the payments of the spouses who qualify. */
+  qualifyingPayments: number
+}): StateLeafAdjustment {
+  const { config } = args
+  const status = args.married ? 'marriedFilingJointly' : 'unmarried'
+  const qualifying = Math.max(0, args.qualifyingPayments)
+  if (qualifying === 0 || args.grossIncome > config.grossIncomeLimit) return emptyLeafAdjustment()
+  let lineB = config.maximum[status]
+  if (args.grossIncome > config.fullThrough) {
+    let percent = 0
+    for (const tier of config.tiers) {
+      if (args.grossIncome > tier.grossIncomeAbove) percent = tier.percent[status]
+    }
+    lineB = Math.max(0, args.payments) * percent / 100
+  }
+  const exclusion = Math.min(qualifying, lineB)
+  return { taxableIncomeDelta: exclusion === 0 ? 0 : -exclusion, taxCredit: 0, warnings: [] }
+}
+
+/**
+ * Connecticut 12-701(a)(20)(B)(xxviii) and (xxix): the fraction of the year's
+ * IRA distributions subtracted, from the schedule row the federal AGI falls
+ * in. A joint return reads the joint schedule; every other return, a
+ * qualifying surviving spouse's included, reads the schedule for an unmarried
+ * individual, married individual filing separately or head of household.
+ */
+export function connecticutIraSubtractionFraction(
+  schedule: Record<'unmarried' | 'marriedFilingJointly', readonly { readonly federalAgiAtLeast: number; readonly percent: number }[]>,
+  married: boolean,
+  federalAgi: number,
+): number {
+  const rows = married ? schedule.marriedFilingJointly : schedule.unmarried
+  let percent = 0
+  for (const row of rows) {
+    if (federalAgi >= row.federalAgiAtLeast) percent = row.percent
+  }
+  return percent / 100
+}
+
+/**
  * Connecticut WS personal exemption: discrete ceiling steps from the pack
  * schedule. steps = ceil(max(0, CT_AGI - start) / step); reduction = steps × per-step.
  */

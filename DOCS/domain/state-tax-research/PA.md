@@ -42,3 +42,11 @@ capital-gain line to zero. This is encoded as
 ## Citations
 - https://www.revenue.pa.gov/ — flat 3.07% rate; retirement income exempt.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — PA flat 3.07%.
+
+## A traditional IRA converted in full to a Roth IRA is not taxed (2026-10-06)
+
+Record: `pa-40-roth-ira-conversion-not-taxable`. Classification: `settled`.
+
+The 2025 PA-40 instructions: no PA tax on the difference between the amount distributed from a traditional IRA and the previous contributions when the entire withdrawal goes to a Roth IRA, trustee to trustee or within 60 days, with any federal tax withheld also put into the new IRA. There is no age condition, so the engine subtracts an IRA conversion at any age; until 2026-10-06 it taxed the conversion of an owner under 60, $1,228 on $40,000. An in-plan Roth rollover is not addressed by the instructions and 61 Pa. Code 101.6(c)(8)(iii)(A)(II) exempts a transfer only when it is not included in federal income, so the engine keeps it under the age-60 rule; whether Pennsylvania taxes it is not determined.
+
+Authority: [2025 PA-40 instructions](https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforindividuals/pit/documents/2025/2025_pa-40in.pdf), Roth IRA Rollover.

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 588183401a7d49b5209b554ce86e54cf340a7f93.
+ * Output families imported from the output-family census at commit b93bd7c6e664d04ded1e5ff9bfab8df3c208fee5.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -2692,12 +2692,15 @@ const families = {
   "mcp-batch-cumulative-tax-objective": {
     "title": "Batch cumulative tax objective",
     "group": "taxes",
-    "meaning": "Adapter sum of each evaluated projection year's tax plus penalties.",
+    "meaning": "Sum of each evaluated candidate projection's taxes and penalties, published as batch_evaluate's cumulative_tax objective.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
-    "engineSource": null,
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.lifetimeTaxesAndPenalties"
+    },
     "surfaces": [
       {
         "surface": "mcp",
@@ -2709,12 +2712,15 @@ const families = {
   "mcp-batch-ending-traditional-objective": {
     "title": "Batch ending traditional balance objective",
     "group": "accounts-and-growth",
-    "meaning": "Adapter sum of ending balances for traditional accounts in each evaluated candidate.",
+    "meaning": "Ending traditional-account balance of each evaluated candidate, published as batch_evaluate's ending_trad objective.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
-    "engineSource": null,
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.endingByCategory"
+    },
     "surfaces": [
       {
         "surface": "mcp",
@@ -2726,12 +2732,15 @@ const families = {
   "mcp-compare-ending-after-tax-estate-delta": {
     "title": "MCP scenario ending-estate delta",
     "group": "optimizer-and-comparisons",
-    "meaning": "Adapter-computed Plan B minus Plan A ending after-tax estate.",
+    "meaning": "Plan B minus Plan A ending after-tax estate, as compare_scenarios publishes it.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
-    "engineSource": null,
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/scenarios/comparison.ts",
+      "symbol": "ScenarioHeadlineComparison.endingAfterTaxEstate"
+    },
     "surfaces": [
       {
         "surface": "mcp",

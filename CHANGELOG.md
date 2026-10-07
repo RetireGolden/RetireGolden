@@ -4,6 +4,151 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.4.1** (2026-10-06) — a **patch**: the state tax
+  corrections below, an additive conversion marker on the state retirement facts, and no
+  removed or renamed export. Plans stay schema 7. planner-ui's `^0.4.0` range already admits
+  it, so planner-ui is not re-released; RetireGolden-MCP and RetireGolden-Pro move by bumping
+  their exact engine pin. **Not yet published**; the owner tags `engine-v0.4.1` and approves
+  the `npm-publish` environment.
+- **Changed: Colorado has no TABOR rate cut for 2026** (2026-10-06). The State Controller
+  certified on September 8, 2026 that revenue fell $175.9 million short of the Referendum C
+  cap, so there is no refund obligation and no temporary rate reduction under C.R.S. 39-22-627,
+  and the engine's 4.40% is right for 2026 (Legislative Council Staff, Economic & Revenue
+  Forecast, September 2026). The `state-enacted-tax-year-figures` record and worksheet now say
+  so and name the next estimate, due October 1, 2027. No figure moves.
+- **Changed: the three RetireGolden-MCP output families are engine families** (2026-10-07).
+  RetireGolden-MCP 0.11.0 ships MCP #81, so `batch_evaluate`'s `cumulative_tax` and
+  `ending_trad` objectives and `compare_scenarios`' ending-estate delta read
+  `ProjectionSummary.lifetimeTaxesAndPenalties`, `ProjectionSummary.endingByCategory` and
+  `ScenarioHeadlineComparison.endingAfterTaxEstate`. As the census freeze recorded, their kind
+  moves from `adapter` to `engine`, each with its `engineSource` (RetireGolden-Docs b93bd7c6, re-imported here):
+  engine 192, ui-native 24, ui-transformation 21, adapter 0. No figure moves.
+- **Fixed (tooling): a fresh dependency resolve passes the trust policy again** (2026-10-06).
+  vitest 5.0.2 and later depend on `why-is-node-running ^3.2.1`; 3.2.2 has no provenance
+  attestation while 3.2.0 and 3.2.1 do, so pnpm's `trustPolicy: no-downgrade` refused every
+  fresh resolve and the Resolve Gate was red on main from 2026-10-02. A root override scoped to
+  the 3.x line holds 3.2.1; the committed lockfile does not move, and `pnpm-workspace.yaml`
+  records the reason and when to drop it.
+- **Fixed: states treat a Roth conversion by their own rules, not as a withdrawal**
+  (2026-10-06). Every state retirement row now marks the taxable conversion dollars
+  (`rothConversionAmount`) and the part converted at 59 and a half or older
+  (`rothConversionAmountAtAge59HalfOrOlder`, read on a named conversion's execution date,
+  otherwise on January 1), on both conversion paths and without splitting an account's event,
+  so no federal figure moves. The comment that called conversions "not exclusion-eligible"
+  described a coarse bucket the projection no longer reads and now says so.
+  - **Maine** (2025 Form 1040ME instructions): a conversion gets no pension income deduction.
+    A 70-year-old converting $30,000 had all of it deducted; now none
+    (`me-1040me-roth-conversion-not-pension-income`).
+  - **Pennsylvania** (2025 PA-40 instructions): a traditional IRA converted in full to a Roth
+    IRA is not taxed, at any age. A $40,000 conversion at 50 paid $1,228.00; now $0
+    (`pa-40-roth-ira-conversion-not-taxable`). An in-plan Roth rollover keeps the age-60 rule,
+    a stated limit.
+  - **South Carolina** (S.C. Code 12-6-1170(A)(2), IRC 408A(d)(3)(A)(ii)): a conversion carries
+    no premature penalty, so it counts toward the $3,000 deduction at any age. A $20,000
+    conversion at 50 got no deduction and an incomplete year; now $3,000 and a complete year
+    (`sc-code-12-6-1170-roth-conversion-not-premature`).
+  - **Michigan** (Treasury FAQ) and **New York** (TSB-M-98(7)I): a conversion counts only if
+    made at 59 and a half. A $30,000 conversion at 55 in Michigan had all of it subtracted, and
+    one in New York by an owner 59 at year end but not 59 and a half on January 1 had $20,000
+    excluded; now none. An undated conversion in the half-birthday year is read on January 1
+    and gets nothing, so both records are approximated, needing the conversion date
+    (`mi-treasury-roth-conversion-at-59-and-a-half`,
+    `ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half`). One library figure moves: the
+    Michigan example `trump-account-head-start`, whose converting owner was born in 2004,
+    now executes $13,180.74 of 2027's requested $40,801.60 conversion, was $16,465.61, so its
+    cleaned executable schedule is $4,050,076, was $4,053,361; the raw schedule and the other
+    years do not move, and no other planner-ui figure does.
+  - Stated as limits, not code: Georgia's 62 to 64 tier, the Delaware and Arkansas date edges,
+    in-plan rollovers in Maryland, Rhode Island, Mississippi and Pennsylvania, and Ohio and
+    Hawaii, where the treatment is not determined. Eleven quotes were added to the
+    quote-fidelity ledger (5 EXACT, 2 ELISION-EXACT, 4 PDF-WORD-LEVEL).
+- **Fixed: Connecticut subtracts IRA distributions by its federal-AGI schedule** (2026-10-06).
+  Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix) give 100% below $75,000 of federal AGI
+  ($100,000 joint), stepping to none at $100,000 ($150,000 joint); the engine subtracted every
+  IRA dollar at any AGI. A single filer's $30,000 IRA distribution: at $78,000 of federal AGI
+  $21,000 comes off, was $30,000; at $120,000 none, was $30,000; joint at $112,000, $16,500.
+  A conversion follows the same schedule. Pensions keep the unconditional rule, which the
+  identical (xxi) and (xxii) schedules would also limit
+  (`ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule`).
+- **Fixed: New Jersey's pension exclusion is income-tested and per return** (2026-10-06).
+  N.J.S.A. 54A:6-10(b) and NJ-1040 line 28a allow it only at New Jersey gross income of $150,000
+  or less: up to $100,000 joint or $75,000 otherwise at $100,000 or less, then 50% / 37.5% of the
+  payments to $125,000 and 25% / 18.75% to $150,000, counting only a qualifying spouse's
+  payments. The engine gave $50,000 for each household member 62 or older with no income test.
+  A single filer of 65 whose $80,000 income is all pension now excludes $75,000, was $50,000; at
+  $110,000 with that pension, $30,000; at $200,000, nothing, was $50,000; a couple both 65 with
+  $110,000 of pensions, $55,000, was $100,000. The record moves from approximated to settled.
+- **Fixed: Virginia's $800 aged exemption counts a January 1 birthday, and a part-year
+  resident is taxed as Form 760PY taxes one** (2026-10-06). Va. Code §58.1-322.03(2)(b) gives
+  the $800 to an aged taxpayer as IRC 63(f) defines one; the 2025 Form 760 instructions count a
+  taxpayer "age 65 or older on or before January 1" of the following year. The engine read
+  the age at the end of the year, so a single filer born January 1, 1962 with $70,000 of
+  wages lost the $800 for 2026: taxable income $60,320, now $59,520 (tax $46 less). Form
+  760PY prorates the standard deduction, the personal exemptions (its Prorated Exemption
+  Worksheet) and the age deduction, and taxes the resident-period income on the ordinary rate
+  schedule. The split-year path gave the Virginia slice the whole $930 and $800 and scaled
+  Virginia's brackets with the months; it now prorates the exemptions and keeps the brackets
+  (a new pack field, `partYearRateSchedule: 'unscaled'`, set for Virginia only). A single
+  filer under 65 with $60,000 of ordinary income who lived six months in Virginia now owes
+  $1,189.20 for the slice, down from $1,291.21; at 70, $1,108.70, down from $1,187.71. Every
+  other state still scales its brackets for a split year, which overstates the tax where the
+  part-year return taxes the resident-period income on the ordinary schedule, as New Jersey's
+  does; the Virginia and New Jersey records state it as a limit. The record
+  `va-code-58-1-322-03-2-personal-exemptions` cites both instructions (four rows added to the
+  quote-fidelity ledger, PDF-WORD-LEVEL).
+- **Fixed: the Kansas plan-code warning names its record** (2026-10-06). `ks-plan-code-unknown`
+  carried the ruleId `ks-named-public-pension-exclusion`, which the registry does not hold; it
+  now names `ks-stat-79-32-117-public-pension-exclusion`. No figure moves.
+- **Fixed: Virginia's age deduction is applied again, to income of every kind and with its
+  income test** (2026-10-06). Va. Code §58.1-322.03(5) allows $12,000 for each taxpayer born
+  on or before January 1, 1939, and $12,000 for each later-born taxpayer who has attained 65,
+  reduced $1 for each $1 of adjusted federal AGI above $50,000 single or $75,000 married. Since
+  #710 (2026-09-13) no projected Virginia year took it: the projection always supplies
+  characterized retirement rows, Virginia's branch for them had no age deduction, and the pack's
+  $12,000 retirement-income cap sat on the coarse path the projection no longer took. The engine
+  now computes it as Form 760's Age 65 and Older Deduction Worksheet does: adjusted federal AGI
+  is federal AGI less the taxable Social Security and Tier 1 benefits in it; a couple takes one
+  reduction on their joint figure and splits the result; a taxpayer whose 65th birthday is
+  January 1 qualifies for the year before; a part-year resident's deduction is prorated. A
+  couple both 70 with $60,000 of pensions and no Social Security now pays $622.00 of 2026
+  Virginia tax, down from $1,987.30 (taxable income $15,040, was $39,040); with $80,000 of
+  pensions and Social Security, $2,044.80, down from $3,137.30 (taxable $40,040, was $59,040).
+  A single filer of 65 or older with $40,000 of wages and no retirement income gets the $12,000
+  the old retirement-income cap never gave (taxable $17,520, was $29,520). The VA pack's
+  `retirement` is now `none` beside a new `virginiaAgeDeduction`, and the record
+  `va-code-58-1-322-03-age-deduction-and-social-security` moves from approximated to settled,
+  citing the 2025 Form 760 instructions beside the statute (four rows added to the
+  quote-fidelity ledger, all PDF-WORD-LEVEL). Not modeled: Virginia conformity adjustments to
+  federal AGI, and the disability subtraction and low-income and earned income credits a
+  taxpayer may take instead. The personal-exemptions fixture moves its single filer from
+  $60,000 to $70,000 so the age deduction is fully phased out there and the exemptions remain
+  the only difference it prices. No library example is in Virginia, so none moves.
+- **Fixed: Kansas flags a missing plan code only where the code decides the tax, and
+  subtracts Washburn University's 403(b)** (2026-10-06). K.S.A. 79-32,117 subtracts named
+  retirement systems (KPERS, federal civil service and military, and the listed city, utility,
+  Washburn and Overland Park plans). An IRA, a private pension, and a 401(k), 401(a) or 457(b)
+  employer plan is none of them, yet since #710 a missing code on them raised
+  `ks-plan-code-unknown`, so most Kansas plans showed incomplete years for a fact that could
+  not change the tax; those rows are now complete. Washburn's plan, (c)(xix), is a 403(b)
+  (Department of Revenue Notice 08-06, one row added to the quote-fidelity ledger,
+  PDF-WORD-LEVEL), and the engine gave an employer plan no subtraction whatever its code: a
+  $12,000 distribution from an employer plan coded `KS-WASHBURN` now comes off Kansas taxable
+  income in full, was taxed; no other code subtracts an employer plan (whether a federal Thrift
+  Savings Plan or a KPERS 457 account is subtracted is a stated limit). A 403(b), or an
+  employer plan of other, unknown or undeclared type, with a taxable amount and no code is
+  still flagged. A projected employer account now passes its declared `employerPlanType` to
+  the state row as `qualifiedPlanType` when the state evidence gives none, as the annuity path
+  already did, so a declared 401(k) or 457(b) is complete and an undeclared one is flagged.
+  The same plan type lets Virginia's subtraction for basis taxed by a prior state treat a
+  declared 401(k) or 457(b) account as the §401 or §457 plan Va. Code §58.1-322.02(11)
+  enumerates, as it already did an annuity's; that needs prior-state basis evidence, which no
+  library example carries. A 403(b) is not enumerated, and Virginia's two predicates (the
+  subtraction and its basis pool) accepted every declared employer-plan type but other and
+  unknown: a 403(b) with $4,000 federally included and $6,000 of basis taxed by California had
+  $4,000 subtracted. It now gets none, and only 401(a), 401(k), 457(b) and IRA types qualify
+  (`va-code-58-1-322-02-11-basis`). A public, federal civil service, military or
+  government survivor pension without a code, or one of unknown public source, is flagged as
+  before. No library example is in Kansas.
 - Prepared **`@retiregolden/planner-ui` 0.11.0** (2026-10-06) — a **minor** bump, because
   its engine dependency is now `^0.4.0`. A host on planner-ui 0.10.0 resolves engine 0.3.x
   for the planner, which refuses the schema 7 plans engine 0.4.0 writes. So RetireGolden-MCP
@@ -32,6 +177,175 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   alone: a host that keeps planner-ui 0.10.0 runs its planner on engine 0.3.x. Until a
   host moves, a plan saved by 0.4.0 does not open in it. Now that npm serves 0.4.0,
   planner-ui's pack smoke in `auto` mode resolves it from the registry.
+- **Changed (2026-09-13, #710, recorded 2026-10-06): state income tax in every projection year now
+  applies each state's retirement rules per owner and per source, Roth conversions count toward
+  those exclusions, several 2026 state amounts changed, and many plans now report incomplete
+  years.** This entry was missing when engine 0.4.0 shipped, and 0.4.0 includes #710; it is added
+  after the fact. The PR description says the final review found no existing monetary value
+  changed, but that compared against an intermediate capture inside the PR, not against main
+  before it, and the PR's own report golden for the example couple moved. Measured against main
+  before #710 (4e74f68ad), on the library examples run in their own states and moved into each of
+  the 51 jurisdictions: figures move in 26 states, and in Kansas for a pension entered as
+  "public". The federal tax computation and the states with no income tax do not move. Of the 29
+  library examples, 27 keep every figure (three of those now report incomplete years) and two
+  move. "State tax on the same income" below re-prices each year of the #710 projection with both
+  versions of the state calculation, so it separates the rule change from its effect on later
+  withdrawals.
+  - **One exclusion per owner, not a household pool.** Before, a capped exclusion was the cap
+    times the number of living spouses who met its age test, shared across the household's
+    pensions and traditional withdrawals. Now each owner's distributions meet only that owner's
+    cap, so a spouse with nothing to exclude no longer shelters the other. This is the default
+    rule for Alabama, Georgia, Kentucky, Maine, New York, Oklahoma and Rhode Island; Arkansas,
+    Colorado, Delaware, Louisiana, Maryland, Missouri, South Carolina and West Virginia apply their
+    own per-owner rules; New Jersey stays pooled and Michigan stays one return-level limit. It
+    raises tax for a couple whose withdrawals come from one spouse's account in a year: for the
+    library couple with a 401(k) each, drawn one at a time, state tax on the same income over the
+    projection rises by $54,587.06 in Maine, $23,400.45 in Georgia, $21,103.33 in New York,
+    $13,597.08 in Rhode Island and $10,822.05 in Oklahoma. The code states the per-recipient
+    reading in a comment; the rule records were not changed to say it.
+  - **Roth conversions now count toward state retirement exclusions.** Before, a conversion was
+    left out of the retirement income the exclusions read, by design; the code comment "Roth
+    conversions are excluded (not exclusion-eligible)" is still there. #710 passes each conversion
+    to the state calculation as an IRA or employer-plan distribution, so every exclusion that
+    reaches IRAs takes it: in full in Connecticut, Illinois, Iowa, Michigan, Mississippi, New
+    Jersey and Pennsylvania, and up to the owner's cap in Alabama, Arkansas, Colorado, Delaware,
+    Georgia, Kentucky, Louisiana, Maine, Maryland (employer plans only), New York, Oklahoma, Rhode
+    Island, South Carolina and Wisconsin. No rule record in #710 cites an authority for treating a
+    conversion as an eligible distribution in any of these states. The example couple converts
+    $189,820 in 2028; that year's state tax on the same income goes from $11,760.97 to $1,653.84
+    in Connecticut, $11,797.63 to $2,401.55 in Illinois and $7,197.47 to $1,370.01 in
+    Pennsylvania. Over the projection it falls by $56,570.79 in Connecticut, $50,641.86 in
+    Illinois, $40,733.67 in Mississippi, $37,679.28 in New Jersey and $37,830.56 in Iowa.
+  - **Kentucky.** The standard deduction is $3,360 once per return, so a joint return takes $3,360
+    instead of $6,720 (Kentucky DOR's 2026 standard deduction announcement; Form 740 instructions,
+    line 10: one standard deduction on a joint return; `ky-dor-2026-standard-deduction-once-per-return`),
+    which is $117.60 more tax a year. The $31,110 pension and retirement exclusion (KRS
+    141.019(1)(g)1.b, `ky-krs-141-retirement-and-social-security`, not edited by #710) is now per
+    owner and reaches conversions. For the example couple, state tax on the same income: 2026,
+    both working, $6,799.80 to $6,917.40; 2028, a $189,820 conversion from one spouse's account,
+    $8,081.92 to $7,110.67 (one $31,110 exclusion, $1,088.85); 2036, $101,980 withdrawn from one
+    spouse's account, $1,156.39 to $2,362.84 (the second $31,110 no longer applies). Over the
+    projection, lifetime taxes and penalties go from $431,348.91 to $433,212.27, conversions from
+    $1,014,366.37 to $1,017,094.47, and the ending after-tax estate from $3,697,353.40 to
+    $3,701,888.29. It affects every Kentucky joint return, and Kentucky plans with conversions or
+    with one spouse drawing more than $31,110.
+  - **Maryland.** The pension exclusion no longer reaches IRAs, applies per recipient aged 65 or
+    older, and is reduced by that recipient's Social Security and railroad benefits; the 2026
+    maximum is $40,600, not $41,200 (Md. Tax-General 10-209; the Comptroller's 2026 maximum;
+    `md-tax-10-209-pension-exclusion`). State tax on the same income rises by $19,178.51 to
+    $50,994.02 across the library plans moved to Maryland, $46,103.02 for the RMD-and-IRMAA example;
+    the example couple in 2036 goes from $695.60 to $4,609.60.
+  - **Virginia's age deduction is no longer applied.** The Virginia path #710 added handles
+    military retirement, Tier I and basis taxed by another state, and returns without the $12,000
+    age-65 amount the pack carries, with no warning; `va-code-58-1-322-03-age-deduction-and-social-security`
+    (Va. Code 58.1-322.03(5)) still describes the pack as applying it. A couple both 65 or older
+    pays $1,380.00 more a year (the example couple in 2036: $3,397.48 to $4,777.48); the
+    survivor-years example moved to Virginia pays $27,040.00 more over the projection. Not
+    registered as a limit.
+  - **Missouri and West Virginia hold back deductions until household facts are given.** Missouri's
+    $6,000 private and its public pension deductions (RSMo 143.124.5 and .7,
+    `mo-retirement-income-deduction`) need Missouri income and filing status; without them
+    neither applies and the year is incomplete. West Virginia's $8,000 age-65 modification (W. Va.
+    Code 11-21-12(c)(9), `wv-code-11-21-12-c9-age-disability-residual`) needs each owner's
+    eligibility and prior modifications, and is not applied without them. The example couple in
+    2036: Missouri $1,919.36 to $2,483.36, West Virginia $3,234.07 to $3,966.87.
+  - **South Carolina.** Public pensions are no longer fully exempt: the blanket public override
+    is removed, since S.C. Code 12-6-1171 fully deducts only military retirement. The 12-6-1170(A)
+    deduction is per owner, $3,000 under 65 and $10,000 from 65; the SCIAD deduction of 2026 Act
+    110 ($15,000 single, $30,000 joint) now phases out with federal AGI; and the 12-6-1170(B)
+    age-65 deduction needs each owner's remaining South Carolina income, so it is withheld and the
+    year is incomplete. The example couple in 2026, working, with AGI past the phase-out:
+    $7,943.10 to $9,506.10.
+  - **Colorado.** Pension and Social Security share one cap per recipient, raised to the
+    recipient's taxable Social Security from 65 (C.R.S. 39-22-104(4)(f)(III),
+    `co-crs-39-22-104-social-security-inclusion`, `co-crs-39-22-104-federal-base-and-pension-cap`);
+    before, taxable Social Security was taxed and only pensions used the cap. A single filer with
+    Social Security pays much less: the coast-fire example's lifetime taxes and penalties go from
+    $1,707,504.36 to $1,634,909.14 and its ending after-tax estate from $7,592,621.78 to
+    $7,766,215.63. For a couple who both receive Social Security, the engine does not split the
+    taxable amount between them, counts none, and marks the year incomplete. Federal AGI of
+    $300,000 or more adds back the federal deduction above $1,000 or $2,000 (C.R.S.
+    39-22-104(3)(p.7)).
+  - **Massachusetts, Vermont, Wisconsin and Louisiana amounts.** Massachusetts personal
+    exemptions of $4,400 single and $8,800 joint, plus $700 for each person 65 or older, now
+    apply (Mass. Gen. Laws ch. 62 §3(b)): $440.00 less a year for a joint return. Vermont's 2026
+    standard deduction is $7,850 single and $15,700 joint (was $7,400 and $14,850) with indexed
+    brackets (32 V.S.A. 5811(21) and 5822). Wisconsin's 2026 brackets apply and its standard
+    deduction now phases down with income (maximum $13,960 single and $25,840 joint, zero at
+    $136,453 and $159,690; 2026 Form 1-ES); before, the maximum applied at every income.
+    Louisiana's age-65 exemption is $12,324, the $12,000 base indexed by 2.7% (La. R.S.
+    47:44.1(A)). The example couple in 2026: Massachusetts $10,050.00 to $9,610.00, Vermont
+    $9,687.53 to $9,477.05, Wisconsin $8,540.25 to $9,848.31.
+  - **A pension entered as "public" is now an unidentified public source.** States whose
+    exclusion names particular systems or needs contributory status no longer exclude it, and
+    usually mark the year incomplete: Kansas (K.S.A. 79-32,117(c), named systems only), Louisiana
+    (La. R.S. 47:44.2 names federal and railroad retirement), Massachusetts (ch. 62
+    §2(a)(2)(E)), New Jersey, Delaware, Colorado, Arkansas, Iowa, Maryland and South Carolina.
+    The survivor-years example's $4,000 a month pension, entered as public, over the projection:
+    Kansas $0.00 to $47,028.02, Massachusetts $0.00 to $38,380.00, Delaware $6,258.75 to
+    $33,932.00, New Jersey $0.00 to $16,660.00, Louisiana $0.00 to $15,018.75. Delaware also
+    withholds its exclusion from a distribution whose early-distribution status is unknown
+    (`de-early-distribution-gate`, unsettled). The 1040 import now enters a line 5b pension as an
+    unconfirmed private source instead of private.
+  - **Many plans now report incomplete years.** A year is incomplete when a state rule needs a
+    fact the plan does not hold; its figure leaves out the relief that fact would decide. On the
+    library plans: every plan in Connecticut (personal exemption needs Connecticut AGI), Missouri,
+    Montana (long-term gains rate schedule), South Carolina, Utah (retirement, Social Security and
+    military credits), Vermont, West Virginia and Wisconsin (exemption counts); most plans in
+    Illinois, Kansas, Massachusetts and Oregon (retirement credit); some in Colorado, Delaware and
+    Iowa; every year with a QCD in each income-tax state except Arkansas and Hawaii, whose QCD
+    policy is recorded (`state-direct-qcd-conformity-policies`); every year of a California or New
+    Jersey plan with an HSA; and the year of a mid-year move. Kansas flags every IRA and 401(k)
+    distribution as missing a named-plan code. Tax is unchanged in Utah, Oregon, Montana, Kansas
+    (private sources) and the QCD-only states. An incomplete year has three effects: the
+    optimizer publishes no recommendation (the example couple moved to Utah went from keeping its
+    own strategy among 21 candidates to no winner, 34 incomplete years), relocation compare
+    suppresses its driver attribution for that state, and the Optimize page shows guidance pointing
+    to the new state tax facts worksheet.
+  - **A spouse's treat-as-own election needs the new election facts.** Owner treatment now comes
+    only from the annual election gate (Treas. Reg. 1.408-8(c)(3) and 1.402(c)-2(j)(4)), which
+    needs the decedent's identity, the date of death, an affirmative election and the spouse's
+    contribution history. A plan
+    with `election: 'treat-as-own'` and an election year but no such facts stays on the
+    beneficiary schedule, and every year is incomplete. The library's inherited-IRA example
+    reduced to its $300,000 spouse IRA, elected as own in 2025: the 2026 owner RMD of $14,218.01
+    is gone, and lifetime taxes and penalties go from $29,908.32 to $28,655.09, the remain-a-
+    beneficiary figure.
+  - **Inherited Roth withdrawals are taxed unless the decedent's five-year clock is known.**
+    Before, every inherited Roth withdrawal was tax-free. Now it is characterized under Treas. Reg.
+    1.408A-6 (`treas-reg-1-408A-6-inherited-roth-nonqualified-earnings`): with
+    `roth5YearStartYear` and its provenance, or an inherited Roth tax-character pool, a qualified
+    withdrawal stays tax-free; without them the whole withdrawal is ordinary income and the year
+    is incomplete. A single filer inheriting a $150,000 Roth in 2024 under the 10-year rule: tax
+    on $83,267 withdrawn in 2027 goes from $0.00 to $7,594.85, lifetime taxes and penalties from
+    $0.00 to $13,553.68; with a 2010 clock it stays $0.00.
+  - **Added without moving an existing plan.** Each needs new plan facts that existing plans do
+    not have: HUD-validated HECM openings (2026 maximum claim amount $1,249,125 under Mortgagee
+    Letter 2025-22; initial MIP 2% and annual MIP 0.5% under Mortgagee Letter 2017-12 and Handbook
+    4000.1; `hud-hecm-mca-mip-limits`), the confirmed
+    non-designated five-year schedule (IRC 401(a)(9)(B)(ii)), the post-deadline entire remaining
+    benefit with ordinary §4974 excise (Treas. Reg. 54.4974-1(e)), prior designated Roth
+    deferrals counted toward the Roth catch-up (T.D. 10033, §1.414(v)-2(b)(1) and (d)(6)) with
+    `employerPlanId` grouping, `stateTaxFacts`, `inheritedRothTaxCharacterPools`,
+    `employerElectiveDeferralHistory`, characterized pension sources, and the planner's state tax
+    facts worksheet. The plan schema stays version 5; the new collections default to empty. The
+    2026 pack also pins the Part D out-of-pocket threshold ($2,100), the annual gift exclusion
+    ($19,000) and the basic exclusion amount ($15,000,000), none of which the engine computes with.
+  - **Exported API.** `spouseTreatAsOwnCatchUp` (`strategies/inheritedIra`) now takes the
+    one-reference-balance input of `determineSection402c2j4CatchUp` and returns a determination;
+    called with the old `priorYearEndBalancesByYear` input it returns incomplete instead of
+    evidence rows. `createStateTaxCalculator` gains `computeResult`; `combineTaxCalculators`
+    passes federal AGI, deduction and taxable Social Security to the state calculator; `YearResult`
+    gains `taxComputation`, `acceptedTaxInput`, `hecmComputation` and
+    `electionYearOwnerRmdObligations`.
+
+  - **Corrected in 0.4.1 (the entries at the top of this section).** Virginia's age deduction is
+    applied again, with its income test; Kansas no longer marks IRA and 401(k) years incomplete
+    for a plan code that cannot change its tax; and a Roth conversion now follows each state's
+    own rule, derived from its statute or form instructions: Maine and Pennsylvania give it no
+    exclusion and no tax respectively, South Carolina counts it at any age, Michigan and New York
+    only at 59½, Connecticut and New Jersey under their income tests, and the other states that
+    reach IRA distributions keep counting it, now with a citation.
 - **Changed: every one of the 237 frozen output families is complete** (2026-09-30). The
   output census froze at 237 families (RetireGolden-Docs 5881834); every family has a record,
   every record passes every catalog gate, and every record has an independent review from a

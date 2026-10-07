@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -47,16 +47,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1514,
+          "line": 1515,
           "note": null,
           "tests": [
             {
               "title": "leaves an Alaska individual outside the chapter that does impose a tax",
-              "line": 1536
+              "line": 1537
             },
             {
               "title": "would carry the whole of it if the exclusion in 43.20.012(a) were not there",
-              "line": 1541
+              "line": 1542
             }
           ]
         }
@@ -109,7 +109,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1534
             }
           ]
         }
@@ -120,16 +120,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1948,
+          "line": 1949,
           "note": null,
           "tests": [
             {
               "title": "charges one rate on the whole Arizona base",
-              "line": 1962
+              "line": 1963
             },
             {
               "title": "applies the same rate to a joint return, since the paragraph is status-blind",
-              "line": 1967
+              "line": 1968
             }
           ]
         }
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -198,16 +198,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2029,
+          "line": 2030,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Arizonan’s Social Security out of the state base",
-              "line": 2044
+              "line": 2045
             },
             {
               "title": "would pull the federally taxable share in if Arizona taxed it",
-              "line": 2048
+              "line": 2049
             }
           ]
         }
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -373,7 +373,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -451,11 +451,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -466,16 +466,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2058,
+          "line": 2059,
           "note": null,
           "tests": [
             {
               "title": "takes the whole military pension out of an Arizona base",
-              "line": 2072
+              "line": 2073
             },
             {
               "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
-              "line": 2077
+              "line": 2078
             }
           ]
         }
@@ -538,7 +538,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 974
+              "line": 1145
             }
           ]
         }
@@ -549,12 +549,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 894,
+          "line": 898,
           "note": null,
           "tests": [
             {
               "title": "is $150 for each person 65 or older below the phase-out",
-              "line": 899
+              "line": 903
             }
           ]
         }
@@ -612,11 +612,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             },
             {
               "name": "retirementExclusion",
-              "line": 163
+              "line": 168
             }
           ]
         }
@@ -627,16 +627,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2083,
+          "line": 2084,
           "note": null,
           "tests": [
             {
               "title": "taxes an Arizona IRA or private pension distribution in full",
-              "line": 2099
+              "line": 2100
             },
             {
               "title": "does not let the public bucket’s exclusion spill onto it",
-              "line": 2104
+              "line": 2105
             }
           ]
         }
@@ -701,7 +701,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -789,7 +789,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -800,16 +800,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1983,
+          "line": 1984,
           "note": null,
           "tests": [
             {
               "title": "deducts Arizona’s published amount and adds no federal age-65 amount",
-              "line": 2001
+              "line": 2002
             },
             {
               "title": "would take the federal figure and the federal age-65 addition if it were tagged",
-              "line": 2009
+              "line": 2010
             }
           ]
         }
@@ -882,7 +882,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         }
@@ -893,12 +893,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1065,
+          "line": 1069,
           "note": null,
           "tests": [
             {
               "title": "taxes $1,000,000 at $103,836.61 through 2030 and $89,438.64 from 2031",
-              "line": 1078
+              "line": 1082
             }
           ]
         }
@@ -956,7 +956,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -967,12 +967,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2445,
+          "line": 2446,
           "note": null,
           "tests": [
             {
               "title": "maps the supported single and MFJ deduction cells to California taxable income",
-              "line": 2454
+              "line": 2455
             }
           ]
         }
@@ -1034,7 +1034,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -1117,12 +1117,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2471,
+          "line": 2472,
           "note": null,
           "tests": [
             {
               "title": "omits California Social Security from the taxable base",
-              "line": 2487
+              "line": 2488
             }
           ]
         }
@@ -1190,7 +1190,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 974
+              "line": 1145
             }
           ]
         }
@@ -1201,12 +1201,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1095,
+          "line": 1099,
           "note": null,
           "tests": [
             {
               "title": "excludes up to $20,000 at federal AGI up to $125,000 through 2029",
-              "line": 1109
+              "line": 1113
             }
           ]
         }
@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -1348,7 +1348,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -1359,12 +1359,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 812,
+          "line": 883,
           "note": null,
           "tests": [
             {
               "title": "selects the statutory age65 pension limit",
-              "line": 813
+              "line": 884
             }
           ]
         }
@@ -1432,7 +1432,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 974
+              "line": 1145
             }
           ]
         }
@@ -1443,12 +1443,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 902,
+          "line": 906,
           "note": null,
           "tests": [
             {
               "title": "is $264 for each person 65 or older below the phase-out",
-              "line": 907
+              "line": 911
             }
           ]
         }
@@ -1511,7 +1511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -1522,12 +1522,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 815,
+          "line": 886,
           "note": null,
           "tests": [
             {
               "title": "raises subtraction room for fully excludable Social Security",
-              "line": 816
+              "line": 887
             }
           ]
         }
@@ -1596,7 +1596,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         },
@@ -1707,7 +1707,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 384
+              "line": 407
             }
           ]
         },
@@ -1725,7 +1725,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -1781,7 +1781,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 384
+              "line": 407
             }
           ]
         },
@@ -1790,7 +1790,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -1858,7 +1858,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 384
+              "line": 407
             }
           ]
         },
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -1878,16 +1878,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3081,
+          "line": 3082,
           "note": null,
           "tests": [
             {
               "title": "holds Hawaii taxable income unchanged when federally included Social Security is added",
-              "line": 3100
+              "line": 3101
             },
             {
               "title": "would raise the base by the IRC 86 inclusion if Social Security were taxed",
-              "line": 3108
+              "line": 3109
             }
           ]
         }
@@ -1926,7 +1926,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 384
+              "line": 407
             }
           ]
         },
@@ -1935,7 +1935,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -1946,12 +1946,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3029,
+          "line": 3030,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 3041
+              "line": 3042
             }
           ]
         }
@@ -2034,7 +2034,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2106,7 +2106,7 @@
             },
             {
               "name": "states.HI",
-              "line": 384
+              "line": 407
             }
           ]
         },
@@ -2124,7 +2124,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2135,12 +2135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3116,
+          "line": 3117,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 3131
+              "line": 3132
             }
           ]
         }
@@ -2189,7 +2189,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 420
+              "line": 443
             }
           ]
         },
@@ -2198,7 +2198,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2209,12 +2209,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3142,
+          "line": 3143,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 3158
+              "line": 3159
             }
           ]
         }
@@ -2254,7 +2254,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 420
+              "line": 443
             }
           ]
         },
@@ -2263,7 +2263,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -2332,7 +2332,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 420
+              "line": 443
             }
           ]
         },
@@ -2350,7 +2350,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 974
+              "line": 1145
             }
           ]
         }
@@ -2361,12 +2361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 910,
+          "line": 914,
           "note": null,
           "tests": [
             {
               "title": "is $318 for each person 65 or older below the phase-out",
-              "line": 915
+              "line": 919
             }
           ]
         }
@@ -2415,7 +2415,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 691
+              "line": 714
             }
           ]
         },
@@ -2424,11 +2424,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2439,20 +2439,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3944,
+          "line": 3945,
           "note": null,
           "tests": [
             {
               "title": "prices MFJ ordinary income on the $95,000 TY2026 breakpoint",
-              "line": 3980
+              "line": 3981
             },
             {
               "title": "prices single ordinary income on the $47,500 TY2026 breakpoint",
-              "line": 3989
+              "line": 3990
             },
             {
               "title": "prices single and joint filers below their respective TY2026 thresholds",
-              "line": 3996
+              "line": 3997
             }
           ]
         }
@@ -2502,7 +2502,7 @@
           "functions": [
             {
               "name": "states.MT",
-              "line": 691
+              "line": 714
             }
           ]
         },
@@ -2511,7 +2511,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -2531,16 +2531,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 524,
+          "line": 580,
           "note": null,
           "tests": [
             {
               "title": "uses distinct HOH and MFS ordinary thresholds and stacks gains across their edges",
-              "line": 525
+              "line": 581
             },
             {
               "title": "stacks $1,000 gain after $47,000 ordinary taxable income",
-              "line": 537
+              "line": 593
             }
           ]
         }
@@ -2599,7 +2599,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         },
@@ -2731,7 +2731,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 691
+              "line": 714
             }
           ]
         },
@@ -2740,7 +2740,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2751,27 +2751,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3556,
+          "line": 3557,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3576
+              "line": 3577
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3581
+              "line": 3582
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3599,
+          "line": 3600,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3617
+              "line": 3618
             }
           ]
         }
@@ -2821,7 +2821,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 691
+              "line": 714
             }
           ]
         },
@@ -2839,7 +2839,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -2850,20 +2850,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3512,
+          "line": 3513,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3531
+              "line": 3532
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3537
+              "line": 3538
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3543
+              "line": 3544
             }
           ]
         }
@@ -2922,7 +2922,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 764
+              "line": 804
             }
           ]
         },
@@ -2931,11 +2931,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1534
             }
           ]
         }
@@ -2946,16 +2946,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3802,
+          "line": 3803,
           "note": null,
           "tests": [
             {
               "title": "prices single filers at the Schedule B top bracket threshold and first marginal dollar",
-              "line": 3833
+              "line": 3834
             },
             {
               "title": "prices joint filers at the Schedule A top bracket threshold and first marginal dollar",
-              "line": 3841
+              "line": 3842
             }
           ]
         }
@@ -3007,7 +3007,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 764
+              "line": 804
             }
           ]
         },
@@ -3025,7 +3025,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -3036,12 +3036,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3774,
+          "line": 3775,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3789
+              "line": 3790
             }
           ]
         }
@@ -3080,7 +3080,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 729
+              "line": 752
             }
           ]
         },
@@ -3089,7 +3089,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -3100,16 +3100,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 660,
+          "line": 661,
           "note": null,
           "tests": [
             {
               "title": "leaves a Nevada retiree with no state base at all",
-              "line": 677
+              "line": 678
             },
             {
               "title": "would carry the pension and IRA income under the narrower reading",
-              "line": 682
+              "line": 683
             }
           ]
         }
@@ -3149,7 +3149,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 865
+              "line": 905
             }
           ]
         },
@@ -3158,7 +3158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -3178,24 +3178,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 546,
+          "line": 602,
           "note": null,
           "tests": [
             {
               "title": "includes IRA federal public and Armed Forces pension sources under section 316.157",
-              "line": 547
+              "line": 603
             },
             {
               "title": "offsets Tier I but not Tier II and cannot borrow an older nonpension recipient age",
-              "line": 554
+              "line": 610
             },
             {
               "title": "credits 9% of the $7,500 ceiling for a qualifying age62 taxpayer",
-              "line": 564
+              "line": 620
             },
             {
               "title": "offsets SS and excess household income, and never refunds unused credit",
-              "line": 569
+              "line": 625
             }
           ]
         }
@@ -3253,7 +3253,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -3264,12 +3264,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1034,
+          "line": 1038,
           "note": null,
           "tests": [
             {
               "title": "allows the $675 credit through 2031 and none from 2032, with no missing-fact warning",
-              "line": 1049
+              "line": 1053
             }
           ]
         }
@@ -3310,7 +3310,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 865
+              "line": 905
             }
           ]
         },
@@ -3319,11 +3319,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -3410,7 +3410,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 865
+              "line": 905
             }
           ]
         },
@@ -3441,7 +3441,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 409
+              "line": 549
             }
           ]
         }
@@ -3520,7 +3520,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 865
+              "line": 905
             }
           ]
         },
@@ -3529,7 +3529,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -3540,12 +3540,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4290,
+          "line": 4291,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 4303
+              "line": 4304
             }
           ]
         }
@@ -3603,7 +3603,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -3668,7 +3668,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -3677,7 +3677,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -3697,12 +3697,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 620,
+          "line": 676,
           "note": null,
           "tests": [
             {
               "title": "uses the return-level $900 maximum less $200 phaseout",
-              "line": 621
+              "line": 677
             }
           ]
         }
@@ -3746,7 +3746,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -3755,7 +3755,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 145
+              "line": 150
             }
           ]
         }
@@ -3766,12 +3766,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4256,
+          "line": 4257,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 4264
+              "line": 4265
             }
           ]
         }
@@ -3821,7 +3821,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -3830,7 +3830,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -3854,16 +3854,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 585,
+          "line": 641,
           "note": null,
           "tests": [
             {
               "title": "limits the $890 military credit to $500 of precredit Utah liability",
-              "line": 586
+              "line": 642
             },
             {
               "title": "credits the current 4.45% of $20,000 qualifying military income",
-              "line": 597
+              "line": 653
             }
           ]
         }
@@ -3903,7 +3903,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -3912,7 +3912,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -3932,12 +3932,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 628,
+          "line": 684,
           "note": null,
           "tests": [
             {
               "title": "subtracts only federally included Railroad Retirement and requires SS overlap facts",
-              "line": 629
+              "line": 685
             }
           ]
         }
@@ -3982,7 +3982,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -3991,7 +3991,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         },
@@ -4011,12 +4011,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 636,
+          "line": 692,
           "note": null,
           "tests": [
             {
               "title": "recovers documented other-state §401(a) basis once and excludes 403b/IRA substitutes",
-              "line": 637
+              "line": 693
             }
           ]
         }
@@ -4055,7 +4055,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 966
+              "line": 1006
             }
           ]
         },
@@ -4064,7 +4064,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -4076,27 +4076,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 604,
+          "line": 660,
           "note": null,
           "tests": [
             {
               "title": "uses $5,350 federally taxable SS, not the $10,000 gross benefit",
-              "line": 605
+              "line": 661
             },
             {
               "title": "includes otherwise-excluded interest in statutory MAGI phaseout",
-              "line": 613
+              "line": 669
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4273,
+          "line": 4274,
           "note": null,
           "tests": [
             {
               "title": "applies the statutory Social Security credit through the annual state resolver",
-              "line": 4279
+              "line": 4280
             }
           ]
         }
@@ -4145,7 +4145,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1060
+              "line": 1117
             }
           ]
         },
@@ -4154,7 +4154,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1321
+              "line": 1526
             }
           ]
         }
@@ -4165,12 +4165,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4597,
+          "line": 4810,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 4616
+              "line": 4829
             }
           ]
         }
@@ -4233,7 +4233,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -4244,16 +4244,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1124,
+          "line": 1128,
           "note": null,
           "tests": [
             {
               "title": "charges 9.9% above $1,000,000 from 2028, the same deduction for a couple",
-              "line": 1142
+              "line": 1146
             },
             {
               "title": "includes the federally taxable share of Social Security",
-              "line": 1151
+              "line": 1155
             }
           ]
         }
@@ -4336,7 +4336,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1343
+              "line": 1548
             }
           ]
         }
@@ -4347,12 +4347,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1378,
+          "line": 1382,
           "note": "the federal QCD exclusion carried into Washington from 2028",
           "tests": [
             {
               "title": "keeps a direct QCD excluded and the year complete",
-              "line": 1410
+              "line": 1414
             }
           ]
         }
@@ -4410,7 +4410,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 1907
+              "line": 2174
             }
           ]
         }
@@ -4421,20 +4421,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
-          "line": 1271,
+          "line": 1275,
           "note": "the deduction indexed every second year from 2029 at the plan inflation",
           "tests": [
             {
               "title": "adjusts the deduction for 2029 and every second year after, rounded to $1,000",
-              "line": 1295
+              "line": 1299
             },
             {
               "title": "prices the indexed deduction through the annual state calculation",
-              "line": 1310
+              "line": 1314
             },
             {
               "title": "never reduces the deduction, and leaves it alone with no projected inflation",
-              "line": 1317
+              "line": 1321
             }
           ]
         }
@@ -4499,7 +4499,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1060
+              "line": 1117
             }
           ]
         },
@@ -4517,7 +4517,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1534
             }
           ]
         }
@@ -4573,7 +4573,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 1129
+              "line": 1186
             }
           ]
         },
@@ -4582,7 +4582,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1329
+              "line": 1534
             }
           ]
         }
@@ -4593,16 +4593,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1637,
+          "line": 1638,
           "note": null,
           "tests": [
             {
               "title": "leaves a Wyoming retiree with no state base at all",
-              "line": 1656
+              "line": 1657
             },
             {
               "title": "would build a base if chapter 12 imposed as well as preempted",
-              "line": 1661
+              "line": 1662
             }
           ]
         }

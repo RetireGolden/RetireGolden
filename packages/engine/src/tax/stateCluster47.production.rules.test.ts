@@ -425,6 +425,62 @@ describeRule('ks-stat-79-32-117-public-pension-exclusion', { readings: { namedPu
     expect(exclusion('KS', [fact({ sourceKind: 'stateLocalPublic', planSystemCode: 'CITY-OTHER' })])).toBe(0)
     expect(exclusion('KS', [fact({ sourceKind: 'ordinaryPrivatePension' })])).toBe(0)
   })
+  it('does not flag a missing code on a source no named system pays', () => {
+    // An IRA, a private pension, and a 401(k), 401(a) or 457(b) employer plan
+    // are no 79-32,117 system, so every code, a listed one included, leaves
+    // the $12,000 taxed.
+    const rows = [
+      ...(['ira', 'ordinaryPrivatePension', 'unknownPrivate'] as const).map((sourceKind) => ({ label: sourceKind, change: { sourceKind } })),
+      ...(['401k', '401a', '457b', 'ira'] as const).map((qualifiedPlanType) => ({
+        label: `employerPlan ${qualifiedPlanType}`, change: { sourceKind: 'employerPlan' as const, qualifiedPlanType },
+      })),
+    ]
+    for (const { label, change } of rows) {
+      const bare = annual('KS', { retirementDistributions: [fact(change)] })
+      expect(bare.status, label).toBe('complete')
+      expect(bare.warnings.map((warning) => warning.code), label).not.toContain('ks-plan-code-unknown')
+      expect(exclusion('KS', [fact(change)]), label).toBe(0)
+      expect(exclusion('KS', [fact({ ...change, planSystemCode: 'KPERS' })]), label).toBe(0)
+      expect(exclusion('KS', [fact({ ...change, planSystemCode: 'KS-WASHBURN' })]), label).toBe(0)
+    }
+  })
+  it('flags an employer plan that may be Washburn University\'s 403(b), and subtracts it under KS-WASHBURN', () => {
+    // 79-32,117(c)(xix) names Washburn University's retirement plan, a 403(b).
+    // A 403(b) row, or one of other, unknown or undeclared type, with no code
+    // could be it; the code decides the $12,000.
+    for (const qualifiedPlanType of ['403b', 'other', 'unknown', undefined] as const) {
+      const label = qualifiedPlanType ?? 'undeclared'
+      const change = { sourceKind: 'employerPlan' as const, ...(qualifiedPlanType === undefined ? {} : { qualifiedPlanType }) }
+      const bare = annual('KS', { retirementDistributions: [fact(change)] })
+      expect(bare.status, label).toBe('incomplete')
+      const warning = bare.warnings.find((item) => item.code === 'ks-plan-code-unknown')
+      expect(warning?.ruleId, label).toBe('ks-stat-79-32-117-public-pension-exclusion')
+      expect(warning?.missingFacts, label).toEqual(['planSystemCode', 'qualifiedPlanType'])
+      expect(exclusion('KS', [fact(change)]), label).toBe(0)
+      const washburn = annual('KS', { retirementDistributions: [fact({ ...change, planSystemCode: 'KS-WASHBURN' })] })
+      expect(washburn.status, label).toBe('complete')
+      expect(exclusion('KS', [fact({ ...change, planSystemCode: 'KS-WASHBURN' })]), label).toBe(accepted)
+      // A code Kansas does not list, or a listed pension system's code, is a
+      // known answer on an employer plan: no subtraction.
+      for (const planSystemCode of ['NOT-A-KANSAS-PLAN', 'KPERS']) {
+        expect(annual('KS', { retirementDistributions: [fact({ ...change, planSystemCode })] }).status, `${label} ${planSystemCode}`).toBe('complete')
+        expect(exclusion('KS', [fact({ ...change, planSystemCode })]), `${label} ${planSystemCode}`).toBe(0)
+      }
+    }
+    // Nothing included federally, nothing to subtract: no flag.
+    expect(annual('KS', { retirementDistributions: [fact({ sourceKind: 'employerPlan', qualifiedPlanType: '403b', federallyIncludedAmount: 0, grossDistribution: 0 })] }).status).toBe('complete')
+  })
+  it('flags a missing code on a public source, where the code decides it', () => {
+    for (const sourceKind of ['stateLocalPublic', 'federalCivilService', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor', 'unknownPublic'] as const) {
+      const bare = annual('KS', { retirementDistributions: [fact({ sourceKind })] })
+      expect(bare.status, sourceKind).toBe('incomplete')
+      expect(bare.warnings.map((warning) => warning.code), sourceKind).toContain('ks-plan-code-unknown')
+      // The warning names the registered record, so a reader can follow it.
+      expect(bare.warnings.find((warning) => warning.code === 'ks-plan-code-unknown')?.ruleId, sourceKind)
+        .toBe('ks-stat-79-32-117-public-pension-exclusion')
+    }
+    expect(exclusion('KS', [fact({ sourceKind: 'federalCivilService', planSystemCode: 'US-FERS' })])).toBe(accepted)
+  })
 })
 describeRule('ky-dor-2026-standard-deduction-once-per-return', { readings: { oncePerReturn: 6_640, twiceForJoint: 3_280 }, accepted: 'oncePerReturn' }, ({ accepted }) => {
   it('deducts $3,360 once from $10,000 on a joint return', () => expect(annual('KY', {}, { filingStatus: 'marriedFilingJointly', ordinaryIncome: 10_000 }).taxableIncome).toBe(accepted))
@@ -669,6 +725,21 @@ describeRule('va-code-58-1-322-02-11-basis', { readings: { qualifyingPriorStateB
     expect(exclusion('VA', [{ ...row, priorTaxState: undefined }])).toBe(0)
     expect(exclusion('VA', [{ ...row, priorTaxState: 'VA', planSystemCode: 'VRS' }])).toBe(0)
     expect(annual('VA', { retirementDistributions: [{ ...row, knownPreviouslyTaxedBasis: undefined }] }).status).toBe('incomplete')
+  })
+  it('recovers it from a 401 or 457 plan, not from a 403(b), which 58.1-322.02(11) does not enumerate', () => {
+    // $4,000 federally included, $6,000 of basis taxed by California.
+    const row = fact({ sourceKind: 'employerPlan', priorTaxState: 'CA', knownPreviouslyTaxedBasis: 6_000, federallyIncludedAmount: 4_000 })
+    for (const qualifiedPlanType of ['401a', '401k', '457b'] as const) {
+      expect(exclusion('VA', [{ ...row, qualifiedPlanType }]), qualifiedPlanType).toBe(4_000)
+      expect(annual('VA', { retirementDistributions: [{ ...row, qualifiedPlanType }] }).pensionBasisPools, qualifiedPlanType)
+        .toEqual([expect.objectContaining({ state: 'VA', kind: 'eligiblePlan', openingBasis: 6_000, basisConsumed: 4_000, closingBasis: 2_000 })])
+    }
+    for (const qualifiedPlanType of ['403b', 'other', 'unknown', undefined] as const) {
+      const label = qualifiedPlanType ?? 'undeclared'
+      const typed = qualifiedPlanType === undefined ? row : { ...row, qualifiedPlanType }
+      expect(exclusion('VA', [typed]), label).toBe(0)
+      expect(annual('VA', { retirementDistributions: [typed] }).pensionBasisPools ?? [], label).toEqual([])
+    }
   })
 })
 

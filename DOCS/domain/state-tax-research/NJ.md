@@ -55,3 +55,11 @@ Record: `nj-direct-qcd-ira-basis-treatment`. New Jersey independently computes t
 Authority: [January 2026 GIT-1 & 2, Worksheet C](https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf).
 
 The preserved Summer 2010 HSA answer is historical agency evidence. Its original `summer10.pdf` URL returned HTTP 404 in the September 12, 2026 research check and again on September 23, 2026, when the whole State Tax News PDF folder was gone from nj.gov with no official copy elsewhere; the official archive authenticates the publication but does not itself supply an operative HSA rule.
+
+## The pension exclusion is income-tested and per return (2026-10-06)
+
+Record: `nj-stat-54a-6-10-retirement-income-exclusion`. Classification: `settled`.
+
+N.J.S.A. 54A:6-10(b) and NJ-1040 line 28a: for a taxpayer 62 or older (or disabled) on the last day of the year, and only when New Jersey gross income is $150,000 or less, the exclusion is the lesser of the qualifying spouse's pension, annuity and IRA payments and, at gross income up to $100,000, $100,000 joint or $75,000 otherwise; above $100,000 it is 50% (joint) or 37.5% of all payments to $125,000 and 25% or 18.75% to $150,000. The engine computes it after every other New Jersey adjustment, testing the base at that point as gross income, and counts a Roth conversion like any IRA distribution. Until 2026-10-06 it gave $50,000 for each household member 62 or older with no income test. Not modeled: line 28b's unclaimed exclusion, the special exclusion, the New Jersey basis of a distribution, and a QCD New Jersey taxes.
+
+A year split between states prorates the exclusion's maximum and scales its income bounds with the slice. The slice's brackets are scaled with the months too, which taxes the year's income as a full-year resident and keeps the resident share; NJ-1040 taxes a part-year resident's resident-period income on the ordinary tax table, so the engine overstates New Jersey tax on a split year with income above the lowest band. Virginia is the only state whose brackets the split-year path leaves unscaled (`va-code-58-1-322-03-2-personal-exemptions`).

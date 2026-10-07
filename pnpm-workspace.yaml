@@ -31,10 +31,11 @@ trustPolicyExclude:
   - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
   - 'semver@6.3.1'
 
-# Root package.json `pnpm.overrides` holds two entries, `sharp` and
-# `ejs>jake`. Both exist to raise a transitive floor above what the declaring
-# package's own range allows, each for a named advisory; neither is a pin of a
-# first-party dependency. Dependabot does not read `pnpm.overrides`; when it
+# Root package.json `pnpm.overrides` holds three entries. `sharp` and
+# `ejs>jake` raise a transitive floor above what the declaring package's own
+# range allows, each for a named advisory; `why-is-node-running@^3` holds a
+# transitive at its last release with provenance, for the trust policy above.
+# None is a pin of a first-party dependency. Dependabot does not read `pnpm.overrides`; when it
 # bumps an overridden package it rewrites the lockfile's `overrides:` block to
 # the new version while package.json keeps the old one, and every CI job then
 # fails with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile
@@ -76,6 +77,19 @@ trustPolicyExclude:
 #   override is functionally inert; a full production build including
 #   workbox generateSW confirmed that (commit 4d2e5f5f).
 #   Drop when nothing under `ejs` resolves a brace-expansion below 5.0.8.
+#
+# why-is-node-running@^3: 3.2.1
+#   Scoped: only where a dependent asks for the 3.x line. vitest 5.0.2 and
+#   later declare `why-is-node-running: ^3.2.1`; vitest 5.0.0 and 5.0.1 ask
+#   for ^2.3.0, which this entry leaves alone.
+#   Reason: 3.2.2 (2025-01-08) carries no provenance attestation, while 3.2.0
+#   and 3.2.1 do, all three from the same publisher. trustPolicy no-downgrade
+#   therefore refuses 3.2.2 with ERR_PNPM_TRUST_DOWNGRADE, and the resolve
+#   gate failed from 2026-10-02 once vitest 5.0.2 reached a fresh resolve.
+#   Holding 3.2.1 keeps the policy whole instead of exempting 3.2.2 (owner's
+#   choice, 2026-10-06).
+#   Drop when a 3.x release with provenance follows 3.2.2, or when vitest
+#   no longer depends on the package.
 #
 # Removed 2026-09-04: highs, react, react-dom, react-is, recharts,
 # es-toolkit, immer.

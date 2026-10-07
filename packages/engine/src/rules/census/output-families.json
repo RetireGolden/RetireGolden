@@ -7751,11 +7751,15 @@
     "id": "mcp-batch-cumulative-tax-objective",
     "group": "taxes",
     "title": "Batch cumulative tax objective",
-    "meaning": "Adapter sum of each evaluated projection year's tax plus penalties.",
+    "meaning": "Sum of each evaluated candidate projection's taxes and penalties, published as batch_evaluate's cumulative_tax objective.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.lifetimeTaxesAndPenalties"
+    },
     "uiSources": [
       {
         "path": "RetireGolden-MCP/src/adapter.ts",
@@ -7768,22 +7772,24 @@
         "selector": "batch_evaluate.results[].objective"
       }
     ],
-    "transformations": [
-      "For objective=cumulative_tax, reduce YearResult.tax + YearResult.penalties across projection years."
-    ],
+    "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes batch_evaluate select the engine summary's lifetimeTaxesAndPenalties (engine/src/projection/compare.ts#summarizeProjection), the same quantity as projection-summary-lifetime-taxes-and-penalties on each candidate plan; per the freeze the family becomes kind engine with the MCP release that ships it. Engine calculation record mcp-batch-cumulative-tax-objective."
+    "notes": "Read from the engine since RetireGolden-MCP 0.11.0 (published 2026-10-07, from MCP main 6d7c3346, which carries #81): batch_evaluate selects the engine summary's lifetimeTaxesAndPenalties (engine/src/projection/compare.ts#summarizeProjection), the same quantity as projection-summary-lifetime-taxes-and-penalties on each candidate plan. Through mcp-v0.10.0 the adapter computed it (MCP pin 3197d359). Engine calculation record mcp-batch-cumulative-tax-objective. No registry rule: it is the sum of the engine's own yearly tax and penalty figures, whose rules are cited on those families."
   },
   {
     "id": "mcp-batch-ending-traditional-objective",
     "group": "accounts-and-growth",
     "title": "Batch ending traditional balance objective",
-    "meaning": "Adapter sum of ending balances for traditional accounts in each evaluated candidate.",
+    "meaning": "Ending traditional-account balance of each evaluated candidate, published as batch_evaluate's ending_trad objective.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.endingByCategory"
+    },
     "uiSources": [
       {
         "path": "RetireGolden-MCP/src/adapter.ts",
@@ -7796,22 +7802,24 @@
         "selector": "batch_evaluate.results[].objective"
       }
     ],
-    "transformations": [
-      "For objective=ending_trad, select the final year's balances and sum entries whose candidate account type is traditional."
-    ],
+    "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes batch_evaluate select the engine summary's endingByCategory.traditional (engine/src/projection/compare.ts#summarizeProjection, rolled up by engine/src/projection/yearFigures.ts#balancesByCategory); per the freeze the family becomes kind engine with the MCP release that ships it. Engine calculation record mcp-batch-ending-traditional-objective."
+    "notes": "Read from the engine since RetireGolden-MCP 0.11.0 (published 2026-10-07, from MCP main 6d7c3346, which carries #81): batch_evaluate selects the engine summary's endingByCategory.traditional (engine/src/projection/compare.ts#summarizeProjection, rolled up by engine/src/projection/yearFigures.ts#balancesByCategory). Through mcp-v0.10.0 the adapter computed it (MCP pin 3197d359). Engine calculation record mcp-batch-ending-traditional-objective."
   },
   {
     "id": "mcp-compare-ending-after-tax-estate-delta",
     "group": "optimizer-and-comparisons",
     "title": "MCP scenario ending-estate delta",
-    "meaning": "Adapter-computed Plan B minus Plan A ending after-tax estate.",
+    "meaning": "Plan B minus Plan A ending after-tax estate, as compare_scenarios publishes it.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
-    "kind": "adapter",
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/scenarios/comparison.ts",
+      "symbol": "ScenarioHeadlineComparison.endingAfterTaxEstate"
+    },
     "uiSources": [
       {
         "path": "RetireGolden-MCP/src/adapter.ts",
@@ -7824,12 +7832,10 @@
         "selector": "compare_scenarios.deltaEndingAfterTaxEstate"
       }
     ],
-    "transformations": [
-      "Subtract a.endingAfterTaxEstate from b.endingAfterTaxEstate."
-    ],
+    "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in the adapter at the MCP pin 3197d359. RetireGolden-MCP #81 (fc13b94, on MCP main; mcp-v0.10.0, the latest release, predates it and still computes it) makes compare_scenarios read compareScenarioPlans(a, b, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta (engine/src/scenarios/comparison.ts#compareScenarioPlans), the same number; per the freeze the family becomes kind engine with the MCP release that ships it. Nominal across different end years, unlike compare-plan-money-deltas (R13); the engine record states it as a limit. Engine calculation record mcp-compare-ending-after-tax-estate-delta."
+    "notes": "Read from the engine since RetireGolden-MCP 0.11.0 (published 2026-10-07, from MCP main 6d7c3346, which carries #81): compare_scenarios reads compareScenarioPlans(a, b, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta (engine/src/scenarios/comparison.ts#compareScenarioPlans). Through mcp-v0.10.0 the adapter computed the same number (MCP pin 3197d359). Nominal across different end years, unlike compare-plan-money-deltas (R13); the engine record states it as a limit, and MCP 0.11.0 names it as a known difference. Engine calculation record mcp-compare-ending-after-tax-estate-delta."
   },
   {
     "id": "scenario-comparison-cell",

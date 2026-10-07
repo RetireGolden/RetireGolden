@@ -137,10 +137,44 @@
   The flat pack cap does not verify plan qualification, separate military retirement, subtract gross
   SS/RRB, or apply M-3; personal exemption, modeled Maine-AGI proxy limits, and whole Form 1040ME accuracy
   remain outside this bounded claim.
+- Virginia has no retirement-income exclusion. Its relief at 65 is the **age deduction** of Va. Code
+  §58.1-322.03(5), **$12,000** per qualifying taxpayer against income of every kind, reduced $1 for each $1 of
+  adjusted federal AGI above **$50,000** single or **$75,000** married, as Form 760's Age 65 and Older
+  Deduction Worksheet computes it: AFAGI is federal AGI less the taxable Social Security and Tier 1 benefits
+  in it, a couple takes one reduction on their joint AFAGI and splits the result, and a taxpayer born on or
+  before January 1, 1939 takes the full amount with no income test
+  (`va-code-58-1-322-03-age-deduction-and-social-security`, [VA.md](../state-tax-research/VA.md)). The pack
+  carries it as `virginiaAgeDeduction`, with `retirement: { kind: 'none' }`.
+- Kansas subtracts only the retirement systems K.S.A. 79-32,117 names, by plan code on a public, federal civil
+  service, military or government survivor pension; a public pension without a code is incomplete. Washburn
+  University's plan is a 403(b), so an employer plan coded `KS-WASHBURN` is subtracted and a 403(b) or
+  undeclared employer plan without a code is incomplete. An IRA, a private pension, and a 401(k), 401(a) or
+  457(b) plan are never a named system, so no code changes their tax and a missing one is not flagged
+  (`ks-stat-79-32-117-public-pension-exclusion`, [KS.md](../state-tax-research/KS.md)).
+- **A Roth conversion is marked on the state retirement row.** Both conversion paths set `rothConversionAmount`
+  (the taxable conversion dollars, without splitting an account's event) and
+  `rothConversionAmountAtAge59HalfOrOlder` (read on a named conversion's execution date, otherwise on January 1),
+  and each state's rule decides whether a conversion counts: Maine never
+  (`me-1040me-roth-conversion-not-pension-income`); Pennsylvania never taxes an IRA conversion, at any age
+  (`pa-40-roth-ira-conversion-not-taxable`); South Carolina counts it at any age, as no premature penalty applies
+  (`sc-code-12-6-1170-roth-conversion-not-premature`); Michigan and New York only at 59 and a half at the
+  conversion (`mi-treasury-roth-conversion-at-59-and-a-half`, `ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half`,
+  approximated for an undated conversion in the half-birthday year); Connecticut by its federal-AGI schedule for IRA
+  distributions (`ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule`); New Jersey like any IRA payment under
+  its income-tested exclusion (`nj-stat-54a-6-10-retirement-income-exclusion`); every other state like a
+  withdrawal. The limits that stay are stated in each state's record: Georgia's 62 to 64 tier, the Delaware and
+  Arkansas date edges, in-plan rollovers in Maryland, Rhode Island, Mississippi and Pennsylvania, and Ohio and
+  Hawaii, where the answer is not determined.
 - Mid-year state moves prorate state taxable income, deductions, brackets, cumulative
   band base amounts, and retirement caps by months in each state segment. Taxable
   Social Security is computed once on the full-year federal base and then apportioned
-  by months.
+  by months. Scaling the brackets taxes the year's income as a full-year resident and
+  keeps the resident share. Virginia's Form 760PY instead taxes the resident-period
+  income on the ordinary schedule, so Virginia's pack sets
+  `partYearRateSchedule: 'unscaled'` and its slice keeps its brackets
+  (`va-code-58-1-322-03-2-personal-exemptions`). Every other state's brackets are
+  scaled, which overstates the tax where the part-year return uses the ordinary
+  schedule, as New Jersey's does; that is a stated limit.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,

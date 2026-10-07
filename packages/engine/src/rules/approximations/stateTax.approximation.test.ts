@@ -1308,66 +1308,6 @@ describeRule('ne-stat-77-2716-public-pension-exemption', {
   })
 })
 
-const njSingleTax = (taxable: number) => bandedTax(
-  [
-    [0, 20_000, 1.4], [20_000, 35_000, 1.75], [35_000, 40_000, 3.5],
-    [40_000, 75_000, 5.525], [75_000, 500_000, 6.37],
-  ],
-  taxable,
-)
-const NJ_HIGH_AGI = 200_000
-const NJ_PENSION = 80_000
-const NJ_PACK_CAP = 50_000
-const NJ_SINGLE_STATUTE_CAP = 75_000
-
-describeRule('nj-stat-54a-6-10-retirement-income-exclusion', {
-  readings: {
-    // $200,000 of gross income is over the $150,000 ceiling, so the exclusion
-    // is $0 even though the filer is 62 and the payments are pension.
-    agiCeilingWithholdsTheExclusion: njSingleTax(NJ_HIGH_AGI),
-    fiftyThousandGrantedRegardlessOfAgi: njSingleTax(NJ_HIGH_AGI - NJ_PACK_CAP),
-  },
-  accepted: 'agiCeilingWithholdsTheExclusion',
-  produced: 'fiftyThousandGrantedRegardlessOfAgi',
-}, ({ accepted, produced }) => {
-  const scenario = input({
-    state: 'NJ',
-    ordinaryIncome: NJ_HIGH_AGI,
-    privateRetirementIncome: NJ_PENSION,
-    agesAlive: [62],
-  })
-
-  it('grants a $50,000 subtraction to a household over the $150,000 AGI ceiling', () => {
-    expect(computeStateTax(pack('NJ'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTax(pack('NJ'), scenario)).toBeLessThan(accepted)
-    expect(produced).not.toBe(PRODUCED_TBD)
-  })
-
-  it('reaches the statute once the cap is withheld', () => {
-    const noCap = {
-      ...pack('NJ'),
-      retirementPrivate: { kind: 'none' as const },
-    }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
-  })
-
-  it('under-excludes a single filer below $100,000 of income, in the other direction', () => {
-    // bothDirections is not a hedge. Below the AGI ceiling a single filer is
-    // allowed $75,000; the pack's per-person $50,000 leaves $25,000 in the
-    // base the statute takes out.
-    const underTheCeiling = input({
-      state: 'NJ',
-      ordinaryIncome: 80_000,
-      privateRetirementIncome: 80_000,
-      agesAlive: [62],
-    })
-    const packTax = computeStateTax(pack('NJ'), underTheCeiling)
-    const statuteTax = njSingleTax(80_000 - NJ_SINGLE_STATUTE_CAP)
-    expect(packTax).toBeCloseTo(njSingleTax(80_000 - NJ_PACK_CAP), 6)
-    expect(packTax).toBeGreaterThan(statuteTax)
-  })
-})
-
 const mdSingleTax = (taxable: number) => bandedTax(
   [
     [0, 1000, 2], [1000, 2000, 3], [2000, 3000, 4], [3000, 100_000, 4.75],

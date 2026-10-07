@@ -1,6 +1,6 @@
 /**
  * West / mountain leaf helpers: HI HOH brackets, ID retirement, MT LTCG,
- * OR credit, UT credits, VA military/SS, VT rates/minimum/retirement.
+ * OR credit, UT credits, VA military/SS/age deduction, VT rates/minimum/retirement.
  */
 
 import { stateParamsFor, type StateTaxParams } from '../params/state/index.js'
@@ -394,6 +394,37 @@ export function virginiaPriorStateBasisSubtraction(args: {
   }
   const sub = Math.min(Math.max(0, args.federallyIncluded), Math.max(0, args.knownPriorStateTaxedBasis))
   return { taxableIncomeDelta: -sub, taxCredit: 0, warnings: [] }
+}
+
+/**
+ * Virginia §58.1-322.03(5) age deduction, as Form 760's Age Deduction
+ * Worksheet computes it. Each taxpayer born on or before January 1, 1939 takes
+ * the full amount with no income test ((5)(a)). The later-born taxpayers who
+ * have attained 65 ((5)(b)) take the amount each, less one reduction of $1 for
+ * each $1 by which adjusted federal AGI exceeds the single or the married
+ * threshold; for a married couple that AGI is the couple's joint figure and the
+ * reduction is taken once from their combined amount (worksheet lines 11 to
+ * 15), which the worksheet then splits evenly between them. The result is a
+ * subtraction from income of every kind, not only retirement income.
+ *
+ * `adjustedFederalAgi` is federal AGI less the taxable Social Security and
+ * Tier 1 Railroad Retirement benefits in it (worksheet lines 2 to 8); the
+ * caller assembles it.
+ */
+export function virginiaAgeDeduction(args: {
+  config: NonNullable<StateTaxParams['virginiaAgeDeduction']>
+  married: boolean
+  fullAmountClaimants: number
+  incomeTestedClaimants: number
+  adjustedFederalAgi: number
+}): StateLeafAdjustment {
+  const { config } = args
+  const fullAmount = config.amount * Math.max(0, args.fullAmountClaimants)
+  const threshold = args.married ? config.marriedAfagiThreshold : config.singleAfagiThreshold
+  const excess = Math.max(0, args.adjustedFederalAgi - threshold)
+  const incomeTested = Math.max(0, config.amount * Math.max(0, args.incomeTestedClaimants) - excess)
+  const deduction = fullAmount + incomeTested
+  return { taxableIncomeDelta: deduction === 0 ? 0 : -deduction, taxCredit: 0, warnings: [] }
 }
 
 /** Vermont TY2026 derived thresholds (Act 11 CPI method; see vt-supplement). */

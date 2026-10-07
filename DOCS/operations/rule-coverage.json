@@ -2,22 +2,22 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 582,
+    "total": 588,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 78,
-      "settled": 375,
+      "settled": 381,
       "unsettled": 7
     },
     "approximatedByKind": {
       "convention": 23,
-      "fix": 74,
-      "needs-fact": 25
+      "fix": 72,
+      "needs-fact": 27
     },
     "byVolatility": {
       "annuallyIndexed": 92,
       "awaitingGuidance": 13,
-      "staticStatute": 468,
+      "staticStatute": 474,
       "sunsetting": 9
     },
     "byJurisdiction": {
@@ -29,7 +29,7 @@
         "AZ": 9,
         "CA": 5,
         "CO": 4,
-        "CT": 2,
+        "CT": 3,
         "DC": 3,
         "DE": 6,
         "FL": 1,
@@ -44,8 +44,8 @@
         "LA": 4,
         "MA": 5,
         "MD": 5,
-        "ME": 4,
-        "MI": 3,
+        "ME": 5,
+        "MI": 4,
         "MN": 3,
         "MO": 3,
         "MS": 7,
@@ -57,13 +57,13 @@
         "NJ": 5,
         "NM": 2,
         "NV": 1,
-        "NY": 6,
+        "NY": 7,
         "OH": 2,
         "OK": 1,
         "OR": 5,
-        "PA": 3,
+        "PA": 4,
         "RI": 7,
-        "SC": 8,
+        "SC": 9,
         "SD": 1,
         "TN": 2,
         "TX": 2,
@@ -75,7 +75,7 @@
         "WV": 8,
         "WY": 1
       },
-      "stateTotal": 221
+      "stateTotal": 227
     }
   },
   "attestations": {
@@ -816,17 +816,17 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 46
+      "ruleCount": 47
     },
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 39
+      "ruleCount": 43
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 45
+      "ruleCount": 46
     },
     {
       "module": "statesSouthCentral",
@@ -846,15 +846,15 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1796,
+    "entryCount": 1816,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 145,
+      "ELISION-EXACT": 147,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1220,
+      "EXACT": 1225,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 415,
+      "PDF-WORD-LEVEL": 428,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 10
     },
@@ -2674,6 +2674,110 @@
           {
             "id": "usc-45-231m-state-tax-bar",
             "citation": "45 U.S.C. 231a(b), supplemental annuity"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-06",
+        "note": "Virginia age deduction: va-code-58-1-322-03-age-deduction-and-social-security, reclassified settled when the engine began applying Va. Code 58.1-322.03(5) as Form 760 computes it, gains four authorities quoting the Virginia Department of Taxation's 2025 Form 760 instructions (who qualifies on line 4, the definition of AFAGI, the married taxpayers' joint AFAGI, and the joint computation split between spouses). Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the statute row EXACT and unchanged, the four new rows PDF-WORD-LEVEL. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction"
+          },
+          {
+            "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income"
+          },
+          {
+            "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers"
+          },
+          {
+            "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-06",
+        "note": "Virginia personal exemptions: va-code-58-1-322-03-2-personal-exemptions gains two authorities, the 2025 Form 760 instructions on who counts as 65 for the additional exemption (on or before January 1 of the following year) and the 2025 Form 760PY instructions on prorating a part-year resident's exemptions. Every row of the record was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to the record, with pdftotext from poppler 25.07.0: the two statute rows EXACT and unchanged, the two new rows PDF-WORD-LEVEL. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older"
+          },
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-06",
+        "note": "State treatment of Roth conversions and Connecticut's IRA schedule: six new records, me-1040me-roth-conversion-not-pension-income (2025 Form 1040ME instructions), pa-40-roth-ira-conversion-not-taxable (2025 PA-40 instructions, two rows), ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half (TSB-M-98(7)I), mi-treasury-roth-conversion-at-59-and-a-half (Michigan Treasury FAQ), sc-code-12-6-1170-roth-conversion-not-premature (S.C. Code 12-6-1170(A)(2) and IRC 408A(d)(3)(A)(i)-(ii)) and ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule (Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii) and (xxix), clauses and schedules). Every row was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: 5 EXACT, 2 ELISION-EXACT and 4 PDF-WORD-LEVEL, nothing serious. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "me-1040me-roth-conversion-not-pension-income",
+            "citation": "Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction"
+          },
+          {
+            "id": "pa-40-roth-ira-conversion-not-taxable",
+            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover"
+          },
+          {
+            "id": "pa-40-roth-ira-conversion-not-taxable",
+            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld"
+          },
+          {
+            "id": "ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half",
+            "citation": "New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition"
+          },
+          {
+            "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)"
+          },
+          {
+            "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)"
+          },
+          {
+            "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule"
+          },
+          {
+            "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule"
+          },
+          {
+            "id": "mi-treasury-roth-conversion-at-59-and-a-half",
+            "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax"
+          },
+          {
+            "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+            "citation": "S.C. Code §12-6-1170(A)(2)"
+          },
+          {
+            "id": "sc-code-12-6-1170-roth-conversion-not-premature",
+            "citation": "IRC 408A(d)(3)(A)(i)-(ii)"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-06",
+        "note": "Virginia part-year rate schedule and Kansas Washburn 403(b): va-code-58-1-322-03-2-personal-exemptions gains two authorities from the 2025 Form 760PY instructions (Line 17 Income Tax, and the Tax Rate Schedule example), which show a part-year resident's Virginia taxable income taxed on the ordinary schedule; ks-stat-79-32-117-public-pension-exclusion gains Kansas Department of Revenue Notice 08-06, which describes Washburn University's basic retirement plan as a 403(b). Every row of both records was checked with verify-quotes.mjs --refresh on 2026-10-06, fetched live that day and filtered to each record, with pdftotext from poppler 25.07.0: the statute rows EXACT and unchanged, the PDF rows PDF-WORD-LEVEL. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "ks-stat-79-32-117-public-pension-exclusion",
+            "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available"
+          },
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax"
+          },
+          {
+            "id": "va-code-58-1-322-03-2-personal-exemptions",
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule"
           }
         ]
       }
