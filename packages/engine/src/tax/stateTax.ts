@@ -467,6 +467,8 @@ export interface ComputeStateTaxOptions {
    *   times `capShare`, or what its own rows earn with the whole caps. Without
    *   `yearRows` they run on the slice's own rows with the whole caps
    *   (`capShare` 1), or, on the coarse path, with the caps times `capShare`;
+   * - `personRows` are the whole year's rows, from which a person's facts are
+   *   read (New Jersey's veteran and disabled exemptions);
    * - `wholeYearGrossIncome` is New Jersey's gross income for the whole year,
    *   which its pension exclusion tests.
    */
@@ -476,6 +478,7 @@ export interface ComputeStateTaxOptions {
     undated: number
     capShare: number
     yearRows?: readonly StateRetirementDistributionFact[]
+    personRows?: readonly StateRetirementDistributionFact[]
     wholeYearGrossIncome?: number
   }
 }
@@ -1610,7 +1613,9 @@ export function computeStateTaxableIncomeResult(
     const blindOrDisabled = new Set<string>()
     for (const row of opts.householdFacts?.taxpayerEligibility ?? []) if (row.blind) blindOrDisabled.add(row.personId)
     const veterans = new Set<string>()
-    for (const row of distributions ?? []) {
+    // Who is a veteran or disabled is a fact of the person, not of the
+    // slice: a split year reads it from the year's rows.
+    for (const row of slice?.personRows ?? distributions ?? []) {
       if (row.recipientDisabled) blindOrDisabled.add(row.ownerPersonId)
       if (row.sourceKind === 'militaryRetirement' && row.cause !== 'death') veterans.add(row.ownerPersonId)
     }
@@ -2172,14 +2177,43 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
     ? Math.max(0, input.privateRetirementIncome ?? input.retirementIncome ?? 0) + Math.max(0, input.publicPensionIncome ?? 0)
     : yearRows.reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
   const warnings: StateTaxExactnessWarning[] = []
+  // The projection's segments cover the year once each. A host-built
+  // residency that leaves months out, runs past December or names a state
+  // twice is priced as given and marked incomplete: income in a month no
+  // segment covers, dated or spread by months, is taxed by no state.
+  const givenMonths = (input.stateResidency ?? []).reduce((total, segment) => total + Math.max(0, segment.months), 0)
+  if (givenMonths !== 12) {
+    warnings.push({
+      code: 'state-rich-split-year-adapter-required',
+      message: givenMonths < 12
+        ? `The year's residency covers ${givenMonths} of its 12 months; income dated in, or spread by months to, the months it leaves out is taxed by no state.`
+        : `The year's residency segments give ${givenMonths} months; the segments past December are cut to fit the year.`,
+      missingFacts: ['stateResidency'],
+    })
+  }
   const slices: StatePartYearSlice[] = []
   const pensionPools: StatePensionBasisPoolResult[] = []
   let njPools: readonly StateNjIraBasisPoolResult[] | undefined
   let hsaPools: readonly StateHsaBasisPoolResult[] | undefined
+  const pricedStates = new Set<string>()
   const sum = { totalTax: 0, taxableIncome: 0, stateTax: 0, localTax: 0, taxCredit: 0 }
   for (const span of spans) {
     const params = resolvedStateParams(span.state, input, opts.mapParams)
-    if (!params) continue
+    if (!params) {
+      warnings.push({ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${span.state} tax year ${input.year}: its ${span.months} months are not priced.`, missingFacts: ['stateTaxPack'] })
+      continue
+    }
+    // A state named in two segments (a move away and back) is priced in each,
+    // but its basis pools are committed once, from the first.
+    const repeated = pricedStates.has(params.code)
+    pricedStates.add(params.code)
+    if (repeated) {
+      warnings.push({
+        code: 'state-rich-split-year-adapter-required',
+        message: `${params.code} appears in two of the year's residency segments: each is priced as its own part year, and its basis pools are committed from the first only.`,
+        missingFacts: ['stateResidency'],
+      })
+    }
     const slice = allocateSplitYear(input, span, yearRows, opts.qcdEvents, opts.householdFacts, annualTaxableSs)
     const method = params.partYear
     let result: StateTaxComputationResult
@@ -2227,7 +2261,10 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
         localRatePct,
         retirementDistributions: slice.rows,
         stateIncomeComponents: undefined,
-        qcdEvents: slice.qcdEvents,
+        // A part-year resident's QCD has no state adjustment here: the leaf
+        // marks it incomplete and applies none (stateQcdHsa.ts).
+        qcdEvents: slice.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
+        ...(opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }),
         taxableSocialSecurityOverride: slice.taxableSocialSecurity,
         federalOverride: federal(),
         partYearSlice: {
@@ -2236,6 +2273,7 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
           undated: slice.even,
           capShare: sliceCapShare,
           ...(sliceCapShare !== 1 && yearRows !== undefined ? { yearRows } : {}),
+          ...(yearRows === undefined ? {} : { personRows: yearRows }),
           ...(params.newJerseyPensionExclusion ? { wholeYearGrossIncome: fullYear().income.newJerseyGrossIncome } : {}),
         },
       })
@@ -2316,9 +2354,19 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
     sum.localTax += result.localTax
     sum.taxCredit += result.taxCredit
     slices.push({ state: span.state, months: span.months, method: params.hasIncomeTax ? method?.method ?? 'monthsShare' : 'noIncomeTax', ...(incomeRatio === undefined ? {} : { incomeRatio }), totalTax: result.totalTax })
-    pensionPools.push(...pensionBasisPools(span.state, slice.rows) ?? [])
-    if (span.state === 'NJ') njPools = njIraBasisPools('NJ', opts.njIraOwnerPools)
-    if (span.state === input.state) hsaPools = hsaBasisPools(span.state, opts.hsaAccounts)
+    if (!repeated) {
+      pensionPools.push(...pensionBasisPools(span.state, slice.rows) ?? [])
+      if (span.state === 'NJ') njPools = njIraBasisPools('NJ', opts.njIraOwnerPools)
+      if (span.state === input.state) hsaPools = hsaBasisPools(span.state, opts.hsaAccounts)
+    }
+  }
+  // A QCD in a split year leaves the year incomplete and no state's QCD
+  // adjustment is applied: the slice that receives it says so above, and a
+  // QCD in the months of a state without an income tax is said so here.
+  const yearHasQcd = opts.qcdEvents !== undefined ? opts.qcdEvents.length > 0 : opts.qcdFacts !== undefined
+  if (yearHasQcd && slices.some((slice) => slice.method !== 'noIncomeTax') &&
+    !warnings.some((warning) => warning.code === 'state-qcd-residency-incomplete')) {
+    warnings.push({ code: 'state-qcd-residency-incomplete', ruleId: 'state-direct-qcd-conformity', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
   }
   if ([...(hsaPools ?? []), ...(njPools ?? []), ...pensionPools].some((pool) => pool.status === 'incomplete')) {
     warnings.push({ code: BASIS_INCOMPLETE, message: 'The annual state basis transition requires complete account, contribution and distribution facts.', missingFacts: ['stateBasisPoolFacts'] })

@@ -216,8 +216,10 @@ const rawStateYear2026 = {
       // income (line 26) by federal AGI (line 25); the standard deduction is not
       // prorated, the exemptions are, by that ratio; the $2,500 government pension
       // subtraction takes the whole cap against the pension in the Arizona column
-      // (ars-43-1041-standard-deduction-published-amount).
-      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' },
+      // (ars-43-1041-standard-deduction-published-amount). The ratio is the
+      // state's income over federal AGI items; it prorates only the exemptions,
+      // which the pack does not model.
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'full' },
     },
     AR: {
       // The thresholds below are DFA's PUBLISHED 2026 schedule (2026 Form

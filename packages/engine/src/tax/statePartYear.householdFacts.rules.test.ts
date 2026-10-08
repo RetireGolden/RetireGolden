@@ -19,6 +19,9 @@
  *   OR       588.1875    363.1875  the retirement income credit, after the ratio
  *   UT       445.00      220.00    the $450 retirement credit, through the ratio
  *   IA       188.10      100.00    the alternate tax, through the ratio
+ *
+ * Who is a veteran or disabled is the person's fact, not the slice's: New
+ * Jersey reads it from the year's rows, wherever they fall.
  */
 import { describe, expect, it } from 'vitest'
 import type { TaxYearInput } from '../projection/types.js'
@@ -57,6 +60,23 @@ describe('household facts reach a resident-period slice, prorated by its return'
     })
     expect(result.totalTax).toBeCloseTo(2_402.60625, 6)
     expect(result.status).toBe('complete')
+  })
+
+  it('New Jersey: the veteran exemption from a military pension paid in the other state’s months, by the months', () => {
+    // Six months in New Jersey, then Texas, $100,000 of income with a $20,000
+    // military pension dated September, in Texas's months. The New Jersey
+    // slice receives 50,000 - 10,000 = 40,000. 54A:3-1: $1,000 for the
+    // taxpayer and $6,000 for a veteran, by the months, 3,500. 36,500 taxable:
+    // 280 + 262.50 + 1,500 x 3.5% = 595. Reading the veteran from the slice's
+    // own rows, which hold no military pension, gave 39,500 and 700.
+    const result = computeStateTaxYearResult(sixMonths('NJ'), {
+      householdFacts: { stateFilingStatus: 'single' },
+      retirementDistributions: [{
+        ...pension(20_000, 50), accountId: 'military', sourceKind: 'militaryRetirement', distributionDate: '2026-09-15',
+      }],
+      qcdEvents: [], hsaAccounts: [],
+    })
+    expect(result.totalTax).toBeCloseTo(595, 6)
   })
 
   it('Massachusetts: the personal exemption by the months resident', () => {

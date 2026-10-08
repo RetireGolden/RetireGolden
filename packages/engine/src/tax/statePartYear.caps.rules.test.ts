@@ -26,7 +26,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { TaxYearInput } from '../projection/types.js'
-import { knownMoney, type StateHsaAccountYearFacts, type StateRetirementDistributionFact } from './stateRetirementFacts.js'
+import { knownMoney, type StateHsaAccountYearFacts, type StateQcdEventFacts, type StateRetirementDistributionFact } from './stateRetirementFacts.js'
 import { computeStateTaxYearResult } from './stateTax.js'
 
 function sixMonths(state: string, changes: Partial<TaxYearInput>): TaxYearInput {
@@ -192,6 +192,87 @@ describe('what still marks a split year incomplete', () => {
     expect(year('NJ', 'TX', [hsa]).warnings.some((w) => w.missingFacts.includes('stateHsaAccountYearFacts'))).toBe(true)
     expect(year('TX', 'CA', [hsa]).status).toBe('complete')
     expect(year('CA', 'TX', []).status).toBe('complete')
+  })
+
+  it('a state with no published parameters: its months are not priced, and the year says so', () => {
+    // As the annual path does for a state without a pack.
+    const result = computeStateTaxYearResult({
+      ...sixMonths('NY', { ordinaryIncome: 100_000 }),
+      stateResidency: [{ state: 'ZZ', months: 6 }, { state: 'NY', months: 6 }],
+    }, { qcdEvents: [] })
+    expect(result.status).toBe('incomplete')
+    expect(result.warnings.find((w) => w.code === 'state-pack-unavailable')).toEqual({
+      code: 'state-pack-unavailable',
+      message: 'No published state parameter set is available for ZZ tax year 2026: its 6 months are not priced.',
+      missingFacts: ['stateTaxPack'],
+    })
+    expect(result.partYear?.slices.map((slice) => slice.state)).toEqual(['NY'])
+  })
+
+  it('a residency that leaves months out: income in them is taxed by no state, and the year says so', () => {
+    // Four months in New York and four in Texas: a distribution dated
+    // November falls in neither. The projection's segments always cover the
+    // year; a host-built residency may not.
+    const short = computeStateTaxYearResult({
+      ...sixMonths('NY', { ordinaryIncome: 90_000, agesAlive: [50] }),
+      stateResidency: [{ state: 'NY', months: 4 }, { state: 'TX', months: 4 }],
+    }, {
+      retirementDistributions: [retirement({ accountId: 'ira', sourceKind: 'ira', federallyIncludedAmount: 30_000, recipientAgeYears: 50, distributionDate: '2026-11-15' })],
+      qcdEvents: [],
+    })
+    expect(short.status).toBe('incomplete')
+    expect(short.warnings.filter((w) => w.missingFacts.includes('stateResidency')).map((w) => w.message)).toEqual([
+      "The year's residency covers 8 of its 12 months; income dated in, or spread by months to, the months it leaves out is taxed by no state.",
+    ])
+    const long = computeStateTaxYearResult({
+      ...sixMonths('NY', { ordinaryIncome: 90_000 }),
+      stateResidency: [{ state: 'NY', months: 8 }, { state: 'TX', months: 8 }],
+    }, { qcdEvents: [] })
+    expect(long.status).toBe('incomplete')
+    expect(long.warnings.some((w) => w.message === "The year's residency segments give 16 months; the segments past December are cut to fit the year.")).toBe(true)
+  })
+
+  it('a state named in two segments: priced in each, its pools committed once, and the year says so', () => {
+    // Massachusetts three months, Texas six, Massachusetts three again, with
+    // a pension of $8,000 spread over the year and $6,000 of basis already
+    // taxed. Each Massachusetts segment receives $2,000; one pool is
+    // committed, from the first, consuming its 2,000.
+    const result = computeStateTaxYearResult({
+      ...sixMonths('MA', { ordinaryIncome: 8_000, agesAlive: [62] }),
+      stateResidency: [{ state: 'MA', months: 3 }, { state: 'TX', months: 6 }, { state: 'MA', months: 3 }],
+    }, { retirementDistributions: [retirement({ federallyIncludedAmount: 8_000, knownPreviouslyTaxedBasis: 6_000 })], qcdEvents: [] })
+    expect(result.status).toBe('incomplete')
+    expect(result.warnings.filter((w) => w.missingFacts.includes('stateResidency')).map((w) => w.message)).toEqual([
+      "MA appears in two of the year's residency segments: each is priced as its own part year, and its basis pools are committed from the first only.",
+    ])
+    expect(result.partYear?.slices.map((slice) => [slice.state, slice.months])).toEqual([['MA', 3], ['TX', 6], ['MA', 3]])
+    expect(result.pensionBasisPools).toEqual([{
+      state: 'MA', accountId: 'pension', ownerPersonId: 'p1', kind: 'pension', status: 'complete',
+      openingBasis: 6_000, basisConsumed: 2_000, closingBasis: 4_000,
+    }])
+  })
+
+  it('a QCD in a split year: the year is incomplete and no state QCD adjustment is applied', () => {
+    // A $10,000 direct QCD, in New York's months or in Texas's. The state
+    // QCD rules are written for a full-year resident; a part-year resident's
+    // QCD is marked, not priced, wherever it falls.
+    const qcd = (transferDate: string): StateQcdEventFacts => ({
+      eventId: 'qcd', accountId: 'ira', ownerPersonId: 'p1', grossIraDistribution: 10_000,
+      directCharityTransfer: 10_000, federalExcludedAmount: 10_000, federalTaxableAmount: 0,
+      federalBasisAllocated: 0, residency: 'fullYearResident', splitInterest: false, directTransfer: true, transferDate,
+    })
+    const year = (qcdEvents: StateQcdEventFacts[]) => computeStateTaxYearResult(
+      sixMonths('NY', { ordinaryIncome: 100_000, agesAlive: [75], peopleAged65Plus: 1 }),
+      { retirementDistributions: [], qcdEvents },
+    )
+    const none = year([])
+    expect(none.status).toBe('complete')
+    for (const date of ['2026-03-15', '2026-09-15']) {
+      const result = year([qcd(date)])
+      expect(result.status).toBe('incomplete')
+      expect(result.warnings.some((w) => w.code === 'state-qcd-residency-incomplete')).toBe(true)
+      expect(result.totalTax).toBeCloseTo(none.totalTax, 6)
+    }
   })
 
   it('a state whose parameters carry no part-year method: the months share, marked incomplete', () => {
