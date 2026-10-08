@@ -517,16 +517,16 @@
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1086,
-        1111
+        1115
       ],
       "note": "Continues I.delegate past its excluded line 1086 (`: { amount: 0, evidence: 'none' as const }`); see that entry's note.",
       "anchors": [
         {
-          "line": 1108,
+          "line": 1112,
           "text": "const inheritedRmdShortfallObligations ="
         },
         {
-          "line": 1111,
+          "line": 1115,
           "text": "for (const operation of inheritedOperations) {"
         }
       ]
@@ -536,28 +536,28 @@
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1140,
-        1181
+        1144,
+        1185
       ],
       "anchors": [
         {
-          "line": 1140,
+          "line": 1144,
           "text": "for (const operation of inheritedOperations) {"
         },
         {
-          "line": 1142,
+          "line": 1146,
           "text": "state.balance = operation.sourceBalanceAfter"
         },
         {
-          "line": 1145,
+          "line": 1149,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1171,
+          "line": 1175,
           "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)"
         },
         {
-          "line": 1178,
+          "line": 1182,
           "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce("
         }
       ]

@@ -262,16 +262,18 @@ describe('New Jersey pension exclusion, part-year resident', () => {
     // test reads the year ($80,000, under $100,000), and the $75,000 maximum
     // is prorated to $37,500 (NJ-1040 line 28a, part-year residents), so
     // $37,500 of the slice's $40,000 is excluded. The $1,000 personal
-    // exemption is limited to the six months resident by 54A:3-1(c), $500
-    // (the input names no one 65 or older for the age exemption), so $2,000
-    // is taxed at 1.4%: $28.00. The slice's brackets are halved, so the first
-    // band ends at $10,000.
+    // exemption and the $1,000 age exemption are each limited to the six
+    // months resident by 54A:3-1(c), $500 apiece, so $1,500 is taxed at 1.4%:
+    // $21.00. New Jersey's part-year brackets are the whole-year table
+    // (partYear.rateSchedule 'unscaled'), whose first band runs to $20,000;
+    // statePartYear.rules.test.ts pins that with income above the first band.
     const partYear = computeStateTaxYearResult(input('NJ', {
       ordinaryIncome: 80_000,
       privateRetirementIncome: 80_000,
       agesAlive: [65],
+      peopleAged65Plus: 1,
       stateResidency: [{ state: 'NJ', months: 6 }, { state: 'FL', months: 6 }],
     }))
-    expect(partYear.totalTax).toBeCloseTo(2_000 * 0.014, 6)
+    expect(partYear.totalTax).toBeCloseTo(1_500 * 0.014, 6)
   })
 })

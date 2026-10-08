@@ -1087,6 +1087,10 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       const ownerTake = electionYearOwnerPlan.takeByAccountId.get(row.accountId) ?? 0
       const ownerRequired =
         electionYearOwnerPlan.ownerRequiredByAccountId.get(row.accountId) ?? 0
+      // The planner's unpaid amount counts a pool's shared j(4) figure once,
+      // toward the pool, not once against every IRA in it.
+      const ownerUnpaid = electionYearOwnerPlan.rows
+        .find((plan) => plan.accountId === row.accountId)?.unpaidAmount ?? Math.max(0, ownerRequired - accepted.amount)
       const suppressCash = suppressInheritedForcedTakeAccountIds.has(row.accountId)
       // Keep beneficiary/decedent requiredAmount (immutable trigger or death-year
       // residual base). When non-death-year cash is suppressed, publish accepted
@@ -1099,7 +1103,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         disclosures: [
           ...row.evidence.disclosures,
           `election-year-owner-rmd:${ownerRequired}`,
-          `election-year-owner-rmd-unpaid:${Math.max(0, ownerRequired - accepted.amount)}`,
+          `election-year-owner-rmd-unpaid:${ownerUnpaid}`,
         ],
       }
     })

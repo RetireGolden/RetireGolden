@@ -3749,15 +3749,15 @@
             },
             {
               "title": "carries a pre-election distribution larger than the first IRA needs to the rest of the pool",
-              "line": 829
+              "line": 840
             },
             {
               "title": "credits a completed history row to the IRA it came from and does not also count the shared figure",
-              "line": 855
+              "line": 866
             },
             {
               "title": "adds a lone IRA's pre-election distribution back when no reference balance is given",
-              "line": 892
+              "line": 903
             }
           ]
         }

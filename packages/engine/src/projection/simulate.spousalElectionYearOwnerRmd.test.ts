@@ -818,6 +818,17 @@ describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
     expect(y.rmd).toBeCloseTo(accepted, 8)
     expect(y.rmd).not.toBeCloseTo(readings.oncePerIraOnLiveBalances, 2)
     expect(y.rmd).not.toBeCloseTo(readings.oncePerPoolOnLiveBalances, 2)
+    // The unpaid disclosure counts the shared 1,000 once too: 4065.04 - 1000
+    // on the first IRA, and the second's whole 1203.25, never 1203.25 - 1000.
+    const unpaid = (accountId: string) => {
+      const disclosure = y.inheritedAccounts
+        ?.find((candidate) => candidate.accountId === accountId)
+        ?.disclosures.find((entry) => entry.startsWith('election-year-owner-rmd-unpaid:'))
+      if (disclosure === undefined) throw new Error(`missing unpaid disclosure for ${accountId}`)
+      return Number(disclosure.slice('election-year-owner-rmd-unpaid:'.length))
+    }
+    expect(unpaid('inherited')).toBeCloseTo(3065.04, 2)
+    expect(unpaid('pooled-second')).toBeCloseTo(1203.25, 2)
     expect(y.balances.inherited).toBeCloseTo(95_934.96, 2)
     expect(y.balances['pooled-second']).toBeCloseTo(28_396.75, 2)
     expect(y.rmdShortfallExciseDetails).toHaveLength(1)

@@ -306,28 +306,28 @@
       "label": "post-forced-distribution QCD preparation snapshot",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1707,
-        1749
+        1711,
+        1753
       ],
       "anchors": [
         {
-          "line": 1707,
+          "line": 1711,
           "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({"
         },
         {
-          "line": 1712,
+          "line": 1716,
           "text": "people: Object.freeze(people.map((person) => Object.freeze({"
         },
         {
-          "line": 1717,
+          "line": 1721,
           "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({"
         },
         {
-          "line": 1734,
+          "line": 1738,
           "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map("
         },
         {
-          "line": 1746,
+          "line": 1750,
           "text": "offsetHistoryUnprovableDonorIds: Object.freeze(["
         }
       ]
@@ -337,12 +337,12 @@
       "label": "prerequisite publication and retained executor handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1750,
-        1750
+        1754,
+        1754
       ],
       "anchors": [
         {
-          "line": 1750,
+          "line": 1754,
           "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite"
         }
       ]
@@ -352,16 +352,16 @@
       "label": "caller-owned named-QCD executor call",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1791,
-        1792
+        1795,
+        1796
       ],
       "anchors": [
         {
-          "line": 1791,
+          "line": 1795,
           "text": "if (qcdExecutionInput.status === 'ready') {"
         },
         {
-          "line": 1792,
+          "line": 1796,
           "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)"
         }
       ]

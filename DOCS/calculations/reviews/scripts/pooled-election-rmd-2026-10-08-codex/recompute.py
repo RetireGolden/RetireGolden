@@ -1,4 +1,4 @@
-﻿from decimal import Decimal, getcontext, ROUND_HALF_UP
+from decimal import Decimal, getcontext, ROUND_HALF_UP
 getcontext().prec = 32
 D = Decimal
 CENT = D('0.01')

@@ -247,7 +247,10 @@ export const rmdRecords = {
       'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#electionYearOwnerRmdCredits',
       'packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts#planElectionYearOwnerRmdDraws',
     ],
-    verifiedOn: '2026-09-30',
+    // The 2026-10-07 restatements were Claude's and Codex reviewed them on
+    // 2026-10-08 (the worksheet); the record stays Grok-reviewed because Codex
+    // derived the original.
+    verifiedOn: '2026-10-08',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'grok' },
   },
   'inherited-distribution-forced-annual': {
