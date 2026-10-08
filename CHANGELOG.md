@@ -121,8 +121,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   at load. The moves alone, measured on the 0.4.2 head: worker 1,146.9 to 1,084.4 KiB (of
   1,150), core 894.9 to 866.2 KiB (of 900), all JS 5,063.1 to 5,055.9 KiB (of 5,100), with
   identical figures from the built bundles over the 29 example plans
-  (DOCS/operations/bundle-budget.md). With the part-year work this release builds to worker
-  1,092.4, core 874.2 and all JS 5,071.9 KiB.
+  (DOCS/operations/bundle-budget.md). With the part-year work and its fail-closed guards this
+  release builds to worker 1,093.8, core 875.6 and all JS 5,074.8 KiB.
 - Prepared **`@retiregolden/engine` 0.4.2** (2026-10-08) — a **patch**: the state tax and
   inherited-IRA corrections below and the dependency re-resolve. Plans stay schema 7, and no
   export is removed. One exported type changes: the state pack field `partYearRateSchedule`
