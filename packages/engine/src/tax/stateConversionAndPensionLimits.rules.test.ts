@@ -173,18 +173,23 @@ describeRule('ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule', {
     expect(subtracted('CT', [row({ accountTaxTreatment: 'traditional' })], household({ federalAgi: 60_000 }))).toBe(accepted.at60k)
     expect(subtracted('CT', [conversion(30_000, { accountTaxTreatment: 'traditional' })], household({ federalAgi: 78_000 }))).toBe(accepted.conversionAt78k)
   })
-  it('never reaches a split year, which prices each slice without the rows and is incomplete', () => {
+  it('reaches a split year, whose Connecticut slice is the full-year tax on the rows times the ratio', () => {
     // Six months in Connecticut, six in Florida, $150,000 of federal AGI with
-    // a $30,000 IRA distribution: the schedule allows nothing at that AGI,
-    // but the Connecticut slice is priced on the coarse inputs, where the
-    // pack's full rule takes its share of the private retirement income off.
+    // a $30,000 IRA distribution: the schedule allows nothing at that AGI.
+    // CT-1040NR/PY taxes as a resident and prorates by Connecticut-source
+    // Connecticut AGI. 150,000 taxable (the exemption phases out by $45,000):
+    // 10,000 x 2% = 200; 40,000 x 4.5% = 1,800; 50,000 x 5.5% = 2,750; 50,000
+    // x 6% = 3,000; 7,750. The row has no date, so half the year is
+    // Connecticut's: 3,875. Until 2026-10-08 the slice was priced on the
+    // coarse inputs, where the pack's full rule took its share of the private
+    // retirement income off, and the year was incomplete.
     const split = { stateResidency: [{ state: 'CT', months: 6 }, { state: 'FL', months: 6 }], ordinaryIncome: 150_000 }
-    const options = { retirementDistributions: [row()], householdFacts: household({ federalAgi: 150_000 }) }
+    const options = { retirementDistributions: [row()], householdFacts: household({ federalAgi: 150_000, connecticutAgi: 150_000 }) }
     const withRetirement = computeStateTaxYearResult(input('CT', { ...split, privateRetirementIncome: 30_000 }), options)
-    const withoutRetirement = computeStateTaxYearResult(input('CT', split), options)
-    expect(withRetirement.status).toBe('incomplete')
-    expect(withRetirement.warnings.map((warning) => warning.code)).toContain('state-rich-split-year-adapter-required')
-    expect(withRetirement.amount).toBeLessThan(withoutRetirement.amount)
+    expect(withRetirement.totalTax).toBeCloseTo(3_875, 6)
+    expect(withRetirement.status).toBe('complete')
+    // The rows decide it, not the coarse retirement bucket.
+    expect(computeStateTaxYearResult(input('CT', split), options).totalTax).toBeCloseTo(3_875, 6)
   })
 })
 
@@ -265,7 +270,7 @@ describe('New Jersey pension exclusion, part-year resident', () => {
     // exemption and the $1,000 age exemption are each limited to the six
     // months resident by 54A:3-1(c), $500 apiece, so $1,500 is taxed at 1.4%:
     // $21.00. New Jersey's part-year brackets are the whole-year table
-    // (partYear.rateSchedule 'unscaled'), whose first band runs to $20,000;
+    // (partYear.method 'residentPeriod'), whose first band runs to $20,000;
     // statePartYear.rules.test.ts pins that with income above the first band.
     const partYear = computeStateTaxYearResult(input('NJ', {
       ordinaryIncome: 80_000,

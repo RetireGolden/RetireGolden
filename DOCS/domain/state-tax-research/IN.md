@@ -219,7 +219,7 @@ flattering under-charge. Registered as
   (IC 6-3.6-8-6). Credits are outside the pack's declared scope.
 - The Schedule 1 add-backs, several of which reach retirees — the non-Indiana
   municipal bond interest add-back at IC 6-3-1-3.5(a)(21) in particular.
-- Part-year and nonresident proration (IC 6-3-1-3.5(a)(9)); the Perry County /
+- Nonresident proration (IC 6-3-1-3.5(a)(9); part-year residents are below); the Perry County /
   Kentucky carve-out (IC 6-3.6-8-7); the reciprocity agreements with Kentucky,
   Michigan, Ohio, Pennsylvania and Wisconsin.
 
@@ -350,3 +350,11 @@ Every lever above is registered in
 ## Characterized retirement and evidence scope (2026-09-12)
 
 The current DOR deductions page includes targeted civil-service, military and disability deductions; it provides no general public or private pension deduction. Its complete displayed deduction headings and IB26 taxable-pension language are preserved in the source record. A specific qualifying exception still controls.
+
+## Part-year residents (2026-10-08)
+
+Method (a), Form IT-40PNR: Column B is the income while resident, the exemptions (not modeled) times the Schedule A proration; no capped retirement exclusion (ic-6-3-1-3-5-exemptions-not-a-standard-deduction). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Indiana and six in Texas, owes $1,475.00 for the Indiana months, the same as before. With a $40,000 Roth conversion on top, the slice is $2,655.00 when the conversion falls in the months resident and $1,475.00 when it falls in Texas's, where the months share of the year gave $2,065.00 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

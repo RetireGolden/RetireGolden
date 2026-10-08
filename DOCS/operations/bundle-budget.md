@@ -120,7 +120,9 @@ binding, not on anything the source says:
 Three things now hold that shape closed. The bundle-budget CLI fails the build on **any** static
 import cycle among `dist/assets` chunks (`staticImportCycles`, Tarjan over `from "…"` and
 side-effect `import "…"` specifiers matched by basename; dynamic `import()` is not an edge), and
-still fails it if any other chunk statically imports `planner.worker-*.js`. The engine's funding
+still fails it if a chunk in the worker entry's static closure statically imports
+`planner.worker-*.js` (`workerEntryImporters`; a chunk the entry reaches only through `import()` may,
+as the last section explains). The engine's funding
 phase reads the tolerance at call time rather than aliasing it at module level, so a future cycle
 through *that* module could not turn it into `undefined` — read that as one module's habit, not a
 class-wide guarantee: `annualWithdrawalPlanning.ts`, `annualHealthcareExpenses.ts`,
@@ -458,3 +460,47 @@ Minified chunks no longer say which module a byte came from, so the build record
 when `PlanRoutes` holds `report/reportModel.ts`, whatever chain of imports put it there. It fails closed:
 a missing map, a map naming chunks this build did not emit, or a `PlanRoutes` chunk the map does not
 describe are all failures.
+
+## Room for part-year state tax: three moves, no cap moved
+
+On 2026-10-08 the planner worker measured 1,146.9 of 1,150 KiB and the engine simulation core
+(`useProjection`) 894.9 of 900 KiB, before engine 0.4.3's part-year state tax, which adds code to
+both. Decision D-BUNDLE-HEADROOM: move code most visits never run out of a chunk, or pack data
+losslessly; never raise a cap. Three changes, measured together on the engine 0.4.2 head (73c43843):
+
+| # | Change | Worker | useProjection | Where the bytes go |
+|---|---|---:|---:|---|
+| A | three engine modules only the retirement-action editor runs (`actions/retirementActionManualReview.ts`, `actions/retirementActionCandidateIdentityAllocator.ts`, `actions/ownedNonRothIraAnnualFilingSourceResolver.ts`) are marked free of side effects in `app/vite.config.ts` (`engineTreeshake`, both graphs), so they leave the core | 0 | −28.7 | the lazy `RetirementActionsEditor` chunk, +29.4 |
+| D1 | the worker loads the Optimize channel (`optimize/runOptimize.ts` and the optimizer behind it) with `import()` on that channel's first request (`workers/dispatch.ts`) | about −58.6 | 0 | a new `runOptimize` chunk of 59.8 the worker loads lazily |
+| H | the historical return series ships as `[stocks, bonds, inflation]` rows from 1928, decoded once at load (`montecarlo/historicalReturns.ts`) | about −3.8 | 0 | gone; the app graph's copy, in `sharedPaths`, also falls 3.9 |
+| | **measured together** | **1,146.9 → 1,084.4** | **894.9 → 866.2** | |
+
+All JS went from 5,063.1 to 5,055.9 KiB (H, in both graphs) and the precache from 5,183.8 to
+5,176.6 KiB. A and D1 move bytes between chunks; they do not remove them. The split between D1 and H in
+the worker column was measured with each change alone on 616b75ca; the totals are this build's.
+
+No computed figure moves. A harness ran the built bundles before and after over the 29 example plans:
+the worker's Monte Carlo, historical suites, relocation compare and spending solver responses, its
+Optimize responses (with the wall-clock `solveMs` left out), and the main thread's `projectPlan` with
+and without the annual cash-flow capture all hash identically.
+
+Three guards keep the moves:
+
+- **A.** Each module's top level is declarations only (imports, types, functions and one string
+  constant), which is what makes the side-effect-free mark safe. `app/vite.config.ts` throws at config
+  load if one of the three paths no longer exists, `CHUNK_MODULE_EXCLUSIONS` fails the budget when
+  `useProjection` holds any of them, and `app/scripts/viteChunkModules.test.mjs` holds the two lists
+  equal.
+- **D1.** The Optimize chunk imports the worker entry back for the engine code they share. That is the
+  shape #672 forbids for a *statically* imported chunk, so the worker-graph guard
+  (`workerEntryImporters`) now looks only at the entry's static closure: the chunks the entry reaches
+  through static imports, transitively. A chunk there that imports the entry is evaluated while the entry
+  is still loading, before the entry's body has run, which is the TDZ crash. A chunk reached only through
+  `import()` is fetched and evaluated at the dispatch that asks for it, after the entry module has
+  finished evaluating, so every binding it imports is initialized. It imports the URL the worker was
+  started from (`/assets/planner.worker-<hash>.js`, relative to its own `/assets/` URL), so it binds the
+  entry that already ran rather than a second copy. The static-import-cycle check
+  (`staticImportCycles`) is unchanged and still clean, and a lazily loaded chunk that a static import also
+  reaches is in the closure and still fails.
+- **H.** `historicalReturns.packed.test.ts` holds the decoded table deep-equal, key for key and row for
+  row, to the 96 objects the module held before the change.

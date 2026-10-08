@@ -124,7 +124,7 @@ $73.2875 of tax, not the full $2,050 / $146.575.
 - Modeled Maine AGI is a proxy: not every §5122 modification is representable in the plan model.
 - Pre-2026 Maine inputs use the sole 2026 state pack as a parameter stand-in; those dollars are not certified historical Maine amounts.
 - Brackets are annually indexed (September restatement). The Maine basic and the §5124-C(2) phase-out starts are indexed under §5403(2) and §5403(4). The engine holds pack-year nominals transcribed from the published MRS schedule — $15,700 / $31,400 basic and $102,250 / $204,550 phase-out starts for 2026 — and does not auto-reconcile them with each year's statutory restatement. Range widths ($75,000 / $150,000) stay fixed per §5124-C(2). Only the borrowed federal age addition is inflation-scaled with assumed plan inflation, not a statutory COLA oracle.
-- Part-year residency remains month proration of income, deductions, and brackets — not certified statutory nonresident apportionment.
+- Part-year residency follows Schedule NR from 2026-10-08 (Part-year residents, below); nonresident apportionment is not modeled.
 
 ## Citations
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf — MRS 2026 rate schedules (basic $15,700/$31,400; age/blindness addition $2,050 unmarried / $1,650 married; brackets and surcharge).
@@ -145,3 +145,11 @@ Record: `me-1040me-roth-conversion-not-pension-income`. Classification: `settled
 The 2025 Form 1040ME instructions: a conversion of benefits from one account to another does not qualify for the pension income deduction, a traditional IRA converted to a Roth IRA being their example, because the taxpayer receives no retirement or IRA benefit at the conversion. The engine leaves the conversion part of every retirement row out of Maine's pension pool, an in-plan Roth rollover included. Until 2026-10-06 a $30,000 conversion by a 70-year-old was deducted in full.
 
 Authority: [2025 Form 1040ME instructions](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf), Schedule 1S, pension income deduction.
+
+## Part-year residents (2026-10-08)
+
+Method (b), credit form, Schedule NR 2025: the tax as a full-year resident less a credit of the tax times line 6, non-Maine AGI, over Maine AGI, which leaves the Maine share; the pension deduction is prorated by the share of the pension received while resident (me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Maine and six in Texas, owes $2,753.88 for the Maine months, the same as before. With a $40,000 Roth conversion on top, the slice is $5,742.49 when the conversion falls in the months resident and $3,190.27 when it falls in Texas's, where the months share of the year gave $4,466.38 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

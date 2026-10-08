@@ -32,10 +32,12 @@ import {
   LATEST_STATE_PACK_YEAR,
   conformStateStandardDeduction,
   stateParamsFor,
+  type StatePartYearRatio,
   type StateRetirementExclusion,
   type StateTaxBracket,
   type StateTaxParams,
 } from '../params/state/index.js'
+import { allocateSplitYear, federalAgiItems, residencySpans, undatedIncome } from './statePartYear.js'
 import { computeFederalTax, taxableSocialSecurity } from './federalTax.js'
 import {
   californiaMilitaryExclusions,
@@ -301,12 +303,18 @@ function virginiaAdjustedFederalAgi(
   input: TaxYearInput,
   facts: StateHouseholdTaxFacts | undefined,
   distributions: readonly StateRetirementDistributionFact[] | undefined,
+  override: FederalFactsForState | undefined,
 ): number {
   let agi: number
   let taxableSocialSecurity: number
   if (facts?.federalAgi !== undefined && facts.federallyIncludedSocialSecurity !== undefined) {
     agi = facts.federalAgi
     taxableSocialSecurity = facts.federallyIncludedSocialSecurity
+  } else if (override?.taxableSocialSecurity !== undefined) {
+    // A split-year slice: the whole year's figures, as Form 760PY computes
+    // the age deduction for the year before prorating it.
+    agi = override.agi
+    taxableSocialSecurity = override.taxableSocialSecurity
   } else {
     const federal = computeFederalTax(input)
     agi = federal.agi
@@ -445,12 +453,42 @@ export interface ComputeStateTaxOptions {
    * federal AGI or carry the federal senior deduction.
    */
   federalOverride?: FederalFactsForState
+  /**
+   * A resident-period slice of a split year (`StateTaxParams.partYear`), priced
+   * with the whole year's household facts:
+   * - `deduction` and `exemption` multiply the standard deduction and the
+   *   exemptions those facts give;
+   * - `undated` multiplies the HSA adjustment and the federal senior deduction
+   *   subtraction, which carry no date;
+   * - `capShare` prorates the retirement exclusions and Virginia's age
+   *   deduction. With `yearRows`, the retirement rules also run on the whole
+   *   year's rows, as a return that computes the allowance for the year and
+   *   prorates it does, and the slice takes the smaller exclusion: that one
+   *   times `capShare`, or what its own rows earn with the whole caps. Without
+   *   `yearRows` they run on the slice's own rows with the whole caps
+   *   (`capShare` 1), or, on the coarse path, with the caps times `capShare`;
+   * - `personRows` are the whole year's rows, from which a person's facts are
+   *   read (New Jersey's veteran and disabled exemptions);
+   * - `wholeYearGrossIncome` is New Jersey's gross income for the whole year,
+   *   which its pension exclusion tests.
+   */
+  partYearSlice?: {
+    deduction: number
+    exemption: number
+    undated: number
+    capShare: number
+    yearRows?: readonly StateRetirementDistributionFact[]
+    personRows?: readonly StateRetirementDistributionFact[]
+    wholeYearGrossIncome?: number
+  }
 }
 
 /** Federal figures some state provisions read: AGI and the IRC 151(d)(5)(C) senior deduction. */
 interface FederalFactsForState {
   agi: number
   seniorDeduction: number
+  /** The year's federally taxable Social Security, for a split-year slice (Virginia's adjusted federal AGI). */
+  taxableSocialSecurity?: number
 }
 
 /**
@@ -482,6 +520,14 @@ interface TaxableIncomeComputation {
   warnings: StateTaxExactnessWarning[]
   /** Ordinary taxable income before LTCG stacking (Montana). */
   ordinaryTaxableIncomeBeforeLtcg?: number
+  /**
+   * The state's income after its modifications and retirement exclusions,
+   * before exemptions and the standard deduction: the base of a part-year
+   * income ratio on `stateIncome`.
+   */
+  stateIncome?: number
+  /** New Jersey gross income (NJ-1040 line 27), which its pension exclusion tests. */
+  newJerseyGrossIncome?: number
 }
 
 export interface StateTaxDetail {
@@ -504,6 +550,11 @@ export interface StateTaxComputationResult {
   hsaBasisPools?: readonly StateHsaBasisPoolResult[]
   njIraBasisPools?: readonly StateNjIraBasisPoolResult[]
   pensionBasisPools?: readonly StatePensionBasisPoolResult[]
+  /**
+   * A year split between states: how each state's slice was priced, and the
+   * year's income that carried no date and so was spread by months.
+   */
+  partYear?: { slices: readonly StatePartYearSlice[]; undatedIncomeSpreadByMonths: number }
 }
 
 export interface StatePensionBasisPoolResult {
@@ -1158,12 +1209,14 @@ function characterizedRetirementDelta(
   return { taxableIncomeDelta, taxCredit, warnings }
 }
 
+/** Add a leaf's adjustment, times `share` (a split-year slice's proration; 1 otherwise). */
 function accumulateLeaf(
   into: { taxableIncomeDelta: number; taxCredit: number; warnings: StateTaxExactnessWarning[] },
   part: StateLeafAdjustment,
+  share = 1,
 ): void {
-  into.taxableIncomeDelta += part.taxableIncomeDelta
-  into.taxCredit += part.taxCredit
+  into.taxableIncomeDelta += part.taxableIncomeDelta * share
+  into.taxCredit += part.taxCredit * share
   into.warnings.push(...part.warnings)
 }
 
@@ -1212,6 +1265,7 @@ export function computeStateTaxableIncomeResult(
 
   const acc = { taxableIncomeDelta: 0, taxCredit: 0, warnings: [] as StateTaxExactnessWarning[] }
   const federal = federalFactsFor(input, opts)
+  const slice = opts.partYearSlice
   const joint = taxStatus === 'marriedFilingJointly'
   if (params.rhodeIslandSocialSecurityModification && includedSocialSecurity > 0) {
     accumulateLeaf(acc, rhodeIslandSocialSecurityModification({
@@ -1224,7 +1278,7 @@ export function computeStateTaxableIncomeResult(
     }))
   }
   if (params.federalSeniorDeduction === 'subtracted' && input.peopleAged65Plus > 0) {
-    accumulateLeaf(acc, federalSeniorDeductionSubtraction({ federalSeniorDeduction: federal().seniorDeduction }))
+    accumulateLeaf(acc, federalSeniorDeductionSubtraction({ federalSeniorDeduction: federal().seniorDeduction }), slice?.undated)
   }
   if (params.code === 'WV' && input.year < (params.westVirginiaSocialSecurity?.fullExclusionFrom ?? 2026)) {
     const facts = opts.householdFacts
@@ -1241,38 +1295,50 @@ export function computeStateTaxableIncomeResult(
   const publicPension = input.publicPensionIncome ?? 0
   const agesAlive = input.agesAlive ?? []
   const distributions = resolvedDistributions(opts)
+  const yearRows = slice?.yearRows
   if (distributions !== undefined) {
-    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint, married: input.filingStatus === 'marriedFilingJointly', year: input.year })
-    accumulateLeaf(acc, {
-      taxableIncomeDelta: characterized.taxableIncomeDelta,
-      taxCredit: characterized.taxCredit,
-      warnings: characterized.warnings,
-    })
+    const context = { federal, joint, married: input.filingStatus === 'marriedFilingJointly', year: input.year }
+    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, context)
+    let taxableIncomeDelta = characterized.taxableIncomeDelta
+    let warnings = characterized.warnings
+    if (yearRows) {
+      // A slice whose return prorates the exclusion: the exclusion the whole
+      // year's rows earn, times the share, but never more than the slice's own
+      // receipts earn with the whole caps (ComputeStateTaxOptions.partYearSlice).
+      const year = characterizedRetirementDelta(params, yearRows, agesAlive, opts, context)
+      taxableIncomeDelta = Math.max(taxableIncomeDelta, year.taxableIncomeDelta * slice.capShare)
+      warnings = year.warnings
+    }
+    accumulateLeaf(acc, { taxableIncomeDelta, taxCredit: characterized.taxCredit, warnings })
   } else if (params.code === 'RI' && params.rhodeIslandSocialSecurityModification && !rhodeIslandPensionModificationAllowed({
     config: params.rhodeIslandSocialSecurityModification,
     joint,
     federalAgi: federal().agi,
   })) {
     // Rhode Island 44-30-12(c)(9): no pension modification at or above the limit.
-  } else if (params.retirementRuleShared) {
-    taxable -= retirementExclusion(params.retirementPrivate, privateRetirement + publicPension, agesAlive)
   } else {
-    taxable -= retirementExclusion(params.retirementPrivate, privateRetirement, agesAlive)
-    taxable -= retirementExclusion(params.retirementPublic, publicPension, agesAlive)
+    // The coarse path: a slice's caps times its share.
+    const privateRule = slice ? scaleExclusion(params.retirementPrivate, slice.capShare) : params.retirementPrivate
+    if (params.retirementRuleShared) {
+      taxable -= retirementExclusion(privateRule, privateRetirement + publicPension, agesAlive)
+    } else {
+      taxable -= retirementExclusion(privateRule, privateRetirement, agesAlive)
+      taxable -= retirementExclusion(slice ? scaleExclusion(params.retirementPublic, slice.capShare) : params.retirementPublic, publicPension, agesAlive)
+    }
   }
 
   // HSA: collection preferred; legacy singular accepted.
   if (params.hsaConformity === 'nonconformingCalifornia') {
     if (opts.hsaAccounts !== undefined) {
-      accumulateLeaf(acc, californiaHsaCollectionAdjustment(opts.hsaAccounts))
+      accumulateLeaf(acc, californiaHsaCollectionAdjustment(opts.hsaAccounts), slice?.undated)
     } else if (opts.hsaFacts) {
-      accumulateLeaf(acc, californiaHsaAdjustment(opts.hsaFacts))
+      accumulateLeaf(acc, californiaHsaAdjustment(opts.hsaFacts), slice?.undated)
     } else accumulateLeaf(acc, californiaHsaCollectionAdjustment(undefined))
   } else if (params.hsaConformity === 'newJerseyCategories') {
     if (opts.hsaAccounts !== undefined) {
-      accumulateLeaf(acc, newJerseyHsaCollectionAdjustment(opts.hsaAccounts))
+      accumulateLeaf(acc, newJerseyHsaCollectionAdjustment(opts.hsaAccounts), slice?.undated)
     } else if (opts.hsaFacts) {
-      accumulateLeaf(acc, newJerseyHsaAdjustment(opts.hsaFacts))
+      accumulateLeaf(acc, newJerseyHsaAdjustment(opts.hsaFacts), slice?.undated)
     } else accumulateLeaf(acc, newJerseyHsaCollectionAdjustment(undefined))
   }
 
@@ -1324,13 +1390,18 @@ export function computeStateTaxableIncomeResult(
   // New Jersey 54A:6-10(b): the pension exclusion tests New Jersey gross
   // income (NJ-1040 line 27), read here as the base after every adjustment
   // above, so it comes after them.
+  let newJerseyGrossIncome: number | undefined
   if (params.newJerseyPensionExclusion) {
+    newJerseyGrossIncome = taxable + acc.taxableIncomeDelta
     const payments = newJerseyPensionPayments(params.newJerseyPensionExclusion.minAge, input, distributions)
     acc.warnings.push(...payments.warnings)
+    const njConfig = params.newJerseyPensionExclusion
     accumulateLeaf(acc, newJerseyPensionExclusion({
-      config: params.newJerseyPensionExclusion,
+      config: slice ? { ...njConfig, maximum: { unmarried: njConfig.maximum.unmarried * slice.capShare, marriedFilingJointly: njConfig.maximum.marriedFilingJointly * slice.capShare } } : njConfig,
       married: input.filingStatus === 'marriedFilingJointly',
-      grossIncome: taxable + acc.taxableIncomeDelta,
+      // A part-year resident's line 28a tests the whole year's income (2025
+      // NJ-1040 instructions); the slice's maximum is the months share.
+      grossIncome: slice?.wholeYearGrossIncome ?? newJerseyGrossIncome,
       payments: payments.payments,
       qualifyingPayments: payments.qualifyingPayments,
     }))
@@ -1378,6 +1449,7 @@ export function computeStateTaxableIncomeResult(
           age65EligibleCount: opts.householdFacts.age65EligibleCount,
           config: ilExemption,
         }),
+        slice?.exemption,
       )
     }
   } else if (params.code === 'IL') {
@@ -1410,7 +1482,7 @@ export function computeStateTaxableIncomeResult(
       config: params.virginiaPersonalExemptions,
       exemptionCount: opts.householdFacts?.exemptionTaxpayerCount ?? (joint ? 2 : 1),
       agedTaxpayerCount: virginiaAgedTaxpayerCount(input, opts.householdFacts),
-    }))
+    }), slice?.exemption)
   }
 
   // Virginia 58.1-322.03(5): the age deduction comes off income of every
@@ -1426,9 +1498,9 @@ export function computeStateTaxableIncomeResult(
         fullAmountClaimants: claimants.fullAmount,
         incomeTestedClaimants: claimants.incomeTested,
         adjustedFederalAgi: claimants.incomeTested > 0
-          ? virginiaAdjustedFederalAgi(input, opts.householdFacts, distributions)
+          ? virginiaAdjustedFederalAgi(input, opts.householdFacts, yearRows ?? distributions, opts.federalOverride)
           : 0,
-      }))
+      }), slice?.capShare)
     }
   }
 
@@ -1462,9 +1534,12 @@ export function computeStateTaxableIncomeResult(
   }
 
   let rawTotal = params.standardDeduction[taxStatus]
+  // Massachusetts's and New Jersey's exemptions, which come off with the
+  // deduction but prorate as exemptions in a split year.
+  let exemptionTotal = 0
   const age65EligibleCount = derivedAge65EligibleCount(opts.householdFacts, input.year)
   if (params.code === 'MA' && opts.householdFacts?.stateFilingStatus && age65EligibleCount !== undefined) {
-    rawTotal += massachusettsPersonalExemption({ filingStatus: opts.householdFacts.stateFilingStatus, age65EligibleCount, config: params.massachusettsRates })
+    exemptionTotal += massachusettsPersonalExemption({ filingStatus: opts.householdFacts.stateFilingStatus, age65EligibleCount, config: params.massachusettsRates })
   } else if (params.code === 'MA') {
     acc.warnings.push({ code: 'ma-personal-exemption-incomplete', ruleId: 'ma-personal-age-exemptions', message: 'Massachusetts personal and age exemptions require filing status and age-65 count.', missingFacts: ['stateFilingStatus', 'age65EligibleCount'] })
   }
@@ -1538,17 +1613,19 @@ export function computeStateTaxableIncomeResult(
     const blindOrDisabled = new Set<string>()
     for (const row of opts.householdFacts?.taxpayerEligibility ?? []) if (row.blind) blindOrDisabled.add(row.personId)
     const veterans = new Set<string>()
-    for (const row of distributions ?? []) {
+    // Who is a veteran or disabled is a fact of the person, not of the
+    // slice: a split year reads it from the year's rows.
+    for (const row of slice?.personRows ?? distributions ?? []) {
       if (row.recipientDisabled) blindOrDisabled.add(row.ownerPersonId)
       if (row.sourceKind === 'militaryRetirement' && row.cause !== 'death') veterans.add(row.ownerPersonId)
     }
-    rawTotal += nj.taxpayer * (input.filingStatus === 'marriedFilingJointly' ? 2 : 1) +
+    exemptionTotal += nj.taxpayer * (input.filingStatus === 'marriedFilingJointly' ? 2 : 1) +
       nj.age65 * (age65EligibleCount ?? Math.max(0, input.peopleAged65Plus)) +
       nj.blindOrDisabled * blindOrDisabled.size + nj.veteran * veterans.size
   }
   const phaseout = params.standardDeductionPhaseout
   const allowed =
-    params.code === 'WI' && params.wisconsinStandardDeduction
+    (params.code === 'WI' && params.wisconsinStandardDeduction
       ? rawTotal
       : phaseout
         ? phaseOutStandardDeduction(
@@ -1557,7 +1634,8 @@ export function computeStateTaxableIncomeResult(
             phaseout.startsAt[taxStatus],
             phaseout.range[taxStatus],
           )
-        : rawTotal
+        : rawTotal) * (slice?.deduction ?? 1) +
+    exemptionTotal * (slice?.exemption ?? 1)
 
   const taxableIncome = Math.max(0, taxable - allowed)
   return {
@@ -1565,6 +1643,8 @@ export function computeStateTaxableIncomeResult(
     taxCredit: acc.taxCredit,
     warnings: acc.warnings,
     ordinaryTaxableIncomeBeforeLtcg: taxableIncome,
+    stateIncome: preExemptionReliefBound,
+    newJerseyGrossIncome,
   }
 }
 
@@ -1595,6 +1675,61 @@ export function computeStateTaxDetailResult(
   input: TaxYearInput,
   opts: ComputeStateTaxOptions = {},
 ): StateTaxComputationResult {
+  return priceState(params, input, opts).result
+}
+
+/**
+ * Oregon's retirement income credit (ORS 316.157) on the qualifying pension
+ * among `opts`' rows, at most `precreditTax`. An Oregon year whose figures no
+ * longer carry the credit (it cannot be claimed for tax years from 2032)
+ * prices no credit and asks for no facts.
+ */
+function oregonRetirementCredit(
+  params: StateTaxParams,
+  opts: ComputeStateTaxOptions,
+  precreditTax: number,
+): { taxCredit: number; warnings: StateTaxExactnessWarning[] } {
+  const warnings: StateTaxExactnessWarning[] = []
+  if (!params.oregonRetirementIncomeCredit) return { taxCredit: 0, warnings }
+  const facts = opts.householdFacts
+  const distributions = resolvedDistributions(opts)
+  const tier1 = facts?.recipientSocialSecurity !== undefined
+    ? facts.recipientSocialSecurity.reduce((sum, row) => sum + Math.max(0, row.grossRailroadTier1), 0)
+    : facts?.householdGrossRailroadBenefits === 0 ? 0 : undefined
+  if (distributions !== undefined && oregonRetirementCreditProvedZero(distributions)) {
+    // A complete zero qualifying-pension ledger proves a zero credit without
+    // Oregon household worksheet income.
+    return { taxCredit: 0, warnings }
+  }
+  if (!facts?.stateFilingStatus || facts.oregonHouseholdIncome === undefined || facts.householdGrossSocialSecurity === undefined || tier1 === undefined || distributions === undefined) {
+    warnings.push({ code: 'or-retirement-credit-incomplete', ruleId: 'or-316-157-retirement-income-credit', message: 'Oregon retirement credit requires characterized pension recipients, household income, and TitleII/TierI benefit offsets.', missingFacts: ['retirementDistributions', 'oregonHouseholdIncome', 'householdGrossSocialSecurity', 'recipientSocialSecurity.grossRailroadTier1', 'stateFilingStatus'] })
+    return { taxCredit: 0, warnings }
+  }
+  const eligible = distributions.filter((row) => {
+    const pension = ['ordinaryPrivatePension', 'employerPlan', 'ira', 'federalCivilService', 'stateLocalPublic', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor'].includes(row.sourceKind)
+    if (!pension) {
+      if (row.sourceKind === 'unknownPublic' || row.sourceKind === 'unknownPrivate') warnings.push({ code: 'or-pension-source-unknown', message: 'Oregon credit requires a characterized qualifying pension source.', missingFacts: ['sourceKind'] })
+      return false
+    }
+    if (row.recipientAgeKnown === false) {
+      warnings.push({ code: 'or-pension-recipient-age-unknown', message: 'Oregon credit requires the pension recipient to be62orolder; another household member age does not qualify the pension.', missingFacts: ['recipientAgeYears'] })
+      return false
+    }
+    return row.recipientAgeYears >= 62
+  })
+  const qualifyingPension = eligible.reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+  const credit = oregonRetirementIncomeCredit({ recipientAgeYears: eligible.length ? 62 : 0, qualifyingPension, householdSocialSecurityAndTier1: facts.householdGrossSocialSecurity + tier1, householdIncome: facts.oregonHouseholdIncome, joint: facts.stateFilingStatus === 'marriedFilingJointly' || facts.stateFilingStatus === 'qualifyingSurvivingSpouse', precreditOregonTax: precreditTax, config: params.oregonRetirementIncomeCredit })
+  warnings.push(...credit.warnings)
+  return { taxCredit: credit.taxCredit, warnings }
+}
+
+/** The state result and the income computation behind it (the split-year path reads both). */
+function priceState(
+  params: StateTaxParams,
+  input: TaxYearInput,
+  opts: ComputeStateTaxOptions,
+  deferred?: { oregonRetirementCredit?: boolean },
+): { result: StateTaxComputationResult; income: TaxableIncomeComputation } {
   const income = computeStateTaxableIncomeResult(params, input, opts)
   const warnings: StateTaxExactnessWarning[] = [...income.warnings]
   let taxCredit = income.taxCredit
@@ -1692,37 +1827,12 @@ export function computeStateTaxDetailResult(
       warnings.push(...alt.warnings)
     }
 
-    // An Oregon year whose figures no longer carry the credit (it cannot be
-    // claimed for tax years from 2032) prices no credit and asks for no facts.
-    if (params.code === 'OR' && params.oregonRetirementIncomeCredit) {
-      const facts = opts.householdFacts
-      const distributions = resolvedDistributions(opts)
-      const tier1 = facts?.recipientSocialSecurity !== undefined
-        ? facts.recipientSocialSecurity.reduce((sum, row) => sum + Math.max(0, row.grossRailroadTier1), 0)
-        : facts?.householdGrossRailroadBenefits === 0 ? 0 : undefined
-      if (distributions !== undefined && oregonRetirementCreditProvedZero(distributions)) {
-        // A complete zero qualifying-pension ledger proves a zero credit without
-        // Oregon household worksheet income.
-      } else if (!facts?.stateFilingStatus || facts.oregonHouseholdIncome === undefined || facts.householdGrossSocialSecurity === undefined || tier1 === undefined || distributions === undefined) {
-        warnings.push({ code: 'or-retirement-credit-incomplete', ruleId: 'or-316-157-retirement-income-credit', message: 'Oregon retirement credit requires characterized pension recipients, household income, and TitleII/TierI benefit offsets.', missingFacts: ['retirementDistributions', 'oregonHouseholdIncome', 'householdGrossSocialSecurity', 'recipientSocialSecurity.grossRailroadTier1', 'stateFilingStatus'] })
-      } else {
-        const eligible = distributions.filter((row) => {
-          const pension = ['ordinaryPrivatePension', 'employerPlan', 'ira', 'federalCivilService', 'stateLocalPublic', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor'].includes(row.sourceKind)
-          if (!pension) {
-            if (row.sourceKind === 'unknownPublic' || row.sourceKind === 'unknownPrivate') warnings.push({ code: 'or-pension-source-unknown', message: 'Oregon credit requires a characterized qualifying pension source.', missingFacts: ['sourceKind'] })
-            return false
-          }
-          if (row.recipientAgeKnown === false) {
-            warnings.push({ code: 'or-pension-recipient-age-unknown', message: 'Oregon credit requires the pension recipient to be62orolder; another household member age does not qualify the pension.', missingFacts: ['recipientAgeYears'] })
-            return false
-          }
-          return row.recipientAgeYears >= 62
-        })
-        const qualifyingPension = eligible.reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
-        const credit = oregonRetirementIncomeCredit({ recipientAgeYears: eligible.length ? 62 : 0, qualifyingPension, householdSocialSecurityAndTier1: facts.householdGrossSocialSecurity + tier1, householdIncome: facts.oregonHouseholdIncome, joint: facts.stateFilingStatus === 'marriedFilingJointly' || facts.stateFilingStatus === 'qualifyingSurvivingSpouse', precreditOregonTax: stateTax, config: params.oregonRetirementIncomeCredit })
-        taxCredit += credit.taxCredit
-        warnings.push(...credit.warnings)
-      }
+    // A part-year Oregon slice takes this credit after the Oregon percentage
+    // (computeSplitYearResult), so its full-year pricing leaves it out.
+    if (params.code === 'OR' && !deferred?.oregonRetirementCredit) {
+      const credit = oregonRetirementCredit(params, opts, stateTax)
+      taxCredit += credit.taxCredit
+      warnings.push(...credit.warnings)
     }
 
     // Utah nonrefundable credits after precredit tax.
@@ -1825,17 +1935,20 @@ export function computeStateTaxDetailResult(
   }
   const status = warnings.length > 0 ? 'incomplete' : 'complete'
   return {
-    amount: totalTax,
-    taxableIncome,
-    stateTax: stateTaxAfterCredit,
-    localTax,
-    totalTax,
-    taxCredit,
-    status,
-    warnings,
-    hsaBasisPools: hsaPools,
-    njIraBasisPools: njPools,
-    pensionBasisPools: pensionPools,
+    result: {
+      amount: totalTax,
+      taxableIncome,
+      stateTax: stateTaxAfterCredit,
+      localTax,
+      totalTax,
+      taxCredit,
+      status,
+      warnings,
+      hsaBasisPools: hsaPools,
+      njIraBasisPools: njPools,
+      pensionBasisPools: pensionPools,
+    },
+    income,
   }
 }
 
@@ -1852,143 +1965,43 @@ function scaleExclusion(rule: StateRetirementExclusion, scale: number): StateRet
 }
 
 /**
- * Wisconsin's sliding standard deduction for a slice priced on `scale` of the
- * year's income: the deduction of the whole year's income, times `deduction`.
- * The income points scale with the slice so the phase-down reads the year's
- * income; the maximum and the rate per slice dollar carry the ratio.
+ * The months share of a full-year resident's tax, for a state whose parameters
+ * carry no part-year method (`StateTaxParams.partYear`): the standard
+ * deduction, the retirement caps and every bracket edge times the months,
+ * priced on the year's income times the months, without household facts. Every state with
+ * an income tax carries a method, so this is the fallback for a state added
+ * without one. A sliding deduction such as Wisconsin's would phase on the
+ * slice's income here, which is one reason Wisconsin carries its method.
  */
-function wisconsinSlice<T extends { maximum: number; fullThrough: number; phaseStart: number; phaseRate: number; zeroAt: number }>(
-  row: T,
-  deduction: number,
-  scale: number,
-): T {
-  return {
-    ...row,
-    maximum: row.maximum * deduction,
-    phaseRate: row.phaseRate * deduction / scale,
-    fullThrough: row.fullThrough * scale,
-    phaseStart: row.phaseStart * scale,
-    zeroAt: row.zeroAt * scale,
-  }
-}
-
 function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
   const age65 = params.standardDeductionAge65Addition
-  // The state's part-year method (StateTaxParams.partYear): a deduction or
-  // exemption its return allows whole keeps 1, every other one the months.
-  const deduction = params.partYear?.standardDeduction === 'full' ? 1 : scale
-  const exemption = params.partYear?.exemptions === 'full' ? 1 : scale
-  const wi = params.wisconsinStandardDeduction
+  const scaledBrackets = (rows: StateTaxBracket[]) => rows.map((b) => ({
+    ...b,
+    lowerBound: b.lowerBound * scale,
+    ...(b.baseTax === undefined ? {} : { baseTax: b.baseTax * scale }),
+  }))
   return {
     ...params,
     standardDeduction: {
-      single: params.standardDeduction.single * deduction,
-      marriedFilingJointly: params.standardDeduction.marriedFilingJointly * deduction,
+      single: params.standardDeduction.single * scale,
+      marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
     },
     // The per-person age-65 addition is part of the same deduction and prorates
-    // with it: a 65+ filer resident for five months takes five twelfths of it
-    // against five twelfths of the year's income, not the whole year's.
+    // with it.
     ...(age65 === undefined
       ? {}
       : {
           standardDeductionAge65Addition: {
-            single: age65.single * deduction,
-            marriedFilingJointly: age65.marriedFilingJointly * deduction,
+            single: age65.single * scale,
+            marriedFilingJointly: age65.marriedFilingJointly * scale,
           },
         }),
-    // Form 1NPR looks Wisconsin's sliding deduction up on the year's federal
-    // income and prorates the tax (line 32), so the slice takes the months
-    // share of the whole year's deduction. Until 2026-10-07 the slice phased
-    // the whole schedule on its own income and kept it unprorated.
-    ...(wi === undefined
-      ? {}
-      : {
-          wisconsinStandardDeduction: {
-            single: wisconsinSlice(wi.single, deduction, scale),
-            marriedFilingJointly: wisconsinSlice(wi.marriedFilingJointly, deduction, scale),
-            marriedFilingSeparately: wisconsinSlice(wi.marriedFilingSeparately, deduction, scale),
-            headOfHousehold: {
-              ...wisconsinSlice(wi.headOfHousehold, deduction, scale),
-              secondSegmentStart: wi.headOfHousehold.secondSegmentStart * scale,
-            },
-            exemptionPerPerson: wi.exemptionPerPerson * exemption,
-            age65Addition: wi.age65Addition * exemption,
-          },
-        }),
-    // Scaling the brackets with the months taxes the year's income as a
-    // resident and keeps the resident share. A state whose part-year return
-    // taxes the resident-period income on its ordinary rate schedule keeps its
-    // brackets and any zero band (`rateSchedule: 'unscaled'`).
-    brackets: params.partYear?.rateSchedule === 'unscaled' ? params.brackets : {
-      single: params.brackets.single.map((b) => ({
-        ...b,
-        lowerBound: b.lowerBound * scale,
-        ...(b.baseTax === undefined ? {} : { baseTax: b.baseTax * scale }),
-      })),
-      marriedFilingJointly: params.brackets.marriedFilingJointly.map((b) => ({
-        ...b,
-        lowerBound: b.lowerBound * scale,
-        ...(b.baseTax === undefined ? {} : { baseTax: b.baseTax * scale }),
-      })),
+    brackets: {
+      single: scaledBrackets(params.brackets.single),
+      marriedFilingJointly: scaledBrackets(params.brackets.marriedFilingJointly),
     },
     retirementPrivate: scaleExclusion(params.retirementPrivate, scale),
     retirementPublic: scaleExclusion(params.retirementPublic, scale),
-    // Form 760PY multiplies the full-year age deduction by the residency
-    // ratio. Scaling the amount and both thresholds with the prorated income
-    // the slice prices does the same: the slice's adjusted federal AGI, which
-    // excludes Social Security, is the year's figure times the same scale.
-    ...(params.virginiaAgeDeduction === undefined
-      ? {}
-      : {
-          virginiaAgeDeduction: {
-            ...params.virginiaAgeDeduction,
-            amount: params.virginiaAgeDeduction.amount * scale,
-            singleAfagiThreshold: params.virginiaAgeDeduction.singleAfagiThreshold * scale,
-            marriedAfagiThreshold: params.virginiaAgeDeduction.marriedAfagiThreshold * scale,
-          },
-        }),
-    // NJ-1040 line 28a for a part-year resident: the income test is on the
-    // whole year's income and the dollar maximum is prorated by the months
-    // resident. Scaling the income bounds with the slice's prorated income
-    // tests the whole year; scaling the maximum prorates it; a tier's percent
-    // of the slice's payments needs no change.
-    ...(params.newJerseyPensionExclusion === undefined
-      ? {}
-      : {
-          newJerseyPensionExclusion: {
-            ...params.newJerseyPensionExclusion,
-            grossIncomeLimit: params.newJerseyPensionExclusion.grossIncomeLimit * scale,
-            fullThrough: params.newJerseyPensionExclusion.fullThrough * scale,
-            maximum: {
-              unmarried: params.newJerseyPensionExclusion.maximum.unmarried * scale,
-              marriedFilingJointly: params.newJerseyPensionExclusion.maximum.marriedFilingJointly * scale,
-            },
-            tiers: params.newJerseyPensionExclusion.tiers.map((tier) => ({ ...tier, grossIncomeAbove: tier.grossIncomeAbove * scale })),
-          },
-        }),
-    // New Jersey 54A:3-1(c) limits the exemptions to the months resident.
-    ...(params.newJerseyPersonalExemptions === undefined
-      ? {}
-      : {
-          newJerseyPersonalExemptions: {
-            taxpayer: params.newJerseyPersonalExemptions.taxpayer * exemption,
-            age65: params.newJerseyPersonalExemptions.age65 * exemption,
-            blindOrDisabled: params.newJerseyPersonalExemptions.blindOrDisabled * exemption,
-            veteran: params.newJerseyPersonalExemptions.veteran * exemption,
-          },
-        }),
-    // Form 760PY's Prorated Exemption Worksheet reduces the personal
-    // exemptions in proportion to the time resident; the $800 for a taxpayer
-    // 65 or older is an additional personal exemption under 58.1-322.03(2)(b),
-    // so it is prorated with them.
-    ...(params.virginiaPersonalExemptions === undefined
-      ? {}
-      : {
-          virginiaPersonalExemptions: {
-            perExemption: params.virginiaPersonalExemptions.perExemption * exemption,
-            perAgedTaxpayer: params.virginiaPersonalExemptions.perAgedTaxpayer * exemption,
-          },
-        }),
   }
 }
 
@@ -2034,10 +2047,46 @@ export interface StateTaxYearOptions extends StateTaxOptions, ComputeStateTaxOpt
 }
 
 /**
+ * The state's parameters for the year as the annual path prices them. Resolve
+ * borrowed federal deduction components before pricing. Whole-federal packs
+ * carry a federal basic that must move with IRC 63(c)(7)(B)(ii) projection,
+ * plus the 63(c)(3) age-65 addition that 63(c)(1) includes in "the standard
+ * deduction." Maine keeps its own published basic and adopts only the age
+ * addition through the independent policy. Everything else in the pack —
+ * brackets included — stays nominal. A deduction the state's own statute
+ * indexes (Washington's from 2029, the District's for 2027 to 2029) is
+ * projected on that schedule at the plan's inflation (decision
+ * D-2027-ROLLOVER, review V1).
+ */
+function resolvedStateParams(
+  code: string,
+  input: TaxYearInput,
+  mapParams: ((params: StateTaxParams) => StateTaxParams) | undefined,
+): StateTaxParams | undefined {
+  const published = stateParamsFor(code, input.year)
+  if (!published) return undefined
+  const { pack } = packForYear(input.year)
+  const params = statutorilyIndexedStandardDeduction(
+    conformStateStandardDeduction(
+      published,
+      pack.federalTax.age65Addition,
+      input.inflationScale ?? 1,
+      pack.federalTax.standardDeduction,
+    ),
+    {
+      year: input.year,
+      packYear: LATEST_STATE_PACK_YEAR,
+      inflationScale: input.stateIndexingScale ?? input.inflationScale ?? 1,
+    },
+  )
+  return mapParams ? mapParams(params) : params
+}
+
+/**
  * Full state+local tax for one TaxYearInput — the single computation behind
  * `createStateTaxCalculator`, exported so callers can re-price a recorded
  * ledger year (relocation-compare drivers) through the identical path,
- * including the flat override and split-year residency proration.
+ * including the flat override and split-year residency.
  */
 export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYearOptions = {}): number {
   if (
@@ -2056,39 +2105,6 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
   }
   const overrideRate = Math.max(0, opts.overridePct ?? 0) / 100
   const localRatePct = Math.max(0, opts.localPct ?? 0)
-  const localRate = localRatePct / 100
-  const resolveParams = (code: string): StateTaxParams | undefined => {
-    const published = stateParamsFor(code, input.year)
-    if (!published) return undefined
-    // Resolve borrowed federal deduction components before pricing. Whole-
-    // federal packs carry a federal basic that must move with IRC
-    // 63(c)(7)(B)(ii) projection, plus the 63(c)(3) age-65 addition that
-    // 63(c)(1) includes in "the standard deduction." Maine keeps its own
-    // published basic and adopts only the age addition through the independent
-    // policy. Everything else in the pack — brackets included — stays nominal.
-    //
-    // Resolving here rather than later is deliberate: the params returned from
-    // this point on already hold any attached age addition, so the split-year
-    // path below hands `prorateParams` a resolved pair and residency scales
-    // basic and addition together instead of only the basic half.
-    // A deduction the state's own statute indexes (Washington's from 2029, the
-    // District's for 2027 to 2029) is projected on that schedule at the plan's inflation.
-    const { pack } = packForYear(input.year)
-    const params = statutorilyIndexedStandardDeduction(
-      conformStateStandardDeduction(
-        published,
-        pack.federalTax.age65Addition,
-        input.inflationScale ?? 1,
-        pack.federalTax.standardDeduction,
-      ),
-      {
-        year: input.year,
-        packYear: LATEST_STATE_PACK_YEAR,
-        inflationScale: input.stateIndexingScale ?? input.inflationScale ?? 1,
-      },
-    )
-    return opts.mapParams ? opts.mapParams(params) : params
-  }
   if (overrideRate > 0) {
     // The flat effective rate approximates a state return, so it still
     // honors the universal U.S.-government-interest exemption.
@@ -2096,66 +2112,275 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
       Math.max(0, Math.max(0, input.ordinaryIncome) - Math.max(0, input.usGovernmentInterest ?? 0)) +
       Math.max(0, input.capitalGains) +
       Math.max(0, input.qualifiedDividends ?? 0)
-    return base * (overrideRate + localRate)
+    return base * (overrideRate + localRatePct / 100)
   }
-  if (input.stateResidency && input.stateResidency.length > 0) {
-    // Taxable SS is a full-year federal computation: derive it once from
-    // annual income and thresholds, then apportion it to each state by
-    // months of residency (recomputing per slice would understate it).
-    let annualTaxableSs = 0
-    if (input.ssBenefits > 0) {
-      const { pack } = packForYear(input.year)
-      annualTaxableSs = taxableSocialSecurity(
-        pack,
-        taxParameterFilingStatus(input.filingStatus),
+  if (input.stateResidency?.length) return computeStateTaxYearResult(input, opts).totalTax
+  if (!input.state) return 0
+  const params = resolvedStateParams(input.state, input, opts.mapParams)
+  return params ? computeStateTaxDetail(params, input, { localRatePct }).totalTax : 0
+}
+
+/** One state's slice of a year split between states (`StateTaxComputationResult.partYear`). */
+export interface StatePartYearSlice {
+  state: string
+  months: number
+  /**
+   * `residentPeriod`, method (a): the slice's own income on the ordinary
+   * schedule. `incomePercentage`, method (b): the full-year tax as if resident
+   * times `incomeRatio`. `monthsShare`: the state's parameters carry no method,
+   * so the months share of a full-year resident's tax. `noIncomeTax`: none to price.
+   */
+  method: 'residentPeriod' | 'incomePercentage' | 'monthsShare' | 'noIncomeTax'
+  incomeRatio?: number
+  totalTax: number
+}
+
+const BASIS_INCOMPLETE = 'state-basis-transition-incomplete'
+
+/**
+ * A year split between states (`TaxYearInput.stateResidency`): each state's
+ * slice by the method its parameters carry (`StateTaxParams.partYear`), on
+ * the income tax/statePartYear.ts allocates to it, with the whole year's
+ * household facts. The state basis pools are committed once for the year,
+ * after the slices: each MA, VA or UT pool from the rows its slice received,
+ * New Jersey's annual IRA pools when New Jersey is one of the states, and the
+ * HSA pools of the year's residence state, whose evidence the projection
+ * supplies.
+ */
+function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, localRatePct: number): StateTaxComputationResult {
+  const spans = residencySpans(input.stateResidency ?? [])
+  const taxStatus = taxParameterFilingStatus(input.filingStatus)
+  // Taxable Social Security and federal AGI are full-year federal figures:
+  // derived once, then apportioned (recomputing per slice would understate
+  // them against annual thresholds).
+  const annualTaxableSs = input.ssBenefits > 0
+    ? taxableSocialSecurity(
+        packForYear(input.year).pack,
+        taxStatus,
         Math.max(0, input.ordinaryIncome) + Math.max(0, input.qualifiedDividends ?? 0) + input.capitalGains,
         input.ssBenefits,
         input.taxExemptInterest,
         input.foreignExclusionAddback,
       )
+    : 0
+  let annualFederal: FederalFactsForState | undefined
+  const federal = (): FederalFactsForState => {
+    if (annualFederal === undefined) {
+      const computed = computeFederalTax(input)
+      annualFederal = { agi: computed.agi, seniorDeduction: computed.seniorDeduction, taxableSocialSecurity: annualTaxableSs }
     }
-    // Federal AGI and the senior deduction are full-year figures too: derive
-    // them once, only if a segment state reads them.
-    let annualFederal: FederalFactsForState | undefined
-    const annualFederalFacts = (): FederalFactsForState => {
-      if (annualFederal === undefined) {
-        const federal = computeFederalTax(input)
-        annualFederal = { agi: federal.agi, seniorDeduction: federal.seniorDeduction }
-      }
-      return annualFederal
+    return annualFederal
+  }
+  const yearRows = resolvedDistributions(opts)
+  const yearItems = federalAgiItems(input, annualTaxableSs)
+  const yearRetirement = yearRows === undefined
+    ? Math.max(0, input.privateRetirementIncome ?? input.retirementIncome ?? 0) + Math.max(0, input.publicPensionIncome ?? 0)
+    : yearRows.reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+  const warnings: StateTaxExactnessWarning[] = []
+  // The projection's segments cover the year once each. A host-built
+  // residency that leaves months out, runs past December or names a state
+  // twice is priced as given and marked incomplete: income in a month no
+  // segment covers, dated or spread by months, is taxed by no state.
+  const givenMonths = (input.stateResidency ?? []).reduce((total, segment) => total + Math.max(0, segment.months), 0)
+  if (givenMonths !== 12) {
+    warnings.push({
+      code: 'state-rich-split-year-adapter-required',
+      message: givenMonths < 12
+        ? `The year's residency covers ${givenMonths} of its 12 months; income dated in, or spread by months to, the months it leaves out is taxed by no state.`
+        : `The year's residency segments give ${givenMonths} months; the segments past December are cut to fit the year.`,
+      missingFacts: ['stateResidency'],
+    })
+  }
+  const slices: StatePartYearSlice[] = []
+  const pensionPools: StatePensionBasisPoolResult[] = []
+  let njPools: readonly StateNjIraBasisPoolResult[] | undefined
+  let hsaPools: readonly StateHsaBasisPoolResult[] | undefined
+  const pricedStates = new Set<string>()
+  const sum = { totalTax: 0, taxableIncome: 0, stateTax: 0, localTax: 0, taxCredit: 0 }
+  for (const span of spans) {
+    const params = resolvedStateParams(span.state, input, opts.mapParams)
+    if (!params) {
+      warnings.push({ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${span.state} tax year ${input.year}: its ${span.months} months are not priced.`, missingFacts: ['stateTaxPack'] })
+      continue
     }
-    return input.stateResidency.reduce((sum, segment) => {
-      const months = Math.min(12, Math.max(0, segment.months))
-      if (months <= 0) return sum
-      const params = resolveParams(segment.state)
-      if (!params) return sum
-      const scale = months / 12
-      const readsFederal =
-        params.rhodeIslandSocialSecurityModification !== undefined ||
-        params.marylandCapitalGainSurtax !== undefined ||
-        params.californiaMilitaryExclusions !== undefined ||
-        params.federalSeniorDeduction !== undefined
+    // A state named in two segments (a move away and back) is priced in each,
+    // but its basis pools are committed once, from the first.
+    const repeated = pricedStates.has(params.code)
+    pricedStates.add(params.code)
+    if (repeated) {
+      warnings.push({
+        code: 'state-rich-split-year-adapter-required',
+        message: `${params.code} appears in two of the year's residency segments: each is priced as its own part year, and its basis pools are committed from the first only.`,
+        missingFacts: ['stateResidency'],
+      })
+    }
+    const slice = allocateSplitYear(input, span, yearRows, opts.qcdEvents, opts.householdFacts, annualTaxableSs)
+    const method = params.partYear
+    let result: StateTaxComputationResult
+    let incomeRatio: number | undefined
+    if (!params.hasIncomeTax) {
+      result = { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'complete', warnings: [] }
+    } else if (method === undefined) {
       const segmentOpts: ComputeStateTaxOptions = {
-        taxableSocialSecurityOverride: annualTaxableSs * scale,
+        taxableSocialSecurityOverride: annualTaxableSs * slice.even,
         localRatePct,
-        ...(readsFederal
-          ? { federalOverride: { agi: annualFederalFacts().agi, seniorDeduction: annualFederalFacts().seniorDeduction * scale } }
-          : {}),
+        federalOverride: { agi: federal().agi, seniorDeduction: federal().seniorDeduction * slice.even },
       }
       if (params.standardDeductionPhaseout) {
-        const annualPreDeduction = computeStateTaxableIncome(params, input, {
+        segmentOpts.standardDeductionPhaseoutIncomeOverride = computeStateTaxableIncome(params, input, {
           taxableSocialSecurityOverride: annualTaxableSs,
           standardDeductionAllowedOverride: 0,
         })
-        segmentOpts.standardDeductionPhaseoutIncomeOverride = annualPreDeduction
       }
-      const detail = computeStateTaxDetail(prorateParams(params, scale), prorateInput(input, scale, segment.state), segmentOpts)
-      return sum + detail.totalTax
-    }, 0)
+      result = computeStateTaxDetailResult(prorateParams(params, slice.even), prorateInput(input, slice.even, span.state), segmentOpts)
+      warnings.push({
+        code: 'state-rich-split-year-adapter-required',
+        message: `${span.state} has no part-year method in its parameters: its slice is the months share of a full-year resident's tax, priced without the year's characterized rows and household facts.`,
+        missingFacts: ['partYearMethod'],
+      })
+    } else {
+      const yearPolicy = method.exclusionCap
+      const federalRatio = yearItems > 0 ? Math.min(1, Math.max(0, slice.federalAgiItems / yearItems)) : slice.even
+      // `full` and `viaTaxRatio` give the slice's own receipts the whole caps;
+      // the ratios prorate the exclusion the whole year's rows earn.
+      const capShare = yearPolicy === 'full' || yearPolicy === 'viaTaxRatio' ? 1
+        : yearPolicy === 'retirementShare' ? slice.retirementShare
+          : yearPolicy === 'incomeRatio' ? federalRatio
+            : slice.even
+      const fullInput: TaxYearInput = { ...input, state: span.state, stateResidency: undefined }
+      // OR-40-P line 45 multiplies the tax by the Oregon percentage; lines 50
+      // to 53 then subtract the standard credits of Schedule OR-ASC-NP, the
+      // retirement income credit (code 811) among them, on the Oregon-column
+      // pension (Publication OR-17). So the full-year tax leaves that credit
+      // out, and the slice takes it after the ratio on its own rows.
+      const oregonCreditAfterRatio = method.method === 'incomePercentage' && params.code === 'OR' && params.oregonRetirementIncomeCredit !== undefined
+      let asResident: ReturnType<typeof priceState> | undefined
+      const fullYear = () => (asResident ??= priceState(params, fullInput, { ...opts, localRatePct }, { oregonRetirementCredit: oregonCreditAfterRatio }))
+      const sliceOpts = (deduction: number, exemption: number, sliceCapShare = capShare): ComputeStateTaxOptions => ({
+        ...opts,
+        localRatePct,
+        retirementDistributions: slice.rows,
+        stateIncomeComponents: undefined,
+        // A part-year resident's QCD has no state adjustment here: the leaf
+        // marks it incomplete and applies none (stateQcdHsa.ts).
+        qcdEvents: slice.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
+        ...(opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }),
+        taxableSocialSecurityOverride: slice.taxableSocialSecurity,
+        federalOverride: federal(),
+        partYearSlice: {
+          deduction,
+          exemption,
+          undated: slice.even,
+          capShare: sliceCapShare,
+          ...(sliceCapShare !== 1 && yearRows !== undefined ? { yearRows } : {}),
+          ...(yearRows === undefined ? {} : { personRows: yearRows }),
+          ...(params.newJerseyPensionExclusion ? { wholeYearGrossIncome: fullYear().income.newJerseyGrossIncome } : {}),
+        },
+      })
+      const ratio = (): number => {
+        if (method.ratioBasis === 'federalAgi') return federalRatio
+        const denominator = method.ratioBasis === 'stateIncome' ? fullYear().income.stateIncome ?? 0 : yearItems
+        if (denominator <= 0) return slice.even
+        const numerator = computeStateTaxableIncomeResult(params, slice.input, sliceOpts(1, 1)).stateIncome ?? 0
+        return Math.min(1, Math.max(0, numerator / denominator))
+      }
+      if (method.method === 'incomePercentage') {
+        incomeRatio = ratio()
+        const full = fullYear().result
+        result = {
+          ...full,
+          amount: full.amount * incomeRatio,
+          taxableIncome: full.taxableIncome * incomeRatio,
+          stateTax: full.stateTax * incomeRatio,
+          localTax: full.localTax * incomeRatio,
+          totalTax: full.totalTax * incomeRatio,
+          taxCredit: full.taxCredit * incomeRatio,
+        }
+        if (oregonCreditAfterRatio) {
+          const credit = oregonRetirementCredit(params, sliceOpts(1, 1), result.stateTax)
+          result = {
+            ...result,
+            amount: result.amount - credit.taxCredit,
+            stateTax: result.stateTax - credit.taxCredit,
+            totalTax: result.totalTax - credit.taxCredit,
+            taxCredit: result.taxCredit + credit.taxCredit,
+            warnings: [...result.warnings, ...credit.warnings],
+          }
+        }
+      } else {
+        const share = (rule: StatePartYearRatio) => (rule === 'full' ? 1 : rule === 'months' ? slice.even : ratio())
+        result = priceState(params, slice.input, sliceOpts(share(method.standardDeduction), share(method.exemptions))).result
+      }
+      // A capped exclusion someone in the household is old enough for, whose
+      // part-year rule the state's return does not state (no `exclusionCap`):
+      // the slice is priced on the year's exclusion times the months. The year
+      // is incomplete only where the other reading, the whole cap on the
+      // slice's own receipts, would give the slice a different income; with
+      // income spread evenly, where the slice's qualifying retirement income
+      // exceeds the months' share of the cap. Federal-AGI ratios of method (b)
+      // do not read the slice's exclusion.
+      const capped = [params.retirementPrivate, params.retirementPublic].some((rule) =>
+        rule.kind === 'capped' && (input.agesAlive ?? [Infinity]).some((age) => age >= (rule.minAge ?? 0)))
+      if (yearPolicy === undefined && capped && yearRetirement > 0 &&
+        (method.method === 'residentPeriod' || method.ratioBasis !== 'federalAgi')) {
+        const income = (computation: TaxableIncomeComputation) => computation.stateIncome ?? computation.taxableIncome
+        const priced = income(computeStateTaxableIncomeResult(params, slice.input, sliceOpts(1, 1)))
+        const wholeCap = income(computeStateTaxableIncomeResult(params, slice.input, sliceOpts(1, 1, 1)))
+        if (Math.abs(priced - wholeCap) > 0.005) {
+          warnings.push({
+            code: 'state-rich-split-year-adapter-required',
+            message: `How ${span.state}'s part-year return applies its capped retirement exclusion is not established: the slice takes the year's exclusion times the months resident, and the whole cap on its own receipts would exclude a different amount.`,
+            missingFacts: ['partYearExclusionCap'],
+          })
+        }
+      }
+    }
+    // California and New Jersey price HSA income from the year's HSA facts,
+    // which are the year-end state's (the projection's residence state). A
+    // slice of either that is not that state would need its own.
+    const hsaFactsSupplied = opts.hsaAccounts !== undefined ? opts.hsaAccounts.length > 0 : opts.hsaFacts !== undefined
+    if (params.hasIncomeTax && span.state !== input.state && hsaFactsSupplied &&
+      (params.hsaConformity === 'nonconformingCalifornia' || params.hsaConformity === 'newJerseyCategories')) {
+      warnings.push({
+        code: 'state-rich-split-year-adapter-required',
+        message: `${span.state}'s slice prices HSA income on the year's HSA facts, which are those of ${input.state ?? 'the year-end state'}; ${span.state}'s own are not supplied.`,
+        missingFacts: ['stateHsaAccountYearFacts'],
+      })
+    }
+    warnings.push(...result.warnings.filter((warning) => warning.code !== BASIS_INCOMPLETE))
+    sum.totalTax += result.totalTax
+    sum.taxableIncome += result.taxableIncome
+    sum.stateTax += result.stateTax
+    sum.localTax += result.localTax
+    sum.taxCredit += result.taxCredit
+    slices.push({ state: span.state, months: span.months, method: params.hasIncomeTax ? method?.method ?? 'monthsShare' : 'noIncomeTax', ...(incomeRatio === undefined ? {} : { incomeRatio }), totalTax: result.totalTax })
+    if (!repeated) {
+      pensionPools.push(...pensionBasisPools(span.state, slice.rows) ?? [])
+      if (span.state === 'NJ') njPools = njIraBasisPools('NJ', opts.njIraOwnerPools)
+      if (span.state === input.state) hsaPools = hsaBasisPools(span.state, opts.hsaAccounts)
+    }
   }
-  if (!input.state) return 0
-  const params = resolveParams(input.state)
-  return params ? computeStateTaxDetail(params, input, { localRatePct }).totalTax : 0
+  // A QCD in a split year leaves the year incomplete and no state's QCD
+  // adjustment is applied: the slice that receives it says so above, and a
+  // QCD in the months of a state without an income tax is said so here.
+  const yearHasQcd = opts.qcdEvents !== undefined ? opts.qcdEvents.length > 0 : opts.qcdFacts !== undefined
+  if (yearHasQcd && slices.some((slice) => slice.method !== 'noIncomeTax') &&
+    !warnings.some((warning) => warning.code === 'state-qcd-residency-incomplete')) {
+    warnings.push({ code: 'state-qcd-residency-incomplete', ruleId: 'state-direct-qcd-conformity', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
+  }
+  if ([...(hsaPools ?? []), ...(njPools ?? []), ...pensionPools].some((pool) => pool.status === 'incomplete')) {
+    warnings.push({ code: BASIS_INCOMPLETE, message: 'The annual state basis transition requires complete account, contribution and distribution facts.', missingFacts: ['stateBasisPoolFacts'] })
+  }
+  return {
+    amount: sum.totalTax,
+    ...sum,
+    status: warnings.length > 0 ? 'incomplete' : 'complete',
+    warnings,
+    ...(pensionPools.length === 0 ? {} : { pensionBasisPools: pensionPools }),
+    ...(njPools === undefined ? {} : { njIraBasisPools: njPools }),
+    ...(hsaPools === undefined ? {} : { hsaBasisPools: hsaPools }),
+    partYear: { slices, undatedIncomeSpreadByMonths: undatedIncome(input, yearRows) },
+  }
 }
 
 /**
@@ -2290,31 +2515,10 @@ export function computeStateTaxYearResult(
     if (segments.length === 1 && segments[0]!.months === 12) {
       return computeStateTaxYearResult({ ...input, state: segments[0]!.state, stateResidency: undefined }, opts)
     }
-    // Retain the existing residency computation while refusing exact rich-fact
-    // allocation. Do not return a fabricated zero or commit annual basis pools.
-    const totalTax = computeStateTaxYearTotal(input, opts)
-    return { amount: totalTax, taxableIncome: 0, stateTax: totalTax, localTax: 0, totalTax, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-rich-split-year-adapter-required', message: 'Rich state facts require residency-segment allocation by the projection adapter; tax retains the existing prorated estimate.', missingFacts: ['stateResidencyFactAllocation'] }] }
+    return computeSplitYearResult(input, opts, localRatePct)
   }
   if (!input.state) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'complete', warnings: [] }
-  const published = stateParamsFor(input.state, input.year)
-  if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
-  const { pack } = packForYear(input.year)
-  // A federal-following deduction conforms to the year's federal basic, loaded
-  // or projected; a statute's own indexing runs at the plan's inflation from
-  // the state figures' year (decision D-2027-ROLLOVER, review V1).
-  const resolved = statutorilyIndexedStandardDeduction(
-    conformStateStandardDeduction(
-      published,
-      pack.federalTax.age65Addition,
-      input.inflationScale ?? 1,
-      pack.federalTax.standardDeduction,
-    ),
-    {
-      year: input.year,
-      packYear: LATEST_STATE_PACK_YEAR,
-      inflationScale: input.stateIndexingScale ?? input.inflationScale ?? 1,
-    },
-  )
-  const params = opts.mapParams ? opts.mapParams(resolved) : resolved
+  const params = resolvedStateParams(input.state, input, opts.mapParams)
+  if (!params) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
   return computeStateTaxDetailResult(params, input, { ...opts, localRatePct })
 }

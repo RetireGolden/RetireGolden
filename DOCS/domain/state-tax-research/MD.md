@@ -37,3 +37,11 @@ Source records above require discriminating positive and negative fixtures throu
 - https://www.gfrlaw.com/what-we-do/insights/maryland-tax-alert-2025 — 2025 new 6.25%/6.5% brackets and 2% capital-gains surtax over $350k AGI.
 - https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/Pension-Exclusion-Worksheet.pdf — 2025 pension exclusion $41,200; age-65 requirement; employer-plan qualifying income; SS offset.
 - https://legalclarity.org/how-does-maryland-tax-retirement-income/ — SS fully exempt; pension exclusion mechanics.
+
+## Part-year residents (2026-10-08)
+
+Method (a), Form 502 marked "P" (2025 resident booklet; Tax Tip #52): the deduction and exemptions times the Maryland income factor, line 16 Maryland AGI over line 1 federal AGI; the tax on the ordinary schedule; the pension exclusion figured as for the full year, times the months resident over 12 (md-tg-10-217-2026-indexed-standard-deduction). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'months' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Maryland and six in Texas, owes $2,241.75 for the Maryland months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,118.68 when the conversion falls in the months resident and $2,264.82 when it falls in Texas's, where the months share of the year gave $3,191.75 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

@@ -258,10 +258,11 @@ of question Title 35 Part III would probably answer, which is unreachable.
   regime; nonresident proration under §27-7-17(3)(c) and §27-7-21(i). A
   part-year resident (2025 Form 80-100 instructions) multiplies the deductions
   and exemptions by the line 13c ratio of Mississippi AGI to total AGI and keeps
-  the whole zero band; from 2026-10-07 the split-year slice does the same
-  (`partYear`, `ms-27-7-5-rate-ramp`), where before it halved the band for six
-  months: $1,754.00, now $1,554.00, for a single filer of 50 with $100,000 of
-  ordinary income, resident six months.
+  the whole zero band; from 2026-10-07 the split-year slice keeps the band
+  whole (`partYear`, `ms-27-7-5-rate-ramp`), where before it halved it for six
+  months, and from 2026-10-08 it takes the line 13c ratio, where before the
+  months stood for it: $1,754.00, now $1,554.00, for a single filer of 50 with
+  $100,000 of ordinary income, resident six months.
 
 ### Net direction, and why it must not be netted
 **The sign of the error flips with the household's age, and the flip point sits
@@ -384,3 +385,11 @@ Every lever above is registered in
   https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80105258%201.pdf
 - MS DOR, Individual Income Tax FAQ:
   https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions
+
+## Part-year residents (2026-10-08)
+
+Method (a), 2025 Form 80-100 instructions: line 13c divides the Mississippi-only income (13a) by the income from all sources (13b), both under Mississippi law, and prorates the deductions and exemptions; the $10,000 zero band stays whole; retirement income is exempt without a cap (ms-27-7-5-rate-ramp). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Mississippi and six in Texas, owes $1,554.00 for the Mississippi months, the same as before. With a $40,000 Roth conversion on top, the slice is $1,554.00 when the conversion falls in the months resident and $1,554.00 when it falls in Texas's, where the months share of the year gave $2,354.00 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

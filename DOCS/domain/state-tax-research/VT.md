@@ -76,3 +76,11 @@ Source records above require discriminating positive and negative fixtures throu
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — 2025 Vermont brackets (single 0/47,900/116,000/242,000; MFJ 0/79,950/193,300/294,600) and standard deduction $7,400/$14,850.
 - https://legislature.vermont.gov/statutes/section/32/151/05830e — § 5830e(a), exact filing-status thresholds and the $10,000 proportional phaseout bands.
 - https://ljfo.vermont.gov/assets/Publications/Issue-Briefs/GENERAL-379202-v2-How_Vermont_Taxes_Social_Security_Benefits-v2.pdf — income-based SS exemption mechanics.
+
+## Part-year residents (2026-10-08)
+
+Method (b), IN-113 2025 instructions: IN-111 line 16 is the tax on all income times line 35, the Vermont share of federal AGI over federal AGI (vt-32-5830e-retirement-election). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi', exclusionCap: 'viaTaxRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Vermont and six in Texas, owes $2,216.26 for the Vermont months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,606.41 when the conversion falls in the months resident and $2,559.12 when it falls in Texas's, where the months share of the year gave $3,582.76 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

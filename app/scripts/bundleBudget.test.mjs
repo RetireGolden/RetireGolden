@@ -198,7 +198,7 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
 
   it('reports a worker-entry import that is not a same-directory relative', () => {
     const result = workerEntryImporters([
-      { name: 'planner.worker-aaa.js', source: 'export const k=1;' },
+      { name: 'planner.worker-aaa.js', source: 'import{t as n}from"./annualProjectionFundingClose-bbb.js";' },
       {
         name: 'annualProjectionFundingClose-bbb.js',
         source: 'import{k as oe}from"/assets/planner.worker-aaa.js";const d=oe;',
@@ -233,7 +233,7 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
 
   it('reports a side-effect-only static import of the worker entry', () => {
     const result = workerEntryImporters([
-      { name: 'planner.worker-aaa.js', source: 'export const k=1;' },
+      { name: 'planner.worker-aaa.js', source: 'import"./annualProjectionFundingClose-bbb.js";' },
       { name: 'annualProjectionFundingClose-bbb.js', source: 'import"./planner.worker-aaa.js";' },
     ])
     expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
@@ -245,6 +245,38 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
       { name: 'annualProjectionKernels-ccc.js', source: 'export const x=1;' },
     ])
     expect(result.importers).toEqual([])
+  })
+
+  it('reports an importer the entry reaches through a chain of static imports', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'import{t as n}from"./annualProjectionKernels-ccc.js";' },
+      { name: 'annualProjectionKernels-ccc.js', source: 'import{u}from"./annualProjectionFundingClose-bbb.js";' },
+      { name: 'annualProjectionFundingClose-bbb.js', source: 'import{k as oe}from"./planner.worker-aaa.js";' },
+    ])
+    expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
+  })
+
+  // The Optimize channel's solver (D-BUNDLE-HEADROOM): the entry loads it with
+  // import() at the dispatch that asks for it, after the entry has finished
+  // evaluating, so its import of the entry binds initialized values.
+  it('does not report a chunk the entry reaches only through import()', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'const o=()=>import("./runOptimize-ddd.js");' },
+      { name: 'runOptimize-ddd.js', source: 'import{k as oe}from"./planner.worker-aaa.js";export const r=oe;' },
+    ])
+    expect(result.importers).toEqual([])
+  })
+
+  it('reports a lazily loaded chunk once a static import also reaches it', () => {
+    const result = workerEntryImporters([
+      {
+        name: 'planner.worker-aaa.js',
+        source: 'import{x}from"./annualProjectionKernels-ccc.js";const o=()=>import("./runOptimize-ddd.js");',
+      },
+      { name: 'annualProjectionKernels-ccc.js', source: 'import{r}from"./runOptimize-ddd.js";export const x=r;' },
+      { name: 'runOptimize-ddd.js', source: 'import{k as oe}from"./planner.worker-aaa.js";export const r=oe;' },
+    ])
+    expect(result.importers).toEqual(['runOptimize-ddd.js'])
   })
 
   it('fails closed when the worker entry is missing', () => {
@@ -455,6 +487,7 @@ describe('chunksNamingTestFiles', () => {
 
 describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes)', () => {
   const REPORT_MODEL = 'packages/planner-ui/src/report/reportModel.ts'
+  const PLAN_ROUTES_ONLY = CHUNK_MODULE_EXCLUSIONS.filter((e) => e.label === 'plan route group (PlanRoutes)')
   const jsNames = ['index-a.js', 'PlanRoutes-b.js', 'downloadReport-c.js']
   const mapWith = (planRoutesModules) => ({
     chunks: {
@@ -474,6 +507,7 @@ describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes
     const { failures, checked } = chunkModuleExclusionFailures(
       jsNames,
       mapWith(['packages/planner-ui/src/routes/PlanRoutes.tsx']),
+      PLAN_ROUTES_ONLY,
     )
     expect(failures).toEqual([])
     expect(checked).toEqual([
@@ -485,6 +519,7 @@ describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes
     const { failures, checked } = chunkModuleExclusionFailures(
       jsNames,
       mapWith(['packages/planner-ui/src/routes/PlanRoutes.tsx', REPORT_MODEL]),
+      PLAN_ROUTES_ONLY,
     )
     expect(failures).toHaveLength(1)
     expect(failures[0]).toContain('PlanRoutes-b.js contains packages/planner-ui/src/report/reportModel.ts')
@@ -493,7 +528,7 @@ describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes
 
   it('fails closed when the build wrote no module map', () => {
     for (const map of [null, {}, { chunks: {} }]) {
-      const { failures } = chunkModuleExclusionFailures(jsNames, map)
+      const { failures } = chunkModuleExclusionFailures(jsNames, map, PLAN_ROUTES_ONLY)
       expect(failures).toHaveLength(1)
       expect(failures[0]).toMatch(/module membership is unmeasured/)
     }
@@ -501,22 +536,58 @@ describe('chunkModuleExclusionFailures (the report model stays out of PlanRoutes
 
   it('fails closed when the map is from a different build', () => {
     const stale = { chunks: { ...mapWith([]).chunks, 'PlanRoutes-old.js': [REPORT_MODEL] } }
-    const { failures } = chunkModuleExclusionFailures(jsNames, stale)
+    const { failures } = chunkModuleExclusionFailures(jsNames, stale, PLAN_ROUTES_ONLY)
     expect(failures).toHaveLength(1)
     expect(failures[0]).toMatch(/PlanRoutes-old\.js\), so it describes a different build/)
   })
 
   it('fails closed when the map does not describe the matching chunk', () => {
-    const { failures } = chunkModuleExclusionFailures(jsNames, {
-      chunks: { 'index-a.js': [], 'downloadReport-c.js': [REPORT_MODEL] },
-    })
+    const { failures } = chunkModuleExclusionFailures(
+      jsNames,
+      { chunks: { 'index-a.js': [], 'downloadReport-c.js': [REPORT_MODEL] } },
+      PLAN_ROUTES_ONLY,
+    )
     expect(failures).toEqual([
       'plan route group (PlanRoutes): PlanRoutes-b.js is not in the chunk module map, so its modules are unmeasured',
     ])
   })
 
   it('fails closed when no chunk matches', () => {
-    const { failures } = chunkModuleExclusionFailures(['index-a.js'], { chunks: { 'index-a.js': [] } })
+    const { failures } = chunkModuleExclusionFailures(['index-a.js'], { chunks: { 'index-a.js': [] } }, PLAN_ROUTES_ONLY)
     expect(failures).toEqual(['plan route group (PlanRoutes): no chunk matched, so its module exclusions are unmeasured'])
+  })
+})
+
+describe('chunkModuleExclusionFailures (editor-only engine modules stay out of useProjection)', () => {
+  const EDITOR_ONLY = [
+    'packages/engine/src/actions/retirementActionManualReview.ts',
+    'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+    'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts',
+  ]
+  const jsNames = ['PlanRoutes-b.js', 'useProjection-c.js', 'RetirementActionsEditor-d.js']
+  const mapWith = (useProjectionModules) => ({
+    chunks: {
+      'PlanRoutes-b.js': [],
+      'useProjection-c.js': useProjectionModules,
+      'RetirementActionsEditor-d.js': EDITOR_ONLY,
+    },
+  })
+
+  it('names the three modules app/vite.config.ts marks side-effect-free', () => {
+    const core = CHUNK_MODULE_EXCLUSIONS.find((e) => e.label === 'engine simulation core (useProjection)')
+    expect(core?.modules).toEqual(EDITOR_ONLY)
+    expect(core?.match.test('useProjection-P8q9X2z1.js')).toBe(true)
+  })
+
+  it('passes when the editor chunk holds them and the core does not', () => {
+    const { failures, checked } = chunkModuleExclusionFailures(jsNames, mapWith(['packages/engine/src/projection/simulate.ts']))
+    expect(failures).toEqual([])
+    expect(checked.map((row) => row.name)).toEqual(['PlanRoutes-b.js', 'useProjection-c.js'])
+  })
+
+  it('fails, naming the module, when one comes back into the core', () => {
+    const { failures } = chunkModuleExclusionFailures(jsNames, mapWith([EDITOR_ONLY[1]]))
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toContain('useProjection-c.js contains packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts')
   })
 })

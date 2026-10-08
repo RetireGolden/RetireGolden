@@ -52,3 +52,11 @@ maximums per the Tax Foundation cross-check.
 - https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf — enrolled 2026 H.B. 341, § 40-18-19(a)(13): first $6,000 of taxable retirement income, for individual taxpayers age 65+.
 - https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf — 2025 Schedule RS: each taxpayer is eligible for up to $6,000, bounded by retirement income taxable to Alabama.
 - https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf — 2025 Form 40 booklet: Federal Social Security benefits and qualifying defined-benefit retirement payments are listed as income not reported; other pension and IRA distributions use Schedule RS.
+
+## Part-year residents (2026-10-08)
+
+Method (a): a part-year resident files Form 40 on the resident-period income, with the whole standard deduction and exemptions (2025 Form 40 and Form 40NR booklets); the $6,000 exclusion applies to the retirement income taxable to Alabama, uncut (al-dor-individual-income-tax-rate-schedule). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'full', ratioBasis: 'federalAgi', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Alabama and six in Texas, owes $2,310.00 for the Alabama months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,310.00 when the conversion falls in the months resident and $2,310.00 when it falls in Texas's, where the months share of the year gave $3,310.00 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

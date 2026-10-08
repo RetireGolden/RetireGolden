@@ -156,7 +156,7 @@ letters.
   correct figures are published by the department each year.
 - **Not investigated**, and flagged so nobody assumes otherwise: local or city
   income taxes (North Dakota appears to have none, but the negative was not
-  verified), part-year and nonresident proration under §57-38-30.3(1)(f), the
+  verified), nonresident proration under §57-38-30.3(1)(f) (part-year residents are below), the
   Minnesota and Montana reciprocity agreements referenced on Form ND-1 item F,
   and the additions on Schedule ND-1SA.
 
@@ -237,3 +237,11 @@ The no-general-private-retirement-subtraction conclusion rests on the complete N
 
 
 Evidence completion (2026-09-12): The closed-list source record now additionally quotes ND-1 lines9,14,15, including peace-officer service/disability limits, military survivor/dual-status technicians, and the SS/TierI allocation ratio. Line1b itself describes federal-taxable-income entry mechanics and does not literally state that private pensions are taxable. That bounded pension-base conclusion is an inference from the federal-taxable-income definition plus the complete statutory adjustment enumeration, not a fabricated DOR sentence.
+
+## Part-year residents (2026-10-08)
+
+Method (b), Schedule ND-1NR 2025: line 23 is the tax times line 20, North Dakota income over federal AGI (ndcc-57-38-30-3-2-closed-subtraction-list). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi', exclusionCap: 'viaTaxRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in North Dakota and six in Texas, owes $334.67 for the North Dakota months, the same as before. With a $40,000 Roth conversion on top, the slice is $931.72 when the conversion falls in the months resident and $517.62 when it falls in Texas's, where the months share of the year gave $724.67 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

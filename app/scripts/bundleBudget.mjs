@@ -217,7 +217,23 @@ if (workerEntryBudget === undefined) {
 const WORKER_ENTRY_NAME = workerEntryBudget.match
 
 /**
- * Chunks other than the worker entry that statically import it.
+ * Chunks in the worker entry's static closure, other than the entry, that
+ * statically import it.
+ *
+ * The static closure is every chunk the entry reaches through static imports
+ * (`from "…"` and side-effect `import "…"`), transitively. A chunk there that
+ * imports the entry back is #672: the module graph evaluates it as part of
+ * loading the entry, before the entry's own body has run, so the binding it
+ * imports is still in its temporal dead zone.
+ *
+ * A chunk the entry reaches only through `import()` — the Optimize channel's
+ * solver, loaded on that channel's first request — is outside the closure and
+ * may import the entry. It is fetched and evaluated after the entry module has
+ * finished evaluating, at the dispatch that asks for it, so every binding it
+ * imports from the entry is initialized. The URL it imports is the one the
+ * worker was started from, so it binds the already-evaluated entry rather
+ * than a second copy. And no static cycle results:
+ * `staticImportCycles` below still checks the whole emitted graph.
  *
  * `chunks` is `{ name, source }[]`. Returns `{ workerNames, importers }`.
  * `importers: null` means the worker entry itself was missing — fail closed;
@@ -228,11 +244,21 @@ export function workerEntryImporters(chunks) {
   const workerNames = chunks.filter((chunk) => WORKER_ENTRY_NAME.test(chunk.name)).map((chunk) => chunk.name)
   if (workerNames.length === 0) return { workerNames, importers: null }
   const workerSet = new Set(workerNames)
+  const staticImports = new Map(chunks.map((chunk) => [chunk.name, parseStaticRelativeImports(chunk.source)]))
+  const closure = new Set(workerNames)
+  const pending = [...workerNames]
+  while (pending.length > 0) {
+    for (const target of staticImports.get(pending.pop()) ?? []) {
+      if (!closure.has(target) && staticImports.has(target)) {
+        closure.add(target)
+        pending.push(target)
+      }
+    }
+  }
   const importers = []
   for (const chunk of chunks) {
-    if (workerSet.has(chunk.name)) continue
-    const imports = parseStaticRelativeImports(chunk.source)
-    if (imports.some((name) => workerSet.has(name))) importers.push(chunk.name)
+    if (workerSet.has(chunk.name) || !closure.has(chunk.name)) continue
+    if (staticImports.get(chunk.name).some((name) => workerSet.has(name))) importers.push(chunk.name)
   }
   return { workerNames, importers }
 }
@@ -329,6 +355,10 @@ const planRoutesBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'plan r
 if (planRoutesBudget === undefined) {
   throw new Error('bundleBudget.mjs: missing CHUNK_BUDGETS row labeled "plan route group (PlanRoutes)"')
 }
+const useProjectionBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'engine simulation core (useProjection)')
+if (useProjectionBudget === undefined) {
+  throw new Error('bundleBudget.mjs: missing CHUNK_BUDGETS row labeled "engine simulation core (useProjection)"')
+}
 
 /**
  * Source modules (repo-relative paths) that must not render code into a
@@ -348,6 +378,22 @@ export const CHUNK_MODULE_EXCLUSIONS = [
     why:
       'only the Results, Report and Optimize pages build a report; import what a plan page needs from a ' +
       'smaller module (the Roth five-year note lives in planner/professionalConfirmation.ts for this reason)',
+  },
+  {
+    label: useProjectionBudget.label,
+    match: useProjectionBudget.match,
+    modules: [
+      'packages/engine/src/actions/retirementActionManualReview.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts',
+    ],
+    // Only the retirement-action editor runs these three (28.7 KiB together).
+    // app/vite.config.ts marks them side-effect-free so they load with its
+    // lazy chunk instead of with the simulation core every plan visit loads
+    // (D-BUNDLE-HEADROOM).
+    why:
+      'only the retirement-action editor runs it; keep it in EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES in ' +
+      'app/vite.config.ts and import it from the editor, not from a module the projection loads',
   },
 ]
 

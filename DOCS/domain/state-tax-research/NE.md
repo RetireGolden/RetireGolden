@@ -67,3 +67,11 @@ the big-levers private-retiree model.)
 - https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716 — § 77-2716(14)(a)(iv), 100% of federally included Social Security benefits subtracted for tax years beginning on or after 2024-01-01.
 - https://blog.turbotax.intuit.com/income-tax-by-state/nebraska-108625/ — standard deduction $8,600 / $17,200; private pensions/IRA/401(k) taxable; military/federal/railroad exempt.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — cross-check 2025 rates 2.46%–5.20%.
+
+## Part-year residents (2026-10-08)
+
+Method (b), 1040N 2025 and Schedule III: a percentage of the tax a resident with the same income owes. The form divides Nebraska-source income as stated federally by federal AGI with Nebraska's adjustments; the ratio here divides federal AGI items on both sides. The retirement treatment for a part year was not determined (316 NAC 22). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months. Leaving Nebraska's adjustments out of the denominator makes the ratio higher than the form's when they add to income and lower when they subtract, so the figure errs in either direction.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Nebraska and six in Texas, owes $1,923.23 for the Nebraska months, the same as before. With a $40,000 Roth conversion on top, the slice is $3,642.72 when the conversion falls in the months resident and $2,023.73 when it falls in Texas's, where the months share of the year gave $2,833.23 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

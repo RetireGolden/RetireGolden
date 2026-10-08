@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 
 import viteConfigText from '../vite.config.ts?raw'
 
+import { CHUNK_MODULE_EXCLUSIONS } from './bundleBudget.mjs'
+
 /**
  * vite.config.ts hard-codes bare filenames for the engine modules its
  * Rolldown `codeSplitting` groups (annualProjectionCodeSplitting) match by
@@ -83,5 +85,25 @@ describe('vite.config.ts projection/internal chunk module list', () => {
     expect(groups[0]).not.toContain('includeDependenciesRecursively: false')
     expect(groups[0]).not.toContain('annualProjectionFundingClose')
     expect(groups[0]).not.toContain('annualProjectionSettlement')
+  })
+})
+
+// The engine modules vite.config.ts marks side-effect-free so they leave the
+// useProjection chunk (D-BUNDLE-HEADROOM). Parsed from source text like the
+// list above, and held equal to the budget's useProjection exclusion, so the
+// mark and the guard cannot name different files.
+describe('vite.config.ts editor-only engine module list', () => {
+  const declaration = viteConfigText.match(/const EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES\s*=\s*(\[[^\]]*\])/)
+  const names = declaration === null ? [] : [...declaration[1].matchAll(/'([A-Za-z][\w-]*\.ts)'/g)].map((m) => m[1])
+  const actionsDir = fileURLToPath(new URL('../../packages/engine/src/actions', import.meta.url))
+
+  it('names three modules, each still under packages/engine/src/actions/', () => {
+    expect(names).toHaveLength(3)
+    expect(names.filter((name) => !existsSync(`${actionsDir}/${name}`))).toEqual([])
+  })
+
+  it('matches the modules the bundle budget keeps out of useProjection', () => {
+    const core = CHUNK_MODULE_EXCLUSIONS.find((e) => e.label === 'engine simulation core (useProjection)')
+    expect(core?.modules).toEqual(names.map((name) => `packages/engine/src/actions/${name}`))
   })
 })

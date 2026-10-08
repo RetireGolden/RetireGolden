@@ -118,6 +118,43 @@ const annualProjectionCodeSplitting = {
   ],
 } satisfies ViteCodeSplitting
 
+// Engine modules only the retirement-action editor runs, marked free of side
+// effects so Rolldown drops them from any chunk that uses none of their
+// exports (decision D-BUNDLE-HEADROOM). Each one's top level is declarations
+// only: imports, types, functions and one string constant. Without the mark,
+// Rolldown kept all three in the useProjection chunk although nothing that
+// chunk runs calls them (28.7 KiB); with it, they load with the lazy
+// RetirementActionsEditor chunk that does.
+// A rename would silently drop the mark, so the paths are asserted below, and
+// CHUNK_MODULE_EXCLUSIONS in scripts/bundleBudget.mjs fails the build if one
+// comes back into useProjection.
+const EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES = [
+  'retirementActionManualReview.ts',
+  'retirementActionCandidateIdentityAllocator.ts',
+  'ownedNonRothIraAnnualFilingSourceResolver.ts',
+] as const
+
+function assertEditorOnlyEngineModulesExist(): void {
+  const missing = EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES.filter((name) => !existsSync(`${engineSrc}/actions/${name}`))
+  if (missing.length > 0) {
+    throw new Error(
+      'app/vite.config.ts: the side-effect-free list names engine module(s) that no longer exist under ' +
+        `packages/engine/src/actions/: ${missing.join(', ')}. Update EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES ` +
+        'and CHUNK_MODULE_EXCLUSIONS in scripts/bundleBudget.mjs to match (see DOCS/operations/bundle-budget.md).',
+    )
+  }
+}
+assertEditorOnlyEngineModulesExist()
+
+const editorOnlyEngineModuleTest = new RegExp(
+  `packages[\\\\/]engine[\\\\/]src[\\\\/]actions[\\\\/](${EDITOR_ONLY_ENGINE_ACTION_MODULE_NAMES.map((name) => name.replace('.', '\\.')).join('|')})$`,
+)
+
+// Shared by the app and worker graphs, like the code-splitting groups.
+const engineTreeshake = {
+  moduleSideEffects: [{ test: editorOnlyEngineModuleTest, sideEffects: false }],
+} satisfies NonNullable<BuildEnvironmentOptions['rolldownOptions']>['treeshake']
+
 // "How RetireGolden is tested" prints how many test suites and files the
 // source tree holds. Counted here, once per build, with fs.globSync over the
 // page's own patterns (HOW_TESTED_GLOBS, relative to the page's directory)
@@ -190,6 +227,7 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
+      treeshake: engineTreeshake,
       output: {
         codeSplitting: annualProjectionCodeSplitting,
       },
@@ -201,6 +239,7 @@ export default defineConfig({
     // graph. Same group list as the app graph — see annualProjectionCodeSplitting.
     format: 'es',
     rolldownOptions: {
+      treeshake: engineTreeshake,
       output: {
         codeSplitting: annualProjectionCodeSplitting,
       },

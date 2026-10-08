@@ -66,3 +66,11 @@ Source records above require discriminating positive and negative fixtures throu
 Record: `sc-code-12-6-1170-roth-conversion-not-premature`. Classification: `settled`.
 
 S.C. Code 12-6-1170(A)(2) counts plan and IRA income not subject to a penalty for premature distribution, and IRC 408A(d)(3)(A)(ii) says section 72(t) does not apply to a conversion. The engine counts a conversion toward the $3,000 deduction ($10,000 from 65) whatever the owner's age; until 2026-10-06 it withheld the conversion of an owner under 59 and a half on January 1 as of unknown premature status and marked the year incomplete.
+
+## Part-year residents (2026-10-08)
+
+Method (a), 2025 Schedule NR: line 45 divides line 31 Column B by Column A (adjusted gross income, before South Carolina's additions and subtractions), line 47 applies it to the deduction, and line 48 is taxed on the ordinary table; the retirement deduction's caps are not prorated (sc-sciad-act-110-retirement-income-deduction). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in South Carolina and six in Texas, owes $1,248.25 for the South Carolina months, the same as before. With a $40,000 Roth conversion on top, the slice is $3,064.31 when the conversion falls in the months resident and $1,359.89 when it falls in Texas's, where the months share of the year gave $2,290.25 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

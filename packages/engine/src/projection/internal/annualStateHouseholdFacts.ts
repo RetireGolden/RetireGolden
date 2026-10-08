@@ -3,7 +3,8 @@ import { ageOnDate, householdFactsForYear } from './stateRetirementFactsAdapter.
  * State household bases and eligibility are characterized inputs. Household
  * §86 inclusion cannot be allocated between recipients by an invented ratio.
  */
-import type { Plan, StateTaxYearHouseholdFacts } from '../../model/plan.js'
+import { stateResidencySegmentsForYear, type Plan, type StateTaxYearHouseholdFacts } from '../../model/plan.js'
+import { annualSocialSecurityPayableMonths } from '../../socialSecurity/householdYear.js'
 import type { SocialSecurityStreamActivity, StateHouseholdTaxFactsInput } from '../types.js'
 
 export interface AnnualRailroadBenefit {
@@ -15,6 +16,8 @@ export interface AnnualRailroadBenefit {
 export interface AnnualRecipientSocialSecurity {
   readonly ownerPersonId: string
   readonly grossSocialSecurity: number
+  /** Months of the year the benefits were paid, the last that many; set only in a year split between states, below twelve. */
+  readonly paidMonths?: number
   readonly federallyIncludedSocialSecurity?: number
   readonly grossRailroadTier1: number
   readonly federallyIncludedRailroadTier1?: number
@@ -74,6 +77,24 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
         ? undefined : (previous ?? 0) + row.federallyIncludedAmount)
   }
   const ids = new Set([...grossByPerson.keys(), ...tier1ByPerson.keys()])
+  // In a year split between states, the months each recipient's benefits were
+  // paid, so each state's slice takes those of its own months: a claim's
+  // first year pays from the claim month to December
+  // (annualSocialSecurityPayableMonths). Known only for a recipient whose
+  // every paying stream is an own retirement claim; any other benefit is
+  // spread over the year.
+  const paidMonthsByPerson = new Map<string, number>()
+  if (stateResidencySegmentsForYear(plan.household, taxYear).length > 1) {
+    for (const stream of input.socialSecurityStreams) {
+      if (stream.annualAmount <= 0 || paidMonthsByPerson.get(stream.personId) === 12) continue
+      const income = plan.incomes.find((row) => row.id === stream.streamId)
+      const person = people.get(stream.personId)
+      const months = stream.source === 'own-retirement' && income?.type === 'socialSecurity' && person !== undefined
+        ? annualSocialSecurityPayableMonths(taxYear - Number(person.dob.slice(0, 4)), income.claimAge)
+        : 12
+      paidMonthsByPerson.set(stream.personId, Math.max(paidMonthsByPerson.get(stream.personId) ?? 0, months > 0 ? months : 12))
+    }
+  }
   const grossSs = [...grossByPerson.values()].reduce((sum, amount) => sum + amount, 0)
   const ssRecipients = [...grossByPerson].filter(([, amount]) => amount > 0)
   const knownNoTier1 = railroad !== undefined && !railroad.some((row) => row.kind === 'tier1' && row.grossAmount > 0)
@@ -97,7 +118,9 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
         ? federal.taxableSocialSecurity : undefined)
     const includedTier1 = railroad === undefined ? undefined : tier1IncludedByPerson.get(ownerPersonId) ??
       (grossRailroadTier1 === 0 ? 0 : undefined)
+    const paidMonths = paidMonthsByPerson.get(ownerPersonId) ?? 12
     return { ownerPersonId, grossSocialSecurity, grossRailroadTier1,
+      ...(paidMonths < 12 ? { paidMonths } : {}),
       ...(included === undefined ? {} : { federallyIncludedSocialSecurity: included }),
       ...(includedTier1 === undefined ? {} : { federallyIncludedRailroadTier1: includedTier1 }),
     }

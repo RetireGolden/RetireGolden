@@ -243,12 +243,15 @@ export interface StateRetirementDistributionFactInput {
    * have happened.
    */
   rothConversionAmountAtAge59HalfOrOlder?: number
+  /** The civil date the distribution was paid, when the plan gives one (split years). */
+  distributionDate?: string
 }
 
 export interface StateHouseholdTaxFactsInput {
   /** Actual people included on the current state return; excludes deceased nonclaimants. */
   claimantPersonIds?: readonly string[]
-  recipientSocialSecurity?: readonly { ownerPersonId: string; ageYears?: number; grossSocialSecurity: number; federallyIncludedSocialSecurity?: number; grossRailroadTier1: number; federallyIncludedRailroadTier1?: number }[]
+  /** Per recipient; `paidMonths` counts the months paid, the last that many of the year. */
+  recipientSocialSecurity?: readonly { ownerPersonId: string; ageYears?: number; grossSocialSecurity: number; federallyIncludedSocialSecurity?: number; grossRailroadTier1: number; federallyIncludedRailroadTier1?: number; paidMonths?: number }[]
   stateFilingStatus?:
     | 'single'
     | 'marriedFilingJointly'

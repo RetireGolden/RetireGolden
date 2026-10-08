@@ -4,6 +4,125 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.4.3** (2026-10-08) — a **patch**: part-year phase 2
+  and the bundle headroom it needed (the entries below). Plans stay schema 7, and no export is
+  removed. One exported type changes again: the state pack's `partYear` descriptor (new in
+  0.4.2) becomes a union on `method` (`residentPeriod` or `incomePercentage`) with a
+  `ratioBasis` and an optional `exclusionCap`, and `rateSchedule` goes, since a
+  resident-period state always prices its slice on the whole-year schedule. Three optional
+  facts are added (`distributionDate`, `transferDate`, `paidMonths`). Neither
+  RetireGolden-MCP, RetireGolden-Pro nor the site reads the descriptor. planner-ui's
+  `^0.4.0` range admits 0.4.3; its worker now loads the Optimize channel on first use, a
+  change that reaches hosts with the next planner-ui release. **Not yet published**; the
+  owner tags `engine-v0.4.3` and approves the `npm-publish` environment.
+- **Changed: a year split between states is priced by each state's own part-year method,
+  on the income the months resident received, with the year's household facts** (engine
+  0.4.3, 2026-10-08). Phase 2 of the part-year work; phase 1 (0.4.2) set the rate schedule
+  and deduction method of twelve resident-period states. What changed:
+  - **The slice's income** (`tax/statePartYear.ts`): a distribution or QCD transfer dated in
+    the year goes whole into the slice of its month; Social Security by the months it is paid
+    (an own retirement claim's first year carries `paidMonths`); everything else by the
+    months, the pensions, annuities and wages the projection pays for whole years among it.
+    The result reports the income spread by months (`partYear.undatedIncomeSpreadByMonths`)
+    and how each slice was priced (`partYear.slices`). A split row scales its amounts
+    together; the state basis pools are committed once for the year, after the slices.
+  - **Method (b)**: CA, NY, CT, DE, WV, VT, RI, MN, OR, WI, CO, UT, MT, NM, ND, NE, KS, OK,
+    MO, AR and NC, and ME, OH and IA through their credits, take the tax on the whole year's
+    income as if resident times their income ratio, on federal AGI items or on the state's own
+    income after its modifications, as each 2025 form divides (`partYear.ratioBasis`). Until
+    now the months stood for every ratio.
+  - **Method (a)**: the twelve phase-1 states plus GA, IL, IN, MI, MA and PA tax the
+    resident-period income; a deduction or exemption a return prorates by an income ratio
+    (`'incomeRatio'`, new beside `'full'` and `'months'`) takes the state's ratio.
+  - **Household facts reach every slice**: the Illinois and Massachusetts exemptions are
+    prorated by their ratios; the Connecticut and Wisconsin exemptions, Utah's credits and
+    Iowa's alternate tax sit in the full-year tax the ratio prorates; Oregon's retirement
+    income credit comes after the ratio, on the pension received while resident (OR-40-P
+    line 45, then lines 50 to 53); South Carolina's SCIAD phases on the year's federal AGI;
+    New Jersey's veteran and disabled exemptions read who qualifies from the year's rows,
+    wherever they fall, and prorate by the months.
+  - **Retirement-exclusion caps** follow each state's part-year rule (`partYear.exclusionCap`):
+    whole (NY, OK, SC, LA, MI, AL, AZ, and KY, whose 2025 Schedule P takes the pension income
+    received while resident up to the whole $31,110), the year's exclusion by the months (MD,
+    NJ, DC, VA's age
+    deduction), by the share of retirement income received while resident (DE, GA, ID, ME), by
+    the income ratio (WI), or in the full-year tax (the other method (b) states), never more
+    than the slice's own receipts earn. The blanket months scaling is gone.
+  - **Wisconsin's slice-only path is gone**: method (b) prices it with the same figure.
+  - **`state-rich-split-year-adapter-required` no longer marks a fully priced year.** It stays,
+    with a narrower message, in these cases. Arkansas, Colorado, Rhode Island and Missouri do
+    not state how a capped retirement exclusion applies to a part year: their slices take the
+    year's exclusion by the months, and the year is marked only where the whole cap on the
+    slice's own receipts would give the slice a different income (with income spread evenly,
+    where the slice's qualifying retirement income exceeds the months' share of the cap). A
+    California or New Jersey slice that is not the year-end state, in a year with HSA facts,
+    would need HSA facts of its own, the year's being the year-end state's. A residency whose
+    segments do not give the year's 12 months, or that names a state twice (the projection
+    builds neither), is priced as given, each repeated state's basis pools committed once. And
+    a state whose parameters carry no method (none does). A state with no published
+    parameters marks the year `state-pack-unavailable`, as the annual path does, where it
+    used to be skipped.
+
+  Before and after, a single filer of 50 resident six months in the state and six in Texas
+  (every state's figures are worked in `packages/engine/src/tax/statePartYear*.rules.test.ts`):
+  - $100,000 of ordinary income spread over the year: no state moves (New York $2,429.88,
+    Hawaii $2,395.20, Wisconsin $2,232.31, Illinois $2,475.00 without its exemption).
+  - The same and a $40,000 Roth conversion, in the resident months / in Texas's, against the
+    months share before: New York $4,641.27 / $2,578.48 (was $3,609.88); California $5,739.42 /
+    $3,188.56 ($4,463.99); Oklahoma $3,292.00 / $2,057.50 ($2,899.75); Hawaii $5,340.34 /
+    $2,477.49 ($3,907.20); New Jersey $3,574.90 / $1,242.38 ($2,347.38); Virginia $4,567.33 /
+    $2,411.08 ($3,489.20); Kentucky $1,943.55 / $1,632.40 ($2,332.40); Pennsylvania, Illinois
+    and Mississippi, whose rules take the conversion off, $1,535.00, $2,475.00 and $1,554.00
+    either way ($2,149.00, $3,465.00, $2,354.00).
+  - With household facts: Illinois $2,402.61 (was $2,475.00), Massachusetts $2,390.00
+    ($2,500.00), Wisconsin $2,213.76 ($2,232.31); South Carolina $1,639.00 with its SCIAD phased
+    out on the year's $100,000 ($1,248.25 on the unphased $15,000); Oregon, for a pensioner of
+    66 with $20,000 of income, $363.19 after its retirement income credit ($588.19, the credit
+    dropped).
+
+  The "Moving in retirement" example does not move: its July 2029 move from Florida to
+  Kentucky splits income that is spread evenly, so its lifetime tax stays $732,506.95; its
+  2029 is no longer marked incomplete. The review L7 household U1 (Kentucky to Florida in
+  November 2026, `packages/planner-ui/src/planner/preStartEvents.figures.test.ts`) does move:
+  its annuity's effect from a 2026 start is -$151,691.59, was -$147,615.81, because Kentucky's
+  pension exclusion now meets the in-plan Roth conversion received while resident, up to the
+  whole $31,110, as it does for a full-year resident (the record income-annuity-annual says
+  so). Of the relocation comparisons the bundle-headroom harness ran over the example library
+  (five candidates each, listed in the script), five move, by their split year's
+  Kentucky, Pennsylvania or California slice: the example couple's moves to Florida in 2030,
+  Arizona in 2028 and Pennsylvania in 2031 by -$1,098.71, -$1,132.36 and -$2,190.78 of
+  lifetime state and local tax, and the two California allocation plans' move to Pennsylvania
+  in 2031 by -$1,198.18 and -$1,198.38.
+  `DOCS/calculations/taxes/scripts/part-year-split-years.mjs` lists each of those split years'
+  states, months, rows and slice taxes, before and after (its output beside it). Remaining
+  limits, stated in `va-code-58-1-322-03-2-personal-exemptions`: days are priced as months.
+  Only a dated row goes whole into the slice of its month: retirement distribution evidence
+  with a `distributionDate`, and a QCD with its transfer date. Everything else is spread by
+  the months, a named Roth conversion included: its execution date does not reach its
+  account's annual row. The forms' rounding of the ratio is not applied, nor California's
+  separately rounded effective rate (540NR line 36); the packs' continuous rate schedules
+  stand in where a form mandates its tax table (NJ-1040 line 43 and Hawaii N-15 line 44 below
+  $100,000 of taxable income, California's at $100,000 or less). Nebraska's ratio and
+  Wisconsin's subtraction share are taken on federal AGI items, leaving out adjustments whose
+  sign sets which way the figure errs. A QCD in a split year leaves the year incomplete, and
+  its state adjustment is not applied. Nonresident-period source income, the credit for tax
+  paid to the other state, special accrual and the SC, DE and MO full-year elections are not
+  modeled. Exported types: `StateTaxParams['partYear']` loses `rateSchedule` and gains
+  `method`, `ratioBasis` and `exclusionCap`, with the new `StatePartYearRatio`,
+  `StatePartYearRatioBasis` and `StatePartYearExclusionCap`; `StateTaxComputationResult` gains
+  `partYear` (the new `StatePartYearSlice`); `ComputeStateTaxOptions` gains `partYearSlice`, a
+  slice's shares and the year's rows its caps and person facts read;
+  `computeStateTaxableIncomeResult` also returns `stateIncome` and `newJerseyGrossIncome`; the
+  state fact types gain `distributionDate`, `transferDate` and `paidMonths`.
+- **Changed: room in the app bundle for the part-year work, with no cap raised** (2026-10-08,
+  decision D-BUNDLE-HEADROOM). Three editor-only engine modules leave the engine simulation
+  core for the retirement-action editor's lazy chunk; the worker loads the Optimize channel
+  on its first request; the historical return series ships as rows of three numbers decoded
+  at load. The moves alone, measured on the 0.4.2 head: worker 1,146.9 to 1,084.4 KiB (of
+  1,150), core 894.9 to 866.2 KiB (of 900), all JS 5,063.1 to 5,055.9 KiB (of 5,100), with
+  identical figures from the built bundles over the 29 example plans
+  (DOCS/operations/bundle-budget.md). With the part-year work and its fail-closed guards this
+  release builds to worker 1,093.8, core 875.6 and all JS 5,074.8 KiB.
 - Prepared **`@retiregolden/engine` 0.4.2** (2026-10-08) — a **patch**: the state tax and
   inherited-IRA corrections below and the dependency re-resolve. Plans stay schema 7, and no
   export is removed. One exported type changes: the state pack field `partYearRateSchedule`

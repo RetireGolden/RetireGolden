@@ -52,3 +52,11 @@ pension/IRA exclusion, so `retirement: { kind: "none" }`.
 - https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets — TY2026 whole-dollar rate bands.
 - https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf — TY2026 standard deduction ($15,300 / $30,600), simplified-subtraction thresholds, and alternate maxima marked Not Indexed.
 - https://www.revisor.mn.gov/statutes/cite/290.0132 — Minn. Stat. §290.0132 subd. 26 Social Security subtraction structure.
+
+## Part-year residents (2026-10-08)
+
+Method (b), Schedule M1NR 2025: line 32 is the tax on all income times line 30, Minnesota income over federal income, a few Minnesota additions aside (mn-stat-290-0132-subd-21-military-retirement-subtraction). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi', exclusionCap: 'viaTaxRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Minnesota and six in Texas, owes $2,638.30 for the Minnesota months, the same as before. With a $40,000 Roth conversion on top, the slice is $5,243.75 when the conversion falls in the months resident and $2,913.19 when it falls in Texas's, where the months share of the year gave $4,078.47 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

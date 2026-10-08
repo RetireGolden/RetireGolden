@@ -79,3 +79,11 @@ Record: `ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half`. Classification: `app
 TSB-M-98(7)I: up to $20,000 of conversion income is excluded if the taxpayer is 59 and a half at the time of the conversion. The engine tests a named conversion on its execution date when the plan gives one and every other conversion on January 1, so in the year the owner reaches 59 and a half an undated conversion gets no exclusion, which can overstate New York tax. Until 2026-10-06 the engine excluded it whenever the owner was 59 at the end of the year. Whether an in-plan Roth rollover qualifies, when the instructions allow only periodic payments from a 401(k), is not determined.
 
 Authority: [TSB-M-98(7)I](https://www.tax.ny.gov/pdf/memos/income/m98_7i.pdf).
+
+## Part-year residents (2026-10-08)
+
+Method (b), IT-203-I 2025: the base tax as a full-year resident times line 45, line 31 New York column over federal column, both New York AGI after the modifications; the $20,000 pension exclusion is per taxable period, not prorated (ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in New York and six in Texas, owes $2,429.88 for the New York months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,641.27 when the conversion falls in the months resident and $2,578.48 when it falls in Texas's, where the months share of the year gave $3,609.88 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

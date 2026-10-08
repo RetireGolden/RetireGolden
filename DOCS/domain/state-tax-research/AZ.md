@@ -250,3 +250,11 @@ Every lever above is registered in
 | `ars-43-1022-2-government-pension-exclusion` | approximated (understates tax) |
 | `ars-43-1022-22-long-term-capital-gain-subtraction` | approximated (understates tax) |
 | `ars-43-1023-e-age-65-exemption` | approximated (overstates tax) |
+
+## Part-year residents (2026-10-08)
+
+Method (a), Form 140PY (2025 instructions): line 27 divides Arizona gross income (line 26) by federal AGI (line 25); the standard deduction is not prorated, the exemptions are, by that ratio; the $2,500 government pension subtraction takes the whole cap against the pension in the Arizona column (ars-43-1041-standard-deduction-published-amount). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Arizona and six in Texas, owes $856.25 for the Arizona months, the same as before. With a $40,000 Roth conversion on top, the slice is $1,856.25 when the conversion falls in the months resident and $856.25 when it falls in Texas's, where the months share of the year gave $1,356.25 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
