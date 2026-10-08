@@ -35,3 +35,11 @@ Source records above require discriminating positive and negative fixtures throu
 - https://delcode.delaware.gov/title30/c011/sc01/index.html — 30 Del. C. § 1102(a)(14) (5.55% $25,000–$60,000 band).
 - https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf — Delaware Division of Revenue, 2026 PIT-EST instructions, line 3 and rate table.
 - https://www.legis.delaware.gov/BillDetail/130098 — HB 89 (unenacted source of erroneous $5,700 / $11,400).
+
+## Part-year residents (2026-10-08)
+
+Method (b), PIT-NON 2025: line 42 taxes all income; line 43 divides line 30a, modified Delaware-source income, by line 30b, Delaware AGI; the pension exclusion's Delaware column is the exclusion times the Delaware share of the pension income (de-code-30-1106-social-security-retirement-subtractions). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Delaware and six in Texas, owes $2,684.50 for the Delaware months, the same as before. With a $40,000 Roth conversion on top, the slice is $5,148.64 when the conversion falls in the months resident and $2,860.36 when it falls in Texas's, where the months share of the year gave $4,004.50 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

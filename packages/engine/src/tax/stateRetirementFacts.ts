@@ -149,6 +149,12 @@ export interface StateRetirementDistributionFact {
    * have happened.
    */
   rothConversionAmountAtAge59HalfOrOlder?: number
+  /**
+   * The civil date (YYYY-MM-DD) the distribution was paid, when the plan gives
+   * one. A year split between states puts a dated row whole in the slice of
+   * the month it falls in; an undated row is spread by months.
+   */
+  distributionDate?: string
 }
 
 /** The taxable Roth conversion dollars in a row, never more than the row's included amount. */
@@ -169,7 +175,13 @@ export type StateFilingStatusExtended =
   | 'qualifyingSurvivingSpouse'
 
 export interface StateHouseholdTaxFacts {
-  recipientSocialSecurity?: readonly { ownerPersonId: string; ageYears?: number; grossSocialSecurity: number; federallyIncludedSocialSecurity?: number; grossRailroadTier1: number; federallyIncludedRailroadTier1?: number }[]
+  /**
+   * Per recipient. `paidMonths`, when known, is how many months of the year
+   * the benefits were paid, the last that many (the projection pays a claim
+   * from its claim month to December); a split year allocates them by those
+   * months. Absent, they are spread over the year.
+   */
+  recipientSocialSecurity?: readonly { ownerPersonId: string; ageYears?: number; grossSocialSecurity: number; federallyIncludedSocialSecurity?: number; grossRailroadTier1: number; federallyIncludedRailroadTier1?: number; paidMonths?: number }[]
   stateFilingStatus?: StateFilingStatusExtended
   federalAgi?: number
   /** Connecticut AGI is a separate state worksheet line, never federal AGI by proxy. */
@@ -360,6 +372,8 @@ export interface StateQcdEventFacts {
   directTransfer: boolean
   /** Kansas covered charitable-credit modification for this same transfer. */
   kansasCoveredCharitableCreditClaimed?: boolean
+  /** The civil date (YYYY-MM-DD) of the transfer, when known; places it in a split year. */
+  transferDate?: string
 }
 
 /**

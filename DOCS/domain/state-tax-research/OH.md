@@ -74,3 +74,11 @@ small to model as an exclusion, so `retirement: { kind: "none" }`.
   2026 IT 1040 ES worksheet (conflicting prior-year table; disclosed only).
 - https://tax.ohio.gov/individual/file-now/ohio-tax-credits-and-their-required-documentation — Retirement Income Credit (≤$200) and senior credit.
 - https://www.edelmanfinancialengines.com/education/tax/ohio-tax-social-security/ — Social Security exempt from Ohio income tax.
+
+## Part-year residents (2026-10-08)
+
+Method (b), credit form, IT NRC 2025: the credit is the tax times line 19, the nonresident portion of Ohio AGI over Ohio AGI, which leaves the Ohio portion's share; the retirement and senior credits are in the full-year tax. The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Ohio and six in Texas, owes $1,182.81 for the Ohio months, the same as before. With a $40,000 Roth conversion on top, the slice is $2,227.90 when the conversion falls in the months resident and $1,237.72 when it falls in Texas's, where the months share of the year gave $1,732.81 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

@@ -193,8 +193,8 @@ and is added back in full at line 11.
   the legislated-ramp states. DFA publishes the next year's schedule in the
   AR1000ES instructions each October.
 - **Not investigated**, and flagged so nobody assumes otherwise: the Texarkana
-  border-city exemption (AR1000ADJ), part-year and nonresident proration on
-  AR1000NR, lump-sum distribution averaging (AR1000TD), the 10% additional tax
+  border-city exemption (AR1000ADJ), nonresident proration on AR1000NR (part-year
+  residents are below), lump-sum distribution averaging (AR1000TD), the 10% additional tax
   on early distributions (AR1000F line 32), the pass-through entity tax
   interaction, and the AR1000TC credits.
 
@@ -299,3 +299,11 @@ Registered as `state-direct-qcd-conformity-policies`. Authority: [2017 Arkansas 
 Arkansas adopts the January 1, 2017 federal retirement provisions under [Act 155 section 18](https://www.arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT155.pdf). Eligible direct QCDs use the adopted $100,000 per-owner annual ceiling, not a blanket addback. The state-only excess is evaluated before other supported retirement exclusions; unsupported transaction types and missing facts remain incomplete.
 
 The residual ordinary exemption is enacted by [2023 Arkansas Act 358 sections 1–2](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf), effective for tax years beginning January 1, 2023. For example, $2,000 military plus $10,000 qualifying ordinary retirement excludes $6,000 total; $7,000 military plus $10,000 ordinary excludes $7,000. The original military exemption remains effective from 2018.
+
+## Part-year residents (2026-10-08)
+
+Method (b), AR1000F/NR 2025 instructions: line 38D is the net tax after personal credits times Arkansas AGI over total AGI figured as if a full-year resident; how the $6,000 exemption splits in a part year is not stated (aca-26-51-307-e-uniformed-services-full-exemption). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Arkansas and six in Texas, owes $1,620.71 for the Arkansas months, the same as before. With a $40,000 Roth conversion on top, the slice is $3,035.19 when the conversion falls in the months resident and $1,686.22 when it falls in Texas's, where the months share of the year gave $2,360.71 either way. How the return applies its capped retirement exclusion to a part year is not stated, so the slice takes the year's exclusion times the months, and the split year is marked incomplete (`state-rich-split-year-adapter-required`) only where the whole cap on the slice's own receipts would give it a different income: with income spread evenly, where the slice's qualifying retirement income exceeds the months' share of the cap.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

@@ -64,3 +64,11 @@ municipal public pensions; characterized source facts route only federal/railroa
 ## TY2026 characterized retirement rule
 
 La. R.S. 47:44.1(A) indexes the $12,000 starting amount by the previous calendar-year CPI-U change. The 2025 change of 2.7% produces $12,324 for 2026. Apply per eligible age-65 recipient after separately exempt federal/RRA benefits; unknown age is incomplete. [La. R.S. 47:44.1](https://www.legis.la.gov/legis/Law.aspx?d=102133) and [47:44.2](https://www.legis.la.gov/legis/Law.aspx?d=102134).
+
+## Part-year residents (2026-10-08)
+
+Method (a), 2025 Form IT-540B: line 10 enters the whole standard deduction, line 11E prorates only the itemized excess, line 13 taxes at 3%; the age-65 exclusion's cap is not prorated (la-ldr-it540es-2026-standard-deduction). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'full', ratioBasis: 'federalAgi', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Louisiana and six in Texas, owes $1,113.75 for the Louisiana months, the same as before. With a $40,000 Roth conversion on top, the slice is $2,313.75 when the conversion falls in the months resident and $1,113.75 when it falls in Texas's, where the months share of the year gave $1,713.75 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

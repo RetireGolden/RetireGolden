@@ -47,6 +47,13 @@ export interface StateRetirementExclusion {
   tierByAge?: ReadonlyArray<{ minAge: number | null; cap: number }>
 }
 
+/** How a part-year return prorates a deduction or exemption (`StateTaxParams.partYear`). */
+export type StatePartYearRatio = 'full' | 'months' | 'incomeRatio'
+/** The income a part-year ratio divides (`StateTaxParams.partYear`). */
+export type StatePartYearRatioBasis = 'federalAgi' | 'stateIncome' | 'stateOverFederalAgi'
+/** How a capped retirement exclusion applies to the resident period (`StateTaxParams.partYear`). */
+export type StatePartYearExclusionCap = 'full' | 'months' | 'retirementShare' | 'incomeRatio' | 'viaTaxRatio'
+
 export interface StateTaxParams {
   /** Two-letter code, e.g. 'KY'. */
   code: string
@@ -169,30 +176,61 @@ export interface StateTaxParams {
    */
   retirementRuleShared?: boolean
   /**
-   * How the state prices a part-year resident's slice of a split year
-   * (`prorateParams` in tax/stateTax.ts). Left out, the slice scales the
-   * standard deduction, the exemptions and the bracket edges with the months
-   * resident. With income spread evenly that is the months share of the tax a
-   * full-year resident would owe: the income-percentage method, method (b), with
-   * the months standing in for the state's income ratio.
+   * How the state taxes a part-year resident (tax/stateTax.ts, the split-year
+   * path), from the 2025 part-year or nonresident instructions of each state.
+   * A state left without one is priced by the months share of a full-year
+   * resident's tax, every amount and bracket edge scaled by the months, and the
+   * year is marked incomplete.
    *
-   * A state whose part-year return taxes only the resident-period income, on
-   * the ordinary rate schedule, carries the descriptor (method (a)):
-   * - `rateSchedule: 'unscaled'` keeps the brackets and any zero band whole;
-   *   `scaled` scales them with the months, as when the field is left out.
-   * - `standardDeduction` and `exemptions`: `months` prorates the amount with
-   *   the months resident, `full` allows it whole. The age-65 addition goes
-   *   with the standard deduction. A state that prorates by an income ratio
-   *   (federal AGI, state AGI) or by days is recorded as `months`. The engine
-   *   spreads the year's income evenly, so the ratios agree. `exemptions`
-   *   reaches only the exemptions a pack models (New Jersey's, Virginia's and
-   *   Wisconsin's); it is recorded for the others as their return reads.
+   * - `method: 'residentPeriod'`, method (a): the income of the months resident
+   *   on the ordinary rate schedule, its brackets and any zero band whole.
+   *   Pennsylvania's method (c) is this with nothing to prorate.
+   *   `standardDeduction` and `exemptions` say how the return prorates each:
+   *   `full` allows it whole, `months` by the months resident, `incomeRatio`
+   *   by the state's income ratio on `ratioBasis`. The age-65 addition goes
+   *   with the standard deduction. A return that prorates by days is recorded
+   *   as `months`: the plan carries a move month, not a day. `exemptions`
+   *   reaches the exemptions a pack models (Illinois's, Massachusetts's, New
+   *   Jersey's and Virginia's); it is recorded for the others as their return
+   *   reads.
+   * - `method: 'incomePercentage'`, method (b), the credit form included: the
+   *   tax on the whole year's income as if resident, times the ratio of the
+   *   resident-period income to the year's on `ratioBasis`, held to 0 to 1.
+   *   Deductions, exemptions and credits are the full-year ones, so the ratio
+   *   prorates them, except Oregon's retirement income credit, which OR-40-P
+   *   subtracts after the ratio on the resident period's pension.
+   *
+   * `ratioBasis`: `federalAgi` divides federal AGI items (ordinary income,
+   * qualified dividends, net gains and taxable Social Security) received while
+   * resident by the year's; `stateIncome` divides the state's own income after
+   * its modifications and retirement exclusions, before exemptions and the
+   * deduction; `stateOverFederalAgi` divides the resident-period state income by
+   * the year's federal AGI items.
+   *
+   * `exclusionCap`: how a dollar-capped retirement exclusion applies to the
+   * resident period. `full` keeps the whole cap for the resident-period
+   * receipts; `months` prorates it by the months resident; `retirementShare`
+   * by the share of the year's retirement income received while resident;
+   * `incomeRatio` by the federal-AGI-items ratio; `viaTaxRatio` leaves it in
+   * the full-year tax that the method (b) ratio dilutes, and gives the
+   * resident-period income the exclusion of its own receipts. Left out, the
+   * slice takes the year's exclusion by the months, as `months` does, and the
+   * year is marked incomplete where the whole cap on the slice's own receipts
+   * would give the slice a different income.
    */
-  partYear?: {
-    rateSchedule: 'scaled' | 'unscaled'
-    standardDeduction: 'months' | 'full'
-    exemptions: 'months' | 'full'
-  }
+  partYear?:
+    | {
+        method: 'residentPeriod'
+        standardDeduction: StatePartYearRatio
+        exemptions: StatePartYearRatio
+        ratioBasis: StatePartYearRatioBasis
+        exclusionCap?: StatePartYearExclusionCap
+      }
+    | {
+        method: 'incomePercentage'
+        ratioBasis: StatePartYearRatioBasis
+        exclusionCap?: StatePartYearExclusionCap
+      }
   /**
    * Direct QCD conformity metadata. `unknown` fails closed for exact state QCD
    * results; never infer addback from silence. Pack policy is authoritative.

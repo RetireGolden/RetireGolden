@@ -52,3 +52,11 @@ $25,500 MFJ for 2025.
 ## Citations
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — 2025 flat 4.25%; standard deduction $12,750 / $25,500.
 - https://www.ncdor.gov/taxes-forms/individual-income-tax/filing-topics/bailey-decision-concerning-federal-state-and-local-retirement-benefits — Bailey government-pension exemption; SS fully exempt; IRA/401(k) taxable.
+
+## Part-year residents (2026-10-08)
+
+Method (b), D-401 2025: line 13, Schedule PN line 21 Column B over Column A, both total income with the North Carolina adjustments, times the line 12b taxable income; at a flat rate that is the tax times the ratio. No capped retirement exclusion. The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in North Carolina and six in Texas, owes $1,740.64 for the North Carolina months, the same as before. With a $40,000 Roth conversion on top, the slice is $3,263.96 when the conversion falls in the months resident and $1,813.31 when it falls in Texas's, where the months share of the year gave $2,538.64 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

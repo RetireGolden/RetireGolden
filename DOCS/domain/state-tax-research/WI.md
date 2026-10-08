@@ -48,12 +48,13 @@ credit-forfeiture limbs that the coarse pack cap does not yet express.
   `capPerPerson` / `minAge` pack fields.
 - Part-year residents: Form 1NPR (2025 instructions) looks the deduction up in its
   Standard Deduction Table by the year's federal income (line 31) and prorates the tax by Wisconsin income over
-  federal income (line 32). The split-year slice takes the months share of the
-  full-year tax, the months for the ratio, and from 2026-10-07 phases the deduction
-  on the year's income; before, it phased it on the slice's own income. A single
-  filer of 50 with $100,000 of ordinary income, resident six months: $1,798.39, now
-  $2,232.31. The slice drops the exemptions, which need household facts it does not
-  receive. Nonresident returns are out of scope.
+  federal income (line 32). From 2026-10-08 the split-year slice is that method, the
+  full-year tax with the year's household facts times line 32 (Part-year residents,
+  below); from 2026-10-07 it was the months share with the deduction phased on the
+  year's income, and before that it phased it on the slice's own income. A single
+  filer of 50 with $100,000 of ordinary income, resident six months: $1,798.39, then
+  and now $2,232.31; with the $700 exemption supplied, $2,213.76. Nonresident
+  returns are out of scope.
 
 ## Citations
 - https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf — TY2026 Form 1-ES instructions page 2 (SD phase-down) and rate schedules.
@@ -65,3 +66,11 @@ credit-forfeiture limbs that the coarse pack cap does not yet express.
 TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. A part-year resident's Form 1NPR looks the deduction up in its Standard Deduction Table by the year's federal income (line 31) and prorates the tax by the ratio of Wisconsin income to federal income (line 32); the split-year slice takes the months share of the full-year tax and, from 2026-10-07, phases the deduction on the year's income. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.
 
 Registered as `wi-2026-rates-standard-deduction-exemptions`. Authority: [Wisconsin 2026 Form 1-ES, pages 2–3](https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf).
+
+## Part-year residents (2026-10-08)
+
+Method (b), 1NPR 2025 instructions: the sliding deduction on the year's federal income; line 32 divides line 30, the Wisconsin column, by line 31, federal income; Schedule SB reduces the $24,000 subtraction at 67 by the Wisconsin share of the income (wi-2026-rates-standard-deduction-exemptions). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'incomeRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months. Taking the subtraction's share on federal AGI items leaves out Wisconsin's modifications, which move the form's share either way, so the figure errs in either direction.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Wisconsin and six in Texas, owes $2,232.31 for the Wisconsin months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,382.01 when the conversion falls in the months resident and $2,434.45 when it falls in Texas's, where the months share of the year gave $3,408.23 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

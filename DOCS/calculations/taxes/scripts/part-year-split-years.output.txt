@@ -1,0 +1,192 @@
+Output of part-year-split-years.mjs (this folder), run from the repository root on 2026-10-08,
+twice: on a worktree of 9b997500, the engine 0.4.2 merge on main, before the part-year work of
+0.4.3 (`node DOCS/calculations/taxes/scripts/part-year-split-years.mjs <that worktree>`), and on
+this branch after the review fixes, at 95ac71ffd (no argument). No later commit of the branch
+changes a computation: the commits after it add this evidence and change only text. Dollars
+throughout.
+
+What moved between the two runs:
+- U1's annuity effect from a 2026 start, -147,615.81 to -151,691.59. Kentucky's ten-month slice
+  now receives ten twelfths of the year's undated Roth conversion of the 401(k) and excludes it
+  against the whole $31,110 (2025 Schedule P: the pension income received while resident, up to
+  the cap): 4,397.59 with the annuity bought, 25,963.61 without, at 3.5%, so 2026's state tax
+  falls by 153.92 and 908.73. The household without the annuity saves more, so the effect grows.
+- The lifetime state and local tax of five relocation candidates; every other plan and
+  candidate in the table is equal to the cent:
+    example-couple, FL 2030               34,523.70 to 33,424.99   (-1,098.71)
+    example-couple, AZ 2028-04            55,078.58 to 53,946.22   (-1,132.36)
+    example-couple, PA 2031-10            50,011.81 to 47,821.03   (-2,190.78)
+    glidepath-allocation, PA 2031-10      78,607.51 to 77,409.33   (-1,198.18)
+    static-allocation-control, PA 2031-10 85,517.99 to 84,319.61   (-1,198.38)
+  The example couple's Kentucky slice takes the conversion it receives against the whole cap,
+  and Pennsylvania's slice, which now receives the rows, no longer taxes the conversion, as
+  Pennsylvania does not; in the two California plans the Pennsylvania slice drops the
+  conversion the same way and California's slice is its method (b), the full-year tax times
+  9/12, where 0.4.2 scaled the schedule with the months. Later years follow from the balances
+  each split year leaves.
+
+================================================================ before: engine 0.4.2
+part-year-split-years.mjs at 9b9975004 (without tax/statePartYear.ts)
+
+U1 (Kentucky to Florida in November 2026), from a 2026 start
+ with the annuity: ending net worth 4,047,909.85
+  2026: KY 10 months, FL 2 months; year-end state FL; state tax 6,930.87 (incomplete)
+    KY: 10 months, the months share of the year, state tax 6,930.87; no rows
+    FL: 2 months, the months share of the year, state tax 0.00; no rows
+    the year's row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 5,277.11, Roth conversion 5,277.11
+ without the annuity: ending net worth 4,195,525.66
+  2026: KY 10 months, FL 2 months; year-end state FL; state tax 6,653.63 (incomplete)
+    KY: 10 months, the months share of the year, state tax 6,653.63; no rows
+    FL: 2 months, the months share of the year, state tax 0.00; no rows
+    the year's row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 31,156.33, Roth conversion 31,156.33
+ the annuity's effect: -147,615.81
+
+Relocation, lifetime state and local tax, from a 2026 start: baseline | FL 2030 | AZ 2028-04 | NY | PA 2031-10 | OR 2027
+ aggressive-saver: 0.00 | 0.00 | 691,368.98 | 1,915,214.22 | 131,062.00 | 2,798,755.64
+ all-401k-no-bridge: 168,525.87 | 19,045.91 | 137,207.76 | 255,776.43 | 88,334.21 | 430,608.60
+ annuity-purchases-estate: 0.00 | 0.00 | 16,114.46 | 77,145.13 | 0.00 | 138,703.49
+ barista-fire: 845,653.54 | 31,418.68 | 266,119.91 | 570,551.23 | 136,874.50 | 845,653.54
+ bracket-fill-roth: 0.00 | 0.00 | 12,870.72 | 49,351.74 | 0.00 | 69,308.88
+ bridge-early-retirement: 423,206.44 | 11,209.49 | 146,163.18 | 310,043.20 | 51,203.00 | 539,136.14
+ brokerage-bridge-401k: 169,881.06 | 24,171.98 | 135,715.28 | 257,951.09 | 92,003.22 | 429,267.03
+ brokerage-no-hsa: 0.00 | 0.00 | 4,596.81 | 6,953.90 | 687.47 | 23,684.64
+ coast-fire: 311,116.90 | 14,434.88 | 216,692.40 | 461,779.84 | 169,866.02 | 845,750.81
+ early-career-match: 920,089.37 | 9,851.45 | 284,682.43 | 663,086.87 | 194,806.64 | 1,098,543.27
+ early-retiree-aca: 0.00 | 0.00 | 31,493.07 | 51,731.32 | 22,046.19 | 129,112.47
+ example-couple: 72,808.43 | 34,523.70 | 55,078.58 | 103,419.81 | 50,011.81 | 190,706.21
+ fixed-target-spending: 7,132.16 | 2,989.91 | 1,699.70 | 7,532.74 | 7,065.18 | 15,151.77
+ glidepath-allocation: 101,720.23 | 48,577.08 | 42,164.50 | 66,191.26 | 78,607.51 | 121,356.89
+ guardrails-flex-goals: 7,903.47 | 2,552.06 | 911.21 | 6,377.36 | 8,381.86 | 15,262.64
+ hsa-property-depth: 0.00 | 0.00 | 4,439.76 | 11,013.58 | 1,514.41 | 24,235.32
+ hsa-stealth-retirement: 240,517.96 | 20,426.98 | 109,737.51 | 193,270.54 | 59,898.57 | 387,982.66
+ inherited-ira-beneficiary: 0.00 | 0.00 | 8,410.49 | 15,968.41 | 0.00 | 36,826.90
+ lean-fat-fire: 0.00 | 0.00 | 334,251.12 | 860,295.58 | 79,258.27 | 1,381,531.74
+ ltc-shock: 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00
+ moving-state-tax: 145,058.90 | 0.00 | 97,862.79 | 234,910.32 | 122,478.84 | 381,472.21
+ no-annuity-brokerage: 0.00 | 0.00 | 18,698.96 | 75,910.67 | 0.00 | 133,736.07
+ no-head-start-grad: 641,853.16 | 11,373.48 | 388,926.75 | 935,742.47 | 196,864.61 | 1,506,674.63
+ rmd-irmaa: 0.00 | 0.00 | 47,249.47 | 94,604.87 | 8,910.10 | 206,938.48
+ salary-growth-escalation: 0.00 | 0.00 | 351,228.59 | 872,379.18 | 140,774.86 | 1,422,093.07
+ static-allocation-control: 95,396.97 | 53,146.67 | 40,702.39 | 63,298.33 | 85,517.99 | 114,296.94
+ survivor-years: 0.00 | 0.00 | 8,043.75 | 5,915.25 | 0.00 | 64,107.75
+ trump-account-head-start: 863,621.97 | 11,373.48 | 519,378.99 | 1,299,307.65 | 196,864.61 | 2,023,265.51
+ under-saved-single: 0.00 | 0.00 | 24,683.04 | 50,350.51 | 21,351.04 | 107,862.89
+
+example-couple, candidate 0 (FL 2030): lifetime state and local tax 34,523.70
+  2030: KY 6 months, FL 6 months; year-end state FL; state tax 4,407.57 (incomplete)
+    KY: 6 months, the months share of the year, state tax 4,407.57; no rows
+    FL: 6 months, the months share of the year, state tax 0.00; no rows
+    the year's row example-couple--401k (employerPlan, owner example-couple--alex, age 68.67): included 173,145.10, Roth conversion 173,145.10
+example-couple, candidate 1 (AZ 2028-04): lifetime state and local tax 55,078.58
+  2028: KY 3 months, AZ 9 months; year-end state AZ; state tax 5,373.60 (incomplete)
+    KY: 3 months, the months share of the year, state tax 1,955.05; no rows
+    AZ: 9 months, the months share of the year, state tax 3,418.56; no rows
+    the year's row example-couple--401k (employerPlan, owner example-couple--alex, age 66.67): included 189,819.68, Roth conversion 189,819.68
+example-couple, candidate 3 (PA 2031-10): lifetime state and local tax 50,011.81
+  2031: KY 9 months, PA 3 months; year-end state PA; state tax 7,532.46 (incomplete)
+    KY: 9 months, the months share of the year, state tax 5,801.75; no rows
+    PA: 3 months, the months share of the year, state tax 1,730.71; no rows
+    the year's row example-couple--401k (employerPlan, owner example-couple--alex, age 69.67): included 144,746.27, Roth conversion 144,746.27
+glidepath-allocation, candidate 3 (PA 2031-10): lifetime state and local tax 78,607.51
+  2031: CA 9 months, PA 3 months; year-end state PA; state tax 19,029.95 (incomplete)
+    CA: 9 months, the months share of the year, state tax 17,954.49; no rows
+    PA: 3 months, the months share of the year, state tax 1,075.46; no rows
+    the year's row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 140,101.34, Roth conversion 140,101.34
+    the year's row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 161,287.36
+static-allocation-control, candidate 3 (PA 2031-10): lifetime state and local tax 85,517.99
+  2031: CA 9 months, PA 3 months; year-end state PA; state tax 19,390.50 (incomplete)
+    CA: 9 months, the months share of the year, state tax 18,315.04; no rows
+    PA: 3 months, the months share of the year, state tax 1,075.46; no rows
+    the year's row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 140,124.90, Roth conversion 140,124.90
+    the year's row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 166,456.55
+
+================================================================ after: this branch
+part-year-split-years.mjs at 95ac71ffd (with tax/statePartYear.ts)
+
+U1 (Kentucky to Florida in November 2026), from a 2026 start
+ with the annuity: ending net worth 4,048,813.82
+  2026: KY 10 months, FL 2 months; year-end state FL; state tax 6,776.95 (complete)
+    KY: 10 months, residentPeriod, state tax 6,776.95
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 4,397.59, Roth conversion 4,397.59, undated
+    FL: 2 months, noIncomeTax, state tax 0.00
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 879.52, Roth conversion 879.52, undated
+    spread by months: 241,661.73
+ without the annuity: ending net worth 4,200,505.41
+  2026: KY 10 months, FL 2 months; year-end state FL; state tax 5,744.90 (complete)
+    KY: 10 months, residentPeriod, state tax 5,744.90
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 25,963.61, Roth conversion 25,963.61, undated
+    FL: 2 months, noIncomeTax, state tax 0.00
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 64.67): included 5,192.72, Roth conversion 5,192.72, undated
+    spread by months: 232,156.33
+ the annuity's effect: -151,691.59
+
+Relocation, lifetime state and local tax, from a 2026 start: baseline | FL 2030 | AZ 2028-04 | NY | PA 2031-10 | OR 2027
+ aggressive-saver: 0.00 | 0.00 | 691,368.98 | 1,915,214.22 | 131,062.00 | 2,798,755.64
+ all-401k-no-bridge: 168,525.87 | 19,045.91 | 137,207.76 | 255,776.43 | 88,334.21 | 430,608.60
+ annuity-purchases-estate: 0.00 | 0.00 | 16,114.46 | 77,145.13 | 0.00 | 138,703.49
+ barista-fire: 845,653.54 | 31,418.68 | 266,119.91 | 570,551.23 | 136,874.50 | 845,653.54
+ bracket-fill-roth: 0.00 | 0.00 | 12,870.72 | 49,351.74 | 0.00 | 69,308.88
+ bridge-early-retirement: 423,206.44 | 11,209.49 | 146,163.18 | 310,043.20 | 51,203.00 | 539,136.14
+ brokerage-bridge-401k: 169,881.06 | 24,171.98 | 135,715.28 | 257,951.09 | 92,003.22 | 429,267.03
+ brokerage-no-hsa: 0.00 | 0.00 | 4,596.81 | 6,953.90 | 687.47 | 23,684.64
+ coast-fire: 311,116.90 | 14,434.88 | 216,692.40 | 461,779.84 | 169,866.02 | 845,750.81
+ early-career-match: 920,089.37 | 9,851.45 | 284,682.43 | 663,086.87 | 194,806.64 | 1,098,543.27
+ early-retiree-aca: 0.00 | 0.00 | 31,493.07 | 51,731.32 | 22,046.19 | 129,112.47
+ example-couple: 72,808.43 | 33,424.99 | 53,946.22 | 103,419.81 | 47,821.03 | 190,706.21
+ fixed-target-spending: 7,132.16 | 2,989.91 | 1,699.70 | 7,532.74 | 7,065.18 | 15,151.77
+ glidepath-allocation: 101,720.23 | 48,577.08 | 42,164.50 | 66,191.26 | 77,409.33 | 121,356.89
+ guardrails-flex-goals: 7,903.47 | 2,552.06 | 911.21 | 6,377.36 | 8,381.86 | 15,262.64
+ hsa-property-depth: 0.00 | 0.00 | 4,439.76 | 11,013.58 | 1,514.41 | 24,235.32
+ hsa-stealth-retirement: 240,517.96 | 20,426.98 | 109,737.51 | 193,270.54 | 59,898.57 | 387,982.66
+ inherited-ira-beneficiary: 0.00 | 0.00 | 8,410.49 | 15,968.41 | 0.00 | 36,826.90
+ lean-fat-fire: 0.00 | 0.00 | 334,251.12 | 860,295.58 | 79,258.27 | 1,381,531.74
+ ltc-shock: 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00
+ moving-state-tax: 145,058.90 | 0.00 | 97,862.79 | 234,910.32 | 122,478.84 | 381,472.21
+ no-annuity-brokerage: 0.00 | 0.00 | 18,698.96 | 75,910.67 | 0.00 | 133,736.07
+ no-head-start-grad: 641,853.16 | 11,373.48 | 388,926.75 | 935,742.47 | 196,864.61 | 1,506,674.63
+ rmd-irmaa: 0.00 | 0.00 | 47,249.47 | 94,604.87 | 8,910.10 | 206,938.48
+ salary-growth-escalation: 0.00 | 0.00 | 351,228.59 | 872,379.18 | 140,774.86 | 1,422,093.07
+ static-allocation-control: 95,396.97 | 53,146.67 | 40,702.39 | 63,298.33 | 84,319.61 | 114,296.94
+ survivor-years: 0.00 | 0.00 | 8,043.75 | 5,915.25 | 0.00 | 64,107.75
+ trump-account-head-start: 863,621.97 | 11,373.48 | 519,378.99 | 1,299,307.65 | 196,864.61 | 2,023,265.51
+ under-saved-single: 0.00 | 0.00 | 24,683.04 | 50,350.51 | 21,351.04 | 107,862.89
+
+example-couple, candidate 0 (FL 2030): lifetime state and local tax 33,424.99
+  2030: KY 6 months, FL 6 months; year-end state FL; state tax 3,308.86 (complete)
+    KY: 6 months, residentPeriod, state tax 3,308.86
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 68.67): included 86,572.55, Roth conversion 86,572.55, undated
+    FL: 6 months, noIncomeTax, state tax 0.00
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 68.67): included 86,572.55, Roth conversion 86,572.55, undated
+    spread by months: 258,017.89
+example-couple, candidate 1 (AZ 2028-04): lifetime state and local tax 53,946.22
+  2028: KY 3 months, AZ 9 months; year-end state AZ; state tax 4,273.26 (complete)
+    KY: 3 months, residentPeriod, state tax 862.00
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 66.67): included 47,454.92, Roth conversion 47,454.92, undated
+    AZ: 9 months, residentPeriod, state tax 3,411.26
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 66.67): included 142,364.76, Roth conversion 142,364.76, undated
+    spread by months: 236,393.87
+example-couple, candidate 3 (PA 2031-10): lifetime state and local tax 47,821.03
+  2031: KY 9 months, PA 3 months; year-end state PA; state tax 5,292.01 (complete)
+    KY: 9 months, residentPeriod, state tax 4,681.43
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 69.67): included 108,559.70, Roth conversion 108,559.70, undated
+    PA: 3 months, residentPeriod, state tax 610.58
+      row example-couple--401k (employerPlan, owner example-couple--alex, age 69.67): included 36,186.57, Roth conversion 36,186.57, undated
+    spread by months: 224,300.29
+glidepath-allocation, candidate 3 (PA 2031-10): lifetime state and local tax 77,409.33
+  2031: CA 9 months, PA 3 months; year-end state PA; state tax 17,831.77 (complete)
+    CA: 9 months, incomePercentage, ratio 0.750000, state tax 17,831.59
+      row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 105,076.00, Roth conversion 105,076.00, undated
+      row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 119,644.00, undated
+    PA: 3 months, residentPeriod, state tax 0.18
+      row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 35,025.33, Roth conversion 35,025.33, undated
+      row glidepath-allocation--t401k (employerPlan, owner glidepath-allocation--p1, age 69.25): included 39,881.33, undated
+    spread by months: 299,650.23
+static-allocation-control, candidate 3 (PA 2031-10): lifetime state and local tax 84,319.61
+  2031: CA 9 months, PA 3 months; year-end state PA; state tax 18,192.12 (complete)
+    CA: 9 months, incomePercentage, ratio 0.750000, state tax 18,192.12
+      row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 105,093.68, Roth conversion 105,093.68, undated
+      row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 123,520.67, undated
+    PA: 3 months, residentPeriod, state tax 0.00
+      row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 35,031.23, Roth conversion 35,031.23, undated
+      row static-allocation-control--t401k (employerPlan, owner static-allocation-control--p1, age 69.25): included 41,173.56, undated
+    spread by months: 304,819.13

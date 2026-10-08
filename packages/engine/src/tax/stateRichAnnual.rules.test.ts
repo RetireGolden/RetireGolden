@@ -20,10 +20,16 @@ describe('rich annual state transport and basis', () => {
     expect(rich.amount).toBeCloseTo(1_335, 8)
     expect(calculator.compute(year)).toBe(rich.amount)
   })
-  it('retains a split-year tax estimate and refuses exact basis allocation', () => {
+  it('prices each state of a split year by its own method and commits no basis without the facts', () => {
+    // California, method (b): half its full-year tax on $100,000, 5,207.98 /
+    // 2 = 2,603.99 (100,000 - 5,706 on the schedule). New Jersey, method (a):
+    // $50,000 less half its $1,000 exemption on the ordinary table,
+    // 1,242.375. Neither needs the split-year code now; the year is
+    // incomplete for the HSA and QCD activity nothing supplied.
     const result = createStateTaxCalculator().computeResult(input('CA', { ordinaryIncome: 100_000, stateResidency: [{ state: 'CA', months: 6 }, { state: 'NJ', months: 6 }] }))
-    expect(result.amount).toBeGreaterThan(0)
-    expect(result.issues.some((issue) => issue.code === 'state-rich-split-year-adapter-required')).toBe(true)
+    expect(result.amount).toBeCloseTo(3_846.365, 6)
+    expect(result.issues.map((issue) => issue.code)).not.toContain('state-rich-split-year-adapter-required')
+    expect(result.issues.map((issue) => issue.code)).toContain('ca-hsa-activity-unavailable')
     expect(result.hsaBasisPools).toBeUndefined()
   })
   it.each(['MA', 'VA', 'UT'])('%s consumes account basis only once across two events', (state) => {

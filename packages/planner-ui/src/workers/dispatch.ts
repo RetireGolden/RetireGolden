@@ -23,7 +23,6 @@ import {
   runRiskBasedGuardrailRequest,
 } from '../mc/runRequest'
 import type { OptimizeRequest, OptimizeResponse } from '../optimize/messages'
-import { runOptimizeRequest } from '../optimize/runOptimize'
 import type { SpendingSolveRequest, SpendingSolveResponse } from '../optimize/spendingMessages'
 import { runSpendingSolveRequest } from '../optimize/runSpendingSolve'
 import type { RelocationCompareRequest, RelocationCompareResponse } from '../relocation/messages'
@@ -98,9 +97,18 @@ export async function dispatchPlannerWorkerRequest(
     case 'monteCarlo':
       handleMonteCarlo(message.request, host)
       return
-    case 'optimize':
+    case 'optimize': {
+      // Loaded on the channel's first request, not with the worker: the
+      // optimizer and its LP model are about 59 KiB that the Monte Carlo,
+      // spending-solve and relocation channels never run (D-BUNDLE-HEADROOM).
+      // The chunk this emits imports the worker entry back, which is safe
+      // only because it is reached through import() and evaluates after the
+      // entry has finished; app/scripts/bundleBudget.mjs workerEntryImporters
+      // says why and still fails any statically imported chunk that does it.
+      const { runOptimizeRequest } = await import('../optimize/runOptimize')
       host.post({ type: 'done', result: await runOptimizeRequest(message.request, host.wasmUrl) })
       return
+    }
     case 'spendingSolve':
       host.post({ type: 'done', result: runSpendingSolveRequest(message.request) })
       return

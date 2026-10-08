@@ -246,7 +246,7 @@ export const westStateRecords = {
   'ars-43-1041-standard-deduction-published-amount': {
     title: 'Arizona’s standard deduction is its own amount, indexed in the federal manner',
     statement:
-      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2026 (for taxable years beginning after December 31, 2025). The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it. A part-year resident’s Form 140PY taxes the Arizona taxable income at 2.5% (line 56) and allows the whole standard deduction (2025 instructions: “The standard deduction is not prorated”), while the exemptions are multiplied by the Arizona income ratio (line 51). From 2026-10-07 a slice of a year split between states keeps the whole deduction (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it prorated it by months. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,053.13, now $856.25.',
+      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2026 (for taxable years beginning after December 31, 2025). The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it. A part-year resident’s Form 140PY taxes the Arizona taxable income at 2.5% (line 56) and allows the whole standard deduction (2025 instructions: “The standard deduction is not prorated”), while the exemptions are multiplied by the Arizona income ratio (line 51). From 2026-10-07 a slice of a year split between states keeps the whole deduction, where before it prorated it by months. From 2026-10-08 the slice is the income received in the months resident, a dated distribution in the slice of its month and the rest by the months (tax/statePartYear.ts#allocateSplitYear); the exemptions take the line 27 ratio, Arizona gross income over federal AGI; and the $2,500 government pension subtraction keeps its whole cap against the pension in the Arizona column (the 2026 figures’ partYear, tax/stateTax.ts#computeSplitYearResult). With $100,000 of ordinary income spread evenly and a $40,000 Roth conversion in the six months resident, a single filer of 50 pays $1,856.25, or $856.25 with the conversion in the other state’s months, where the months share of the income gave $1,356.25 either way. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,053.13, now $856.25.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -303,7 +303,7 @@ export const westStateRecords = {
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/params/state/data/year2026.ts#AZ.partYear',
-      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
     ],
   },
 
@@ -889,7 +889,7 @@ export const westStateRecords = {
   'hi-hrs-235-2-4-a-2-f-2026-standard-deduction': {
     title: 'Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint',
     statement:
-      'For tax year 2026, Hawaii’s standard deduction is $8,000 for an unmarried individual and $16,000 on a joint return. The pack models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record. Personal exemptions, itemization, and whole-return accuracy are also outside this record. A part-year resident’s Form N-15 (Rev. 2025) multiplies the standard deduction and the exemptions by the ratio of Hawaii AGI to total AGI (lines 37, 40b and 42b) and takes the tax from the ordinary table (line 44). From 2026-10-07 a slice of a year split between states does the same, with the months for the ratio (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the table with the months too. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,941.60, now $2,395.20.',
+      'For tax year 2026, Hawaii’s standard deduction is $8,000 for an unmarried individual and $16,000 on a joint return. The pack models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record. Personal exemptions, itemization, and whole-return accuracy are also outside this record. A part-year resident’s Form N-15 (Rev. 2025) multiplies the standard deduction and the exemptions by the ratio of Hawaii AGI to total AGI (lines 37, 40b and 42b) and takes the tax from the ordinary table (line 44). From 2026-10-07 a slice of a year split between states keeps the table whole, where before it scaled it with the months too. From 2026-10-08 the slice is the income received in the months resident (tax/statePartYear.ts#allocateSplitYear), and the ratio is line 37’s, line 35 Column B over Column A, Hawaii AGI over total AGI without the excluded pensions and Social Security, where before the months stood for it (the 2026 figures’ partYear, tax/stateTax.ts#computeSplitYearResult). With $100,000 spread evenly and a $40,000 Roth conversion in the six months resident, a single filer of 50 pays $5,340.34, or $2,477.49 with the conversion in the other state’s months, where the months share gave $3,907.20 either way. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,941.60, now $2,395.20.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -927,7 +927,7 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.HI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/params/state/data/year2026.ts#HI.partYear',
-      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
     ],
   },
 
@@ -1084,7 +1084,7 @@ export const westStateRecords = {
   'id-form-43-part-year-resident-period': {
     title: 'Idaho taxes a part-year resident on the income of the months resident, with the deduction prorated and the zero band whole',
     statement:
-      'A part-year resident files Form 43. Line 38 is the Idaho percentage, line 31 Column B over Column A; line 39 multiplies the deduction on line 37 by it; line 41 subtracts the result from line 31 Column B to give Idaho taxable income; and the line 42 tax worksheet subtracts the whole $4,811 ($9,622 joint) before applying 5.3%, the same zero band a full-year resident has (2025 instructions). The 2026 figures carry the method as the partYear of params/state/data/year2026.ts, and from 2026-10-07 a slice of a year split between states keeps the zero band whole and prorates the deduction by the months resident (tax/stateTax.ts#prorateParams). The engine spreads the year’s income evenly over the months, so the months stand for the Idaho percentage; a year whose income fell unevenly across the move is outside this record. Until 2026-10-07 the slice also scaled the zero band with the months: a single filer of 50 with $100,000 of ordinary income, resident six months and six in Texas, paid $2,095.86 of Idaho tax where Form 43 gives $1,968.37. The retirement benefits deduction cap is prorated by the months as every state’s is, a limit va-code-58-1-322-03-2-personal-exemptions states. The 2025 instructions are the latest published; the 2026 return is taken to keep the method.',
+      'A part-year resident files Form 43. Line 38 is the Idaho percentage, line 31 Column B over Column A; line 39 multiplies the deduction on line 37 by it; line 41 subtracts the result from line 31 Column B to give Idaho taxable income; and the line 42 tax worksheet subtracts the whole $4,811 ($9,622 joint) before applying 5.3%, the same zero band a full-year resident has (2025 instructions). The 2026 figures carry the method as the partYear of params/state/data/year2026.ts. From 2026-10-07 a slice of a year split between states keeps the zero band whole. From 2026-10-08 the slice is the income received in the months resident (tax/statePartYear.ts#allocateSplitYear), and the deduction takes the Idaho percentage, line 31 Column B over Column A, total adjusted income after the Idaho additions and subtractions, where before the months stood for it (tax/stateTax.ts#computeSplitYearResult). With $100,000 spread evenly and a $40,000 Roth conversion in the six months resident, a single filer of 50 pays $3,966.47, or $2,090.27 with the conversion in the other state’s months, where the months share gave $3,028.37 either way. Until 2026-10-07 the slice also scaled the zero band with the months: a single filer of 50 with $100,000 of ordinary income, resident six months and six in Texas, paid $2,095.86 of Idaho tax where Form 43 gives $1,968.37. From 2026-10-08 the retirement benefits deduction is cut to the share of the benefits received while resident, as Form 39NR cuts it, never more than the slice’s own benefits earn (va-code-58-1-322-03-2-personal-exemptions states the limits that remain). The 2025 instructions are the latest published; the 2026 return is taken to keep the method.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1107,7 +1107,7 @@ export const westStateRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#ID.partYear',
-      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
     ],
   },
 
@@ -2105,7 +2105,7 @@ export const westStateRecords = {
   },
   'or-316-157-retirement-income-credit': {
     title: 'Oregon caps the age-62 retirement credit by net pension and liability',
-    statement: 'An eligible recipient age 62 or older receives 9% of net qualifying pension income, capped by remaining Oregon liability. Net pension is capped at $7,500 nonjoint/$15,000 joint, reduced by household Social Security/Tier-I benefits and household income above $15,000/$30,000. Only qualifying pension included in Oregon taxable income enters; a gross pension amount alone does not establish the credit. The credit cannot be claimed for tax years from 2032 (or-laws-2009-c913-s36-retirement-credit-ends-2032).',
+    statement: 'An eligible recipient age 62 or older receives 9% of net qualifying pension income, capped by remaining Oregon liability. Net pension is capped at $7,500 nonjoint/$15,000 joint, reduced by household Social Security/Tier-I benefits and household income above $15,000/$30,000. Only qualifying pension included in Oregon taxable income enters; a gross pension amount alone does not establish the credit. The credit cannot be claimed for tax years from 2032 (or-laws-2009-c913-s36-retirement-credit-ends-2032). For a part-year resident Form OR-40-P multiplies the tax by the Oregon percentage on line 45 and subtracts the standard credits of Schedule OR-ASC-NP, this one (code 811) among them, on lines 50 to 53, figured on the pension in the Oregon column (Publication OR-17): the slice of a year split between states takes the credit after its ratio, on its own rows (tax/stateTax.ts#computeSplitYearResult). Before 2026-10-08 the slice was the months share of the year without the household facts, so it dropped the credit: a single filer of 66 with a $12,000 pension and $8,000 of interest, six months resident, $588.19 where the form gives $363.19.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2131,6 +2131,8 @@ export const westStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.OR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateTax.ts#oregonRetirementCredit',
+      'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
       'packages/engine/src/tax/stateWestExtras.ts#oregonRetirementIncomeCredit',
     ],
   },

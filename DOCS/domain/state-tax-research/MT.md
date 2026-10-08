@@ -94,3 +94,11 @@ there is no broad pension/IRA exclusion, mapped to `retirement: { kind: "none" }
 TY2026 net long-term capital gains use 3.0% and 4.1%, with the rate boundary shared with ordinary income: $47,500 single/MFS, $71,250 HOH and $95,000 joint/QSS. Ordinary taxable income consumes the lower band first. A return cannot apply the full lower capital-gain band again independently of ordinary income.
 
 Registered as `mt-long-term-capital-gain-schedule`. Authority: [Montana DOR HB337 notice](https://revenuefiles.mt.gov/news/recent-news/HB-337).
+
+## Part-year residents (2026-10-08)
+
+Method (b), Form 2 2025 and its instructions, Schedule II: the tax as a resident times line 17, Montana-source income over income from all sources (mt-mca-15-30-2120-3-n-military-retirement-subtraction). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi', exclusionCap: 'viaTaxRatio' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Montana and six in Texas, owes $2,144.55 for the Montana months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,210.14 when the conversion falls in the months resident and $2,338.96 when it falls in Texas's, where the months share of the year gave $3,274.55 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

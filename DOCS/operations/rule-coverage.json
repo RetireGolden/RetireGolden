@@ -79,10 +79,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 484,
+    "totalFiles": 485,
     "byStatus": {
       "partial": 94,
-      "registered": 135,
+      "registered": 136,
       "rule-free": 255,
       "unswept": 0
     },
@@ -721,10 +721,10 @@
     },
     {
       "directory": "tax",
-      "files": 21,
+      "files": 22,
       "byStatus": {
         "partial": 12,
-        "registered": 8,
+        "registered": 9,
         "rule-free": 1
       }
     },

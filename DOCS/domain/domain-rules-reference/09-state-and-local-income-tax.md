@@ -188,22 +188,35 @@
   withdrawal. The limits that stay are stated in each state's record: Georgia's 62 to 64 tier, the Delaware and
   Arkansas date edges, in-plan rollovers in Maryland, Rhode Island, Mississippi and Pennsylvania, and Ohio and
   Hawaii, where the answer is not determined.
-- Mid-year state moves price each state's slice of the year on the months resident,
-  with the year's income spread evenly over the months. Taxable Social Security is
-  computed once on the full-year federal base and then apportioned by months. The
-  pack's `partYear` carries the state's part-year method, read from each state's 2025
-  part-year or nonresident instructions. Twelve states tax the resident-period income
-  on the ordinary schedule: their slice keeps the brackets and any zero band whole.
-  VA, NJ, HI, SC, DC, MS, ID and MD prorate the standard deduction and exemptions by
-  months; AZ, LA, KY and AL allow the standard deduction whole, and AL its exemptions
-  too. Every other state's slice scales its deduction, exemptions, brackets, band base
-  amounts and retirement caps by months. That is the months share of a full-year
-  resident's tax: the income-percentage method, with the months for the state's own
-  ratio. Wisconsin's sliding deduction is phased on the year's income, as Form 1NPR
-  phases it. Each state's form and line, and the limits that remain, are in
-  `va-code-58-1-322-03-2-personal-exemptions`: household facts and characterized
-  retirement rows do not reach a slice, every retirement cap is prorated by months,
-  and each state's own income ratio is replaced by the months.
+- Mid-year state moves price each state's slice of the year by that state's own
+  part-year method, read from its 2025 part-year or nonresident return (the pack's
+  `partYear`; DOCS/calculations/taxes/state-enacted-tax-year-figures.md, Part-year
+  residents). The slice's income is what the months resident received: a dated
+  distribution or QCD transfer in the slice of its month, Social Security by the
+  months it is paid, everything else by the months. Eighteen states tax that
+  income on their ordinary schedule (method (a); Pennsylvania's method (c) has
+  nothing to prorate), the standard deduction and exemptions prorated by months,
+  by the state's income ratio or not at all, as each return does. Twenty-four
+  take the tax on the whole year's income as if resident times the state's
+  income ratio (method (b); Maine, Ohio and Iowa through a credit that comes to
+  the same), on federal AGI items or on the state's own income after its
+  modifications, as each form divides. Taxable Social Security is computed once
+  on the full-year federal base. The slice receives the year's household facts
+  (Oregon's retirement income credit after the ratio, as OR-40-P takes it); a
+  capped retirement exclusion follows each state's rule for a part year, and
+  where the return does not state one (Arkansas, Colorado, Rhode Island,
+  Missouri) the slice takes the year's exclusion by the months and the year is
+  incomplete only where the whole cap would give the slice a different income.
+  The limits that remain are in `va-code-58-1-322-03-2-personal-exemptions`:
+  days are priced as months; only a dated distribution or QCD goes whole into
+  its slice, so income without a date, a named Roth conversion included, is
+  spread by months; the forms' ratio rounding, their tax tables (New Jersey,
+  Hawaii, California) and California's rounded effective rate are not applied;
+  Nebraska's and Wisconsin's federal-AGI proxies err in whichever direction
+  their left-out adjustments set; nonresident-period source income, the credit
+  for tax paid to the other state, special accrual and the full-year elections
+  are not modeled; and a California or New Jersey slice that is not the
+  year-end state is incomplete when the year has HSA facts.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,

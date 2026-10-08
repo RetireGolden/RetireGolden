@@ -66,15 +66,15 @@ type RawStateTaxParams = Omit<StateTaxParams, 'retirementPrivate' | 'retirementP
 type RawStateTaxPack = Omit<StateTaxPack, 'states'> & { states: Record<string, RawStateTaxParams> }
 
 /**
- * Part-year methods (`StateTaxParams.partYear`). A state left without one is
- * priced by the months share of a full-year resident's tax. These two are the
- * resident-period method: the part-year return taxes the income of the months
- * resident on the ordinary rate schedule. Each state's form and line are
- * cited where it is set.
+ * Part-year methods (`StateTaxParams.partYear`), from the 2025 part-year or
+ * nonresident return of every state with an income tax (the 42-jurisdiction
+ * derivation of 2026-10-07; DOCS/calculations/taxes/state-enacted-tax-year-figures.md,
+ * part-year residents). Each state cites its form and line where it is set.
+ * INCOME_PERCENTAGE is method (b) for the six states whose ratio divides
+ * federal AGI items, a capped exclusion left in the full-year tax the ratio
+ * dilutes (WV, VT, MN, MT, NM, ND).
  */
-const RESIDENT_PERIOD = { rateSchedule: 'unscaled', standardDeduction: 'months', exemptions: 'months' } as const
-/** The same, with the whole standard deduction allowed (AZ, LA, KY). */
-const RESIDENT_PERIOD_FULL_DEDUCTION = { ...RESIDENT_PERIOD, standardDeduction: 'full' } as const
+const INCOME_PERCENTAGE = { method: 'incomePercentage', ratioBasis: 'federalAgi', exclusionCap: 'viaTaxRatio' } as const
 
 const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   AL: { kind: 'full' },
@@ -158,10 +158,11 @@ const rawStateYear2026 = {
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 2 }, { lowerBound: 1000, ratePct: 4 }, { lowerBound: 6000, ratePct: 5 }],
       },
       retirement: { kind: 'capped', capPerPerson: 6000, minAge: 65 },
-      // A part-year resident files Form 40 on the resident-period income, with
-      // the whole standard deduction and exemptions (2025 Form 40 and Form 40NR
-      // booklets; al-dor-individual-income-tax-rate-schedule).
-      partYear: { rateSchedule: 'unscaled', standardDeduction: 'full', exemptions: 'full' },
+      // Method (a): a part-year resident files Form 40 on the resident-period
+      // income, with the whole standard deduction and exemptions (2025 Form 40
+      // and Form 40NR booklets); the $6,000 exclusion applies to the retirement
+      // income taxable to Alabama, uncut (al-dor-individual-income-tax-rate-schedule).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'full', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     AK: {
       // `capitalGainsAsOrdinary: false` here, as for every no-income-tax state
@@ -211,10 +212,12 @@ const rawStateYear2026 = {
       // deduction is subtracted for 2025 to 2028
       // (ars-43-1022-35-federal-senior-deduction-subtraction).
       federalSeniorDeduction: 'subtracted',
-      // Form 140PY: 2.5% of the resident-period taxable income; the standard
-      // deduction is not prorated, the exemptions are, by the Arizona income
-      // ratio (ars-43-1041-standard-deduction-published-amount).
-      partYear: RESIDENT_PERIOD_FULL_DEDUCTION,
+      // Method (a), Form 140PY (2025 instructions): line 27 divides Arizona gross
+      // income (line 26) by federal AGI (line 25); the standard deduction is not
+      // prorated, the exemptions are, by that ratio; the $2,500 government pension
+      // subtraction takes the whole cap against the pension in the Arizona column
+      // (ars-43-1041-standard-deduction-published-amount).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     AR: {
       // The thresholds below are DFA's PUBLISHED 2026 schedule (2026 Form
@@ -261,6 +264,11 @@ const rawStateYear2026 = {
         supportedTransactionKinds: ['directIraToCharity'],
         authoritySourceIds: ['AR2017', 'AR2025', 'IRS2016'],
       },
+      // Method (b), AR1000F/NR 2025 instructions: line 38D is the net tax after
+      // personal credits times Arkansas AGI over total AGI figured as if a
+      // full-year resident; how the $6,000 exemption splits in a part year is not
+      // stated (aca-26-51-307-e-uniformed-services-full-exemption).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome' },
     },
     CA: {
       code: 'CA', name: 'California', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -290,6 +298,11 @@ const rawStateYear2026 = {
       californiaMilitaryExclusions: { retirementCap: 20000, survivorBenefitCap: 20000, agiLimitNonjoint: 125000, agiLimitJoint: 250000 },
       hsaConformity: 'nonconformingCalifornia',
       directQcdPolicy: { kind: 'unknown' },
+      // Method (b), 2025 Form 540NR (the booklet returned 403; the method rests
+      // on its lines 36 and 37 as read in search snippets): the tax on all income
+      // times California AGI over total AGI; no capped retirement exclusion
+      // (ca-rtc-17132-9-10-military-retirement-exclusions).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     CO: {
       coloradoRetirement: { age55Cap: 20_000, age65Cap: 24_000, ssAgiNonjoint: 75_000, ssAgiJoint: 95_000 },
@@ -310,6 +323,11 @@ const rawStateYear2026 = {
       // up to $15,000, for 2022 to 2028; from 55 it is a pension in the
       // (4)(f) subtraction (co-crs-39-22-104-4-y-military-retirement-subtraction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0, cap: 15000 }, { minAge: 55, cap: 0 }] },
+      // Method (b), Rule 39-22-110 (DR 0104PN returned 403): the tax as a
+      // full-year resident times Colorado modified federal AGI over modified
+      // federal AGI; how the pension subtraction's caps apply to a part year is
+      // unresolved (co-crs-39-22-104-federal-base-and-pension-cap).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome' },
     },
     CT: {
       code: 'CT', name: 'Connecticut', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
@@ -357,6 +375,11 @@ const rawStateYear2026 = {
         marriedFilingJointly: { maximum: 24000, phaseoutStart: 48000, phaseoutStep: 1000, reductionPerStep: 1000 },
         qualifyingSurvivingSpouse: { maximum: 24000, phaseoutStart: 48000, phaseoutStep: 1000, reductionPerStep: 1000 },
       },
+      // Method (b), CT-1040NR/PY 2025 instructions: the tax as a resident times
+      // line 6, Connecticut-source income with its modifications, over line 5,
+      // Connecticut AGI; the retirement subtractions are percentages, with no
+      // dollar cap (ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' },
     },
     DE: {
       // 30 Del. C. § 1108(a)(3): $3,250 single / $6,500 MFJ basic standard
@@ -382,6 +405,11 @@ const rawStateYear2026 = {
       },
       retirement: { kind: 'capped', capPerPerson: 12500, minAge: 60 },
       delawareUnder60Pension: { ordinaryCap: 2000, militaryCap: 12500 },
+      // Method (b), PIT-NON 2025: line 42 taxes all income; line 43 divides line
+      // 30a, modified Delaware-source income, by line 30b, Delaware AGI; the
+      // pension exclusion's Delaware column is the exclusion times the Delaware
+      // share of the pension income (de-code-30-1106-social-security-retirement-subtractions).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' },
     },
     DC: {
       // D.C. Law 26-189 (permanent, effective 2026-10-02, applying from 2025;
@@ -407,10 +435,10 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'none' },
-      // 2025 D-40 booklet: a part-year resident is taxed on the income of the
-      // period domiciled in DC; 47-1801.04(44)(D) prorates the deduction by
-      // months (dc-code-47-1801-04-3a-standard-deduction-2026-2029).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), 2025 D-40 booklet: the income of the period domiciled in DC;
+      // the deduction, exemptions and subtractions by days (Calculation C), here
+      // by months (dc-code-47-1801-04-3a-standard-deduction-2026-2029).
+      partYear: { method: 'residentPeriod', standardDeduction: 'months', exemptions: 'months', ratioBasis: 'federalAgi', exclusionCap: 'months' },
     },
     FL: {
       // `false` per the AK note above. Fla. Const. art. VII § 5(a) reaches "the
@@ -435,6 +463,12 @@ const rawStateYear2026 = {
       // benefit on a deceased veteran's record at any age, in full
       // (ga-code-48-7-27-a-5-1-military-retirement-exclusion).
       militaryRetirementExclusion: { byAge: [{ minAge: 0, cap: 17500 }, { minAge: 62, cap: 0 }], survivor: 100, wageAddition: 17500 },
+      // Method (a), 2025 IT-511 Schedule 3: line 9 divides line 8 Column C by
+      // Column A, both after the Georgia adjustments, and prorates the standard
+      // deduction and dependents; the retirement exclusion is prorated by the
+      // Georgia share of the retirement income
+      // (ga-code-48-7-27-a-5-1-military-retirement-exclusion).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' },
     },
     HI: {
       // Haw. Rev. Stat. § 235-2.4(a)(2)(F): $8,000 single / $16,000 MFJ for tax
@@ -471,10 +505,12 @@ const rawStateYear2026 = {
         kind: 'conforms',
         citation: 'Hawaii adopts current IRC; direct QCD federal exclusion flows through absent a Hawaii addition',
       },
-      // Form N-15 (Rev. 2025): lines 40b and 42b prorate the standard deduction
-      // and exemptions by the line 37 Hawaii AGI ratio; line 44 takes the tax
-      // from the ordinary table (hi-hrs-235-2-4-a-2-f-2026-standard-deduction).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), Form N-15 (Rev. 2025): line 37 divides line 35 Column B,
+      // Hawaii AGI, by Column A, total AGI, both without the excluded pensions and
+      // Social Security; lines 40b and 42b prorate the standard deduction and
+      // exemptions by it, and line 44 takes the tax from the ordinary table
+      // (hi-hrs-235-2-4-a-2-f-2026-standard-deduction).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     ID: {
       code: 'ID', name: 'Idaho', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -489,10 +525,12 @@ const rawStateYear2026 = {
       // 151(d)(5)(C) senior deduction applies for 2025 to 2028
       // (id-h559-2026-conformity-senior-deduction).
       federalSeniorDeduction: 'subtracted',
-      // 2025 Form 43, lines 38 and 39: the deduction times the Idaho
-      // percentage; the line 42 worksheet subtracts the whole $4,811 zero band
-      // before 5.3% (id-form-43-part-year-resident-period).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), 2025 Form 43: line 38 divides line 31, total adjusted income
+      // (AGI with the Idaho additions and subtractions), Column B by Column A, and
+      // line 39 applies it to the deduction; the line 42 worksheet subtracts the
+      // whole zero band; Form 39NR cuts the retirement benefits deduction to the
+      // share received while resident (id-form-43-part-year-resident-period).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' },
     },
     IL: {
       code: 'IL', name: 'Illinois', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -505,6 +543,11 @@ const rawStateYear2026 = {
         agiCutoffNonjoint: 250000,
         agiCutoffJoint: 500000,
       },
+      // Method (a), 2025 Schedule NR: line 48 divides line 46, the Illinois
+      // portion of base income, by line 47, base income, and line 50 applies it to
+      // the exemption; the retirement subtraction reaches the income received as
+      // a resident, with no cap (il-personal-exemption-2026).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     IN: {
       // Legislated ramp, and Indiana's is statutory rather than published:
@@ -544,6 +587,10 @@ const rawStateYear2026 = {
       // IC 6-3-2-4(a)(2): military retirement and survivor's benefits in full
       // (ic-6-3-2-4-military-retirement-deduction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }], survivor: 'retiredPay' },
+      // Method (a), Form IT-40PNR: Column B is the income while resident, the
+      // exemptions (not modeled) times the Schedule A proration; no capped
+      // retirement exclusion (ic-6-3-1-3-5-exemptions-not-a-standard-deduction).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     IA: {
       code: 'IA', name: 'Iowa', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -551,6 +598,10 @@ const rawStateYear2026 = {
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 3.8 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.8 }] },
       retirement: { kind: 'full', minAge: 55 },
+      // Method (b), credit form, IA 126 2025: the credit is the tax less credits
+      // times the non-Iowa share of line 28, federal total income with the Iowa
+      // modifications, which leaves the Iowa share; the exclusion has no cap.
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     KS: {
       code: 'KS', name: 'Kansas', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -566,6 +617,9 @@ const rawStateYear2026 = {
         charitableCreditAdjustment: 'coveredCreditAddback',
       },
       kansasNamedPlanCodes: ['KPERS', 'KP&F', 'KSRS', 'US-CSRS', 'US-FERS', 'US-MILITARY', 'RRB', 'KS-13-14-106-CITY', 'KS-BPU', 'KS-WASHBURN', 'KS-OVERLAND-PARK-POLICE-FIRE'],
+      // Method (b), 2025 K-40 booklet: line 10 is the tax times Schedule S line
+      // B23, Kansas-source income with its modifications over Kansas AGI.
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' },
     },
     KY: {
       // Kentucky standard deduction is $3,360 once per return. MFJ is one joint
@@ -574,9 +628,14 @@ const rawStateYear2026 = {
       standardDeduction: { single: 3360, marriedFilingJointly: 3360 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.5 }] },
       retirement: { kind: 'capped', capPerPerson: 31110 },
-      // 2025 Form 740-NP Schedule A instructions: the standard deduction "does
-      // not have to be prorated" (ky-dor-2026-standard-deduction-once-per-return).
-      partYear: RESIDENT_PERIOD_FULL_DEDUCTION,
+      // Method (a): 2025 Form 740-NP Schedule A instructions, the standard
+      // deduction "does not have to be prorated"; personal tax credits times the
+      // line 34 Kentucky percentage, Kentucky AGI after the pension exclusion
+      // over federal AGI. 2025 Schedule P: a 740-NP filer reports only the
+      // pension income received while a Kentucky resident, and Part III line 3
+      // excludes the lesser of it and the whole $31,110
+      // (ky-dor-2026-standard-deduction-once-per-return).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'full' },
     },
     LA: {
       // La. R.S. 47:44.1(A): $12,000 base indexed by prior-calendar-year CPI-U.
@@ -585,10 +644,11 @@ const rawStateYear2026 = {
       standardDeduction: { single: 12875, marriedFilingJointly: 25750 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3 }] },
       retirement: { kind: 'capped', capPerPerson: 12324, minAge: 65 },
-      // 2025 Form IT-540B: line 10 enters the whole standard deduction, line
-      // 11E prorates only the itemized excess, line 13 taxes at 3%
+      // Method (a), 2025 Form IT-540B: line 10 enters the whole standard
+      // deduction, line 11E prorates only the itemized excess, line 13 taxes at
+      // 3%; the age-65 exclusion's cap is not prorated
       // (la-ldr-it540es-2026-standard-deduction).
-      partYear: RESIDENT_PERIOD_FULL_DEDUCTION,
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'full', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     ME: {
       // 2026 per MRS revised schedule (2026-05-20): ME publishes its own basic
@@ -622,6 +682,12 @@ const rawStateYear2026 = {
       // the capped (a) deduction, for a primary recipient or surviving spouse
       // (me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }], survivor: 'retiredPay' },
+      // Method (b), credit form, Schedule NR 2025: the tax as a full-year
+      // resident less a credit of the tax times line 6, non-Maine AGI, over Maine
+      // AGI, which leaves the Maine share; the pension deduction is prorated by
+      // the share of the pension received while resident
+      // (me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'retirementShare' },
     },
     MD: {
       // Tax-General 10-217(c) indexes the $3,350 / $6,700 deduction from 2026
@@ -659,10 +725,12 @@ const rawStateYear2026 = {
       // the rest can take the 10-209 pension exclusion
       // (md-tg-10-207-q-military-retirement-subtraction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0, cap: 12500 }, { minAge: 55, cap: 20000 }], survivor: 'retiredPay' },
-      // Form 502 marked "P" (Tax Tip #52; COMAR 03.04.02.12): the deduction and
-      // exemptions times the Maryland income factor, the tax on the ordinary
-      // schedule (md-tg-10-217-2026-indexed-standard-deduction).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), Form 502 marked "P" (2025 resident booklet; Tax Tip #52):
+      // the deduction and exemptions times the Maryland income factor, line 16
+      // Maryland AGI over line 1 federal AGI; the tax on the ordinary schedule;
+      // the pension exclusion figured as for the full year, times the months
+      // resident over 12 (md-tg-10-217-2026-indexed-standard-deduction).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'months' },
     },
     MA: {
       code: 'MA', name: 'Massachusetts', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -678,6 +746,10 @@ const rawStateYear2026 = {
         personalExemptionHoh: 6800,
         ageBlindAddition: 700,
       },
+      // Method (a), Form 1-NR/PY: resident-period income at 5%, the exemptions
+      // by days resident, here months; government pensions are exempt without a
+      // cap (ma-personal-exemptions-and-surtax).
+      partYear: { method: 'residentPeriod', standardDeduction: 'months', exemptions: 'months', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     MI: {
       code: 'MI', name: 'Michigan', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -688,6 +760,12 @@ const rawStateYear2026 = {
       // full, and the (1)(f)(iv) maximum reduced by them
       // (mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }], reducesGeneralCap: true },
+      // Method (a), Schedule NR lines 14 to 19 and MCL 206.30(5): Column B, the
+      // exemption (not modeled) by Michigan-source adjusted gross income (line
+      // 14B) over total adjusted gross income (line 14A), both before Michigan's
+      // retirement subtractions; the subtraction caps are not prorated
+      // (mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     MN: {
       code: 'MN', name: 'Minnesota', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
@@ -709,6 +787,10 @@ const rawStateYear2026 = {
       // 10 U.S.C. 1447 to 1455 included, in full
       // (mn-stat-290-0132-subd-21-military-retirement-subtraction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }], survivor: 'retiredPay' },
+      // Method (b), Schedule M1NR 2025: line 32 is the tax on all income times
+      // line 30, Minnesota income over federal income, a few Minnesota additions
+      // aside (mn-stat-290-0132-subd-21-military-retirement-subtraction).
+      partYear: INCOME_PERCENTAGE,
     },
     MS: {
       // Legislated ramp registered as `ms-27-7-5-rate-ramp`. Miss. Code Ann.
@@ -750,10 +832,12 @@ const rawStateYear2026 = {
       // other Mississippi gap here — see
       // `ms-early-or-excess-distribution-not-exempt`.
       retirement: { kind: 'full' },
-      // 2025 Form 80-100 instructions: the deductions and exemptions times the
-      // line 13c Mississippi AGI ratio, and the $10,000 zero band whole
+      // Method (a), 2025 Form 80-100 instructions: line 13c divides the
+      // Mississippi-only income (13a) by the income from all sources (13b), both
+      // under Mississippi law, and prorates the deductions and exemptions; the
+      // $10,000 zero band stays whole; retirement income is exempt without a cap
       // (ms-27-7-5-rate-ramp).
-      partYear: RESIDENT_PERIOD,
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     MO: {
       // HB 594 (signed 2025-07-10): individuals deduct 100% of federally
@@ -785,6 +869,11 @@ const rawStateYear2026 = {
         privatePhaseoutMfs: 16000,
         publicMaxSocialSecurityBenefit: 48967,
       },
+      // Method (b), MO-NRI 2025: the Missouri income percentage divides Missouri
+      // income, with its Missouri-source modifications, by total Missouri AGI;
+      // how the retirement deductions' caps apply to a part year is not stated
+      // (mo-retirement-income-deduction).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome' },
     },
     MT: {
       // HB 337 (2025): 2026 = 4.7%/5.65% at 47,500/95,000; 2027 steps again to
@@ -812,6 +901,10 @@ const rawStateYear2026 = {
         thresholdHoh: 71250,
         thresholdJoint: 95000,
       },
+      // Method (b), Form 2 2025 and its instructions, Schedule II: the tax as a
+      // resident times line 17, Montana-source income over income from all
+      // sources (mt-mca-15-30-2120-3-n-military-retirement-subtraction).
+      partYear: INCOME_PERCENTAGE,
     },
     NE: {
       // LB 754 ramp: top 5.2% (2025) -> 4.55% (2026, brackets consolidated to
@@ -828,6 +921,12 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'none' },
+      // Method (b), 1040N 2025 and Schedule III: a percentage of the tax a
+      // resident with the same income owes. The form divides Nebraska-source
+      // income as stated federally by federal AGI with Nebraska's adjustments;
+      // the ratio here divides federal AGI items on both sides. The retirement
+      // treatment for a part year was not determined (316 NAC 22).
+      partYear: { method: 'incomePercentage', ratioBasis: 'federalAgi' },
     },
     NV: {
       code: 'NV', name: 'Nevada', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
@@ -877,15 +976,17 @@ const rawStateYear2026 = {
       },
       // N.J.S.A. 54A:3-1 as amended by P.L.2019, c.146 (nj-stat-54a-3-1-personal-exemptions).
       newJerseyPersonalExemptions: { taxpayer: 1000, age65: 1000, blindOrDisabled: 1000, veteran: 6000 },
-      // There is no part-year return: NJ-1040 (2025 instructions) taxes the
-      // resident-period income on the ordinary table, with the exemptions
-      // prorated by months under 54A:3-1(c) (nj-stat-54a-3-1-personal-exemptions).
-      partYear: RESIDENT_PERIOD,
       hsaConformity: 'newJerseyCategories',
       directQcdPolicy: {
         kind: 'noGeneralFederalExclusion',
         citation: 'N.J.S.A. 54A:5-1 closed categories; reconstruct NJ taxable IRA earnings (GIT-1/2)',
       },
+      // Method (a): there is no part-year return. NJ-1040 (2025 instructions)
+      // taxes the resident-period income on the ordinary table, with the
+      // exemptions prorated by months under 54A:3-1(c) and, at whole-year income
+      // up to $100,000, the pension exclusion's maximum by months
+      // (nj-stat-54a-3-1-personal-exemptions).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'months', ratioBasis: 'federalAgi', exclusionCap: 'months' },
     },
     NM: {
       code: 'NM', name: 'New Mexico', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -904,6 +1005,10 @@ const rawStateYear2026 = {
       // 7-2-5.13: $30,000 of armed forces retirement pay per retiree or
       // surviving spouse (nm-nmsa-7-2-5-13-armed-forces-retirement-exemption).
       militaryRetirementExclusion: { byAge: [{ minAge: 0, cap: 30000 }], survivor: 'retiredPay' },
+      // Method (b), PIT-B 2025: the tax on all income times line 12, line 11
+      // Column 2 over Column 1, total federal income
+      // (nm-nmsa-7-2-5-13-armed-forces-retirement-exemption).
+      partYear: INCOME_PERCENTAGE,
     },
     NY: {
       // 2025 budget middle-class cuts effective 2026: the five brackets through
@@ -925,6 +1030,11 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 20000, minAge: 59 },
+      // Method (b), IT-203-I 2025: the base tax as a full-year resident times
+      // line 45, line 31 New York column over federal column, both New York AGI
+      // after the modifications; the $20,000 pension exclusion is per taxable
+      // period, not prorated (ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     NC: {
       // Statutory ramp: 4.25% (2025) -> 3.99% (2026). S.L. 2026-41 section 44.1
@@ -936,6 +1046,11 @@ const rawStateYear2026 = {
       standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.99 }] },
       retirement: { kind: 'none' },
+      // Method (b), D-401 2025: line 13, Schedule PN line 21 Column B over
+      // Column A, both total income with the North Carolina adjustments, times
+      // the line 12b taxable income; at a flat rate that is the tax times the
+      // ratio. No capped retirement exclusion.
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     ND: {
       // Brackets defined on federal taxable income; std deduction ≈ federal base.
@@ -961,6 +1076,9 @@ const rawStateYear2026 = {
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 82800, ratePct: 1.95 }, { lowerBound: 304850, ratePct: 2.5 }],
       },
       retirement: { kind: 'none' },
+      // Method (b), Schedule ND-1NR 2025: line 23 is the tax times line 20, North
+      // Dakota income over federal AGI (ndcc-57-38-30-3-2-closed-subtraction-list).
+      partYear: INCOME_PERCENTAGE,
     },
     OH: {
       // TY2026: zero at/below $26,050; $332 plus 2.75% of excess strictly above
@@ -972,6 +1090,11 @@ const rawStateYear2026 = {
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75, baseTax: 332 }],
       },
       retirement: { kind: 'none' },
+      // Method (b), credit form, IT NRC 2025: the credit is the tax times line 19,
+      // the nonresident portion of Ohio AGI over Ohio AGI, which leaves the Ohio
+      // portion's share; the retirement and senior credits are in the full-year
+      // tax.
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' },
     },
     OK: {
       // HB 2764 (2025): six brackets collapsed to three from 2026 — 0% replaces
@@ -993,6 +1116,11 @@ const rawStateYear2026 = {
       // 2358(E)(17), Schedule 511-A line 4: Armed Forces retirement benefits in
       // full, outside the $10,000 (ok-stat-68-2358-e-17-armed-forces-retirement-exclusion).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }] },
+      // Method (b), 511-NR 2025 packet: the tax times line 17, Oklahoma AGI over
+      // AGI from all sources after the Oklahoma adjustments; the $10,000
+      // retirement exclusion in the Oklahoma column is the part tied to Oklahoma
+      // income and is not prorated (ok-stat-68-2358-e-17-armed-forces-retirement-exclusion).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' },
     },
     OR: {
       code: 'OR', name: 'Oregon', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -1015,6 +1143,13 @@ const rawStateYear2026 = {
         incomeThresholdSingle: 15000,
         incomeThresholdJoint: 30000,
       },
+      // Method (b), OR-40-N/P 2025 instructions: line 45 is the tax times the
+      // line 35 Oregon percentage, line 34S over line 34F, both after Oregon
+      // additions and subtractions; lines 50 to 53 then subtract the standard
+      // credits of Schedule OR-ASC-NP, the retirement income credit (code 811)
+      // among them, figured on the Oregon-column pension (Publication OR-17), so
+      // that credit comes after the percentage (or-316-157-retirement-income-credit).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' },
     },
     PA: {
       code: 'PA', name: 'Pennsylvania', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -1027,6 +1162,10 @@ const rawStateYear2026 = {
       // 61 Pa. Code 101.6(c)(3): retired pay of a uniformed service is not
       // compensation, at any age (pa-code-61-101-6-c-3-uniformed-services-retired-pay).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }] },
+      // Method (c), 2025 PA-40 instructions: the income received while a
+      // resident, at the flat rate, with no deduction or exemption to prorate;
+      // retirement income is not taxable (pa-40-roth-ira-conversion-not-taxable).
+      partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'full', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     RI: {
       // RI Division of Taxation ADV 2025-22 (TY2026): $11,200/$22,400 standard
@@ -1047,6 +1186,11 @@ const rawStateYear2026 = {
       },
       retirement: { kind: 'capped', capPerPerson: 50000, minAge: 67 },
       rhodeIslandSocialSecurityModification: { nonjointAgiLimit: 107000, jointAgiLimit: 133750, minAge: 67 },
+      // Method (b), RI-1040NR 2025 instructions: the tax times Schedule III line
+      // 14, line 13 over line 12 Column A, federal AGI with the Rhode Island
+      // modifications; how the $50,000 pension modification splits in a part
+      // year is not stated (ri-gen-laws-44-30-12-social-security-and-pension-modification).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome' },
     },
     SC: {
       // H.4216 (signed 2026-03-30) rewrote TY2026: SCIAD deduction of
@@ -1082,10 +1226,12 @@ const rawStateYear2026 = {
         marriedFilingJointly: { base: 30000, phaseoutStart: 80000, phaseoutRange: 110000, reductionIncrement: 10 },
         qualifyingSurvivingSpouse: { base: 30000, phaseoutStart: 80000, phaseoutRange: 110000, reductionIncrement: 10 },
       },
-      // 2025 Schedule NR: line 45 is the Column B / Column A
-      // proration, line 47 applies it to the deduction, and line 48 is taxed
-      // on the ordinary table (sc-sciad-act-110-retirement-income-deduction).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), 2025 Schedule NR: line 45 divides line 31 Column B by
+      // Column A (adjusted gross income, before South Carolina's additions and
+      // subtractions), line 47 applies it to the deduction, and line 48 is taxed
+      // on the ordinary table; the retirement deduction's caps are not prorated
+      // (sc-sciad-act-110-retirement-income-deduction).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'incomeRatio', ratioBasis: 'federalAgi', exclusionCap: 'full' },
     },
     SD: {
       code: 'SD', name: 'South Dakota', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
@@ -1130,6 +1276,11 @@ const rawStateYear2026 = {
         retirementCreditPerEligibleClaimant: 450,
         latestEligibleBirthDate: '1952-12-31',
       },
+      // Method (b), TC-40 2025 instructions, TC-40B: line 39 divides line 38
+      // Column A by Column B, both after the Utah additions and subtractions, and
+      // the tax after the apportionable credits, the retirement and Social
+      // Security credits among them, is multiplied by it (ut-code-59-10-1019-retirement-credit).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'viaTaxRatio' },
     },
     VT: {
       // TY2026 derived from Act 11 bases + BLS CUUR0000SA0 CPI-U method
@@ -1175,6 +1326,10 @@ const rawStateYear2026 = {
         },
       },
       retirement: { kind: 'none' },
+      // Method (b), IN-113 2025 instructions: IN-111 line 16 is the tax on all
+      // income times line 35, the Vermont share of federal AGI over federal AGI
+      // (vt-32-5830e-retirement-election).
+      partYear: INCOME_PERCENTAGE,
     },
     VA: {
       code: 'VA', name: 'Virginia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -1209,10 +1364,11 @@ const rawStateYear2026 = {
         singleAfagiThreshold: 50000,
         marriedAfagiThreshold: 75000,
       },
-      // Form 760PY taxes the resident-period income on the ordinary rate
-      // schedule; only the deductions and exemptions are prorated
-      // (va-code-58-1-322-03-2-personal-exemptions).
-      partYear: RESIDENT_PERIOD,
+      // Method (a), Form 760PY: the resident-period income on the ordinary rate
+      // schedule; the standard deduction times federal AGI received while
+      // resident over federal AGI, the exemptions and the age deduction by the
+      // days resident, here months (va-code-58-1-322-03-2-personal-exemptions).
+      partYear: { method: 'residentPeriod', standardDeduction: 'incomeRatio', exemptions: 'months', ratioBasis: 'federalAgi', exclusionCap: 'months' },
     },
     WA: {
       // No broad income tax; a 7% tax on large long-term gains is out of scope.
@@ -1245,6 +1401,10 @@ const rawStateYear2026 = {
         age65ResidualCap: 8000,
         namedPublicCombinedCapPerPerson: 2000,
       },
+      // Method (b), IT-140 2025 Schedule A: the tax times West Virginia income
+      // over federal AGI, neither reduced by the Schedule M modifications, so the
+      // senior modification stays in the full-year tax (wv-code-11-21-12-c9-age-disability-residual).
+      partYear: INCOME_PERCENTAGE,
     },
     WI: {
       // TY2026 Form 1-ES: max SD in standardDeduction; wisconsinStandardDeduction
@@ -1286,6 +1446,11 @@ const rawStateYear2026 = {
       // Survivor Benefit Plan included, in full, outside the line 16
       // subtraction (wi-stat-71-05-1-am-military-retirement-subtraction).
       militaryRetirementExclusion: { byAge: [{ minAge: 0 }], survivor: 'retiredPay' },
+      // Method (b), 1NPR 2025 instructions: the sliding deduction on the year's
+      // federal income; line 32 divides line 30, the Wisconsin column, by line 31,
+      // federal income; Schedule SB reduces the $24,000 subtraction at 67 by the
+      // Wisconsin share of the income (wi-2026-rates-standard-deduction-exemptions).
+      partYear: { method: 'incomePercentage', ratioBasis: 'stateOverFederalAgi', exclusionCap: 'incomeRatio' },
     },
     WY: {
       // `false` per the AK note above. Wyoming's whole income tax chapter is

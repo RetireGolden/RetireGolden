@@ -48,3 +48,11 @@ qualifying retirement source).
 The TY2026 basic allowance is $2,925 per eligible exemption, with a separate $1,000 age-65 addition. The allowance is unavailable above $250,000 federal AGI for nonjoint returns or $500,000 joint. Return exemption/dependency and age counts are required independently of retirement subtraction eligibility.
 
 Registered as `il-personal-exemption-2026`. Authority: [Illinois FY 2026-15, 2026 personal exemption](https://tax.illinois.gov/research/publications/bulletins/fy-2026-15.html), [35 ILCS 5/204(b), (d)](https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm).
+
+## Part-year residents (2026-10-08)
+
+Method (a), 2025 Schedule NR: line 48 divides line 46, the Illinois portion of base income, by line 47, base income, and line 50 applies it to the exemption; the retirement subtraction reaches the income received as a resident, with no cap (il-personal-exemption-2026). The 2026 figures carry it as `partYear: { method: 'residentPeriod', standardDeduction: 'full', exemptions: 'incomeRatio', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Illinois and six in Texas, owes $2,475.00 for the Illinois months, the same as before. With a $40,000 Roth conversion on top, the slice is $2,475.00 when the conversion falls in the months resident and $2,475.00 when it falls in Texas's, where the months share of the year gave $3,465.00 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.

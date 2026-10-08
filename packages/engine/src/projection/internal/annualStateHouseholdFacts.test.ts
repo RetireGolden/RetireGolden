@@ -23,6 +23,26 @@ describe('annual state household source facts', () => {
     expect(result.householdFacts.claimantDatesOfBirth).toEqual(['1952-12-31'])
     expect(result.householdFacts.interestExcludedFromFederalAgi).toBe(300)
   })
+  it('gives each recipient the months its claim pays in a year split between states, and only then', () => {
+    // Born 1960: attained 66 in 2026. A claim at 66 and 4 months pays from
+    // the fifth month, eight months of the year (annualSocialSecurityPayableMonths).
+    // The household moves on July 1, so the year is split; a year not split
+    // carries no paid months, so its facts keep their shape.
+    const inputPlan = plan()
+    inputPlan.household.people[0]!.dob = '1960-03-10'
+    inputPlan.household.state = 'NY'
+    inputPlan.household.stateMoves = [{ fromYear: 2026, fromMonth: 7, state: 'FL' }]
+    inputPlan.incomes = [{ type: 'socialSecurity', id: 'ss-p1', personId: 'p1', pia: 2_000, claimAge: { years: 66, months: 4 } } as never]
+    const split = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026, socialSecurityStreams: [stream('p1', 16_000)], federal, railroadBenefits: [] })
+    expect(split.recipientSocialSecurity[0]).toMatchObject({ ownerPersonId: 'p1', grossSocialSecurity: 16_000, paidMonths: 8 })
+    // The next year pays all twelve months: no paid months recorded.
+    const later = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2027, socialSecurityStreams: [stream('p1', 24_000)], federal, railroadBenefits: [] })
+    expect(later.recipientSocialSecurity[0]!.paidMonths).toBeUndefined()
+    // A benefit on another record is spread over the year.
+    const spousal = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026, socialSecurityStreams: [{ ...stream('p1', 16_000), source: 'spousal' }], federal, railroadBenefits: [] })
+    expect(spousal.recipientSocialSecurity[0]!.paidMonths).toBeUndefined()
+  })
+
   it('does not allocate a household inclusion by gross-benefit ratio', () => {
     const result = buildAnnualStateHouseholdFacts({ plan: plan(), taxYear: 2026,
       socialSecurityStreams: [stream('p1', 12000), stream('p2', 8000)], federal, railroadBenefits: [] })

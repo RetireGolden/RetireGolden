@@ -136,7 +136,7 @@ if (workerGraph.importers === null) {
   )
 } else if (workerGraph.importers.length > 0) {
   result.failures.push(
-    `worker graph cycle: ${workerGraph.importers.join(', ')} statically import ${workerGraph.workerNames.join(', ')} ` +
+    `worker graph cycle: ${workerGraph.importers.join(', ')}, in the static closure of ${workerGraph.workerNames.join(', ')}, statically import it ` +
       '(isolated coordinator chunks must not import the worker entry — #672 TDZ on first spawn, Monte Carlo and both Optimize-rail channels)',
   )
 }
@@ -186,7 +186,7 @@ if (result.failures.length > 0) {
     console.log(`chunk graph: no static import cycle among ${jsChunks.length} chunks`)
   }
   if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
-    console.log('worker graph: no isolated chunk imports the worker entry')
+    console.log('worker graph: no chunk in the static closure of the worker entry imports it')
   }
   if (testFileChunks.length === 0) {
     console.log('test files: no chunk names one')

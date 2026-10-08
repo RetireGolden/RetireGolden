@@ -1,23 +1,23 @@
 # Mutation receipt: historical-market-series
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-10-08 against RetireGolden base `d22dc9d7` (branch `claude/engine-0.4.3`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/historicalReturns.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/historicalReturns.ts b/packages/engine/src/montecarlo/historicalReturns.ts
-index 9d4fc90d..e36adfcc 100644
+index 1857f9713..a7bcff4e0 100644
 --- a/packages/engine/src/montecarlo/historicalReturns.ts
 +++ b/packages/engine/src/montecarlo/historicalReturns.ts
-@@ -24,7 +24,7 @@ export interface HistoricalYear {
- 
+@@ -25,7 +25,7 @@ export interface HistoricalYear {
+ // [stocksPct, bondsPct, inflationPct], one row per year from FIRST_HISTORICAL_YEAR.
  // prettier-ignore
- export const HISTORICAL_YEARS: readonly HistoricalYear[] = [
--  { year: 1928, stocksPct: 43.8, bondsPct: 0.8, inflationPct: -1.2 },
-+  { year: 1928, stocksPct: 43.9, bondsPct: 0.8, inflationPct: -1.2 },
-   { year: 1929, stocksPct: -8.3, bondsPct: 4.2, inflationPct: 0.6 },
-   { year: 1930, stocksPct: -25.1, bondsPct: 4.5, inflationPct: -6.4 },
-   { year: 1931, stocksPct: -43.8, bondsPct: -2.6, inflationPct: -9.3 },
+ const HISTORICAL_YEAR_ROWS: readonly (readonly [number, number, number])[] = [
+-  [43.8, 0.8, -1.2],
++  [43.9, 0.8, -1.2],
+   [-8.3, 4.2, 0.6],
+   [-25.1, 4.5, -6.4],
+   [-43.8, -2.6, -9.3],
 ```
 
 Edits the stored 1928 stock return from 43.8 to 43.9, the kind of one-value transcription drift the sample-row pin exists to catch. A 0.1 change is well above the unrounded 1e-9 column-sum bound.
@@ -30,7 +30,7 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/historicalReturns.evi
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (historicalReturns.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed on 2026-10-08 because the table now ships as rows of three numbers decoded at load (D-BUNDLE-HEADROOM) and the hunk no longer anchored; the mutation is the same edit in the new form, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (historicalReturns.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.0 packages/engine

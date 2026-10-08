@@ -20,7 +20,7 @@
  * - U1 (the derivation's household): a $30,000 car and a $50,000 inheritance
  *   in 2026, a Roth window 2026-2030, a move to Florida in November 2026, and
  *   a $100,000 non-qualified annuity bought in 2026 from the brokerage paying
- *   $550 a month from 67. The annuity's effect: -$147,615.81 from 2026,
+ *   $550 a month from 67. The annuity's effect: -$151,691.59 from 2026,
  *   +$455,159.49 from 2027.
  * - T1 (the check's TIPS case): a bridge ladder paying $30,000 a year in real
  *   terms from 2028 to 2031, bought in 2026 from the brokerage: -$14,871.56
@@ -38,8 +38,15 @@
  * and 5,661,788.00. U1's 2026 figure moved again on 2026-10-07, from
  * -$147,623.51: the household are Kentucky residents who move to Florida in
  * November, and Kentucky's part-year slice now takes the whole standard
- * deduction (2025 Form 740-NP Schedule A). The 2027-start figures do not
- * move: the move is before that start.
+ * deduction (2025 Form 740-NP Schedule A). It moved again on 2026-10-08, from
+ * -$147,615.81: the characterized retirement rows now reach the Kentucky
+ * slice, so its pension exclusion meets the in-plan Roth conversion received
+ * while resident, up to the whole $31,110 (2025 Schedule P), as a full-year
+ * resident's does (the year's conversion is $5,277 with the annuity bought,
+ * $31,156 without, and undated, so ten twelfths of it is Kentucky's), where
+ * the coarse slice left conversions out of it. The 2027-start figures do not
+ * move: the move is before that start. The split year's slices and rows are
+ * listed by DOCS/calculations/taxes/scripts/part-year-split-years.mjs.
  * - S1 (review H1): the Home's sale dated 2026. From 2027 the ledger sells it
  *   in 2027 (propertySaleYear.ts), the same projection as a sale dated 2027
  *   apart from the warning that names it; before the rule it kept the house
@@ -129,8 +136,8 @@ describe('the double count the already-paid convention allows, rerunnable here (
   const u1: Variant = { car: true, inheritance: true, roth: true, annuity: true, move: true }
   const u1WithoutAnnuity: Variant = { ...u1, annuity: false }
 
-  it('U1: the annuity costs $147,615.81 from a 2026 start and gains $455,159.49 from a 2027 start', () => {
-    expect(effect(u1, u1WithoutAnnuity, 2026)).toBeCloseTo(-147_615.81, 2)
+  it('U1: the annuity costs $151,691.59 from a 2026 start and gains $455,159.49 from a 2027 start', () => {
+    expect(effect(u1, u1WithoutAnnuity, 2026)).toBeCloseTo(-151_691.59, 2)
     expect(effect(u1, u1WithoutAnnuity, 2027)).toBeCloseTo(455_159.49, 2)
   })
 

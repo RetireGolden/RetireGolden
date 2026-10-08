@@ -63,3 +63,11 @@ monotonic and parallel.
 - https://www.law.cornell.edu/regulations/oklahoma/OAC-710-50-15-49 — $10,000 retirement-income deduction.
 - https://smartasset.com/retirement/oklahoma-retirement-taxes — Social Security exempt; $10,000 per-person retirement exclusion.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — OK top rate 4.75%.
+
+## Part-year residents (2026-10-08)
+
+Method (b), 511-NR 2025 packet: the tax times line 17, Oklahoma AGI over AGI from all sources after the Oklahoma adjustments; the $10,000 retirement exclusion in the Oklahoma column is the part tied to Oklahoma income and is not prorated (ok-stat-68-2358-e-17-armed-forces-retirement-exclusion). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months.
+
+A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Oklahoma and six in Texas, owes $1,999.75 for the Oklahoma months, the same as before. With a $40,000 Roth conversion on top, the slice is $3,292.00 when the conversion falls in the months resident and $2,057.50 when it falls in Texas's, where the months share of the year gave $2,899.75 either way.
+
+The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
