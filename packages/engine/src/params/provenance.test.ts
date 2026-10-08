@@ -1042,8 +1042,9 @@ describe('parameter provenance', () => {
     expect(byId('state-enacted-or').url).toBe('https://www.oregonlegislature.gov/bills_laws/ors/ors316.html')
     expect(byId('state-enacted-ca').url).toBe('https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII')
     expect(byId('state-enacted-wa').url).toBe('https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf')
-    expect(byId('state-enacted-dc').url).toBe('https://code.dccouncil.gov/us/dc/council/acts/26-416')
-    expect(byId('state-enacted-dc').figures).toContain('congressional review with a projected law date of about November 20, 2026')
+    expect(byId('state-enacted-dc').url).toBe('https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990')
+    expect(byId('state-enacted-dc').figures).toContain('in force from October 2, 2026 after congressional review, and applying from 2025')
+    expect(byId('state-enacted-dc').figures).not.toContain('November 20, 2026')
     // What is loaded is not claimed complete; the survey is named for the
     // rest, and the conditional and vote-pending changes are named with dates.
     const stateRow = byId('state-income-tax').figures

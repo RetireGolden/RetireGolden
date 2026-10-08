@@ -123,8 +123,11 @@ export function characterizePensionDistribution(input: {
   readonly taxYear?: number
   /** Payee DOB paired with taxYear; year-end recipientAgeYears never clears early distribution. */
   readonly payeeDateOfBirth?: string
+  /** The year this payee's payments began, when known; carried on military rows only. */
+  readonly paymentsBeganYear?: number
 }): AnnualPensionDistributionCharacterization {
   const source = input.account.source ?? 'private'
+  const military = source === 'militaryRetirement' || source === 'militarySurvivor'
   const eligibility = input.account.stateEligibility
   const isSurvivorPayee = input.payeePersonId !== input.sourceOwnerPersonId
   const cause =
@@ -148,10 +151,12 @@ export function characterizePensionDistribution(input: {
     earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
       explicit: eligibility?.earlyDistributionDisqualifier,
       minimumAgeAtDistributionYears,
+      military,
     }),
     ...(minimumAgeAtDistributionYears === undefined
       ? {}
       : { minimumAgeAtDistributionYears }),
+    ...(military && input.paymentsBeganYear !== undefined ? { paymentsBeganYear: input.paymentsBeganYear } : {}),
     ...(eligibility?.planSystemCode !== undefined
       ? { planSystemCode: eligibility.planSystemCode }
       : {}),
@@ -558,6 +563,7 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
         explicit: event.eligibility?.earlyDistributionDisqualifier,
         ageAtDistributionYears: distributionAge,
         minimumAgeAtDistributionYears,
+        military: event.source === 'militaryRetirement' || event.source === 'militarySurvivor',
       }),
     }
   })
@@ -566,15 +572,19 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
 /**
  * Infer Box 7 / premature-penalty disqualification from explicit facts or a
  * proved distribution-age lower bound. Year-end recipient age never establishes
- * eligibility; crossing-year undated withdrawals stay unknown.
+ * eligibility; crossing-year undated withdrawals stay unknown. Military retired
+ * pay and a Survivor Benefit Plan annuity are paid under title 10 of the U.S.
+ * Code, not from a qualified plan, so IRC 72(t) never reaches them: `false`
+ * at any age unless the plan asserts otherwise.
  */
 export function inferEarlyDistributionDisqualifier(input: {
   readonly explicit?: 'true' | 'false' | 'unknown'
   readonly ageAtDistributionYears?: number
   readonly minimumAgeAtDistributionYears?: number
+  readonly military?: boolean
 }): 'true' | 'false' | 'unknown' {
   if (input.explicit === 'true') return 'true'
-  if (input.explicit === 'false') return 'false'
+  if (input.explicit === 'false' || input.military) return 'false'
   if (input.ageAtDistributionYears !== undefined) {
     return input.ageAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
   }

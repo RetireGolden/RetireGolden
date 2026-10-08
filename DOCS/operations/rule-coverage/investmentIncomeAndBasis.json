@@ -2180,7 +2180,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2245,15 +2245,15 @@
           "functions": [
             {
               "name": "RAILROAD_SOURCES_SUBTRACTED_UNDER_STATE_LAW",
-              "line": 42
+              "line": 45
             },
             {
               "name": "federalRailroadRetirementActKinds",
-              "line": 64
+              "line": 67
             },
             {
               "name": "railroadRetirementActSubtraction",
-              "line": 73
+              "line": 76
             }
           ]
         },

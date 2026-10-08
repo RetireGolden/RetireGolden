@@ -133,6 +133,12 @@
  * branch): the goldens are regenerated with both, main's FI figures and
  * notes and this branch's projected-figures sentence; neither moves the
  * other's figures.
+ * 2026-10-08: the District of Columbia's permanent law, D.C. Law 26-189,
+ * took effect October 2, 2026, so the "District of Columbia standard
+ * deduction, 2026 to 2029" row cites it (publisher, link and figures text)
+ * and the state income tax row no longer names a pending congressional
+ * review. Wording only; no golden's plan is in the District, so no figure
+ * changed.
  */
 import { describe, expect, it } from 'vitest'
 

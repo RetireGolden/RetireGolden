@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "AK",
-              "line": 151
+              "line": 166
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -100,7 +100,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -109,7 +109,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -178,7 +178,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -254,7 +254,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -283,16 +283,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 501,
+          "line": 502,
           "note": null,
           "tests": [
             {
               "title": "exempts an ASRS pension Arizona taxes above $2,500",
-              "line": 520
+              "line": 521
             },
             {
               "title": "reaches the statute’s figure only by capping the military exclusion too",
-              "line": 525
+              "line": 526
             }
           ]
         }
@@ -355,7 +355,7 @@
           "functions": [
             {
               "name": "AZ.capitalGainsTaxablePct",
-              "line": 185
+              "line": 200
             }
           ]
         },
@@ -373,7 +373,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -384,16 +384,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 541,
+          "line": 542,
           "note": null,
           "tests": [
             {
               "title": "subtracts a quarter of a pre-2012 gain that Arizona taxes in full",
-              "line": 561
+              "line": 562
             },
             {
               "title": "reaches the statute’s figure only for a household holding nothing bought since 2011",
-              "line": 566
+              "line": 567
             }
           ]
         }
@@ -442,7 +442,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -451,7 +451,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -520,7 +520,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -538,7 +538,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1147
+              "line": 1174
             }
           ]
         }
@@ -603,7 +603,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -612,7 +612,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -683,7 +683,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -701,7 +701,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -712,16 +712,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 581,
+          "line": 582,
           "note": null,
           "tests": [
             {
               "title": "gives a 65-year-old Arizonan no exemption at all",
-              "line": 597
+              "line": 598
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 602
+              "line": 603
             }
           ]
         }
@@ -758,8 +758,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2020,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-14",
-      "dueOn": "2027-01-12",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-02-04",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/index.ts",
@@ -770,8 +770,12 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "AZ.partYear",
+              "line": 217
+            },
+            {
               "name": "states.AZ",
-              "line": 171
+              "line": 186
             }
           ]
         },
@@ -789,15 +793,31 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/tax/statePartYear.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 143,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "allows the whole standard deduction",
+              "line": 155
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
           "line": 1984,
@@ -836,6 +856,11 @@
           "kind": "formInstruction",
           "citation": "2025 Arizona Form 140A, line 18",
           "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 140PY instructions, lines 51, 53 and 56",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140PYi.pdf"
         }
       ]
     },
@@ -947,7 +972,7 @@
           "functions": [
             {
               "name": "CA",
-              "line": 246
+              "line": 265
             }
           ]
         },
@@ -956,7 +981,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1012,7 +1037,7 @@
           "functions": [
             {
               "name": "states.CA",
-              "line": 246
+              "line": 265
             }
           ]
         },
@@ -1034,7 +1059,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1097,7 +1122,7 @@
           "functions": [
             {
               "name": "CA",
-              "line": 246
+              "line": 265
             }
           ]
         },
@@ -1106,7 +1131,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1172,7 +1197,7 @@
           "functions": [
             {
               "name": "states.CA",
-              "line": 246
+              "line": 265
             }
           ]
         },
@@ -1190,7 +1215,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1147
+              "line": 1174
             }
           ]
         }
@@ -1256,7 +1281,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 275
+              "line": 294
             }
           ]
         },
@@ -1274,7 +1299,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1306,6 +1331,114 @@
       ]
     },
     {
+      "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+      "title": "Colorado subtracts up to $15,000 of military retirement under 55 through 2028, and from 55 it is a pension in the shared subtraction",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CO",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-03-06",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/enacted2029.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/enacted2029.ts",
+          "functions": [
+            {
+              "name": "CO.militaryRetirementExclusion",
+              "line": 116
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CO.militaryRetirementExclusion",
+              "line": 312
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 207,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts 15,000 under 55, the pension subtraction from 55, and nothing military-specific from 2029",
+              "line": 211
+            },
+            {
+              "title": "prices 100,000 of military pay at 45",
+              "line": 224
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(4)(y)(I)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(4)(y)(I)(D)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(4)(y)(II)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(4)(f)(I)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "C.R.S. 39-22-104(4)(f)(II)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        }
+      ]
+    },
+    {
       "id": "co-crs-39-22-104-federal-base-and-pension-cap",
       "title": "Colorado applies recipient-level Social Security and pension shared caps",
       "classification": "settled",
@@ -1330,7 +1463,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 275
+              "line": 294
             }
           ]
         },
@@ -1348,7 +1481,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1359,12 +1492,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 894,
+          "line": 898,
           "note": null,
           "tests": [
             {
               "title": "selects the statutory age65 pension limit",
-              "line": 895
+              "line": 899
             }
           ]
         }
@@ -1414,7 +1547,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 275
+              "line": 294
             }
           ]
         },
@@ -1432,7 +1565,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1147
+              "line": 1174
             }
           ]
         }
@@ -1493,7 +1626,7 @@
           "functions": [
             {
               "name": "states.CO",
-              "line": 275
+              "line": 294
             }
           ]
         },
@@ -1511,7 +1644,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1522,12 +1655,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 897,
+          "line": 901,
           "note": null,
           "tests": [
             {
               "title": "raises subtraction room for fully excludable Social Security",
-              "line": 898
+              "line": 902
             }
           ]
         }
@@ -1569,7 +1702,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 152
+              "line": 155
             }
           ]
         },
@@ -1578,7 +1711,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 42
+              "line": 45
             }
           ]
         },
@@ -1707,7 +1840,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 407
+              "line": 439
             }
           ]
         },
@@ -1725,7 +1858,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1781,7 +1914,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 407
+              "line": 439
             }
           ]
         },
@@ -1790,7 +1923,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -1858,7 +1991,7 @@
           "functions": [
             {
               "name": "states.HI",
-              "line": 407
+              "line": 439
             }
           ]
         },
@@ -1867,7 +2000,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1914,8 +2047,8 @@
       "volatility": "sunsetting",
       "effectiveFrom": 2026,
       "effectiveThrough": 2027,
-      "verifiedOn": "2026-09-07",
-      "dueOn": "2027-02-04",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-03-06",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1925,8 +2058,12 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "HI.partYear",
+              "line": 477
+            },
+            {
               "name": "states.HI",
-              "line": 407
+              "line": 439
             }
           ]
         },
@@ -1935,15 +2072,31 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/tax/statePartYear.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 83,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "prorates the deduction and keeps the ordinary table",
+              "line": 98
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
           "line": 3030,
@@ -1968,6 +2121,11 @@
           "kind": "statute",
           "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)",
           "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44",
+          "url": "https://files.hawaii.gov/tax/forms/2025/n15_i.pdf"
         }
       ]
     },
@@ -2034,7 +2192,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2102,11 +2260,11 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             },
             {
               "name": "states.HI",
-              "line": 407
+              "line": 439
             }
           ]
         },
@@ -2124,7 +2282,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2189,7 +2347,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 443
+              "line": 479
             }
           ]
         },
@@ -2198,7 +2356,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2254,7 +2412,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 443
+              "line": 479
             }
           ]
         },
@@ -2263,7 +2421,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -2308,6 +2466,70 @@
       ]
     },
     {
+      "id": "id-form-43-part-year-resident-period",
+      "title": "Idaho taxes a part-year resident on the income of the months resident, with the deduction prorated and the zero band whole",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ID",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ID.partYear",
+              "line": 495
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "prorateParams",
+              "line": 1875
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/statePartYear.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 267,
+          "note": null,
+          "tests": [
+            {
+              "title": "prorates the deduction and keeps the whole zero band",
+              "line": 280
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Idaho Form 43 instructions, lines 38, 39 and 41, and the line 42 tax worksheet",
+          "url": "https://tax.idaho.gov/wp-content/uploads/forms/EIN00046/EIN00046_03-02-2026.pdf"
+        }
+      ]
+    },
+    {
       "id": "id-h559-2026-conformity-senior-deduction",
       "title": "Idaho adopts the Internal Revenue Code as of January 1, 2026, so the federal senior deduction applies for 2025 to 2028",
       "classification": "settled",
@@ -2332,7 +2554,7 @@
           "functions": [
             {
               "name": "states.ID",
-              "line": 443
+              "line": 479
             }
           ]
         },
@@ -2350,7 +2572,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1147
+              "line": 1174
             }
           ]
         }
@@ -2415,7 +2637,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 714
+              "line": 789
             }
           ]
         },
@@ -2428,7 +2650,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2502,7 +2724,7 @@
           "functions": [
             {
               "name": "states.MT",
-              "line": 714
+              "line": 789
             }
           ]
         },
@@ -2511,7 +2733,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -2531,16 +2753,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 591,
+          "line": 595,
           "note": null,
           "tests": [
             {
               "title": "uses distinct HOH and MFS ordinary thresholds and stacks gains across their edges",
-              "line": 592
+              "line": 596
             },
             {
               "title": "stacks $1,000 gain after $47,000 ordinary taxable income",
-              "line": 604
+              "line": 608
             }
           ]
         }
@@ -2581,7 +2803,7 @@
           "functions": [
             {
               "name": "states.MT",
-              "line": 124
+              "line": 127
             }
           ]
         },
@@ -2731,7 +2953,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 714
+              "line": 789
             }
           ]
         },
@@ -2740,7 +2962,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2797,6 +3019,125 @@
       ]
     },
     {
+      "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
+      "title": "Montana subtracts 50% of military retirement, limited to Montana wages, and 50% of a military survivor benefit, for five years",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "the year the household became a Montana resident, and whether the subtraction was claimed before a move away"
+      },
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+        "packages/engine/src/projection/internal/annualStateHouseholdFacts.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MT.militaryRetirementExclusion",
+              "line": 807
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualStateHouseholdFacts.ts",
+          "functions": [
+            {
+              "name": "buildAnnualStateHouseholdFacts",
+              "line": 50
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 301,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the lesser of 50% and the wages on the return, and 50% of a survivor benefit",
+              "line": 306
+            },
+            {
+              "title": "allows five consecutive years from the later of 2024 and the first payment",
+              "line": 313
+            },
+            {
+              "title": "reads the window from the first payment, not from a later move to Montana",
+              "line": 320
+            },
+            {
+              "title": "withholds the subtraction when the first payment year is unknown, and says so",
+              "line": 328
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2120(8)(a)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2120(3)(n)(ii)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCA 15-30-2120(9)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        }
+      ]
+    },
+    {
       "id": "mt-mca-15-30-2120-federal-taxable-income-base",
       "title": "Montana starts from federal taxable income, so federally taxable Social Security stays in the base",
       "classification": "settled",
@@ -2821,7 +3162,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 714
+              "line": 789
             }
           ]
         },
@@ -2839,7 +3180,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2899,6 +3240,85 @@
       ]
     },
     {
+      "id": "nm-nmsa-7-2-5-13-armed-forces-retirement-exemption",
+      "title": "New Mexico exempts $30,000 of armed forces retirement pay per retiree or surviving spouse",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NM",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NM.militaryRetirementExclusion",
+              "line": 906
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 288,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts 30,000 per retiree or surviving spouse",
+              "line": 292
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "NMSA 1978 7-2-5.13(A), as amended by 2024 N.M. Laws, HB 252, section 32; PDF line numbers retained",
+          "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "NMSA 1978 7-2-5.13(B); PDF line numbers retained",
+          "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf"
+        }
+      ]
+    },
+    {
       "id": "nm-nmsa-7-2-7-individual-income-tax-rates",
       "title": "New Mexico taxes single and joint taxable income on the HB 252 §7-2-7 rate schedules from 2025 onward",
       "classification": "settled",
@@ -2922,7 +3342,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 804
+              "line": 890
             }
           ]
         },
@@ -2935,7 +3355,7 @@
             },
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -3007,7 +3427,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 804
+              "line": 890
             }
           ]
         },
@@ -3025,7 +3445,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3080,7 +3500,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 752
+              "line": 832
             }
           ]
         },
@@ -3089,7 +3509,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3149,7 +3569,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 905
+              "line": 997
             }
           ]
         },
@@ -3158,7 +3578,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -3178,24 +3598,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 613,
+          "line": 617,
           "note": null,
           "tests": [
             {
               "title": "includes IRA federal public and Armed Forces pension sources under section 316.157",
-              "line": 614
+              "line": 618
             },
             {
               "title": "offsets Tier I but not Tier II and cannot borrow an older nonpension recipient age",
-              "line": 621
+              "line": 625
             },
             {
               "title": "credits 9% of the $7,500 ceiling for a qualifying age62 taxpayer",
-              "line": 631
+              "line": 635
             },
             {
               "title": "offsets SS and excess household income, and never refunds unused credit",
-              "line": 636
+              "line": 640
             }
           ]
         }
@@ -3253,7 +3673,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -3310,7 +3730,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 905
+              "line": 997
             }
           ]
         },
@@ -3323,7 +3743,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3410,7 +3830,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 905
+              "line": 997
             }
           ]
         },
@@ -3428,11 +3848,11 @@
           "functions": [
             {
               "name": "federalRailroadRetirementActKinds",
-              "line": 64
+              "line": 67
             },
             {
               "name": "railroadRetirementActSubtraction",
-              "line": 73
+              "line": 76
             }
           ]
         },
@@ -3520,7 +3940,7 @@
           "functions": [
             {
               "name": "states.OR",
-              "line": 905
+              "line": 997
             }
           ]
         },
@@ -3529,7 +3949,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3585,7 +4005,7 @@
           "functions": [
             {
               "name": "states.AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -3603,7 +4023,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -3668,7 +4088,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -3677,7 +4097,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -3686,7 +4106,7 @@
           "functions": [
             {
               "name": "utahRetirementCredit",
-              "line": 221
+              "line": 223
             }
           ]
         }
@@ -3697,12 +4117,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 687,
+          "line": 691,
           "note": null,
           "tests": [
             {
               "title": "uses the return-level $900 maximum less $200 phaseout",
-              "line": 688
+              "line": 692
             }
           ]
         }
@@ -3746,7 +4166,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -3821,7 +4241,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -3830,7 +4250,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -3842,28 +4262,59 @@
               "line": 180
             },
             {
+              "name": "utahRetirementCredit",
+              "line": 223
+            },
+            {
               "name": "utahSelectNonrefundableCredit",
-              "line": 259
+              "line": 264
+            },
+            {
+              "name": "utahSocialSecurityCredit",
+              "line": 194
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+        "packages/engine/src/tax/stateUtahCredits.rules.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 652,
+          "line": 656,
           "note": null,
           "tests": [
             {
               "title": "limits the $890 military credit to $500 of precredit Utah liability",
-              "line": 653
+              "line": 657
             },
             {
               "title": "credits the current 4.45% of $20,000 qualifying military income",
-              "line": 664
+              "line": 668
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateUtahCredits.rules.test.ts",
+          "line": 51,
+          "note": "projection",
+          "tests": [
+            {
+              "title": "prices the military credit for a 60-year-old with 100,000 of military pay",
+              "line": 56
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateUtahCredits.rules.test.ts",
+          "line": 68,
+          "note": "MAGI not needed",
+          "tests": [
+            {
+              "title": "takes the military credit with no MAGI facts when no competing credit can depend on MAGI",
+              "line": 73
             }
           ]
         }
@@ -3875,6 +4326,104 @@
           "kind": "statute",
           "citation": "Utah Code 59-10-1043(1)–(3)",
           "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1043_2022032320220323.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ut-code-59-10-114-1-additions-in-utah-magi",
+      "title": "Utah MAGI adds the 59-10-114 additions, and a plan holds none beyond the tax-exempt interest MAGI already counts",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:UT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualStateHouseholdFacts.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "UT.utahRetirementCredits",
+              "line": 1113
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualStateHouseholdFacts.ts",
+          "functions": [
+            {
+              "name": "buildAnnualStateHouseholdFacts",
+              "line": 50
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1593
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "utahRetirementCredit",
+              "line": 223
+            },
+            {
+              "name": "utahSocialSecurityCredit",
+              "line": 194
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateUtahCredits.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateUtahCredits.rules.test.ts",
+          "line": 29,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices the retirement credit for a claimant born in 1950 with no stored Utah facts",
+              "line": 33
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Utah Code 59-10-114(1)(e)",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, lines 2 to 6",
+          "url": "https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf"
         }
       ]
     },
@@ -3903,7 +4452,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -3912,7 +4461,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -3921,7 +4470,7 @@
           "functions": [
             {
               "name": "utahRailroadSubtraction",
-              "line": 288
+              "line": 293
             }
           ]
         }
@@ -3932,12 +4481,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 695,
+          "line": 699,
           "note": null,
           "tests": [
             {
               "title": "subtracts only federally included Railroad Retirement and requires SS overlap facts",
-              "line": 696
+              "line": 700
             }
           ]
         }
@@ -3982,7 +4531,7 @@
           "functions": [
             {
               "name": "states.UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -3991,7 +4540,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         },
@@ -4000,7 +4549,7 @@
           "functions": [
             {
               "name": "utahPriorTaxed401aSubtraction",
-              "line": 307
+              "line": 312
             }
           ]
         }
@@ -4011,12 +4560,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 703,
+          "line": 707,
           "note": null,
           "tests": [
             {
               "title": "recovers documented other-state §401(a) basis once and excludes 403b/IRA substitutes",
-              "line": 704
+              "line": 708
             }
           ]
         }
@@ -4055,7 +4604,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 1006
+              "line": 1105
             }
           ]
         },
@@ -4064,7 +4613,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -4076,16 +4625,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 671,
+          "line": 675,
           "note": null,
           "tests": [
             {
               "title": "uses $5,350 federally taxable SS, not the $10,000 gross benefit",
-              "line": 672
+              "line": 676
             },
             {
               "title": "includes otherwise-excluded interest in statutory MAGI phaseout",
-              "line": 680
+              "line": 684
             }
           ]
         },
@@ -4122,6 +4671,105 @@
       ]
     },
     {
+      "id": "ut-tc-40-social-security-credit-railroad-magi",
+      "title": "Utah’s Social Security credit phases out on income after the railroad retirement subtraction, as the TC-40 worksheet computes it",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": "The statute: 59-10-1042(1)(d) MAGI is adjusted gross income plus excluded interest plus the 59-10-114 additions, with no 59-10-114(2) subtraction taken off, so the federally included railroad annuity stays in the Social Security credit’s phase-out as it does in the retirement credit’s ($1,120.00 in the worked case), unless 45 U.S.C. 231m(a) is read to bar it from both.",
+      "jurisdiction": "state:UT",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-01-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "UT.utahRetirementCredits",
+              "line": 1113
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1593
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "utahSocialSecurityCredit",
+              "line": 194
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateUtahCredits.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateUtahCredits.rules.test.ts",
+          "line": 93,
+          "note": null,
+          "tests": [
+            {
+              "title": "phases the Social Security credit out on income after the code 78 subtraction",
+              "line": 97
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 TC-40 instructions, Social Security Credit Worksheet, line 5",
+          "url": "https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, line 2",
+          "url": "https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 TC-40 instructions, code 78 Railroad Retirement Income",
+          "url": "https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Utah Code 59-10-1019(1)(e)",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1019_2022032320220323.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Utah Code 59-10-114(2)(d)",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf"
+        }
+      ]
+    },
+    {
       "id": "wa-dor-no-broad-individual-income-tax",
       "title": "Washington has no broad individual income-tax figure in the per-state tax data",
       "classification": "settled",
@@ -4145,7 +4793,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1117
+              "line": 1217
             }
           ]
         },
@@ -4154,7 +4802,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -4233,7 +4881,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -4336,7 +4984,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -4410,7 +5058,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2176
+              "line": 2277
             }
           ]
         }
@@ -4499,7 +5147,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 1117
+              "line": 1217
             }
           ]
         },
@@ -4517,7 +5165,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -4573,7 +5221,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 1186
+              "line": 1290
             }
           ]
         },
@@ -4582,7 +5230,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }

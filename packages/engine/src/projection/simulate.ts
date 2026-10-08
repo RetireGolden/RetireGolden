@@ -1821,7 +1821,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           taxableIncome: federal.taxableIncome, taxableSocialSecurity: federal.taxableSocialSecurity,
           taxExemptInterest: input.taxExemptInterest ?? 0 },
         railroadBenefits: deriveAnnualStateRailroadBenefits(pensionAndAnnuity),
-        claimantPersonIds: people.filter((person) => stateOf(person.id).alive).map((person) => person.id),
+        claimantPersonIds: people.filter((person) => stateOf(person.id).alive).map((person) => person.id), wagesByPerson,
       })
       return { ...input, stateHouseholdFacts: { ...input.stateHouseholdFacts, ...household.householdFacts },
         stateNjIraOwnerPools: applyAcceptedNjIraBasisToYearFacts(input.stateNjIraOwnerPools, year, acceptedStateNjIraBasis,

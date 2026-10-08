@@ -56,3 +56,9 @@ exclusion for the common private-pension/IRA retiree, this is mapped to
 Eligible CSRS/FSRDS and specified Idaho firefighter/police benefits require age 65 or age 62 and disability. Military has its distinct disabled/age-62/employment-filing test. Married taxpayers must file jointly. FERS and generic private or public plans are excluded. The statutory maximum is reduced by household Social Security and Railroad Retirement benefits and cannot exceed qualifying federally included income. Survivor and remarriage facts remain necessary where applicable.
 
 Registered as `id-code-63-3022a-qualified-retirement-deduction`. Authority: [Idaho Code 63-3022A(1)–(3)](https://legislature.idaho.gov/statutesrules/idstat/title63/t63ch30/sect63-3022a/).
+
+## Idaho taxes a part-year resident on the income of the months resident, with the deduction prorated and the zero band whole (verified 2026-10-07)
+
+A part-year resident files Form 43. Line 38 is the Idaho percentage, line 31 Column B over Column A; line 39 multiplies the deduction by it; line 41 gives Idaho taxable income; and the line 42 tax worksheet subtracts the whole $4,811 ($9,622 joint) before 5.3%, the same zero band a full-year resident has. From 2026-10-07 a slice of a year split between states keeps the zero band whole and prorates the deduction by the months resident (the pack's `partYear`). A single filer of 50 with $100,000 of ordinary income, resident six months and six in Texas: $2,095.86, now $1,968.37.
+
+Registered as `id-form-43-part-year-resident-period`. Authority: [2025 Idaho individual income tax forms and instructions, Form 43](https://tax.idaho.gov/wp-content/uploads/forms/EIN00046/EIN00046_03-02-2026.pdf).

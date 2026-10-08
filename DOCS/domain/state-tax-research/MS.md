@@ -255,8 +255,13 @@ of question Title 35 Part III would probably answer, which is unreachable.
   the pack's declared scope.
 - The full §27-7-15(4) exclusion list beyond (d), (k), (l) and (m); itemized
   deductions and the state-income-tax add-back; the catastrophe savings account
-  regime; nonresident and part-year proration under §27-7-17(3)(c) and
-  §27-7-21(i).
+  regime; nonresident proration under §27-7-17(3)(c) and §27-7-21(i). A
+  part-year resident (2025 Form 80-100 instructions) multiplies the deductions
+  and exemptions by the line 13c ratio of Mississippi AGI to total AGI and keeps
+  the whole zero band; from 2026-10-07 the split-year slice does the same
+  (`partYear`, `ms-27-7-5-rate-ramp`), where before it halved the band for six
+  months: $1,754.00, now $1,554.00, for a single filer of 50 with $100,000 of
+  ordinary income, resident six months.
 
 ### Net direction, and why it must not be netted
 **The sign of the error flips with the household's age, and the flip point sits

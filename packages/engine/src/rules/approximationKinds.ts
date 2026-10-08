@@ -135,6 +135,16 @@
  *   pension modification applies the Social Security modification's AGI
  *   limits and leaves IRA distributions out.
  *
+ * Registered and fixed with the state military retirement rules (2026-10-07):
+ * - ic-6-3-2-4-military-retirement-deduction, fix: a pension's `source`
+ *   already says it is military, so the pack's `militaryRetirementExclusion`
+ *   deducts it in full; the record is settled and has left this list.
+ * - mt-mca-15-30-2120-3-n-military-retirement-subtraction, needs-fact: the
+ *   five-year window of MCA 15-30-2120(9) starts with the year the recipient
+ *   became a Montana resident when that came after the pay began; the plan
+ *   holds no residency start or claim history, so the engine starts it at the
+ *   pension's first payment (not before 2024).
+ *
  * Settled and removed from this list (decision D-LIFE-TABLE-2023, 2026-09-27):
  * - ssa-table-4c6-period-life-table-vintage, a convention until then (the
  *   embedded table trailed SSA's newest one between reviewed refreshes): the
@@ -210,7 +220,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'hi-hrs-235-7-pension-and-social-security': { kind: 'fix' },
   'ic-6-3-1-3-5-exemptions-not-a-standard-deduction': { kind: 'fix' },
   'ic-6-3-2-3-7-civil-service-annuity-age-62': { kind: 'fix' },
-  'ic-6-3-2-4-military-retirement-deduction': { kind: 'fix' },
   'ic-6-3-6-2-2-county-income-tax-shares-the-state-base': { kind: 'convention', reason: 'the county tax uses the local income tax rate set in the plan, which is zero unless entered, because county rates vary and there is no published statewide rate to use instead' },
   'irc-1-h-1-E-unrecaptured-section-1250-gain': { kind: 'fix' },
   'irc-1-h-optimizer-flat-fifteen-percent-preferential-rate': { kind: 'convention', reason: 'a constant rate keeps the optimizer linear and the full year-by-year projection re-prices its choice' },
@@ -270,6 +279,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'ms-combined-return-runs-the-schedule-per-spouse': { kind: 'fix' },
   'ms-early-or-excess-distribution-not-exempt': { kind: 'fix' },
   'mt-mca-15-30-2120-3-g-age-65-subtraction': { kind: 'fix' },
+  'mt-mca-15-30-2120-3-n-military-retirement-subtraction': { kind: 'needs-fact', missingInput: 'the year the household became a Montana resident, and whether the subtraction was claimed before a move away' },
   'ndcc-57-38-30-3-2-closed-subtraction-list': { kind: 'needs-fact', missingInput: 'whether a public pension is a qualified retired law enforcement (peace officer) benefit' },
   'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': { kind: 'fix' },
   'ne-stat-77-2716-public-pension-exemption': { kind: 'fix' },

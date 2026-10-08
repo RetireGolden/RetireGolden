@@ -473,7 +473,9 @@ describeRule('ks-stat-79-32-117-public-pension-exclusion', { readings: { namedPu
     expect(annual('KS', { retirementDistributions: [fact({ sourceKind: 'employerPlan', qualifiedPlanType: '403b', federallyIncludedAmount: 0, grossDistribution: 0 })] }).status).toBe('complete')
   })
   it('flags a missing code on a public source, where the code decides it', () => {
-    for (const sourceKind of ['stateLocalPublic', 'federalCivilService', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor', 'unknownPublic'] as const) {
+    // A military retirement row needs none: the source names the system
+    // (c)(vii) names (tax/stateMilitaryRetirement.rules.test.ts).
+    for (const sourceKind of ['stateLocalPublic', 'federalCivilService', 'militarySurvivor', 'governmentSurvivor', 'unknownPublic'] as const) {
       const bare = annual('KS', { retirementDistributions: [fact({ sourceKind })] })
       expect(bare.status, sourceKind).toBe('incomplete')
       expect(bare.warnings.map((warning) => warning.code), sourceKind).toContain('ks-plan-code-unknown')
@@ -537,7 +539,9 @@ describeRule('ma-rrb-and-public-pension-exclusions', { readings: { provenContrib
 describeRule('nj-stat-54a-6-26-military-pension-exclusion', { readings: { military: 80_000, ordinaryPensionCap: 0 }, accepted: 'military' }, ({ accepted }) => {
   it('excludes military at age50 while OPM remains taxable', () => {
     const changes = { agesAlive: [50] }
-    expect(exclusion('NJ', [fact({ sourceKind: 'militaryRetirement', recipientAgeYears: 50, federallyIncludedAmount: 80_000 })], household(), changes)).toBe(accepted)
+    // Its owner also takes the $6,000 veteran exemption of 54A:3-1(b)7
+    // (nj-stat-54a-3-1-personal-exemptions).
+    expect(exclusion('NJ', [fact({ sourceKind: 'militaryRetirement', recipientAgeYears: 50, federallyIncludedAmount: 80_000 })], household(), changes)).toBe(accepted + 6_000)
     expect(exclusion('NJ', [fact({ sourceKind: 'federalCivilService', recipientAgeYears: 50, federallyIncludedAmount: 80_000 })], household(), changes)).toBe(0)
     expect(exclusion('NJ', [fact({ sourceKind: 'militarySurvivor', recipientAgeYears: 50 })], household(), changes)).toBe(12_000)
   })

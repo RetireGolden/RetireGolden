@@ -46,7 +46,14 @@ credit-forfeiture limbs that the coarse pack cap does not yet express.
 - The $24,000 retirement subtraction’s per-recipient attribution, credit
   forfeiture, and Line 17 age-65 limb remain approximated by the coarse
   `capPerPerson` / `minAge` pack fields.
-- Nonresident / part-year Form 1NPR proration is out of resident scope.
+- Part-year residents: Form 1NPR (2025 instructions) looks the deduction up in its
+  Standard Deduction Table by the year's federal income (line 31) and prorates the tax by Wisconsin income over
+  federal income (line 32). The split-year slice takes the months share of the
+  full-year tax, the months for the ratio, and from 2026-10-07 phases the deduction
+  on the year's income; before, it phased it on the slice's own income. A single
+  filer of 50 with $100,000 of ordinary income, resident six months: $1,798.39, now
+  $2,232.31. The slice drops the exemptions, which need household facts it does not
+  receive. Nonresident returns are out of scope.
 
 ## Citations
 - https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf — TY2026 Form 1-ES instructions page 2 (SD phase-down) and rate schedules.
@@ -55,6 +62,6 @@ credit-forfeiture limbs that the coarse pack cap does not yet express.
 
 ## Wisconsin applies the 2026 income-tested deduction, exemptions and status schedules (verified 2026-09-12)
 
-TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. Part-year/nonresident calculations need the instructed income-ratio proration. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.
+TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. A part-year resident's Form 1NPR looks the deduction up in its Standard Deduction Table by the year's federal income (line 31) and prorates the tax by the ratio of Wisconsin income to federal income (line 32); the split-year slice takes the months share of the full-year tax and, from 2026-10-07, phases the deduction on the year's income. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.
 
 Registered as `wi-2026-rates-standard-deduction-exemptions`. Authority: [Wisconsin 2026 Form 1-ES, pages 2–3](https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf).

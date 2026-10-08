@@ -149,7 +149,7 @@ export function PensionAccountEditor({
         </div>
         <SelectField
           label="Pension source"
-          help="State retirement exclusions need a characterized source. A 1040 line 5b total cannot establish private, employer, IRA, or public-system identity; confirm the source from your plan documents."
+          help="State retirement exclusions need a characterized source. A 1040 line 5b total cannot establish private, employer, IRA, or public-system identity; confirm the source from your plan documents. Railroad Tier I here is only the part reported on Form RRB-1099-R. Enter the Social Security equivalent part, reported on Form RRB-1099, as Social Security. The planner cannot yet mark that amount as railroad, so a state that taxes Social Security taxes it, although federal law (45 U.S.C. 231m) bars any state tax on it."
           hint={sourceConfirmed ? `On record: ${pensionSourceLabel(recordedSource)}. Source changes are saved only when you record them.` : `Source is unconfirmed: ${pensionSourceLabel(recordedSource)}. Choose and record a characterized source before editing eligibility.`}
           value={draftSource}
           options={[{ value: '', label: 'Unknown (clear recorded source)' }, ...PENSION_SOURCE_OPTIONS]}

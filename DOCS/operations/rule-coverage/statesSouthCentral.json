@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -129,7 +129,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -138,7 +138,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -207,7 +207,7 @@
           "functions": [
             {
               "name": "states.AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 888,
+          "line": 892,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 889
+              "line": 893
             }
           ]
         }
@@ -305,7 +305,7 @@
           "functions": [
             {
               "name": "states.AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -323,7 +323,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 891,
+          "line": 895,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 892
+              "line": 896
             }
           ]
         }
@@ -398,7 +398,7 @@
           "functions": [
             {
               "name": "AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -407,7 +407,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -480,7 +480,7 @@
           "functions": [
             {
               "name": "AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -558,7 +558,7 @@
           "functions": [
             {
               "name": "AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -567,7 +567,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -645,7 +645,7 @@
           "functions": [
             {
               "name": "AR.capitalGainsTaxablePct",
-              "line": 214
+              "line": 233
             }
           ]
         },
@@ -654,7 +654,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -731,7 +731,7 @@
           "functions": [
             {
               "name": "AR",
-              "line": 200
+              "line": 219
             }
           ]
         },
@@ -749,7 +749,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -760,16 +760,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 465,
+          "line": 466,
           "note": null,
           "tests": [
             {
               "title": "taxes half of the excess above $10,000,000 that Arkansas exempts outright",
-              "line": 475
+              "line": 476
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 480
+              "line": 481
             }
           ]
         }
@@ -801,8 +801,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -812,8 +812,12 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "AL.partYear",
+              "line": 164
+            },
+            {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -822,15 +826,31 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/tax/statePartYear.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 193,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "keeps the schedule and the whole deduction",
+              "line": 213
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
           "line": 5005,
@@ -859,6 +879,11 @@
           "kind": "stateAgencyPublication",
           "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)",
           "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 40 booklet, part-year residents",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
     },
@@ -887,7 +912,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -905,7 +930,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1017,7 +1042,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1066,7 +1091,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1084,7 +1109,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1161,7 +1186,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1170,7 +1195,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1236,7 +1261,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1245,7 +1270,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1312,7 +1337,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1330,11 +1355,11 @@
           "functions": [
             {
               "name": "federalRailroadRetirementActKinds",
-              "line": 64
+              "line": 67
             },
             {
               "name": "railroadRetirementActSubtraction",
-              "line": 73
+              "line": 76
             }
           ]
         },
@@ -1412,7 +1437,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1421,7 +1446,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1478,7 +1503,7 @@
           "functions": [
             {
               "name": "states.AL",
-              "line": 142
+              "line": 153
             }
           ]
         },
@@ -1487,7 +1512,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1548,8 +1573,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": 2026,
-      "verifiedOn": "2026-09-12",
-      "dueOn": "2027-01-10",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-02-04",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1559,8 +1584,12 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "KY.partYear",
+              "line": 579
+            },
+            {
               "name": "states.KY",
-              "line": 527
+              "line": 570
             }
           ]
         },
@@ -1569,24 +1598,40 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
         "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+        "packages/engine/src/tax/statePartYear.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 496,
+          "line": 498,
           "note": null,
           "tests": [
             {
               "title": "deducts $3,360 once from $10,000 on a joint return",
-              "line": 497
+              "line": 499
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 177,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "allows the whole standard deduction",
+              "line": 188
             }
           ]
         },
@@ -1618,6 +1663,11 @@
           "kind": "formInstruction",
           "citation": "Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern",
           "url": "https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 740-NP Schedule A instructions",
+          "url": "https://revenue.ky.gov/Forms/740-NP%20Schedule%20A%20(2025).pdf"
         }
       ]
     },
@@ -1645,7 +1695,7 @@
           "functions": [
             {
               "name": "KY",
-              "line": 527
+              "line": 570
             }
           ]
         },
@@ -1654,7 +1704,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1750,8 +1800,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": 2026,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-01-07",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-02-04",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1761,8 +1811,12 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "LA.partYear",
+              "line": 591
+            },
+            {
               "name": "states.LA",
-              "line": 535
+              "line": 581
             }
           ]
         },
@@ -1771,13 +1825,18 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateAnnualParameters.rules.test.ts"
+        "packages/engine/src/tax/stateAnnualParameters.rules.test.ts",
+        "packages/engine/src/tax/statePartYear.rules.test.ts"
       ],
       "fixtures": [
         {
@@ -1788,6 +1847,17 @@
             {
               "title": "pins the CPI-indexed IT-540ESi deduction at boundary and 100k coordinates",
               "line": 101
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 160,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "allows the whole standard deduction",
+              "line": 172
             }
           ]
         }
@@ -1824,6 +1894,11 @@
           "kind": "stateAgencyPublication",
           "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet",
           "url": "https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form IT-540B, lines 10, 11E, 12 and 13",
+          "url": "https://dam.ldr.la.gov/taxforms/IT540B(2025)WEB-BC-F.pdf"
         }
       ]
     },
@@ -1852,7 +1927,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 535
+              "line": 581
             }
           ]
         },
@@ -1861,7 +1936,7 @@
           "functions": [
             {
               "name": "louisianaAge65RetirementExemption",
-              "line": 50
+              "line": 61
             }
           ]
         },
@@ -1870,7 +1945,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1952,7 +2027,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES.LA",
-              "line": 103
+              "line": 114
             }
           ]
         },
@@ -1961,7 +2036,7 @@
           "functions": [
             {
               "name": "louisianaFederalRailroadExclusion",
-              "line": 22
+              "line": 33
             }
           ]
         },
@@ -2013,8 +2088,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-12",
-      "dueOn": "2027-09-12",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateLouisianaRetirement.ts",
@@ -2026,7 +2101,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 535
+              "line": 581
             }
           ]
         },
@@ -2035,7 +2110,7 @@
           "functions": [
             {
               "name": "louisianaFederalRailroadExclusion",
-              "line": 22
+              "line": 33
             }
           ]
         },
@@ -2044,7 +2119,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -2055,6 +2130,7 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
@@ -2066,6 +2142,17 @@
             {
               "title": "fully excludes proven federal and railroad sources, not a private under-65 pension",
               "line": 162
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 189,
+          "note": "military",
+          "tests": [
+            {
+              "title": "excludes military pay under 47:44.2 and leaves the 12,324 dollar exemption to the private pension",
+              "line": 194
             }
           ]
         },
@@ -2096,6 +2183,11 @@
           "kind": "statute",
           "citation": "La. R.S. 47:44.2",
           "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form IT-540 instructions, Schedule E code 04E",
+          "url": "https://dam.ldr.la.gov/taxforms/IT540i-WEB-2025-Revised-7-26.pdf"
         }
       ]
     },
@@ -2123,7 +2215,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2132,7 +2224,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -2219,7 +2311,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2228,7 +2320,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2299,7 +2391,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2317,7 +2409,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2384,8 +2476,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": 2030,
-      "verifiedOn": "2026-09-28",
-      "dueOn": "2027-09-28",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
       "implementedBy": [
         "packages/engine/src/params/state/data/enacted2027.ts",
         "packages/engine/src/params/state/data/enacted2028.ts",
@@ -2401,7 +2493,7 @@
           "functions": [
             {
               "name": "states.MS",
-              "line": 118
+              "line": 121
             }
           ]
         },
@@ -2419,7 +2511,7 @@
           "functions": [
             {
               "name": "states.MS",
-              "line": 36
+              "line": 39
             }
           ]
         },
@@ -2437,7 +2529,11 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
+            },
+            {
+              "name": "MS.partYear",
+              "line": 756
             }
           ]
         },
@@ -2455,13 +2551,18 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
             }
           ]
         }
       ],
       "fixtureFiles": [
         "packages/engine/src/tax/stateEnacted2027.rules.test.ts",
+        "packages/engine/src/tax/statePartYear.rules.test.ts",
         "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "fixtures": [
@@ -2484,6 +2585,17 @@
             {
               "title": "charges 3.5% for 2028, 3.25% for 2029 and 3% from 2030 above the $10,000 band",
               "line": 254
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 122,
+          "note": "the zero band of a part-year resident",
+          "tests": [
+            {
+              "title": "keeps the whole $10,000 zero band",
+              "line": 138
             }
           ]
         },
@@ -2549,6 +2661,11 @@
           "kind": "legislativeHistory",
           "citation": "2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30",
           "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 80-100 instructions, part-year residents and lines 14 and 15",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
         }
       ]
     },
@@ -2576,7 +2693,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2585,7 +2702,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2651,7 +2768,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2669,7 +2786,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -2746,7 +2863,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 642
+              "line": 713
             }
           ]
         },
@@ -2764,7 +2881,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2810,6 +2927,80 @@
       ]
     },
     {
+      "id": "ok-stat-68-2358-e-17-armed-forces-retirement-exclusion",
+      "title": "Oklahoma excludes Armed Forces retirement benefits in full, outside the $10,000 retirement exclusion",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OK",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "OK.militaryRetirementExclusion",
+              "line": 995
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 163,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes military pay in full and leaves the 10,000 dollar exclusion to the private pension",
+              "line": 167
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 4",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        }
+      ]
+    },
+    {
       "id": "ok-stat-68-2358-retirement-and-social-security",
       "title": "Oklahoma subtracts Social Security and caps ordinary retirement exclusions at $10,000 per person",
       "classification": "approximated",
@@ -2835,7 +3026,7 @@
           "functions": [
             {
               "name": "OK",
-              "line": 887
+              "line": 976
             }
           ]
         },
@@ -2844,7 +3035,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -2935,7 +3126,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 996
+              "line": 1095
             }
           ]
         },
@@ -2944,7 +3135,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -3008,7 +3199,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 996
+              "line": 1095
             }
           ]
         },
@@ -3017,7 +3208,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3081,7 +3272,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 1001
+              "line": 1100
             }
           ]
         },
@@ -3090,7 +3281,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3149,7 +3340,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 1001
+              "line": 1100
             }
           ]
         },
@@ -3158,7 +3349,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }

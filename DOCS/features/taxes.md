@@ -481,9 +481,11 @@ Maine's §5122(2)(M-2) pension-income deduction carries the MRS July 2026 Form 1
 per-person TY2026 maximum (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`,
 [ME.md](../domain/state-tax-research/ME.md);
 [MRS 2026 Form 1040ES-ME Instructions](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf)).
-The flat cap does not verify plan qualification, separate military retirement, reduce by gross
-Social Security/Railroad Retirement, or apply the M-3 federal-AGI phaseout; personal exemption and whole
-Form 1040ME accuracy remain outside this bounded claim.
+The flat cap does not verify plan qualification, reduce by gross Social Security/Railroad Retirement, or
+apply the M-3 federal-AGI phaseout; personal exemption and whole Form 1040ME accuracy remain outside this
+bounded claim. Military retirement plan benefits come off in full outside the cap under (M-2)(1)(b), one of
+the state military rules the pack's `militaryRetirementExclusion` carries (see the domain rules reference,
+section 9).
 Virginia's relief at 65 is not a retirement exclusion but the §58.1-322.03(5) **age deduction**: $12,000 per
 qualifying taxpayer against income of every kind, reduced $1 for each $1 of adjusted federal AGI (federal AGI
 less taxable Social Security and Tier 1) above $50,000 single or $75,000 married, computed as Form 760's

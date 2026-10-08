@@ -4,12 +4,243 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.4.2** (2026-10-08) — a **patch**: the state tax and
+  inherited-IRA corrections below and the dependency re-resolve. Plans stay schema 7, and no
+  export is removed. One exported type changes: the state pack field `partYearRateSchedule`
+  (`@retiregolden/engine/params/state`), added in 0.4.1, becomes the `partYear` descriptor.
+  Neither RetireGolden-MCP, RetireGolden-Pro nor the site reads it. planner-ui's `^0.4.0` range
+  already admits 0.4.2, so planner-ui is not re-released; RetireGolden-MCP and
+  RetireGolden-Pro move by bumping their exact engine pin. **Not yet published**; the owner tags
+  `engine-v0.4.2` and approves the `npm-publish` environment.
+- **Changed: the District of Columbia's standard deduction rests on its permanent law, and the
+  dated review that was to settle it is closed** (2026-10-08). D.C. Law 26-189, the Fiscal Year 2027
+  Budget Support Act of 2026 (D.C. Act 26-418, Bill 26-661), took effect October 2, 2026, when its
+  congressional review ended (the Council's legislative record); no resolution disapproving it was
+  introduced. It sets D.C. Code 47-1801.04(3A) and (44) in the words the emergency D.C. Act 26-416
+  used: a basic deduction of $15,000 single, $22,500 head of household and $30,000 joint plus the
+  IRC 63(c)(3) additional amount for 2026 to 2029, indexed from a 2025 base and rounded down to $50,
+  and the federal deduction from 2030. Its sec. 7113 applies the subtitle as of January 1, 2025, so
+  it governs tax year 2026 whatever the status of the earlier acts. The tracker's "District of
+  Columbia congressional review about November 20, 2026" and the emergency act's lapse about
+  November 11 are retired: the question settled on 2026-10-02. No figure
+  changes, before or after: $15,000 / $30,000 for 2026 ($15,350 / $30,750 for 2027 at 2.5%
+  inflation, $16,150 single for 2029, the federal deduction from 2030); a single filer under 65
+  with $60,000 of District income pays $2,525.00 for 2026 and a couple with $120,000 $6,050.00. Two
+  sources still print the federal deduction, and neither governs: code.dccouncil.gov has not
+  codified Law 26-189 (its 47-1801.04 still prints (44)(A)(iv)), and the Office of Tax and
+  Revenue's 2026 D-40ES (Rev. 03/2026), written before the act, enters $16,100 / $24,150 / $32,200
+  on its estimate worksheet. The one check left is the Office's 2026 D-40 booklet, about January
+  2027 (DOCS/maintenance-schedule.md). The earlier acts are history: D.C. Act 26-214 (emergency),
+  D.C. Act 26-217 (temporary, D.C. Law 26-89 on the code site) and D.C. Act 26-416 (emergency) set
+  the same amounts. The temporary act's status is contested: Pub. L. 119-78 (H.J. Res. 142, February
+  18, 2026) disapproved it and the White House said the resolution nullifies it, while the District's
+  Attorney General (opinion of February 24, 2026) concluded that the resolution came after the Home
+  Rule Act's review period and did not repeal it. The record takes no side; neither reading reaches
+  the permanent law's application to 2026. `dc-code-47-1801-04-3a-standard-deduction-2026-2029`
+  stays settled and is re-cited: the enrolled act and the Council's legislative record on
+  lims.dccouncil.gov (admitted as a District publisher, since the code site lags), Pub. L. 119-78,
+  47-1801.04(44)(D) (the deduction prorated by months, as the engine does; the D-40 booklet's
+  Calculation C uses days), the code site's text before the law, and the two Office publications.
+  The code-site note on D.C. Law 26-89 that a live check found ABSENT on 2026-10-07 is withdrawn.
+  All sixteen quotes were checked by a live verify-quotes --refresh run on 2026-10-08 (8
+  PDF-WORD-LEVEL, 5 EXACT, 3 ELISION-EXACT), recorded as a dated amendment to the quote-fidelity
+  ledger. The report's parameter sources, the District row and the state income tax row, say the
+  same; no report figure moves. The `state-enacted-tax-year-figures` record and worksheet, and
+  `neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal`, now name the District's deduction with
+  Washington's among those projected on their statute's schedule (the District's every year from 2027
+  to 2029, rounded down to $50), and Maine's from 2027 and the District's from 2030 among those that
+  follow the federal one, where they said Washington's alone was projected.
+
+- **Fixed: a part-year resident's slice of a split year is priced by the state's own part-year
+  method** (2026-10-07). Every state but Virginia scaled its brackets, zero band and standard
+  deduction with the months resident, which is the months share of a full-year resident's tax.
+  Eleven states tax the resident-period income on the ordinary schedule instead, as each one's
+  2025 part-year or nonresident instructions read: New Jersey (NJ-1040), Hawaii (Form N-15),
+  South Carolina (Schedule NR), the District of Columbia (D-40), Mississippi (Form 80-100), Idaho
+  (Form 43, the zero band whole) and Maryland (Form 502 P) prorate the deduction; Arizona (Form
+  140PY), Louisiana (Form IT-540B), Kentucky (Form 740-NP Schedule A) and Alabama (Form 40, the
+  exemptions too) allow it whole. The pack's `partYearRateSchedule: 'unscaled'` becomes a
+  `partYear` descriptor (the rate schedule, scaled or unscaled; the standard deduction and the
+  exemptions, by months or whole), set for those eleven and for Virginia, whose figures do not
+  move. Wisconsin's sliding standard deduction was phased on the slice's own income and never
+  prorated; the slice now takes the months share of the deduction on the year's income, as Form
+  1NPR looks it up by federal income (its Standard Deduction Table, on line 31) and prorates the tax
+  (line 32). A single filer of
+  50 with $100,000 of ordinary income, resident six months and six in Texas, 2026: New Jersey
+  $2,090.03, now $1,242.38; Hawaii $2,941.60, now $2,395.20; South Carolina $1,731.25, now
+  $1,248.25; the District $2,812.50, now $2,362.50; Mississippi $1,754.00, now $1,554.00; Arizona
+  $1,053.13, now $856.25; Louisiana $1,306.88, now $1,113.75; Idaho $2,095.86, now $1,968.37;
+  Alabama $2,405.00, now $2,310.00; Kentucky $1,691.20, now $1,632.40; Maryland $2,268.00, now
+  $2,241.75; Wisconsin $1,798.39, now $2,232.31. Every other state's figure stands: its months
+  share is the income-percentage method with the months for its own ratio, or, for a state that
+  taxes resident-period income at a flat rate, the same figure. The limits that remain are stated
+  in `va-code-58-1-322-03-2-personal-exemptions`: a slice receives no household facts, so the
+  Illinois, Connecticut, Wisconsin and Massachusetts exemptions and Oregon's, Utah's and Iowa's
+  credits drop, and South Carolina's slice deducts its SCIAD unphased; characterized retirement
+  rows are not allocated across the move; every retirement cap is prorated by months; and each
+  income-percentage state's own ratio is replaced by the months. Pricing an income-percentage
+  state from the full-year rich computation waits for the projection to assemble each state's
+  facts: it hands the state calculator facts filtered to the year's residence state, so the other
+  state of the move cannot be priced from them yet. One library example moves: "Moving in
+  retirement (state tax)" goes from Florida to Kentucky in July 2029 and pays $58.80 less that
+  year, lifetime tax $732,565.75, now $732,506.95, ending investable $3,880,516.31, now
+  $3,880,618.68; its relocation table's Florida row prints "-$145,059" where it printed
+  "-$145,118". The pinned pre-start annuity size (U1, a Kentucky couple moving to Florida in
+  November 2026) is now -$147,615.81 from a 2026 start, where it was -$147,623.51.
+  Each state's part-year method is quoted from its 2025 form or instructions on the record that
+  carries it, Idaho's on a new record (`id-form-43-part-year-resident-period`), each quote checked
+  against the live document (PDF-WORD-LEVEL in the quote-fidelity ledger).
+
+- **Changed: the stated limits of state military retirement pricing say what is now true**
+  (2026-10-07). The `state-enacted-tax-year-figures` record, its worksheet and the
+  tax/stateTax.ts header said a state's own military rule was modeled in only fifteen states, with
+  Wisconsin "the first known case"; every state with a rule now has it modeled, through its own
+  branch, the pack's `militaryRetirementExclusion` or an exclusion that is already full. What
+  remains is listed there: North Carolina's 20-year, medical and Bailey limbs, Kentucky's pre-1998
+  share and Oregon's pre-October 1991 proration, each needing a service history the plan does not
+  hold; Montana's approximated five-year window; earned income read from wage streams only in
+  Georgia and Montana; the survivor annuity in Michigan, Oklahoma, Pennsylvania and Kansas, where
+  the law does not plainly reach it, Nebraska's full exclusion of one, which may understate, and
+  Delaware's unsettled treatment; a survivor's share of a pension tagged Military retirement
+  priced as retired pay; New Mexico's 2026 session not checked; Idaho's lawful zero under 62
+  marked incomplete; and Vermont's unrounded phase-out ratio. The record's loaded-figures list
+  adds Georgia's 2027 military exclusion and the end of Colorado's under-55 subtraction from 2029.
+  No figure moves.
+- **Fixed: New Jersey's personal exemptions** (2026-10-07). N.J.S.A. 54A:3-1, as amended by
+  P.L.2019, c.146, allows $1,000 for the taxpayer and for a spouse on a joint return, $1,000 for
+  each 65 or older at the close of the year, $1,000 for each blind or disabled, and $6,000 for
+  each honorably discharged veteran; none was modeled. They now come off New Jersey gross income
+  after the pension exclusion's income test (the pack's `newJerseyPersonalExemptions`): blindness
+  from the plan's stored taxpayer eligibility, disability from a pension marked for a disabled
+  recipient, and a veteran inferred for the owner of a pension tagged Military retirement (not its
+  survivor), an inference the record states. The $1,500 dependent and $1,000 college-student
+  exemptions are a stated limit; the plan collects no dependents. $50,000 of income, 2026: single
+  at 60, $1,270.00, now $1,214.75; single at 66, now $1,159.50; joint, both 60, $805.00, now
+  $770.00; joint, both 66, now $735.00; a single veteran at 66 with a $30,000 military pension
+  beside it, $1,270.00, now $828.00 (`nj-stat-54a-3-1-personal-exemptions`). The ORACLE-009 New
+  Jersey worksheet now starts from $121,000 of gross income so its $120,000 of taxable income is
+  unchanged. No library example moves: none is in New Jersey.
+- **Fixed: Utah's credits are priced in a projected year** (2026-10-07). The projection never
+  supplied the 59-10-114 additions that Utah MAGI adds (59-10-1019(1)(e), 59-10-1042(1)(d)), and
+  the credit election demanded MAGI even where it could not change the answer, so every projected
+  Utah year withheld the retirement, Social Security and military credits and was marked
+  incomplete, ordinary plans included. A plan holds none of those additions beyond its tax-exempt
+  interest, which MAGI already counts once (the TC-40 worksheets take code 57 back out), so the
+  projection now supplies 0 and a stored household-year figure still wins
+  (`ut-code-59-10-114-1-additions-in-utah-magi`); and a credit that is zero at any MAGI (no
+  claimant born on or before December 31, 1952; no Social Security in Utah taxable income) no
+  longer needs it. Single filers, 2026: $100,000 of military pay, $4,450.00 incomplete at every
+  age, now $0.00; born 1950 with $25,920 of Social Security and a $20,000 pension, $1,067.11
+  incomplete, now $617.11 (the $450 retirement credit); born 1956 with Social Security and $20,000
+  of other income, $1,063.55 incomplete, now $890.00; born 1960 with $60,000 of other income,
+  $2,670.00 either way, now complete.
+- **Changed: Utah's Social Security credit phases out on income after the railroad retirement
+  subtraction** (2026-10-07, D-UTAH-RAILROAD-MAGI). The 2025 TC-40 Social Security Credit
+  Worksheet starts from line 9, after the code 78 subtraction of a Railroad Retirement Act
+  annuity; the retirement credit worksheet keeps line 6, and so does the engine. Born 1956,
+  $32,000 of Social Security, a $20,000 tier II annuity and $20,000 of other income: $1,120.00,
+  now $890.00. The record is unsettled: the statute's MAGI keeps the annuity in, and whether 45
+  U.S.C. 231m(a) bars counting it at all is undecided
+  (`ut-tc-40-social-security-credit-railroad-magi`). No library example moves: none is in Utah.
+- **Fixed: a state's own rule for military retired pay and Survivor Benefit Plan annuities, in the
+  states the engine priced under their general retirement rules** (2026-10-07). A pension tagged
+  Military retirement or Military survivor benefit now takes the state's own subtraction first,
+  per recipient, and the state's general retirement rules see only what it leaves (the pack's
+  `militaryRetirementExclusion`). Single filer, $100,000 pension, 2026, before and after:
+  - **Full subtractions.** Wisconsin 71.05(1)(am), Survivor Benefit Plan included, outside the
+    line 16 subtraction: $4,464.62 at 60 and $3,192.62 at 67, now $0.00. Indiana IC 6-3-2-4(a)(2):
+    $2,950.00, now $0.00 (`ic-6-3-2-4-military-retirement-deduction` is settled; only a caller that
+    passes the coarse public bucket alone still over-charges). Minnesota 290.0132 subd. 21:
+    $5,276.61, now $0.00. Louisiana 47:44.2 and code 04E, outside the 65+ exemption: $2,613.75 at 60
+    and $2,244.03 at 65, now $0.00. Maine 5122(2)(M-2)(1)(b), outside the $49,824 cap: $2,066.83 at
+    60, now $0.00, and $50,000 of military pay with a $50,000 private pension at 70, $1,928.45, now
+    $0.00. Michigan 206.30(1)(e)(i), which lowers the general maximum by the amount deducted:
+    $1,376.58, now $0.00 (with a $50,000 private pension beside $50,000 of military pay the tax is
+    unchanged, as the reduced maximum gives the same total). Oklahoma 2358(E)(17), outside the
+    $10,000: $3,549.50, now $0.00 ($50,000 military and $50,000 private at 70: $3,549.50, now
+    $1,299.50). Pennsylvania 61 Pa. Code 101.6(c)(3) at any age: $3,070.00 at 45 and 55, now $0.00.
+    Michigan, Oklahoma and Pennsylvania leave a Survivor Benefit Plan annuity to their general rule,
+    as their law does not plainly reach it.
+  - **Capped and age-tested.** Colorado 39-22-104(4)(y), $15,000 under 55 through 2028, and from 55
+    the (4)(f) pension subtraction it was kept out of: $3,691.60 at 45 and 60 and $3,403.40 at 65,
+    now $3,031.60, $2,811.60 and $2,347.40; a survivor annuity under 55, $3,691.60, now $2,811.60.
+    Maryland 10-207(q), $12,500 under 55 and $20,000 from 55, death benefits included, the rest open
+    to the pension exclusion: $4,536.00 at every age, now $3,942.25 at 45, $3,586.00 at 60 and
+    $1,657.50 at 65. Georgia 48-7-27(a)(5.1), $17,500 under 62 and $35,000 with more than $17,500 of
+    wages, read from the recipient's wage streams: $4,241.50 at 60, now $3,368.25; with a $20,000
+    wage stream, $5,239.50, now $3,493.00; a veteran's survivor benefit in full at any age, $4,241.50
+    under 65 and $998.00 from 65, now $0.00. HB 266, signed May 13, 2025, effective for 2027, is
+    loaded in the enacted 2027 figures: under 65, up to $65,000 with no earned-income test. New
+    Mexico 7-2-5.13, $30,000 per retiree or surviving spouse: $3,569.10 at 60, now $2,124.30.
+    Montana 15-30-2120(3)(n), 50% of retired pay no more than the wages on the return and 50% of a
+    survivor benefit, in five years from the later of 2024 and the pension's first payment (the plan
+    holds no residency start, so the window is approximated:
+    `mt-mca-15-30-2120-3-n-military-retirement-subtraction`): a survivor benefit at 60, $4,289.10,
+    now $1,593.30; retired pay with a $20,000 wage stream, $5,419.10, now $4,289.10.
+  - **Kansas** reads a Military retirement row as the armed-forces system 79-32,117(c)(vii) names,
+    so it needs no plan code: $5,291.44, incomplete, now $0.00, complete. A survivor annuity still
+    needs the code.
+  - **Survivor annuities.** The District of Columbia excludes one from 62 as a federal survivor
+    benefit under 47-1803.02(a)(2)(N)(ii): $5,625.00 at 62, now $0.00. Missouri subtracts only a
+    retiree's own military pay in full under 143.121.3(12); a survivor annuity is a public pension
+    under 143.124.5, capped at the pack's $48,967 less the Social Security exemption, so the engine no
+    longer understates: $0.00 at 60, now $1,461.22. From 2024 that public subtraction needs no
+    Missouri income or filing status, so the engine now takes it in a year without Missouri income,
+    for a civil service annuity too: $3,666.32 at 70, now $1,364.87 (still incomplete for the
+    income-tested private deduction).
+  - **Premature-distribution status.** Military retired pay and a survivor annuity are paid under
+    title 10, not from a plan 72(t) reaches, so the projection marks them not premature at any age
+    (`inferEarlyDistributionDisqualifier`). South Carolina 12-6-1171 under 59½: $4,244.00,
+    incomplete, now $0.00, complete. Delaware's $12,500 military limb under 60: $5,369.00,
+    incomplete, now $4,544.00, complete.
+  - The projection passes each person's wages from wage streams to the state calculation
+    (`ownerStateTaxFacts[].wages`), and a military pension row carries the year its payments began
+    (`paymentsBeganYear`). New rule records for each state; `state-military-facts-unknown` marks a
+    year where a cap turns on an unknown age, wage or first-payment fact. No library example moves:
+    none carries a military pension or a Missouri public pension.
+- **Changed: the Railroad Tier I pension source says it is the part reported on Form
+  RRB-1099-R** (2026-10-07, D-RAILROAD-TIER1-SPLIT, first half). 26 U.S.C. 86(d)(1)(B) and
+  (d)(4)(A) make the Social Security equivalent part of a tier I benefit, reported on Form
+  RRB-1099, a Social Security benefit; 72(r) makes the rest of tier I, tier II and the
+  supplemental annuity, reported on Form RRB-1099-R, benefits under an employer plan. The engine
+  prices a pension tagged `railroadTier1` as a pension, which is right for the RRB-1099-R part,
+  so planner-ui's label for it now reads "Railroad Tier I, non-Social Security equivalent part
+  (RRB-1099-R)", and the pension source help says the RRB-1099 part is entered as Social
+  Security. The help and the `usc-45-231m-state-tax-bar` record state the limit: entered that
+  way, a state that taxes Social Security taxes it, although 45 U.S.C. 231m bars any state tax
+  on it. The plan fact that would let the bar reach an RRB-1099 amount needs a plan schema
+  change and is deferred. No figure moves.
+- **Fixed: in the year a surviving spouse's treat-as-own election takes effect, each pooled IRA's
+  owner RMD is figured on its own balance** (2026-10-07, D-POOLED-ELECTION-REFERENCE-BALANCE).
+  When two or more inherited IRAs from one decedent are each elected as the spouse's own, the plan
+  checks give them identical election facts, and the engine took every IRA's owner RMD from that
+  one shared reference balance. Treas. Reg. 1.408-8(c)(3) makes that year's requirement the
+  owner's, 1.408-8(b)(2) bases it on the IRA's own balance at the prior December 31, and
+  1.408-8(e)(1)(i) calculates it separately for each IRA. Each IRA in such a pool now takes its
+  own balance; the reference still stands in for an IRA alone in its pool,
+  and the requirements still aggregate into the owner's one owned-IRA obligation. A $29,600 IRA
+  pooled with a $100,000 one under a $100,000 reference, owner aged 75 (divisor 24.6): before,
+  $4,065.04 required on the $29,600 IRA and $8,130.08 for the owner; after, $1,203.25 and
+  $5,268.29. A distribution taken before the election now counts once toward the pool's total,
+  whichever IRA it came from, as 1.408-8(e)(1)(i) lets the total come from any of the IRAs: a
+  completed history row to the IRA it names, the pool's one j(4) pre-election figure once for the
+  pool, where it had been credited against every IRA. And an IRA's prior December 31 balance is
+  its opening balance plus the distributions accepted as taken from it, since the projection never
+  debits them; a lone IRA's positive reference still takes precedence. $99,000 and $29,600 IRAs
+  under a $100,000 reference, $1,000 paid before the election: before, $3,227.64 forced, so the
+  year distributed $4,227.64 of the $5,268.29 required and left $1,040.65 unmet with no shortfall
+  reported; after, $4,268.29 forced and $5,268.29 distributed. A lone $99,000 IRA with no reference
+  and $1,000 paid before the election now owes $4,065.04 (was $4,024.39). The
+  `rmd-uniform-lifetime-divisor` record states the rule and what remains: a gain or loss since the
+  prior December 31 is not carried, a pool with any completed history row does not also count its
+  j(4) figure, and an IRA whose balance cannot cover its unpaid amount is not made up from another
+  IRA. No library example moves: none carries spousal election facts.
 - Prepared **`@retiregolden/engine` 0.4.1** (2026-10-06) — a **patch**: the state tax
   corrections below, an additive conversion marker on the state retirement facts, and no
   removed or renamed export. Plans stay schema 7. planner-ui's `^0.4.0` range already admits
   it, so planner-ui is not re-released; RetireGolden-MCP and RetireGolden-Pro move by bumping
-  their exact engine pin. **Not yet published**; the owner tags `engine-v0.4.1` and approves
-  the `npm-publish` environment.
+  their exact engine pin. **Published 2026-10-07** from the tag `engine-v0.4.1` on 3a6e845b,
+  with npm provenance.
 - **Changed: Colorado has no TABOR rate cut for 2026** (2026-10-06). The State Controller
   certified on September 8, 2026 that revenue fell $175.9 million short of the Referendum C
   cap, so there is no refund obligation and no temporary rate reduction under C.R.S. 39-22-627,
@@ -29,6 +260,20 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   fresh resolve and the Resolve Gate was red on main from 2026-10-02. A root override scoped to
   the 3.x line holds 3.2.1; the committed lockfile does not move, and `pnpm-workspace.yaml`
   records the reason and when to drop it.
+- **Fixed (tooling): `pnpm audit --audit-level=high` is clean again** (2026-10-07). Thirteen
+  high advisories sat on five dev-only packages, and Dependabot's security updates failed with
+  `security_update_not_possible` on every push to main. Four packages move inside their
+  dependents' existing ranges, and nothing else in the lockfile moves: `fast-uri` 3.1.5 to
+  3.1.8 (under `ajv`, an engine dev dependency that only the plan-schema test imports, and under
+  workbox-build), `undici` 8.10.0 to 8.11.2 (under `jsdom`, whose `^8.9.0` already admits it,
+  so jsdom stays 30.0.1), `brace-expansion` 5.0.9 to 5.0.12 (under `minimatch`) and
+  `source-map-js` 1.2.1 to 1.2.2 (under `magicast`). The root `sharp` override's floor rises
+  from `^0.35.0` to `^0.35.5` for the libheif and librsvg advisories, taking sharp from 0.35.3
+  to 0.35.5 with its platform binaries, and its record in `pnpm-workspace.yaml` says why. No
+  other manifest changes and no published package's runtime dependencies move; a
+  from-scratch resolve passes the trust policy and the seven-day release-age gate. The ten
+  moderate and low advisories on the same versions clear with them; one low remains
+  (`serialize-javascript` 7.1.1 under workbox-build's terser plugin).
 - **Fixed: states treat a Roth conversion by their own rules, not as a withdrawal**
   (2026-10-06). Every state retirement row now marks the taxable conversion dollars
   (`rothConversionAmount`) and the part converted at 59 and a half or older

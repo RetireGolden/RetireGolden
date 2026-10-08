@@ -226,6 +226,8 @@ export interface StateRetirementDistributionFactInput {
   priorTaxState?: string
   qualifiedPlanType?: '401a' | '401k' | '403b' | '457b' | 'ira' | 'other' | 'unknown'
   deathOrDisabilitySurvivorUnder55?: boolean
+  /** The year a pension's payments to this recipient began, when known (Montana's five-year window). */
+  paymentsBeganYear?: number
   taxableSocialSecurityAllocated?: number
   /**
    * The part of `federallyIncludedAmount` that is a taxable Roth conversion: an
@@ -298,6 +300,8 @@ export interface StateHouseholdTaxFactsInput {
   ownerStateTaxFacts?: readonly {
     ownerPersonId: string
     recipientAgeYears?: number
+    /** Wages from the owner's wage streams this year (Georgia and Montana military limbs). */
+    wages?: number
     remainingScIncome?: number
     westVirginiaEligibleAge65OrDisabled?: boolean
     westVirginiaSurvivorEligible?: boolean

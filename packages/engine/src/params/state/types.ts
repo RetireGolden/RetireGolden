@@ -169,11 +169,30 @@ export interface StateTaxParams {
    */
   retirementRuleShared?: boolean
   /**
-   * `unscaled` when a part-year resident's return taxes the resident-period
-   * income on the ordinary rate schedule (Virginia's Form 760PY). Left out,
-   * the split-year slice scales the brackets with the resident months.
+   * How the state prices a part-year resident's slice of a split year
+   * (`prorateParams` in tax/stateTax.ts). Left out, the slice scales the
+   * standard deduction, the exemptions and the bracket edges with the months
+   * resident. With income spread evenly that is the months share of the tax a
+   * full-year resident would owe: the income-percentage method, method (b), with
+   * the months standing in for the state's income ratio.
+   *
+   * A state whose part-year return taxes only the resident-period income, on
+   * the ordinary rate schedule, carries the descriptor (method (a)):
+   * - `rateSchedule: 'unscaled'` keeps the brackets and any zero band whole;
+   *   `scaled` scales them with the months, as when the field is left out.
+   * - `standardDeduction` and `exemptions`: `months` prorates the amount with
+   *   the months resident, `full` allows it whole. The age-65 addition goes
+   *   with the standard deduction. A state that prorates by an income ratio
+   *   (federal AGI, state AGI) or by days is recorded as `months`. The engine
+   *   spreads the year's income evenly, so the ratios agree. `exemptions`
+   *   reaches only the exemptions a pack models (New Jersey's, Virginia's and
+   *   Wisconsin's); it is recorded for the others as their return reads.
    */
-  partYearRateSchedule?: 'unscaled'
+  partYear?: {
+    rateSchedule: 'scaled' | 'unscaled'
+    standardDeduction: 'months' | 'full'
+    exemptions: 'months' | 'full'
+  }
   /**
    * Direct QCD conformity metadata. `unknown` fails closed for exact state QCD
    * results; never infer addback from silence. Pack policy is authoritative.
@@ -265,6 +284,20 @@ export interface StateTaxParams {
       readonly grossIncomeAbove: number
       readonly percent: Record<'unmarried' | 'marriedFilingJointly', number>
     }[]
+  }
+  /**
+   * New Jersey 54A:3-1 personal exemptions, taken from New Jersey gross
+   * income: `taxpayer` for the taxpayer and for a spouse on a joint return,
+   * `age65` for each of them 65 or older at the close of the year,
+   * `blindOrDisabled` for each blind or disabled, and `veteran` for each
+   * honorably discharged veteran. The $1,500 dependent exemption is not
+   * modeled; the plan collects no dependents.
+   */
+  newJerseyPersonalExemptions?: {
+    taxpayer: number
+    age65: number
+    blindOrDisabled: number
+    veteran: number
   }
   /** South Carolina TY2026 SCIAD standard-deduction phaseout schedule. */
   southCarolinaSciad?: Record<
@@ -381,6 +414,39 @@ export interface StateTaxParams {
     militaryZeroAt: number
     standardDeductionByStatus?: Record<'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse', number>
   }
+  /**
+   * The state's own subtraction of U.S. uniformed-services retired pay, per
+   * recipient, applied to characterized `militaryRetirement` rows (and to
+   * `militarySurvivor` rows as `survivor` says). Whatever it leaves stays in the
+   * state's general retirement rules. See `militaryRetirementSubtraction` in
+   * tax/stateRailroadAndMilitary.ts.
+   */
+  militaryRetirementExclusion?: {
+    /**
+     * Caps by the recipient's age at the end of the year: the last row whose
+     * `minAge` the recipient has reached applies, and a row without `cap`
+     * subtracts all of it. No row reached subtracts nothing.
+     */
+    byAge: readonly { readonly minAge: number; readonly cap?: number }[]
+    /** Percent of the retired pay the subtraction may reach (Montana's 50). */
+    percent?: number
+    /**
+     * Survivor Benefit Plan annuities: `'retiredPay'` takes the same rule and
+     * cap as retired pay; a number subtracts that percent at any age, with no
+     * cap; absent leaves them to the general retirement rules.
+     */
+    survivor?: 'retiredPay' | number
+    /** Georgia: the cap rises by this much when the recipient's wages exceed it. */
+    wageAddition?: number
+    /**
+     * Montana: the retired-pay subtraction is no more than the wages on the
+     * return, and both subtractions apply only in the five tax years that start
+     * with the later of this year and the year the pension's payments began.
+     */
+    wageLimitWindowFrom?: number
+    /** Michigan: the general retirement maximum is reduced by the amount subtracted. */
+    reducesGeneralCap?: true
+  }
   /** Kansas named statutory plan codes for the public-pension allowlist. */
   kansasNamedPlanCodes?: readonly string[]
   /**
@@ -470,8 +536,8 @@ export interface StateTaxParams {
    * (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction). The first
    * year an adjustment applies, the years between adjustments, and the
    * rounding of each adjusted amount. Washington, ESSB 6346 section 316: 2029,
-   * every 2 years, to the nearest $1,000. The District of Columbia, D.C. Act
-   * 26-416: 2027, every year, cumulative from a 2025 base, rounded down to $50.
+   * every 2 years, to the nearest $1,000. The District of Columbia, D.C. Law
+   * 26-189: 2027, every year, cumulative from a 2025 base, rounded down to $50.
    */
   standardDeductionStatutoryIndexing?: {
     firstIndexedYear: number

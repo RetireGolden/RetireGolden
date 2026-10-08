@@ -2578,7 +2578,7 @@ describeRule('mn-dor-2026-rate-schedule-and-standard-deduction', {
 const DC_SS_OTHER_INCOME = 90_000
 const DC_SS_BENEFITS = 40_000
 const DC_FEDERALLY_TAXABLE_SS = 0.85 * DC_SS_BENEFITS
-// D.C. Act 26-416's basic deduction for 2026, the law in force
+// D.C. Law 26-189's basic deduction for 2026, the law in force
 // (dc-code-47-1801-04-3a-standard-deduction-2026-2029); the raw figures carry it
 // without the federal addition at 65, which the annual resolver attaches.
 const DC_DEDUCTION_SINGLE = 15_000

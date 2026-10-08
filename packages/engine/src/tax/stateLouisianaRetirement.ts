@@ -1,11 +1,12 @@
 /**
  * Louisiana retirement exclusions:
  * - La. R.S. 47:44.1(A) age-65 annual retirement exemption (TY2026 indexed $12,324)
- * - La. R.S. 47:44.2 federal civil-service / railroad only (not all public)
+ * - La. R.S. 47:44.2 federal civil-service, military and railroad only (not all public)
  */
 
 import {
   emptyLeafAdjustment,
+  isMilitarySource,
   isRailroadSource,
   type StateLeafAdjustment,
   type StateRetirementDistributionFact,
@@ -16,8 +17,18 @@ import {
 export const LA_RETIREMENT_EXEMPTION_TY2026 = 12_324
 
 /**
- * §47:44.2 exclusion: federal civil-service and qualifying RRB only.
- * Municipal / state-local public pensions receive $0 under this section.
+ * Income §47:44.2 exempts: a retirement system for retirees of the United
+ * States Government (civil service and the uniformed services; IT-540 code
+ * 04E names a military survivor benefit plan) and the Railroad Retirement Act.
+ */
+function exemptUnder44_2(fact: StateRetirementDistributionFact): boolean {
+  return fact.sourceKind === 'federalCivilService' || isMilitarySource(fact.sourceKind) || isRailroadSource(fact.sourceKind)
+}
+
+/**
+ * §47:44.2 exclusion: federal civil-service, military (Survivor Benefit Plan
+ * annuities included) and qualifying RRB only. Municipal / state-local public
+ * pensions receive $0 under this section.
  */
 export function louisianaFederalRailroadExclusion(
   facts: readonly StateRetirementDistributionFact[],
@@ -26,7 +37,7 @@ export function louisianaFederalRailroadExclusion(
   const warnings: StateTaxExactnessWarning[] = []
   for (const fact of facts) {
     const amount = Math.max(0, fact.federallyIncludedAmount)
-    if (fact.sourceKind === 'federalCivilService' || isRailroadSource(fact.sourceKind)) {
+    if (exemptUnder44_2(fact)) {
       total += amount
       continue
     }
@@ -60,7 +71,7 @@ export function louisianaAge65RetirementExemption(args: {
       warnings.push({ code: 'la-retirement-age-unknown', ruleId: 'la-rs-47-44-1-retirement-exemption', message: 'Louisiana age-65 exemption requires known recipient age.', missingFacts: ['recipientAgeYears'] })
       continue
     }
-    if (fact.sourceKind === 'federalCivilService' || isRailroadSource(fact.sourceKind)) {
+    if (exemptUnder44_2(fact)) {
       continue // already fully excluded under §44.2
     }
     if (fact.sourceKind === 'unknownPublic' || fact.sourceKind === 'unknownPrivate') {

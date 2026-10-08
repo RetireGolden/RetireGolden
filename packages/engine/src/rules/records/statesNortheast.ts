@@ -731,7 +731,7 @@ export const northeastStateRecords = {
   'me-mrs-36-5122-2-m2-m3-2026-pension-deduction': {
     title: 'Maine’s 2026 nonmilitary pension deduction maximum is $49,824 before offset and phaseout',
     statement:
-      'For tax year 2026, Maine\'s nonmilitary pension deduction amount is $49,824 before the statutory Social Security and Railroad Retirement reduction and the federal-adjusted-gross-income phaseout in §5122(2)(M-3), and the deductible amount may not exceed qualifying retirement-plan benefits included in federal adjusted gross income. Approximated: the pack models retirement as one flat per-person cap at the published maximum and cannot classify every eligible distribution, subtract gross Social Security or Railroad Retirement from the nonmilitary maximum, apply the separate full military deduction, or enforce the M-3 phaseout — so it can misstate tax in either direction outside isolated fixtures where federal AGI is below the unindexed M-3 applicable-amount base for the filing status, a single qualifying primary recipient is represented, and there is no gross Social Security or Railroad Retirement. Approximated further: on MFJ returns `retirementExclusion` multiplies `capPerPerson` by `agesAlive.length` because the plan schema cannot attribute retirement income to each spouse separately, so a one-recipient household can be over-excluded when both spouses are marked alive. A Roth conversion never qualifies, registered at me-1040me-roth-conversion-not-pension-income.',
+      'For tax year 2026, Maine\'s nonmilitary pension deduction amount is $49,824 before the statutory Social Security and Railroad Retirement reduction and the federal-adjusted-gross-income phaseout in §5122(2)(M-3), and the deductible amount may not exceed qualifying retirement-plan benefits included in federal adjusted gross income. Approximated: the pack models retirement as one flat per-person cap at the published maximum and cannot classify every eligible distribution, subtract gross Social Security or Railroad Retirement from the nonmilitary maximum, or enforce the M-3 phaseout (the separate full military deduction of M-2(1)(b) is taken on characterized rows before this cap: me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction) — so it can misstate tax in either direction outside isolated fixtures where federal AGI is below the unindexed M-3 applicable-amount base for the filing status, a single qualifying primary recipient is represented, and there is no gross Social Security or Railroad Retirement. Approximated further: on MFJ returns `retirementExclusion` multiplies `capPerPerson` by `agesAlive.length` because the plan schema cannot attribute retirement income to each spouse separately, so a one-recipient household can be over-excluded when both spouses are marked alive. A Roth conversion never qualifies, registered at me-1040me-roth-conversion-not-pension-income.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -1005,7 +1005,7 @@ export const northeastStateRecords = {
   'nj-stat-54a-6-10-retirement-income-exclusion': {
     title: 'New Jersey’s pension exclusion is for a person 62 or older, only with gross income of $150,000 or less, and steps down above $100,000',
     statement:
-      'From 2021 New Jersey excludes pension, annuity and retirement plan payments, IRA distributions included, received by a person 62 or older, or by one disabled as the Social Security Act defines it, but only if gross income for the year is not more than $150,000. At or below $100,000 of gross income the exclusion is the payments up to $100,000 on a joint return or $75,000 on a single, head of household or surviving spouse return; above $100,000 it is 50% (joint) or 37.5% (other returns) of the payments to $125,000, and 25% or 18.75% to $150,000. The NJ-1040 line 28a worksheet takes the lesser of the qualifying payments and that amount, and on a joint return counts only the payments of a spouse who qualifies, as the statute’s payments received by any person who is 62 or older require. The engine computes the exclusion after every other New Jersey adjustment and tests the base at that point as gross income (tax/stateTax.ts#computeStateTaxableIncomeResult, tax/stateNortheastExtras.ts#newJerseyPensionExclusion); it reads each recipient’s age on the last day of the year, as line 28a does, and counts a Roth conversion like any other IRA distribution, as GIT-2 reports it on line 20a. Until 2026-10-06 the engine gave $50,000 for each household member 62 or older with no income test: a single filer of 65 with $200,000 of gross income including an $80,000 pension had $50,000 excluded where the law allows none, and one whose whole $80,000 income was pension had $50,000 excluded where the law allows $75,000. Settled for the age, income and payment tests. Not modeled: the unclaimed exclusion of line 28b and the special exclusion for a retiree outside Social Security; married filing separately, not a plan filing status; the New Jersey basis of a distribution whose state taxable amount differs from the federal one; and a QCD New Jersey taxes, which enters gross income but not the payments counted. A year split between states prorates the maximum and tests the slice against bounds scaled with it. The slice’s brackets are scaled with the months too, which taxes the year’s income as a full-year resident and keeps the resident share, while NJ-1040 taxes a part-year resident’s resident-period income on the ordinary tax table; the engine therefore overstates New Jersey tax on a split year with income above the lowest band, a limit va-code-58-1-322-03-2-personal-exemptions states for every state but Virginia. Social Security is registered separately at nj-njit12-social-security-exclusion.',
+      'From 2021 New Jersey excludes pension, annuity and retirement plan payments, IRA distributions included, received by a person 62 or older, or by one disabled as the Social Security Act defines it, but only if gross income for the year is not more than $150,000. At or below $100,000 of gross income the exclusion is the payments up to $100,000 on a joint return or $75,000 on a single, head of household or surviving spouse return; above $100,000 it is 50% (joint) or 37.5% (other returns) of the payments to $125,000, and 25% or 18.75% to $150,000. The NJ-1040 line 28a worksheet takes the lesser of the qualifying payments and that amount, and on a joint return counts only the payments of a spouse who qualifies, as the statute’s payments received by any person who is 62 or older require. The engine computes the exclusion after every other New Jersey adjustment and tests the base at that point as gross income (tax/stateTax.ts#computeStateTaxableIncomeResult, tax/stateNortheastExtras.ts#newJerseyPensionExclusion); it reads each recipient’s age on the last day of the year, as line 28a does, and counts a Roth conversion like any other IRA distribution, as GIT-2 reports it on line 20a. Until 2026-10-06 the engine gave $50,000 for each household member 62 or older with no income test: a single filer of 65 with $200,000 of gross income including an $80,000 pension had $50,000 excluded where the law allows none, and one whose whole $80,000 income was pension had $50,000 excluded where the law allows $75,000. Settled for the age, income and payment tests. Not modeled: the unclaimed exclusion of line 28b and the special exclusion for a retiree outside Social Security; married filing separately, not a plan filing status; the New Jersey basis of a distribution whose state taxable amount differs from the federal one; and a QCD New Jersey taxes, which enters gross income but not the payments counted. A year split between states prorates the maximum and tests the slice against bounds scaled with it. The slice is taxed on the ordinary table, unscaled, as NJ-1040 taxes a part-year resident’s resident-period income (nj-stat-54a-3-1-personal-exemptions); until 2026-10-07 its brackets were scaled with the months too, which overstated New Jersey tax on a split year with income above the lowest band. Social Security is registered separately at nj-njit12-social-security-exclusion.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2022,4 +2022,143 @@ export const northeastStateRecords = {
     "packages/engine/src/params/state/data/year2026.ts#NJ"
   ]
 },
+  'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {
+    title: 'Maine deducts military retirement plan benefits in full, outside the capped pension deduction',
+    statement:
+      'For each primary recipient of retirement plan benefits, 36 M.R.S. 5122(2)(M-2)(1) deducts the capped amount of division (a), which excludes military retirement plan benefits, plus the whole of division (b), the military retirement plan benefits included in federal adjusted gross income. Division (b) has no cap, no Social Security or railroad offset and no M-3 phaseout, and a primary recipient includes the surviving spouse of the person on whose service the benefits are based. A pension tagged Military retirement or Military survivor benefit is deducted in full and does not take room under the $49,824 division (a) maximum, which the household\u2019s other pensions keep (me-mrs-36-5122-2-m2-m3-2026-pension-deduction). Before 2026-10-07 the engine put military pay in that capped pool: a single filer with $100,000 of military pay paid $2,066.83 at 60, and one with $50,000 of military pay and a $50,000 private pension at 70 paid $1,928.45, where the law charges nothing on either. From 2026 a military retirement plan is any of the uniformed services of 37 U.S.C. 101(3).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(1)(b)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'An amount equal to the aggregate of retirement benefits under military retirement plans included in the individual’s federal adjusted gross income; and',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(2)(c)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'For tax years beginning on or after January 1, 2026, "military retirement plan" means retirement plan benefits received as a result of service in the active or reserve components of the uniformed services of the United States as defined in 37 United States Code, Section 101(3).',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(2)(e)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        '"Primary recipient" means the individual upon whose earnings or contributions the retirement plan benefits are based or the surviving spouse of that individual.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#ME.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'pa-code-61-101-6-c-3-uniformed-services-retired-pay': {
+    title: 'Pennsylvania does not tax a uniformed service\u2019s retired pay, at any age',
+    statement:
+      'Under 61 Pa. Code 101.6(c)(3), compensation does not include any retired or retainer pay of a member or former member of a uniformed service computed under 10 U.S.C. 1401, so it is not taxable at any age; the age-60 reading the pack uses for other retirement income (pa-pit-retirement-benefits-not-compensation) does not reach it. A pension tagged Military retirement is excluded in full at any age. Before 2026-10-07 the engine excluded it only from 60: a single filer with $100,000 of it paid $3,070.00 at 45 and at 55, where the law charges nothing. A Survivor Benefit Plan annuity is paid under 10 U.S.C. 1450, not computed under 1401, and whether the death-benefit rules of the same section reach it was not settled from the primary text, so a pension tagged Military survivor benefit keeps the general rule, excluded from 60.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:PA',
+    authority: [{
+      kind: 'regulation',
+      citation: '61 Pa. Code 101.6(c)(3)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html',
+      quotedText:
+        '(3) Federal old age insurance benefits payable under 42 U.S.C.A. § 401, Railroad Retirement Act benefits payable under 45 U.S.C.A. § 228 or § 231 or any retired or retainer pay of a member or former member of a uniformed service computed under 10 U.S.C.A. § 1401.',
+    }, {
+      kind: 'regulation',
+      citation: '61 Pa. Code 101.6(c)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html',
+      quotedText: '(c) Compensation does not mean or include any of the following:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PA.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+  'nj-stat-54a-3-1-personal-exemptions': {
+    title: 'New Jersey allows personal exemptions: $1,000 each taxpayer and spouse, $1,000 at 65, $1,000 blind or disabled, $6,000 veteran',
+    statement:
+      'N.J.S.A. 54A:3-1, as amended by P.L.2019, c.146, allows against New Jersey gross income a $1,000 exemption for the taxpayer and $1,000 for a spouse who does not file separately; $1,000 for each of them 65 or older at the close of the year; $1,000 for each blind or disabled; and $6,000 for a taxpayer who is a veteran honorably discharged or released under honorable circumstances from active duty. The engine takes them from gross income after the pension exclusion\u2019s income test, as NJ-1040 line 13 does: two regular exemptions on a joint return and one otherwise; the 65-or-older count from the claimants\u2019 dates of birth; blindness from the plan\u2019s stored taxpayer eligibility and disability from a pension marked for a disabled recipient; and a veteran for the owner of a pension tagged Military retirement, not its survivor. That last is an inference the plan cannot confirm: retired pay implies service ending under honorable conditions, but a reserve or Guard retiree whose service never included active duty does not qualify, and the one-time veteran documentation is assumed filed. Not modeled: the $1,500 exemption for each dependent and the additional $1,000 for each dependent attending college, since the plan collects no dependents, and a domestic partner\u2019s exemption. A part-year resident\u2019s exemptions are prorated by the months resident under (c). Before 2026-10-07 none was modeled: a single filer at 60 with $50,000 of income paid $1,270.00, now $1,214.75; at 66, $1,159.50; a joint couple both 66, $805.00, now $735.00; a single veteran at 66 with a $30,000 military pension and $50,000 of other income, $1,270.00, now $828.00. New Jersey has no part-year return: a part-year resident files NJ-1040 for the months resident, and it taxes the income received while resident on the ordinary tax table (2025 NJ-1040 instructions). From 2026-10-07 a slice of a year split between states does the same (the 2026 figures\u2019 partYear, tax/stateTax.ts#prorateParams): it keeps the table whole and prorates only the exemptions, where before it scaled the table with the months too. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,090.03, now $1,242.38. The engine prices the rate schedule, not the table\u2019s $50 rows.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NJ',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146',
+      url: 'https://pub.njleg.gov/bills/2018/PL19/146_.HTM',
+      quotedText: 'Each taxpayer shall be allowed a personal exemption of $1,000.00 which may be taken as a deduction from his New Jersey gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:3-1(b)1, 3 and 4',
+      url: 'https://pub.njleg.gov/bills/2018/PL19/146_.HTM',
+      quotedText:
+        'For the taxpayer\'s spouse, or domestic partner as defined in section 3 of P.L.2003, c.246 (C.26:8A-3), who does not file separately - $1,000.00. … Taxpayer 65 years of age or over at the close of the taxable year - $1,000.00. … Taxpayer\'s spouse 65 years of age or over at the close of the taxable year - $1,000.00.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:3-1(b)5 and 6',
+      url: 'https://pub.njleg.gov/bills/2018/PL19/146_.HTM',
+      quotedText: 'Blind or disabled taxpayer - $1,000.00. … Blind or disabled spouse - $1,000.00.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:3-1(b)7',
+      url: 'https://pub.njleg.gov/bills/2018/PL19/146_.HTM',
+      quotedText:
+        'Taxpayer who is a veteran honorably discharged or released under honorable circumstances from active duty in the Armed Forces of the United States, a reserve component thereof, or the National Guard of New Jersey in a federal active duty status, as those terms are used in N.J.S.38A:1-1 - $6,000.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:3-1(b)2 and (c)',
+      url: 'https://pub.njleg.gov/bills/2018/PL19/146_.HTM',
+      quotedText:
+        'For each dependent who qualifies as a dependent of the taxpayer during the taxable year for federal income tax purposes - $1,500.00. … The personal exemptions allowed under this section shall be limited to that percentage which the total number of months within a taxpayer\'s taxable year under this act bears to 12.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form NJ-1040 instructions, Part-Year Residents, line 30 and line 43',
+      url: 'https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf',
+      quotedText:
+        'Part-Year Residents. There is no part-year resident return. You may have to file both Form NJ-1040 to report income you received for the part of the year you were a resident and Form NJ-1040NR if you had income from New Jersey sources for the part of the year you were a nonresident. … Part-Year Residents. Prorate the total on line 13 for the time you were a New Jersey resident and enter the amount on line 30. For this calculation, 15 days or more is considered a month. … Line 43 – Tax on Amount on Line 42 If the income on line 42 is less than $100,000, use the Tax Table on page 54. Otherwise, calculate the tax by using the Tax Rate Schedules on page 63.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#NJ.newJerseyPersonalExemptions',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/params/state/data/year2026.ts#NJ.partYear',
+    ],
+  },
 } satisfies Record<string, TaxRuleRecord>

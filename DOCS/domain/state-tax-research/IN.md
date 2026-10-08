@@ -199,11 +199,12 @@ flattering under-charge. Registered as
 ## Simplifications / not modeled
 - **County income tax.** No per-state default; the caller must supply the rate.
   Understates tax for every Indiana household. Registered.
-- **Military retirement deduction.** The public bucket is one flag and it now
-  carries `none`, which is right for INPRS/PERF, TRF and municipal retirees and
-  over-charges a military one on the whole pension. The direction was chosen
-  rather than inherited — `full` is exact for the veteran and exempts every
-  teacher, trooper and state employee alongside them. Registered.
+- **Military retirement deduction.** Modeled from 2026-10-07: a pension tagged
+  Military retirement or Military survivor benefit is deducted in full by the
+  pack's `militaryRetirementExclusion`, and the public bucket keeps `none`,
+  which is right for INPRS/PERF, TRF and municipal retirees. Only a caller that
+  hands over the coarse public bucket alone, with no characterized rows, still
+  over-charges a military pension.
 - **Federal civil service annuity deduction.** No exclusion shape offsets one
   income stream against another. Over-charges. Registered.
 - **The Schedule 3 exemptions**, all of them. Over-charges. Registered.
@@ -223,12 +224,11 @@ flattering under-charge. Registered as
   Michigan, Ohio, Pennsylvania and Wisconsin.
 
 ### Net direction
-The county gap understates and is large; the military, civil service, exemption
-and property-tax gaps overstate and are individually smaller. For a
+The county gap understates and is large; the civil service, exemption and
+property-tax gaps overstate and are individually smaller. For a
 **private-sector** Indiana retiree the pack now nets to understating by roughly
-the county rate. For an Indiana **military** retiree it overstates by the
-pension and understates by the county — the two can be the same order of
-magnitude, so read the records rather than the net.
+the county rate, and since 2026-10-07 the same is true of a **military** retiree,
+whose pension is deducted in full.
 
 ## Open items, for whoever refreshes this
 1. **Which bills P.L.201-2023 and P.L.80-2025 are.** The Code's source note names
@@ -312,7 +312,7 @@ Every lever above is registered in
 | `ic-6-3-2-1-flat-rate-ramp` | settled |
 | `ic-6-3-1-3-5-a-8-social-security-railroad-subtraction` | settled |
 | `ic-6-3-2-no-general-retirement-deduction` | settled |
-| `ic-6-3-2-4-military-retirement-deduction` | approximated (overstates tax) |
+| `ic-6-3-2-4-military-retirement-deduction` | settled |
 | `ic-6-3-2-3-7-civil-service-annuity-age-62` | approximated (overstates tax) |
 | `ic-6-3-6-2-2-county-income-tax-shares-the-state-base` | approximated (understates tax) |
 | `ic-6-3-1-3-5-exemptions-not-a-standard-deduction` | approximated (overstates tax) |

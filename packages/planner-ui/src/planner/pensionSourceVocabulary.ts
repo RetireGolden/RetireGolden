@@ -16,7 +16,7 @@ export const PENSION_SOURCE_OPTIONS: ReadonlyArray<{ value: PensionSourceKind; l
   { value: 'militarySurvivor', label: 'Military survivor benefit' },
   { value: 'federalCivilService', label: 'Federal civil service' },
   { value: 'stateLocalPublic', label: 'State or local public retirement' },
-  { value: 'railroadTier1', label: 'Railroad Tier I' },
+  { value: 'railroadTier1', label: 'Railroad Tier I, non-Social Security equivalent part (RRB-1099-R)' },
   { value: 'railroadTier2', label: 'Railroad Tier II' },
   { value: 'railroadRetirementAct', label: 'Railroad Retirement Act (other)' },
   { value: 'governmentSurvivor', label: 'Government survivor benefit' },

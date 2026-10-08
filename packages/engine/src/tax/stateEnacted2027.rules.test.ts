@@ -1163,12 +1163,12 @@ describeRule('wa-essb-6346-2028-income-tax', {
 })
 
 // District of Columbia, 47-1806.03(a)(11) rates: 4% to $10,000, 6% to
-// $40,000, 6.5% to $60,000, 8.5% to $250,000. The emergency act's deduction
-// in force ($15,000 / $30,000) against the federal one the engine carried
-// before ($16,100 / $32,200), both for filers under 65 in 2026:
-//   single, $60,000:  act     45,000 -> 400 + 1,800 + 5,000 x 6.5% = 2,525.00
+// $40,000, 6.5% to $60,000, 8.5% to $250,000. D.C. Law 26-189's deduction
+// ($15,000 / $30,000) against the federal one the code site still prints and
+// the 2026 D-40ES enters ($16,100 / $32,200), for filers under 65 in 2026:
+//   single, $60,000:  law     45,000 -> 400 + 1,800 + 5,000 x 6.5% = 2,525.00
 //                     federal 43,900 -> 400 + 1,800 + 3,900 x 6.5% = 2,453.50
-//   joint, $120,000:  act     90,000 -> 400 + 1,800 + 1,300 + 30,000 x 8.5% = 6,050.00
+//   joint, $120,000:  law     90,000 -> 400 + 1,800 + 1,300 + 30,000 x 8.5% = 6,050.00
 //                     federal 87,800 -> 400 + 1,800 + 1,300 + 27,800 x 8.5% = 5,863.00
 // From 2027 the basic amount is indexed from a 2025 base and rounded down to
 // $50: at 2.5% a year, 15,000 x 1.025 = 15,375 -> 15,350 for 2027, and
@@ -1176,18 +1176,18 @@ describeRule('wa-essb-6346-2028-income-tax', {
 // deduction returns.
 const DC_TO_60000 = 10_000 * 0.04 + 30_000 * 0.06 + 20_000 * 0.065
 describeRule('dc-code-47-1801-04-3a-standard-deduction-2026-2029', {
-  note: 'the emergency act’s deduction loaded as the law in force',
+  note: 'D.C. Law 26-189’s deduction, the law in force',
   readings: {
-    emergencyActDeductionInForce: {
+    permanentLawDeduction: {
       single: 10_000 * 0.04 + 30_000 * 0.06 + (60_000 - 15_000 - 40_000) * 0.065,
       joint: DC_TO_60000 + (120_000 - 30_000 - 60_000) * 0.085,
     },
-    federalDeductionUntilThePermanentActIsLaw: {
+    federalDeduction: {
       single: 10_000 * 0.04 + 30_000 * 0.06 + (60_000 - 16_100 - 40_000) * 0.065,
       joint: DC_TO_60000 + (120_000 - 32_200 - 60_000) * 0.085,
     },
   },
-  accepted: 'emergencyActDeductionInForce',
+  accepted: 'permanentLawDeduction',
 }, ({ accepted, readings }) => {
   const household = (joint: boolean, ordinaryIncome: number, year = 2026, inflationScale = 1): TaxYearInput => ({
     year,
@@ -1201,13 +1201,13 @@ describeRule('dc-code-47-1801-04-3a-standard-deduction-2026-2029', {
     inflationScale,
   })
 
-  it('prices 2026 on the emergency act’s $15,000 and $30,000, $71.50 and $187 over the federal deduction', () => {
+  it('prices 2026 on D.C. Law 26-189’s $15,000 and $30,000, $71.50 and $187 over the federal deduction', () => {
     expect(accepted.single).toBeCloseTo(2_525, 6)
-    expect(readings.federalDeductionUntilThePermanentActIsLaw.single).toBeCloseTo(2_453.5, 6)
+    expect(readings.federalDeduction.single).toBeCloseTo(2_453.5, 6)
     expect(accepted.joint).toBeCloseTo(6_050, 6)
-    expect(readings.federalDeductionUntilThePermanentActIsLaw.joint).toBeCloseTo(5_863, 6)
+    expect(readings.federalDeduction.joint).toBeCloseTo(5_863, 6)
     expect(computeStateTaxYearTotal(household(false, 60_000))).toBeCloseTo(accepted.single, 6)
-    expect(computeStateTaxYearTotal(household(false, 60_000))).not.toBeCloseTo(readings.federalDeductionUntilThePermanentActIsLaw.single, 6)
+    expect(computeStateTaxYearTotal(household(false, 60_000))).not.toBeCloseTo(readings.federalDeduction.single, 6)
     expect(computeStateTaxYearTotal(household(true, 120_000))).toBeCloseTo(accepted.joint, 6)
   })
 

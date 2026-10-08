@@ -20,7 +20,7 @@
  * - U1 (the derivation's household): a $30,000 car and a $50,000 inheritance
  *   in 2026, a Roth window 2026-2030, a move to Florida in November 2026, and
  *   a $100,000 non-qualified annuity bought in 2026 from the brokerage paying
- *   $550 a month from 67. The annuity's effect: -$147,623.51 from 2026,
+ *   $550 a month from 67. The annuity's effect: -$147,615.81 from 2026,
  *   +$455,159.49 from 2027.
  * - T1 (the check's TIPS case): a bridge ladder paying $30,000 a year in real
  *   terms from 2028 to 2031, bought in 2026 from the brokerage: -$14,871.56
@@ -35,7 +35,11 @@
  * sizes are unchanged. All four moved again, by cents to a few dollars, with
  * the 2026-09-29 change to CMS's published IRMAA amounts: U1 was -$147,622.51
  * and +$455,165.79, T1 -$14,872.97 and +$702,077.21, and S1 below 6,371,676.29
- * and 5,661,788.00.
+ * and 5,661,788.00. U1's 2026 figure moved again on 2026-10-07, from
+ * -$147,623.51: the household are Kentucky residents who move to Florida in
+ * November, and Kentucky's part-year slice now takes the whole standard
+ * deduction (2025 Form 740-NP Schedule A). The 2027-start figures do not
+ * move: the move is before that start.
  * - S1 (review H1): the Home's sale dated 2026. From 2027 the ledger sells it
  *   in 2027 (propertySaleYear.ts), the same projection as a sale dated 2027
  *   apart from the warning that names it; before the rule it kept the house
@@ -125,8 +129,8 @@ describe('the double count the already-paid convention allows, rerunnable here (
   const u1: Variant = { car: true, inheritance: true, roth: true, annuity: true, move: true }
   const u1WithoutAnnuity: Variant = { ...u1, annuity: false }
 
-  it('U1: the annuity costs $147,623.51 from a 2026 start and gains $455,159.49 from a 2027 start', () => {
-    expect(effect(u1, u1WithoutAnnuity, 2026)).toBeCloseTo(-147_623.51, 2)
+  it('U1: the annuity costs $147,615.81 from a 2026 start and gains $455,159.49 from a 2027 start', () => {
+    expect(effect(u1, u1WithoutAnnuity, 2026)).toBeCloseTo(-147_615.81, 2)
     expect(effect(u1, u1WithoutAnnuity, 2027)).toBeCloseTo(455_159.49, 2)
   })
 

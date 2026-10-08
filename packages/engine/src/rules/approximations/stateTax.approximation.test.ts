@@ -28,8 +28,9 @@
  *     for conforming states or a fixed pack-carried statutory deduction addition
  *     (Delaware) — not an exemption slot, and not Arizona's relief.
  *   - Indiana deducts military retirement in full and gives every other public
- *     pension nothing; the North Dakota and Arizona shape again, pointed the
- *     way Arkansas's is.
+ *     pension nothing; on the coarse buckets that is the North Dakota and
+ *     Arizona shape again, pointed the way Arkansas's is (characterized rows
+ *     price it exactly, so its pin below is a legacy characterization).
  *   - Indiana's civil service annuity adjustment is capped at $16,000, gated at
  *     62, and reduced by Social Security received; nothing in the bucket
  *     offsets one income stream against another.
@@ -627,17 +628,16 @@ const IN_MILITARY_OTHER_INCOME = 24_000
 const IN_MILITARY_PENSION = 36_000
 const IN_MILITARY_GROSS = IN_MILITARY_OTHER_INCOME + IN_MILITARY_PENSION
 
-describeRule('ic-6-3-2-4-military-retirement-deduction', {
-  readings: {
-    militaryRetirementDeductedInFull: inTax(IN_MILITARY_OTHER_INCOME),
-    noDeductionAtAllLikeEveryOtherIndianaPension: inTax(IN_MILITARY_GROSS),
-  },
-  accepted: 'militaryRetirementDeductedInFull',
-  produced: 'noDeductionAtAllLikeEveryOtherIndianaPension',
-}, ({ accepted, produced }) => {
-  // An Indiana military retiree. IC 6-3-2-4(a)(2) deducts the pension outright
-  // with no age condition; the pack's public bucket carries the `none` Indiana
-  // applies to every OTHER public pension, so this household is over-charged.
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law, which the projection always reaches, lives in
+// tax/stateMilitaryRetirement.rules.test.ts.
+describe('legacy aggregate ic-6-3-2-4-military-retirement-deduction', () => {
+  const accepted = inTax(IN_MILITARY_OTHER_INCOME)
+  const produced = inTax(IN_MILITARY_GROSS)
+  // An Indiana military retiree priced from the coarse buckets alone. IC
+  // 6-3-2-4(a)(2) deducts the pension outright with no age condition; the
+  // pack's public bucket carries the `none` Indiana applies to every OTHER
+  // public pension, and the bucket cannot say this one is military.
   const scenario = input({
     state: 'IN',
     ordinaryIncome: IN_MILITARY_GROSS,

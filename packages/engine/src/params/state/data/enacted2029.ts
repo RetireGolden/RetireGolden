@@ -24,6 +24,9 @@
  *   indexed and stand at the 2026 $2,925.
  * - Maryland: Tax-General 10-207(mm)(3)(V), the first $19,000 of public-safety
  *   retirement income (`md-tg-10-207-mm-public-safety-retirement-subtraction`).
+ * - Colorado: C.R.S. 39-22-104(4)(y)(I) allows the military retirement
+ *   subtraction under 55 only for income tax years before January 1, 2029, so
+ *   it ends (`co-crs-39-22-104-4-y-military-retirement-subtraction`).
  *
  * @see DOCS/calculations/taxes/state-enacted-tax-year-figures.md
  */
@@ -108,6 +111,9 @@ export const stateEnacted2029: StateEnactedYear = {
         agiCutoffNonjoint: 250000,
         agiCutoffJoint: 500000,
       },
+    },
+    CO: {
+      militaryRetirementExclusion: null,
     },
   },
 }

@@ -197,7 +197,7 @@ export function californiaMilitaryExclusions(args: {
  * after, each time by one year's inflation.
  *
  * The District of Columbia's basic standard deduction for 2026 to 2029 (D.C.
- * Code 47-1801.04(3A), D.C. Act 26-416) is the other case: from 2027 it is the
+ * Code 47-1801.04(3A), D.C. Law 26-189) is the other case: from 2027 it is the
  * 2026 amount increased by the cost-of-living adjustment from a 2025 base year,
  * rounded down to a multiple of $50, which is the published amount times the
  * cumulative inflation factor (`basis: 'cumulative'`).

@@ -987,12 +987,12 @@ export const midwestStateRecords = {
   },
 
   'ic-6-3-2-4-military-retirement-deduction': {
-    title: 'Indiana deducts military retirement in full, and the modeled state rules deduct none of it',
+    title: 'Indiana deducts military retirement and survivor\u2019s benefits in full',
     statement:
-      'For taxable years beginning after 2021, IC 6-3-2-4(a)(2) sets Indiana’s deduction for military retirement or survivor’s benefits at the lesser of the benefits included in adjusted gross income or $6,250 plus one hundred percent of the benefits above $6,250 — which is the whole amount. There is no age condition, no income phase-out, and the deduction reaches the individual’s surviving spouse; it is separate from and additional to the $5,000 for active or reserve service pay under (a)(1). Not modelled. The pack’s public bucket is one flag for every public pension the input model can carry, and in Indiana that bucket is dominated by INPRS/PERF, TRF, municipal police and fire retirees who get NOTHING, so the bucket carries `none` and a military pension is charged Indiana tax on income Indiana removes from the base entirely. The direction is chosen rather than inherited: the same flag set to `full` — which is what Indiana carried until 2026-08-05 — is exact for the military retiree and exempts every teacher, trooper and state employee’s pension in Indiana alongside them, which errs toward the taxpayer and across by far the larger population.',
-    classification: 'approximated',
+      'For taxable years beginning after 2021, IC 6-3-2-4(a)(2) sets Indiana’s deduction for military retirement or survivor’s benefits at the lesser of the benefits included in adjusted gross income or $6,250 plus one hundred percent of the benefits above $6,250 — which is the whole amount. There is no age condition, no income phase-out, and the deduction reaches the individual’s surviving spouse; it is separate from and additional to the $5,000 for active or reserve service pay under (a)(1). A pension tagged Military retirement or Military survivor benefit is deducted in full (the pack\u2019s `militaryRetirementExclusion`), and every other public pension keeps the `none` Indiana gives INPRS/PERF, TRF, municipal police and fire retirees. Before 2026-10-07 the military pension got nothing as well: a single filer with $100,000 of it paid $2,950.00, where the law charges nothing. A caller that hands the calculator only the coarse public-pension bucket, with no characterized rows, still gets nothing for it, because the bucket cannot say a pension is military; the projection always supplies the rows.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:IN',
     authority: [{
@@ -1011,16 +1011,16 @@ export const midwestStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-05',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
-      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
-      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/params/state/data/year2026.ts#IN.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 
@@ -1247,7 +1247,7 @@ export const midwestStateRecords = {
 
   'ks-stat-79-32-117-public-pension-exclusion': {
     title: 'Kansas exempts named retirement systems',
-    statement: 'Kansas subtracts the named statutory systems, including federal civil service and armed forces, KPERS, qualifying city and public-utility plans, Washburn University, and the Overland Park police and fire plans. The characterized selector requires an eligible named plan code on a public, federal civil service, military or government survivor pension; private and unlisted public plans receive no named-plan subtraction. Unknown public identity, or a public pension without a code, remains incomplete. Generic public income does not establish eligibility. Washburn University’s retirement plan, which (c)(xix) names, is an employer plan: the Department of Revenue’s Notice 08-06 describes its basic plan as a 403(b) and allows the subtraction for it and for the university’s supplemental retirement annuity. An employer-plan row coded KS-WASHBURN therefore has its federally included amount subtracted (no other code subtracts an employer plan; the engine applies the other named systems to pensions, so whether a federal Thrift Savings Plan or a KPERS 457 account entered as an employer plan is subtracted is not determined here, and the engine subtracts neither), and one with a taxable amount and no code is incomplete unless its plan type is 401(k), 401(a) or 457(b), which no named system is. A projected employer account takes its declared 401(k), 403(b) or 457(b) class as that plan type when the state evidence gives none, so an undeclared employer account is incomplete in a Kansas year it pays out (stateMidwestExtras.ts#kansasNamedPlanExclusion, projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts). An IRA and a private pension receive no named-plan subtraction whatever code they carry, and neither does a 401(k), 401(a) or 457(b), so a missing code on them is not flagged; before 2026-10-06 it was, and every Kansas year with an IRA or 401(k) withdrawal was marked incomplete for a fact that could not change its tax.',
+    statement: 'Kansas subtracts the named statutory systems, including federal civil service and armed forces, KPERS, qualifying city and public-utility plans, Washburn University, and the Overland Park police and fire plans. The characterized selector requires an eligible named plan code on a public, federal civil service, military survivor or government survivor pension; private and unlisted public plans receive no named-plan subtraction. A pension tagged Military retirement needs no code: the source already names the system (c)(vii) names, service in the armed forces of the United States, so it is read as US-MILITARY. Before 2026-10-07 it needed the code too, and a Kansas military retiree without one was charged on the whole pension ($5,291.44 on $100,000, single) with the year marked incomplete. A pension tagged Military survivor benefit still needs the code: (c)(vii) reaches retirement benefits "in whatever form" earned for service in the armed forces, but no primary text read here says that a Survivor Benefit Plan annuity is one, so the code is the plan\u2019s assertion that it is. Unknown public identity, or a public pension without a code, remains incomplete. Generic public income does not establish eligibility. Washburn University’s retirement plan, which (c)(xix) names, is an employer plan: the Department of Revenue’s Notice 08-06 describes its basic plan as a 403(b) and allows the subtraction for it and for the university’s supplemental retirement annuity. An employer-plan row coded KS-WASHBURN therefore has its federally included amount subtracted (no other code subtracts an employer plan; the engine applies the other named systems to pensions, so whether a federal Thrift Savings Plan or a KPERS 457 account entered as an employer plan is subtracted is not determined here, and the engine subtracts neither), and one with a taxable amount and no code is incomplete unless its plan type is 401(k), 401(a) or 457(b), which no named system is. A projected employer account takes its declared 401(k), 403(b) or 457(b) class as that plan type when the state evidence gives none, so an undeclared employer account is incomplete in a Kansas year it pays out (stateMidwestExtras.ts#kansasNamedPlanExclusion, projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts). An IRA and a private pension receive no named-plan subtraction whatever code they carry, and neither does a 401(k), 401(a) or 457(b), so a missing code on them is not flagged; before 2026-10-06 it was, and every Kansas year with an IRA or 401(k) withdrawal was marked incomplete for a fact that could not change its tax.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1293,7 +1293,7 @@ export const midwestStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-10-06',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/projection/internal/annualStateRetirementEvents.ts',
@@ -1845,7 +1845,7 @@ export const midwestStateRecords = {
   'neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal': {
     title: 'State figures a statute indexes stay at their latest published amounts in later years, so tax is overstated over a long projection (Nebraska’s brackets are the pinned case)',
     statement:
-      'For a year after the latest published state figures, params/state/index.ts#stateParamsFor carries every state figure forward at its latest published amount. tax/stateTax.ts projects only two kinds at the plan’s inflation: a standard deduction tagged as the federal one (params/state/index.ts#conformStateStandardDeduction) and a deduction whose statute sets its own indexing schedule, which is Washington’s alone (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction). Many state statutes index their figures every year instead, so in a nominal projection those figures fall behind incomes that grow with inflation: brackets start lower in real terms, deductions, exemptions, exclusions and income limits shrink, and more income is taxed at higher rates. The engine therefore overstates state tax, by more each year the projection runs. Nebraska is the pinned case: 77-2715.03(3) adjusts the minimum and maximum of every bracket each year by the change in the Consumer Price Index for All Urban Consumers, rounded to the nearest $10, and the engine holds the 2026 amounts. In 2046, at 2.5% inflation a year, the 3.99% bracket that starts at $24,760 single would start at $40,570 and the 3.51% bracket at $6,770 rather than $4,130; on $100,000 of Nebraska taxable income the engine charges $3,827.79 where the indexed brackets give $3,724.18, $103.61 more. The survey of 2026-09-28 (DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md) found these state figures indexed by statute: Arkansas’s brackets and standard deduction; Arizona’s standard deduction; California’s brackets and standard deduction; Idaho’s zero-rate thresholds; Illinois’s exemption for 2027 and 2028; Kentucky’s standard deduction; Louisiana’s standard deduction and retirement exemption; Maine’s brackets, surcharge threshold from 2027, deduction phase-out and pension cap; Maryland’s standard deduction; the Massachusetts surtax threshold; Michigan’s retirement ceiling; Minnesota’s brackets and standard deduction; Missouri’s brackets and its public-pension Social Security figure; Montana’s brackets and capital-gain breaks from 2028; Nebraska’s brackets and standard deduction; North Dakota’s brackets; Ohio’s bracket threshold from 2027; Oregon’s brackets and standard deduction; Rhode Island’s brackets, standard deduction, surtax threshold from 2028 and the income limits of its Social Security and pension modifications; South Carolina’s bracket; and Vermont’s and Wisconsin’s brackets and standard deductions. The District of Columbia’s own deduction would be indexed from 2027 if its pending act becomes law. The survey reported no indexed figure for the other states with an income tax, but it did not read every statute for indexing, so the list may be incomplete. The deductions tagged as federal (Colorado, the District of Columbia, Idaho, Iowa, Missouri, Montana, North Dakota and New Mexico) and Washington’s deduction are already projected. The engine has what indexing the rest needs from the plan: every state calculation receives the year’s cumulative inflation factor. What it lacks is each figure’s schedule, which differs by state (annual or biennial, CPI-U, chained CPI, CPI-W or the GDP deflator, with caps and rounding). This release registers the gap and does not change it.',
+      'For a year after the latest published state figures, params/state/index.ts#stateParamsFor carries every state figure forward at its latest published amount. tax/stateTax.ts projects only two kinds at the plan’s inflation: a standard deduction tagged as the federal one (params/state/index.ts#conformStateStandardDeduction) and a deduction whose statute sets its own indexing schedule, which is Washington’s from 2029 and the District of Columbia’s for 2027 to 2029 (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction). Many state statutes index their figures every year instead, so in a nominal projection those figures fall behind incomes that grow with inflation: brackets start lower in real terms, deductions, exemptions, exclusions and income limits shrink, and more income is taxed at higher rates. The engine therefore overstates state tax, by more each year the projection runs. Nebraska is the pinned case: 77-2715.03(3) adjusts the minimum and maximum of every bracket each year by the change in the Consumer Price Index for All Urban Consumers, rounded to the nearest $10, and the engine holds the 2026 amounts. In 2046, at 2.5% inflation a year, the 3.99% bracket that starts at $24,760 single would start at $40,570 and the 3.51% bracket at $6,770 rather than $4,130; on $100,000 of Nebraska taxable income the engine charges $3,827.79 where the indexed brackets give $3,724.18, $103.61 more. The survey of 2026-09-28 (DOCS/domain/state-tax-research/later-years-survey-2026-09-28.md) found these state figures indexed by statute: Arkansas’s brackets and standard deduction; Arizona’s standard deduction; California’s brackets and standard deduction; Idaho’s zero-rate thresholds; Illinois’s exemption for 2027 and 2028; Kentucky’s standard deduction; Louisiana’s standard deduction and retirement exemption; Maine’s brackets, surcharge threshold from 2027, deduction phase-out and pension cap; Maryland’s standard deduction; the Massachusetts surtax threshold; Michigan’s retirement ceiling; Minnesota’s brackets and standard deduction; Missouri’s brackets and its public-pension Social Security figure; Montana’s brackets and capital-gain breaks from 2028; Nebraska’s brackets and standard deduction; North Dakota’s brackets; Ohio’s bracket threshold from 2027; Oregon’s brackets and standard deduction; Rhode Island’s brackets, standard deduction, surtax threshold from 2028 and the income limits of its Social Security and pension modifications; South Carolina’s bracket; and Vermont’s and Wisconsin’s brackets and standard deductions. The District of Columbia’s own deduction is indexed from 2027 under D.C. Law 26-189 and is projected (dc-code-47-1801-04-3a-standard-deduction-2026-2029). The survey reported no indexed figure for the other states with an income tax, but it did not read every statute for indexing, so the list may be incomplete. The deductions tagged as federal (Colorado, Idaho, Iowa, Missouri, Montana, North Dakota and New Mexico, Maine from 2027 and the District of Columbia from 2030) and the Washington and District of Columbia deductions their statutes index are already projected. The engine has what indexing the rest needs from the plan: every state calculation receives the year’s cumulative inflation factor. What it lacks is each figure’s schedule, which differs by state (annual or biennial, CPI-U, chained CPI, CPI-W or the GDP deflator, with caps and rounding). This release registers the gap and does not change it.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -2331,7 +2331,7 @@ export const midwestStateRecords = {
   },
   'wi-2026-rates-standard-deduction-exemptions': {
     title: 'Wisconsin applies the 2026 income-tested deduction, exemptions and status schedules',
-    statement: 'TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. Part-year/nonresident calculations need the instructed income-ratio proration. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.',
+    statement: 'TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. A part-year resident’s Form 1NPR (2025 instructions) looks the deduction up in its Standard Deduction Table by the year’s federal income (line 31) and prorates the tax by the ratio of Wisconsin income to federal income (line 32). A slice of a year split between states takes the months share of the full-year tax, with the months for the ratio, and from 2026-10-07 phases the deduction on the year’s income (tax/stateTax.ts#prorateParams); before, it phased the deduction on the slice’s own income and did not prorate it. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,798.39, now $2,232.31. A slice receives no household facts, so it drops the exemptions. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2344,11 +2344,17 @@ export const midwestStateRecords = {
         url: 'https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf',
         quotedText: 'Your exemptions are $700 for yourself, $700 for your spouse if filing a joint return, and $700 for each dependent.',
       },
+      {
+        kind: 'formInstruction',
+        citation: '2025 Form 1NPR instructions, lines 32, 33 and 34c, and the 2025 Standard Deduction Table for Form 1NPR filers',
+        url: 'https://www.revenue.wi.gov/TaxForms2025/2025-Form1NPR-Inst.pdf',
+        quotedText: 'Line 32 Ratio of Your Wisconsin Income to Federal Income Divide the amount on line 30, Wisconsin column, by the amount on line 31, federal column. … Note: Even though you may start the tax computation based on federal income, the tax will be later prorated based on the ratio of your Wisconsin income to federal income. The result is that you pay only the portion of the tax attributable to Wisconsin income. … Line 34c Standard Deduction Go to the 2025 Standard Deduction Table on page 48 to find your standard deduction. … If your federal income (line 31 of Form 1NPR) is–',
+      },
     ],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -2359,6 +2365,8 @@ export const midwestStateRecords = {
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateMidwestExtras.ts#wisconsinStandardDeduction',
       'packages/engine/src/tax/stateMidwestExtras.ts#wisconsinPersonalExemption',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
+      'packages/engine/src/tax/stateTax.ts#wisconsinSlice',
     ],
   },
   'ks-direct-qcd-conformity': {
@@ -2390,6 +2398,162 @@ export const midwestStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.KS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
+    ],
+  },
+'wi-stat-71-05-1-am-military-retirement-subtraction': {
+    title: 'Wisconsin subtracts U.S. military retirement payments in full, Survivor Benefit Plan annuities included',
+    statement:
+      'Wis. Stat. 71.05(1)(am) subtracts all retirement payments from the U.S. military employee retirement system, and the 2025 Schedule SB instructions, line 12, name the Retired Serviceman\u2019s Family Protection Plan and the Survivor Benefit Plan among them, up to the amount included in federal income, at any age. A pension tagged Military retirement or Military survivor benefit is subtracted in full, and it does not enter the line 16 retirement income subtraction at 67 or older, which reaches only retirement income "not been removed from Wisconsin income on lines 12 through 15". Before 2026-10-07 the engine gave such a pension only the line 16 subtraction: a single filer with a $100,000 military pension paid $4,464.62 at 60 and $3,192.62 at 67, where the law charges nothing. The statute text is cited by its number; the registry quotes the Department\u2019s instructions, whose host is the admitted Wisconsin publisher.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WI',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB instructions, line 12 (Wis. Stat. 71.05(1)(am))',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        '(1) The U.S. military retirement system (including payments from the Retired Serviceman\u2019s Family Protection Plan or the Survivor Benefit Plan). These retirement benefits are paid from the Defense Finance and Accounting Service.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB instructions, line 12, limit',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText: 'Your subtraction cannot be more than the amount of such retirement payments that you included in your federal income.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB instructions, line 16',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'retirement income from a qualified retirement plan or individual retirement account (IRA) that is federally taxable and has not been removed from Wisconsin income on lines 12 through 15 of this schedule.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#WI.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'mn-stat-290-0132-subd-21-military-retirement-subtraction': {
+    title: 'Minnesota subtracts military retirement pay in full, survivor annuities included',
+    statement:
+      'Minn. Stat. 290.0132, subd. 21 subtracts, to the extent included in federal adjusted gross income, retirement pay from the federal government for military service computed under 10 U.S.C. 1401 to 1414, 1447 to 1455 (the Survivor Benefit Plan) and 12733, at any age and with no income test. A pension tagged Military retirement or Military survivor benefit is subtracted in full. The subdivision is limited to individuals who do not claim the past military service credit of section 290.0677; the engine does not model that credit, so it takes the subtraction. Before 2026-10-07 the engine gave nothing: a single filer with a $100,000 military pension paid $5,276.61 at any age, where the law charges nothing.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MN',
+    authority: [{
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 21',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        'To the extent included in federal adjusted gross income, compensation received from a pension or other retirement pay from the federal government for service in the military, as computed under United States Code, title 10, sections 1401 to 1414, 1447 to 1455, and 12733, is a subtraction. The subtraction is limited to individuals who do not claim the credit under section 290.0677.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MN.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction': {
+    title: 'Michigan deducts Armed Forces retirement pay in full and lowers the general retirement maximum by it',
+    statement:
+      'MCL 206.30(1)(e)(i) deducts, to the extent included in adjusted gross income, compensation, including retirement or pension benefits, received for services in the Armed Forces of the United States, with no cap and no age test, and (1)(f)(iv) reduces the general retirement maximum by the amount deducted under subdivision (e). A pension tagged Military retirement is deducted in full and the per-return maximum the pack carries ($67,610 a person in 2026) is reduced by it before the household\u2019s other retirement income takes it. So a retiree with $50,000 of military pay and $50,000 of a private pension pays the same Michigan tax as before (the private pension takes $17,610, the military pay $50,000), and one with $100,000 of military pay alone pays none, where the engine charged $1,376.58 before 2026-10-07. A Survivor Benefit Plan annuity is not pay for the recipient\u2019s own service; whether subsection (8)(c) or another paragraph reaches it was not settled from the primary text, so a pension tagged Military survivor benefit stays under the general retirement maximum as before.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MI',
+    authority: [{
+      kind: 'statute',
+      citation: 'MCL 206.30(1)(e)(i)',
+      url: 'https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30',
+      quotedText: '(i) Compensation, including retirement or pension benefits, received for services in the Armed Forces of the United States.',
+    }, {
+      kind: 'statute',
+      citation: 'MCL 206.30(1)(f)(iv)',
+      url: 'https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30',
+      quotedText:
+        'The maximum amounts allowed under this subparagraph shall be reduced by the amount of the deduction for retirement or pension benefits claimed under subparagraph (i) or subdivision (e) and by the amount of a deduction claimed under subdivision (p).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MI.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits': {
+    title: 'Missouri subtracts a retiree\u2019s own military retirement in full and a Survivor Benefit Plan annuity as a public pension',
+    statement:
+      'RSMo 143.121.3(12) subtracts one hundred percent of retirement benefits received by a taxpayer as a result of the taxpayer\u2019s own service in the armed forces. A Survivor Benefit Plan annuity is not received for the recipient\u2019s own service, so it falls under the public pension subtraction of 143.124.5: retirement benefits from sources other than privately funded sources, up to the maximum Social Security benefit, less the Social Security exemption (143.124.7). From 2024 that subtraction is allowed "regardless of the taxpayer\u2019s filing status or the amount of the taxpayer\u2019s Missouri adjusted gross income", so the engine takes it whether or not the year carries Missouri income; the private pension deduction of 143.124.3, which is income-tested, still needs it. Before 2026-10-07 a pension tagged Military survivor benefit was subtracted in full, which understated Missouri tax, and a public pension was given nothing in a year without Missouri income. A single filer with a $100,000 Survivor Benefit Plan annuity at 60 now pays $1,461.22 (was $0); a civil service annuitant with $100,000 at 70 pays $1,364.87 (was $3,666.32). Both years stay incomplete for want of Missouri income, which the private deduction needs. The cap is the pack\u2019s $48,967 (mo-retirement-income-deduction).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MO',
+    authority: [{
+      kind: 'statute',
+      citation: 'RSMo 143.121.3(12)',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.121',
+      quotedText:
+        'One hundred percent of any retirement benefits received by any taxpayer as a result of the taxpayer\'s service in the Armed Forces of the United States, including reserve components and the National Guard of this state',
+    }, {
+      kind: 'statute',
+      citation: 'RSMo 143.124.5',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.124',
+      quotedText:
+        'For all tax years beginning on or after January 1, 2012, there shall be subtracted from Missouri adjusted gross income, determined pursuant to section 143.121, a maximum of an amount equal to one hundred percent of the retirement benefits received from sources other than privately funded sources in the tax year, but not to exceed the maximum Social Security benefit available for such tax year.',
+    }, {
+      kind: 'statute',
+      citation: 'RSMo 143.124.5, from 2024',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.124',
+      quotedText:
+        'For all tax years beginning on or after January 1, 2024, a taxpayer shall be entitled to the maximum exemption provided by this subsection regardless of the taxpayer\'s filing status or the amount of the taxpayer\'s Missouri adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateMidwestExtras.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MO.missouriRetirement',
+      'packages/engine/src/tax/stateMidwestExtras.ts#missouriMilitaryAndRailroad',
+      'packages/engine/src/tax/stateMidwestExtras.ts#missouriPublicPensionDeduction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

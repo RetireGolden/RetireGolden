@@ -18,11 +18,14 @@
  * income type in the plan, so they never reach these helpers.
  */
 
+import type { StateTaxParams } from '../params/state/types.js'
 import {
   isMilitarySource,
   isRailroadSource,
+  type StateHouseholdTaxFacts,
   type StateRetirementDistributionFact,
   type StateRetirementSourceKind,
+  type StateTaxExactnessWarning,
 } from './stateRetirementFacts.js'
 
 const ALL_RAILROAD_RETIREMENT_ACT_KINDS: readonly StateRetirementSourceKind[] = [
@@ -100,4 +103,79 @@ export function rhodeIslandMilitaryServicePensionModification(
     if (isMilitarySource(fact.sourceKind)) total += Math.max(0, fact.federallyIncludedAmount)
   }
   return total
+}
+
+/**
+ * A state's own subtraction of U.S. uniformed-services retired pay, as its
+ * `militaryRetirementExclusion` describes it, per recipient: the cap for the
+ * recipient's age at the end of the year (Colorado, Georgia, Maryland, New
+ * Mexico), Montana's 50% within its five-year window, or all of it (Indiana,
+ * Maine, Michigan, Minnesota, Oklahoma, Pennsylvania, Wisconsin). Survivor
+ * Benefit Plan annuities follow `survivor`. Returns the amount subtracted and
+ * the rows with it taken off, so the state's general retirement rules price
+ * only what is left; a remainder above a cap stays in them.
+ *
+ * Fails closed: a recipient whose age decides the cap but is unknown, a
+ * Georgia wage test or Montana wage limit whose wages are unknown, and a
+ * Montana pension whose first payment year is unknown get nothing, with a
+ * warning.
+ */
+export function militaryRetirementSubtraction(
+  config: NonNullable<StateTaxParams['militaryRetirementExclusion']>,
+  facts: readonly StateRetirementDistributionFact[],
+  taxYear: number,
+  owners: StateHouseholdTaxFacts['ownerStateTaxFacts'],
+): { subtracted: number; rows: StateRetirementDistributionFact[]; warnings: StateTaxExactnessWarning[] } {
+  const warnings: StateTaxExactnessWarning[] = []
+  const warn = (missing: string) => warnings.push({ code: 'state-military-facts-unknown', message: 'State military retirement subtraction withheld for want of a fact.', missingFacts: [missing] })
+  const taken = new Map<StateRetirementDistributionFact, number>()
+  const survivor = config.survivor
+  const montana = config.wageLimitWindowFrom
+  const wagesOf = (owner?: string) => {
+    const rows = owners?.filter((row) => owner === undefined || row.ownerPersonId === owner) ?? []
+    return rows.length && rows.every((row) => row.wages !== undefined) ? rows.reduce((sum, row) => sum + row.wages!, 0) : undefined
+  }
+  let returnWages = montana === undefined ? 0 : wagesOf()
+  const byOwner = new Map<string, StateRetirementDistributionFact[]>()
+  for (const fact of facts) {
+    if (fact.sourceKind !== 'militaryRetirement' && (fact.sourceKind !== 'militarySurvivor' || survivor === undefined)) continue
+    if (montana !== undefined) {
+      if (fact.paymentsBeganYear === undefined) { warn('paymentsBeganYear'); continue }
+      const from = Math.max(montana, fact.paymentsBeganYear)
+      if (taxYear < from || taxYear >= from + 5) continue
+    }
+    byOwner.set(fact.ownerPersonId, [...(byOwner.get(fact.ownerPersonId) ?? []), fact])
+  }
+  for (const [owner, rows] of byOwner) {
+    if (config.byAge.length > 1 && rows.some((row) => row.recipientAgeKnown === false)) { warn('recipientAgeYears'); continue }
+    const tier = config.byAge.filter((row) => rows[0]!.recipientAgeYears >= row.minAge).pop()
+    const retired = rows.filter((row) => row.sourceKind === 'militaryRetirement' || survivor === 'retiredPay')
+    const total = retired.reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+    let cap = tier === undefined ? 0 : Math.min(tier.cap ?? Infinity, total * (config.percent ?? 100) / 100)
+    if (config.wageAddition !== undefined && cap > 0 && total > cap) {
+      const wages = wagesOf(owner)
+      if (wages === undefined) warn('ownerStateTaxFacts.wages')
+      else if (wages > config.wageAddition) cap += config.wageAddition
+    }
+    if (montana !== undefined && total > 0) {
+      if (returnWages === undefined) { warn('ownerStateTaxFacts.wages'); cap = 0 }
+      else { cap = Math.min(cap, returnWages); returnWages -= Math.min(cap, total) }
+    }
+    for (const row of rows) {
+      const included = Math.max(0, row.federallyIncludedAmount)
+      const part = retired.includes(row) ? Math.min(included, cap) : included * (survivor as number) / 100
+      if (retired.includes(row)) cap -= part
+      taken.set(row, part)
+    }
+  }
+  let subtracted = 0
+  const rows: StateRetirementDistributionFact[] = []
+  for (const fact of facts) {
+    const part = taken.get(fact) ?? 0
+    subtracted += part
+    // A row subtracted in full leaves the general rules altogether.
+    if (part === 0) rows.push(fact)
+    else if (fact.federallyIncludedAmount > part) rows.push({ ...fact, federallyIncludedAmount: fact.federallyIncludedAmount - part })
+  }
+  return { subtracted, rows, warnings }
 }

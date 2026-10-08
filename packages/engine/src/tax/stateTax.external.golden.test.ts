@@ -59,7 +59,8 @@ describe('ORACLE-009: New Jersey graduated state income tax vs NJ Division of Ta
   })
 
   it('taxes a single filer across five graduated bracket layers', () => {
-    // Single, $120,000 New Jersey taxable income on NJ-1040 line 42.
+    // Single, $121,000 of New Jersey gross income less the $1,000 personal
+    // exemption of 54A:3-1(a): $120,000 taxable income on NJ-1040 line 42.
     // NJ worksheet Table A: 120,000 * 6.37% - 2,126.25 = $5,517.75.
     // Equivalent bracket stack:
     //   20,000 * 1.4% = 280.00
@@ -67,7 +68,7 @@ describe('ORACLE-009: New Jersey graduated state income tax vs NJ Division of Ta
     //    5,000 * 3.5% = 175.00
     //   35,000 * 5.525% = 1,933.75
     //   45,000 * 6.37% = 2,866.50
-    const tax = computeStateTax(nj, stateInput('NJ', { ordinaryIncome: 120_000, agesAlive: [45] }))
+    const tax = computeStateTax(nj, stateInput('NJ', { ordinaryIncome: 121_000, agesAlive: [45] }))
     expectMoney(tax, 5_517.75)
   })
 })

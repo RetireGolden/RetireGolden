@@ -112,7 +112,9 @@ const KANSAS_EMPLOYER_PLAN_NAMED_CODES: ReadonlySet<string> = new Set(['KS-WASHB
  * employer-plan row that could be Washburn's 403(b) with no code and a
  * nonzero amount are incomplete, with the warning code ks-plan-code-unknown.
  * An employer-plan row coded KS-WASHBURN is subtracted; any other code on one
- * subtracts nothing.
+ * subtracts nothing. A `militaryRetirement` row needs no code: the source
+ * already names the system 79-32,117(c)(vii) names, service in the armed
+ * forces, so it is read as US-MILITARY.
  */
 export function kansasNamedPlanExclusion(
   fact: StateRetirementDistributionFact,
@@ -131,13 +133,14 @@ export function kansasNamedPlanExclusion(
   } else if (fact.sourceKind !== 'unknownPublic' && !KANSAS_NAMED_PLAN_SOURCE_KINDS.includes(fact.sourceKind)) {
     return emptyLeafAdjustment()
   }
-  if (fact.sourceKind === 'unknownPublic' || !fact.planSystemCode) {
+  const planSystemCode = fact.planSystemCode ?? (fact.sourceKind === 'militaryRetirement' ? 'US-MILITARY' : undefined)
+  if (fact.sourceKind === 'unknownPublic' || !planSystemCode) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [kansasPlanCodeWarning(fact)] }
   }
-  if (!codes.has(fact.planSystemCode)) {
+  if (!codes.has(planSystemCode)) {
     return emptyLeafAdjustment()
   }
-  if (fact.sourceKind === 'employerPlan' && !KANSAS_EMPLOYER_PLAN_NAMED_CODES.has(fact.planSystemCode)) {
+  if (fact.sourceKind === 'employerPlan' && !KANSAS_EMPLOYER_PLAN_NAMED_CODES.has(planSystemCode)) {
     return emptyLeafAdjustment()
   }
   return { taxableIncomeDelta: amount === 0 ? 0 : -amount, taxCredit: 0, warnings: [] }
@@ -204,10 +207,16 @@ export function missouriPublicPensionDeduction(args: {
   return Math.min(Math.max(0, args.publicPension), cap)
 }
 
+/**
+ * RSMo 143.121.3(12): one hundred percent of retirement benefits received as a
+ * result of the taxpayer's own service in the armed forces, and the Railroad
+ * Retirement Act annuities. A Survivor Benefit Plan annuity is not received
+ * for the recipient's own service; it is a public pension under 143.124.5.
+ */
 export function missouriMilitaryAndRailroad(facts: readonly StateRetirementDistributionFact[]): number {
   let total = 0
   for (const fact of facts) {
-    if (isMilitarySource(fact.sourceKind) || isRailroadSource(fact.sourceKind)) {
+    if (fact.sourceKind === 'militaryRetirement' || isRailroadSource(fact.sourceKind)) {
       total += Math.max(0, fact.federallyIncludedAmount)
     }
   }

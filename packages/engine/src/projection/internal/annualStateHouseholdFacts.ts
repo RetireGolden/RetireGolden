@@ -40,6 +40,12 @@ export interface AnnualStateHouseholdFactsInput {
   readonly railroadBenefits?: readonly AnnualRailroadBenefit[]
   /** Actual claimants in this year's return; needed after a household death. */
   readonly claimantPersonIds?: readonly string[]
+  /**
+   * Each person's wages from wage streams this year, the plan's only income
+   * attributed to a person as pay for work; read by the Georgia and Montana
+   * military subtractions. Absent leaves wages unknown.
+   */
+  readonly wagesByPerson?: ReadonlyMap<string, number>
 }
 export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsInput): {
   householdFacts: AnnualStateHouseholdFacts
@@ -108,7 +114,8 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
     if (person === undefined) { warnings.push(`Unknown state-return claimant ${id}.`); return [] }
     return [person.dob]
   })
-  const derivedOwners = householdFactsForYear(plan, taxYear, { claimantPersonIds: claimantIds })
+  const derivedOwners = householdFactsForYear(plan, taxYear, { claimantPersonIds: claimantIds,
+    ...(input.wagesByPerson === undefined ? {} : { ownerStateTaxFacts: claimantIds.map((ownerPersonId) => ({ ownerPersonId, wages: input.wagesByPerson!.get(ownerPersonId) ?? 0 })) }) })
   const claimantAges = dates.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
   const validDerivedAge65Count = allClaimantsKnown && claimantAges.length === claimantIds.length && claimantAges.every((age) => age !== undefined)
     ? claimantAges.filter((age) => age !== undefined && age >= 65).length
@@ -136,12 +143,19 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
     // 59-10-114(2)(d) subtraction removes none of the Social Security benefit
     // included in Utah taxable income, the 59-10-1042(2) credit base: the
     // overlap is 0.
-    // Outside-engine section114 additions remain separately asserted facts.
+    // The 59-10-114 additions Utah MAGI adds are set below.
     ...(railroad !== undefined ? {
       socialSecurityIncludedInUtahTaxableIncome: federal.taxableSocialSecurity,
       railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome: 0,
     } : {}),
     interestExcludedFromFederalAgi: federal.taxExemptInterest,
+    // Utah MAGI (59-10-1019(1)(e), 59-10-1042(1)(d)) adds the 59-10-114(1)
+    // additions. The plan holds none of (a) to (d) or (f) to (j); the
+    // out-of-state municipal interest of (1)(e) is in the tax-exempt interest
+    // above, which the TC-40 credit worksheets count once (they take code 57
+    // back out of total income), so nothing more is added. A stored assertion
+    // still wins.
+    utahSection59_10_114Additions: storedFacts.utahSection59_10_114Additions ?? 0,
     recipientSocialSecurity: recipients,
     ...(utahCreditElection === undefined ? {} : { utahCreditElection:
       utahCreditElection === 'retirement' ? 'retirement' :
