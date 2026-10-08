@@ -131,6 +131,8 @@ export interface StateRetirementDistributionFact {
   priorTaxState?: string
   qualifiedPlanType?: '401a' | '401k' | '403b' | '457b' | 'ira' | 'other' | 'unknown'
   deathOrDisabilitySurvivorUnder55?: boolean
+  /** The year a pension's payments to this recipient began, when known (Montana's five-year window). */
+  paymentsBeganYear?: number
   /** Characterized share of federally taxable Social Security for state per-recipient caps. */
   taxableSocialSecurityAllocated?: number
   /**
@@ -213,6 +215,8 @@ export interface StateHouseholdTaxFacts {
   oregonHouseholdIncome?: number
   /** Wisconsin: taxpayer claimed as a dependent elsewhere → no personal exemption. */
   claimedAsDependent?: boolean
+  /** Per-person eligibility the plan stores (New Jersey reads `blind`). */
+  taxpayerEligibility?: readonly { personId: string; blind?: boolean }[]
   /** Montana net taxable long-term capital gain (after federal/state netting). */
   montanaNetTaxableLtcg?: number
   /** Vermont U.S.-obligation adjustment for §5822(a)(6) minimum tax. */
@@ -225,6 +229,8 @@ export interface StateHouseholdTaxFacts {
   ownerStateTaxFacts?: ReadonlyArray<{
     ownerPersonId: string
     recipientAgeYears?: number
+    /** Wages from the owner's wage streams this year (Georgia and Montana military limbs). */
+    wages?: number
     remainingScIncome?: number
     westVirginiaEligibleAge65OrDisabled?: boolean
     westVirginiaSurvivorEligible?: boolean

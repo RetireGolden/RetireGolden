@@ -26,7 +26,7 @@
  *   single and $6,000 married "on and after January 1, 2030", when the
  *   temporary amounts in (ii) to (vii) end
  *   (`va-code-58-1-322-03-standard-deduction-steps`).
- * - District of Columbia: D.C. Code 47-1801.04(44)(A)(vi), as D.C. Act 26-416
+ * - District of Columbia: D.C. Code 47-1801.04(44)(A)(vi), as D.C. Law 26-189
  *   amends it, the federal standard deduction for taxable years beginning after
  *   December 31, 2029, when the District's own basic deduction ends
  *   (`dc-code-47-1801-04-3a-standard-deduction-2026-2029`).
@@ -57,7 +57,7 @@ export const stateEnacted2030: StateEnactedYear = {
     MD: {
       marylandPublicSafetySubtraction: { amount: 20000, minAge: 55, planSystemCode: 'MD-PUBLIC-SAFETY' },
     },
-    // D.C. Code 47-1801.04(44)(A)(vi), as D.C. Act 26-416 amends it: for
+    // D.C. Code 47-1801.04(44)(A)(vi), as D.C. Law 26-189 amends it: for
     // taxable years beginning after December 31, 2029, the federal standard
     // deduction (`dc-code-47-1801-04-3a-standard-deduction-2026-2029`).
     DC: {

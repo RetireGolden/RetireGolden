@@ -159,8 +159,15 @@ acquisition date cannot be verified no subtraction is allowed at all.
   credits are outside the pack's scope.
 - **Small business income tax election** (Form 140-SBI, §43-1022(28)): not
   modeled. A retiree with Schedule C or E income could in principle elect it.
-- **Not investigated**, and flagged so nobody assumes otherwise: part-year and
-  nonresident proration (Forms 140PY, 140NR), the credit for increased excise
+- **Part-year residents** (Form 140PY, 2025 instructions): 2.5% of the
+  resident-period taxable income (line 56), with the whole standard deduction
+  ("The standard deduction is not prorated") and the exemptions multiplied by the
+  Arizona income ratio (line 51). From 2026-10-07 the split-year slice keeps the
+  whole deduction (`partYear`); before, it halved it for six months. A single
+  filer of 50 with $100,000 of ordinary income, resident six months: $1,053.13,
+  now $856.25 (`ars-43-1041-standard-deduction-published-amount`).
+- **Not investigated**, and flagged so nobody assumes otherwise: nonresident
+  proration (Form 140NR), the credit for increased excise
   taxes, the property-tax credit on Form 140PTC, whether any Arizona
   municipality levies an income tax (Arizona appears to have none, but the
   negative was not verified), and the §43-1042 itemized-deduction path including

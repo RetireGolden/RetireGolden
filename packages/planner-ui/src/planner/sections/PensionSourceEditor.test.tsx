@@ -165,6 +165,20 @@ describe('Pension source confirmation editor', () => {
     expect(getPlan().accounts[0]).toMatchObject({ type: 'pension', source: 'ordinaryPrivatePension' })
   })
 
+  it('labels Railroad Tier I as the RRB-1099-R part and routes the RRB-1099 part to Social Security', async () => {
+    // 26 U.S.C. 86(d)(1)(B) and (d)(4)(A): the Social Security equivalent part
+    // of tier I (Form RRB-1099) is a Social Security benefit; 72(r) makes the
+    // rest (Form RRB-1099-R) an employer-plan benefit, priced as a pension.
+    const { host } = await mountPension(pension({ source: 'railroadTier1' }))
+    const card = host.querySelector('[data-pension-source]')!
+    expect(card.querySelector('option[value="railroadTier1"]')?.textContent)
+      .toBe('Railroad Tier I, non-Social Security equivalent part (RRB-1099-R)')
+    expect(card.textContent).toContain('On record: Railroad Tier I, non-Social Security equivalent part (RRB-1099-R).')
+    const help = card.querySelector('.help-tip-text')?.textContent ?? ''
+    expect(help).toContain('Enter the Social Security equivalent part, reported on Form RRB-1099, as Social Security.')
+    expect(help).toContain('a state that taxes Social Security taxes it, although federal law (45 U.S.C. 231m) bars any state tax on it.')
+  })
+
   it('does not record unknown sources', async () => {
     const { host, getPlan } = await mountPension(pension())
     await act(async () => {

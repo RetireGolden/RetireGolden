@@ -289,7 +289,7 @@ export function annualPensionAndAnnuityIncome(
           federallyIncludedAmount: amount,
           recipientAgeYears,
           taxYear: input.year,
-          ...(payee !== undefined ? { payeeDateOfBirth: payee.dob } : {}),
+          ...(payee !== undefined ? { payeeDateOfBirth: payee.dob } : {}), ...(payeePersonId === ownerId ? { paymentsBeganYear: startCalendarYear } : {}),
         }),
       )
       rows.push({

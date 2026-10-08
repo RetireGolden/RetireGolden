@@ -3397,7 +3397,7 @@
           "functions": [
             {
               "name": "planElectionYearOwnerRmdDraws",
-              "line": 65
+              "line": 94
             }
           ]
         },
@@ -3557,7 +3557,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The annualOwnedAccountDrawsPhase planner computes the election-year owner requirement, credits only caller-accepted actual distributions, and takes the unpaid amount within live capacity without refunding excess prior distributions. The adapter admits completed current-year beneficiary history or coherent same-year j(4) pre-election actuals; a proposed/display row is not credit. The forced-distribution coordinator publishes electionYearOwnerRmdObligations with full requirement, evidence-bearing credit, pre-settlement unpaid, settled and unsatisfied amounts, and routes remaining owner obligations through the existing RMD gate and section 4974 contract. The describeRule production test suite (in simulate.spousalElectionYearOwnerRmd.test.ts) binds the under-age, age-75, contribution-alone with prior history only, completed-shortfall and insufficient-balance discriminators. Its Roth suppression test gives two same-pool Roths identical verified elections and uses a distinct-decedent non-electing Roth as the nonqualified control. Both elected balances remain unchanged with no state facts; a pass-through observer of the actual production characterization callback delegates unchanged and requires calls only for the non-electing control. The control retains its source-derived 100 distribution and 40 taxable earnings, distinguishing suppression before characterization from a later cosmetic removal. This linkage is not a test-pass or closure claim. Mixed-year Form 8606 and transaction-tax chronology remain typed incomplete. In the election year the elected IRA owes that owner obligation only and joins no beneficiary section 4974 obligation, grouped by decedent or not. Known limit (2026-09-30): when a spouse's same-decedent pool holds two or more IRAs with the election in effect, the engine takes each IRA's owner RMD from the pool's one shared reference balance, because the plan checks require identical election facts across the pool and a positive reference replaces the prior December 31 balance, not from that IRA's own prior December 31 balance as 1.408-8(c)(3) and 1.401(a)(9)-5 require. A 29,600 IRA pooled with a 100,000 one under a 100,000 reference owes 4,065.04 (100,000 / 24.6) where its own balance gives 1,203.25 (29,600 / 24.6), so the engine overstates the requirement for a pooled IRA smaller than the reference; the same test file pins that current behavior.",
+      "conventionRationale": "The annualOwnedAccountDrawsPhase planner computes the election-year owner requirement, credits only caller-accepted actual distributions, and takes the unpaid amount within live capacity without refunding excess prior distributions. The adapter admits completed current-year beneficiary history or coherent same-year j(4) pre-election actuals; a proposed/display row is not credit. The forced-distribution coordinator publishes electionYearOwnerRmdObligations with full requirement, evidence-bearing credit, pre-settlement unpaid, settled and unsatisfied amounts, and routes remaining owner obligations through the existing RMD gate and section 4974 contract. The describeRule production test suite (in simulate.spousalElectionYearOwnerRmd.test.ts) binds the under-age, age-75, contribution-alone with prior history only, completed-shortfall and insufficient-balance discriminators. Its Roth suppression test gives two same-pool Roths identical verified elections and uses a distinct-decedent non-electing Roth as the nonqualified control. Both elected balances remain unchanged with no state facts; a pass-through observer of the actual production characterization callback delegates unchanged and requires calls only for the non-electing control. The control retains its source-derived 100 distribution and 40 taxable earnings, distinguishing suppression before characterization from a later cosmetic removal. This linkage is not a test-pass or closure claim. Mixed-year Form 8606 and transaction-tax chronology remain typed incomplete. In the election year the elected IRA owes that owner obligation only and joins no beneficiary section 4974 obligation, grouped by decedent or not. When a spouse's same-decedent pool holds two or more IRAs with the election in effect, each IRA's owner RMD is taken from its own prior December 31 balance as 1.408-8(b)(2) and (e)(1)(i) require, its opening balance plus the distributions accepted as taken from it, and not from the one reference balance the plan checks give every IRA in the pool: a 29,600 IRA pooled with a 100,000 one under a 100,000 reference owes 1,203.25 (29,600 / 24.6), where until 2026-10-07 the engine charged it 4,065.04 (100,000 / 24.6). An accepted election-year distribution counts once toward the pool's total, since (e)(1)(i) lets the total be distributed from any of the IRAs: a completed history row to the IRA it names, the pool's one j(4) pre-election figure once for the pool, where until 2026-10-07 it was credited against every IRA. Discriminating tests in the same test file pin both, and rmd-uniform-lifetime-divisor states the figures and the limits that remain.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3617,7 +3617,7 @@
           "functions": [
             {
               "name": "planElectionYearOwnerRmdDraws",
-              "line": 65
+              "line": 94
             }
           ]
         },
@@ -3635,11 +3635,19 @@
           "functions": [
             {
               "name": "acceptedElectionYearQualifyingDistributions",
-              "line": 177
+              "line": 221
+            },
+            {
+              "name": "electionYearOwnerRmdCredits",
+              "line": 339
             },
             {
               "name": "electionYearOwnerRmdReferenceBalance",
-              "line": 230
+              "line": 381
+            },
+            {
+              "name": "electionYearQualifyingDistributionsInPool",
+              "line": 304
             },
             {
               "name": "gateSpousalElectionFromInheritedAccount",
@@ -3716,6 +3724,40 @@
             {
               "title": "charges no beneficiary §4974 obligation beside the paid 4065.04 owner RMD",
               "line": 468
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts",
+          "line": 680,
+          "note": "pooled election-year owner RMD balance",
+          "tests": [
+            {
+              "title": "takes the 29,600 IRA's owner RMD from its own balance: 1203.25, not the pool reference's 4065.04",
+              "line": 688
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts",
+          "line": 785,
+          "note": "pooled pre-election distribution credit",
+          "tests": [
+            {
+              "title": "counts the pool's 1,000 pre-election distribution once and forces 4268.29",
+              "line": 794
+            },
+            {
+              "title": "carries a pre-election distribution larger than the first IRA needs to the rest of the pool",
+              "line": 840
+            },
+            {
+              "title": "credits a completed history row to the IRA it came from and does not also count the shared figure",
+              "line": 866
+            },
+            {
+              "title": "adds a lone IRA's pre-election distribution back when no reference balance is given",
+              "line": 903
             }
           ]
         }

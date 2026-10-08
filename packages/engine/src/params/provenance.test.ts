@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
 import { acaParametersForCoverageYear, hsaLimitsForYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
+import { paramsAttestations } from '../rules/attestations/params.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
 import { KNOWN_LIFE_TABLE_EDITIONS, LAST_TABLE_AGE, LIFE_TABLE_EDITION_BEFORE_THE_FIELD, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
 import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
@@ -1042,8 +1043,14 @@ describe('parameter provenance', () => {
     expect(byId('state-enacted-or').url).toBe('https://www.oregonlegislature.gov/bills_laws/ors/ors316.html')
     expect(byId('state-enacted-ca').url).toBe('https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CONS&sectionNum=SEC.%2036.&article=XIII')
     expect(byId('state-enacted-wa').url).toBe('https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf')
-    expect(byId('state-enacted-dc').url).toBe('https://code.dccouncil.gov/us/dc/council/acts/26-416')
-    expect(byId('state-enacted-dc').figures).toContain('congressional review with a projected law date of about November 20, 2026')
+    expect(byId('state-enacted-dc').url).toBe('https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990')
+    expect(byId('state-enacted-dc').figures).toContain('in force from October 2, 2026 after congressional review, and applying from 2025')
+    expect(byId('state-enacted-dc').figures).not.toContain('November 20, 2026')
+    // The coverage note the rules sweep copies into DOCS/operations says the same.
+    const packNote = paramsAttestations['params/state/data/year2026.ts']!.note
+    expect(packNote).toContain('effective 2026-10-02 when its congressional review ended')
+    expect(packNote).not.toContain('2026-11-20')
+    expect(packNote).not.toContain('military separation')
     // What is loaded is not claimed complete; the survey is named for the
     // rest, and the conditional and vote-pending changes are named with dates.
     const stateRow = byId('state-income-tax').figures
@@ -1051,6 +1058,10 @@ describe('parameter provenance', () => {
     expect(stateRow).toContain('Georgia and South Carolina 2027 rates await determinations')
     expect(stateRow).toContain('Initiative 645, Proposition 3')
     expect(stateRow).not.toMatch(/Indiana, Mississippi, Montana, Nebraska and North Carolina are listed/)
+    // Utah's credits and Maine's military subtraction are priced; the row says so.
+    expect(stateRow).not.toContain('Social Security credit remains unmodeled')
+    expect(stateRow).toContain('military retirement credits are computed in every projected year')
+    expect(stateRow).not.toContain('military separation')
     expect(byId('state-enacted-wa').figures).toContain('Initiative 645 on the November 3, 2026 ballot')
     expect(byId('state-enacted-ca').figures).toContain('Proposition 3 on the November 3, 2026 ballot')
   })

@@ -208,28 +208,28 @@
       "label": "post-RMD and post-withdrawal conversion preparation snapshot",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1987,
-        2022
+        1991,
+        2026
       ],
       "anchors": [
         {
-          "line": 1987,
+          "line": 1991,
           "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({"
         },
         {
-          "line": 1996,
+          "line": 2000,
           "text": "balances: Object.freeze(balances.map((state) => Object.freeze({"
         },
         {
-          "line": 2000,
+          "line": 2004,
           "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>"
         },
         {
-          "line": 2007,
+          "line": 2011,
           "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map((["
         },
         {
-          "line": 2013,
+          "line": 2017,
           "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map("
         }
       ]
@@ -239,16 +239,16 @@
       "label": "shared narrowed linked-group verdict",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        2029,
-        2030
+        2033,
+        2034
       ],
       "anchors": [
         {
-          "line": 2029,
+          "line": 2033,
           "text": "const effectiveLinkedWithdrawalGroups ="
         },
         {
-          "line": 2030,
+          "line": 2034,
           "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups"
         }
       ]
@@ -258,16 +258,16 @@
       "label": "caller-owned named-conversion executor call",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        2031,
-        2033
+        2035,
+        2037
       ],
       "anchors": [
         {
-          "line": 2031,
+          "line": 2035,
           "text": "if (rothConversionExecutionInput.status === 'ready') {"
         },
         {
-          "line": 2033,
+          "line": 2037,
           "text": "rothConversionExecutionInput.executorInput,"
         }
       ]

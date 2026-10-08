@@ -15,16 +15,15 @@
  * income tax, under 45 U.S.C. 231m (usc-45-231m-state-tax-bar, applied at the
  * top of `characterizedRetirementDelta`).
  *
- * Military retirement: a state's own military rule is modeled only in
- * Arkansas, California, Delaware, Idaho, Iowa, Kansas, Massachusetts,
- * Missouri, New Jersey, Rhode Island, South Carolina, Utah, Vermont, Virginia
- * and West Virginia. Everywhere else a pension tagged Military retirement or
- * Military survivor benefit is priced under the state's general retirement
- * rules, and the state's own military exclusion, with its age or income
- * tests, is not modeled yet. The first known case is Wisconsin, which
- * subtracts U.S. military retirement pay in full (2025 Schedule SB, line 12);
- * the engine gives it only the retirement income subtraction at 67 or older.
- * This is a stated limit of the state-enacted-tax-year-figures calculation.
+ * Military retirement: a state's own rule for military retired pay and
+ * Survivor Benefit Plan annuities is modeled in every state that has one,
+ * through its own branch below or the pack's `militaryRetirementExclusion`
+ * (`militaryRetirementSubtraction`), or through a public-pension or
+ * all-retirement exclusion that is already full. What it does not reach (North
+ * Carolina's, Kentucky's and Oregon's service-history limbs, Montana's
+ * residency window, the survivor annuity where a state's law does not plainly
+ * reach it) is listed in the limits of the state-enacted-tax-year-figures
+ * calculation.
  *
  * @see DOCS/features/taxes.md
  */
@@ -142,6 +141,7 @@ import {
 } from './stateMidwestExtras.js'
 import {
   federalRailroadRetirementActKinds,
+  militaryRetirementSubtraction,
   railroadRetirementActSubtraction,
   rhodeIslandMilitaryServicePensionModification,
 } from './stateRailroadAndMilitary.js'
@@ -557,6 +557,7 @@ function characterizedRetirementDelta(
     joint: boolean
     /** A joint return of a married couple; a qualifying surviving spouse is unmarried. */
     married: boolean
+    year: number
   },
 ): { taxableIncomeDelta: number; taxCredit: number; warnings: StateTaxExactnessWarning[] } {
   const warnings: StateTaxExactnessWarning[] = []
@@ -569,6 +570,19 @@ function characterizedRetirementDelta(
   // rules, for the railroad sources the state's own law does not already
   // subtract below; no retirement pool below counts a railroad source.
   taxableIncomeDelta -= railroadRetirementActSubtraction(distributions, federalRailroadRetirementActKinds(code))
+
+  // The state's own subtraction of military retired pay
+  // (`militaryRetirementExclusion`), before its general retirement rules,
+  // which see only what it leaves (`pooled`).
+  let militaryTaken = 0
+  let pooled = distributions
+  if (params.militaryRetirementExclusion) {
+    const part = militaryRetirementSubtraction(params.militaryRetirementExclusion, distributions, context.year, opts.householdFacts?.ownerStateTaxFacts)
+    militaryTaken = part.subtracted
+    taxableIncomeDelta -= militaryTaken
+    warnings.push(...part.warnings)
+    pooled = part.rows
+  }
 
   if (code === 'IA') {
     const part = iowaRetirementExclusionTotal(distributions)
@@ -669,14 +683,16 @@ function characterizedRetirementDelta(
       warnings.push(...part.warnings)
       publicSafetyTaken = part.subtractedByOwner
     }
+    // Military retirement income above the 10-207(q) subtraction taken above
+    // stays in the pension exclusion (10-209(d)(1)).
     const owners = new Map<string, StateRetirementDistributionFact[]>()
-    for (const fact of distributions) {
+    for (const fact of pooled) {
       const rows = owners.get(fact.ownerPersonId) ?? []
       rows.push(fact)
       owners.set(fact.ownerPersonId, rows)
     }
     for (const [owner, rows] of owners) {
-      const qualifying = rows.filter((fact) => fact.sourceKind === 'employerPlan' || fact.sourceKind === 'ordinaryPrivatePension' || fact.sourceKind === 'federalCivilService' || fact.sourceKind === 'stateLocalPublic')
+      const qualifying = rows.filter((fact) => ['employerPlan', 'ordinaryPrivatePension', 'federalCivilService', 'stateLocalPublic', 'militaryRetirement', 'militarySurvivor'].includes(fact.sourceKind))
       if (!qualifying.length) continue
       const age = qualifying[0]!.recipientAgeYears
       if (qualifying.some((fact) => fact.recipientAgeKnown === false)) {
@@ -904,9 +920,14 @@ function characterizedRetirementDelta(
   if (code === 'MO') {
     taxableIncomeDelta -= missouriMilitaryAndRailroad(distributions)
     const facts = opts.householdFacts
-    if (!facts?.stateFilingStatus || facts.missouriIncome === undefined) {
+    // 143.124.3 tests the private deduction against Missouri income; from 2024
+    // 143.124.5 takes the public one "regardless of the taxpayer's filing
+    // status or the amount of the taxpayer's Missouri adjusted gross income",
+    // so it is taken without them.
+    const filingStatus = facts?.stateFilingStatus
+    const missouriIncome = facts?.missouriIncome
+    if (!filingStatus || missouriIncome === undefined) {
       warnings.push({ code: 'mo-retirement-facts-incomplete', ruleId: 'mo-retirement-deductions', message: 'Missouri retirement deductions require Missouri income and full filing status.', missingFacts: ['missouriIncome', 'stateFilingStatus'] })
-      return { taxableIncomeDelta, taxCredit, warnings }
     }
     const byOwner = new Map<string, StateRetirementDistributionFact[]>()
     for (const fact of distributions) {
@@ -918,12 +939,12 @@ function characterizedRetirementDelta(
     let publicDeduction = 0
     for (const rows of byOwner.values()) {
       const privatePension = rows.filter((fact) => fact.sourceKind === 'ordinaryPrivatePension' || fact.sourceKind === 'ira' || fact.sourceKind === 'employerPlan').reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
-      const publicPension = rows.filter((fact) => fact.sourceKind === 'federalCivilService' || fact.sourceKind === 'stateLocalPublic').reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
-      privateDeduction += missouriPrivatePensionDeduction({ filingStatus: facts.stateFilingStatus, missouriIncome: facts.missouriIncome, privatePension, config: params.missouriRetirement })
+      const publicPension = rows.filter((fact) => fact.sourceKind === 'federalCivilService' || fact.sourceKind === 'stateLocalPublic' || fact.sourceKind === 'militarySurvivor').reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
+      if (filingStatus && missouriIncome !== undefined) privateDeduction += missouriPrivatePensionDeduction({ filingStatus, missouriIncome, privatePension, config: params.missouriRetirement })
       if (publicPension > 0) {
         const ownerOffset = rows.every((row) => row.taxableSocialSecurityAllocated !== undefined)
           ? rows.reduce((sum, row) => sum + Math.max(0, row.taxableSocialSecurityAllocated ?? 0), 0)
-          : byOwner.size === 1 ? facts.federallyIncludedSocialSecurity : undefined
+          : byOwner.size === 1 ? facts?.federallyIncludedSocialSecurity : undefined
         if (ownerOffset === undefined) warnings.push({ code: 'mo-public-ss-offset-unknown', message: 'Missouri public pension subtraction requires the owner Social Security subtraction.', missingFacts: ['taxableSocialSecurityAllocated'] })
         else publicDeduction += missouriPublicPensionDeduction({ publicPension, socialSecuritySubtraction: ownerOffset, config: params.missouriRetirement })
       }
@@ -994,6 +1015,9 @@ function characterizedRetirementDelta(
       warnings.push({ code: 'co-ss-pension-facts-missing', ruleId: 'co-ss-pension-shared-cap', message: 'Colorado SS/pension subtraction requires federal AGI and filing status.', missingFacts: ['federalAgi', 'stateFilingStatus'] })
       return { taxableIncomeDelta, taxCredit, warnings }
     }
+    // Military retired pay under 55 took the 39-22-104(4)(y) subtraction above;
+    // at 55 or older it is a pension in the 39-22-104(4)(f) subtraction below,
+    // as a Survivor Benefit Plan annuity is at any age.
     const recipientFacts = opts.householdFacts.recipientSocialSecurity
     const owners = new Set([...distributions.map((row) => row.ownerPersonId), ...(recipientFacts ?? []).map((row) => row.ownerPersonId)])
     const recipients = [...owners].map((ownerPersonId) => {
@@ -1008,9 +1032,9 @@ function characterizedRetirementDelta(
       const included = ssRow?.federallyIncludedSocialSecurity ?? (allocations.length === 1 ? allocations[0]
         : opts.householdFacts?.federallyIncludedSocialSecurity === 0 ? 0 : undefined)
       if (included === undefined || allocations.length > 1) warnings.push({ code: 'co-ss-allocation-unknown', message: 'Colorado needs one reconciled annual Social Security inclusion per recipient.', missingFacts: ['recipientSocialSecurity.federallyIncludedSocialSecurity'] })
-      const pension = owned.filter((row) => ['ordinaryPrivatePension', 'ira', 'employerPlan', 'federalCivilService', 'stateLocalPublic'].includes(row.sourceKind)).reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
+      const pension = pooled.filter((row) => row.ownerPersonId === ownerPersonId && (['ordinaryPrivatePension', 'ira', 'employerPlan', 'federalCivilService', 'stateLocalPublic', 'militarySurvivor'].includes(row.sourceKind) || (row.sourceKind === 'militaryRetirement' && row.recipientAgeYears >= 55))).reduce((sum, row) => sum + Math.max(0, row.federallyIncludedAmount), 0)
       return { ownerPersonId, ageYears: age ?? 0, taxableSocialSecurityAllocated: Math.max(0, included ?? 0), qualifyingPensionAnnuity: pension,
-        deathOrDisabilitySurvivorUnder55: owned.some((row) => row.deathOrDisabilitySurvivorUnder55 === true) }
+        deathOrDisabilitySurvivorUnder55: owned.some((row) => row.deathOrDisabilitySurvivorUnder55 === true || row.sourceKind === 'militarySurvivor') }
     })
     const part = coloradoSsPensionSubtraction({
       config: params.coloradoRetirement,
@@ -1055,7 +1079,7 @@ function characterizedRetirementDelta(
   }
   const eligibleDistributions = code === 'RI'
     ? distributions.filter((fact) => fact.sourceKind !== 'ira' && !isMilitarySource(fact.sourceKind))
-    : distributions
+    : pooled
 
   // Most default pack caps are per recipient (KY, AL, GA, ME, NY, OK,
   // RI), so another spouse's unused exclusion cannot shelter this owner's
@@ -1122,7 +1146,10 @@ function characterizedRetirementDelta(
     }
     const recipientAges = code === 'MI' ? agesAlive : [ages.length ? Math.min(...ages) : 0]
     if (params.retirementRuleShared) {
-      taxableIncomeDelta -= retirementExclusion(params.retirementPrivate, privateAmt + publicAmt, recipientAges)
+      // Michigan 206.30(1)(f)(iv): the maximum is reduced by the military
+      // deduction taken under (1)(e).
+      const reduce = params.militaryRetirementExclusion?.reducesGeneralCap ? militaryTaken : 0
+      taxableIncomeDelta -= Math.max(0, retirementExclusion(params.retirementPrivate, privateAmt + publicAmt + reduce, recipientAges) - reduce)
     } else {
       taxableIncomeDelta -= retirementExclusion(params.retirementPrivate, privateAmt, recipientAges)
       taxableIncomeDelta -= retirementExclusion(params.retirementPublic, publicAmt, recipientAges)
@@ -1215,7 +1242,7 @@ export function computeStateTaxableIncomeResult(
   const agesAlive = input.agesAlive ?? []
   const distributions = resolvedDistributions(opts)
   if (distributions !== undefined) {
-    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint, married: input.filingStatus === 'marriedFilingJointly' })
+    const characterized = characterizedRetirementDelta(params, distributions, agesAlive, opts, { federal, joint, married: input.filingStatus === 'marriedFilingJointly', year: input.year })
     accumulateLeaf(acc, {
       taxableIncomeDelta: characterized.taxableIncomeDelta,
       taxCredit: characterized.taxCredit,
@@ -1503,6 +1530,22 @@ export function computeStateTaxableIncomeResult(
       Math.max(0, input.peopleAged65Plus),
     )
   }
+  // New Jersey 54A:3-1: the taxpayer and a joint spouse, each 65 or older at
+  // the close of the year, each blind or disabled, and each veteran, read as
+  // the owner of a military retirement pension. Dependents are not modeled.
+  const nj = params.newJerseyPersonalExemptions
+  if (nj) {
+    const blindOrDisabled = new Set<string>()
+    for (const row of opts.householdFacts?.taxpayerEligibility ?? []) if (row.blind) blindOrDisabled.add(row.personId)
+    const veterans = new Set<string>()
+    for (const row of distributions ?? []) {
+      if (row.recipientDisabled) blindOrDisabled.add(row.ownerPersonId)
+      if (row.sourceKind === 'militaryRetirement' && row.cause !== 'death') veterans.add(row.ownerPersonId)
+    }
+    rawTotal += nj.taxpayer * (input.filingStatus === 'marriedFilingJointly' ? 2 : 1) +
+      nj.age65 * (age65EligibleCount ?? Math.max(0, input.peopleAged65Plus)) +
+      nj.blindOrDisabled * blindOrDisabled.size + nj.veteran * veterans.size
+  }
   const phaseout = params.standardDeductionPhaseout
   const allowed =
     params.code === 'WI' && params.wisconsinStandardDeduction
@@ -1731,9 +1774,12 @@ export function computeStateTaxDetailResult(
         filingStatus: facts?.stateFilingStatus,
         config,
       })
+      // The 2025 TC-40 Social Security credit worksheet starts its income from
+      // line 9, after the code 78 railroad subtraction; the retirement credit
+      // worksheet keeps line 6 (ut-tc-40-social-security-credit-railroad-magi).
       const ssCredit = utahSocialSecurityCredit({
         socialSecurityIncludedInUtahTaxableIncome: ssBase === undefined ? undefined : Math.min(ssBase, taxableSsEnteringUtah),
-        utahMagi,
+        utahMagi: utahMagi === undefined ? undefined : utahMagi - rrbSubtracted,
         filingStatus: facts?.stateFilingStatus,
         config,
       })
@@ -1805,13 +1851,39 @@ function scaleExclusion(rule: StateRetirementExclusion, scale: number): StateRet
   return rule.capPerPerson === undefined ? rule : { ...rule, capPerPerson: rule.capPerPerson * scale }
 }
 
+/**
+ * Wisconsin's sliding standard deduction for a slice priced on `scale` of the
+ * year's income: the deduction of the whole year's income, times `deduction`.
+ * The income points scale with the slice so the phase-down reads the year's
+ * income; the maximum and the rate per slice dollar carry the ratio.
+ */
+function wisconsinSlice<T extends { maximum: number; fullThrough: number; phaseStart: number; phaseRate: number; zeroAt: number }>(
+  row: T,
+  deduction: number,
+  scale: number,
+): T {
+  return {
+    ...row,
+    maximum: row.maximum * deduction,
+    phaseRate: row.phaseRate * deduction / scale,
+    fullThrough: row.fullThrough * scale,
+    phaseStart: row.phaseStart * scale,
+    zeroAt: row.zeroAt * scale,
+  }
+}
+
 function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
   const age65 = params.standardDeductionAge65Addition
+  // The state's part-year method (StateTaxParams.partYear): a deduction or
+  // exemption its return allows whole keeps 1, every other one the months.
+  const deduction = params.partYear?.standardDeduction === 'full' ? 1 : scale
+  const exemption = params.partYear?.exemptions === 'full' ? 1 : scale
+  const wi = params.wisconsinStandardDeduction
   return {
     ...params,
     standardDeduction: {
-      single: params.standardDeduction.single * scale,
-      marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
+      single: params.standardDeduction.single * deduction,
+      marriedFilingJointly: params.standardDeduction.marriedFilingJointly * deduction,
     },
     // The per-person age-65 addition is part of the same deduction and prorates
     // with it: a 65+ filer resident for five months takes five twelfths of it
@@ -1820,16 +1892,34 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
       ? {}
       : {
           standardDeductionAge65Addition: {
-            single: age65.single * scale,
-            marriedFilingJointly: age65.marriedFilingJointly * scale,
+            single: age65.single * deduction,
+            marriedFilingJointly: age65.marriedFilingJointly * deduction,
+          },
+        }),
+    // Form 1NPR looks Wisconsin's sliding deduction up on the year's federal
+    // income and prorates the tax (line 32), so the slice takes the months
+    // share of the whole year's deduction. Until 2026-10-07 the slice phased
+    // the whole schedule on its own income and kept it unprorated.
+    ...(wi === undefined
+      ? {}
+      : {
+          wisconsinStandardDeduction: {
+            single: wisconsinSlice(wi.single, deduction, scale),
+            marriedFilingJointly: wisconsinSlice(wi.marriedFilingJointly, deduction, scale),
+            marriedFilingSeparately: wisconsinSlice(wi.marriedFilingSeparately, deduction, scale),
+            headOfHousehold: {
+              ...wisconsinSlice(wi.headOfHousehold, deduction, scale),
+              secondSegmentStart: wi.headOfHousehold.secondSegmentStart * scale,
+            },
+            exemptionPerPerson: wi.exemptionPerPerson * exemption,
+            age65Addition: wi.age65Addition * exemption,
           },
         }),
     // Scaling the brackets with the months taxes the year's income as a
     // resident and keeps the resident share. A state whose part-year return
-    // taxes the resident-period income on its ordinary rate schedule
-    // (Virginia's Form 760PY) carries `partYearRateSchedule: 'unscaled'` and
-    // keeps its brackets.
-    brackets: params.partYearRateSchedule === 'unscaled' ? params.brackets : {
+    // taxes the resident-period income on its ordinary rate schedule keeps its
+    // brackets and any zero band (`rateSchedule: 'unscaled'`).
+    brackets: params.partYear?.rateSchedule === 'unscaled' ? params.brackets : {
       single: params.brackets.single.map((b) => ({
         ...b,
         lowerBound: b.lowerBound * scale,
@@ -1876,6 +1966,17 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
             tiers: params.newJerseyPensionExclusion.tiers.map((tier) => ({ ...tier, grossIncomeAbove: tier.grossIncomeAbove * scale })),
           },
         }),
+    // New Jersey 54A:3-1(c) limits the exemptions to the months resident.
+    ...(params.newJerseyPersonalExemptions === undefined
+      ? {}
+      : {
+          newJerseyPersonalExemptions: {
+            taxpayer: params.newJerseyPersonalExemptions.taxpayer * exemption,
+            age65: params.newJerseyPersonalExemptions.age65 * exemption,
+            blindOrDisabled: params.newJerseyPersonalExemptions.blindOrDisabled * exemption,
+            veteran: params.newJerseyPersonalExemptions.veteran * exemption,
+          },
+        }),
     // Form 760PY's Prorated Exemption Worksheet reduces the personal
     // exemptions in proportion to the time resident; the $800 for a taxpayer
     // 65 or older is an additional personal exemption under 58.1-322.03(2)(b),
@@ -1884,8 +1985,8 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
       ? {}
       : {
           virginiaPersonalExemptions: {
-            perExemption: params.virginiaPersonalExemptions.perExemption * scale,
-            perAgedTaxpayer: params.virginiaPersonalExemptions.perAgedTaxpayer * scale,
+            perExemption: params.virginiaPersonalExemptions.perExemption * exemption,
+            perAgedTaxpayer: params.virginiaPersonalExemptions.perAgedTaxpayer * exemption,
           },
         }),
   }
@@ -1970,8 +2071,8 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // this point on already hold any attached age addition, so the split-year
     // path below hands `prorateParams` a resolved pair and residency scales
     // basic and addition together instead of only the basic half.
-    // A deduction the state's own statute indexes (Washington's, from 2029) is
-    // projected on that statute's schedule at the plan's inflation.
+    // A deduction the state's own statute indexes (Washington's from 2029, the
+    // District's for 2027 to 2029) is projected on that schedule at the plan's inflation.
     const { pack } = packForYear(input.year)
     const params = statutorilyIndexedStandardDeduction(
       conformStateStandardDeduction(

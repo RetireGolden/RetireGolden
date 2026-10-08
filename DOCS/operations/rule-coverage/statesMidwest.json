@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -207,7 +207,7 @@
           "functions": [
             {
               "name": "states.IN",
-              "line": 115
+              "line": 118
             }
           ]
         },
@@ -216,7 +216,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -234,7 +234,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -341,7 +341,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -359,7 +359,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -411,23 +411,21 @@
     },
     {
       "id": "ic-6-3-2-4-military-retirement-deduction",
-      "title": "Indiana deducts military retirement in full, and the modeled state rules deduct none of it",
-      "classification": "approximated",
-      "errorDirection": "overstatesTax",
-      "approximation": {
-        "kind": "fix"
-      },
+      "title": "Indiana deducts military retirement and survivor’s benefits in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "state:IN",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-05",
-      "dueOn": "2027-08-05",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
-        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
@@ -435,17 +433,17 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "name": "IN.militaryRetirementExclusion",
+              "line": 546
             }
           ]
         },
         {
-          "path": "packages/engine/src/params/state/types.ts",
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
           "functions": [
             {
-              "name": "StateRetirementExclusion",
-              "line": 36
+              "name": "militaryRetirementSubtraction",
+              "line": 123
             }
           ]
         },
@@ -453,28 +451,24 @@
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
             {
-              "name": "retirementExclusion",
-              "line": 168
+              "name": "characterizedRetirementDelta",
+              "line": 549
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 630,
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 95,
           "note": null,
           "tests": [
             {
-              "title": "charges Indiana tax on a military pension Indiana deducts in full",
-              "line": 648
-            },
-            {
-              "title": "reaches the statute’s figure only by exempting every public pension in the state",
-              "line": 653
+              "title": "deducts military retirement and survivor benefits in full at any age",
+              "line": 99
             }
           ]
         }
@@ -518,7 +512,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -527,7 +521,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -625,7 +619,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 469
+              "line": 509
             }
           ]
         },
@@ -643,7 +637,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -718,7 +712,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -736,7 +730,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1147
+              "line": 1174
             }
           ]
         }
@@ -796,7 +790,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 457
+              "line": 497
             }
           ]
         },
@@ -805,7 +799,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -893,7 +887,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 457
+              "line": 497
             }
           ]
         },
@@ -902,7 +896,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -958,7 +952,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 457
+              "line": 497
             }
           ]
         },
@@ -976,7 +970,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1037,7 +1031,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 505
+              "line": 548
             }
           ]
         },
@@ -1055,7 +1049,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1142,7 +1136,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 505
+              "line": 548
             }
           ]
         },
@@ -1164,7 +1158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1239,7 +1233,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 505
+              "line": 548
             }
           ]
         },
@@ -1248,7 +1242,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1304,7 +1298,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 512
+              "line": 555
             }
           ]
         },
@@ -1322,7 +1316,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -1365,8 +1359,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-10-06",
-      "dueOn": "2027-10-06",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/projection/internal/annualStateRetirementEvents.ts",
@@ -1379,7 +1373,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 512
+              "line": 555
             }
           ]
         },
@@ -1397,7 +1391,7 @@
           "functions": [
             {
               "name": "kansasNamedPlanExclusion",
-              "line": 117
+              "line": 119
             }
           ]
         },
@@ -1406,13 +1400,14 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
       ],
       "fixtures": [
         {
@@ -1439,6 +1434,17 @@
             {
               "title": "flags a missing code on a public source, where the code decides it",
               "line": 475
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 337,
+          "note": "military retirement without a plan code",
+          "tests": [
+            {
+              "title": "subtracts a military retirement row with no plan code, and still asks for one on a survivor annuity",
+              "line": 342
             }
           ]
         }
@@ -1502,7 +1508,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 512
+              "line": 555
             }
           ]
         },
@@ -1511,7 +1517,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1539,6 +1545,89 @@
           "kind": "statute",
           "citation": "K.S.A. 79-32,117(c)(xviii)(B)",
           "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        }
+      ]
+    },
+    {
+      "id": "mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction",
+      "title": "Michigan deducts Armed Forces retirement pay in full and lowers the general retirement maximum by it",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MI.militaryRetirementExclusion",
+              "line": 690
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 144,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts military pay in full and lowers the general maximum by it",
+              "line": 148
+            },
+            {
+              "title": "takes 100,000 of military pay off in full, where the pooled maximum took 67,610",
+              "line": 156
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "MCL 206.30(1)(e)(i)",
+          "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30"
+        },
+        {
+          "kind": "statute",
+          "citation": "MCL 206.30(1)(f)(iv)",
+          "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30"
         }
       ]
     },
@@ -1606,7 +1695,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 619
+              "line": 682
             }
           ]
         },
@@ -1615,7 +1704,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1686,7 +1775,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 619
+              "line": 682
             }
           ]
         },
@@ -1695,7 +1784,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -1790,7 +1879,7 @@
           "functions": [
             {
               "name": "states.MI",
-              "line": 619
+              "line": 682
             }
           ]
         },
@@ -1817,7 +1906,7 @@
           "functions": [
             {
               "name": "rothConversionPartAtAge59HalfOrOlder",
-              "line": 158
+              "line": 160
             }
           ]
         },
@@ -1885,7 +1974,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 625
+              "line": 692
             }
           ]
         },
@@ -1898,7 +1987,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -1968,7 +2057,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 625
+              "line": 692
             }
           ]
         },
@@ -1977,7 +2066,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -2022,6 +2111,84 @@
       ]
     },
     {
+      "id": "mn-stat-290-0132-subd-21-military-retirement-subtraction",
+      "title": "Minnesota subtracts military retirement pay in full, survivor annuities included",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MN.militaryRetirementExclusion",
+              "line": 711
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 113,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts military retirement pay and a survivor annuity in full",
+              "line": 117
+            },
+            {
+              "title": "prices 30,000 of military pay on a 100,000 dollar return",
+              "line": 121
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 21",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        }
+      ]
+    },
+    {
       "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
       "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the modeled state rules omit",
       "classification": "approximated",
@@ -2047,7 +2214,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 625
+              "line": 692
             }
           ]
         },
@@ -2056,7 +2223,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2143,7 +2310,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 683
+              "line": 758
             }
           ]
         },
@@ -2156,7 +2323,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2280,7 +2447,7 @@
           "functions": [
             {
               "name": "states.MO",
-              "line": 683
+              "line": 758
             }
           ]
         },
@@ -2289,15 +2456,15 @@
           "functions": [
             {
               "name": "missouriMilitaryAndRailroad",
-              "line": 207
+              "line": 216
             },
             {
               "name": "missouriPrivatePensionDeduction",
-              "line": 178
+              "line": 181
             },
             {
               "name": "missouriPublicPensionDeduction",
-              "line": 197
+              "line": 200
             }
           ]
         },
@@ -2306,7 +2473,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
             }
           ]
         }
@@ -2317,16 +2484,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 578,
+          "line": 582,
           "note": null,
           "tests": [
             {
               "title": "phases private pension dollar-for-dollar above $25,000 single",
-              "line": 579
+              "line": 583
             },
             {
               "title": "uses a different public limit and independent military/RRB exclusions",
-              "line": 583
+              "line": 587
             }
           ]
         }
@@ -2342,6 +2509,94 @@
         {
           "kind": "statute",
           "citation": "RSMo 143.124.5, .7",
+          "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.124"
+        }
+      ]
+    },
+    {
+      "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
+      "title": "Missouri subtracts a retiree’s own military retirement in full and a Survivor Benefit Plan annuity as a public pension",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateMidwestExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MO.missouriRetirement",
+              "line": 781
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateMidwestExtras.ts",
+          "functions": [
+            {
+              "name": "missouriMilitaryAndRailroad",
+              "line": 216
+            },
+            {
+              "name": "missouriPublicPensionDeduction",
+              "line": 200
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 365,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts a survivor annuity as a public pension, capped, and the retiree's own pay in full",
+              "line": 369
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "RSMo 143.121.3(12)",
+          "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.121"
+        },
+        {
+          "kind": "statute",
+          "citation": "RSMo 143.124.5",
+          "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.124"
+        },
+        {
+          "kind": "statute",
+          "citation": "RSMo 143.124.5, from 2024",
           "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.124"
         }
       ]
@@ -2370,7 +2625,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 683
+              "line": 758
             }
           ]
         },
@@ -2379,7 +2634,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2443,7 +2698,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 851
+              "line": 940
             }
           ]
         },
@@ -2452,7 +2707,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1536
+              "line": 1579
             }
           ]
         }
@@ -2534,7 +2789,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -2552,7 +2807,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2563,20 +2818,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 130,
+          "line": 131,
           "note": null,
           "tests": [
             {
               "title": "exempts a civil-service pension North Dakota taxes in full",
-              "line": 153
+              "line": 154
             },
             {
               "title": "reaches the statute’s figure once the public bucket stops exempting",
-              "line": 158
+              "line": 159
             },
             {
               "title": "still taxes private retirement income, which is the half the pack gets right",
-              "line": 168
+              "line": 169
             }
           ]
         }
@@ -2663,11 +2918,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 862
+              "line": 951
             },
             {
               "name": "states.ND",
-              "line": 851
+              "line": 940
             }
           ]
         },
@@ -2685,7 +2940,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2696,16 +2951,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 182,
+          "line": 183,
           "note": null,
           "tests": [
             {
               "title": "taxes the whole qualified dividend rather than the statute’s 60%",
-              "line": 199
+              "line": 200
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 204
+              "line": 205
             }
           ]
         }
@@ -2749,7 +3004,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 862
+              "line": 951
             }
           ]
         },
@@ -2758,7 +3013,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2826,7 +3081,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -2835,7 +3090,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -2907,7 +3162,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 851
+              "line": 940
             }
           ]
         },
@@ -2916,7 +3171,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -2985,7 +3240,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -2994,7 +3249,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -3068,7 +3323,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 851
+              "line": 940
             }
           ]
         },
@@ -3086,7 +3341,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3150,7 +3405,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 736
+              "line": 816
             }
           ]
         },
@@ -3163,7 +3418,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3284,7 +3539,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -3293,7 +3548,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -3370,7 +3625,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 736
+              "line": 816
             }
           ]
         },
@@ -3379,7 +3634,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3449,7 +3704,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 139
+              "line": 142
             }
           ]
         },
@@ -3551,7 +3806,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2176
+              "line": 2277
             }
           ]
         }
@@ -3613,7 +3868,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 68
+              "line": 79
             }
           ]
         },
@@ -3622,7 +3877,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",
@@ -3702,7 +3957,7 @@
           "functions": [
             {
               "name": "states.OH",
-              "line": 876
+              "line": 965
             }
           ]
         },
@@ -3785,7 +4040,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 991
+              "line": 1090
             }
           ]
         },
@@ -3794,7 +4049,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -3846,8 +4101,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": 2026,
-      "verifiedOn": "2026-09-12",
-      "dueOn": "2027-01-10",
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-02-04",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateMidwestExtras.ts",
@@ -3859,7 +4114,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1149
+              "line": 1249
             }
           ]
         },
@@ -3868,11 +4123,11 @@
           "functions": [
             {
               "name": "wisconsinPersonalExemption",
-              "line": 305
+              "line": 314
             },
             {
               "name": "wisconsinStandardDeduction",
-              "line": 267
+              "line": 276
             }
           ]
         },
@@ -3881,31 +4136,51 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1550
+              "line": 1593
+            },
+            {
+              "name": "prorateParams",
+              "line": 1875
+            },
+            {
+              "name": "wisconsinSlice",
+              "line": 1860
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+        "packages/engine/src/tax/statePartYear.rules.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 799,
+          "line": 803,
           "note": null,
           "tests": [
             {
               "title": "matches Form 1-ES cumulative taxes at all Schedule A B and C band edges",
-              "line": 800
+              "line": 804
             },
             {
               "title": "adds the age65 exemption to the $700 personal allowance",
-              "line": 815
+              "line": 819
             },
             {
               "title": "uses the published2026 rates and floors the standard deduction at zero",
-              "line": 822
+              "line": 826
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/statePartYear.rules.test.ts",
+          "line": 244,
+          "note": "a part-year resident",
+          "tests": [
+            {
+              "title": "phases the deduction on the year’s income and keeps the months share",
+              "line": 262
             }
           ]
         }
@@ -3917,6 +4192,11 @@
           "kind": "formInstruction",
           "citation": "Wisconsin 2026 Form 1-ES, pages 2–3",
           "url": "https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 1NPR instructions, lines 32, 33 and 34c, and the 2025 Standard Deduction Table for Form 1NPR filers",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-Form1NPR-Inst.pdf"
         }
       ]
     },
@@ -3946,7 +4226,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1149
+              "line": 1249
             }
           ]
         },
@@ -3964,11 +4244,11 @@
           "functions": [
             {
               "name": "federalRailroadRetirementActKinds",
-              "line": 64
+              "line": 67
             },
             {
               "name": "railroadRetirementActSubtraction",
-              "line": 73
+              "line": 76
             }
           ]
         },
@@ -4058,7 +4338,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1149
+              "line": 1249
             }
           ]
         },
@@ -4067,7 +4347,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             }
           ]
         }
@@ -4104,6 +4384,98 @@
       ]
     },
     {
+      "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
+      "title": "Wisconsin subtracts U.S. military retirement payments in full, Survivor Benefit Plan annuities included",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-10-07",
+      "dueOn": "2027-10-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WI.militaryRetirementExclusion",
+              "line": 1288
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateRailroadAndMilitary.ts",
+          "functions": [
+            {
+              "name": "militaryRetirementSubtraction",
+              "line": 123
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "characterizedRetirementDelta",
+              "line": 549
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateMilitaryRetirement.rules.test.ts",
+          "line": 66,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts military pay on line 12 and leaves the line 16 room to the private pension",
+              "line": 70
+            },
+            {
+              "title": "prices a 20,000 dollar military pension at 60 on a 160,000 dollar return",
+              "line": 79
+            },
+            {
+              "title": "subtracts a Survivor Benefit Plan annuity the same way",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB instructions, line 12 (Wis. Stat. 71.05(1)(am))",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB instructions, line 12, limit",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB instructions, line 16",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        }
+      ]
+    },
+    {
       "id": "wi-stat-71-05-retirement-income-subtraction",
       "title": "Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the modeled state rules cap pooled income and skip the election",
       "classification": "approximated",
@@ -4130,7 +4502,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1149
+              "line": 1249
             }
           ]
         },
@@ -4139,7 +4511,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1528
+              "line": 1571
             },
             {
               "name": "retirementExclusion",

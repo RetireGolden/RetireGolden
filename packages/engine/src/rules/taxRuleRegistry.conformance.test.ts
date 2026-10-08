@@ -576,6 +576,16 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   DC: [
     'code.dccouncil.gov', // Council of the District of Columbia, Code of the District of Columbia
+    // Verified 2026-10-08. The Council's Legislative Information Management
+    // System publishes each act's enrolled text and its legislative record,
+    // the law number and effective date included. Admitted because the code
+    // host lags: D.C. Law 26-189 took effect 2026-10-02 and the code host had
+    // not codified it by 2026-10-08, so its enrolled original on this host is
+    // the only text of the law in force (the Arkansas and Alabama enrolled-act
+    // pattern). The legislation pages are script-rendered; the record they
+    // render is served as JSON from /api/Search/GetLegislationDetails/, which
+    // is what dc-code-47-1801-04-3a-standard-deduction-2026-2029 cites.
+    'lims.dccouncil.gov', // Council of the District of Columbia, enrolled acts and legislative records
   ],
   FL: [
     'flsenate.gov', // Florida Senate: the Constitution and the Florida Statutes
@@ -974,6 +984,11 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     'https://www.nj.gov/treasury/taxation/enewsarc/august2010.shtml',
     'https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf',
     'https://www.nj.gov/treasury/taxation/njit12.shtml',
+    // Verified 2026-10-07: the Division's 2025 Form NJ-1040 instructions, at the
+    // current-year path the Division serves them from, quoted for the
+    // part-year resident (nj-stat-54a-3-1-personal-exemptions). The path will
+    // serve the 2026 instructions once they publish; admit only this file.
+    'https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf',
   ],
   OR: [
     // Verified 2026-09-09: 2025 Publication OR-17 TY2025 railroad-benefits
@@ -989,6 +1004,9 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   SC: [
     // Verified TY2025 SC1040 instructions, line o; admit only this publication.
     'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
+    // Verified 2026-10-07: the 2025 Schedule NR, lines 45 to 48, quoted for
+    // the part-year resident (sc-sciad-act-110-retirement-income-deduction).
+    'https://dor.sc.gov/sites/dor/files/forms/SchNR_2025.pdf',
   ],
   VA: [
     // Verified 2026-09-09: Virginia Department of Taxation Subtractions page
@@ -1063,6 +1081,11 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // worksheet (dated April 2026), which prints $3,350 and $6,700, the
     // contrary reading of md-tg-10-217-2026-indexed-standard-deduction.
     'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/2026-pv-worksheet.pdf',
+    // Verified 2026-10-07: the Comptroller's Personal Tax Tip #52 on part-year
+    // residents, quoted for the Maryland income factor
+    // (md-tg-10-217-2026-indexed-standard-deduction); marylandtaxes.gov stays
+    // out of STATE_PRIMARY_PUBLISHERS.
+    'https://www.marylandtaxes.gov/forms/Personal_Tax_Tips/tip52.pdf',
   ],
   CA: [
     // Verified 2026-09-28: the Secretary of State's list of measures on the
@@ -1078,11 +1101,35 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     'https://lawfilesext.leg.wa.gov/biennium/2025-26/Pdf/Bills/Session%20Laws/Senate/6346-S.SL.pdf',
     'https://www.sos.wa.gov/elections/initiatives-referenda/submitted-signature-statistics',
   ],
+  UT: [
+    // Verified 2026-10-07: the Tax Commission's 2025 TC-40 instructions, the
+    // dated copy of the forms/current file, for the credit worksheets quoted
+    // by ut-code-59-10-114-1-additions-in-utah-magi and
+    // ut-tc-40-social-security-credit-railroad-magi; files.tax.utah.gov stays
+    // out of STATE_PRIMARY_PUBLISHERS.
+    'https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf',
+  ],
   ID: [
     // Verified 2026-09-28: the State Tax Commission's release on the 2025
     // conformity deductions, for id-h559-2026-conformity-senior-deduction;
     // tax.idaho.gov stays out of STATE_PRIMARY_PUBLISHERS.
     'https://tax.idaho.gov/pressrelease/file-now-to-get-your-conformity-deductions/',
+    // Verified 2026-10-07: the 2025 individual income tax forms and
+    // instructions, quoted for Form 43's part-year method
+    // (id-form-43-part-year-resident-period).
+    'https://tax.idaho.gov/wp-content/uploads/forms/EIN00046/EIN00046_03-02-2026.pdf',
+  ],
+  DC: [
+    // Verified 2026-10-07: the Office of Tax and Revenue's 2025 D-40 booklet,
+    // quoted for the part-year resident
+    // (dc-code-47-1801-04-3a-standard-deduction-2026-2029); otr.cfo.dc.gov stays
+    // out of STATE_PRIMARY_PUBLISHERS.
+    'https://otr.cfo.dc.gov/sites/default/files/dc/sites/otr/publication/attachments/2025_D40_Book_082026_v1.pdf',
+    // Verified 2026-10-08: the Office's 2026 D-40ES booklet (Rev. 03/2026),
+    // its estimated-tax booklet, quoted for the federal amounts its
+    // estimate worksheet enters, which the permanent law does not follow
+    // (dc-code-47-1801-04-3a-standard-deduction-2026-2029).
+    'https://otr.cfo.dc.gov/sites/default/files/dc/sites/otr/publication/attachments/2026_D40ES_Book_wLinks04012026.pdf',
   ],
   GA: [
     // Verified 2026-09-28: HB 463 (2026) as passed, from the Governor's 2026
@@ -1090,6 +1137,9 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // Code host yields no quote-verifiable text; gov.georgia.gov stays out of
     // STATE_PRIMARY_PUBLISHERS.
     'https://gov.georgia.gov/document/2026-signed-legislation/hb-463/download',
+    // Verified 2026-10-07: HB 266 (2025) as passed, from the Governor's 2025
+    // signed legislation, for ga-code-48-7-27-a-5-1-military-retirement-exclusion.
+    'https://gov.georgia.gov/document/2025-signed-legislation/hb-266/download',
   ],
 }
 
@@ -2612,7 +2662,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-10-06')
+    expect(latestDueOn).toBe('2027-10-07')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

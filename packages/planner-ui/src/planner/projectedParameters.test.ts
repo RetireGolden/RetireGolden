@@ -54,7 +54,7 @@ describe('projected parameter years', () => {
       "grow at this plan's 4% inflation assumption.",
     )
     expect(projectedParametersSentence(2026, plan)).not.toContain('publishes')
-    // From 2030 the District's deduction is the federal one (D.C. Act 26-416),
+    // From 2030 the District's deduction is the federal one (D.C. Law 26-189),
     // so a plan that starts then names only Washington's statute.
     expect(projectedParametersSentence(2030, plan)).toContain(
       "moves with it, and Washington's from 2030, which its statute indexes to inflation, grows at this plan's 2.5% inflation assumption.",

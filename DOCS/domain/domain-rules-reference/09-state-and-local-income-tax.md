@@ -55,9 +55,10 @@
   bucket carries the cap and a military pension is over-charged instead
   (`aca-26-51-307-e-uniformed-services-full-exemption`). IN is the mirror image at its limit — military
   retirement is deducted in full and *every* other public pension, INPRS/PERF, TRF, municipal police and fire
-  alike, gets nothing at all, so the bucket carries `none`
-  (`ic-6-3-2-4-military-retirement-deduction`, with the capped and Social-Security-offset civil service annuity
-  registered beside it as `ic-6-3-2-3-7-civil-service-annuity-age-62`). NY subtracts qualifying New York
+  alike, gets nothing at all, so the bucket carries `none` and a characterized military row takes the
+  pack's `militaryRetirementExclusion` instead (`ic-6-3-2-4-military-retirement-deduction`; only a caller that
+  hands over the coarse bucket alone still over-charges it), with the capped and Social-Security-offset civil
+  service annuity registered beside it as `ic-6-3-2-3-7-civil-service-annuity-age-62`. NY subtracts qualifying New York
   State, local, and federal-government pensions in full and limits Optional Retirement Program members to the
   employment-attributable portion, but `{ kind: 'full' }` removes every routed `publicPensionIncome` dollar
   without issuer or ORP portion checks (`ny-government-pension-issuer-qualification-not-modeled`). ND, AZ, and
@@ -70,9 +71,12 @@
   $2,065 of state tax — so an Indiana projection under-charges unless the rate is supplied by hand
   (`ic-6-3-6-2-2-county-income-tax-shares-the-state-base`). No default was invented: the published rates span
   sixfold and Indiana publishes no statewide figure to stand for them.
-- **State personal exemptions are modelled nowhere.** The `standardDeduction` slot holds a state's *standard
-  deduction*, or for CO and ND the federal-taxable-income converter, and no pack entry folds a separate
-  per-person exemption into it. IN has no standard deduction at all and instead subtracts $1,000 per filer,
+- **State personal exemptions are not folded into the standard deduction.** The `standardDeduction` slot holds a
+  state's *standard deduction*, or for CO and ND the federal-taxable-income converter, and no pack entry folds a
+  separate per-person exemption into it; the states whose exemptions are modeled carry their own block (CT, IL,
+  MA, VA, VT, WI, WV, and NJ's `newJerseyPersonalExemptions`: $1,000 per taxpayer and joint spouse, $1,000 each
+  65 or older, $1,000 each blind or disabled, $6,000 each veteran, read as the owner of a military retirement
+  pension, with no dependents: `nj-stat-54a-3-1-personal-exemptions`). IN has no standard deduction at all and instead subtracts $1,000 per filer,
   $1,000 per person aged 65+, $1,000 per person blind and $500 more below $40,000 of AGI
   (`ic-6-3-1-3-5-exemptions-not-a-standard-deduction`); MS stacks $6,000/$12,000 plus $1,500 per person aged
   65+ on top of a standard deduction the pack does carry
@@ -134,9 +138,10 @@
   gross Social Security/Railroad Retirement reduction and the M-3 federal-AGI phaseout
   (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`, [ME.md](../state-tax-research/ME.md); [MRS 2026 Form
   1040ES-ME Instructions, revised July 2026](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf)).
-  The flat pack cap does not verify plan qualification, separate military retirement, subtract gross
-  SS/RRB, or apply M-3; personal exemption, modeled Maine-AGI proxy limits, and whole Form 1040ME accuracy
-  remain outside this bounded claim.
+  The flat pack cap does not verify plan qualification, subtract gross SS/RRB, or apply M-3; personal
+  exemption, modeled Maine-AGI proxy limits, and whole Form 1040ME accuracy remain outside this bounded claim.
+  Military retirement plan benefits come off in full under (M-2)(1)(b), outside the cap
+  (`me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction`).
 - Virginia has no retirement-income exclusion. Its relief at 65 is the **age deduction** of Va. Code
   §58.1-322.03(5), **$12,000** per qualifying taxpayer against income of every kind, reduced $1 for each $1 of
   adjusted federal AGI above **$50,000** single or **$75,000** married, as Form 760's Age 65 and Older
@@ -146,11 +151,29 @@
   (`va-code-58-1-322-03-age-deduction-and-social-security`, [VA.md](../state-tax-research/VA.md)). The pack
   carries it as `virginiaAgeDeduction`, with `retirement: { kind: 'none' }`.
 - Kansas subtracts only the retirement systems K.S.A. 79-32,117 names, by plan code on a public, federal civil
-  service, military or government survivor pension; a public pension without a code is incomplete. Washburn
+  service, military survivor or government survivor pension; a public pension without a code is incomplete. A
+  pension tagged Military retirement needs no code: the source names the armed-forces system (c)(vii) names. Washburn
   University's plan is a 403(b), so an employer plan coded `KS-WASHBURN` is subtracted and a 403(b) or
   undeclared employer plan without a code is incomplete. An IRA, a private pension, and a 401(k), 401(a) or
   457(b) plan are never a named system, so no code changes their tax and a missing one is not flagged
   (`ks-stat-79-32-117-public-pension-exclusion`, [KS.md](../state-tax-research/KS.md)).
+- **A state's own military retirement rule** is the pack's `militaryRetirementExclusion`, applied per
+  recipient to characterized Military retirement rows (and to Military survivor benefit rows where the
+  state's law reaches them) before the state's general retirement rules, which see only what it leaves
+  (`militaryRetirementSubtraction` in tax/stateRailroadAndMilitary.ts). In full: IN, ME, MN and WI, survivor
+  annuities included; MI, which also lowers its general maximum by it, and OK and PA, whose law does not
+  plainly reach a survivor annuity, so it keeps the general rule. Capped: CO $15,000 under 55 through 2028,
+  then the (4)(f) pension subtraction; GA $17,500 under 62, $35,000 with more than $17,500 of wages, a
+  veteran's survivor benefit in full, and $65,000 under 65 from 2027 (HB 266); MD $12,500 under 55 and
+  $20,000 from 55, the rest open to the pension exclusion; NM $30,000 per retiree or surviving spouse; MT
+  50% (retired pay no more than the wages on the return), in five years from the later of 2024 and the
+  pension's first payment, which is approximated
+  (`mt-mca-15-30-2120-3-n-military-retirement-subtraction`). LA excludes military pay and survivor annuities
+  under 47:44.2 in its own branch; KS reads a military retirement row as US-MILITARY; DC excludes a survivor
+  annuity at 62 under (N)(ii); MO prices a survivor annuity under the capped public-pension subtraction, which
+  needs no Missouri income from 2024. Military retired pay and survivor annuities are never subject to the
+  72(t) penalty, so the projection marks them not premature at any age (SC 12-6-1171, DE 1106(b)(3)). The
+  states the engine still misses are the stated limits of `state-enacted-tax-year-figures`.
 - **A Roth conversion is marked on the state retirement row.** Both conversion paths set `rothConversionAmount`
   (the taxable conversion dollars, without splitting an account's event) and
   `rothConversionAmountAtAge59HalfOrOlder` (read on a named conversion's execution date, otherwise on January 1),
@@ -165,16 +188,22 @@
   withdrawal. The limits that stay are stated in each state's record: Georgia's 62 to 64 tier, the Delaware and
   Arkansas date edges, in-plan rollovers in Maryland, Rhode Island, Mississippi and Pennsylvania, and Ohio and
   Hawaii, where the answer is not determined.
-- Mid-year state moves prorate state taxable income, deductions, brackets, cumulative
-  band base amounts, and retirement caps by months in each state segment. Taxable
-  Social Security is computed once on the full-year federal base and then apportioned
-  by months. Scaling the brackets taxes the year's income as a full-year resident and
-  keeps the resident share. Virginia's Form 760PY instead taxes the resident-period
-  income on the ordinary schedule, so Virginia's pack sets
-  `partYearRateSchedule: 'unscaled'` and its slice keeps its brackets
-  (`va-code-58-1-322-03-2-personal-exemptions`). Every other state's brackets are
-  scaled, which overstates the tax where the part-year return uses the ordinary
-  schedule, as New Jersey's does; that is a stated limit.
+- Mid-year state moves price each state's slice of the year on the months resident,
+  with the year's income spread evenly over the months. Taxable Social Security is
+  computed once on the full-year federal base and then apportioned by months. The
+  pack's `partYear` carries the state's part-year method, read from each state's 2025
+  part-year or nonresident instructions. Twelve states tax the resident-period income
+  on the ordinary schedule: their slice keeps the brackets and any zero band whole.
+  VA, NJ, HI, SC, DC, MS, ID and MD prorate the standard deduction and exemptions by
+  months; AZ, LA, KY and AL allow the standard deduction whole, and AL its exemptions
+  too. Every other state's slice scales its deduction, exemptions, brackets, band base
+  amounts and retirement caps by months. That is the months share of a full-year
+  resident's tax: the income-percentage method, with the months for the state's own
+  ratio. Wisconsin's sliding deduction is phased on the year's income, as Form 1NPR
+  phases it. Each state's form and line, and the limits that remain, are in
+  `va-code-58-1-322-03-2-personal-exemptions`: household facts and characterized
+  retirement rows do not reach a slice, every retirement cap is prorated by months,
+  and each state's own income ratio is replaced by the months.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,

@@ -2,23 +2,23 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 588,
+    "total": 604,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 78,
-      "settled": 381,
-      "unsettled": 7
+      "settled": 396,
+      "unsettled": 8
     },
     "approximatedByKind": {
       "convention": 23,
-      "fix": 72,
-      "needs-fact": 27
+      "fix": 71,
+      "needs-fact": 28
     },
     "byVolatility": {
       "annuallyIndexed": 92,
-      "awaitingGuidance": 13,
-      "staticStatute": 474,
-      "sunsetting": 9
+      "awaitingGuidance": 14,
+      "staticStatute": 488,
+      "sunsetting": 10
     },
     "byJurisdiction": {
       "federal": 361,
@@ -28,54 +28,54 @@
         "AR": 10,
         "AZ": 9,
         "CA": 5,
-        "CO": 4,
+        "CO": 5,
         "CT": 3,
         "DC": 3,
         "DE": 6,
         "FL": 1,
-        "GA": 2,
+        "GA": 3,
         "HI": 7,
         "IA": 3,
-        "ID": 3,
+        "ID": 4,
         "IL": 4,
         "IN": 7,
         "KS": 3,
         "KY": 2,
         "LA": 4,
         "MA": 5,
-        "MD": 5,
-        "ME": 5,
-        "MI": 4,
-        "MN": 3,
-        "MO": 3,
+        "MD": 6,
+        "ME": 6,
+        "MI": 5,
+        "MN": 4,
+        "MO": 4,
         "MS": 7,
-        "MT": 5,
+        "MT": 6,
         "NC": 4,
         "ND": 8,
         "NE": 5,
         "NH": 1,
-        "NJ": 5,
-        "NM": 2,
+        "NJ": 6,
+        "NM": 3,
         "NV": 1,
         "NY": 7,
         "OH": 2,
-        "OK": 1,
+        "OK": 2,
         "OR": 5,
-        "PA": 4,
+        "PA": 5,
         "RI": 7,
         "SC": 9,
         "SD": 1,
         "TN": 2,
         "TX": 2,
-        "UT": 6,
+        "UT": 8,
         "VA": 8,
         "VT": 6,
         "WA": 5,
-        "WI": 4,
+        "WI": 5,
         "WV": 8,
         "WY": 1
       },
-      "stateTotal": 227
+      "stateTotal": 243
     }
   },
   "attestations": {
@@ -234,7 +234,7 @@
     {
       "path": "params/state/data/year2026.ts",
       "sweptOn": "2026-09-29",
-      "note": "ca-ftb-2026-540-es-standard-deduction names the California TY2026 estimated-tax worksheet single/MFJ deduction cells and computeStateTaxableIncome only — retained 2025 Schedule X/Y brackets, continuous lower-income schedule behavior, credits, and whole-return figures remain outside that settled record; mn-dor-2026-rate-schedule-and-standard-deduction names the Minnesota TY2026 single/MFJ deduction and bracket cells plus taxable-income and bracketTax enforcers; mn-stat-290-0132-subd-26-social-security-inclusion remains approximated with zero runtime subtraction (indexed simplified thresholds versus unindexed alternate maxima are source-discriminated in the record, not modeled). de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax; oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names the OH TY2026 single/MFJ 2.75% band cells with baseTax $332; the optional StateTaxBracket.baseTax field represents cumulative schedule tax. iowa-code-422-7-8-social-security-subtraction and il-ita-203-a-2-L-social-security-subtraction name the IA and IL TY2026 packs with taxesSocialSecurity:false enforcers; nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name the NJ, NY, and PA packs likewise — fixture discriminators only, not whole-return certification. md-tax-10-209-pension-exclusion and ga-code-48-7-27-retirement-and-social-security-exclusion pack cells are exercised by relational fixture extensions (MD gross-SS cap offset limb approximated; GA SS subtraction settled). Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation / me-mrs-36-5122-2-m2-m3-2026-pension-deduction $49,824 TY2026 maximum without SS offset military separation M-3 phaseout or plan qualification, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. la-ldr-it540es-2026-standard-deduction covers Louisiana TY2026 single/MFJ deduction cells; or-lro-2026-rate-schedule-and-standard-deduction covers refreshed Oregon cells while disclosing continuous marginal versus printed whole-dollar base taxes. dc-code-47-1801-04-3a-standard-deduction-2026-2029 names the DC 2026 basic deduction the District sets itself, $15,000/$30,000, loaded under D.C. Act 26-416 (emergency, effective 2026-08-13) and indexed from 2027; the permanent act, D.C. Act 26-418, is under congressional review to about 2026-11-20. Calendar-year CA, LA, MN, OH, and OR records expire after 2026; stateParamsFor may reuse the 2026 pack in later plan years as a stand-in. Not complete law coverage."
+      "note": "ca-ftb-2026-540-es-standard-deduction names the California TY2026 estimated-tax worksheet single/MFJ deduction cells and computeStateTaxableIncome only — retained 2025 Schedule X/Y brackets, continuous lower-income schedule behavior, credits, and whole-return figures remain outside that settled record; mn-dor-2026-rate-schedule-and-standard-deduction names the Minnesota TY2026 single/MFJ deduction and bracket cells plus taxable-income and bracketTax enforcers; mn-stat-290-0132-subd-26-social-security-inclusion remains approximated with zero runtime subtraction (indexed simplified thresholds versus unindexed alternate maxima are source-discriminated in the record, not modeled). de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax; oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names the OH TY2026 single/MFJ 2.75% band cells with baseTax $332; the optional StateTaxBracket.baseTax field represents cumulative schedule tax. iowa-code-422-7-8-social-security-subtraction and il-ita-203-a-2-L-social-security-subtraction name the IA and IL TY2026 packs with taxesSocialSecurity:false enforcers; nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name the NJ, NY, and PA packs likewise — fixture discriminators only, not whole-return certification. md-tax-10-209-pension-exclusion and ga-code-48-7-27-retirement-and-social-security-exclusion pack cells are exercised by relational fixture extensions (MD gross-SS cap offset limb approximated; GA SS subtraction settled). Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation / me-mrs-36-5122-2-m2-m3-2026-pension-deduction $49,824 TY2026 maximum without SS offset, M-3 phaseout or plan qualification (military retired pay has its own full subtraction, me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction), WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. la-ldr-it540es-2026-standard-deduction covers Louisiana TY2026 single/MFJ deduction cells; or-lro-2026-rate-schedule-and-standard-deduction covers refreshed Oregon cells while disclosing continuous marginal versus printed whole-dollar base taxes. dc-code-47-1801-04-3a-standard-deduction-2026-2029 names the DC 2026 basic deduction the District sets itself, $15,000/$30,000, loaded under D.C. Law 26-189 (D.C. Act 26-418, permanent, effective 2026-10-02 when its congressional review ended, and applying from 2025-01-01; D.C. Act 26-416, emergency, from 2026-08-13) and indexed from 2027. Calendar-year CA, LA, MN, OH, and OR records expire after 2026; stateParamsFor may reuse the 2026 pack in later plan years as a stand-in. Not complete law coverage."
     },
     {
       "path": "params/state/index.ts",
@@ -816,27 +816,27 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 47
+      "ruleCount": 51
     },
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 43
+      "ruleCount": 46
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 46
+      "ruleCount": 48
     },
     {
       "module": "statesSouthCentral",
       "path": "rule-coverage/statesSouthCentral.json",
-      "ruleCount": 36
+      "ruleCount": 37
     },
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 55
+      "ruleCount": 61
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -846,15 +846,15 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1816,
+    "entryCount": 1884,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 147,
+      "ELISION-EXACT": 151,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1225,
+      "EXACT": 1250,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 428,
+      "PDF-WORD-LEVEL": 467,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 10
     },
@@ -1870,14 +1870,6 @@
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
             "citation": "D.C. Act 26-416, sec. 9003"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
           }
         ]
       },
@@ -2088,14 +2080,6 @@
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
             "citation": "D.C. Act 26-416, sec. 9003"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
           }
         ]
       },
@@ -2174,14 +2158,6 @@
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
             "citation": "D.C. Act 26-416, sec. 9003"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04(44)(A)(iv), permanent version"
-          },
-          {
-            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04, code site note on D.C. Law 26-89"
           }
         ]
       },
@@ -2778,6 +2754,500 @@
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
             "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-07",
+        "note": "Added or extended by the state military retirement change (2026-10-07): the new records for Wisconsin, Minnesota, Michigan, Missouri, Maine, Pennsylvania, Georgia, Maryland, Oklahoma, Colorado, New Mexico and Montana, and the IT-540 code 04E authority added to the Louisiana 47:44.2 record, each checked against its source with verify-quotes on 2026-10-07 (poppler 25.07.0), filtered to these records; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
+            "citation": "2025 Wisconsin Schedule SB instructions, line 12 (Wis. Stat. 71.05(1)(am))"
+          },
+          {
+            "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
+            "citation": "2025 Wisconsin Schedule SB instructions, line 12, limit"
+          },
+          {
+            "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
+            "citation": "2025 Wisconsin Schedule SB instructions, line 16"
+          },
+          {
+            "id": "mn-stat-290-0132-subd-21-military-retirement-subtraction",
+            "citation": "Minn. Stat. 290.0132, subd. 21"
+          },
+          {
+            "id": "mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction",
+            "citation": "MCL 206.30(1)(e)(i)"
+          },
+          {
+            "id": "mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction",
+            "citation": "MCL 206.30(1)(f)(iv)"
+          },
+          {
+            "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
+            "citation": "RSMo 143.121.3(12)"
+          },
+          {
+            "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
+            "citation": "RSMo 143.124.5"
+          },
+          {
+            "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
+            "citation": "RSMo 143.124.5, from 2024"
+          },
+          {
+            "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
+            "citation": "36 M.R.S. §5122(2)(M-2)(1)(b)"
+          },
+          {
+            "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
+            "citation": "36 M.R.S. §5122(2)(M-2)(2)(c)"
+          },
+          {
+            "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
+            "citation": "36 M.R.S. §5122(2)(M-2)(2)(e)"
+          },
+          {
+            "id": "pa-code-61-101-6-c-3-uniformed-services-retired-pay",
+            "citation": "61 Pa. Code 101.6(c)(3)"
+          },
+          {
+            "id": "pa-code-61-101-6-c-3-uniformed-services-retired-pay",
+            "citation": "61 Pa. Code 101.6(c)"
+          },
+          {
+            "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
+            "citation": "2025 Form IT-511 Individual Income Tax booklet, retirement income exclusion, item 2 (O.C.G.A. 48-7-27(a)(5.1))"
+          },
+          {
+            "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
+            "citation": "2025 Form IT-511 Individual Income Tax booklet, adjustments to income, item 27"
+          },
+          {
+            "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
+            "citation": "HB 266 (2025), section 1, amending O.C.G.A. 48-7-27(a)(5.1)(C) (new text underlined in the passed version); PDF line numbers retained"
+          },
+          {
+            "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
+            "citation": "HB 266 (2025), section 3(b); PDF line numbers retained"
+          },
+          {
+            "id": "md-tg-10-207-q-military-retirement-subtraction",
+            "citation": "Md. Code, Tax-General 10-207(q)(1)(iii)"
+          },
+          {
+            "id": "md-tg-10-207-q-military-retirement-subtraction",
+            "citation": "Md. Code, Tax-General 10-207(q)(2)"
+          },
+          {
+            "id": "md-tg-10-207-q-military-retirement-subtraction",
+            "citation": "Md. Code, Tax-General 10-209(d)(1)"
+          },
+          {
+            "id": "ok-stat-68-2358-e-17-armed-forces-retirement-exclusion",
+            "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 4"
+          },
+          {
+            "id": "la-rs-47-44-2-social-security-federal-retirement",
+            "citation": "La. R.S. 47:44.2"
+          },
+          {
+            "id": "la-rs-47-44-2-social-security-federal-retirement",
+            "citation": "2025 Form IT-540 instructions, Schedule E code 04E"
+          },
+          {
+            "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+            "citation": "C.R.S. 39-22-104(4)(y)(I)"
+          },
+          {
+            "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+            "citation": "C.R.S. 39-22-104(4)(y)(I)(D)"
+          },
+          {
+            "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+            "citation": "C.R.S. 39-22-104(4)(y)(II)"
+          },
+          {
+            "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+            "citation": "C.R.S. 39-22-104(4)(f)(I)"
+          },
+          {
+            "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
+            "citation": "C.R.S. 39-22-104(4)(f)(II)"
+          },
+          {
+            "id": "nm-nmsa-7-2-5-13-armed-forces-retirement-exemption",
+            "citation": "NMSA 1978 7-2-5.13(A), as amended by 2024 N.M. Laws, HB 252, section 32; PDF line numbers retained"
+          },
+          {
+            "id": "nm-nmsa-7-2-5-13-armed-forces-retirement-exemption",
+            "citation": "NMSA 1978 7-2-5.13(B); PDF line numbers retained"
+          },
+          {
+            "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
+            "citation": "MCA 15-30-2120(8)(a)"
+          },
+          {
+            "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
+            "citation": "MCA 15-30-2120(3)(n)(ii)"
+          },
+          {
+            "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
+            "citation": "MCA 15-30-2120(9)"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-07",
+        "note": "Added by the Utah credit change (2026-10-07, decision D-UTAH-RAILROAD-MAGI): the records for the 59-10-114 additions in Utah MAGI and for the Social Security credit's phase-out after the code 78 railroad subtraction, each checked against its source with verify-quotes on 2026-10-07 (poppler 25.07.0), filtered to these records; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "ut-code-59-10-114-1-additions-in-utah-magi",
+            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026"
+          },
+          {
+            "id": "ut-code-59-10-114-1-additions-in-utah-magi",
+            "citation": "Utah Code 59-10-114(1)(e)"
+          },
+          {
+            "id": "ut-code-59-10-114-1-additions-in-utah-magi",
+            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, lines 2 to 6"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "2025 TC-40 instructions, Social Security Credit Worksheet, line 5"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, line 2"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "2025 TC-40 instructions, code 78 Railroad Retirement Income"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "Utah Code 59-10-1019(1)(e)"
+          },
+          {
+            "id": "ut-tc-40-social-security-credit-railroad-magi",
+            "citation": "Utah Code 59-10-114(2)(d)"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-07",
+        "note": "Added by the New Jersey personal exemption change (2026-10-07): the N.J.S.A. 54A:3-1 record, quoting P.L.2019, c.146, checked against its source with verify-quotes on 2026-10-07, filtered to this record; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)5 and 6"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)7"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-07",
+        "note": "Added or re-run by the part-year methods change (2026-10-07): the 2025 part-year form or instruction now quoted on each of the twelve records that carry a state's part-year method (New Jersey, Hawaii, South Carolina, the District of Columbia, Mississippi, Maryland, Arizona, Louisiana, Kentucky, Alabama and Wisconsin, and the new id-form-43-part-year-resident-period), and every other quote on those records, each checked against its source with a live verify-quotes --refresh run on 2026-10-07 (poppler 25.07.0), filtered to these records; no other entry was re-run. All twelve part-year quotes are PDF-WORD-LEVEL. The District record's code-site note on D.C. Law 26-89 is now ABSENT: the page no longer prints the notice that its text included temporary legislation expiring on September 25, 2026, the date that law expired, so the quote records what the page said when the record was written and needs re-citing.",
+        "entries": [
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)5 and 6"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)7"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "2025 Form NJ-1040 instructions, Part-Year Residents, line 30 and line 43"
+          },
+          {
+            "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(F)"
+          },
+          {
+            "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)"
+          },
+          {
+            "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
+            "citation": "Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44"
+          },
+          {
+            "id": "ars-43-1041-standard-deduction-published-amount",
+            "citation": "A.R.S. 43-1041(A)(1)"
+          },
+          {
+            "id": "ars-43-1041-standard-deduction-published-amount",
+            "citation": "A.R.S. 43-1041(H)"
+          },
+          {
+            "id": "ars-43-1041-standard-deduction-published-amount",
+            "citation": "A.R.S. 43-105(A)"
+          },
+          {
+            "id": "ars-43-1041-standard-deduction-published-amount",
+            "citation": "2025 Arizona Form 140A, line 18"
+          },
+          {
+            "id": "ars-43-1041-standard-deduction-published-amount",
+            "citation": "2025 Form 140PY instructions, lines 51, 53 and 56"
+          },
+          {
+            "id": "sc-sciad-act-110-retirement-income-deduction",
+            "citation": "2026 Act 110, H.4216, SCIAD and effective date"
+          },
+          {
+            "id": "sc-sciad-act-110-retirement-income-deduction",
+            "citation": "2025 Schedule NR, lines 45 to 48"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 9003"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Md. Tax-General §10-217(c)(2)"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction"
+          },
+          {
+            "id": "md-tg-10-217-2026-indexed-standard-deduction",
+            "citation": "Comptroller of Maryland, Personal Tax Tip #52, part-year residents"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)4, as amended by 2025 Miss. H.B. 1, § 1"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)5, as amended by 2025 Miss. H.B. 1, § 1"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)6, as amended by 2025 Miss. H.B. 1, § 1"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)7, as amended by 2025 Miss. H.B. 1, § 1"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii), closing sentence"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "MS DOR, Individual Income Tax: Tax Rates"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30"
+          },
+          {
+            "id": "ms-27-7-5-rate-ramp",
+            "citation": "2025 Form 80-100 instructions, part-year residents and lines 14 and 15"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "La. R.S. 47:294(A)"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "La. R.S. 47:294(A)(1), TY2025 single and separate base amount"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "La. R.S. 47:294(A)(2), filing-status cell"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "La. R.S. 47:294(A)(2), amount cell"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "La. R.S. 47:294(B)"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet"
+          },
+          {
+            "id": "la-ldr-it540es-2026-standard-deduction",
+            "citation": "2025 Form IT-540B, lines 10, 11E, 12 and 13"
+          },
+          {
+            "id": "ky-dor-2026-standard-deduction-once-per-return",
+            "citation": "Kentucky DOR, Kentucky DOR Announces 2026 Standard Deduction (2025-09-04)"
+          },
+          {
+            "id": "ky-dor-2026-standard-deduction-once-per-return",
+            "citation": "Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern"
+          },
+          {
+            "id": "ky-dor-2026-standard-deduction-once-per-return",
+            "citation": "2025 Form 740-NP Schedule A instructions"
+          },
+          {
+            "id": "al-dor-individual-income-tax-rate-schedule",
+            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate"
+          },
+          {
+            "id": "al-dor-individual-income-tax-rate-schedule",
+            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)"
+          },
+          {
+            "id": "al-dor-individual-income-tax-rate-schedule",
+            "citation": "2025 Form 40 booklet, part-year residents"
+          },
+          {
+            "id": "wi-2026-rates-standard-deduction-exemptions",
+            "citation": "Wisconsin 2026 Form 1-ES, pages 2–3"
+          },
+          {
+            "id": "wi-2026-rates-standard-deduction-exemptions",
+            "citation": "2025 Form 1NPR instructions, lines 32, 33 and 34c, and the 2025 Standard Deduction Table for Form 1NPR filers"
+          },
+          {
+            "id": "id-form-43-part-year-resident-period",
+            "citation": "2025 Idaho Form 43 instructions, lines 38, 39 and 41, and the line 42 tax worksheet"
+          }
+        ]
+      },
+      {
+        "on": "2026-10-08",
+        "note": "The District of Columbia standard deduction record re-cited to the law in force (2026-10-08): D.C. Law 26-189, the Fiscal Year 2027 Budget Support Act of 2026 (D.C. Act 26-418), took effect October 2, 2026 after congressional review, and the code site has not codified it yet, so dc-code-47-1801-04-3a-standard-deduction-2026-2029 now quotes its enrolled original on lims.dccouncil.gov (sec. 7112(b)(1) and (3), sec. 7113 and sec. 9003, PDF-WORD-LEVEL), the Council's legislative record giving its law number and effective date (the JSON its legislation page renders, ELISION-EXACT), Pub. L. 119-78 disapproving the temporary D.C. Act 26-217 (EXACT), 47-1801.04(44)(D) on prorating the deduction by months (EXACT), the code site's text of (44)(A)(iv) before Law 26-189 (EXACT), the Office of Tax and Revenue's 2026 D-40ES worksheet, which enters the federal amounts (PDF-WORD-LEVEL; the quote is cut into three segments because the extraction drops the letters k, j and w and the commas there), and the 2025 D-40 booklet's basic deduction (PDF-WORD-LEVEL). The four D.C. Act 26-416 rows stay: the emergency act is in force to about November 11, 2026 and its words, verified character for character, are the permanent act's (each Law 26-189 quote has the same hash as its Act 26-416 counterpart). Withdrawn: the ABSENT code-site note on D.C. Law 26-89 (replaced on the same page by the (44)(D) quote) and the (Perm) page's (44)(A)(iv), re-cited to the current page as the text before Law 26-189; both are dropped from the entry lists of the four earlier amendments that named them (three of 2026-09-28 and one of 2026-10-07), whose notes are left as written. All sixteen rows were checked by a live verify-quotes --refresh run on 2026-10-08, filtered to this record (seven sources fetched, none from the cache; poppler 25.07.0): 8 PDF-WORD-LEVEL, 5 EXACT, 3 ELISION-EXACT. No other entry was re-run.",
+        "entries": [
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I), enrolled original"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year, enrolled original"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi), enrolled original"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7113, applicability of subtitle I, enrolled original"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 9003, effective date, enrolled original"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Act 26-416, sec. 9003"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "Council of the District of Columbia, Legislative Information Management System, the record of Bill 26-661"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "Pub. L. 119-78 (H.J. Res. 142), disapproving D.C. Act 26-217"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04(44)(D), the part-year resident"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "D.C. Code 47-1801.04(44)(A)(iv) before D.C. Law 26-189, as the code site prints it on 2026-10-08"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "2026 D-40ES (Rev. 03/2026), Worksheet to Estimate DC Tax Payments, line 2b"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "2025 D-40 booklet, New for 2025 Income Tax Returns, DC Basic Standard Deduction"
+          },
+          {
+            "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
+            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents"
           }
         ]
       }

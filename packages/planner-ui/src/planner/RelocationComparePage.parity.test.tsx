@@ -148,6 +148,9 @@ describe('the rendered relocation table (B2-P1 slice 3)', () => {
       expect(cells![3], `${row.label} delta`).toBe(retiredDeltaCell(row, row.id === 'baseline' ? null : retiredDelta(row, baseline)))
       expect(cells![4], `${row.label} estate`).toBe(fmtMoney(retiredEstateToday(plan, expected, row)!))
     }
-    expect(printed.get('FL')![3]).toBe('-$145,118')
+    // "-$145,118" until 2026-10-07, when Kentucky's part-year slice took the
+    // whole standard deduction: the plan's own July 2029 move to Kentucky pays
+    // $58.80 less, so the Florida row saves that much less against it.
+    expect(printed.get('FL')![3]).toBe('-$145,059')
   })
 })

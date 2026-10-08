@@ -246,7 +246,7 @@ export const westStateRecords = {
   'ars-43-1041-standard-deduction-published-amount': {
     title: 'Arizona’s standard deduction is its own amount, indexed in the federal manner',
     statement:
-      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2026 (for taxable years beginning after December 31, 2025). The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it.',
+      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2026 (for taxable years beginning after December 31, 2025). The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it. A part-year resident’s Form 140PY taxes the Arizona taxable income at 2.5% (line 56) and allows the whole standard deduction (2025 instructions: “The standard deduction is not prorated”), while the exemptions are multiplied by the Arizona income ratio (line 51). From 2026-10-07 a slice of a year split between states keeps the whole deduction (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it prorated it by months. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,053.13, now $856.25.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -279,6 +279,12 @@ export const westStateRecords = {
       url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
       quotedText:
         '18 Standard deduction: If you checked filing status box 4 enter $31,500; box 5 enter $23,625; or box 6 or 7 enter $15,750.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 140PY instructions, lines 51, 53 and 56',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140PYi.pdf',
+      quotedText:
+        'Line 51 - Prorated Exemptions Multiply the amount on line 50 by the Arizona income ratio from line 27 and enter the result. … Line 56 - Tax Amount Multiply line 55 by 2.5% (.025) and enter the result. … Tax Tip: The standard deduction is not prorated.',
     }],
     // The amount moves every year under (H) even though the mechanism is
     // statutory, so this falls due with the autumn figures rather than on the
@@ -286,7 +292,7 @@ export const westStateRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2020,
     effectiveThrough: null,
-    verifiedOn: '2026-09-14',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/index.ts',
@@ -296,6 +302,8 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#AZ.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -881,7 +889,7 @@ export const westStateRecords = {
   'hi-hrs-235-2-4-a-2-f-2026-standard-deduction': {
     title: 'Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint',
     statement:
-      'For tax year 2026, Hawaii’s standard deduction is $8,000 for an unmarried individual and $16,000 on a joint return. The pack models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record. Personal exemptions, itemization, and whole-return accuracy are also outside this record.',
+      'For tax year 2026, Hawaii’s standard deduction is $8,000 for an unmarried individual and $16,000 on a joint return. The pack models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record. Personal exemptions, itemization, and whole-return accuracy are also outside this record. A part-year resident’s Form N-15 (Rev. 2025) multiplies the standard deduction and the exemptions by the ratio of Hawaii AGI to total AGI (lines 37, 40b and 42b) and takes the tax from the ordinary table (line 44). From 2026-10-07 a slice of a year split between states does the same, with the months for the ratio (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the table with the months too. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,941.60, now $2,395.20.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -900,11 +908,17 @@ export const westStateRecords = {
       url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
       quotedText:
         '(G) For taxable years beginning after December 31, 2027:',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44',
+      url: 'https://files.hawaii.gov/tax/forms/2025/n15_i.pdf',
+      quotedText:
+        '37 Ratio of Hawaii AGI to Total AGI. Divide line 35, Column B, by line 35, Column A (Compute to 3 decimal places and round to 2 decimal places). … Multiply line 40a by the ratio on line 37 … Multiply line 42a by the ratio on line 37 … 43 Taxable Income. Line 41 minus line 42b (but not less than zero). … 44 Tax. Fill in oval if from: Tax Table; Tax Rate Schedule; or Capital Gains Tax Worksheet',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: 2027,
-    verifiedOn: '2026-09-07',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -912,6 +926,8 @@ export const westStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.HI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#HI.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1062,6 +1078,36 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.ID',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
       'packages/engine/src/tax/stateEnactedLaw.ts#federalSeniorDeductionSubtraction',
+    ],
+  },
+
+  'id-form-43-part-year-resident-period': {
+    title: 'Idaho taxes a part-year resident on the income of the months resident, with the deduction prorated and the zero band whole',
+    statement:
+      'A part-year resident files Form 43. Line 38 is the Idaho percentage, line 31 Column B over Column A; line 39 multiplies the deduction on line 37 by it; line 41 subtracts the result from line 31 Column B to give Idaho taxable income; and the line 42 tax worksheet subtracts the whole $4,811 ($9,622 joint) before applying 5.3%, the same zero band a full-year resident has (2025 instructions). The 2026 figures carry the method as the partYear of params/state/data/year2026.ts, and from 2026-10-07 a slice of a year split between states keeps the zero band whole and prorates the deduction by the months resident (tax/stateTax.ts#prorateParams). The engine spreads the year’s income evenly over the months, so the months stand for the Idaho percentage; a year whose income fell unevenly across the move is outside this record. Until 2026-10-07 the slice also scaled the zero band with the months: a single filer of 50 with $100,000 of ordinary income, resident six months and six in Texas, paid $2,095.86 of Idaho tax where Form 43 gives $1,968.37. The retirement benefits deduction cap is prorated by the months as every state’s is, a limit va-code-58-1-322-03-2-personal-exemptions states. The 2025 instructions are the latest published; the 2026 return is taken to keep the method.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ID',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Idaho Form 43 instructions, lines 38, 39 and 41, and the line 42 tax worksheet',
+      url: 'https://tax.idaho.gov/wp-content/uploads/forms/EIN00046/EIN00046_03-02-2026.pdf',
+      quotedText:
+        '38. Idaho percentage. Divide line 31, Column B, by line 31, Column A … Multiply amount on line 37 by the percentage on line 38 and enter the result here … Idaho taxable income. Subtract lines 39 and 40 from line 31, Column B … 2. Enter the amount for your filing status: • Single or married filing separately, enter $4,811 • Married filing jointly, head of household, or qualifying surviving spouse, enter $9,622 3. Subtract line 2 from line 1. Enter the subtotal … 4. Multiply subtotal by 5.3% … 5. Idaho tax. Enter the total here and on Form 43, line 42.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#ID.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1525,7 +1571,7 @@ export const westStateRecords = {
   'ut-code-59-10-114-social-security-tax-credit': {
     title: 'Utah taxes Social Security but offers a separate Social Security benefits credit',
     statement:
-      'Effective January 1, 2026, Utah permits a claimant receiving a Social Security benefit to claim a nonrefundable credit equal to the percentage in §59-10-104(2) multiplied by the benefit included in state taxable income. The credit is reduced by 2.5 cents for each dollar of modified adjusted gross income above $54,000 for a single return or $90,000 for a joint return. S.B. 60 makes the referenced §59-10-104(2) rate 4.45 percent for tax years beginning in 2026. `computeStateTaxDetailResult` uses the characterized amount actually included in Utah taxable income, subtracts any overlapping RRB amount already removed under §59-10-114(2)(d), applies the filing-status phaseout, and caps the nonrefundable credit at remaining Utah liability. Missing inclusion, MAGI, or overlap evidence is incomplete rather than a zero credit. The credit is an alternative to the general retirement credit at §59-10-1019 and may be paired with the military credit at §59-10-1043.',
+      'Effective January 1, 2026, Utah permits a claimant receiving a Social Security benefit to claim a nonrefundable credit equal to the percentage in §59-10-104(2) multiplied by the benefit included in state taxable income. The credit is reduced by 2.5 cents for each dollar of modified adjusted gross income above $54,000 for a single return or $90,000 for a joint return. S.B. 60 makes the referenced §59-10-104(2) rate 4.45 percent for tax years beginning in 2026. `computeStateTaxDetailResult` uses the characterized amount actually included in Utah taxable income, subtracts any overlapping RRB amount already removed under §59-10-114(2)(d), applies the filing-status phaseout on MAGI less the railroad annuity Utah subtracts, as the TC-40 worksheet does (ut-tc-40-social-security-credit-railroad-magi), and caps the nonrefundable credit at remaining Utah liability. Missing inclusion, MAGI, or overlap evidence is incomplete rather than a zero credit, except that no Social Security in Utah taxable income is a zero credit at any MAGI. The credit is an alternative to the general retirement credit at §59-10-1019 and may be paired with the military credit at §59-10-1043.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1567,7 +1613,7 @@ export const westStateRecords = {
   'ut-code-59-10-1019-retirement-credit': {
     title: 'Utah provides a $450 nonrefundable retirement credit to each eligible claimant',
     statement:
-      'Utah Code §59-10-1019 makes a claimant born on or before December 31, 1952 eligible regardless of whether the claimant is retired. Each eligible claimant may claim a $450 nonrefundable credit, reduced by 2.5 cents for each dollar of return modified adjusted gross income above the stated filing-status threshold. A return claiming the Social Security credit under §59-10-1042 or the military retirement credit under §59-10-1043 cannot claim this alternative. `computeStateTaxDetailResult` applies the return-level election, phaseout, and liability cap; exact dates of birth and Utah MAGI are required rather than inferred from a rounded age or an ordinary-income amount.',
+      'Utah Code §59-10-1019 makes a claimant born on or before December 31, 1952 eligible regardless of whether the claimant is retired. Each eligible claimant may claim a $450 nonrefundable credit, reduced by 2.5 cents for each dollar of return modified adjusted gross income above the stated filing-status threshold. A return claiming the Social Security credit under §59-10-1042 or the military retirement credit under §59-10-1043 cannot claim this alternative. `computeStateTaxDetailResult` applies the return-level election, phaseout, and liability cap; exact dates of birth and Utah MAGI are required rather than inferred from a rounded age or an ordinary-income amount, except that a return whose claimants were all born after December 31, 1952 has no credit at any MAGI and needs neither MAGI nor filing status.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2122,7 +2168,7 @@ export const westStateRecords = {
 
   'ut-code-59-10-1043-military-retirement-credit': {
     title: 'Utah credits taxable military retirement at the current state rate',
-    statement: 'The military credit equals 4.45% for TY2026 of qualifying military retirement, including qualifying survivor pay, included in federal AGI. Social Security, IRA/401(k) withdrawals and nonmilitary federal pensions are excluded. The return may combine military with Social Security credit, or elect general retirement credit instead. Nonrefundable liability and residency apportionment limits apply; no carryforward is created.',
+    statement: 'The military credit equals 4.45% for TY2026 of qualifying military retirement, including qualifying survivor pay, included in federal AGI. Social Security, IRA/401(k) withdrawals and nonmilitary federal pensions are excluded. The return may combine military with Social Security credit, or elect general retirement credit instead. Nonrefundable liability and residency apportionment limits apply; no carryforward is created. The credit has no phase-out, so the election needs MAGI only when a competing credit can depend on it: a return with no claimant born on or before December 31, 1952 has no retirement credit and one with no Social Security in Utah taxable income has no Social Security credit, at any MAGI. Before 2026-10-07 the projection never supplied the 59-10-114 additions MAGI needs (ut-code-59-10-114-1-additions-in-utah-magi) and the election demanded MAGI regardless, so the military credit was withheld in every projected year: a single filer with $100,000 of military pay paid $4,450.00, incomplete, where the credit leaves $0.00.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2150,6 +2196,8 @@ export const westStateRecords = {
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateWestExtras.ts#utahMilitaryRetirementCredit',
       'packages/engine/src/tax/stateWestExtras.ts#utahSelectNonrefundableCredit',
+      'packages/engine/src/tax/stateWestExtras.ts#utahRetirementCredit',
+      'packages/engine/src/tax/stateWestExtras.ts#utahSocialSecurityCredit',
     ],
   },
   'ca-hsa-state-basis-nonconformity': {
@@ -2401,6 +2449,255 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.HI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
+    ],
+  },
+  'co-crs-39-22-104-4-y-military-retirement-subtraction': {
+    title: 'Colorado subtracts up to $15,000 of military retirement under 55 through 2028, and from 55 it is a pension in the shared subtraction',
+    statement:
+      'C.R.S. 39-22-104(4)(y) subtracts the military retirement benefits of a qualified individual, one under 55 at the close of the year, up to $15,000, for income tax years before January 1, 2029; military retirement benefits are those received as a result of the individual\u2019s own service. From 55 there is no military limb: (4)(f)(I) subtracts amounts received as pensions or annuities from any source, so military retired pay shares the $20,000 (55 to 64) or $24,000 (65 and older) subtraction with Social Security. Under 55, (4)(f)(II) subtracts a pension received because of the death of the person originally entitled to it, which a Survivor Benefit Plan annuity is, so a pension tagged Military survivor benefit takes the $20,000 pension subtraction at any age. Before 2026-10-07 the engine left military pay out of the pension subtraction and gave it no under-55 limb: a single filer with $100,000 of military pay paid $3,691.60 at 45 and at 60 and $3,403.40 at 65, where the law charges $3,031.60, $2,811.60 and $2,347.40, the same as a private pension from 55. The under-55 limb ends with 2028 in the enacted 2029 figures.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:CO',
+    authority: [{
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(4)(y)(I)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'For income tax years commencing on or after January 1, 2019, but prior to January 1, 2029, an amount equal to a qualified individual\'s military retirement benefits included in federal adjusted gross income, but not to exceed the following amounts:',
+    }, {
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(4)(y)(I)(D)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText: 'Fifteen thousand dollars for income tax years commencing on or after January 1, 2022, but before January 1, 2029.',
+    }, {
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(4)(y)(II)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        '"Military retirement benefits" means any retirement benefits received as a result of the individual\'s service in the armed forces of the United States. (B) "Qualified individual" means an individual who is under fifty-five years of age at the close of the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(4)(f)(I)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'For income tax years commencing on or after January 1, 1989, amounts received as pensions or annuities from any source by any individual who is fifty-five years of age or older at the close of the taxable year, to the extent included in federal adjusted gross income;',
+    }, {
+      kind: 'statute',
+      citation: 'C.R.S. 39-22-104(4)(f)(II)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'For income tax years commencing on or after January 1, 1989, amounts received as pensions or annuities from any source by any individual who is less than fifty-five years of age at the close of the taxable year if such benefits are received because of the death of the person originally entitled to receive such benefits and only to the extent such benefits are included in federal adjusted gross income;',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2029.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#CO.militaryRetirementExclusion',
+      'packages/engine/src/params/state/data/enacted2029.ts#CO.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'nm-nmsa-7-2-5-13-armed-forces-retirement-exemption': {
+    title: 'New Mexico exempts $30,000 of armed forces retirement pay per retiree or surviving spouse',
+    statement:
+      'NMSA 7-2-5.13, as amended by 2024 HB 252 for taxable years beginning on or after January 1, 2025, lets an armed forces retiree, one who qualified by years of service or disability to separate with lifetime benefits, or the surviving spouse of one, claim an exemption of $30,000 of armed forces retirement pay included in net income. A pension tagged Military retirement or Military survivor benefit takes up to $30,000 a recipient, and the rest is taxed as New Mexico taxes other retirement income. Before 2026-10-07 the engine gave nothing: a single filer with $100,000 of military pay paid $3,569.10 at 60, where the law charges $2,124.30. The 2026 session was not checked for a later amendment.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NM',
+    authority: [{
+      kind: 'statute',
+      citation: 'NMSA 1978 7-2-5.13(A), as amended by 2024 N.M. Laws, HB 252, section 32; PDF line numbers retained',
+      url: 'https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf',
+      quotedText:
+        'An individual who is an armed forces retiree 2 or the surviving spouse of an armed forces retiree may claim 3 an exemption in an amount equal to thirty thousand dollars 4 ($30,000) of armed forces retirement pay includable, except 5 for this exemption, in net income.',
+    }, {
+      kind: 'statute',
+      citation: 'NMSA 1978 7-2-5.13(B); PDF line numbers retained',
+      url: 'https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf',
+      quotedText:
+        'As used in this section, "armed forces 7 retiree" means a former member of the armed forces of the 8 United States who has qualified by years of service or 9 disability to separate from military service with lifetime 10 benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#NM.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'mt-mca-15-30-2120-3-n-military-retirement-subtraction': {
+    title: 'Montana subtracts 50% of military retirement, limited to Montana wages, and 50% of a military survivor benefit, for five years',
+    statement:
+      'MCA 15-30-2120(3)(n)(i) and (8) subtract the lesser of the Montana source wage income on the return and 50% of the taxpayer\u2019s military retirement income; (3)(n)(ii) subtracts up to 50% of survivor benefits for military service, with no wage limit. Under (9) either may be claimed only by a person who became a resident on or after June 30, 2023, or was a resident before receiving the pay and remained one, only for 5 consecutive years after meeting that test, and not after claiming it and becoming a nonresident. The engine takes Montana wages from the household\u2019s wage streams (a recurring income names no person and may not be pay for work, so it is not counted) and applies both subtractions in the five tax years that start with the later of 2024 and the year the pension\u2019s payments began, from the pension\u2019s start age. Approximated: the plan does not hold the year the household became a Montana resident or whether the subtraction was claimed before a move away, so the engine reads every recipient as a resident before the pay began. A retiree who moved to Montana after June 30, 2023 and after the pay began has a window starting the year of the move, later than the engine\u2019s, and one who moved in before that date after the pay began is not eligible at all, so the error runs both ways. A survivor of a retiree in the plan, whose payments start at the retiree\u2019s death, has no first payment year on the row and gets nothing, with the year marked incomplete. Before 2026-10-07 the engine gave neither subtraction: a single filer with $100,000 of military pay and a $20,000 wage stream paid $5,419.10 at 60 (now $4,289.10), and one with $100,000 of survivor benefit paid $4,289.10 (now $1,593.30) in the window.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:MT',
+    authority: [{
+      kind: 'statute',
+      citation: 'MCA 15-30-2120(8)(a)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
+      quotedText:
+        '(8) (a) Subject to subsection (9), the subtraction in subsection (3)(n)(i) is equal to the lesser of: (i) the amount of Montana source wage income on the return; or (ii) 50% of the taxpayer\'s military pension or military retirement income.',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2120(3)(n)(ii)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
+      quotedText:
+        '(ii) subject to subsection (9), up to 50% of all income received as survivor benefits for military service provided for in subsections (3)(n)(i)(A) through (3)(n)(i)(D);',
+    }, {
+      kind: 'statute',
+      citation: 'MCA 15-30-2120(9)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
+      quotedText:
+        '(9) The subtractions in subsection (3)(n): (a) may only be claimed by a person who: (i) became a resident of the state on or after June 30, 2023; or (ii) was a resident of the state before receiving military pension or military retirement income and remained a resident after receiving military pension or military retirement income; (b) may only be claimed for 5 consecutive years after satisfying the provisions of subsection (9)(a); and (c) are not available if a taxpayer claimed the exemption before becoming a nonresident.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MT.militaryRetirementExclusion',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts#buildAnnualStateHouseholdFacts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+  'ut-code-59-10-114-1-additions-in-utah-magi': {
+    title: 'Utah MAGI adds the 59-10-114 additions, and a plan holds none beyond the tax-exempt interest MAGI already counts',
+    statement:
+      'The modified adjusted gross income that phases out Utah\u2019s retirement credit (59-10-1019(1)(e)) and Social Security credit (59-10-1042(1)(d)) is adjusted gross income, plus interest left out of it, plus the additions 59-10-114 requires. Of those additions, (1)(a) to (d) and (f) to (j) (a lump sum distribution, a child\u2019s income, a medical care savings account or my529 withdrawal, a trust distribution, a reimbursed adoption expense, a pass-through entity tax) are things a plan cannot hold, and the out-of-state municipal interest of (1)(e) is tax-exempt interest, which MAGI already counts as interest left out of adjusted gross income; the TC-40 credit worksheets count it once, taking code 57 back out of total income before adding federal line 2a. So the projection supplies the additions as 0, and a stored household-year assertion still wins. Before 2026-10-07 it supplied nothing, so every projected Utah year lacked MAGI: the retirement, Social Security and military credits were withheld and the year marked incomplete, whether or not MAGI could change them. A single filer born in 1950 with $25,920 of Social Security and a $20,000 pension paid $1,067.11 in 2026, incomplete, where the $450 retirement credit leaves $617.11; one born in 1956 with Social Security and $20,000 of other income paid $1,063.55, incomplete, now $890.00 with a $173.55 Social Security credit; a military retiree with $100,000 paid $4,450.00, incomplete, now $0.00.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf',
+      quotedText:
+        '(i) adjusted gross income for the taxable year for which a tax credit is claimed under this section; (ii) any interest income that is not included in adjusted gross income for the taxable year described in Subsection (1)(d)(i); and (iii) any addition to adjusted gross income required by Section 59-10-114 for the taxable year described in Subsection (1)(d)(i).',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code 59-10-114(1)(e)',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
+      quotedText:
+        '(e) except as provided in Subsection (5), for bonds, notes, and other evidences of indebtedness acquired on or after January 1, 2003, the interest from bonds, notes, and other evidences of indebtedness: (i) issued by one or more of the following entities: (A) a state other than this state;',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 TC-40 instructions, Retirement Credit Worksheet, lines 2 to 6',
+      url: 'https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf',
+      quotedText:
+        '2. Enter the amount from TC-40, line 6 (Total income) … 3. Enter municipal bond interest from TC-40, Schedule A, Part 1, code 57 … 4. Line 2 minus line 3 … 5. Enter tax exempt interest from federal form 1040 or 1040-SR, line 2a … 6. Modified Adjusted Gross Income Add lines 4 and 5',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateWestExtras.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#UT.utahRetirementCredits',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts#buildAnnualStateHouseholdFacts',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateWestExtras.ts#utahRetirementCredit',
+      'packages/engine/src/tax/stateWestExtras.ts#utahSocialSecurityCredit',
+    ],
+  },
+
+  'ut-tc-40-social-security-credit-railroad-magi': {
+    title: 'Utah\u2019s Social Security credit phases out on income after the railroad retirement subtraction, as the TC-40 worksheet computes it',
+    statement:
+      'Decision D-UTAH-RAILROAD-MAGI. The 2025 TC-40 Social Security Credit Worksheet starts its income from TC-40 line 9, Utah taxable income, which is after the line 8 subtractions, the code 78 subtraction of a Railroad Retirement Act annuity among them (59-10-114(2)(d)); the Retirement Credit Worksheet starts from line 6, total income, before any subtraction. The engine follows the form: the Social Security credit\u2019s MAGI is the retirement credit\u2019s less the federally included railroad annuity the engine subtracts, and the retirement credit keeps it. The statute reads otherwise. 59-10-1042(1)(d) and 59-10-1019(1)(e) define MAGI alike, as adjusted gross income plus excluded interest plus the 59-10-114 additions, with no subtraction taken off, so the annuity is in both. Whether 45 U.S.C. 231m(a) itself bars counting a Railroad Retirement Act annuity in a phase-out is unsettled: the section bars a tax on the annuity, not its use as a measure, and no decision either way was found. A single filer born in 1956 with $32,000 of Social Security, a $20,000 tier II annuity and $20,000 of other income has federal AGI of $63,200 and Utah taxable income of $43,200; the credit of 4.45% x $23,200 = $1,032.40 is not phased out on the form\u2019s $43,200 (Utah tax $890.00), where the statute\u2019s $63,200 would take $230.00 of it (Utah tax $1,120.00, the engine\u2019s figure before 2026-10-07). The form\u2019s line 9 also nets the other line 8 subtractions (U.S. obligation interest, the state refund, code 77 Native American income, the 401(a) subtraction); the engine nets only the railroad annuity, so with those the Social Security credit can still be phased out more than the form does.',
+    classification: 'unsettled',
+    contraryReading:
+      'The statute: 59-10-1042(1)(d) MAGI is adjusted gross income plus excluded interest plus the 59-10-114 additions, with no 59-10-114(2) subtraction taken off, so the federally included railroad annuity stays in the Social Security credit\u2019s phase-out as it does in the retirement credit\u2019s ($1,120.00 in the worked case), unless 45 U.S.C. 231m(a) is read to bar it from both.',
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 TC-40 instructions, Social Security Credit Worksheet, line 5',
+      url: 'https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf',
+      quotedText: '5. Enter the amount from TC-40, line 9 (Utah taxable income/loss)',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 TC-40 instructions, Retirement Credit Worksheet, line 2',
+      url: 'https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf',
+      quotedText: '2. Enter the amount from TC-40, line 6 (Total income)',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 TC-40 instructions, code 78 Railroad Retirement Income',
+      url: 'https://files.tax.utah.gov/tax/forms/2025/tc-40inst.pdf',
+      quotedText:
+        'Federal law does not permit states to tax railroad retirement, disability income, unemployment income, and sickness benefits received from the Railroad Retirement Board and reported on form RRB-1099.',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf',
+      quotedText:
+        '(iii) any addition to adjusted gross income required by Section 59-10-114 for the taxable year described in Subsection (1)(d)(i).',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code 59-10-1019(1)(e)',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1019_2022032320220323.pdf',
+      quotedText:
+        '(i) adjusted gross income for the taxable year for which a tax credit is claimed under this section; (ii) any interest income that is not included in adjusted gross income for the taxable year described in Subsection (1)(e)(i); and (iii) any addition to adjusted gross income required by Section 59-10-114 for the taxable year described in Subsection (1)(e)(i).',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code 59-10-114(2)(d)',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
+      quotedText:
+        '(d) the amount of a railroad retirement benefit: (i) paid: (A) in accordance with The Railroad Retirement Act of 1974, 45 U.S.C. Sec. 231 et seq.;',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateWestExtras.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateWestExtras.ts#utahSocialSecurityCredit',
+      'packages/engine/src/params/state/data/year2026.ts#UT.utahRetirementCredits',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

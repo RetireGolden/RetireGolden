@@ -174,6 +174,50 @@ export interface AcceptedElectionYearQualifyingDistributions {
     | 'section402c2j4-actual-pre-election-distribution'
 }
 
+/** Completed, provenance-backed current-year history rows: distributions from this IRA itself. */
+function acceptedCurrentYearHistory(
+  account: Extract<Account, { type: 'traditional' | 'roth' }>,
+  taxYear: number,
+): { readonly rows: number; readonly amount: number } {
+  const accepted = (account.inherited?.annualDistributionHistory ?? [])
+    .filter((row) =>
+      row.taxYear === taxYear &&
+      parseCivilIsoDate(row.observedAsOfDate ?? '') !== null &&
+      parseCivilIsoDate(row.legalDistributionDeadline ?? '') !== null &&
+      parseCivilIsoDate(row.provenance.asOf) !== null &&
+      row.observedAsOfDate! >= row.legalDistributionDeadline! &&
+      row.provenance.asOf >= row.observedAsOfDate! &&
+      row.provenance.source.trim().length > 0,
+    )
+  return {
+    rows: accepted.length,
+    amount: accepted.reduce((sum, row) => sum + Math.max(0, row.distributedAmount), 0),
+  }
+}
+
+/** The evidenced j(4) pre-election actual for the year, or 0. */
+function section402c2j4PreElectionActual(
+  account: Extract<Account, { type: 'traditional' | 'roth' }>,
+  taxYear: number,
+): number {
+  const electionFacts = account.inherited?.beneficiary?.spousalElectionFacts
+  const worksheet = electionFacts?.section402c2j4Inputs
+  const eventDate = electionFacts?.affirmativeElectionDate
+  return worksheet !== undefined &&
+    worksheet.distributionYear === taxYear &&
+    parseCivilIsoDate(worksheet.provenance.asOf) !== null &&
+    worksheet.provenance.source.trim().length > 0 &&
+    (eventDate === null || eventDate === undefined || worksheet.provenance.asOf >= eventDate)
+    ? Math.max(0, worksheet.actualPreElectionDistributionsCurrentYear)
+    : 0
+}
+
+/**
+ * The accepted amount for one IRA read on its own, as for an IRA alone in its
+ * pool. The election-year phase reads every IRA through
+ * electionYearQualifyingDistributionsInPool, which counts a pool's shared
+ * j(4) figure once.
+ */
 export function acceptedElectionYearQualifyingDistributions(input: {
   readonly account: Extract<Account, { type: 'traditional' | 'roth' }>
   readonly taxYear: number
@@ -182,34 +226,14 @@ export function acceptedElectionYearQualifyingDistributions(input: {
   if (inherited === undefined || inherited.beneficiary === undefined) {
     return { amount: 0, evidence: 'none' }
   }
-  const acceptedHistory = (inherited.annualDistributionHistory ?? [])
-    .filter((row) =>
-      row.taxYear === input.taxYear &&
-      parseCivilIsoDate(row.observedAsOfDate ?? '') !== null &&
-      parseCivilIsoDate(row.legalDistributionDeadline ?? '') !== null &&
-      parseCivilIsoDate(row.provenance.asOf) !== null &&
-      row.observedAsOfDate! >= row.legalDistributionDeadline! &&
-      row.provenance.asOf >= row.observedAsOfDate! &&
-      row.provenance.source.trim().length > 0,
-    )
-  const fromHistory = acceptedHistory
-    .reduce((sum, row) => sum + Math.max(0, row.distributedAmount), 0)
-  if (acceptedHistory.length > 0) {
+  const history = acceptedCurrentYearHistory(input.account, input.taxYear)
+  if (history.rows > 0) {
     return {
-      amount: fromHistory,
+      amount: history.amount,
       evidence: 'completed-current-year-beneficiary-history',
     }
   }
-  const electionFacts = inherited.beneficiary.spousalElectionFacts
-  const worksheet = electionFacts?.section402c2j4Inputs
-  const eventDate = electionFacts?.affirmativeElectionDate
-  const fromJ4 = worksheet !== undefined &&
-    worksheet.distributionYear === input.taxYear &&
-    parseCivilIsoDate(worksheet.provenance.asOf) !== null &&
-    worksheet.provenance.source.trim().length > 0 &&
-    (eventDate === null || eventDate === undefined || worksheet.provenance.asOf >= eventDate)
-    ? Math.max(0, worksheet.actualPreElectionDistributionsCurrentYear)
-    : 0
+  const fromJ4 = section402c2j4PreElectionActual(input.account, input.taxYear)
   // Prefer an explicit current-year history row when present; otherwise the
   // independently proven j(4) pre-election actual is the only accepted amount.
   if (fromJ4 > 0) {
@@ -221,16 +245,145 @@ export function acceptedElectionYearQualifyingDistributions(input: {
   return { amount: 0, evidence: 'none' }
 }
 
-/**
- * Prior-Dec-31 / current-year RMD reference balance for election-year owner
- * recalculation. Prefers the explicit j(4) reference balance when supplied so
- * a live opening balance that already nets pre-election distributions does not
- * silently understate the owner requirement.
- */
-export function electionYearOwnerRmdReferenceBalance(input: {
+interface ElectionYearPoolInput {
   readonly account: Extract<Account, { type: 'traditional' | 'roth' }>
+  /** Every logical account this year, to find the account's pool. */
+  readonly accounts: readonly Readonly<Account>[]
+  readonly primaryPersonId: string
+  readonly taxYear: number
+}
+
+/**
+ * The other IRAs in this account's payee/decedent/type pool, the pool whose
+ * members the plan checks require to carry identical beneficiary and
+ * election facts (checkInheritedIraAggregationFacts). Logical account IDs are
+ * compared, so compatible duplicate physical rows count once.
+ */
+function sameDecedentIraPoolMates(
+  input: ElectionYearPoolInput,
+): Extract<Account, { type: 'traditional' | 'roth' }>[] {
+  const { account } = input
+  const decedentId = account.inherited?.decedentId
+  if (account.kind !== 'ira' || decedentId === undefined) return []
+  const payee = account.ownerPersonId ?? input.primaryPersonId
+  return input.accounts.flatMap((other) =>
+    (other.type === 'traditional' || other.type === 'roth') &&
+    other.type === account.type &&
+    other.id !== account.id &&
+    other.kind === 'ira' &&
+    other.inherited?.decedentId === decedentId &&
+    (other.ownerPersonId ?? input.primaryPersonId) === payee
+      ? [other]
+      : [],
+  )
+}
+
+/** One IRA's accepted election-year distributions, read against its pool. */
+export interface ElectionYearQualifyingDistributionsInPool
+  extends AcceptedElectionYearQualifyingDistributions {
+  /** The IRA is one of two or more in its payee/decedent/type pool. */
+  readonly pooled: boolean
+  /** The pool's one j(4) pre-election distribution, counted once per pool; 0 for a lone IRA. */
+  readonly poolShared: number
+}
+
+/**
+ * One IRA's accepted election-year distributions, read against its pool.
+ *
+ * Treas. Reg. 1.408-8(e)(1)(i) calculates each IRA's requirement separately
+ * and lets the total be distributed from any one or more of the owner's
+ * IRAs, so a distribution counts once toward the total, whichever IRA it came
+ * from. A completed current-year history row names the IRA it came from and
+ * is credited to that IRA (`amount`). The j(4) pre-election distribution is
+ * one figure in the facts every IRA of a pool shares and names no IRA: for a
+ * pooled IRA it is returned as `poolShared`, which the planner counts once
+ * for the whole pool, never once per IRA. As for a lone IRA, completed
+ * history is preferred to the j(4) figure: when any IRA of the pool has it,
+ * the j(4) figure is not counted, so no dollar can be counted twice.
+ */
+export function electionYearQualifyingDistributionsInPool(
+  input: ElectionYearPoolInput,
+): ElectionYearQualifyingDistributionsInPool {
+  const mates = sameDecedentIraPoolMates(input)
+  if (mates.length === 0) {
+    return { ...acceptedElectionYearQualifyingDistributions(input), pooled: false, poolShared: 0 }
+  }
+  if (input.account.inherited?.beneficiary === undefined) {
+    return { amount: 0, evidence: 'none', pooled: true, poolShared: 0 }
+  }
+  const own = acceptedCurrentYearHistory(input.account, input.taxYear)
+  const poolHasHistory = own.rows > 0 ||
+    mates.some((mate) => acceptedCurrentYearHistory(mate, input.taxYear).rows > 0)
+  if (poolHasHistory) {
+    return {
+      amount: own.amount,
+      evidence: 'completed-current-year-beneficiary-history',
+      pooled: true,
+      poolShared: 0,
+    }
+  }
+  const shared = section402c2j4PreElectionActual(input.account, input.taxYear)
+  return {
+    amount: 0,
+    evidence: shared > 0 ? 'section402c2j4-actual-pre-election-distribution' : 'none',
+    pooled: true,
+    poolShared: shared,
+  }
+}
+
+/**
+ * The election-year planner's credit inputs for one IRA: its own accepted
+ * distributions and, for a pooled IRA, the pool key and the pool's shared
+ * j(4) figure, which planElectionYearOwnerRmdDraws counts once per pool.
+ */
+export function electionYearOwnerRmdCredits(input: ElectionYearPoolInput): {
+  readonly alreadyDistributedQualifying: number
+  readonly poolKey?: string
+  readonly poolSharedQualifying: number
+} {
+  const accepted = electionYearQualifyingDistributionsInPool(input)
+  if (!accepted.pooled) {
+    return { alreadyDistributedQualifying: accepted.amount, poolSharedQualifying: 0 }
+  }
+  return {
+    alreadyDistributedQualifying: accepted.amount,
+    poolKey: JSON.stringify([
+      input.account.ownerPersonId ?? input.primaryPersonId,
+      input.account.inherited?.decedentId,
+      input.account.type,
+    ]),
+    poolSharedQualifying: accepted.poolShared,
+  }
+}
+
+/**
+ * Prior December 31 balance for one IRA's election-year owner RMD, before the
+ * planner adds back a pool's shared pre-election distribution.
+ *
+ * Treas. Reg. 1.408-8(c)(3) makes the election-year requirement the owner's
+ * under section 401(a)(9)(A); 1.408-8(b)(2) substitutes the IRA's own balance
+ * at the prior December 31 for the 1.401(a)(9)-5(b) account balance, and
+ * 1.408-8(e)(1)(i) calculates the requirement separately for each IRA.
+ *
+ * The projection never debits an accepted pre-election distribution from the
+ * balance (it is already paid), so a plan whose year-end balance is right
+ * enters the balance after it, and the IRA's prior December 31 balance is
+ * that opening balance plus the distributions taken from it this year. A lone
+ * IRA prefers a positive explicit j(4) reference balance, its prior December
+ * 31 balance as the custodian reports it. The reference is one IRA's balance
+ * only while that IRA is alone in its payee/decedent/type pool: the plan
+ * checks give every IRA in a pool identical election facts, so with two or
+ * more IRAs each takes its own opening balance plus its own completed
+ * current-year distributions, and the planner adds the pool's unnamed j(4)
+ * pre-election distribution back once. Withdrawals still aggregate across the
+ * owner's IRAs downstream; only the per-IRA requirement is set here.
+ */
+export function electionYearOwnerRmdReferenceBalance(input: ElectionYearPoolInput & {
   readonly startOfYearBalance: number
 }): number {
+  const opening = Math.max(0, input.startOfYearBalance)
+  const accepted = electionYearQualifyingDistributionsInPool(input)
+  if (accepted.pooled) return opening + accepted.amount
   const reference =
     input.account.inherited?.beneficiary?.spousalElectionFacts?.section402c2j4Inputs
       ?.currentYearRmdReferenceBalance
@@ -240,5 +393,5 @@ export function electionYearOwnerRmdReferenceBalance(input: {
   if (typeof reference === 'number' && Number.isFinite(reference) && reference > 0) {
     return reference
   }
-  return Math.max(0, input.startOfYearBalance)
+  return opening + accepted.amount
 }

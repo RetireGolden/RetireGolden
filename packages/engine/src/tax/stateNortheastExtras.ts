@@ -51,11 +51,15 @@ export function delawareUnder60PensionDeduction(args: {
   return { taxableIncomeDelta: deduction === 0 ? 0 : -deduction, taxCredit: 0, warnings: [] }
 }
 
-/** DC Code government-survivor exclusion N(ii): DC/federal issuer, age 62+. */
+/**
+ * DC Code government-survivor exclusion N(ii): DC/federal issuer, age 62+. A
+ * Survivor Benefit Plan annuity is paid by the federal government, so it needs
+ * no issuer fact.
+ */
 export function dcGovernmentSurvivorExclusion(fact: StateRetirementDistributionFact): StateLeafAdjustment {
-  if (fact.sourceKind !== 'governmentSurvivor') return emptyLeafAdjustment()
+  if (fact.sourceKind !== 'governmentSurvivor' && fact.sourceKind !== 'militarySurvivor') return emptyLeafAdjustment()
   if (fact.recipientAgeYears < 62) return emptyLeafAdjustment()
-  if (fact.survivorIssuer !== 'dc' && fact.survivorIssuer !== 'federal') {
+  if (fact.sourceKind === 'governmentSurvivor' && fact.survivorIssuer !== 'dc' && fact.survivorIssuer !== 'federal') {
     if (fact.survivorIssuer === 'unknown' || fact.survivorIssuer === undefined) {
       return {
         taxableIncomeDelta: 0,

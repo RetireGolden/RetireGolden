@@ -7,7 +7,7 @@
  * 10,383.68 / 383.68 catch-up from federal-spouse-hecm-completion-spec.md S1/S2.
  * Expectations are source-derived, not read back from the planner under test.
  */
-import { describe, expect, it, vi } from 'vitest'
+import { expect, it, vi } from 'vitest'
 
 import { asUsdCents } from '../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
@@ -650,24 +650,47 @@ describeRule('treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd', {
   })
 })
 
-describe('known limit: pooled elected IRAs share one owner-RMD reference balance', () => {
-  // KNOWN LIMIT (calculation record rmd-uniform-lifetime-divisor and tax rule
-  // treas-reg-1-408-8-c-3-spouse-treated-as-owner). This pins CURRENT
-  // behavior, which is wrong; the fix is meant to fail it. Treas. Reg.
-  // 1.408-8(c)(3) makes the election-year RMD the owner's, on each IRA's own
-  // prior December 31 balance ((b)(2) with 1.401(a)(9)-5(b), calculated
-  // separately for each IRA under (e)(1)(i)). The plan checks require every
-  // IRA inherited from one decedent to carry identical election facts, and a
-  // positive election reference balance replaces the prior December 31
-  // balance, so both IRAs here take their owner RMD from the one 100,000
-  // reference: the 29,600 IRA owes 100,000 / 24.6 = 4,065.04, where its own
-  // balance gives 29,600 / 24.6 = 1,203.25. The engine overstates it.
-  it('takes the 29,600 IRA\'s owner RMD from the pool\'s 100,000 reference: 4065.04, not 1203.25', () => {
+// A pool of two elected IRAs from one decedent, worked by hand from the
+// regulations, not from the planner. Treas. Reg. 1.408-8(c)(3) determines the
+// RMD for the calendar year of the election under section 401(a)(9)(A) with
+// the spouse as IRA owner; 1.408-8(b)(2) substitutes the IRA's own balance at
+// the prior December 31 for the 1.401(a)(9)-5(b) account balance; and
+// 1.408-8(e)(1)(i) calculates the requirement separately for each IRA. The
+// plan checks give both IRAs identical election facts, including the one
+// 100,000 j(4) reference balance, which is the first IRA's balance only.
+//
+//   Spouse born 1951-01-02, age attained in 2026           75
+//   Applicable age for a 1951 birth                        73, so an RMD is due
+//   Uniform Lifetime divisor at 75 (Pub. 590-B Table III)  24.6
+//   'inherited'      100,000 / 24.6 = 4,065.0407 -> 4,065.04
+//   'pooled-second'   29,600 / 24.6 = 1,203.2520 -> 1,203.25
+//   Owner total      129,600 / 24.6 = 5,268.2927 -> 5,268.29
+//
+// Nothing was distributed before the election, so each IRA settles its own
+// requirement: 'pooled-second' ends the year at 29,600 - 1,203.25 = 28,396.75,
+// and the owner's one aggregated owned-IRA section 4974 obligation is 5,268.29
+// required and 5,268.29 distributed, excise 0.
+//
+// Wrong reading, the engine before 2026-10-07: each IRA took the shared
+// 100,000 reference, so 'pooled-second' owed 4,065.04, 2,861.79 too much
+// (70,400 / 24.6), and the owner total was 8,130.08.
+const pooledOwnBalance = 29_600 / 24.6
+const pooledSharedReference = 100_000 / 24.6
+
+describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
+  readings: {
+    eachIraOwnPriorDecember31Balance: pooledOwnBalance,
+    poolSharedReferenceBalance: pooledSharedReference,
+  },
+  accepted: 'eachIraOwnPriorDecember31Balance',
+  note: 'pooled election-year owner RMD balance',
+}, ({ accepted, readings }) => {
+  it('takes the 29,600 IRA\'s owner RMD from its own balance: 1203.25, not the pool reference\'s 4065.04', () => {
     expect(packForYear(2026).pack.rmd.uniformLifetimeTable[75]).toBe(24.6)
-    const fromSharedReference = 100_000 / 24.6
-    const fromOwnBalance = 29_600 / 24.6
-    expect(fromSharedReference).toBeCloseTo(4065.04, 2)
-    expect(fromOwnBalance).toBeCloseTo(1203.25, 2)
+    expect(accepted).toBeCloseTo(1203.25, 2)
+    expect(readings.poolSharedReferenceBalance).toBeCloseTo(4065.04, 2)
+    const ownerTotal = 129_600 / 24.6
+    expect(ownerTotal).toBeCloseTo(5268.29, 2)
 
     const plan = planFor('1951-01-02')
     inherited(plan, {
@@ -678,12 +701,221 @@ describe('known limit: pooled elected IRAs share one owner-RMD reference balance
     const first = plan.accounts.find((row) => row.id === 'inherited') as Extract<Account, { type: 'traditional' }>
     plan.accounts.push({ ...structuredClone(first), id: 'pooled-second', name: 'Second IRA, same decedent', balance: 29_600 })
     const result = run(plan, 2026)
-    const obligations = year(result, 2026).electionYearOwnerRmdObligations ?? []
+    const y = year(result, 2026)
+    const obligations = y.electionYearOwnerRmdObligations ?? []
+    expect(obligations.find((row) => row.accountId === 'inherited')).toMatchObject({
+      requiredAmount: 100_000 / 24.6, settledAmount: 100_000 / 24.6, unsatisfiedAmount: 0,
+    })
     const second = obligations.find((row) => row.accountId === 'pooled-second')
-    expect(obligations.find((row) => row.accountId === 'inherited')?.requiredAmount).toBeCloseTo(fromSharedReference, 8)
-    // Current behavior: the shared reference, not the account's own balance.
-    expect(second?.requiredAmount).toBeCloseTo(fromSharedReference, 8)
-    expect(second?.requiredAmount).not.toBeCloseTo(fromOwnBalance, 2)
-    expect(second?.settledAmount).toBeCloseTo(fromSharedReference, 8)
+    expect(second?.requiredAmount).toBe(accepted)
+    expect(second?.requiredAmount).not.toBeCloseTo(readings.poolSharedReferenceBalance, 2)
+    expect(second).toMatchObject({
+      creditedAcceptedDistributionAmount: 0, settledAmount: accepted, unsatisfiedAmount: 0,
+    })
+    expect(y.balances['pooled-second']).toBeCloseTo(28_396.75, 2)
+    expect(y.rmd).toBeCloseTo(5268.29, 2)
+    // The two requirements still aggregate into the owner's one section 4974
+    // obligation for owned IRAs.
+    expect(y.rmdShortfallExciseDetails).toHaveLength(1)
+    expect(y.rmdShortfallExciseDetails![0]).toMatchObject({
+      obligationId: expect.stringContaining('owned-iras'),
+      tax: 0,
+    })
+    expect(y.rmdShortfallExciseDetails![0]!.requiredAmount).toBeCloseTo(ownerTotal, 8)
+    expect(y.rmdShortfallExciseDetails![0]!.distributedByDeadline).toBeCloseTo(ownerTotal, 8)
+  })
+})
+
+// A distribution taken before the election, in a pool of elected IRAs from
+// one decedent, worked by hand from the regulations, not from the planner.
+//
+// Treas. Reg. 1.408-8(c)(3): the election-year RMD of each elected IRA is an
+// owner RMD under section 401(a)(9)(A), so a distribution from the IRA in
+// that calendar year, before the election or after it, counts toward it
+// (1.402(c)-2(j)(4) treats a current-year pre-election distribution the same
+// way when it sizes the catch-up). 1.408-8(e)(1)(i): each IRA's requirement
+// is calculated separately and the total may be distributed from any one or
+// more of the owner's IRAs, so a distribution counts once toward the total,
+// whichever IRA it came from. 1.408-8(b)(2): each requirement is on that IRA's
+// balance at the prior December 31. The projection never debits an accepted
+// pre-election distribution from the balance, so the plan enters each balance
+// after it, and the prior December 31 balance is that balance plus the
+// distribution.
+//
+// The scratch case: owner born 1951-01-02, age 75 in 2026, Uniform Lifetime
+// divisor 24.6. Live balances 99,000 ('inherited') and 29,600
+// ('pooled-second'); the shared election facts carry a 100,000 j(4)
+// reference, which names no IRA, and 1,000 distributed before the election,
+// which also names no IRA.
+//
+//   Prior December 31 total  99,000 + 29,600 + 1,000 = 129,600
+//   The unnamed 1,000 is placed on the first IRA: 100,000 and 29,600
+//   (the total requirement does not depend on where it is placed: one owner,
+//   one divisor)
+//   'inherited'       100,000 / 24.6 = 4,065.04, credited 1,000, forced 3,065.04
+//   'pooled-second'    29,600 / 24.6 = 1,203.25, credited 0,     forced 1,203.25
+//   Owner total       129,600 / 24.6 = 5,268.29
+//   Forced 4,268.29; with the 1,000 the year distributes 5,268.29, so the one
+//   owned-IRA section 4974 obligation is 5,268.29 required and distributed.
+//   Year-end balances 95,934.96 and 28,396.75.
+//
+// Wrong readings: crediting the 1,000 to each IRA on the live balances
+// (09f50704e) forced 3,024.39 + 203.25 = 3,227.64, so the year distributed
+// 4,227.64 against 5,268.29 and left 1,040.65 unmet while reporting no
+// shortfall; counting it once but on the live balances forces
+// 5,227.64 - 1,000 = 4,227.64 and leaves 40.65 (1,000 / 24.6) unmet.
+function pooledElection(firstBalance: number, secondBalance: number, preElectionDistributed: number) {
+  const plan = planFor('1951-01-02')
+  inherited(plan, {
+    ownerDeathYear: 2024, decedentHadStartedRmds: true,
+    beneficiary: facts({ beneficiaryBirthYear: 1951, ownerBirthYear: 1945 }),
+  }, firstBalance)
+  observedElection(plan, '2026-06-15', '2024-06-01', [2025], { referenceBalance: 100_000, preElectionDistributed })
+  const first = plan.accounts.find((row) => row.id === 'inherited') as Extract<Account, { type: 'traditional' }>
+  plan.accounts.push({ ...structuredClone(first), id: 'pooled-second', name: 'Second IRA, same decedent', balance: secondBalance })
+  return plan
+}
+
+function obligationFor(result: ReturnType<typeof run>, accountId: string) {
+  const row = year(result, 2026).electionYearOwnerRmdObligations?.find((candidate) => candidate.accountId === accountId)
+  if (!row) throw new Error(`missing owner RMD obligation for ${accountId}`)
+  return row
+}
+
+describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
+  readings: {
+    oncePerPoolOnPriorDecember31Balances: 129_600 / 24.6 - 1_000,
+    oncePerIraOnLiveBalances: 99_000 / 24.6 - 1_000 + (29_600 / 24.6 - 1_000),
+    oncePerPoolOnLiveBalances: 128_600 / 24.6 - 1_000,
+  },
+  accepted: 'oncePerPoolOnPriorDecember31Balances',
+  note: 'pooled pre-election distribution credit',
+}, ({ accepted, readings }) => {
+  it('counts the pool\'s 1,000 pre-election distribution once and forces 4268.29', () => {
+    expect(packForYear(2026).pack.rmd.uniformLifetimeTable[75]).toBe(24.6)
+    expect(accepted).toBeCloseTo(4268.29, 2)
+    expect(readings.oncePerIraOnLiveBalances).toBeCloseTo(3227.64, 2)
+    expect(readings.oncePerPoolOnLiveBalances).toBeCloseTo(4227.64, 2)
+    const ownerTotal = 129_600 / 24.6
+    expect(ownerTotal).toBeCloseTo(5268.29, 2)
+
+    const result = run(pooledElection(99_000, 29_600, 1_000), 2026)
+    const y = year(result, 2026)
+    expect(obligationFor(result, 'inherited')).toMatchObject({
+      requiredAmount: 100_000 / 24.6,
+      creditedAcceptedDistributionAmount: 1_000,
+      creditedDistributionEvidence: 'section402c2j4-actual-pre-election-distribution',
+      unsatisfiedAmount: 0,
+    })
+    expect(obligationFor(result, 'inherited').settledAmount).toBeCloseTo(3065.04, 2)
+    expect(obligationFor(result, 'pooled-second')).toMatchObject({
+      requiredAmount: 29_600 / 24.6,
+      creditedAcceptedDistributionAmount: 0,
+      creditedDistributionEvidence: 'none',
+      settledAmount: 29_600 / 24.6,
+      unsatisfiedAmount: 0,
+    })
+    expect(y.rmd).toBeCloseTo(accepted, 8)
+    expect(y.rmd).not.toBeCloseTo(readings.oncePerIraOnLiveBalances, 2)
+    expect(y.rmd).not.toBeCloseTo(readings.oncePerPoolOnLiveBalances, 2)
+    // The unpaid disclosure counts the shared 1,000 once too: 4065.04 - 1000
+    // on the first IRA, and the second's whole 1203.25, never 1203.25 - 1000.
+    const unpaid = (accountId: string) => {
+      const disclosure = y.inheritedAccounts
+        ?.find((candidate) => candidate.accountId === accountId)
+        ?.disclosures.find((entry) => entry.startsWith('election-year-owner-rmd-unpaid:'))
+      if (disclosure === undefined) throw new Error(`missing unpaid disclosure for ${accountId}`)
+      return Number(disclosure.slice('election-year-owner-rmd-unpaid:'.length))
+    }
+    expect(unpaid('inherited')).toBeCloseTo(3065.04, 2)
+    expect(unpaid('pooled-second')).toBeCloseTo(1203.25, 2)
+    expect(y.balances.inherited).toBeCloseTo(95_934.96, 2)
+    expect(y.balances['pooled-second']).toBeCloseTo(28_396.75, 2)
+    expect(y.rmdShortfallExciseDetails).toHaveLength(1)
+    expect(y.rmdShortfallExciseDetails![0]).toMatchObject({ obligationId: expect.stringContaining('owned-iras'), tax: 0 })
+    expect(y.rmdShortfallExciseDetails![0]!.requiredAmount).toBeCloseTo(ownerTotal, 8)
+    expect(y.rmdShortfallExciseDetails![0]!.distributedByDeadline).toBeCloseTo(ownerTotal, 8)
+  })
+
+  it('carries a pre-election distribution larger than the first IRA needs to the rest of the pool', () => {
+    // 5,000 distributed before the election, live balances 95,000 and 29,600.
+    // Prior December 31: 100,000 and 29,600, requirements 4,065.04 and
+    // 1,203.25, total 5,268.29. The 5,000 covers 'inherited' whole and
+    // 5,000 - 4,065.04 = 934.96 of 'pooled-second', which is forced
+    // 1,203.25 - 934.96 = 268.29 and ends at 29,600 - 268.29 = 29,331.71.
+    // The year distributes 5,000 + 268.29 = 5,268.29.
+    const result = run(pooledElection(95_000, 29_600, 5_000), 2026)
+    const y = year(result, 2026)
+    expect(obligationFor(result, 'inherited')).toMatchObject({
+      requiredAmount: 100_000 / 24.6, creditedAcceptedDistributionAmount: 100_000 / 24.6,
+      unpaidAmount: 0, settledAmount: 0, unsatisfiedAmount: 0,
+    })
+    const second = obligationFor(result, 'pooled-second')
+    expect(second.requiredAmount).toBeCloseTo(1203.25, 2)
+    expect(second.creditedAcceptedDistributionAmount).toBeCloseTo(934.96, 2)
+    expect(second.settledAmount).toBeCloseTo(268.29, 2)
+    expect(second.creditedDistributionEvidence).toBe('section402c2j4-actual-pre-election-distribution')
+    expect(y.rmd).toBeCloseTo(268.29, 2)
+    expect(y.balances.inherited).toBeCloseTo(95_000, 8)
+    expect(y.balances['pooled-second']).toBeCloseTo(29_331.71, 2)
+    expect(y.rmdShortfallExciseDetails![0]!.requiredAmount).toBeCloseTo(5268.29, 2)
+    expect(y.rmdShortfallExciseDetails![0]!.distributedByDeadline).toBeCloseTo(5268.29, 2)
+    expect(y.rmdShortfallExciseDetails![0]!.tax).toBe(0)
+  })
+
+  it('credits a completed history row to the IRA it came from and does not also count the shared figure', () => {
+    // 'pooled-second' reports 1,000 distributed in 2026 on a completed
+    // history row, so the distribution came from it: live 28,600, prior
+    // December 31 29,600, required 1,203.25, credited 1,000, forced 203.25.
+    // History is preferred to the shared j(4) figure, which is not counted
+    // again: 'inherited' (live and prior December 31 100,000) is required and
+    // forced 4,065.04 with no credit. The year distributes
+    // 1,000 + 203.25 + 4,065.04 = 5,268.29.
+    const plan = pooledElection(100_000, 28_600, 1_000)
+    const second = plan.accounts.find((row) => row.id === 'pooled-second') as Extract<Account, { type: 'traditional' }>
+    second.inherited!.annualDistributionHistory!.push({
+      taxYear: 2026, requiredAmount: 1_000, distributedAmount: 1_000,
+      observedAsOfDate: '2026-12-31', legalDistributionDeadline: '2026-12-31',
+      provenance: { source: 'Custodian completed statutory distribution record', asOf: '2026-12-31' },
+    })
+    // A completed 2026 row is admissible only once the shared election facts
+    // are observed at or after it, so both IRAs carry facts as of year end.
+    for (const row of plan.accounts) {
+      const facts = row.type === 'traditional' ? row.inherited?.beneficiary?.spousalElectionFacts : undefined
+      if (facts) facts.provenance = { ...facts.provenance, asOf: '2026-12-31' }
+    }
+    const result = run(plan, 2026)
+    const y = year(result, 2026)
+    expect(obligationFor(result, 'pooled-second')).toMatchObject({
+      requiredAmount: 29_600 / 24.6, creditedAcceptedDistributionAmount: 1_000,
+      creditedDistributionEvidence: 'completed-current-year-beneficiary-history', unsatisfiedAmount: 0,
+    })
+    expect(obligationFor(result, 'pooled-second').settledAmount).toBeCloseTo(203.25, 2)
+    expect(obligationFor(result, 'inherited')).toMatchObject({
+      requiredAmount: 100_000 / 24.6, creditedAcceptedDistributionAmount: 0,
+      creditedDistributionEvidence: 'none', settledAmount: 100_000 / 24.6, unsatisfiedAmount: 0,
+    })
+    expect(y.rmd).toBeCloseTo(4268.29, 2)
+    expect(y.rmdShortfallExciseDetails![0]!.requiredAmount).toBeCloseTo(5268.29, 2)
+    expect(y.rmdShortfallExciseDetails![0]!.distributedByDeadline).toBeCloseTo(5268.29, 2)
+  })
+
+  it('adds a lone IRA\'s pre-election distribution back when no reference balance is given', () => {
+    // One IRA, live 99,000, j(4) reference 0 (the placeholder when j(4) does
+    // not apply), 1,000 distributed before the election: prior December 31
+    // 100,000, required 4,065.04, credited 1,000, forced 3,065.04, year-end
+    // 95,934.96. On the live balance alone it was 4,024.39 and 3,024.39.
+    const plan = planFor('1951-01-02')
+    inherited(plan, {
+      ownerDeathYear: 2024, decedentHadStartedRmds: true,
+      beneficiary: facts({ beneficiaryBirthYear: 1951, ownerBirthYear: 1945 }),
+    }, 99_000)
+    observedElection(plan, '2026-06-15', '2024-06-01', [2025], { referenceBalance: 0, preElectionDistributed: 1_000 })
+    const result = run(plan, 2026)
+    expect(ownerObligation(result, 2026)).toMatchObject({
+      requiredAmount: 100_000 / 24.6, creditedAcceptedDistributionAmount: 1_000, unsatisfiedAmount: 0,
+    })
+    expect(ownerObligation(result, 2026).settledAmount).toBeCloseTo(3065.04, 2)
+    expect(year(result, 2026).balances.inherited).toBeCloseTo(95_934.96, 2)
   })
 })

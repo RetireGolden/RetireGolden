@@ -72,7 +72,10 @@
  * - Georgia: O.C.G.A. 48-7-27(a)(5)(A)(xiv) as added by HB 463 (2026), section
  *   2-3: a retirement income exclusion of $70,000 for each taxpayer 65 or older
  *   for taxable years beginning on or after January 1, 2027, up from $65,000
- *   (`ga-hb-463-2027-retirement-exclusion`). Georgia's rate is not changed:
+ *   (`ga-hb-463-2027-retirement-exclusion`). And 48-7-27(a)(5.1) as amended by
+ *   HB 266 (2025), section 1, effective January 1, 2027: military retired pay
+ *   of an individual under 65, up to $65,000, with no earned-income test
+ *   (`ga-code-48-7-27-a-5-1-military-retirement-exclusion`). Georgia's rate is not changed:
  *   HB 463 cuts it 0.125 point from January 1, 2027 unless the Office of
  *   Planning and Budget's test "as of December 1" delays it, and its standard
  *   deduction steps carry the same delay, so both price 2027 at their 2026
@@ -233,6 +236,7 @@ export const stateEnacted2027: StateEnactedYear = {
     GA: {
       retirementPrivate: { kind: 'capped', capPerPerson: 70000, minAge: 65 },
       retirementPublic: { kind: 'capped', capPerPerson: 70000, minAge: 65 },
+      militaryRetirementExclusion: { byAge: [{ minAge: 0, cap: 65000 }, { minAge: 65, cap: 0 }], survivor: 100 },
     },
     VA: {
       standardDeduction: { single: 9200, marriedFilingJointly: 18400 },

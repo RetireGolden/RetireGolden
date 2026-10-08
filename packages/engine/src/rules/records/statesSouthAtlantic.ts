@@ -377,7 +377,7 @@ export const southAtlanticStateRecords = {
 
   "sc-code-12-6-1171-military-retirement": {
     "title": "South Carolina fully deducts qualifying military retirement",
-    "statement": "Qualifying included military retirement and qualifying military survivor benefits are deductible in full under §1171. Ordinary public pensions are not military retirement. Premature-distribution and survivor definitions remain operative. Inactive-duty National Guard/reserve compensation under §1120(7) is a separate rule and is not silently treated as military retirement.",
+    "statement": "Qualifying included military retirement and qualifying military survivor benefits are deductible in full under §1171. Military retired pay and a Survivor Benefit Plan annuity are paid under title 10 of the U.S. Code, not from a plan IRC 72(t) reaches, so they are never subject to a penalty for premature distribution, and the projection marks a military row so at any age; before 2026-10-07 it inferred the penalty status as unknown below 59 and a half and withheld the deduction (a single filer with $100,000 of military pay paid $4,244.00 at 45, incomplete). Ordinary public pensions are not military retirement. Premature-distribution and survivor definitions remain operative. Inactive-duty National Guard/reserve compensation under §1120(7) is a separate rule and is not silently treated as military retirement.",
     "classification": "settled",
     "contraryReading": null,
     "errorDirection": null,
@@ -394,15 +394,17 @@ export const southAtlanticStateRecords = {
     "volatility": "staticStatute",
     "effectiveFrom": 2026,
     "effectiveThrough": null,
-    "verifiedOn": "2026-09-12",
+    "verifiedOn": "2026-10-07",
     "implementedBy": [
+      "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
       "packages/engine/src/tax/stateTax.ts",
       "packages/engine/src/params/state/data/year2026.ts"
     ],
     "implementedByFunctions": [
       "packages/engine/src/params/state/data/year2026.ts#SC",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#inferEarlyDistributionDisqualifier"
     ]
   },
 
@@ -515,16 +517,46 @@ export const southAtlanticStateRecords = {
   },
 
   'dc-code-47-1801-04-3a-standard-deduction-2026-2029': {
-    title: 'The District’s own standard deduction for 2026 to 2029 is loaded as the emergency act in force sets it, with the permanent act’s congressional review named',
+    title: 'The District’s own standard deduction for 2026 to 2029, as its permanent law, D.C. Law 26-189, sets it',
     statement:
-      'Which act is in force on 2026-09-28, and what happens at each date. D.C. Act 26-416, the Fiscal Year 2027 Budget Support Emergency Act of 2026, took effect August 13, 2026 and remains in effect for no longer than 90 days, so to about November 11, 2026. It adds D.C. Code 47-1801.04(3A): a basic standard deduction of $15,000 single or married filing separately, $22,500 head of household and $30,000 joint for taxable years 2026 to 2029, increased annually by the District cost-of-living adjustment from a 2025 base year and rounded down to a multiple of $50, so 2026 carries no adjustment; it amends (44) so that the standard deduction is that basic amount plus the IRC 63(c)(3) additional amount for 2025 to 2029, and the federal standard deduction from 2030. The temporary law whose text the code site printed, D.C. Law 26-89, expired September 25, 2026. The permanent act with the same text, D.C. Act 26-418 (B26-0661), was enacted August 14, 2026 and transmitted to Congress on August 20, 2026, with a projected law date of November 20, 2026 (the Council’s legislative record, read 2026-09-28; the act is not yet on the code site). The engine loads the law in force: the 2026 figures (params/state/data/year2026.ts) carry $15,000 and $30,000 with the federal additional amount, indexed from 2027 at the plan’s inflation and rounded down to $50 (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction), and the figures enacted for 2030 (params/state/data/enacted2030.ts) return to the federal deduction. A single filer under 65 with $60,000 of District income pays $2,525.00 for 2026, where the federal deduction the engine carried before gave $2,453.50; a couple with $120,000, $6,050.00 where it gave $5,863.00. If Act 26-418 becomes law, nothing here changes; if Congress disapproves it and no further emergency act follows the lapse of Act 26-416, the code’s permanent text, the federal deduction for every year after 2017, returns, and this record and the figures are revisited on November 20, 2026. Stated limit, the indexing vintage: the engine projects every indexed figure, the federal brackets included (irc-1-j-3-B-rate-tables-adjusted-each-year), by the plan’s cumulative inflation from the latest loaded year, so 2027 is the 2026 amount times the plan’s inflation from 2026 to 2027. The statute measures the adjustment with a lag, against its base year, and the engine models that lag nowhere; the contrary reading gives 2027 the change from 2025 to 2026. Under constant inflation the two agree ($15,350 for 2027 at 2.5% a year). On a declining path, 3% from 2025 to 2026, 2% to 2027 and 1% a year after, the engine gives $15,300, $15,450 and $15,600 for 2027 to 2029 where the contrary reading gives $15,450, $15,750 and $15,900, so a single filer under 65 with $60,000 of District income pays $9.75 more for 2027 and $19.50 more for 2028 and 2029. Settled for the act in force on 2026-09-28, with the indexing vintage a stated limit.',
+      'What governs on 2026-10-08. D.C. Law 26-189, the Fiscal Year 2027 Budget Support Act of 2026 (D.C. Act 26-418, Bill 26-661), took effect October 2, 2026, when its congressional review ended (the Council’s legislative record, read 2026-10-08); no joint resolution disapproving it was introduced (the Government Publishing Office’s bill collection, searched 2026-10-08, holds none through October 6). Its subtitle I applies as of January 1, 2025 (sec. 7113) and adds D.C. Code 47-1801.04(3A): a basic standard deduction of $15,000 single or married filing separately, $22,500 head of household and $30,000 joint for taxable years 2026 to 2029, increased annually by the District cost-of-living adjustment from a 2025 base year and rounded down to a multiple of $50, so 2026 carries no adjustment; it amends (44) so that the standard deduction is that basic amount plus the IRC 63(c)(3) additional amount for 2025 to 2029, and the federal standard deduction from 2030. That application date decides tax year 2026: the permanent law applies to every taxable year from 2025, so the 2026 figures rest on it alone, whatever the status of the earlier acts. The earlier acts, as history: the same amounts were enacted by D.C. Act 26-214 (emergency, December 3, 2025 to March 3, 2026), by D.C. Act 26-217, a temporary act with no end in 2030 that the code site lists as D.C. Law 26-89 from February 12, 2026, due to expire September 25, 2026, and by D.C. Act 26-416 (emergency, from August 13, 2026 for no more than 90 days, so to about November 11, 2026; its words, quoted here from the code site, are the permanent act’s). The temporary act’s status is contested. Congress disapproved it by Pub. L. 119-78 (H.J. Res. 142), signed February 18, 2026, and the White House statement of that day says the resolution nullifies it; the District’s Attorney General, in an opinion of February 24, 2026, concluded that the resolution was enacted after the Home Rule Act’s 30-day review period ended on February 11, did not repeal the temporary act, and did not change 2025 liabilities. This record takes no side in that dispute, which concerns only the act Pub. L. 119-78 names; neither reading reaches the permanent law or its application to 2026. The Office of Tax and Revenue administered 2025 on the District’s own amounts (its 2025 D-40 booklet, revised in August 2026, prints $15,000, $22,500 and $30,000). Two sources still print the federal deduction, and neither governs. The code site has not yet codified Law 26-189: on 2026-10-08 its 47-1801.04 prints the text before it, (44)(A)(iv), the federal deduction for every year after 2017, and the latest permanent law it lists is D.C. Law 26-187. The Office’s 2026 D-40ES (Rev. 03/2026), its estimated-tax booklet for the year, written while the temporary law was due to expire before the year ended and before the permanent act was passed, enters the federal $16,100, $24,150 and $32,200 on its estimate worksheet. The Office’s 2026 D-40 booklet, due about January 2027, is the first guidance written under Law 26-189, and this record is checked against it then. The engine loads the law in force: the 2026 figures (params/state/data/year2026.ts) carry $15,000 and $30,000 with the federal additional amount, indexed from 2027 at the plan’s inflation and rounded down to $50 (tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction), and the figures enacted for 2030 (params/state/data/enacted2030.ts) return to the federal deduction. No figure changes with the permanent act, which sets what the emergency act set: a single filer under 65 with $60,000 of District income pays $2,525.00 for 2026, where the federal deduction would give $2,453.50; a couple with $120,000, $6,050.00 where it would give $5,863.00. Stated limit, the indexing vintage: the engine projects every indexed figure, the federal brackets included (irc-1-j-3-B-rate-tables-adjusted-each-year), by the plan’s cumulative inflation from the latest loaded year, so 2027 is the 2026 amount times the plan’s inflation from 2026 to 2027. The statute measures the adjustment with a lag, against its base year, and the engine models that lag nowhere; the contrary reading gives 2027 the change from 2025 to 2026. Under constant inflation the two agree ($15,350 for 2027 at 2.5% a year). On a declining path, 3% from 2025 to 2026, 2% to 2027 and 1% a year after, the engine gives $15,300, $15,450 and $15,600 for 2027 to 2029 where the contrary reading gives $15,450, $15,750 and $15,900, so a single filer under 65 with $60,000 of District income pays $9.75 more for 2027 and $19.50 more for 2028 and 2029. Settled: the permanent law is in force and names each year, with the indexing vintage a stated limit. A part-year resident is taxed on the income of the period domiciled in the District (2025 D-40 booklet). The deduction is prorated: 47-1801.04(44)(D), which Law 26-189 leaves as it was, prorates it by the number of months the individual was a resident, as the engine does, where the booklet’s Calculation C prorates it by days. From 2026-10-07 a slice of a year split between states keeps the ordinary schedule and prorates the deduction by months (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the schedule with the months too. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,812.50, now $2,362.50.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Law in force is loaded, and a pending event that could change it is named, dated and revisited (decision of 2026-09-28, State income tax follows each state’s enacted law, applied as it is for Washington’s and California’s votes): congressional review of the permanent act is that event here. The plan’s general inflation stands in for the District’s consumer price index.',
+      'Law in force is loaded (decision of 2026-09-28, State income tax follows each state’s enacted law). The permanent act ended its congressional review on October 2, 2026, so no pending event remains; the Office of Tax and Revenue’s 2026 D-40 booklet, the first guidance written under it, is checked against the loaded amounts when it is published, about January 2027. The plan’s general inflation stands in for the District’s consumer price index.',
     jurisdiction: 'state:DC',
     authority: [{
+      kind: 'statute',
+      citation: 'D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I), enrolled original',
+      url: 'https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990',
+      quotedText:
+        'For taxable years beginning after December 31, 2025, but before January 1, 2030: ... In the case of a return filed by a single individual or married individual filing a separate return, $15,000, increased annually pursuant to the cost-of living adjustment (if the adjustment does not result in a multiple of $50, rounded down to the next multiple of $50);',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year, enrolled original',
+      url: 'https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990',
+      quotedText:
+        'shall mean the calendar year beginning January 1, 2025, or the calendar year beginning one calendar year before the calendar year in which the new dollar amount of the basic standard deduction shall become effective, whichever is later',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi), enrolled original',
+      url: 'https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990',
+      quotedText:
+        'The additional standard deduction as prescribed in section 63(c)(3) of the Internal Revenue Code of 1986; or ... For taxable years beginning after December 31, 2029, the standard deduction as prescribed in section 63(c) of the Internal Revenue Code of 1986.',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Law 26-189 (D.C. Act 26-418), sec. 7113, applicability of subtitle I, enrolled original',
+      url: 'https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990',
+      quotedText:
+        'Except as otherwise provided, this subtitle shall apply as of January 1, 2025',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Law 26-189 (D.C. Act 26-418), sec. 9003, effective date, enrolled original',
+      url: 'https://lims.dccouncil.gov/downloads/LIMS/61627/Meeting3/Enrollment/B26-0661-Enrollment17.pdf?Id=243990',
+      quotedText:
+        'This act shall take effect following approval by the Mayor (or in the event of veto by the Mayor, action by the Council to override the veto) and a 30-day period of congressional review',
+    }, {
       kind: 'statute',
       citation: 'D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)',
       url: 'https://code.dccouncil.gov/us/dc/council/acts/26-416',
@@ -549,33 +581,66 @@ export const southAtlanticStateRecords = {
       quotedText:
         'This act shall take effect following approval by the Mayor (or in the event of veto by the Mayor, action by the Council to override the veto), and shall remain in effect for no longer than 90 days',
     }, {
+      kind: 'legislativeHistory',
+      citation: 'Council of the District of Columbia, Legislative Information Management System, the record of Bill 26-661',
+      url: 'https://lims.dccouncil.gov/api/Search/GetLegislationDetails/B26-0661',
+      quotedText:
+        'Enacted without Mayor\'s Signature with Act Number A26-0418 ... Transmitted to Congress ... Law Number L26-0189 Effective from Oct 02, 2026',
+    }, {
       kind: 'statute',
-      citation: 'D.C. Code 47-1801.04(44)(A)(iv), permanent version',
-      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04(Perm)',
+      citation: 'Pub. L. 119-78 (H.J. Res. 142), disapproving D.C. Act 26-217',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ78/html/PLAW-119publ78.htm',
+      quotedText:
+        'That the Congress disapproves of the action of the District of Columbia Council described as follows: The D.C. Income and Franchise Tax Conformity and Revision Temporary Amendment Act of 2025 (D.C. Act 26-217)',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Code 47-1801.04(44)(D), the part-year resident',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04',
+      quotedText:
+        'In the case of an individual who is a resident, as defined in paragraph (42) of this section, for less than a full 12-month taxable year, the amounts specified in subparagraph (A), (B), or (C) of this paragraph prorated by the number of months that the individual was a resident.',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Code 47-1801.04(44)(A)(iv) before D.C. Law 26-189, as the code site prints it on 2026-10-08',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04',
       quotedText:
         'For taxable years beginning after December 31, 2017, the standard deduction as prescribed in section 63(c) of the Internal Revenue Code of 1986.',
     }, {
-      kind: 'legislativeHistory',
-      citation: 'D.C. Code 47-1801.04, code site note on D.C. Law 26-89',
-      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1801.04',
+      kind: 'formInstruction',
+      citation: '2026 D-40ES (Rev. 03/2026), Worksheet to Estimate DC Tax Payments, line 2b',
+      url: 'https://otr.cfo.dc.gov/sites/default/files/dc/sites/otr/publication/attachments/2026_D40ES_Book_wLinks04012026.pdf',
       quotedText:
-        'This section includes amendments by temporary legislation that will expire on September 25, 2026.',
+        'enter $16,100 if single ... Enter $24,150 if head of household ... Enter $32,200 if married/registered domestic partner filing',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 D-40 booklet, New for 2025 Income Tax Returns, DC Basic Standard Deduction',
+      url: 'https://otr.cfo.dc.gov/sites/default/files/dc/sites/otr/publication/attachments/2025_D40_Book_082026_v1.pdf',
+      quotedText:
+        'DC Basic Standard Deduction - The District has established its own basic standard deduction amounts. For tax year 2025, those amounts are: ... $15,000 for single filers, dependent filers and married/registered domestic partner filers filing separately; ... $22,500 for head of household filers;',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents',
+      url: 'https://otr.cfo.dc.gov/sites/default/files/dc/sites/otr/publication/attachments/2025_D40_Book_082026_v1.pdf',
+      quotedText:
+        'The calculation of tax liability for a part-year resident is prorated based on the income earned in DC during the period of residency. An individual filing a part-year return must indicate the period of domicile on Line 2 of Form D-40. All credits, exemptions and deductions must be prorated according to the time domiciled in DC. … Standard deduction for part-year DC residents. Adjust your standard deduction to reflect the number of days you were domiciled in DC. Complete Calculation C on page 17.',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-10-08',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/data/enacted2030.ts',
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateEnactedLaw.ts',
+      'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#DC',
       'packages/engine/src/params/state/data/enacted2030.ts#states.DC',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateEnactedLaw.ts#statutorilyIndexedStandardDeduction',
+      'packages/engine/src/params/state/data/year2026.ts#DC.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -913,7 +978,7 @@ export const southAtlanticStateRecords = {
   'md-tg-10-217-2026-indexed-standard-deduction': {
     title: 'Maryland indexes its standard deduction from 2026; the engine carries $3,400 single and $6,850 joint, where the Comptroller has printed two different amounts',
     statement:
-      'Md. Tax-General 10-217(b) sets the standard deduction at $3,350 for an individual and $6,700 for spouses on a joint return, a head of household or a surviving spouse, and (c) increases each amount for every taxable year beginning after December 31, 2025 by the IRC 1(f)(3) cost-of-living adjustment with calendar year 2024 as the base, as determined by the Comptroller, each increase rounded down to a multiple of $50. The Comptroller has printed two different 2026 figures: the 2026 Employer Withholding Guide gives $3,400, and the 2026 estimated-tax worksheet (Form PV, dated April 2026) gives $3,350 single and $6,700 joint, the 2025 amounts. The engine keeps $3,400 single, from the withholding guide, and computes the joint amount by the statute’s rule: the chained CPI average for September 2024 to August 2025 (177.2058) over that for September 2023 to August 2024 (173.0158) is a 2.4217% adjustment; $6,700 grows by $162.26, rounded down to $150, giving $6,850, and $3,350 grows by $81.13, rounded down to $50, giving the withholding guide’s $3,400. The 2026 figures (params/state/data/year2026.ts) carry $3,400 and $6,850; they carried $3,350 and $6,700 until the survey of 2026-09-28. Approximated because the statute leaves the adjustment to the Comptroller and the only joint amount the Comptroller has printed is $6,700: if that stands, the engine understates Maryland tax by $150 of deduction on a joint return, about $11.60 a year with a 3% county rate, and by $50 single. It is settled when the 2026 Form 502 instructions print the amounts, expected in January 2027. Later years are indexed the same way and stand at the 2026 amounts until the Comptroller publishes them.',
+      'Md. Tax-General 10-217(b) sets the standard deduction at $3,350 for an individual and $6,700 for spouses on a joint return, a head of household or a surviving spouse, and (c) increases each amount for every taxable year beginning after December 31, 2025 by the IRC 1(f)(3) cost-of-living adjustment with calendar year 2024 as the base, as determined by the Comptroller, each increase rounded down to a multiple of $50. The Comptroller has printed two different 2026 figures: the 2026 Employer Withholding Guide gives $3,400, and the 2026 estimated-tax worksheet (Form PV, dated April 2026) gives $3,350 single and $6,700 joint, the 2025 amounts. The engine keeps $3,400 single, from the withholding guide, and computes the joint amount by the statute’s rule: the chained CPI average for September 2024 to August 2025 (177.2058) over that for September 2023 to August 2024 (173.0158) is a 2.4217% adjustment; $6,700 grows by $162.26, rounded down to $150, giving $6,850, and $3,350 grows by $81.13, rounded down to $50, giving the withholding guide’s $3,400. The 2026 figures (params/state/data/year2026.ts) carry $3,400 and $6,850; they carried $3,350 and $6,700 until the survey of 2026-09-28. Approximated because the statute leaves the adjustment to the Comptroller and the only joint amount the Comptroller has printed is $6,700: if that stands, the engine understates Maryland tax by $150 of deduction on a joint return, about $11.60 a year with a 3% county rate, and by $50 single. It is settled when the 2026 Form 502 instructions print the amounts, expected in January 2027. Later years are indexed the same way and stand at the 2026 amounts until the Comptroller publishes them. A part-year resident files Form 502 marked P: the standard deduction and the exemptions are multiplied by the Maryland income factor, Maryland AGI over federal AGI, and the tax is computed on the ordinary schedule (Tax Tip #52, whose line numbers are those of an earlier Form 502; COMAR 03.04.02.12). From 2026-10-07 a slice of a year split between states does the same, with the months for the factor (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the schedule with the months too. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,268.00, now $2,241.75, and $2,242.94 on the worksheet’s $3,350.',
     classification: 'approximated',
     contraryReading:
       'Use the Comptroller’s 2026 estimated-tax worksheet, $3,350 single and $6,700 joint: the statute makes the adjustment the one the Comptroller determines, and the worksheet is the Comptroller’s latest print. Not taken because the Comptroller’s withholding guide prints $3,400 single, which is what the statute’s formula gives, and the worksheet’s amounts are the unindexed 2025 ones.',
@@ -950,11 +1015,17 @@ export const southAtlanticStateRecords = {
       url: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/tax/forms/worksheets/2026-pv-worksheet.pdf',
       quotedText:
         'your standard deduction amount … is $3,350. … amount is $6,700.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Comptroller of Maryland, Personal Tax Tip #52, part-year residents',
+      url: 'https://www.marylandtaxes.gov/forms/Personal_Tax_Tips/tip52.pdf',
+      quotedText:
+        'Include on line 13 any income received during the part of the year when you were not a resident of Maryland. You must adjust your standard or itemized deductions and exemptions based on the percentage of your income subject to Maryland tax. … The standard deduction must be prorated using the Maryland income factor. … The value of your exemptions (line 19) must be prorated using the Maryland income factor.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -962,6 +1033,8 @@ export const southAtlanticStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.MD',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
+      'packages/engine/src/params/state/data/year2026.ts#MD.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1451,7 +1524,7 @@ export const southAtlanticStateRecords = {
   'va-code-58-1-322-03-2-personal-exemptions': {
     title: 'Virginia deducts $930 for each personal exemption and $800 more for each taxpayer 65 or older',
     statement:
-      'Va. Code 58.1-322.03(2)(a) deducts $930 for each personal exemption allowable to the taxpayer for federal income tax purposes, and (2)(b) gives each blind or aged taxpayer, as IRC 63(f) defines them, an additional $800. Both apply whether or not the taxpayer itemizes. The 2026 figures (params/state/data/year2026.ts) carry them: one exemption for a single filer and two on a joint return, plus $800 for each taxpayer 65 or older. Before the survey of 2026-09-28 the engine allowed neither, overstating Virginia tax by $99.48 for a single filer aged 65 and $198.95 for a couple both 65 in the 5.75% band. The $800 goes to a taxpayer 65 on or before January 1 of the following year, as Form 760 counts it, read from the claimants’ dates of birth (stateTax.ts#virginiaAgedTaxpayerCount); until 2026-10-06 the engine counted the age at the end of the year, so a taxpayer whose 65th birthday is January 1 lost the $800 for the year before it, $46 of tax in the 5.75% band. A part-year resident’s $930 and $800 are prorated with the months of residence, as Form 760PY’s Prorated Exemption Worksheet prorates the personal exemptions by days resident and the $800 is an additional personal exemption (stateTax.ts#prorateParams); until 2026-10-06 the engine gave the Virginia slice of the year the whole exemptions. The slice is taxed on the ordinary rate schedule, unscaled, because Form 760PY computes the tax on its Virginia taxable income from the same Tax Rate Schedule a full-year resident uses, and prorates only the standard deduction, the exemptions and the age deduction (the pack’s partYearRateSchedule, stateTax.ts#prorateParams). Until 2026-10-06 the engine scaled the brackets with the months as well: a single filer under 65, resident six months with $60,000 of ordinary income, paid $1,317.95 of Virginia tax where 760PY gives $1,189.20. The engine spreads the year’s income evenly over the months, so it prorates by months where 760PY prorates the standard deduction by the share of federal AGI received while resident and the exemptions by days; a year whose income fell unevenly across the move is outside this record. Every other state’s slice still scales its brackets with the months, which is the same as taxing the year’s income as a full-year resident and keeping the resident share; that overstates the tax of a state whose part-year return taxes the resident-period income on its ordinary schedule, as New Jersey’s does, and no other state’s part-year method has been reviewed. Settled for the taxpayer and spouse exemptions and the age addition; dependents are not collected by the plan, blindness is not modeled, and whole-return accuracy is outside this record.',
+      'Va. Code 58.1-322.03(2)(a) deducts $930 for each personal exemption allowable to the taxpayer for federal income tax purposes, and (2)(b) gives each blind or aged taxpayer, as IRC 63(f) defines them, an additional $800. Both apply whether or not the taxpayer itemizes. The 2026 figures (params/state/data/year2026.ts) carry them: one exemption for a single filer and two on a joint return, plus $800 for each taxpayer 65 or older. Before the survey of 2026-09-28 the engine allowed neither, overstating Virginia tax by $99.48 for a single filer aged 65 and $198.95 for a couple both 65 in the 5.75% band. The $800 goes to a taxpayer 65 on or before January 1 of the following year, as Form 760 counts it, read from the claimants’ dates of birth (stateTax.ts#virginiaAgedTaxpayerCount); until 2026-10-06 the engine counted the age at the end of the year, so a taxpayer whose 65th birthday is January 1 lost the $800 for the year before it, $46 of tax in the 5.75% band. A part-year resident’s $930 and $800 are prorated with the months of residence, as Form 760PY’s Prorated Exemption Worksheet prorates the personal exemptions by days resident and the $800 is an additional personal exemption (stateTax.ts#prorateParams); until 2026-10-06 the engine gave the Virginia slice of the year the whole exemptions. The slice is taxed on the ordinary rate schedule, unscaled, because Form 760PY computes the tax on its Virginia taxable income from the same Tax Rate Schedule a full-year resident uses, and prorates only the standard deduction, the exemptions and the age deduction (the pack’s partYear, stateTax.ts#prorateParams). Until 2026-10-06 the engine scaled the brackets with the months as well: a single filer under 65, resident six months with $60,000 of ordinary income, paid $1,317.95 of Virginia tax where 760PY gives $1,189.20. The engine spreads the year’s income evenly over the months, so it prorates by months where 760PY prorates the standard deduction by the share of federal AGI received while resident and the exemptions by days; a year whose income fell unevenly across the move is outside this record. Every state’s part-year method was read on 2026-10-07 from its 2025 part-year or nonresident instructions, and the 2026 figures’ partYear carries it. Eleven more tax the resident-period income on the ordinary schedule as Virginia does: New Jersey (NJ-1040, the exemptions by months under 54A:3-1(c)), Hawaii (Form N-15, lines 37, 40b, 42b and 44), South Carolina (Schedule NR, lines 45 to 48), the District of Columbia (D-40, Calculation C), Mississippi (Form 80-100, line 13c), Idaho (Form 43, lines 38, 39 and 42, the zero band whole) and Maryland (Form 502 P, Tax Tip #52) prorate the deduction; Arizona (Form 140PY), Louisiana (Form IT-540B, lines 10, 11E and 13), Kentucky (Form 740-NP Schedule A) and Alabama (the Form 40 and 40NR booklets, the exemptions too) allow it whole. Until 2026-10-07 each of them scaled its schedule and deduction with the months, overstating its tax: a single filer of 50 with $100,000 of ordinary income, resident six months, paid $2,090.03 in New Jersey where the method gives $1,242.38, $2,941.60 in Hawaii ($2,395.20), $1,731.25 in South Carolina ($1,248.25), $2,812.50 in the District ($2,362.50), $1,754.00 in Mississippi ($1,554.00), $1,053.13 in Arizona ($856.25), $1,306.88 in Louisiana ($1,113.75), $2,095.86 in Idaho ($1,968.37), $2,405.00 in Alabama ($2,310.00), $1,691.20 in Kentucky ($1,632.40) and $2,268.00 in Maryland ($2,241.75). Every other state’s slice scales its schedule, deduction and exemptions with the months, which is the months share of a full-year resident’s tax: the income-percentage method of the other income-tax states (twenty-one directly, and Maine, Ohio and Iowa through a credit), with the months for the state’s own ratio, and the same figure for the states that tax resident-period income at a flat rate (Georgia, Illinois, Indiana, Michigan, Massachusetts and Pennsylvania). Wisconsin phases its sliding deduction on the year’s income from 2026-10-07 (wi-2026-rates-standard-deduction-exemptions). The limits that remain: a slice receives no household facts, so it drops the Illinois, Connecticut, Wisconsin and Massachusetts exemptions, Oregon’s retirement credit, Utah’s retirement credits and Iowa’s alternate-tax test, and South Carolina’s slice deducts its SCIAD unphased; characterized retirement rows are not allocated across the move; every retirement-exclusion cap is prorated by the months, where the states variously allow it whole or prorate it by months, by days, by the share of retirement income received while resident or by the income ratio, or dilute it through the tax ratio; and each income-percentage state’s own ratio, such as New York’s after its pension exclusion or West Virginia’s on unreduced federal AGI, is replaced by the months. Settled for the taxpayer and spouse exemptions and the age addition; dependents are not collected by the plan, blindness is not modeled, and whole-return accuracy is outside this record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1509,6 +1582,7 @@ export const southAtlanticStateRecords = {
       'packages/engine/src/tax/stateTax.ts#prorateParams',
       'packages/engine/src/tax/stateTax.ts#virginiaAgedTaxpayerCount',
       'packages/engine/src/tax/stateEnactedLaw.ts#virginiaPersonalExemptions',
+      'packages/engine/src/params/state/data/year2026.ts#VA.partYear',
     ],
   },
 
@@ -1562,7 +1636,7 @@ export const southAtlanticStateRecords = {
 
   "de-early-distribution-gate": {
     "title": "Delaware early-distribution gate applies before pension exclusions",
-    "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published. A Roth conversion carries no premature distribution penalty (IRC 408A(d)(3)(A)(ii)), but the engine holds no date for the conversions its conversion strategy makes and marks an undated conversion of unknown early status unless the owner is 59 and a half on January 1. Such a conversion by a younger owner is withheld from the exclusion and the year marked incomplete, and one by an owner who turns 60 during the year but was under 59 and a half on January 1 gets no exclusion even when it came later; both overstate Delaware tax.",
+    "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. A U.S. military pension or Survivor Benefit Plan annuity is paid under title 10 of the U.S. Code, not from a plan or IRA, so it carries neither code 1 nor the federal penalty; the projection marks a military row so at any age, where before 2026-10-07 it was unknown below 59 and a half and the under-60 military limb was withheld. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published. A Roth conversion carries no premature distribution penalty (IRC 408A(d)(3)(A)(ii)), but the engine holds no date for the conversions its conversion strategy makes and marks an undated conversion of unknown early status unless the owner is 59 and a half on January 1. Such a conversion by a younger owner is withheld from the exclusion and the year marked incomplete, and one by an owner who turns 60 during the year but was under 59 and a half on January 1 gets no exclusion even when it came later; both overstate Delaware tax.",
     "classification": "unsettled",
     "contraryReading": "Final TY2026 administrative instructions may clarify or revise the carried-forward classification.",
     "errorDirection": null,
@@ -1579,8 +1653,9 @@ export const southAtlanticStateRecords = {
     "volatility": "awaitingGuidance",
     "effectiveFrom": 2026,
     "effectiveThrough": null,
-    "verifiedOn": "2026-09-12",
+    "verifiedOn": "2026-10-07",
     "implementedBy": [
+      "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
       "packages/engine/src/tax/stateTax.ts",
       "packages/engine/src/params/state/data/year2026.ts",
       "packages/engine/src/tax/stateNortheastExtras.ts"
@@ -1589,13 +1664,14 @@ export const southAtlanticStateRecords = {
       "packages/engine/src/params/state/data/year2026.ts#DE",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
-      "packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction"
+      "packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction",
+      "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#inferEarlyDistributionDisqualifier"
     ]
   },
 
   "dc-code-47-1803-03-government-survivor-exclusion": {
     "title": "District government survivor exclusion remains after the old pension exclusion expires",
-    "statement": "Section 47-1803.02(a)(2)(N)(ii) excludes District or federal government survivor benefits received by a person age 62 or older at year end. It is separate from the $3,000 government-pension provision in (N)(i), which applies only before 2015. The eligible amount must be included in the federal base; ordinary pensions, nonqualifying issuers, Social Security survivor benefits and unknown issuer/age cannot establish this subtraction.",
+    "statement": "Section 47-1803.02(a)(2)(N)(ii) excludes District or federal government survivor benefits received by a person age 62 or older at year end. A Survivor Benefit Plan annuity is a survivor benefit the federal government pays, so a pension tagged Military survivor benefit is excluded at 62 or older with no issuer fact; before 2026-10-07 only a pension tagged government survivor with a District or federal issuer was, and a single filer with a $100,000 Survivor Benefit Plan annuity paid $5,625.00 at 62. It is separate from the $3,000 government-pension provision in (N)(i), which applies only before 2015. The eligible amount must be included in the federal base; ordinary pensions, nonqualifying issuers, Social Security survivor benefits and unknown issuer/age cannot establish this subtraction.",
     "classification": "settled",
     "contraryReading": null,
     "errorDirection": null,
@@ -1612,7 +1688,7 @@ export const southAtlanticStateRecords = {
     "volatility": "staticStatute",
     "effectiveFrom": 2026,
     "effectiveThrough": null,
-    "verifiedOn": "2026-09-12",
+    "verifiedOn": "2026-10-07",
     "implementedBy": [
       "packages/engine/src/tax/stateTax.ts",
       "packages/engine/src/params/state/data/year2026.ts",
@@ -1628,7 +1704,7 @@ export const southAtlanticStateRecords = {
 
   "sc-sciad-act-110-retirement-income-deduction": {
     "title": "South Carolina SCIAD replaces the federal deduction for TY2026",
-    "statement": "Act 110 establishes SCIAD of $15,000 single/MFS, $22,500 HOH, and $30,000 joint/surviving spouse. The phaseout uses federal AGI and status-specific start/width values in the 2026 pack, with zero deduction at or beyond the endpoint. It is a general return deduction, not a pension-only allowance. The rate schedule and SCIAD first apply after 2025.",
+    "statement": "Act 110 establishes SCIAD of $15,000 single/MFS, $22,500 HOH, and $30,000 joint/surviving spouse. The phaseout uses federal AGI and status-specific start/width values in the 2026 pack, with zero deduction at or beyond the endpoint. It is a general return deduction, not a pension-only allowance. The rate schedule and SCIAD first apply after 2025. A part-year resident’s 2025 Schedule NR multiplies the deduction, then the federal one, by the line 45 proration (line 47) and carries the result to SC1040 line 5 (line 48), taxed on the ordinary table; the 2026 Schedule NR is not yet published, and the engine takes it to prorate the SCIAD the same way. From 2026-10-07 a slice of a year split between states keeps the ordinary schedule and prorates the deduction by months (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the schedule with the months too. A slice receives no federal AGI, so it prorates the unphased $15,000, which overstates the deduction above $40,000 of federal AGI: a single filer of 50 with $100,000 of ordinary income, resident six months, paid $1,731.25, now $1,248.25, where the SCIAD, phased out at that income, gives $1,639.00.",
     "classification": "settled",
     "contraryReading": null,
     "errorDirection": null,
@@ -1640,12 +1716,18 @@ export const southAtlanticStateRecords = {
         "citation": "2026 Act 110, H.4216, SCIAD and effective date",
         "url": "https://www.scstatehouse.gov/sess126_2025-2026/bills/4216.htm",
         "quotedText": "a South Carolina Income Adjusted Deduction (SCIAD) equal to: (i) fifteen thousand dollars for taxpayers who file as single or married filing separately; (ii) twenty-two thousand five hundred dollars for taxpayers who file as head of household; and (iii) thirty thousand dollars for taxpayers who file as married filing jointly or as a surviving spouse. … The deduction set forth in subitem (a)(i) is subject to being reduced by a fraction whereby the numerator is the amount the taxpayer's federal adjusted gross income exceeds forty thousand dollars and the denominator is fifty-five thousand. … If the fraction calculated by this subitem is equal to or exceeds one, then the deduction is not allowed. If the fraction is zero, then the deduction is not subject to being reduced. If the fraction is between zero and one, then the deduction must be reduced by the corresponding fraction. … This act takes effect upon approval by the Governor and first applies to tax years beginning after 2025."
+      },
+      {
+        "kind": "formInstruction",
+        "citation": "2025 Schedule NR, lines 45 to 48",
+        "url": "https://dor.sc.gov/sites/dor/files/forms/SchNR_2025.pdf",
+        "quotedText": "45 PRORATION: Line 31, Column B divided by line 31, Column A = % (do not exceed 100%) 46 DEDUCTIONS ADJUSTMENT: If using the standard deduction, enter the amount from federal form on line 46. … 47 Allowable deductions: Multiply line 46 by … 48 South Carolina taxable income: Subtract line 47 from line 44, Column B. Enter the difference here and on the SC1040, line 5."
       }
     ],
     "volatility": "staticStatute",
     "effectiveFrom": 2026,
     "effectiveThrough": null,
-    "verifiedOn": "2026-09-12",
+    "verifiedOn": "2026-10-07",
     "implementedBy": [
       "packages/engine/src/tax/stateTax.ts",
       "packages/engine/src/params/state/data/year2026.ts"
@@ -1653,7 +1735,9 @@ export const southAtlanticStateRecords = {
     "implementedByFunctions": [
       "packages/engine/src/params/state/data/year2026.ts#SC",
       "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/params/state/data/year2026.ts#SC.partYear",
+      "packages/engine/src/tax/stateTax.ts#prorateParams"
     ]
   },
 
@@ -1957,6 +2041,103 @@ export const southAtlanticStateRecords = {
       "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
       "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaSocialSecuritySubtraction"
     ]
+  },
+
+  'ga-code-48-7-27-a-5-1-military-retirement-exclusion': {
+    title: 'Georgia excludes military retirement under 62 ($17,500, or $35,000 with Georgia earnings), under 65 up to $65,000 from 2027, and a veteran\u2019s survivor benefit in full',
+    statement:
+      'For 2026, O.C.G.A. 48-7-27(a)(5.1), as the 2025 IT-511 booklet states it, excludes up to $17,500 of military retirement income for a taxpayer under 62, and $17,500 more for one with more than $17,500 of earned income in Georgia, each spouse on a joint return separately; from 62 military pay takes only the general retirement exclusion of (a)(5) ($65,000 at 65 in the pack; the 62 to 64 tier is the registered approximation ga-code-48-7-27-retirement-and-social-security-exclusion). Income a surviving family member receives on a deceased veteran\u2019s service record is subtracted at any age, so a pension tagged Military survivor benefit is excluded in full. HB 266 (2025), signed and, by its section 3(b), effective for taxable years beginning on or after January 1, 2027, rewrites (5.1): military retirement income of an individual under 65, up to $65,000, with no earned-income test, and not in addition to an exclusion under (a)(5); the enacted 2027 figures carry it (from 65 the $70,000 general exclusion of HB 463 applies). Earned income is read from the recipient\u2019s wage streams, the only income the plan attributes to a person as pay for work; a recurring income names no person and may not be pay for work, so a retiree whose Georgia earnings come only through one is not given the second $17,500, which overstates the tax. A single filer under 62 with $100,000 of military pay paid $4,241.50 before 2026-10-07 and pays $3,368.25 now ($3,493.00 with a $20,000 wage stream); with $100,000 of survivor benefit, $0.00 (was $4,241.50 under 65).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:GA',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Form IT-511 Individual Income Tax booklet, retirement income exclusion, item 2 (O.C.G.A. 48-7-27(a)(5.1))',
+      url: 'https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download',
+      quotedText:
+        '2. Military Retirement Income. Up to $17,500 of military retirement income can be excluded for taxpayers under 62 years of age. An additional $17,500 can be excluded for such taxpayers with more than $17,500 of earned income in Georgia.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form IT-511 Individual Income Tax booklet, adjustments to income, item 27',
+      url: 'https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download',
+      quotedText:
+        '27. Income received by a surviving family member that is based on the service record of a deceased veteran without regard to the age of the surviving family member.',
+    }, {
+      kind: 'statute',
+      citation: 'HB 266 (2025), section 1, amending O.C.G.A. 48-7-27(a)(5.1)(C) (new text underlined in the passed version); PDF line numbers retained',
+      url: 'https://gov.georgia.gov/document/2025-signed-legislation/hb-266/download',
+      quotedText:
+        'provided, however, that no individual shall be allowed an 27 exclusion provided for in this paragraph in addition to any exclusion provided for in 28 paragraph (5) of this subsection',
+    }, {
+      kind: 'statute',
+      citation: 'HB 266 (2025), section 3(b); PDF line numbers retained',
+      url: 'https://gov.georgia.gov/document/2025-signed-legislation/hb-266/download',
+      quotedText:
+        '(b) Section 1 of this Act shall become effective on January 1, 2027, and shall be applicable 244 to all taxable years beginning on or after January 1, 2027.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/data/enacted2027.ts',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#GA.militaryRetirementExclusion',
+      'packages/engine/src/params/state/data/enacted2027.ts#GA.militaryRetirementExclusion',
+      'packages/engine/src/projection/internal/annualStateHouseholdFacts.ts#buildAnnualStateHouseholdFacts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
+  },
+
+  'md-tg-10-207-q-military-retirement-subtraction': {
+    title: 'Maryland subtracts $12,500 of military retirement income under 55 and $20,000 from 55, the rest open to the pension exclusion',
+    statement:
+      'Tax-General 10-207(q) subtracts the first $12,500 of military retirement income received by an individual who is under 55 on the last day of the year, and the first $20,000 for one who is 55 or older. Military retirement income includes death benefits received as a result of military service, so a Survivor Benefit Plan annuity takes the same subtraction. Under 10-209(d)(1) only the part the subtraction takes is kept out of the pension exclusion, so the rest of the military pay of a recipient 65 or older enters it with the household\u2019s other pensions, as the engine prices them. Before 2026-10-07 the engine gave military pay neither: a single filer with $100,000 of it paid $4,536.00 at every age; now $3,942.25 at 45, $3,586.00 at 60 and $1,657.50 at 65.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: 'Md. Code, Tax-General 10-207(q)(1)(iii)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-207&enactments=false',
+      quotedText: '“Military retirement income” means retirement income, including death benefits, received as a result of military service.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Code, Tax-General 10-207(q)(2)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-207&enactments=false',
+      quotedText:
+        '(i) if, on the last day of the taxable year, the individual is under the age of 55 years, the first $12,500 of military retirement income received by an individual during the taxable year; and (ii) if, on the last day of the taxable year, the individual is at least 55 years old, the first $20,000 of military retirement income received by an individual during the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Code, Tax-General 10-209(d)(1)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        'Military retirement income that is included in the subtraction under § 10–207(q) of this subtitle may not be taken into account for purposes of the subtraction under this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MD.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
+    ],
   },
 
 } satisfies Record<string, TaxRuleRecord>

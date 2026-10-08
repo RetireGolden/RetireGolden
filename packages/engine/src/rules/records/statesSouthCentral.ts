@@ -754,7 +754,7 @@ export const southCentralStateRecords = {
   'ms-27-7-5-rate-ramp': {
     title: 'Mississippi’s zero band and its legislated rate ramp',
     statement:
-      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. The pack models that zero band as a 0% bracket below $10,000. The rate above the band is 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The 2026 pack holds 4% for both filing statuses, and the enacted-year figures hold each later step as enacted rather than projected from 2026: 3.75% for 2027 (params/state/data/enacted2027.ts), 3.5% for 2028, 3.25% for 2029 and 3% from 2030 (enacted2028.ts, enacted2029.ts, enacted2030.ts). Section 2 of H.B. 1 cuts the rate further, by 0.2, 0.25 or 0.3 of a point, for calendar year 2031 or later only when the Working Cash-Stabilization Reserve Fund is fully funded and adjusted General Fund revenue exceeds the following year’s appropriations by the stated share of the cost of a one percent cut; those cuts are not loaded, so from 2031 the engine holds 3% and overstates the rate in any year a cut is triggered. The next refreshes each have a published figure waiting, so carrying one forward is wrong by construction.',
+      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. The pack models that zero band as a 0% bracket below $10,000. The rate above the band is 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The 2026 pack holds 4% for both filing statuses, and the enacted-year figures hold each later step as enacted rather than projected from 2026: 3.75% for 2027 (params/state/data/enacted2027.ts), 3.5% for 2028, 3.25% for 2029 and 3% from 2030 (enacted2028.ts, enacted2029.ts, enacted2030.ts). Section 2 of H.B. 1 cuts the rate further, by 0.2, 0.25 or 0.3 of a point, for calendar year 2031 or later only when the Working Cash-Stabilization Reserve Fund is fully funded and adjusted General Fund revenue exceeds the following year’s appropriations by the stated share of the cost of a one percent cut; those cuts are not loaded, so from 2031 the engine holds 3% and overstates the rate in any year a cut is triggered. The next refreshes each have a published figure waiting, so carrying one forward is wrong by construction. A part-year resident is taxed on the income earned while resident, with the deductions and exemptions multiplied by the line 13c ratio of Mississippi AGI to total AGI (2025 Form 80-100 instructions) and the whole $10,000 zero band. From 2026-10-07 a slice of a year split between states keeps the band whole (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it scaled the band with the months. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,754.00, now $1,554.00.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -829,13 +829,19 @@ export const southCentralStateRecords = {
       url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
       quotedText:
         'Sections 1 through 13 and Sections 25 through 29 of this act shall take effect and be in force from and after July 1, 2025, and Sections 15 through 24 of this act shall take effect and be in force from and after March 1, 2026.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 80-100 instructions, part-year residents and lines 14 and 15',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
+      quotedText:
+        'You will be taxed only on income earned while a resident of Mississippi and you will prorate your deductions and exemptions. … Multiply the amount on line 14a by the ratio on line 13c and enter the total here. This is your allowable deduction amount. … Multiply the amount on line 15a by the ratio on line 13c and enter the total here. This is your allowable exemption amount.',
     }],
     volatility: 'staticStatute',
     // Deliberate, exactly as for Indiana: from 2031 the rate turns on the
     // section 2 triggers, which no projection can know.
     effectiveFrom: 2026,
     effectiveThrough: 2030,
-    verifiedOn: '2026-09-28',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/data/enacted2027.ts',
@@ -853,6 +859,8 @@ export const southCentralStateRecords = {
       'packages/engine/src/params/state/data/enacted2030.ts#states.MS',
       'packages/engine/src/params/state/index.ts#stateParamsFor',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+      'packages/engine/src/params/state/data/year2026.ts#MS.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1212,7 +1220,7 @@ export const southCentralStateRecords = {
   'ky-dor-2026-standard-deduction-once-per-return': {
     title: 'Kentucky’s TY2026 standard deduction is $3,360 once per return, including MFJ',
     statement:
-      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest published Form 740 filing-status pattern (TY2024 instructions packet, 42A740(PKT) (10-24); amount updated for 2026 from the DOR announcement) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
+      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest published Form 740 filing-status pattern (TY2024 instructions packet, 42A740(PKT) (10-24); amount updated for 2026 from the DOR announcement) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`. A part-year resident’s standard deduction “does not have to be prorated” (2025 Form 740-NP Schedule A instructions), and the resident-period income is taxed at the flat rate. From 2026-10-07 a slice of a year split between states keeps the whole deduction (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it prorated it by months. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,691.20, now $1,632.40.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1231,11 +1239,17 @@ export const southCentralStateRecords = {
       url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf',
       quotedText:
         'Nonitemizers, enter the standard deduction of $3,160. If married filing separately on a combined return, enter $3,160 in both Columns A and B. If filing a joint return, only one $3,160 standard deduction is allowed.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 740-NP Schedule A instructions',
+      url: 'https://revenue.ky.gov/Forms/740-NP%20Schedule%20A%20(2025).pdf',
+      quotedText:
+        'Amounts entered on Schedule A should be total deductions for the taxable period. These amounts are prorated on Form 740-NP, page 1. If you do not itemize, you may elect to take a standard deduction of $3,270 and it does not have to be prorated.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -1243,6 +1257,8 @@ export const southCentralStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.KY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#KY.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
@@ -1283,7 +1299,7 @@ export const southCentralStateRecords = {
   'la-rs-47-44-2-social-security-federal-retirement': {
     title: 'Louisiana exempts Social Security, federal retirement, and railroad retirement',
     statement:
-      'Louisiana exempts any benefit received under Chapter 7 of Title 42 of the United States Code, any income received under a retirement system for retirees of the United States Government, and any income received under the Railroad Retirement Act of 1974. That is what `taxesSocialSecurity: false` encodes for Social Security, and it is the United States Government / railroad retirement the characterized leaf excludes when source kinds are `federalCivilService` or railroad. The coarse public-bucket overreach onto municipal pensions is registered separately at `la-rs-47-44-2-public-bucket-overreach`.',
+      'Louisiana exempts any benefit received under Chapter 7 of Title 42 of the United States Code, any income received under a retirement system for retirees of the United States Government, and any income received under the Railroad Retirement Act of 1974. That is what `taxesSocialSecurity: false` encodes for Social Security, and it is the United States Government / railroad retirement the characterized leaf excludes when source kinds are `federalCivilService`, `militaryRetirement`, `militarySurvivor` or railroad: the uniformed services are a retirement system for retirees of the United States Government, and the IT-540 instructions put Survivor Benefit Plan payments on the same code, 04E. None of it enters the 47:44.1 exemption at 65, which the household\u2019s other retirement income keeps. Before 2026-10-07 the leaf excluded civil service and railroad only, and military pay fell into the $12,324 exemption at 65: a single filer with $100,000 of it paid $2,613.75 at 60 and $2,244.03 at 65, where the law charges nothing. The coarse public-bucket overreach onto municipal pensions is registered separately at `la-rs-47-44-2-public-bucket-overreach`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1295,11 +1311,17 @@ export const southCentralStateRecords = {
       url: 'https://www.legis.la.gov/legis/Law.aspx?d=102134',
       quotedText:
         'Any benefit received by an individual pursuant to the provisions of Chapter 7 of Title 42 of the United States Code (42 U.S.C. 301 et seq.), and any income received by an individual pursuant to a retirement system for retirees of the United States Government or pursuant to the Railroad Retirement Act of 1974 (45 U.S.C. 231 et seq.) shall be exempt from the state income tax.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form IT-540 instructions, Schedule E code 04E',
+      url: 'https://dam.ldr.la.gov/taxforms/IT540i-WEB-2025-Revised-7-26.pdf',
+      quotedText:
+        '04E – Federal Retirement Benefits – Enter the amount of retirement benefits received from a Federal Retirement System, including benefits received from a military survivor benefit plan.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/tax/stateLouisianaRetirement.ts',
@@ -1348,7 +1370,7 @@ export const southCentralStateRecords = {
   'la-ldr-it540es-2026-standard-deduction': {
     title: 'Louisiana\'s TY2026 CPI-indexed standard deduction is $12,875 single and $25,750 joint',
     statement:
-      'La. R.S. 47:294(A) allows a standard deduction in determining a taxpayer\'s tax liability pursuant to this Part, sets a $12,500.00 base for single and married-filing-separately filers and two hundred percent of that amount for married-filing-jointly, head-of-household, and qualifying-surviving-spouse filers under §294(A)(1)-(2), and §294(B) requires annual CPI-U adjustment beginning January 1, 2026 by multiplying the prior year\'s standard deduction. Louisiana Department of Revenue 2026 Form IT-540ESi instructions publish the agency-computed TY2026 result as Single $12,875 and Married Filing Joint $25,750 and apply those amounts before multiplying Louisiana taxable income by three percent. The pack stores those published amounts in its supported single and married-filing-jointly deduction cells. Settled only for that CPI-indexed standard deduction on supported single and MFJ filings: married filing separately, head of household, and qualifying surviving spouse amounts are documented on the same worksheet but are not separate pack cells; exemptions, credits, retirement Schedule E adjustments, and whole-return accuracy remain outside this record.',
+      'La. R.S. 47:294(A) allows a standard deduction in determining a taxpayer\'s tax liability pursuant to this Part, sets a $12,500.00 base for single and married-filing-separately filers and two hundred percent of that amount for married-filing-jointly, head-of-household, and qualifying-surviving-spouse filers under §294(A)(1)-(2), and §294(B) requires annual CPI-U adjustment beginning January 1, 2026 by multiplying the prior year\'s standard deduction. Louisiana Department of Revenue 2026 Form IT-540ESi instructions publish the agency-computed TY2026 result as Single $12,875 and Married Filing Joint $25,750 and apply those amounts before multiplying Louisiana taxable income by three percent. The pack stores those published amounts in its supported single and married-filing-jointly deduction cells. Settled only for that CPI-indexed standard deduction on supported single and MFJ filings: married filing separately, head of household, and qualifying surviving spouse amounts are documented on the same worksheet but are not separate pack cells; exemptions, credits, retirement Schedule E adjustments, and whole-return accuracy remain outside this record. A part-year resident’s Form IT-540B (2025) enters the whole standard deduction (line 10), prorates only the itemized excess (line 11E) and taxes at 3% (line 13). From 2026-10-07 a slice of a year split between states keeps the whole deduction (the 2026 figures’ partYear, tax/stateTax.ts#prorateParams), where before it prorated it by months. A single filer of 50 with $100,000 of ordinary income, resident six months: $1,306.88, now $1,113.75.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1389,11 +1411,17 @@ export const southCentralStateRecords = {
       url: 'https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf',
       quotedText:
         'Single $12,875 … Married Filing Joint $25,750 … Your Estimated Louisiana Taxable Income (Subtract Lines 2 and 3 from Line 1.) … Estimated Louisiana Income Tax (Multiply Line 4 by .03.)',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form IT-540B, lines 10, 11E, 12 and 13',
+      url: 'https://dam.ldr.la.gov/taxforms/IT540B(2025)WEB-BC-F.pdf',
+      quotedText:
+        '10 LOUISIANA STANDARD DEDUCTION – Enter the standard deduction amount that corresponds with your filing status. Enter $12,500 if filing status is 1 or 3; $25,000 if 2, 4, or 5. … 11E ALLOWABLE DEDUCTIONS – Multiply Line 11D by the percentage on Line 9. … 12 YOUR LOUISIANA TAXABLE INCOME – Subtract Lines 10 and 11E from Line 8. … 13 YOUR LOUISIANA INCOME TAX – Multiply Line 12 by .03.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-09-09',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -1401,13 +1429,15 @@ export const southCentralStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.LA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#LA.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 
   'ok-stat-68-2358-retirement-and-social-security': {
     title: 'Oklahoma subtracts Social Security and caps ordinary retirement exclusions at $10,000 per person',
     statement:
-      'The Oklahoma Tax Commission\'s Form 511 packet directs a resident to subtract Social Security benefits included in federal AGI and permits each individual to exclude up to $10,000 of qualifying retirement benefits. The packet separately makes military and CSRS retirement fully excludable; the pack carries the common $10,000 cap and Social Security subtraction but cannot distinguish those special categories, so it overstates Oklahoma tax for an eligible military or CSRS retiree. The rate and standard-deduction figures in the pack are not re-asserted by this retirement record.',
+      'The Oklahoma Tax Commission\'s Form 511 packet directs a resident to subtract Social Security benefits included in federal AGI and permits each individual to exclude up to $10,000 of qualifying retirement benefits. The packet separately makes military and CSRS retirement fully excludable; the pack carries the common $10,000 cap and Social Security subtraction. A characterized Military retirement row is excluded in full (ok-stat-68-2358-e-17-armed-forces-retirement-exclusion), but the coarse public bucket cannot say a pension is military, and nothing distinguishes a CSRS annuity paid in lieu of Social Security, so the engine overstates Oklahoma tax for an eligible CSRS retiree, and for a military retiree priced from the coarse buckets alone. The rate and standard-deduction figures in the pack are not re-asserted by this retirement record.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -1814,7 +1844,7 @@ export const southCentralStateRecords = {
   'al-dor-individual-income-tax-rate-schedule': {
     title: 'Alabama taxes taxable income at 2%, 4%, and 5% with filing-status break points',
     statement:
-      'The Alabama Department of Revenue\'s individual income-tax page states the rate schedule: for a single filer, 2 percent on the first $500 of taxable income, 4 percent on the next $2,500, and 5 percent on all over $3,000; for married filing jointly, 2 percent on the first $1,000, 4 percent on the next $5,000, and 5 percent on all over $6,000. The pack\'s `brackets` carry those rates and break points.',
+      'The Alabama Department of Revenue\'s individual income-tax page states the rate schedule: for a single filer, 2 percent on the first $500 of taxable income, 4 percent on the next $2,500, and 5 percent on all over $3,000; for married filing jointly, 2 percent on the first $1,000, 4 percent on the next $5,000, and 5 percent on all over $6,000. The pack\'s `brackets` carry those rates and break points. A part-year resident files Form 40 with only the resident-period income and claims the whole standard deduction and the personal and dependent exemptions (2025 Form 40 and Form 40NR booklets), taxed on this schedule. From 2026-10-07 a slice of a year split between states keeps the schedule and the whole deduction (the 2026 figures\' partYear, tax/stateTax.ts#prorateParams), where before it scaled both with the months. A single filer of 50 with $100,000 of ordinary income, resident six months: $2,405.00, now $2,310.00, on the flat $3,000 deduction (al-form40-standard-deduction-agi-slide).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1832,11 +1862,17 @@ export const southCentralStateRecords = {
       url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
       quotedText:
         'Married persons filing a joint return with adjusted gross income of $10,500 or more: … 2 percent on first $1,000 … 4 percent on next $5,000 … 5 percent on all over $6,000',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 40 booklet, part-year residents',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Part-year residents of Alabama should only report income earned while a resident of Alabama. Itemized deductions must be prorated to reflect only those expenses incurred while a resident of Alabama. … Part-year residents are allowed to deduct the full standard deduction, personal, and dependent exemptions.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-28',
+    verifiedOn: '2026-10-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -1844,6 +1880,39 @@ export const southCentralStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+      'packages/engine/src/params/state/data/year2026.ts#AL.partYear',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
+    ],
+  },
+  'ok-stat-68-2358-e-17-armed-forces-retirement-exclusion': {
+    title: 'Oklahoma excludes Armed Forces retirement benefits in full, outside the $10,000 retirement exclusion',
+    statement:
+      '68 O.S. 2358(E)(17) exempts, for 2022 and later, retirement benefits received by an individual from any component of the Armed Forces of the United States, and Schedule 511-A line 4 lets each individual exclude 100% of them. The $10,000 exclusion of line 6 is a separate limb for other retirement benefits. A pension tagged Military retirement is excluded in full and takes no room under the $10,000, which the household\u2019s other retirement income keeps. Before 2026-10-07 the engine priced military pay inside the shared $10,000: a single filer with $100,000 of it paid $3,549.50, and one with $50,000 of military pay and a $50,000 private pension at 70 paid $3,549.50, where the law charges $0.00 and $1,299.50. Whether a Survivor Benefit Plan annuity is a retirement benefit received from a component of the Armed Forces was not settled from the primary text, so a pension tagged Military survivor benefit keeps the $10,000 limb as before. The Civil Service Retirement System limb of the same schedule is the registered approximation ok-stat-68-2358-retirement-and-social-security.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:OK',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 4',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Each individual may exclude 100% of retirement benefits from any component of the Armed Forces of the United States.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-10-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#OK.militaryRetirementExclusion',
+      'packages/engine/src/tax/stateRailroadAndMilitary.ts#militaryRetirementSubtraction',
+      'packages/engine/src/tax/stateTax.ts#characterizedRetirementDelta',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

@@ -238,11 +238,15 @@ describeRule('nj-stat-54a-6-10-retirement-income-exclusion', {
   })
 
   it('counts a Roth conversion and a disabled recipient, and the coarse fields', () => {
-    // A $60,000 conversion at 62 on $60,000 of income: min(60,000, 75,000).
-    expect(subtracted('NJ', [conversion(60_000, { recipientAgeYears: 62 })], household(), { ordinaryIncome: 60_000 })).toBe(60_000)
-    // A disabled recipient of 55 qualifies as the statute's disability limb.
-    expect(subtracted('NJ', [pension(40_000, { recipientAgeYears: 55, recipientDisabled: true })], household(), { ordinaryIncome: 40_000 })).toBe(40_000)
-    expect(subtracted('NJ', [pension(40_000, { recipientAgeYears: 55 })], household(), { ordinaryIncome: 40_000 })).toBe(0)
+    // A $60,000 conversion at 62 on $70,000 of income: min(60,000, 75,000).
+    // (On $70,000 the $1,000 personal exemption leaves the base above zero
+    // either way, so the difference is the exclusion alone.)
+    expect(subtracted('NJ', [conversion(60_000, { recipientAgeYears: 62 })], household(), { ordinaryIncome: 70_000 })).toBe(60_000)
+    // A disabled recipient of 55 qualifies as the statute's disability limb,
+    // and also takes the $1,000 disabled exemption of 54A:3-1(b)5
+    // (nj-stat-54a-3-1-personal-exemptions).
+    expect(subtracted('NJ', [pension(40_000, { recipientAgeYears: 55, recipientDisabled: true })], household(), { ordinaryIncome: 50_000 })).toBe(41_000)
+    expect(subtracted('NJ', [pension(40_000, { recipientAgeYears: 55 })], household(), { ordinaryIncome: 50_000 })).toBe(0)
     // With no characterized rows, the coarse retirement field: single, 65,
     // $80,000 all retirement income, 75,000 off.
     const pack = stateParamsFor('NJ', 2026)!
@@ -257,15 +261,19 @@ describe('New Jersey pension exclusion, part-year resident', () => {
     // Florida. The slice has $40,000 of income and of payments; the income
     // test reads the year ($80,000, under $100,000), and the $75,000 maximum
     // is prorated to $37,500 (NJ-1040 line 28a, part-year residents), so
-    // $37,500 of the slice's $40,000 is excluded and $2,500 is taxed at 1.4%:
-    // $35.00. The slice's brackets are halved, so the first band ends at
-    // $10,000.
+    // $37,500 of the slice's $40,000 is excluded. The $1,000 personal
+    // exemption and the $1,000 age exemption are each limited to the six
+    // months resident by 54A:3-1(c), $500 apiece, so $1,500 is taxed at 1.4%:
+    // $21.00. New Jersey's part-year brackets are the whole-year table
+    // (partYear.rateSchedule 'unscaled'), whose first band runs to $20,000;
+    // statePartYear.rules.test.ts pins that with income above the first band.
     const partYear = computeStateTaxYearResult(input('NJ', {
       ordinaryIncome: 80_000,
       privateRetirementIncome: 80_000,
       agesAlive: [65],
+      peopleAged65Plus: 1,
       stateResidency: [{ state: 'NJ', months: 6 }, { state: 'FL', months: 6 }],
     }))
-    expect(partYear.totalTax).toBeCloseTo(2_500 * 0.014, 6)
+    expect(partYear.totalTax).toBeCloseTo(1_500 * 0.014, 6)
   })
 })

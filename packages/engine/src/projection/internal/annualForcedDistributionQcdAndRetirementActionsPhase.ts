@@ -21,8 +21,8 @@ import { startRothFiveYearPeriod, type RothBasisState } from '../../strategies/r
 import { annualOwnerRmdPlan } from './annualOwnerRmdPlan.js'
 import { planElectionYearOwnerRmdDraws } from './annualOwnedAccountDrawsPhase.js'
 import {
-  acceptedElectionYearQualifyingDistributions,
-  electionYearOwnerRmdReferenceBalance,
+  acceptedElectionYearQualifyingDistributions, electionYearOwnerRmdCredits,
+  electionYearOwnerRmdReferenceBalance, electionYearQualifyingDistributionsInPool,
 } from './beneficiarySpousalElectionGateAdapter.js'
 import { annualSeppDistributions } from './annualSeppDistributions.js'
 import {
@@ -769,16 +769,16 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         accountId: state.account.id,
         accountType: state.account.type,
         priorYearEndBalance: electionYearOwnerRmdReferenceBalance({
-          account: state.account,
-          startOfYearBalance: startOfYearBalance.get(state.account.id) ?? 0,
+          account: state.account, accounts: rmdBalances.map((row) => row.account), taxYear: year,
+          startOfYearBalance: startOfYearBalance.get(state.account.id) ?? 0, primaryPersonId: primary.id,
         }),
         birthYear: socialSecurityDobParts(owner).y,
         ageAttained: ownerState.ageAttained,
         isDeathYear: year === inherited.ownerDeathYear,
-        alreadyDistributedQualifying: acceptedElectionYearQualifyingDistributions({
-          account: state.account,
-          taxYear: year,
-        }).amount,
+        ...electionYearOwnerRmdCredits({
+          account: state.account, accounts: rmdBalances.map((row) => row.account),
+          taxYear: year, primaryPersonId: primary.id,
+        }),
         liveBalance: state.balance,
       }]
     }),
@@ -787,9 +787,9 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     rmdBalances.flatMap((state) =>
       electionYearOwnerRmdAccountIds.has(state.account.id) &&
       (state.account.type === 'traditional' || state.account.type === 'roth')
-        ? [[state.account.id, acceptedElectionYearQualifyingDistributions({
-            account: state.account,
-            taxYear: year,
+        ? [[state.account.id, electionYearQualifyingDistributionsInPool({
+            account: state.account, accounts: rmdBalances.map((row) => row.account),
+            taxYear: year, primaryPersonId: primary.id,
           })] as const]
         : [],
     ),
@@ -799,7 +799,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     const ownerId = rmdBalances.find((state) => state.account.id === row.accountId)?.account.ownerPersonId
       ?? primary.id
     const accepted = electionYearAcceptedDistributions.get(row.accountId) ?? {
-      amount: 0,
+      amount: 0, pooled: false, poolShared: 0,
       evidence: 'none' as const,
     }
     if (row.ownerRequiredAmount > 0) {
@@ -819,8 +819,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       accountId: row.accountId,
       ownerPersonId: ownerId,
       requiredAmount: row.ownerRequiredAmount,
-      creditedAcceptedDistributionAmount: accepted.amount,
-      creditedDistributionEvidence: accepted.evidence,
+      creditedAcceptedDistributionAmount: row.alreadyDistributedQualifying,
+      creditedDistributionEvidence: accepted.pooled && row.alreadyDistributedQualifying <= 0 ? 'none' : accepted.evidence,
       unpaidAmount: row.unpaidAmount,
       settledAmount: row.takeAmount,
       unsatisfiedAmount,
@@ -835,7 +835,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     const existingIndex = rmdShortfallObligations.findIndex((obligation) =>
       obligation.obligationId === obligationId,
     )
-    const distributedByDeadline = accepted.amount + row.takeAmount
+    const distributedByDeadline = row.alreadyDistributedQualifying + row.takeAmount
     if (existingIndex >= 0) {
       const existing = rmdShortfallObligations[existingIndex]!
       rmdShortfallObligations[existingIndex] = {
@@ -1087,6 +1087,10 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       const ownerTake = electionYearOwnerPlan.takeByAccountId.get(row.accountId) ?? 0
       const ownerRequired =
         electionYearOwnerPlan.ownerRequiredByAccountId.get(row.accountId) ?? 0
+      // The planner's unpaid amount counts a pool's shared j(4) figure once,
+      // toward the pool, not once against every IRA in it.
+      const ownerUnpaid = electionYearOwnerPlan.rows
+        .find((plan) => plan.accountId === row.accountId)?.unpaidAmount ?? Math.max(0, ownerRequired - accepted.amount)
       const suppressCash = suppressInheritedForcedTakeAccountIds.has(row.accountId)
       // Keep beneficiary/decedent requiredAmount (immutable trigger or death-year
       // residual base). When non-death-year cash is suppressed, publish accepted
@@ -1094,12 +1098,12 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       return {
         ...row.evidence,
         ...(suppressCash
-          ? { executedRequiredAmount: accepted.amount + ownerTake }
+          ? { executedRequiredAmount: (electionYearOwnerPlan.creditedByAccountId.get(row.accountId) ?? accepted.amount) + ownerTake }
           : {}),
         disclosures: [
           ...row.evidence.disclosures,
           `election-year-owner-rmd:${ownerRequired}`,
-          `election-year-owner-rmd-unpaid:${Math.max(0, ownerRequired - accepted.amount)}`,
+          `election-year-owner-rmd-unpaid:${ownerUnpaid}`,
         ],
       }
     })

@@ -208,6 +208,8 @@ export function utahSocialSecurityCredit(args: {
   if (!args.config) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-ss-credit-pack-missing', ruleId: 'ut-59-10-1042-social-security-credit', message: 'Utah Social Security credit requires the published 2026 statutory parameter set and MAGI facts.', missingFacts: ['utahRetirementCredits', 'utahMagi'] }] }
   }
+  // No Social Security in Utah taxable income: no credit at any MAGI.
+  if (args.socialSecurityIncludedInUtahTaxableIncome === 0) return emptyLeafAdjustment()
   if (args.socialSecurityIncludedInUtahTaxableIncome === undefined || args.utahMagi === undefined || !args.filingStatus) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-ss-credit-incomplete', ruleId: 'ut-59-10-1042-social-security-credit', message: 'Utah Social Security credit requires Utah taxable SS, statutory MAGI, and filing status.', missingFacts: ['socialSecurityIncludedInUtahTaxableIncome', 'utahMagi', 'stateFilingStatus'] }] }
   }
@@ -238,6 +240,9 @@ export function utahRetirementCredit(args: {
   if (!args.config) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-retirement-credit-pack-missing', ruleId: 'ut-59-10-1019-general-retirement-credit', message: 'Utah retirement credit requires the published 2026 statutory parameter set and exact birth-date facts.', missingFacts: ['utahRetirementCredits', 'claimantDatesOfBirth'] }] }
   }
+  // No claimant born on or before the cohort date: no credit at any MAGI.
+  const latest = args.config.latestEligibleBirthDate
+  if (args.claimantDatesOfBirth?.every((dob) => /^\d{4}-\d{2}-\d{2}$/.test(dob) && dob > latest)) return emptyLeafAdjustment()
   if (args.claimantDatesOfBirth === undefined || args.utahMagi === undefined || !args.filingStatus) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-retirement-credit-incomplete', ruleId: 'ut-59-10-1019-general-retirement-credit', message: 'Utah general retirement credit requires exact claimant dates of birth, statutory MAGI, and filing status.', missingFacts: ['claimantDatesOfBirth', 'utahMagi', 'stateFilingStatus'] }] }
   }

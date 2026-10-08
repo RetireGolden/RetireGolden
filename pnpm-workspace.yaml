@@ -56,15 +56,21 @@ trustPolicyExclude:
 # the entry, re-resolve, and let `.github/workflows/resolve-gate.yml` show
 # what a fresh resolve then picks.
 #
-# sharp: ^0.35.0
+# sharp: ^0.35.5
 #   Build-time image toolchain, reached only through
 #   `@vite-pwa/assets-generator` (PWA icon generation) and `sharp-ico`.
-#   Reason: GHSA-f88m-g3jw-g9cj (high, dev-only). assets-generator 1.0.2
-#   still declares `sharp: ^0.33.5` and sharp-ico declares `*`, so without
-#   this override a fresh resolve lands back on the vulnerable 0.33 line
-#   (commit 0ca3b2a7).
-#   Drop when `@vite-pwa/assets-generator` publishes a sharp range that
-#   already excludes the advisory.
+#   Reason: three high, dev-only advisories, each of which raised the floor.
+#   GHSA-f88m-g3jw-g9cj set the original `^0.35.0` (commit 0ca3b2a7);
+#   GHSA-rgj7-g3m4-5g8c (libheif, patched in 0.35.4) and
+#   GHSA-wq5f-xc86-pv6w (librsvg, patched in 0.35.5) raised it to `^0.35.5`
+#   on 2026-10-07. The lockfile resolves assets-generator 1.0.2, which
+#   still declares `sharp: ^0.33.5`; 1.0.3 and later declare `^0.35.4`,
+#   which still admits the librsvg-vulnerable 0.35.4; sharp-ico declares
+#   `*`. Without this override a non-frozen install under the committed
+#   lockfile lands back on the vulnerable 0.33 line.
+#   Drop when the assets-generator version the lockfile resolves declares
+#   a sharp range whose floor is 0.35.5 or later, so that range alone
+#   excludes every advisory above.
 #
 # ejs>jake: ^12.10.1
 #   Scoped: jake only where `ejs` depends on it. ejs 3.1.10 declares

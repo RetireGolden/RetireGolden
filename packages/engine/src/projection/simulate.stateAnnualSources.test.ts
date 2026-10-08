@@ -116,7 +116,7 @@ it('commits NJ Worksheet C basis once and carries closing basis to the next actu
 })
 
 
-it('derives Utah included Social Security while preserving unknown statutory MAGI additions', () => {
+it('derives Utah included Social Security and the 59-10-114 additions the plan holds, keeping a stored assertion', () => {
   // IRC86:30000ordinary+10000SS gives5350 taxableSS. Utah1042 credits
   // only5350*.0445;35350*.0445 minus that credit leaves1335.
   const plan = singlePersonPlan({dob:'1958-01-02',planningAge:80,state:'UT'})
@@ -137,10 +137,21 @@ it('derives Utah included Social Security while preserving unknown statutory MAG
   })
   expect(row.tax).toBeCloseTo(1335,6)
   expect(row.taxComputation?.status).toBe('complete')
+  // With no stored row the plan holds no 59-10-114(1) addition (its
+  // tax-exempt interest is counted once, as excluded interest): 0, the same
+  // credit, and a complete year.
   plan.stateTaxFacts.householdYearFacts = []
-  const unknown = simulatePlan(validatePlan(plan),{startYear:2026,horizonEndYear:2026,taxCalculator:calc}).years[0]!
-  expect(unknown.acceptedTaxInput?.stateHouseholdFacts?.utahSection59_10_114Additions).toBeUndefined()
-  expect(unknown.taxComputation?.status).toBe('incomplete')
+  const derived = simulatePlan(validatePlan(plan),{startYear:2026,horizonEndYear:2026,taxCalculator:calc}).years[0]!
+  expect(derived.acceptedTaxInput?.stateHouseholdFacts?.utahSection59_10_114Additions).toBe(0)
+  expect(derived.tax).toBeCloseTo(1335,6)
+  expect(derived.taxComputation?.status).toBe('complete')
+  // A stored 30,000 addition raises MAGI to 65,350: the phase-out of
+  // 2.5% x 11,350 = 283.75 exceeds the 238.075 credit, so no credit and
+  // 35,350 x 4.45% = 1,573.075.
+  plan.stateTaxFacts.householdYearFacts = [{year:2026,utahSection59_10_114Additions:30000}]
+  const stored = simulatePlan(validatePlan(plan),{startYear:2026,horizonEndYear:2026,taxCalculator:calc}).years[0]!
+  expect(stored.acceptedTaxInput?.stateHouseholdFacts?.utahSection59_10_114Additions).toBe(30000)
+  expect(stored.tax).toBeCloseTo(1573.075,6)
 })
 
 

@@ -195,7 +195,12 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'early-retiree-aca': { depletionYear: null, endingInvestable: 579_405.87, lifetimeTax: 107_862.17, lifetimeRoth: 59_661.87 },
   'rmd-irmaa': { depletionYear: null, endingInvestable: 1_546_168.63, lifetimeTax: 512_839.75, lifetimeRoth: 0 },
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 79_020.67, lifetimeRoth: 0 },
-  'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_516.31, lifetimeTax: 732_565.75, lifetimeRoth: 0 },
+  // Restated 2026-10-07: the plan moves from Florida to Kentucky in July 2029,
+  // and Kentucky's part-year slice now takes the whole $3,360 standard
+  // deduction its Form 740-NP allows, not half of it: 1,680 x 3.5% = $58.80
+  // less tax in 2029. Lifetime tax 732,565.75 -> 732,506.95; ending investable
+  // 3,880,516.31 -> 3,880,618.68 as the saving compounds.
+  'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_618.68, lifetimeTax: 732_506.95, lifetimeRoth: 0 },
   'ltc-shock': { depletionYear: 2033, endingInvestable: 0, lifetimeTax: 0, lifetimeRoth: 0 },
   // Restated 2026-09-28 (D-2027-PUBLISHED-FIGURES, the survey of every state):
   // California's 10.3%, 11.3% and 12.3% bands end from 2031 (Cal. Const. art.

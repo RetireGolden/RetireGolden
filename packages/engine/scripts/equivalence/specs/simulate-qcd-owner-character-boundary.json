@@ -404,36 +404,36 @@
       "label": "owner-character invocation with annual state-tax character publication independent of capture",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1225,
-        1244
+        1229,
+        1248
       ],
       "anchors": [
         {
-          "line": 1225,
+          "line": 1229,
           "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()"
         },
         {
-          "line": 1227,
+          "line": 1231,
           "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())"
         },
         {
-          "line": 1232,
+          "line": 1236,
           "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult("
         },
         {
-          "line": 1233,
+          "line": 1237,
           "text": "annualLegacyQcdOwnerCharacterPlan({"
         },
         {
-          "line": 1237,
+          "line": 1241,
           "text": "preDistributionAggregateIraBalance,"
         },
         {
-          "line": 1239,
+          "line": 1243,
           "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor,"
         },
         {
-          "line": 1243,
+          "line": 1247,
           "text": "[...expectedQcdOwnerIds],"
         }
       ]
@@ -443,16 +443,16 @@
       "label": "ordered owner-row iteration and contradiction selection",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1245,
-        1246
+        1249,
+        1250
       ],
       "anchors": [
         {
-          "line": 1245,
+          "line": 1249,
           "text": "for (const row of qcdOwnerCharacterPlan.rows) {"
         },
         {
-          "line": 1246,
+          "line": 1250,
           "text": "if (row.contradictoryOffsetLedger) {"
         }
       ],
@@ -463,40 +463,40 @@
       "label": "ordered owner offset, character and income folds",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1252,
-        1267
+        1256,
+        1271
       ],
       "anchors": [
         {
-          "line": 1252,
+          "line": 1256,
           "text": "if (row.qcdOffsetConsumedWrite !== null) {"
         },
         {
-          "line": 1253,
+          "line": 1257,
           "text": "namedQcdOffsetConsumedByDonor.set("
         },
         {
-          "line": 1256,
+          "line": 1260,
           "text": ")"
         },
         {
-          "line": 1258,
+          "line": 1262,
           "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)"
         },
         {
-          "line": 1263,
+          "line": 1267,
           "text": "qcdIncomeOffset += row.incomeOffsetDelta"
         },
         {
-          "line": 1264,
+          "line": 1268,
           "text": "if (row.nonQualifiedOrdinaryIncomeDelta > 0) {"
         },
         {
-          "line": 1266,
+          "line": 1270,
           "text": "row.nonQualifiedOrdinaryIncomeDelta"
         },
         {
-          "line": 1267,
+          "line": 1271,
           "text": "}"
         }
       ]
@@ -506,36 +506,36 @@
       "label": "all four closed-union cash-flow publications",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1268,
-        1281
+        1272,
+        1285
       ],
       "anchors": [
         {
-          "line": 1268,
+          "line": 1272,
           "text": "for (const write of row.cashFlowWrites) {"
         },
         {
-          "line": 1269,
+          "line": 1273,
           "text": "switch (write.target) {"
         },
         {
-          "line": 1270,
+          "line": 1274,
           "text": "case 'exclusionFromRmd':"
         },
         {
-          "line": 1273,
+          "line": 1277,
           "text": "case 'ordinaryFromRmd':"
         },
         {
-          "line": 1276,
+          "line": 1280,
           "text": "case 'exclusionBeyondRmd':"
         },
         {
-          "line": 1279,
+          "line": 1283,
           "text": "case 'ordinaryBeyondRmd':"
         },
         {
-          "line": 1281,
+          "line": 1285,
           "text": "break"
         }
       ],
@@ -546,36 +546,36 @@
       "label": "exact helper-owned pro-rata object publication",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1288,
-        1296
+        1292,
+        1300
       ],
       "anchors": [
         {
-          "line": 1288,
+          "line": 1292,
           "text": "if (row.iraProRataWrite !== null) {"
         },
         {
-          "line": 1289,
+          "line": 1293,
           "text": "const readSnapshot = row.iraProRataReadSnapshot!"
         },
         {
-          "line": 1290,
+          "line": 1294,
           "text": "iraProRata.set(row.ownerId, readSnapshot)"
         },
         {
-          "line": 1291,
+          "line": 1295,
           "text": "qcdProRataIdentityByReadSnapshot.set("
         },
         {
-          "line": 1293,
+          "line": 1297,
           "text": "row.iraProRataWrite,"
         },
         {
-          "line": 1296,
+          "line": 1300,
           "text": "}"
         },
         {
-          "line": 1295,
+          "line": 1299,
           "text": "}"
         }
       ],
