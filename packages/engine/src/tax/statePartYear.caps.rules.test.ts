@@ -76,8 +76,8 @@ describe('a capped exclusion in a part year', () => {
     // after its exclusion: the resident period received 10,000 + 10,000 of the
     // 30,000 of retirement income, two thirds, so its exclusion is 12,500 x 2/3
     // = 8,333.33; 45,000 - 8,333.33 = 36,666.67 over 67,500 = 0.543210.
-    // 3,224 x 0.543210 = 1,751.28. The whole cap would give 1,552.30, the
-    // months 1,850.81.
+    // 3,224 x 36,666.67 / 67,500 = 1,751.31. The whole cap would give
+    // 1,552.30, the months 1,850.81.
     const result = computeStateTaxYearResult(sixMonths('DE', { ordinaryIncome: 80_000, agesAlive: [62] }), {
       retirementDistributions: [
         retirement({ federallyIncludedAmount: 20_000 }),

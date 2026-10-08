@@ -38,7 +38,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     prorated by their ratios; the Connecticut and Wisconsin exemptions, Utah's credits and
     Iowa's alternate tax sit in the full-year tax the ratio prorates; Oregon's retirement
     income credit comes after the ratio, on the pension received while resident (OR-40-P
-    line 45, then lines 50 to 53); South Carolina's SCIAD phases on the year's federal AGI.
+    line 45, then lines 50 to 53); South Carolina's SCIAD phases on the year's federal AGI;
+    New Jersey's veteran and disabled exemptions read who qualifies from the year's rows,
+    wherever they fall, and prorate by the months.
   - **Retirement-exclusion caps** follow each state's part-year rule (`partYear.exclusionCap`):
     whole (NY, OK, SC, LA, MI, AL, AZ, and KY, whose 2025 Schedule P takes the pension income
     received while resident up to the whole $31,110), the year's exclusion by the months (MD,
@@ -48,14 +50,18 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     than the slice's own receipts earn. The blanket months scaling is gone.
   - **Wisconsin's slice-only path is gone**: method (b) prices it with the same figure.
   - **`state-rich-split-year-adapter-required` no longer marks a fully priced year.** It stays,
-    with a narrower message, in three cases. Arkansas, Colorado, Rhode Island and Missouri do
+    with a narrower message, in these cases. Arkansas, Colorado, Rhode Island and Missouri do
     not state how a capped retirement exclusion applies to a part year: their slices take the
     year's exclusion by the months, and the year is marked only where the whole cap on the
     slice's own receipts would give the slice a different income (with income spread evenly,
     where the slice's qualifying retirement income exceeds the months' share of the cap). A
     California or New Jersey slice that is not the year-end state, in a year with HSA facts,
-    would need HSA facts of its own, the year's being the year-end state's. And a state whose
-    parameters carry no method (none does).
+    would need HSA facts of its own, the year's being the year-end state's. A residency whose
+    segments do not give the year's 12 months, or that names a state twice (the projection
+    builds neither), is priced as given, each repeated state's basis pools committed once. And
+    a state whose parameters carry no method (none does). A state with no published
+    parameters marks the year `state-pack-unavailable`, as the annual path does, where it
+    used to be skipped.
 
   Before and after, a single filer of 50 resident six months in the state and six in Texas
   (every state's figures are worked in `packages/engine/src/tax/statePartYear*.rules.test.ts`):
@@ -98,19 +104,25 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   stand in where a form mandates its tax table (NJ-1040 line 43 and Hawaii N-15 line 44 below
   $100,000 of taxable income, California's at $100,000 or less). Nebraska's ratio and
   Wisconsin's subtraction share are taken on federal AGI items, leaving out adjustments whose
-  sign sets which way the figure errs. Nonresident-period source income, the credit for tax
+  sign sets which way the figure errs. A QCD in a split year leaves the year incomplete, and
+  its state adjustment is not applied. Nonresident-period source income, the credit for tax
   paid to the other state, special accrual and the SC, DE and MO full-year elections are not
   modeled. Exported types: `StateTaxParams['partYear']` loses `rateSchedule` and gains
   `method`, `ratioBasis` and `exclusionCap`, with the new `StatePartYearRatio`,
   `StatePartYearRatioBasis` and `StatePartYearExclusionCap`; `StateTaxComputationResult` gains
-  `partYear`; the state fact types gain `distributionDate`, `transferDate` and `paidMonths`.
+  `partYear` (the new `StatePartYearSlice`); `ComputeStateTaxOptions` gains `partYearSlice`, a
+  slice's shares and the year's rows its caps and person facts read;
+  `computeStateTaxableIncomeResult` also returns `stateIncome` and `newJerseyGrossIncome`; the
+  state fact types gain `distributionDate`, `transferDate` and `paidMonths`.
 - **Changed: room in the app bundle for the part-year work, with no cap raised** (2026-10-08,
   decision D-BUNDLE-HEADROOM). Three editor-only engine modules leave the engine simulation
   core for the retirement-action editor's lazy chunk; the worker loads the Optimize channel
   on its first request; the historical return series ships as rows of three numbers decoded
-  at load. Worker 1,146.9 to 1,084.4 KiB (of 1,150), core 894.9 to 866.2 KiB (of 900). The
-  built bundles produce identical figures over the 29 example plans
-  (DOCS/operations/bundle-budget.md).
+  at load. The moves alone, measured on the 0.4.2 head: worker 1,146.9 to 1,084.4 KiB (of
+  1,150), core 894.9 to 866.2 KiB (of 900), all JS 5,063.1 to 5,055.9 KiB (of 5,100), with
+  identical figures from the built bundles over the 29 example plans
+  (DOCS/operations/bundle-budget.md). With the part-year work this release builds to worker
+  1,092.4, core 874.2 and all JS 5,071.9 KiB.
 - Prepared **`@retiregolden/engine` 0.4.2** (2026-10-08) — a **patch**: the state tax and
   inherited-IRA corrections below and the dependency re-resolve. Plans stay schema 7, and no
   export is removed. One exported type changes: the state pack field `partYearRateSchedule`

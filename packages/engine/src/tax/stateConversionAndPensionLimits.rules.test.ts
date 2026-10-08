@@ -270,7 +270,7 @@ describe('New Jersey pension exclusion, part-year resident', () => {
     // exemption and the $1,000 age exemption are each limited to the six
     // months resident by 54A:3-1(c), $500 apiece, so $1,500 is taxed at 1.4%:
     // $21.00. New Jersey's part-year brackets are the whole-year table
-    // (partYear.rateSchedule 'unscaled'), whose first band runs to $20,000;
+    // (partYear.method 'residentPeriod'), whose first band runs to $20,000;
     // statePartYear.rules.test.ts pins that with income above the first band.
     const partYear = computeStateTaxYearResult(input('NJ', {
       ordinaryIncome: 80_000,

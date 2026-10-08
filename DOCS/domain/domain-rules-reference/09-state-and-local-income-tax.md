@@ -215,8 +215,11 @@
   Nebraska's and Wisconsin's federal-AGI proxies err in whichever direction
   their left-out adjustments set; nonresident-period source income, the credit
   for tax paid to the other state, special accrual and the full-year elections
-  are not modeled; and a California or New Jersey slice that is not the
-  year-end state is incomplete when the year has HSA facts.
+  are not modeled; a QCD in a split year leaves the year incomplete, its state
+  adjustment not applied; a California or New Jersey slice that is not the
+  year-end state is incomplete when the year has HSA facts; and a residency
+  whose segments do not give 12 months or name a state twice, or a state
+  without published parameters, marks the year incomplete.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,
