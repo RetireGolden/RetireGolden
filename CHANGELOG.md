@@ -4,6 +4,47 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the output census and the RetireGolden-MCP calculation records follow
+  RetireGolden-MCP 0.12.0** (2026-10-09). MCP 0.12.0 (RetireGolden-MCP #91, b2c7f717) renames
+  `compare_scenarios`' `deltaEndingAfterTaxEstate` to `deltaEndingAfterTaxEstateNominal`, with
+  the same value, adds `headline`, the engine's `comparePlanHeadlines` as the Compare page
+  reads it (today's dollars when the two plans end in different years), and makes
+  `run_monte_carlo` with no arguments run `headlineMonteCarloOptions`: 1,000 paths where it ran
+  200, `DEFAULT_MONTE_CARLO_SEED` (6,221,293) where it used 42, and the plan's lognormal model
+  (`buildLognormalModelConfigForPlan`), in which the tool's `returnVolPct` sets only the market
+  factor and an allocated account draws its classes' own volatilities. The census
+  (RetireGolden-Docs 740bfc99 and 6860969d, re-imported here) renames the selector; records the
+  headline's two estates as surfaces of `projection-summary-ending-after-tax-estate` and its
+  delta as a surface of `compare-plan-money-deltas`; excludes `headline.moneyBasis` and
+  `headline.endYear` with the classification it already gives the engine fields they echo
+  (D-MCP-COMPARE-HEADLINES); corrects `compare_scenarios.startYear`, which the tool has echoed
+  since 0.11.0; states the new defaults on the echoed Monte Carlo configuration; and moves its
+  MCP pin from 3197d359 to b2c7f717. At that pin it also covers what 0.11.0 added and the first
+  MCP round left out (D-MCP-CENSUS-PIN): the `startYear` and `warnings` the four other computed
+  tools return, the published summaries' `warnings` and `depletionYear`, and the solver's notes,
+  rounding label and verdict flag, each classified by the census's own precedent; and it removes
+  the selector `solve_max_spending.simulationCount`, a field the tool never returned. Exclusions
+  go from 487 to 504, and no family is added. `solve_max_spending.feasibleBaseAnnual`, the
+  summaries' `fiBasis`, `estateBreakdown` and `savingsRates` need a family, field rows or a
+  record, and the census lists them as not yet covered, with what each needs. The records
+  `mcp-compare-ending-after-tax-estate-delta` (which keeps its different-years limit for the
+  renamed field), `mcp-batch-cumulative-tax-objective`, `mcp-batch-ending-traditional-objective`,
+  `monte-carlo-default-seed` and `projection-summary-fi-spending-base` (whose limit now says
+  what RetireGolden-MCP chose in 0.11.0: its published summaries pass the conversion-free run,
+  and `batch_evaluate` and `solve_max_spending` pass null for the summaries they only read) are
+  restated to match. Codex reviewed all five restatements against RetireGolden-MCP b2c7f717
+  and approved them (`DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`),
+  so every family stays complete. This closes the 0.4.0
+  follow-up that asked RetireGolden-MCP to adopt the headline options. No engine code changes
+  and no figure moves.
+- **Fixed: the parameter-source appendix cites each Utah credit's own record** (2026-10-09,
+  found by the RetireGolden-Pro#324 review). The `state-income-tax` row named the §59-10-1042
+  Social Security, §59-10-1019 retirement and §59-10-1043 military retirement credits but cited
+  one record; it now cites `ut-code-59-10-114-social-security-tax-credit` (the §59-10-1042
+  credit, under its older id), `ut-code-59-10-1019-retirement-credit` and
+  `ut-code-59-10-1043-military-retirement-credit`, and `provenance.test.ts` checks that each
+  cited record's authority is its section. The planner-ui report goldens change in that wording
+  only; no figure moves.
 - Prepared **`@retiregolden/engine` 0.4.3** (2026-10-08) — a **patch**: part-year phase 2
   and the bundle headroom it needed (the entries below). Plans stay schema 7, and no export is
   removed. One exported type changes again: the state pack's `partYear` descriptor (new in
@@ -13,8 +54,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   facts are added (`distributionDate`, `transferDate`, `paidMonths`). Neither
   RetireGolden-MCP, RetireGolden-Pro nor the site reads the descriptor. planner-ui's
   `^0.4.0` range admits 0.4.3; its worker now loads the Optimize channel on first use, a
-  change that reaches hosts with the next planner-ui release. **Not yet published**; the
-  owner tags `engine-v0.4.3` and approves the `npm-publish` environment.
+  change that reaches hosts with the next planner-ui release. It carries the 0.4.2 patch,
+  which was prepared but never published and is folded in here. **Published 2026-10-09** from
+  the tag `engine-v0.4.3` on 084ee643, with npm provenance.
 - **Changed: a year split between states is priced by each state's own part-year method,
   on the income the months resident received, with the year's household facts** (engine
   0.4.3, 2026-10-08). Phase 2 of the part-year work; phase 1 (0.4.2) set the rate schedule
@@ -129,8 +171,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   (`@retiregolden/engine/params/state`), added in 0.4.1, becomes the `partYear` descriptor.
   Neither RetireGolden-MCP, RetireGolden-Pro nor the site reads it. planner-ui's `^0.4.0` range
   already admits 0.4.2, so planner-ui is not re-released; RetireGolden-MCP and
-  RetireGolden-Pro move by bumping their exact engine pin. **Not yet published**; the owner tags
-  `engine-v0.4.2` and approves the `npm-publish` environment.
+  RetireGolden-Pro move by bumping their exact engine pin. **Never published**: it is folded
+  into 0.4.3 (the Prepared entry above).
 - **Changed: the District of Columbia's standard deduction rests on its permanent law, and the
   dated review that was to settle it is closed** (2026-10-08). D.C. Law 26-189, the Fiscal Year 2027
   Budget Support Act of 2026 (D.C. Act 26-418, Bill 26-661), took effect October 2, 2026, when its

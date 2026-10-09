@@ -687,7 +687,7 @@ export const accountsAndGrowthRecords = {
     kind: 'composition',
     outputs: ['mcp-batch-ending-traditional-objective'],
     feeds: [],
-    statement: 'For objective=ending_trad, RetireGolden-MCP\'s batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection\'s endingByCategory.traditional: the last ledger row\'s published balances summed over the plan\'s accounts of type traditional (kinds ira and employer, inherited accounts included), each logical account id once, by projection/yearFigures.ts#balancesByCategory. Roth, HSA, taxable, cash and equity-compensation balances are not in it, and it is the gross balance, before heir tax. The engine publishes the figure and the adapter selects it (RetireGolden-MCP #81); at the census pin 3197d359 the adapter walked the last row\'s balance entries and added those whose account type is traditional. On the worksheet\'s six accounts the objective is 550,750.75. Units: nominal USD of the projection\'s end year. Rounding: none.',
+    statement: 'For objective=ending_trad, RetireGolden-MCP\'s batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection\'s endingByCategory.traditional: the last ledger row\'s published balances summed over the plan\'s accounts of type traditional (kinds ira and employer, inherited accounts included), each logical account id once, by projection/yearFigures.ts#balancesByCategory. Roth, HSA, taxable, cash and equity-compensation balances are not in it, and it is the gross balance, before heir tax. The engine publishes the figure and the adapter selects it, since RetireGolden-MCP 0.11.0 (#81) and so at the census\'s MCP pin b2c7f717 (0.12.0); through mcp-v0.10.0 (3197d359) the adapter walked the last row\'s balance entries and added those whose account type is traditional. On the worksheet\'s six accounts the objective is 550,750.75. Units: nominal USD of the projection\'s end year. Rounding: none.',
     formula: {
       expression: 'objective = Σ over the plan\'s logical accounts a with type traditional of lastYear.balances[a.id]',
       variables: [
@@ -703,8 +703,8 @@ export const accountsAndGrowthRecords = {
     },
     limits: [
       'Gross: the objective ranks the pre-tax balance a candidate leaves, before the heir tax and before any nondeductible basis; what heirs keep is projection-summary-ending-after-tax-estate.',
-      'The pinned adapter added the balances in the order of the row\'s balance entries; the engine adds them in the order of the plan\'s accounts. The two orders can differ in the last binary digit, never by a cent; on the worksheet\'s accounts they give the same double, which the evidence asserts.',
-      'balancesByCategory refuses a plan whose account id is also the id of a property, a debt or a permanent-life policy, where the pinned adapter\'s walk would have added whatever the ledger published under that id; the plan checks refuse such plans before a projection runs.',
+      'The mcp-v0.10.0 adapter (3197d359) added the balances in the order of the row\'s balance entries; the engine adds them in the order of the plan\'s accounts. The two orders can differ in the last binary digit, never by a cent; on the worksheet\'s accounts they give the same double, which the evidence asserts.',
+      'balancesByCategory refuses a plan whose account id is also the id of a property, a debt or a permanent-life policy, where the mcp-v0.10.0 adapter\'s walk would have added whatever the ledger published under that id; the plan checks refuse such plans before a projection runs.',
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts', 'packages/engine/src/projection/yearFigures.ts'],
     implementedByFunctions: [
@@ -712,7 +712,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/projection/compare.ts#ProjectionSummary.endingByCategory',
       'packages/engine/src/projection/yearFigures.ts#balancesByCategory',
     ],
-    verifiedOn: '2026-09-30',
+    verifiedOn: '2026-10-09',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'entered-balance-sheet': {

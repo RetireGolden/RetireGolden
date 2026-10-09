@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit b93bd7c6e664d04ded1e5ff9bfab8df3c208fee5.
+ * Output field coverage imported from the output-family census at commit 6860969d56b8eeefa1d77be6688c280e2e0be3b5.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -11198,7 +11198,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "run_monte_carlo.pathCount",
     "reasonKind": "protocol-metadata",
-    "reason": "Echoed run configuration."
+    "reason": "Echoed run configuration: the caller's pathCount, else 1,000, the app's headline run (the engine's headlineMonteCarloOptions, since RetireGolden-MCP 0.12.0; 200 through 0.11.x)."
   },
   {
     "id": "",
@@ -11206,7 +11206,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "run_monte_carlo.seed",
     "reasonKind": "protocol-metadata",
-    "reason": "Echoed run configuration."
+    "reason": "Echoed run configuration: the caller's seed, else the engine's DEFAULT_MONTE_CARLO_SEED, 6,221,293 (since RetireGolden-MCP 0.12.0; 42 through 0.11.x)."
   },
   {
     "id": "",
@@ -11214,7 +11214,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "run_monte_carlo.returnVolPct",
     "reasonKind": "protocol-metadata",
-    "reason": "Echoed model input, not an output."
+    "reason": "Echoed model input, not an output: the market factor's annual volatility, the caller's or 12. Since RetireGolden-MCP 0.12.0 the model is the plan's (buildLognormalModelConfigForPlan), so an account with an asset allocation draws each class's own volatility instead."
   },
   {
     "id": "",
@@ -11308,9 +11308,145 @@ const exclusionCensus = [
     "id": "",
     "path": "RetireGolden-MCP/src/adapter.ts",
     "symbol": "",
-    "field": "compare_scenarios.startYear (input only)",
+    "field": "compare_scenarios.startYear",
     "reasonKind": "protocol-metadata",
-    "reason": "Optional projection start-year input, not returned as a result field."
+    "reason": "The start year both plans were projected from, echoed since RetireGolden-MCP 0.11.0: the caller's startYear, else the session's. A coordinate, not a result; through 0.10.x it was an input only."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.headline.moneyBasis",
+    "reasonKind": "label-or-category",
+    "reason": "Which dollar basis headline.endingAfterTaxEstate is in (since RetireGolden-MCP 0.12.0): nominal when the two plans end in the same year, today (start-year dollars) when they do not. The engine field it echoes, PlanHeadlineComparison.moneyBasis, is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.headline.endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Each plan's last projection year (baseline Plan A, proposal Plan B) and their difference in years (since RetireGolden-MCP 0.12.0): the coordinates that decide headline.moneyBasis, not a modeled result. The engine field it echoes, PlanHeadlineComparison.endYear, is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.startYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "The session's start year every path was projected from, echoed since RetireGolden-MCP 0.11.0: a coordinate, not a result, classified as run_projection.startYear and compare_scenarios.startYear are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.startYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "The session's start year every candidate was projected from, echoed since RetireGolden-MCP 0.11.0: a coordinate, not a result, classified as run_projection.startYear and compare_scenarios.startYear are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.startYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "The session's start year every projection the optimizer runs starts from, echoed since RetireGolden-MCP 0.11.0: a coordinate, not a result, classified as run_projection.startYear and compare_scenarios.startYear are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.startYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "The session's start year every projection the solver runs starts from, echoed since RetireGolden-MCP 0.11.0: a coordinate, not a result, classified as run_projection.startYear and compare_scenarios.startYear are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "The warning sentences of the session plan's own deterministic projection (ProjectionResult.warnings), returned since RetireGolden-MCP 0.11.0: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "The warning sentences of the session plan's own deterministic projection (ProjectionResult.warnings), returned since RetireGolden-MCP 0.11.0: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "The warning sentences of the session plan's own deterministic projection (ProjectionResult.warnings), returned since RetireGolden-MCP 0.11.0: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "The warning sentences of the session plan's own deterministic projection (ProjectionResult.warnings), returned since RetireGolden-MCP 0.11.0: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "ProjectionSummary.warnings, the projection's warning sentences published inside the summary: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "ProjectionSummary.warnings, the projection's warning sentences published inside the summary: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.warnings",
+    "reasonKind": "not-numeric",
+    "reason": "ProjectionSummary.warnings, the projection's warning sentences published inside the summary: text about the plan, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.maxBaseAnnualNote",
+    "reasonKind": "evidence-note",
+    "reason": "The engine's sentence saying why maxBaseAnnual is the exact amount that passed rather than its $100 floor (null when it is rounded as usual), returned since RetireGolden-MCP 0.11.0: a narrative note about a figure, not a figure."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.spendingSlackNote",
+    "reasonKind": "evidence-note",
+    "reason": "The adapter's sentence saying why spendingSlackDollars is withheld (the base is sustained with less than $100 a year to spare), null otherwise, returned since RetireGolden-MCP 0.11.0: a narrative note about a figure, not a figure."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.maxBaseAnnualRounding",
+    "reasonKind": "label-or-category",
+    "reason": "How maxBaseAnnual relates to feasibleBaseAnnual (down-to-hundred, none, or null with no answer), returned since RetireGolden-MCP 0.11.0. The engine field it echoes, SustainableSpendingResult.maxBaseAnnualRounding, is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.sustainsCurrentBase",
+    "reasonKind": "boolean-flag",
+    "reason": "The engine's verdict whether the plan sustains its current base spending, returned since RetireGolden-MCP 0.11.0. The engine field it echoes, SustainableSpendingResult.sustainsCurrentBase, is the same boolean-flag exclusion."
   },
   {
     "id": "csv-filing-status",

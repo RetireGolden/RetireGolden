@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit b93bd7c6e664d04ded1e5ff9bfab8df3c208fee5.
+ * Output families imported from the output-family census at commit 6860969d56b8eeefa1d77be6688c280e2e0be3b5.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -634,6 +634,10 @@ const families = {
       {
         "surface": "compare-page",
         "selector": "Delta column of the four money rows, in the basis each row label states"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.delta"
       }
     ],
     "relocation": {
@@ -2579,6 +2583,18 @@ const families = {
       {
         "surface": "insights",
         "selector": "InsightCardView flat-delta note \"The base plan runs out of money in YEAR\""
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.depletionYear"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.depletionYear"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.depletionYear"
       }
     ],
     "relocation": null
@@ -2732,7 +2748,7 @@ const families = {
   "mcp-compare-ending-after-tax-estate-delta": {
     "title": "MCP scenario ending-estate delta",
     "group": "optimizer-and-comparisons",
-    "meaning": "Plan B minus Plan A ending after-tax estate, as compare_scenarios publishes it.",
+    "meaning": "Plan B minus Plan A ending after-tax estate in nominal dollars, each estate in its own plan's last-year dollars, as compare_scenarios publishes it in deltaEndingAfterTaxEstateNominal.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -2744,7 +2760,7 @@ const families = {
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.deltaEndingAfterTaxEstate"
+        "selector": "compare_scenarios.deltaEndingAfterTaxEstateNominal"
       }
     ],
     "relocation": null
@@ -3889,6 +3905,14 @@ const families = {
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.endingAfterTaxEstate"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal"
       }
     ],
     "relocation": null
@@ -5677,10 +5701,6 @@ const families = {
       {
         "surface": "scenarios-page",
         "selector": "Spending capacity simulation count column"
-      },
-      {
-        "surface": "mcp",
-        "selector": "solve_max_spending.simulationCount"
       }
     ],
     "relocation": null

@@ -59,3 +59,7 @@ feeds: `monte-carlo-success-rate`; `monte-carlo-investable-fan-percentiles`; `mo
 Derived by: claude (Opus 5.5), 2026-09-28, from the decision's text (decisions-2026-09-25.md, "The Monte Carlo diagnosis, checked") and the check's section 4 (evidence/mc-example-source-check.md), the path seeds by exact integer arithmetic in a separate script that imports nothing from the engine. Implemented by the same session. Reviewed by: unreviewed at the time; see the review below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-codex-4-monte-carlo-optimizer.md`.
+
+Restated 2026-10-09 by claude (Opus 5.5): the record's limit about other hosts now says RetireGolden-MCP adopted these options in 0.12.0 (`b2c7f717`). Its `run_monte_carlo` with no arguments runs `headlineMonteCarloOptions` (1,000 paths, this seed, the plan's lognormal model at 12 percent) where through 0.11.x it ran 200 paths on seed 42 with a plain lognormal model; an explicit argument replaces only its own default, and `returnVolPct` sets only the market factor. RetireGolden-Pro's meeting view still uses its own options. The seed, the path seeds and every expected value above are unchanged. The record's text changed after the review above, so its `reviewedBy` is `unreviewed` again until an independent review of the restated text.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-10-09, the 2026-10-09 restatement against RetireGolden-MCP b2c7f717 (0.12.0), `DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`.

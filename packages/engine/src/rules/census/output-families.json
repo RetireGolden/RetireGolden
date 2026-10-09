@@ -2500,6 +2500,14 @@
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.endingAfterTaxEstate"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal"
       }
     ],
     "transformations": [],
@@ -2507,7 +2515,7 @@
       "irc-1014-a-1-basis-at-death-fair-market-value"
     ],
     "status": "identified",
-    "notes": ""
+    "notes": "The Compare page's levels and RetireGolden-MCP's compare_scenarios.headline.endingAfterTaxEstate.baseline and .proposal (since 0.12.0, b2c7f717) come from engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines: this figure when the two plans end in the same year, and otherwise this figure divided by its own plan's published inflation factor at its end year, in today's (start-year) dollars (R13); headline.moneyBasis says which."
   },
   {
     "transformations": [],
@@ -3401,6 +3409,18 @@
       {
         "surface": "insights",
         "selector": "InsightCardView flat-delta note \"The base plan runs out of money in YEAR\""
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.depletionYear"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.depletionYear"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.depletionYear"
       }
     ],
     "transformations": [
@@ -3408,7 +3428,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "ProjectionSummary.depletionYear (compare.ts) copies this value; the compare page derives an age and a last-funded-year delta from it in planner-ui (compare-plan-deltas)."
+    "notes": "ProjectionSummary.depletionYear (compare.ts) copies this value; the compare page derives an age and a last-funded-year delta from it in planner-ui (compare-plan-deltas). RetireGolden-MCP publishes that copy in every summary it returns (run_projection.summary, compare_scenarios.a and .b); the derive round at 3197d359 left the three selectors out, and they were added on 2026-10-09 at the census's MCP pin b2c7f717."
   },
   {
     "transformations": [],
@@ -4624,7 +4644,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/planner/ComparePlansPage.tsx#ComparePlansPage (proposal minus baseline of nominal summary figures, across plans that can end in different years) until B2-P1 slice 3; now engine engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines, nominal when the plans end in the same year and today's dollars otherwise (R13), which ComparePlansPage reads; the page states the basis on every money row and in a sentence naming both end years.",
+    "notes": "Computed in planner-ui/src/planner/ComparePlansPage.tsx#ComparePlansPage (proposal minus baseline of nominal summary figures, across plans that can end in different years) until B2-P1 slice 3; now engine engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines, nominal when the plans end in the same year and today's dollars otherwise (R13), which ComparePlansPage reads; the page states the basis on every money row and in a sentence naming both end years. RetireGolden-MCP publishes the after-tax estate row's delta, on the same basis, as compare_scenarios.headline.endingAfterTaxEstate.delta since 0.12.0 (b2c7f717), with headline.moneyBasis naming the basis; it publishes none of the other three rows.",
     "dimensions": [],
     "basis": "either",
     "id": "compare-plan-money-deltas",
@@ -4643,6 +4663,10 @@
       {
         "surface": "compare-page",
         "selector": "Delta column of the four money rows, in the basis each row label states"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.delta"
       }
     ],
     "relocation": {
@@ -7244,16 +7268,12 @@
       {
         "surface": "scenarios-page",
         "selector": "Spending capacity simulation count column"
-      },
-      {
-        "surface": "mcp",
-        "selector": "solve_max_spending.simulationCount"
       }
     ],
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "RetireGolden-MCP's solve_max_spending does not return the simulation count: not at 3197d359, where the derive round staged the selector solve_max_spending.simulationCount in error, and not at b2c7f717. The selector was removed on 2026-10-09, from this file and from the staging file, rather than corrected, since no MCP field carries this value."
   },
   {
     "id": "sustainable-spending-result-spending-slack-dollars",
@@ -7811,7 +7831,7 @@
     "id": "mcp-compare-ending-after-tax-estate-delta",
     "group": "optimizer-and-comparisons",
     "title": "MCP scenario ending-estate delta",
-    "meaning": "Plan B minus Plan A ending after-tax estate, as compare_scenarios publishes it.",
+    "meaning": "Plan B minus Plan A ending after-tax estate in nominal dollars, each estate in its own plan's last-year dollars, as compare_scenarios publishes it in deltaEndingAfterTaxEstateNominal.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -7829,13 +7849,13 @@
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.deltaEndingAfterTaxEstate"
+        "selector": "compare_scenarios.deltaEndingAfterTaxEstateNominal"
       }
     ],
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Read from the engine since RetireGolden-MCP 0.11.0 (published 2026-10-07, from MCP main 6d7c3346, which carries #81): compare_scenarios reads compareScenarioPlans(a, b, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta (engine/src/scenarios/comparison.ts#compareScenarioPlans). Through mcp-v0.10.0 the adapter computed the same number (MCP pin 3197d359). Nominal across different end years, unlike compare-plan-money-deltas (R13); the engine record states it as a limit, and MCP 0.11.0 names it as a known difference. Engine calculation record mcp-compare-ending-after-tax-estate-delta."
+    "notes": "Read from the engine since RetireGolden-MCP 0.11.0 (published 2026-10-07, from MCP main 6d7c3346, which carries #81): compare_scenarios reads compareScenarioPlans(a, b, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta (engine/src/scenarios/comparison.ts#compareScenarioPlans). Through mcp-v0.10.0 the adapter computed the same number (MCP pin 3197d359). RetireGolden-MCP 0.12.0 (b2c7f717) renamed the field from deltaEndingAfterTaxEstate to deltaEndingAfterTaxEstateNominal, with the same value, and publishes beside it headline, the Compare page's comparison from engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines (R13): headline.endingAfterTaxEstate.delta is a surface of compare-plan-money-deltas, and its baseline and proposal are surfaces of projection-summary-ending-after-tax-estate. When the two plans end in the same year the two deltas are one number; when they do not, this one stays nominal and counts inflation as a difference between the plans, which the engine record states as a limit. Engine calculation record mcp-compare-ending-after-tax-estate-delta."
   },
   {
     "id": "scenario-comparison-cell",
@@ -7862,7 +7882,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Money metrics are nominal dollars; the depletionYear and projectionEndYear cells carry years, the IRMAA tier-year and simulation-count cells carry counts, and the risk cells carry probabilities (formatScenarioDelta prints the change in percentage points). safeNumber rejects non-finite values and normalizes -0. The MCP compare_scenarios delta is the adapter family mcp-compare-ending-after-tax-estate-delta, computed from two independent summaries at the MCP pin 3197d359; RetireGolden-MCP #81 (fc13b94, not yet released) makes it this type's headline endingAfterTaxEstate delta from compareScenarioPlans."
+    "notes": "Money metrics are nominal dollars; the depletionYear and projectionEndYear cells carry years, the IRMAA tier-year and simulation-count cells carry counts, and the risk cells carry probabilities (formatScenarioDelta prints the change in percentage points). safeNumber rejects non-finite values and normalizes -0. The MCP compare_scenarios nominal delta is the family mcp-compare-ending-after-tax-estate-delta: this type's headline endingAfterTaxEstate delta from compareScenarioPlans since RetireGolden-MCP 0.11.0 (#81), published as deltaEndingAfterTaxEstateNominal since 0.12.0 (b2c7f717); through mcp-v0.10.0 (3197d359) the adapter subtracted two independent summaries itself."
   },
   {
     "id": "cash-flow-line-plan-dollars",
