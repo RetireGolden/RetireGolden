@@ -113,7 +113,7 @@ describeCalculation(
     })
 
     it("equals the pinned adapter's subtraction of two independent summaries, each plan on its own calculator", () => {
-      // RetireGolden-MCP 3197d359 src/adapter.ts#compareScenarios, the census's documented arithmetic.
+      // RetireGolden-MCP 3197d359 src/adapter.ts#compareScenarios, mcp-v0.10.0's arithmetic, which the census documented until its pin moved to b2c7f717 (0.12.0).
       const { a, b } = plans()
       const summaryOf = (plan: Plan) =>
         summarizeProjection(plan, simulatePlan(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) }), {

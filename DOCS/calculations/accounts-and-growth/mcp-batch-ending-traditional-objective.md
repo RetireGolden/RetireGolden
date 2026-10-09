@@ -70,6 +70,6 @@ Derived by: claude (opus 5.5), 2026-09-30, from the census family's transformati
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, `DOCS/calculations/reviews/REVIEW-2026-09-30-round3-codex.md`.
 
-Restated 2026-10-09 by claude (Opus 5.5) when the census's MCP pin moved to RetireGolden-MCP `b2c7f717` (0.12.0): the record now names `3197d359` as mcp-v0.10.0's adapter rather than as the census pin, and says #81 is released. The objective, its arithmetic and the evidence are unchanged. The record's text changed after the review above, so its `reviewedBy` is `unreviewed` again until an independent review of the restated text.
+Restated 2026-10-09 by claude (Opus 5.5) when the census's MCP pin moved to RetireGolden-MCP `b2c7f717` (0.12.0): the record now names `3197d359` as mcp-v0.10.0's adapter rather than as the census pin, and says #81 is released. The objective, its arithmetic and the evidence are unchanged. The record's text changed after the review above, so it was unreviewed until the independent review of the restated text below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-10-09, the 2026-10-09 restatement against RetireGolden-MCP b2c7f717 (0.12.0), `DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`.

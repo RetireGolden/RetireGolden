@@ -26,7 +26,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the selector `solve_max_spending.simulationCount`, a field the tool never returned. Exclusions
   go from 487 to 504, and no family is added. `solve_max_spending.feasibleBaseAnnual`, the
   summaries' `fiBasis`, `estateBreakdown` and `savingsRates` need a family, field rows or a
-  record, and the census lists them as not yet covered, with what each needs. The records
+  record. They are listed as not yet covered, with what each needs, in RetireGolden-Docs'
+  `output-census.md` and under D-MCP-CENSUS-PIN in the program tracker; the imported JSON
+  census carries no row for them until that slice lands. The records
   `mcp-compare-ending-after-tax-estate-delta` (which keeps its different-years limit for the
   renamed field), `mcp-batch-cumulative-tax-objective`, `mcp-batch-ending-traditional-objective`,
   `monte-carlo-default-seed` and `projection-summary-fi-spending-base` (whose limit now says
@@ -35,8 +37,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   restated to match. Codex reviewed all five restatements against RetireGolden-MCP b2c7f717
   and approved them (`DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`),
   so every family stays complete. This closes the 0.4.0
-  follow-up that asked RetireGolden-MCP to adopt the headline options. No engine code changes
-  and no figure moves.
+  follow-up that asked RetireGolden-MCP to adopt the headline options. No computation changes
+  and no figure moves: the change is calculation records, census data (and the modules
+  generated from it) and text.
 - **Fixed: the parameter-source appendix cites each Utah credit's own record** (2026-10-09,
   found by the RetireGolden-Pro#324 review). The `state-income-tax` row named the §59-10-1042
   Social Security, §59-10-1019 retirement and §59-10-1043 military retirement credits but cited
