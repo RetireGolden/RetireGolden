@@ -4,7 +4,7 @@ Kind: composition. RetireGolden-MCP's `batch_evaluate`, called with `objective: 
 
 ## What the adapter computed
 
-At the census pin (RetireGolden-MCP `3197d359`), `src/adapter.ts#batchEvaluate` computed the objective itself:
+Through mcp-v0.10.0 (RetireGolden-MCP `3197d359`, the census's MCP pin until 2026-10-09), `src/adapter.ts#batchEvaluate` computed the objective itself:
 
 ```ts
 const last = proj.years[proj.years.length - 1]!
@@ -14,7 +14,7 @@ obj = Object.entries(last.balances).reduce((s, [id, bal]) => {
 }, 0)
 ```
 
-Since RetireGolden-MCP #81 (`fc13b94`, 2026-09-24, not yet released) it reads `summary.endingByCategory.traditional`. Both select the final row and keep the balances whose account type is `traditional`; the adapter walked the row's balance entries, the engine walks the plan's accounts (see Limits).
+Since RetireGolden-MCP #81 (`fc13b94`, 2026-09-24, released in 0.11.0 on 2026-10-07) it reads `summary.endingByCategory.traditional`, as it still does at the census's MCP pin `b2c7f717` (0.12.0). Both select the final row and keep the balances whose account type is `traditional`; the adapter walked the row's balance entries, the engine walks the plan's accounts (see Limits).
 
 ## Justification
 
@@ -69,3 +69,7 @@ The traditional member of `accounts-ending-balance-by-category`, evaluated on ea
 Derived by: claude (opus 5.5), 2026-09-30, from the census family's transformation (RetireGolden-Docs `output-families.json`) and the plan's account types, the arithmetic by hand. Implemented by: claude (opus 5.5), 2026-09-30: no engine change (the figure is `summarizeProjection`'s existing field); the evidence is `packages/engine/src/projection/compareSummary.mcpObjectives.evidence.test.ts`. Reviewed by: unreviewed.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-09-30, `DOCS/calculations/reviews/REVIEW-2026-09-30-round3-codex.md`.
+
+Restated 2026-10-09 by claude (Opus 5.5) when the census's MCP pin moved to RetireGolden-MCP `b2c7f717` (0.12.0): the record now names `3197d359` as mcp-v0.10.0's adapter rather than as the census pin, and says #81 is released. The objective, its arithmetic and the evidence are unchanged. The record's text changed after the review above, so it was unreviewed until the independent review of the restated text below.
+
+Reviewed by: Codex (GPT-6-Sol), 2026-10-09, the 2026-10-09 restatement against RetireGolden-MCP b2c7f717 (0.12.0), `DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`.

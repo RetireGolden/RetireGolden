@@ -2,6 +2,8 @@
 
 Executed 2026-09-30 on branch `claude/evidence-completeness` at RetireGolden base `f97cf418`, with this change's evidence test in the working tree (no pull request is open yet), in `packages/engine`.
 
+The cell this mutation swaps is the one RetireGolden-MCP's `compare_scenarios` publishes as `deltaEndingAfterTaxEstateNominal`, named `deltaEndingAfterTaxEstate` through 0.11.x with the same value. The record and its worksheet were restated on 2026-10-09 by claude for RetireGolden-MCP 0.12.0 (`b2c7f717`): the field's new name, the `headline` it publishes beside the field (the Compare page's comparison, in today's dollars when the plans end in different years), and the different-years limit, which still applies to the renamed field. The engine cell, the evidence test and this capture did not change, so the receipt stands as executed.
+
 ## Mutation applied to `packages/engine/src/scenarios/comparison.ts`
 
 ```diff

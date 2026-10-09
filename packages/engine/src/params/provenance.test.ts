@@ -3,6 +3,7 @@ import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
 import { acaParametersForCoverageYear, hsaLimitsForYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { paramsAttestations } from '../rules/attestations/params.js'
+import { TAX_RULE_REGISTRY } from '../rules/taxRuleRegistry.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../socialSecurity/cpiU.js'
 import { KNOWN_LIFE_TABLE_EDITIONS, LAST_TABLE_AGE, LIFE_TABLE_EDITION_BEFORE_THE_FIELD, SSA_PERIOD_LIFE_TABLE } from '../longevity/ssaPeriodLifeTable.js'
 import { OASDI_TAX_RATE_BY_YEAR } from '../socialSecurity/oasdiTaxRates.js'
@@ -1061,6 +1062,23 @@ describe('parameter provenance', () => {
     // Utah's credits and Maine's military subtraction are priced; the row says so.
     expect(stateRow).not.toContain('Social Security credit remains unmodeled')
     expect(stateRow).toContain('military retirement credits are computed in every projected year')
+    // Each credit is cited by the record of its own section; the Social Security
+    // credit's record keeps its older id (RetireGolden-Pro#324 review).
+    for (const [id, section] of [
+      ['ut-code-59-10-114-social-security-tax-credit', '59-10-1042'],
+      ['ut-code-59-10-1019-retirement-credit', '59-10-1019'],
+      ['ut-code-59-10-1043-military-retirement-credit', '59-10-1043'],
+    ] as const) {
+      expect(stateRow).toContain('`' + id + '`')
+      expect(TAX_RULE_REGISTRY[id].authority.some((authority) => authority.citation.includes(section))).toBe(true)
+      // The pairing itself: an id that names its section carries it, and the
+      // older id is glossed in the row with the section it stands for.
+      if (id === 'ut-code-59-10-114-social-security-tax-credit') {
+        expect(stateRow).toContain('`' + id + '`, the §' + section + ' credit')
+      } else {
+        expect(id).toContain(section)
+      }
+    }
     expect(stateRow).not.toContain('military separation')
     expect(byId('state-enacted-wa').figures).toContain('Initiative 645 on the November 3, 2026 ballot')
     expect(byId('state-enacted-ca').figures).toContain('Proposition 3 on the November 3, 2026 ballot')

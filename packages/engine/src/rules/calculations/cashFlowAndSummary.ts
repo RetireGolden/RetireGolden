@@ -528,7 +528,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'The conversion-free run is a whole projection without conversions, so the priced year also differs by what earlier years\' conversions did to the balances and withdrawals, not only by that year\'s conversion tax; it is the year the household would have had had it never converted',
-      'The conversion-free choice is a required argument (the independent review\'s M3): the planner\'s projection, compareRothConversion and compareScenarios pass the run; Monte Carlo paths, the optimizer and decision candidates, the SWR, relocation, care, survivor and Social Security comparisons, the scenario plan comparison and the app\'s case runners pass null and show no FI figure, and a converting plan then publishes conversionTaxIncluded. RetireGolden-MCP must choose when it adopts this engine',
+      'The conversion-free choice is a required argument (the independent review\'s M3): the planner\'s projection, compareRothConversion and compareScenarios pass the run; Monte Carlo paths, the optimizer and decision candidates, the SWR, relocation, care, survivor and Social Security comparisons, the scenario plan comparison and the app\'s case runners pass null and show no FI figure, and a converting plan then publishes conversionTaxIncluded. RetireGolden-MCP chose in 0.11.0, and 0.12.0 keeps it: the summaries it publishes, run_projection\'s summary and compare_scenarios\' a and b, pass the run, so their FI figures are the app\'s; batch_evaluate and solve_max_spending pass null for the summaries they only read (lifetime tax, ending balances, the after-tax estate), and no such summary reaches a response whole',
 
       'The later retirement is a household convention, the year the last earner stops; the program states it and the page names the person',
     ],
@@ -539,7 +539,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/compare.ts#withoutRothConversions',
       'packages/engine/src/projection/compare.ts#conversionFreeRun',
     ],
-    verifiedOn: '2026-09-29',
+    verifiedOn: '2026-10-09',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'projection-summary-fi-number': {

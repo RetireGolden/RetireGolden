@@ -184,7 +184,7 @@ describeCalculation(
     })
 
     it("agrees with the pinned adapter's own reduction, tax then penalties year by year, within half a cent", () => {
-      // RetireGolden-MCP 3197d359 src/adapter.ts#batchEvaluate, the census's documented arithmetic.
+      // RetireGolden-MCP 3197d359 src/adapter.ts#batchEvaluate, mcp-v0.10.0's arithmetic, which the census documented until its pin moved to b2c7f717 (0.12.0).
       const adapter = years.reduce((sum, year) => sum + year.tax + year.penalties, 0)
       const summary = summarizeProjection(evidencePlan(() => {}), projection(years), { conversionFreeRun: null })
       expect(withinTolerance(adapter, expected.objective!, example.tolerance)).toBe(true)
@@ -265,7 +265,7 @@ describeCalculation(
     })
 
     it("agrees with the pinned adapter's walk over the last row's balance entries within half a cent", () => {
-      // RetireGolden-MCP 3197d359 src/adapter.ts#batchEvaluate, the census's documented arithmetic.
+      // RetireGolden-MCP 3197d359 src/adapter.ts#batchEvaluate, mcp-v0.10.0's arithmetic, which the census documented until its pin moved to b2c7f717 (0.12.0).
       const plan = accountsPlan()
       const last = years[years.length - 1]!
       const adapter = Object.entries(last.balances).reduce((sum, [id, balance]) => {

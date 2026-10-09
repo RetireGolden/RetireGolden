@@ -769,7 +769,7 @@ export const taxesRecords = {
     kind: 'composition',
     outputs: ['mcp-batch-cumulative-tax-objective'],
     feeds: [],
-    statement: 'For objective=cumulative_tax, RetireGolden-MCP\'s batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection\'s lifetimeTaxesAndPenalties: the sum over every projection year, in ledger order from 0, of that year\'s YearResult.tax plus YearResult.penalties, each in that year\'s nominal dollars, undiscounted. tax already holds the federal AMT, penalties (early-withdrawal penalties and the IRC 4974 excise) are not in tax, and Medicare premiums and their IRMAA surcharges are in neither. The engine publishes the figure and the adapter selects it (RetireGolden-MCP #81); at the census pin 3197d359 the adapter reduced the same two fields itself. On the worksheet\'s four-year ledger the objective is 67,191.52. Units: nominal USD. Rounding: none.',
+    statement: 'For objective=cumulative_tax, RetireGolden-MCP\'s batch_evaluate reports, for each candidate plan it projects, projection/compare.ts#summarizeProjection\'s lifetimeTaxesAndPenalties: the sum over every projection year, in ledger order from 0, of that year\'s YearResult.tax plus YearResult.penalties, each in that year\'s nominal dollars, undiscounted. tax already holds the federal AMT, penalties (early-withdrawal penalties and the IRC 4974 excise) are not in tax, and Medicare premiums and their IRMAA surcharges are in neither. The engine publishes the figure and the adapter selects it, since RetireGolden-MCP 0.11.0 (#81) and so at the census\'s MCP pin b2c7f717 (0.12.0); through mcp-v0.10.0 (3197d359) the adapter reduced the same two fields itself. On the worksheet\'s four-year ledger the objective is 67,191.52. Units: nominal USD. Rounding: none.',
     formula: {
       expression: 'objective = Σ_y (tax_y + penalties_y), added in ledger order from 0',
       variables: [
@@ -785,7 +785,7 @@ export const taxesRecords = {
     },
     limits: [
       'Nominal and undiscounted, as the name cumulative says: a tax dollar paid in the last year counts the same as one paid in the first, so candidates that shift tax in time are ranked on nominal totals, not present values.',
-      'The pinned adapter added each year\'s tax and then its penalties to the running total; the engine adds each year\'s tax plus penalties as one term. The two orders can differ in the last binary digit, never by a cent on ledger-sized figures; on the worksheet\'s ledger they give the same double, which the evidence asserts, and RetireGolden-MCP #81\'s parity test holds them within a cent on its plans.',
+      'The mcp-v0.10.0 adapter (3197d359) added each year\'s tax and then its penalties to the running total; the engine adds each year\'s tax plus penalties as one term. The two orders can differ in the last binary digit, never by a cent on ledger-sized figures; on the worksheet\'s ledger they give the same double, which the evidence asserts, and RetireGolden-MCP #81\'s parity test holds them within a cent on its plans.',
       'The engine function is the figure; which objective name selects it is RetireGolden-MCP code, covered by that repository\'s wiring test, not by this record.',
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts'],
@@ -793,7 +793,7 @@ export const taxesRecords = {
       'packages/engine/src/projection/compare.ts#summarizeProjection',
       'packages/engine/src/projection/compare.ts#ProjectionSummary.lifetimeTaxesAndPenalties',
     ],
-    verifiedOn: '2026-09-30',
+    verifiedOn: '2026-10-09',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
 } satisfies Record<string, CalculationRecord>

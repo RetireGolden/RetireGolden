@@ -676,11 +676,11 @@ export const optimizerAndComparisonsRecords = {
   },
   'mcp-compare-ending-after-tax-estate-delta': {
     title: 'MCP scenario ending after-tax estate delta',
-    purpose: 'The difference RetireGolden-MCP\'s compare_scenarios reports between two plans\' ending after-tax estates: Plan B minus Plan A, nominal.',
+    purpose: 'The difference RetireGolden-MCP\'s compare_scenarios reports between two plans\' ending after-tax estates as deltaEndingAfterTaxEstateNominal: Plan B minus Plan A, nominal.',
     kind: 'composition',
     outputs: ['mcp-compare-ending-after-tax-estate-delta'],
     feeds: [],
-    statement: 'RetireGolden-MCP\'s compare_scenarios reports deltaEndingAfterTaxEstate as scenarios/comparison.ts#compareScenarioPlans(planA, planB, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta: each plan is projected from the same start year with its own tax calculator and summarized by projection/compare.ts#summarizeProjection, and the delta is scenarios/scalarComparison.ts#compareScalars(a.endingAfterTaxEstate, b.endingAfterTaxEstate).delta = b − a, Plan B the proposal and Plan A the baseline; a negative zero is published as 0 and a non-finite figure is refused with a RangeError. Each ending after-tax estate is in nominal dollars of its own plan\'s last year, and the delta subtracts the two as they are, with no conversion when the plans end in different years. The adapter reads this delta (RetireGolden-MCP #81); at the census pin 3197d359 it subtracted the two summaries itself, the same number. Plans ending in 2050 with 1,800,000.00 and in 2054 with 2,000,000.00 differ by +200,000.00. Units: nominal USD. Rounding: none.',
+    statement: 'RetireGolden-MCP\'s compare_scenarios reports deltaEndingAfterTaxEstateNominal (named deltaEndingAfterTaxEstate through 0.11.x, with the same value) as scenarios/comparison.ts#compareScenarioPlans(planA, planB, { startYear, taxCalculatorForPlan }).headline.endingAfterTaxEstate.delta: each plan is projected from the same start year with its own tax calculator and summarized by projection/compare.ts#summarizeProjection, and the delta is scenarios/scalarComparison.ts#compareScalars(a.endingAfterTaxEstate, b.endingAfterTaxEstate).delta = b − a, Plan B the proposal and Plan A the baseline; a negative zero is published as 0 and a non-finite figure is refused with a RangeError. Each ending after-tax estate is in nominal dollars of its own plan\'s last year, and the delta subtracts the two as they are, with no conversion when the plans end in different years. The adapter reads this delta since RetireGolden-MCP 0.11.0 (#81); through mcp-v0.10.0 (3197d359) it subtracted the two summaries itself, the same number. Since 0.12.0 (b2c7f717, the census\'s MCP pin) the tool also publishes headline, scenarios/planHeadlines.ts#comparePlanHeadlines over the same two projections, which is the Compare page\'s comparison: headline.moneyBasis, headline.endYear (each plan\'s last year and their difference) and headline.endingAfterTaxEstate (both estates and their delta), in nominal dollars when the plans end in the same year, where its delta is this one, and in today\'s (start-year) dollars when they do not. Plans ending in 2050 with 1,800,000.00 and in 2054 with 2,000,000.00 differ by +200,000.00. Units: nominal USD. Rounding: none.',
     formula: {
       expression: 'delta = E_B − E_A; E_s = endingNetWorth_s − endingEstateToCharity_s − endingEstateHeirTax_s at plan s\'s last year',
       variables: [
@@ -695,7 +695,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/mcp-compare-ending-after-tax-estate-delta.md',
     },
     limits: [
-      'When the two plans end in different years the delta subtracts dollars of two different years. The worksheet\'s plans, ending in 2050 and 2054 at 2.5 percent inflation, differ by +200,000.00 nominal but by +6,579.93 in 2026 dollars, which is what the Compare page prints (scenarios/planHeadlines.ts#comparePlanHeadlines, owner decision R13). The tool\'s field is nominal, as its census meaning says; an earlier engine CHANGELOG follow-up asks RetireGolden-MCP to read comparePlanHeadlines instead, which would change the tool\'s payload and is left to that repository.',
+      'When the two plans end in different years the delta subtracts dollars of two different years. The worksheet\'s plans, ending in 2050 and 2054 at 2.5 percent inflation, differ by +200,000.00 nominal but by +6,579.93 in 2026 dollars, which is what the Compare page prints (scenarios/planHeadlines.ts#comparePlanHeadlines, owner decision R13) and what RetireGolden-MCP 0.12.0 publishes beside this field as headline.endingAfterTaxEstate.delta. The rename does not lift this limit: deltaEndingAfterTaxEstateNominal is the nominal difference whatever the two end years, as its name and its census meaning say, and a caller who wants the Compare page\'s figure reads headline.',
       'Each plan is priced with the calculator taxCalculatorForPlan returns for it. The evidence uses a zero flat-rate calculator on plans with no taxable income, so it exercises the comparison and the heir-tax identity of the ending estate, not tax law.',
     ],
     implementedBy: [
@@ -708,7 +708,7 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
       'packages/engine/src/projection/compare.ts#summarizeProjection',
     ],
-    verifiedOn: '2026-09-30',
+    verifiedOn: '2026-10-09',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
   },
   'optimizer-candidate-trailing-estate-gap': {
