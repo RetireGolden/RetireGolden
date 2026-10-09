@@ -1071,6 +1071,13 @@ describe('parameter provenance', () => {
     ] as const) {
       expect(stateRow).toContain('`' + id + '`')
       expect(TAX_RULE_REGISTRY[id].authority.some((authority) => authority.citation.includes(section))).toBe(true)
+      // The pairing itself: an id that names its section carries it, and the
+      // older id is glossed in the row with the section it stands for.
+      if (id === 'ut-code-59-10-114-social-security-tax-credit') {
+        expect(stateRow).toContain('`' + id + '`, the §' + section + ' credit')
+      } else {
+        expect(id).toContain(section)
+      }
     }
     expect(stateRow).not.toContain('military separation')
     expect(byId('state-enacted-wa').figures).toContain('Initiative 645 on the November 3, 2026 ballot')
