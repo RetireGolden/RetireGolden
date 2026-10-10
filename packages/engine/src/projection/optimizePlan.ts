@@ -55,6 +55,7 @@ import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { DEFAULT_MONTE_CARLO_SEED } from '../montecarlo/rng.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
+import { planDollarBasis } from './dollarBasis.js'
 import { lastFundedYear } from './moneyLasts.js'
 import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
 import type { AggregateConversionPromotionYearOutcome } from './optimizerAggregateConversionPromotion.js'
@@ -642,6 +643,11 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       forcedDistributionCashDiversion: p.forcedDistributionCashDiversion,
       spendingNeed: p.spendingNeed,
       exogenousCash: p.exogenousCash,
+      // Cash from an asset the LP carries in no bucket: a planned property
+      // sale's net proceeds (both sale paths) and a permanent-life death
+      // benefit. Zero in every year of a plan with neither, which keeps that
+      // plan's LP byte-identical.
+      unbucketedAssetCash: p.unbucketedAssetCash,
       // Recover the divisor from the baseline ratio (startTrad / RMD) so the LP's
       // floor (trad ÷ divisor) reproduces the baseline RMD on the baseline balance.
       rmdDivisor: p.rmd > 0 && p.startTraditional > 0 ? p.startTraditional / p.rmd : null,
@@ -725,7 +731,20 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     // spike the exact ledger charges.
     seniorDeduction: true,
     liquidationRate,
-    realDollarFactor: 1 / Math.pow(1 + infl, years.length),
+    // The objective weighs the buckets at the END of the last plan year, so it
+    // deflates by that year's general-inflation factor on the engine's own
+    // basis (projection/dollarBasis.ts): (1 + i) compounded over the n − 1
+    // years from the first plan year to the last, left to right, the same
+    // double the projection publishes as the last year's inflationScale and
+    // divides its last-year figures by to show today's dollars. A one-year
+    // plan's factor is 1.
+    realDollarFactor:
+      years.length === 0
+        ? 1
+        : 1 /
+          planDollarBasis(plan.assumptions.inflationPct, years[0]!.year, years[years.length - 1]!.year).factors[
+            years.length - 1
+          ]!,
     options: opts.solver,
   }
 }
@@ -2903,6 +2922,16 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
     } else {
       convergence = { ...convergence, keptSchedule: 'converged' }
     }
+  }
+  // A first solve with no solution publishes nothing but its status, so it
+  // carries the one fact that usually explains it: whether, and when, the
+  // plan's own projection runs short. Read, not assumed: the solver and the
+  // projection fund spending differently, so a null here beside no solution
+  // says the projection does not deplete. Neither the convergence loop nor
+  // the guard above runs from a first solve without a solution (it has no
+  // conversions), so `schedule` is still that solve.
+  if (firstSchedule.endingAfterTax === null) {
+    schedule = { ...schedule, projectionDepletionYear: baselineResult.depletionYear }
   }
   // The tournament runs even when the MILP is infeasible or empty — simple
   // candidates can still surface a beneficial exact-ledger schedule there.

@@ -216,8 +216,10 @@ describe('FINDING 1 (closed): the QCD income offset reaches the LP', () => {
     // exclusion, which the solver had been treating as bracket room already
     // filled by income the household never had.
     expect(shipped2026 - regressed2026).toBeCloseTo(30_000, 2)
-    expect(shipped2026).toBeCloseTo(62_355.9, 2)
-    expect(regressed2026).toBeCloseTo(32_355.9, 2)
+    // In cents of HiGHS's raw solution since D-OPTIMIZER-SOLVER-OUTPUT; the
+    // six-significant-digit reading before it gave 62,355.9 and 32,355.9.
+    expect(shipped2026).toBeCloseTo(62_355.91, 2)
+    expect(regressed2026).toBeCloseTo(32_355.91, 2)
 
     // The ACA/IRMAA path reconciles too: an excluded distribution is out of
     // gross income, so the reconstructed incumbent MAGI is the ledger's.

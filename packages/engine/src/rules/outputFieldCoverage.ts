@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 97de7f0cc495e28426c200d6a662d53981f4e92f.
+ * Output field coverage imported from the output-family census at commit ba0a3c53a6dcf45d07bf1ba7ce69dc08f8c0e91a.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -8210,7 +8210,7 @@ const coverageCensus = [
     "field": "endingAfterTax",
     "disposition": "family",
     "familyId": "optimizer-schedule-ending-after-tax-objective",
-    "tsType": "number"
+    "tsType": "number | null"
   },
   {
     "source": "engine/src/strategies/optimizer.ts",
@@ -8218,7 +8218,15 @@ const coverageCensus = [
     "field": "lifetimeTax",
     "disposition": "family",
     "familyId": "optimizer-schedule-lifetime-tax",
-    "tsType": "number"
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "projectionDepletionYear",
+    "disposition": "family",
+    "familyId": "longevity-depletion-year",
+    "tsType": "number | null | undefined"
   },
   {
     "source": "engine/src/strategies/optimizer.ts",
@@ -12490,7 +12498,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "run_optimizer.schedule.status",
     "reasonKind": "label-or-category",
-    "reason": "OptimizedSchedule.status, the MILP solve's status (optimal, feasible, infeasible or timeout), published with the schedule: a classification, as the tool's tournament.winnerSource is."
+    "reason": "OptimizedSchedule.status, the MILP solve's status (optimal, feasible, infeasible, timeout, or node-limit since D-OPTIMIZER-SOLVER-OUTPUT on 2026-10-10), published with the schedule: a classification, as the tool's tournament.winnerSource is."
   },
   {
     "id": "",

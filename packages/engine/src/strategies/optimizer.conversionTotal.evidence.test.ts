@@ -168,9 +168,10 @@ describeCalculation(
         liquidationRate: 0.24,
         options: {
           solve: () => ({
-            Status: 'Optimal',
-            ObjectiveValue: 1,
-            Columns: Object.fromEntries(columns.map((amount, index) => [`conv${index}`, { Primal: amount }])),
+            modelStatus: 'Optimal',
+            primalStatus: 'Feasible',
+            objective: 1,
+            columns: Object.fromEntries(columns.map((amount, index) => [`conv${index}`, amount])),
           }),
         },
       })
@@ -183,7 +184,9 @@ describeCalculation(
         openingInheritedTrad: 0,
         openingOther: 0,
         liquidationRate: 0.24,
-        options: { solve: () => ({ Status: (inputs.caseY as { status: string }).status }) },
+        options: {
+          solve: () => ({ modelStatus: (inputs.caseY as { status: string }).status, primalStatus: 'None', objective: null, columns: {} }),
+        },
       })
       expect(infeasible.status).toBe('infeasible')
       expect(infeasible.conversions).toEqual([])

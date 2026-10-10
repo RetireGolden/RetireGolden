@@ -3,6 +3,7 @@ import type {
   ExactLedgerValidation,
   RetirementActionReadinessVetoSummary,
 } from '@retiregolden/engine/projection/optimizePlan'
+import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
 import { formatYearRuns } from './acaVetoCopy'
 import { fmtMoney, fmtMoneyCompact } from './format'
 
@@ -41,7 +42,7 @@ function heldForAnotherCause(validation: ExactLedgerValidation): boolean {
  * holds before infeasibility.
  */
 export function optimizerProducedNoRecommendation(args: {
-  scheduleStatus: 'optimal' | 'feasible' | 'infeasible' | 'timeout' | null
+  scheduleStatus: OptimizedSchedule['status'] | null
   incumbentHolds: boolean
   candidateWins: boolean
   readinessVeto: RetirementActionReadinessVetoSummary | null | undefined
@@ -49,6 +50,22 @@ export function optimizerProducedNoRecommendation(args: {
   return (
     !args.incumbentHolds && args.scheduleStatus === 'infeasible' && !args.candidateWins && !args.readinessVeto
   )
+}
+
+/**
+ * Which limit stopped the conversion solver, in the page's words, or null when
+ * none did: 'node-limit' is its search limit (a fixed number of branch-and-bound
+ * nodes, the same on every machine), 'timeout' its time limit.
+ */
+export function optimizerStopLimit(status: OptimizedSchedule['status'] | null): 'search limit' | 'time limit' | null {
+  return status === 'node-limit' ? 'search limit' : status === 'timeout' ? 'time limit' : null
+}
+
+/** The solver's status as the page prints it after "Optimizer status:". */
+export function optimizerStatusText(status: OptimizedSchedule['status']): string {
+  const limit = optimizerStopLimit(status)
+  if (limit !== null) return `stopped at its ${limit}`
+  return status === 'feasible' ? 'feasible, not proven optimal' : status
 }
 
 /** Publication copy follows the readiness veto while retaining exact metrics. */

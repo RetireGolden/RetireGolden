@@ -78,12 +78,15 @@ export interface AnnualPropertyAndInsuranceClosePhaseInput {
 export interface AnnualPropertyAndInsuranceClosePhaseResult {
   readonly hecmComputation: { status: 'complete' | 'incomplete'; issues: readonly string[] }
   readonly deathBenefitPaid: number
+  /** The legacy-path property sales' deposits this year, summed in deposit order; 0 with none. */
+  readonly legacyPropertySaleDeposited: number
 }
 
 export function annualPropertyAndInsuranceClosePhase(
   input: AnnualPropertyAndInsuranceClosePhaseInput,
 ): AnnualPropertyAndInsuranceClosePhaseResult {
   const hecmIssues: string[] = []
+  let legacyPropertySaleDeposited = 0
   const {
     year,
     startYear,
@@ -125,7 +128,10 @@ export function annualPropertyAndInsuranceClosePhase(
     surplusDestination: legacyPropertySaleDeposits === null ? null : surplusDestination,
   })) {
     if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
-    if (row.deposit !== null) deposit(row.deposit)
+    if (row.deposit !== null) {
+      deposit(row.deposit)
+      legacyPropertySaleDeposited += row.deposit
+    }
     if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
     if (row.hecmHudMipIncompleteReason !== null) {
       warnings.add(row.hecmHudMipIncompleteReason)
@@ -198,5 +204,5 @@ export function annualPropertyAndInsuranceClosePhase(
     insuranceCashValues.set(transition.policyId, transition.cashValue)
   }
 
-  return { deathBenefitPaid, hecmComputation: { status: hecmIssues.length === 0 ? 'complete' : 'incomplete', issues: hecmIssues } }
+  return { deathBenefitPaid, legacyPropertySaleDeposited, hecmComputation: { status: hecmIssues.length === 0 ? 'complete' : 'incomplete', issues: hecmIssues } }
 }

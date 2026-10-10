@@ -4,6 +4,63 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed (breaking for engine consumers): the conversion optimizer's first solve publishes no
+  figures without a solution, reads HiGHS at full precision, stops at a deterministic node limit,
+  deflates on the engine's basis, and sees the cash a property sale or a death benefit brings**
+  (2026-10-10, D-OPTIMIZER-SOLVER-OUTPUT). **Breaking type change:** `OptimizedSchedule.endingAfterTax`
+  and `OptimizedSchedule.lifetimeTax` are `number | null` (they were `number`), and
+  `OptimizedSchedule.status` gains `'node-limit'`; a consumer that reads either figure must handle
+  null, and one that switches on the status must handle the new value. `OptimizerSolveResult`, the
+  type `options.solve` injects, is now `{ modelStatus, primalStatus, objective, columns }`.
+  - `strategies/optimizer.ts#optimizeSchedule` reads HiGHS's raw solution (`Highs_writeSolution`,
+    16 significant digits) through a wrapper around the highs package's solution writer, and
+    publishes nothing from the package's six-digit parse of the pretty print: a conversion of
+    $107,028.8775 is published as $107,028.88, not $107,029. If the raw solution is missing or does
+    not parse, the solve throws an error saying the highs package's solution writer changed.
+  - The engine and planner-ui now declare `highs` at exactly 1.15.2 (it was `^1.15.2`), as
+    RetireGolden-MCP already does, so every consumer installs the solver the reader and the
+    records' figures are measured on.
+  - A solve with no feasible primal point (an infeasible model, or a limit reached before any
+    incumbent) publishes `endingAfterTax` and `lifetimeTax` as null, an empty `schedule` and
+    `conversions`, and a total of 0, where it published HiGHS's objective (infinite, JSON null, with
+    IRMAA binaries), a lifetime tax of 0 and a row of zeros per year. A solve with a solution
+    publishes its figures whatever stopped it, so a limit's incumbent is described in full.
+  - New `options.maxNodes` (HiGHS `mip_max_nodes`, default 5,000) and status `'node-limit'`: the
+    same input stops at the same incumbent on any machine. `timeLimitSec` defaults to 60 (was 10),
+    as a guard against a hang. rmd-irmaa, the one library example that does not solve to
+    optimality, now stops at the node limit (objective $744,755.92 in about 8 seconds here) where it
+    stopped at the machine-dependent 10-second limit.
+  - `projection/optimizePlan.ts#buildOptimizerInput` deflates the objective by 1 / the plan's
+    general-inflation factor for its last year (`projection/dollarBasis.ts#planDollarBasis`, n − 1
+    years; 1 for a one-year plan), the projection's own today's-dollar basis, where it deflated over
+    n years. Every `endingAfterTax` with a solution moves by one year of the plan's inflation (a
+    factor of 1.025 on the library examples), plus cents.
+  - `optimizePlan` sets the new optional `OptimizedSchedule.projectionDepletionYear` (the plan's
+    projection's depletion year, or null) on a first solve with no solution, and only there.
+    RetireGolden-MCP returns that schedule whole, so the field reaches agents. On the 29 library
+    examples a first solve has no solution exactly when the projection depletes (10 of them), which
+    the new planner-ui guard `examples.optimizerFeasibility.test.ts` holds; the engine does not
+    assume it.
+  - The solver's input books a planned property sale's net proceeds (both sale paths) and a
+    permanent-life death benefit as the year's cash (`OptimizerYear.unbucketedAssetCash`, from the
+    new `OptimizerYearProbe.unbucketedAssetCash`); a HECM draw stays out, needing a debt bucket. A
+    plan with neither emits a byte-identical model. Among the library examples with a solution only
+    example-couple carries any (its $350,000 death benefit): its `endingAfterTax` moves from
+    $1,102,321.89 to $1,353,421.34 and its `lifetimeTax` from $494,228.41 to $475,933.01.
+  - The Optimize page reads `'node-limit'` as the solver's search limit and, with no solution, names
+    the year the plan's projection runs short.
+  - The records `optimizer-schedule-objective-and-lifetime-tax` and `optimizer-schedule-year-solution`
+    are restated (provenance kept; Codex approved the restatement by independent recomputation,
+    `DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-solver-output-codex.md`), every worked figure
+    re-derived by hand and bracket-fill-roth re-measured: $282,266.26 (was $275,381.73) against the
+    projection's $266,458.08 in today's dollars on the same basis. The census (RetireGolden-Docs
+    ba0a3c53, imported here) makes `projectionDepletionYear` a surface of `longevity-depletion-year`
+    (field rows 1,266 → 1,267; families and exclusions unchanged). Characterization figures that
+    pinned six-digit readings move by cents to dollars (fullPlan's optimized Roth characterization,
+    ORACLE-011, the QCD adversarial finding, the Optimize page's cleaned totals); each returns to its
+    old value when the new code reads at six digits. The exact-ledger tournament's winner, estate and
+    lifetime tax move on none of the 29 examples.
+
 - **Changed: the output census covers the whole optimizer schedule RetireGolden-MCP returns, and
   says that its dollar figures are the solver's own** (2026-10-10, D-MCP-OPTIMIZER-SCHEDULE). The
   census (RetireGolden-Docs 97de7f0c, imported here) adds six engine families for what

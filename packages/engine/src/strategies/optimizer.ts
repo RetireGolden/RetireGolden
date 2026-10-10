@@ -184,6 +184,21 @@ export interface OptimizerYear {
   /** Net non-withdrawal cash already in hand (e.g. surplus SS/pension). Nominal. */
   exogenousCash: number
   /**
+   * Cash this year receives from an asset no bucket carries: a planned
+   * property sale's net proceeds (both of the ledger's sale paths) and a
+   * permanent-life death benefit (`OptimizerYearProbe.unbucketedAssetCash`).
+   * Nominal; default 0, which emits a byte-identical LP.
+   *
+   * Booked exactly like `exogenousCash`, on the cash constraint's right-hand
+   * side: it funds the year's spending first and its surplus is saved to the
+   * tax-free bucket. There is nothing to debit, because the property, the
+   * policy and its cash value are in no bucket, and the sale's gain is priced
+   * already (`capitalGainsBase`). The ledger deposits the legacy sale and the
+   * death benefit after the year's withdrawals are solved; the LP lets them
+   * fund that year (see the probe field for what that changes).
+   */
+  unbucketedAssetCash?: number
+  /**
    * Effective pooled owner-traditional divisor (baseline opening trad ÷ baseline
    * owner RMD) when age-eligible; null = no floor. Generic callers may supply a
    * real table divisor for one pool; the plan bridge recovers a pooled baseline
@@ -395,13 +410,27 @@ export interface OptimizerYear {
   }
 }
 
-export type OptimizerSolveResult = {
-  Status: string
-  ObjectiveValue?: number
-  Columns?: Record<string, { Primal?: number }>
+/**
+ * One solve's result, read from HiGHS's raw solution (`Highs_writeSolution`),
+ * not from the pretty print the highs package parses. `optimizeSchedule`
+ * publishes from this and nothing else, and `options.solve` injects it.
+ */
+export interface OptimizerSolveResult {
+  /**
+   * HiGHS's model status as its raw solution writes it, for example
+   * `Optimal`, `Infeasible`, `Solution limit reached` (a node limit) or
+   * `Time limit reached`.
+   */
+  modelStatus: string
+  /** Whether the raw solution carries a primal point, and whether it is feasible. */
+  primalStatus: 'Feasible' | 'Infeasible' | 'None'
+  /** The objective at that primal point; null when there is none. */
+  objective: number | null
+  /** Each column's primal value by name; empty when there is no primal point. */
+  columns: Readonly<Record<string, number>>
 }
 
-export type OptimizerSolver = (lp: string, opts?: Record<string, unknown>) => OptimizerSolveResult
+export type OptimizerSolver = (lp: string, opts: Record<string, unknown>) => OptimizerSolveResult
 
 export interface OptimizerInput {
   years: OptimizerYear[]
@@ -464,10 +493,28 @@ export interface OptimizerInput {
   seniorDeduction?: boolean
   /** Haircut on leftover traditional in the objective (V8 §1.4; ~0.22–0.24). */
   liquidationRate: number
-  /** Deflator to express the objective in today's dollars; argmax is unchanged. */
+  /**
+   * Constant weight on the objective's end-of-horizon buckets (default 1);
+   * the argmax is unchanged. `projection/optimizePlan.ts#buildOptimizerInput`
+   * sets it to 1 / the plan's general-inflation factor for its last year, so
+   * the objective is in today's dollars on the engine's basis
+   * (projection/dollarBasis.ts): deflated over the n − 1 years from the first
+   * plan year to the last, not n, and not at all in a one-year plan.
+   */
   realDollarFactor?: number
   options?: {
-    /** HiGHS time limit in seconds (default 10). */
+    /**
+     * HiGHS branch-and-bound node limit (`mip_max_nodes`, default 5000): the
+     * solve's deterministic stop. A model that reaches it before proving an
+     * optimum returns status `node-limit` with the incumbent it holds, and
+     * the same input stops at the same incumbent on any machine.
+     */
+    maxNodes?: number
+    /**
+     * HiGHS time limit in seconds (default 60). A guard against a hang, not
+     * the intended stop: the node limit is. A solve that reaches it returns
+     * status `timeout`, whose incumbent depends on the machine's speed.
+     */
     timeLimitSec?: number
     /** Optional per-year conversion ceiling, nominal. */
     maxConversionPerYear?: number
@@ -503,39 +550,73 @@ export interface OptimizedYear {
   endTaxable: number
 }
 
+/**
+ * What one solve publishes. Whether it has a SOLUTION is decided by HiGHS's
+ * primal solution status alone, not by `status`: with a feasible primal point
+ * (an optimum, or the incumbent a node or time limit stopped at) every figure
+ * below describes that point; without one (an infeasible model, or a limit
+ * reached before any incumbent) `endingAfterTax` and `lifetimeTax` are null,
+ * `schedule` and `conversions` are empty and `conversionTotal` is 0. The two
+ * figures are null exactly when there is no solution.
+ */
 export interface OptimizedSchedule {
   /**
-   * The solver's status. 'timeout' means HiGHS stopped at its time limit; the
-   * schedule is then whatever incumbent it held (possibly none), not a proven
+   * The solver's status, from HiGHS's raw model status: 'optimal' (proven);
+   * 'node-limit' (stopped at `options.maxNodes`, deterministic) and 'timeout'
+   * (stopped at `options.timeLimitSec`, machine-dependent), each with the
+   * incumbent it held, or with no solution when it held none; 'infeasible' (no
+   * schedule funds the model's years); 'feasible' for any other model status
+   * that still carries a feasible primal point. Only 'optimal' is a proven
    * optimum.
    */
-  status: 'optimal' | 'feasible' | 'infeasible' | 'timeout'
+  status: 'optimal' | 'feasible' | 'infeasible' | 'timeout' | 'node-limit'
   /**
-   * Ending after-tax wealth in today's dollars (the objective). On a cleaned
-   * schedule (projection/optimizePlan.ts#scheduleWithConversions) this is still
-   * the raw solve's value, which describes the raw schedule, not the cleaned one.
+   * The objective at the published solution, rounded to cents: the solver's
+   * ending after-tax wealth in today's dollars on the engine's basis (the end
+   * of the last plan year deflated by that year's general-inflation factor,
+   * projection/dollarBasis.ts), plus its conversion tie-break. Null exactly
+   * when the solve has no solution. On a cleaned schedule
+   * (projection/optimizePlan.ts#scheduleWithConversions) this is still the raw
+   * solve's value, which describes the raw schedule, not the cleaned one.
    */
-  endingAfterTax: number
+  endingAfterTax: number | null
   /**
-   * Cumulative modeled tax over the horizon (secondary readout, V8 §1.4); on a
-   * cleaned schedule, the raw solve's value, as for endingAfterTax.
+   * Cumulative modeled tax over the horizon (secondary readout, V8 §1.4),
+   * recomputed from the published solution's years; null exactly when the
+   * solve has no solution. On a cleaned schedule, the raw solve's value, as
+   * for endingAfterTax.
    */
-  lifetimeTax: number
+  lifetimeTax: number | null
+  /** One row per plan year, in order; empty when the solve has no solution. */
   schedule: OptimizedYear[]
   /**
    * Per-year conversions in each year's nominal dollars, ready to drop into
    * the `optimized`/`manual` strategy: amounts rounded to cents, only years
-   * above $0.50.
+   * above $0.50; empty when the solve has no solution.
    */
   conversions: { year: number; amount: number }[]
   /**
    * conversionScheduleTotal(conversions): the schedule's total, nominal dollars
-   * of different years added. Set by optimizeSchedule on every status and
-   * recomputed by projection/optimizePlan.ts#scheduleWithConversions, never
-   * carried over from another schedule.
+   * of different years added. Set by optimizeSchedule on every status (0 with
+   * no solution) and recomputed by
+   * projection/optimizePlan.ts#scheduleWithConversions, never carried over
+   * from another schedule.
    */
   conversionTotal: number
   solveMs: number
+  /**
+   * Why there is no schedule: the plan's own deterministic projection's
+   * depletion year (`ProjectionResult.depletionYear`, the first year with a
+   * spending shortfall), or null when that projection does not deplete.
+   * Set only by projection/optimizePlan.ts#optimizePlan, and only on a first
+   * solve with no solution; absent on every schedule that has one, and on any
+   * schedule optimizeSchedule returns directly. The two often coincide (on
+   * the library examples a first solve had no solution exactly when the
+   * projection depleted) but nothing guarantees it: the solver's model and
+   * the projection fund spending differently, so a null here beside no
+   * solution is possible and says the projection itself does not run short.
+   */
+  projectionDepletionYear?: number | null
 }
 
 // The one schedule sum lives in a leaf module (strategies/conversionScheduleTotal.ts)
@@ -926,10 +1007,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // somewhere real instead of spending a gift. Clamped nonnegative — this may
     // only take cash back, never hand cash out.
     const forcedCashDiversion = Math.max(0, y.forcedDistributionCashDiversion ?? 0)
+    // Cash from an asset no bucket carries (a property sale's net proceeds, a
+    // death benefit) is one more exogenous inflow, subtracted right after
+    // `exogenousCash`; at its default 0 the constant is the same double.
     constraints.push(
       ` cash${t}: ${expr(cash)} = ${fmt(
         y.spendingNeed -
           y.exogenousCash -
+          (y.unbucketedAssetCash ?? 0) -
           (committed?.proceeds ?? 0) -
           (strategyMoved?.proceeds ?? 0) +
           forcedCashDiversion,
@@ -1087,61 +1172,249 @@ function pack65Deduction(y: OptimizerYear): number {
   return base + age65
 }
 
+/**
+ * The error every failure to read HiGHS's raw solution throws. Nothing is
+ * published from the highs package's own parse of the pretty print (six
+ * significant digits), so a raw solution that is missing or does not parse
+ * has no fallback: it means the installed highs package no longer writes it
+ * the way `parseRawSolution` reads it, and the solve fails closed.
+ */
+function rawSolutionUnreadable(detail: string): Error {
+  return new Error(
+    `The highs package's solution writer changed: the engine reads HiGHS's raw solution through it ` +
+      `(strategies/optimizer.ts), and ${detail}. The engine pins highs 1.15.2; re-check this reader ` +
+      `against any other version before installing it.`,
+  )
+}
+
+const RAW_NUMBER = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/
+
+function rawNumber(text: string, what: string): number {
+  const value = Number(text)
+  if (!RAW_NUMBER.test(text) || !Number.isFinite(value)) {
+    throw rawSolutionUnreadable(`${what} reads "${text}", not a finite number`)
+  }
+  return value
+}
+
+/**
+ * Parse the lines `Highs_writeSolution` prints, HiGHS's raw solution format:
+ *
+ *     Model status
+ *     <model status>
+ *
+ *     # Primal solution values
+ *     <Feasible | Infeasible | None>
+ *     Objective <value>        (with a primal point only)
+ *     # Columns <n>            (with a primal point only)
+ *     <name> <value>           (n lines)
+ *     ...                      (rows, duals and basis, not read)
+ *
+ * HiGHS prints each value to 16 significant digits, or to the thirteenth
+ * decimal place below 1,000 (measured on highs 1.15.2: 17636684.14285714 and
+ * 0.3333333333333), where the pretty print the highs package parses carries
+ * six significant digits. Every line is matched exactly; anything else throws.
+ */
+function parseRawSolution(lines: readonly string[]): OptimizerSolveResult {
+  const statusAt = lines.indexOf('Model status')
+  const modelStatus = statusAt < 0 ? '' : (lines[statusAt + 1] ?? '')
+  if (modelStatus === '') throw rawSolutionUnreadable('its raw solution carries no model status')
+  const primalAt = lines.indexOf('# Primal solution values', statusAt + 2)
+  if (primalAt < 0) throw rawSolutionUnreadable('its raw solution has no primal solution section')
+  const primalStatus = lines[primalAt + 1]
+  if (primalStatus !== 'Feasible' && primalStatus !== 'Infeasible' && primalStatus !== 'None') {
+    throw rawSolutionUnreadable(`its primal solution status reads "${String(primalStatus)}"`)
+  }
+  if (primalStatus === 'None') return { modelStatus, primalStatus, objective: null, columns: {} }
+
+  const objectiveLine = /^Objective (\S+)$/.exec(lines[primalAt + 2] ?? '')
+  if (objectiveLine === null) throw rawSolutionUnreadable('its primal solution has no objective line')
+  const objective = rawNumber(objectiveLine[1]!, 'the objective')
+  const countLine = /^# Columns (\d+)$/.exec(lines[primalAt + 3] ?? '')
+  if (countLine === null) throw rawSolutionUnreadable('its primal solution has no column count')
+  const count = Number(countLine[1])
+  const columns = Object.create(null) as Record<string, number>
+  for (let k = 0; k < count; k++) {
+    const columnLine = /^(\S+) (\S+)$/.exec(lines[primalAt + 4 + k] ?? '')
+    if (columnLine === null) throw rawSolutionUnreadable(`column ${k + 1} of ${count} is not a name and a value`)
+    const name = columnLine[1]!
+    if (name in columns) throw rawSolutionUnreadable(`column ${name} appears twice`)
+    columns[name] = rawNumber(columnLine[2]!, `column ${name}`)
+  }
+  return { modelStatus, primalStatus, objective, columns }
+}
+
+/** The part of the loaded highs module the engine uses. */
+type HighsWasmModule = {
+  solve: (lp: string, options: Record<string, unknown>) => unknown
+  cwrap: (name: string, returnType: string, argumentTypes: string[]) => (...args: unknown[]) => unknown
+  Highs_writeSolutionPretty: unknown
+}
+
+type HighsLoader = (options: {
+  locateFile?: (file: string) => string
+  print: (line: string) => void
+}) => Promise<HighsWasmModule>
+
+/** Where the module's `print` sends a line: into `lines` while a raw solution is being written. */
+type HighsOutput = { lines: string[] | null }
+
+/**
+ * Make a loaded highs module solve to HiGHS's raw solution.
+ *
+ * The highs package (pinned at 1.15.2) reads its result back from HiGHS's
+ * pretty print, six significant digits. Its `solve` looks up
+ * `Module.Highs_writeSolutionPretty` when it calls it, after HiGHS has run and
+ * while the solved model is still in hand, so this replaces that property with
+ * a wrapper: turn HiGHS's `output_flag` on, have `Highs_writeSolution` print
+ * the raw solution to standard output (an empty file name), which the
+ * module's `print` routes into `output`, turn the flag off again and call the
+ * package's own writer, so the package's solve runs to its end unchanged. Its
+ * parsed result is then discarded and the raw lines are parsed instead.
+ *
+ * The module's `print` drops every other line. With `output_flag` off HiGHS
+ * prints nothing, so there are none.
+ */
+function rawSolutionSolver(module: HighsWasmModule, output: HighsOutput): { solve: OptimizerSolver } {
+  const prettyWriter = module.Highs_writeSolutionPretty
+  if (typeof prettyWriter !== 'function' || typeof module.cwrap !== 'function' || typeof module.solve !== 'function') {
+    throw rawSolutionUnreadable('the loaded module has no Highs_writeSolutionPretty, cwrap or solve to wrap')
+  }
+  const writeRaw = module.cwrap('Highs_writeSolution', 'number', ['number', 'string'])
+  const setBoolOption = module.cwrap('Highs_setBoolOptionValue', 'number', ['number', 'string', 'number'])
+  let captured: { lines: string[]; status: unknown } | null = null
+  module.Highs_writeSolutionPretty = (highs: number, file: string): unknown => {
+    output.lines = []
+    let status: unknown = null
+    try {
+      setBoolOption(highs, 'output_flag', 1)
+      status = writeRaw(highs, '')
+      setBoolOption(highs, 'output_flag', 0)
+    } finally {
+      captured = { lines: output.lines, status }
+      output.lines = null
+    }
+    return (prettyWriter as (highs: number, file: string) => unknown)(highs, file)
+  }
+  return {
+    solve: (lp, options) => {
+      captured = null
+      module.solve(lp, options)
+      const raw = captured as { lines: string[]; status: unknown } | null
+      captured = null
+      if (raw === null) throw rawSolutionUnreadable('its solve never called the writer the engine wraps')
+      // HighsStatus: 0 ok, 1 warning, -1 error.
+      if (raw.status !== 0 && raw.status !== 1) {
+        throw rawSolutionUnreadable(`Highs_writeSolution returned ${String(raw.status)}`)
+      }
+      return parseRawSolution(raw.lines)
+    },
+  }
+}
+
 // HiGHS loader is async + costly; memoise per process/worker.
-type HighsModule = { solve: OptimizerSolver }
-let highsPromise: Promise<HighsModule> | null = null
-async function getHighs(locateFile?: (f: string) => string): Promise<HighsModule> {
+let highsPromise: Promise<{ solve: OptimizerSolver }> | null = null
+async function getHighs(locateFile?: (f: string) => string): Promise<{ solve: OptimizerSolver }> {
   if (!highsPromise) {
     // highs ships CJS with an `export default` in its types; under Node16
     // resolution the namespace type isn't callable, but at runtime `.default`
     // is the loader function in both Node ESM and bundler interop.
-    const loader = (await import('highs')).default as unknown as (options?: {
-      locateFile?: (file: string) => string
-    }) => Promise<HighsModule>
+    const loader = (await import('highs')).default as unknown as HighsLoader
+    const output: HighsOutput = { lines: null }
     // A REJECTED load must not stay in the memo. Storing the pending promise
     // and never clearing it turns one transient wasm load failure into a
     // permanently dead optimizer for the rest of the worker's life, with a
     // page reload the only recovery; clearing lets the next call try again.
-    const loading: Promise<HighsModule> = loader(locateFile ? { locateFile } : undefined).catch(
-      (reason: unknown) => {
+    // A module the raw reader cannot wrap is rejected the same way.
+    const loading: Promise<{ solve: OptimizerSolver }> = loader({
+      ...(locateFile ? { locateFile } : {}),
+      print: (line: string) => {
+        output.lines?.push(line)
+      },
+    })
+      .then((module) => rawSolutionSolver(module, output))
+      .catch((reason: unknown) => {
         if (highsPromise === loading) highsPromise = null
         throw reason
-      },
-    )
+      })
     highsPromise = loading
   }
   return highsPromise
 }
 
-const STATUS_MAP: Record<string, OptimizedSchedule['status']> = {
-  Optimal: 'optimal',
-  'Time limit reached': 'timeout',
-  'Iteration limit reached': 'timeout',
-  Infeasible: 'infeasible',
-  'Primal infeasible or unbounded': 'infeasible',
+/** HiGHS's branch-and-bound node limit unless a caller sets one (`options.maxNodes`). */
+const DEFAULT_MAX_NODES = 5000
+/** HiGHS's time limit unless a caller sets one (`options.timeLimitSec`): a hang guard. */
+const DEFAULT_TIME_LIMIT_SEC = 60
+/** HiGHS's largest integer option value (kHighsIInf). */
+const MAX_HIGHS_INT = 2_147_483_647
+
+/**
+ * The published status, from HiGHS's raw model status. `Solution limit
+ * reached` is the node limit: the only solution limit the engine sets.
+ */
+function scheduleStatus(solved: OptimizerSolveResult): OptimizedSchedule['status'] {
+  switch (solved.modelStatus) {
+    case 'Optimal':
+      return 'optimal'
+    case 'Solution limit reached':
+      return 'node-limit'
+    case 'Time limit reached':
+    case 'Iteration limit reached':
+      return 'timeout'
+    case 'Infeasible':
+    case 'Primal infeasible or unbounded':
+      return 'infeasible'
+    default:
+      return solved.primalStatus === 'Feasible' ? 'feasible' : 'infeasible'
+  }
 }
 
 /**
  * Solve the multi-year conversion/withdrawal MILP. Returns a per-year schedule
- * plus a conversions array ready to feed the `optimized` Roth strategy.
+ * plus a conversions array ready to feed the `optimized` Roth strategy, read
+ * from HiGHS's raw solution; see `OptimizedSchedule` for what a solve with no
+ * solution publishes.
  */
 export async function optimizeSchedule(input: OptimizerInput): Promise<OptimizedSchedule> {
   const model = buildOptimizerModel(input)
+  const maxNodes = input.options?.maxNodes ?? DEFAULT_MAX_NODES
+  if (!Number.isInteger(maxNodes) || maxNodes < 1 || maxNodes > MAX_HIGHS_INT) {
+    throw new RangeError(`maxNodes must be a whole number from 1 to ${MAX_HIGHS_INT}; got ${maxNodes}`)
+  }
   const solve = input.options?.solve ?? (await getHighs(input.options?.locateFile)).solve
 
   const t0 = globalThis.performance?.now?.() ?? Date.now()
-  const sol = solve(model.lp, {
+  const solved = solve(model.lp, {
     output_flag: false,
-    time_limit: input.options?.timeLimitSec ?? 10,
+    time_limit: input.options?.timeLimitSec ?? DEFAULT_TIME_LIMIT_SEC,
+    mip_max_nodes: maxNodes,
   })
   const solveMs = (globalThis.performance?.now?.() ?? Date.now()) - t0
 
-  const objectiveValue = typeof sol.ObjectiveValue === 'number' ? sol.ObjectiveValue : 0
-  const columns = sol.Columns ?? {}
-  const status = STATUS_MAP[sol.Status] ?? (objectiveValue ? 'feasible' : 'infeasible')
+  const status = scheduleStatus(solved)
+  // No feasible primal point: nothing to publish but the status. An
+  // infeasible model has no schedule, and a limit reached before any
+  // incumbent has none either; the objective HiGHS reports then (infinity for
+  // an infeasible mixed-integer model) describes no schedule.
+  if (solved.primalStatus !== 'Feasible') {
+    return {
+      status,
+      endingAfterTax: null,
+      lifetimeTax: null,
+      schedule: [],
+      conversions: [],
+      conversionTotal: conversionScheduleTotal([]),
+      solveMs,
+    }
+  }
+  const objective = solved.objective
+  if (objective === null || !Number.isFinite(objective)) {
+    throw new Error(`A feasible solution must carry a finite objective; got ${String(objective)}`)
+  }
   const col = (name: string) => {
-    const c = columns[name]
-    return c && typeof c.Primal === 'number' ? c.Primal : 0
+    const value = solved.columns[name]
+    return typeof value === 'number' ? value : 0
   }
 
   // Gain fraction of a taxable withdrawal, for the LTCG readout (mirrors the model).
@@ -1191,7 +1464,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
 
   return {
     status,
-    endingAfterTax: round(objectiveValue),
+    endingAfterTax: round(objective),
     lifetimeTax: round(lifetimeTax),
     schedule,
     conversions,

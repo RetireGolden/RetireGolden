@@ -118,27 +118,26 @@ export interface OptimizerYearProbe {
    * kind of correction — a credit the LP made on its own variable, not a
    * movement this channel could report.
    *
-   * KNOWN AND ABSENT, and one class rather than a list: cash and value crossing
-   * between the household and an asset the LP carries in NO bucket, where there
-   * is no far side for it to book. A planned property sale's net proceeds
-   * (`propertySaleProceedsTotal` in `baseCashInflows`, and the legacy
-   * `expectedNetProceeds` deposit in the property-events block) — whose GAIN
-   * the LP is already charged, through `preWithdrawalCapitalResult` into
-   * `capitalGainsBase`; a permanent-life death benefit deposited by the
-   * insurance block; and a HECM draw (`hecmDraw`).
+   * NOT reported here either: cash crossing between the household and an asset
+   * the LP carries in NO bucket, where there is no far side for a movement to
+   * book. Two of them are CASH the year receives with nothing to give back, and
+   * reach the LP as cash on `unbucketedAssetCash` below (decision
+   * D-OPTIMIZER-SOLVER-OUTPUT): a planned property sale's net proceeds, on both
+   * of the ledger's paths — whose GAIN the LP was already charged, through
+   * `preWithdrawalCapitalResult` into `capitalGainsBase` — and a permanent-life
+   * death benefit.
    *
-   * ALL FOUR OMISSIONS — the two property-sale paths, the HECM draw, and
-   * the death benefit — RUN IN THE SAME DIRECTION: they make the solve POORER
-   * than the household, which is why omitting them is the conservative answer
-   * until the channel and the bucket that would carry them exist. The HECM draw
-   * is measured, not assumed — the draw funds the ledger's own spending while
-   * the probe reports `exogenousCash` of 0 and the full `spendingNeed`, so the
-   * LP funds the whole year out of buckets the household never had to touch.
-   * What is special about it is not its direction but its FIX: booking the
+   * KNOWN AND ABSENT: a HECM draw (`hecmDraw`). Leaving it out makes the solve
+   * POORER than the household, as leaving out the other two did, and that is
+   * measured, not assumed: the
+   * draw funds the ledger's own spending while the probe reports neither it nor
+   * any other cash for it, so the LP funds the whole year out of buckets the
+   * household never had to touch. What sets it apart is its FIX: booking the
    * draw's cash ALONE, with no bucket for the loan balance it creates and
    * accrues, would flip the solve from poorer to richer and hand it a line of
    * free money it never repays. That is why it needs a debt bucket rather than
-   * a cash credit, and why it cannot ride this channel. A separate slice.
+   * a cash credit, and why it rides neither this channel nor
+   * `unbucketedAssetCash`. A separate slice.
    *
    * Read back off what each producer published — the year's runtime
    * OCCURRENCES for the gift, the series and the lump sum (the occurrence is
@@ -167,6 +166,36 @@ export interface OptimizerYearProbe {
    * passes through the household's hands.
    */
   exogenousStrategyProceeds: number
+  /**
+   * Cash this year delivers from an asset the LP carries in no bucket, summed:
+   *   1. a planned property sale's net proceeds on the exact-basis path
+   *      (`propertySaleProceedsTotal`, inside the ledger's `baseCashInflows`,
+   *      net of selling costs and any HECM payoff);
+   *   2. a planned property sale's net proceeds on the legacy path (the
+   *      `expectedNetProceeds` deposit, or the property's value, net of any
+   *      HECM payoff, which the property close deposits);
+   *   3. a permanent-life policy's payout in its insured's death-age year
+   *      (`max(deathBenefit, cash value)`, which the insurance close
+   *      deposits).
+   * Zero in a year with none of them, which is every year of a plan with no
+   * property sale and no permanent-life policy.
+   *
+   * The LP books it as the year's cash, beside `exogenousCash`, because it has
+   * nowhere else to go: the property, the policy and its cash value are in no
+   * bucket, so there is nothing to debit, and leaving the cash out made the
+   * solve poorer than the household by the whole amount, from that year on.
+   * The sale's gain is already priced (`capitalGainsBase`); a death benefit is
+   * not income.
+   *
+   * ONE TIMING DIFFERENCE, stated rather than modeled: the ledger deposits
+   * paths 2 and 3 after the year's withdrawals are solved, so they cannot fund
+   * that year's spending there, while the LP's cash row lets them. In a year
+   * the ledger funds anyway, it draws the accounts for the year's spending and
+   * then deposits the cash, where the LP spends the cash and draws less, so
+   * the two differ by the tax on that draw; a year the ledger runs short in
+   * can look funded to the LP.
+   */
+  unbucketedAssetCash: number
   /**
    * Charitable exclusion riding on this year's forced owned-IRA distribution:
    * `qcdIncomeOffset + namedQcdIncomeOffset`, capped at the taxable forced

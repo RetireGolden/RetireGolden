@@ -425,14 +425,21 @@ describe('full-plan characterization fixtures', () => {
     // law sync, Step 2): 2027–28 conversions now fill the 12% bracket plus the
     // $6k senior deduction (50,400 + 24,150 = 74,550) instead of stopping $6k
     // short, and the exact estate improved ~$1.2k over the blind solve.
+    // Re-baselined for D-OPTIMIZER-SOLVER-OUTPUT: the schedule is read from
+    // HiGHS's raw solution in cents, where it was the highs package's
+    // six-significant-digit reading, so 2026's request is 62,681.49 (was
+    // 62,681.5), the requested total 538,917.64 (was 538,917.7), and the
+    // projection of it executes 423,639.15 (was .14) for an estate of
+    // 444,057.77 (was .76). Read at six digits, the new code gives the old
+    // figures, so nothing else moved them.
     expect(summary).toEqual({
       status: 'optimal',
-      requestedConversions: 538_917.7,
-      exactConversions: 423_639.14,
+      requestedConversions: 538_917.64,
+      exactConversions: 423_639.15,
       baselineEstate: 381_703.41,
-      exactEstate: 444_057.76,
+      exactEstate: 444_057.77,
       firstConversions: [
-        { year: 2026, amount: 62_681.5 },
+        { year: 2026, amount: 62_681.49 },
         { year: 2027, amount: 74_550 },
         { year: 2028, amount: 74_550 },
       ],
