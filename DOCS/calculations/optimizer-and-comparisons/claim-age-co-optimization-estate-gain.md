@@ -78,7 +78,7 @@ Example library (scratch run at `4a80669e`: every example with Social Security i
 | no-head-start-grad | Nova claims Social Security at 70 | 15,795,758.50 → 15,955,482.13 | $159,724 |
 | trump-account-head-start | Nova claims Social Security at 70 | 23,037,332.75 → 23,167,072.78 | $129,740 |
 
-The other 20 publish 0 (the card reads "none beat your current claim ages by a meaningful margin"). rmd-irmaa's solver hit its 10-second limit in every run on the deriver's machine; its claim result is still the current claim.
+The other 20 publish 0 (the card reads "none beat your current claim ages by a meaningful margin"). rmd-irmaa's solver hit its 10-second limit in every run on the deriver's machine; its claim result is still the current claim. (Since 2026-10-10, decision D-OPTIMIZER-SOLVER-OUTPUT, the solver stops at a 5,000-node limit instead, status `node-limit`, and rmd-irmaa stops there; this record's evidence figures did not move, and its receipt was re-executed with that code.)
 
 Since B2-P1 slice 5 (`claim-age-co-optimization`, the refusals decided 2026-09-25) none of the five wins: each has Marketplace years whose premium tax credit the ledger cannot price, so the search refuses there and publishes 0, and no example's claim change wins. The winning case is carried by the constructed plan above, and the planner's parity test runs on a constructed plan too.
 

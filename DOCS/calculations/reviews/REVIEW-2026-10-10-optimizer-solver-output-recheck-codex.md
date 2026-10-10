@@ -51,3 +51,27 @@ The evidence's maximum cent-rounding allowance is `0.56669724 × 0.01 + 0.425022
 ### 5. `scheduleStatus` and `inf` objective — approve
 
 `Optimal` now maps to `optimal` only with `primalStatus === 'Feasible'`; otherwise the primal-status fallback gives `infeasible`. `parseRawSolution` returns immediately for `None`, without reading an objective; for a primal point it parses `inf` as infinity, and `optimizeSchedule` throws if a feasible point has a non-finite objective. This preserves both records' rule that no primal means no published figures or rows, and that a published objective describes a feasible point. The fallback status is a publication label, not independent proof that an unusual `Optimal`/no-primal signal is mathematically infeasible. Evidence: `packages/engine/src/strategies/optimizer.ts:1223-1253,1365-1384,1408-1426`; `DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-objective-and-lifetime-tax.md:3,12,47`; `DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-year-solution.md:11,81`.
+
+---
+
+## Round 2
+
+After RetireGolden#793's second automated review, on a snapshot holding ROUND2.diff: the convergence loop stops at a re-solve that publishes no figures (projection/optimizePlan.ts#convergeSchedule), dated notes in the worksheets of optimizer-schedule-conversion-total and claim-age-co-optimization-estate-gain, and one grammar fix in optimizer-schedule-objective-and-lifetime-tax. Verdict: approve, 3 of 3 items. Verbatim output follows.
+
+# Review of `ROUND2.diff`
+
+## 1. Convergence after a re-solve with no figures — approve
+
+`optimizeSchedule` sets `endingAfterTax` to null and publishes empty rows and conversions whenever the primal point is not feasible, regardless of whether the model status is `infeasible`, `node-limit`, or `timeout` (`packages/engine/src/strategies/optimizer.ts:1365-1383, 1408-1423`). A feasible point instead produces a finite figure and rows (`:1424-1426, 1437-1485`). Thus the guard in `packages/engine/src/projection/optimizePlan.ts:2822-2831` stops only when the re-solve has no point to step toward, and retains the prior schedule (`:2808-2809, 2851-2860`). The new test injects a first feasible solve followed by `Solution limit reached` with primal status `None`, then checks two calls and preservation of the first schedule (`packages/engine/src/projection/optimizePlan.solverOutput.test.ts:86-105`). It exercises this branch without relying on a live solver run.
+
+## 2. Dated worksheet notes — approve
+
+The Roth worksheet's added note is at `DOCS/calculations/roth/optimizer-schedule-conversion-total.md:114`. The defaults are 5,000 nodes and 60 seconds, both passed to HiGHS (`packages/engine/src/strategies/optimizer.ts:1354-1357, 1392-1405`); the resulting statuses are `node-limit` and `timeout` (`:1365-1379`). The page maps these to “search limit” and “time limit” (`packages/planner-ui/src/planner/optimizePageRecommendation.ts:55-68`), uses `endingAfterTax === null` to choose its no-schedule explanation (`packages/planner-ui/src/planner/OptimizePage.tsx:415-429`), and chooses the corresponding heading (`:798-810`). The roughly eight-second rmd-irmaa result is explicitly attributed to the deriver's machine, not asserted as a universal duration. The time limit can fire first on a slower machine, as the optimizer's option contract says (`packages/engine/src/strategies/optimizer.ts:518-522`). The note dates the earlier account and table rather than changing the record's conversion-total formula (`DOCS/calculations/roth/optimizer-schedule-conversion-total.md:3, 77, 112-116`).
+
+The claim-age worksheet's addition is at `DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization-estate-gain.md:81`. Its node-limit status and 5,000-node default match the same optimizer lines. Its re-execution and unchanged evidence figures are reported as dated evidence, not a change to the claim-age gain definition, which remains joint estate minus current-claim estate (`:3, 24-45`). No code statement contradicts either note.
+
+## 3. Grammar fix — approve
+
+`ROUND2.diff` changes only “whose the stop” to “whose stop” in the same string literal (`packages/engine/src/rules/calculations/optimizerAndComparisons.ts:782`). The node-limit, incumbent, timing, and measurement claims in that sentence are otherwise identical. It changes no meaning.
+
+No tests were run, as requested.

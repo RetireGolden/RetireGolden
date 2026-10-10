@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
+import type { OptimizerSolver, OptimizerSolveResult } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { projectionDollarBasis } from './dollarBasis.js'
 import { buildOptimizerInput, optimizePlan } from './optimizePlan.js'
@@ -81,6 +82,28 @@ describe('a first solve with no solution', () => {
     expect(schedule.conversions).toEqual([])
     expect(schedule.conversionTotal).toBe(0)
     expect(schedule.projectionDepletionYear).toBe(projection.depletionYear)
+  })
+
+  it('stops the convergence loop at a re-solve with no solution, keeping the schedule it had', async () => {
+    // The first solve converts $300,000 in 2026, far more than the exact
+    // ledger rewards, so a step toward any smaller list would be adopted;
+    // the re-solve then stops at its node limit holding no incumbent.
+    const solvent = plan({ planningAge: 90, spending: 30_000, ira: 900_000 })
+    let calls = 0
+    const solve: OptimizerSolver = (): OptimizerSolveResult => {
+      calls += 1
+      if (calls === 1) {
+        return { modelStatus: 'Optimal', primalStatus: 'Feasible', objective: 500_000, columns: { conv0: 300_000, trad1: 600_000, other1: 250_000 } }
+      }
+      return { modelStatus: 'Solution limit reached', primalStatus: 'None', objective: null, columns: {} }
+    }
+    const result = await optimizePlan(solvent, { ...opts, solver: { solve }, convergence: { maxIterations: 6 } })
+    expect(calls).toBe(2)
+    expect(result.convergence.iterations).toBe(2)
+    expect(result.schedule.status).toBe('optimal')
+    expect(result.schedule.endingAfterTax).toBe(500_000)
+    expect(result.schedule.schedule.length).toBeGreaterThan(0)
+    expect(result.schedule.conversions).toEqual([{ year: 2026, amount: 300_000 }])
   })
 
   it('leaves the field off a solve that has a solution', async () => {

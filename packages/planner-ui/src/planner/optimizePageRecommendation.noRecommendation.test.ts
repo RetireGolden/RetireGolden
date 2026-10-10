@@ -30,7 +30,7 @@ describe('optimizerProducedNoRecommendation (#426)', () => {
   })
 
   it('is false for every reportable outcome, including "no change" results', () => {
-    for (const scheduleStatus of ['optimal', 'feasible', 'timeout', null] as const) {
+    for (const scheduleStatus of ['optimal', 'feasible', 'timeout', 'node-limit', null] as const) {
       expect(optimizerProducedNoRecommendation({ ...base, scheduleStatus })).toBe(false)
     }
   })

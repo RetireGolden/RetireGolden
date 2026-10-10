@@ -2821,7 +2821,12 @@ async function convergeSchedule(
     const reInput = buildOptimizerInput(plan, opts, incumbentPlan)
     const solved = await optimizeSchedule(reInput)
     iterations = i + 1
-    if (solved.status === 'infeasible') break
+    // A re-solve with no solution (an infeasible model, or a node or time
+    // limit reached before any incumbent) publishes no figures and no rows,
+    // so it has no step to take: stop and keep the best schedule so far.
+    // Damping toward its empty conversion list could otherwise adopt a
+    // schedule whose figures and rows are empty under a conversion list.
+    if (solved.endingAfterTax === null) break
 
     const damped = dampConvergenceStep(currentConversions, solved.conversions, cfg)
     const candidate = priceExecutedSchedule(plan, damped, simulateOptions)

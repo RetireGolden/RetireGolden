@@ -1,15 +1,15 @@
 # Mutation receipt: claim-change-estate-gain
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `04218ee3` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `15b1b7a5` (branch `claude/2027-rollover`, pull request #768), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `61ceb34a` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `04218ee3` (branch `claude/2027-published-figures`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `15b1b7a5` (branch `claude/2027-rollover`, pull request #768), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`. Re-executed once more 2026-10-10 on RetireGolden#793's branch with its second review's fixes, the code of the commit that carries this receipt, after that review moved the lines below; the mutation is unchanged.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index f5ef9de57..e8c31eb9c 100644
+index 262067ee6..95cb806d9 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -3136,7 +3136,7 @@ export async function optimizePlanCoOptimizingClaimAge(
+@@ -3141,7 +3141,7 @@ export async function optimizePlanCoOptimizingClaimAge(
        winningClaimPatch: winningPatch,
        jointExactEstate: bestEstate,
        currentClaimExactEstate: baseEstate,
@@ -35,9 +35,9 @@ Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, whose changes moved lines of
 ```
  RUN  v5.0.0 packages/engine
 
- ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 382ms
+ ❯ src/projection/optimizePlan.claimGain.evidence.test.ts (3 tests | 1 failed) 356ms
    ❯ claim-change-estate-gain — Claim-age co-optimization estate gain (3)
-     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 290ms
+     × a plan whose claim change wins publishes the joint minus current estate, more than the $1,000 margin, in its last year's dollars 267ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 2 passed (3)
