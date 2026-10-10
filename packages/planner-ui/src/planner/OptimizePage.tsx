@@ -413,14 +413,14 @@ export function OptimizePage() {
   // that no conversion helps. The engine publishes no figures exactly when
   // the solve has no schedule.
   const solverLimit = optimizerStopLimit(schedule?.status ?? null)
-  const solverTimedOut = solverLimit !== null
+  const solverStoppedAtLimit = solverLimit !== null
   const solverHasNoSchedule = schedule !== null && schedule.endingAfterTax === null
   // A solve that stopped with no schedule compared nothing of its own; the
   // cards then name only the simple strategies, as the limit note does.
-  const solverScheduleCompared = !(solverTimedOut && rawConversions < 1)
+  const solverScheduleCompared = !(solverStoppedAtLimit && rawConversions < 1)
   // Why there is no schedule, when the plan's own projection says: the year it runs short.
   const projectionShortYear = schedule?.projectionDepletionYear ?? null
-  const timeoutNote = solverTimedOut ? (
+  const timeoutNote = solverStoppedAtLimit ? (
     <p className="field-hint mt-sm">
       {solverHasNoSchedule
         ? `The conversion solver stopped at its ${solverLimit} before it found a schedule, so this result does not show that no conversion helps: only the simple strategies were compared on your full projection.${
@@ -806,7 +806,7 @@ export function OptimizePage() {
                   ? 'The optimizer reached its search limit'
                   : 'No beneficial conversions found'}
             </h2>
-            {solverTimedOut ? (
+            {solverStoppedAtLimit ? (
               timeoutNote
             ) : (
               <p className="muted">

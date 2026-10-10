@@ -506,14 +506,19 @@ export interface OptimizerInput {
     /**
      * HiGHS branch-and-bound node limit (`mip_max_nodes`, default 5000): the
      * solve's deterministic stop. A model that reaches it before proving an
-     * optimum returns status `node-limit` with the incumbent it holds, and
-     * the same input stops at the same incumbent on any machine.
+     * optimum returns status `node-limit` with the incumbent it holds. The
+     * stop does not depend on the machine's speed: HiGHS runs single-threaded
+     * in the one WebAssembly build of the pinned highs package, whose
+     * floating-point arithmetic WebAssembly specifies exactly, so the same
+     * input is expected to stop at the same incumbent on any machine (seen on
+     * repeated runs on one machine, not measured across machines).
      */
     maxNodes?: number
     /**
      * HiGHS time limit in seconds (default 60). A guard against a hang, not
      * the intended stop: the node limit is. A solve that reaches it returns
-     * status `timeout`, whose incumbent depends on the machine's speed.
+     * status `timeout`, whose incumbent depends on the machine's speed. A
+     * machine too slow to reach the node limit within it stops here instead.
      */
     timeLimitSec?: number
     /** Optional per-year conversion ceiling, nominal. */
@@ -562,7 +567,7 @@ export interface OptimizedYear {
 export interface OptimizedSchedule {
   /**
    * The solver's status, from HiGHS's raw model status: 'optimal' (proven);
-   * 'node-limit' (stopped at `options.maxNodes`, deterministic) and 'timeout'
+   * 'node-limit' (stopped at `options.maxNodes`, independent of the machine's speed) and 'timeout'
    * (stopped at `options.timeLimitSec`, machine-dependent), each with the
    * incumbent it held, or with no solution when it held none; 'infeasible' (no
    * schedule funds the model's years); 'feasible' for any other model status
@@ -1229,7 +1234,11 @@ function parseRawSolution(lines: readonly string[]): OptimizerSolveResult {
 
   const objectiveLine = /^Objective (\S+)$/.exec(lines[primalAt + 2] ?? '')
   if (objectiveLine === null) throw rawSolutionUnreadable('its primal solution has no objective line')
-  const objective = rawNumber(objectiveLine[1]!, 'the objective')
+  // HiGHS prints an infinite objective as inf; that is a solve's answer, not a
+  // format change, so it reaches optimizeSchedule's own finite-objective check.
+  const objectiveText = objectiveLine[1]!
+  const objective =
+    objectiveText === 'inf' ? Infinity : objectiveText === '-inf' ? -Infinity : rawNumber(objectiveText, 'the objective')
   const countLine = /^# Columns (\d+)$/.exec(lines[primalAt + 3] ?? '')
   if (countLine === null) throw rawSolutionUnreadable('its primal solution has no column count')
   const count = Number(countLine[1])
@@ -1272,8 +1281,8 @@ type HighsOutput = { lines: string[] | null }
  * package's own writer, so the package's solve runs to its end unchanged. Its
  * parsed result is then discarded and the raw lines are parsed instead.
  *
- * The module's `print` drops every other line. With `output_flag` off HiGHS
- * prints nothing, so there are none.
+ * Outside that window the module's `print` discards whatever it is handed,
+ * and HiGHS hands it nothing, because `output_flag` is off.
  */
 function rawSolutionSolver(module: HighsWasmModule, output: HighsOutput): { solve: OptimizerSolver } {
   const prettyWriter = module.Highs_writeSolutionPretty
@@ -1356,7 +1365,10 @@ const MAX_HIGHS_INT = 2_147_483_647
 function scheduleStatus(solved: OptimizerSolveResult): OptimizedSchedule['status'] {
   switch (solved.modelStatus) {
     case 'Optimal':
-      return 'optimal'
+      // An optimum with no primal point would publish no figures, so it is
+      // read by its primal status below rather than called optimal.
+      if (solved.primalStatus === 'Feasible') return 'optimal'
+      break
     case 'Solution limit reached':
       return 'node-limit'
     case 'Time limit reached':
@@ -1366,8 +1378,9 @@ function scheduleStatus(solved: OptimizerSolveResult): OptimizedSchedule['status
     case 'Primal infeasible or unbounded':
       return 'infeasible'
     default:
-      return solved.primalStatus === 'Feasible' ? 'feasible' : 'infeasible'
+      break
   }
+  return solved.primalStatus === 'Feasible' ? 'feasible' : 'infeasible'
 }
 
 /**

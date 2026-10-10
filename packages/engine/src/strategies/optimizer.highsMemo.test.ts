@@ -156,7 +156,6 @@ describe('HiGHS raw solution reader', () => {
       ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', '# Columns 0'],
       ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective 1', '# Columns 2', 'conv0 1'],
       ['Model status', 'Optimal', '', '# Primal solution values', 'Unknown'],
-      ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective inf', '# Columns 0'],
     ]
     for (const raw of unreadable) {
       loads.raw = raw
@@ -171,6 +170,12 @@ describe('HiGHS raw solution reader', () => {
     loads.callsWriter = false
     await expect(optimizeSchedule(input())).rejects.toThrow(changed)
     loads.callsWriter = true
+
+    // An infinite objective on a feasible point is the solve's answer, not a
+    // changed writer, and is refused as such.
+    loads.raw = ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective inf', '# Columns 0']
+    await expect(optimizeSchedule(input())).rejects.toThrow('A feasible solution must carry a finite objective')
+    loads.raw = OPTIMAL_RAW
 
     // The reader is unharmed: the next readable solve publishes.
     expect((await optimizeSchedule(input())).status).toBe('optimal')

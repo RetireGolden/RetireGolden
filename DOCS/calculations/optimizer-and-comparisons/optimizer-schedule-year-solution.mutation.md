@@ -1,15 +1,15 @@
 # Mutation receipt: optimizer-schedule-year-solution
 
-First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`.
+First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`. Re-executed once more 2026-10-10 against RetireGolden `926577df` (RetireGolden#793's branch), after its first review moved the lines below; the mutation is unchanged.
 
 ## Mutation applied to `packages/engine/src/strategies/optimizer.ts`
 
 ```diff
 diff --git a/packages/engine/src/strategies/optimizer.ts b/packages/engine/src/strategies/optimizer.ts
-index 9085d3e4b..b1828c9d8 100644
+index 9f8f2923f..b207d09aa 100644
 --- a/packages/engine/src/strategies/optimizer.ts
 +++ b/packages/engine/src/strategies/optimizer.ts
-@@ -1458,7 +1458,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
+@@ -1471,7 +1471,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
        endTrad: round(col(`trad${t + 1}`)),
        endInheritedTrad: round(col(`inh${t + 1}`)),
        endOther: round(col(`other${t + 1}`)),
@@ -35,10 +35,10 @@ Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, which restated this record (
 ```
  RUN  v5.0.0 packages/engine
 
- ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 2 failed) 1209ms
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 2 failed) 1205ms
    ❯ optimizer-schedule-year-solution — Optimizer's per-year solution (3)
-     × case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107028.88 55ms
-     × case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.18, tiers 2 and 1 45ms
+     × case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107028.88 50ms
+     × case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.18, tiers 2 and 1 41ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 6 passed (8)

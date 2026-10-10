@@ -55,7 +55,7 @@ export function optimizerProducedNoRecommendation(args: {
 /**
  * Which limit stopped the conversion solver, in the page's words, or null when
  * none did: 'node-limit' is its search limit (a fixed number of branch-and-bound
- * nodes, the same on every machine), 'timeout' its time limit.
+ * nodes, not a time), 'timeout' its time limit.
  */
 export function optimizerStopLimit(status: OptimizedSchedule['status'] | null): 'search limit' | 'time limit' | null {
   return status === 'node-limit' ? 'search limit' : status === 'timeout' ? 'time limit' : null

@@ -1296,15 +1296,15 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 672
+              "line": 677
             },
             {
               "name": "irmaaIncrements",
-              "line": 653
+              "line": 658
             },
             {
               "name": "irmaaSurchargeFor",
-              "line": 1506
+              "line": 1519
             }
           ]
         }
@@ -1710,7 +1710,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 672
+              "line": 677
             }
           ]
         }

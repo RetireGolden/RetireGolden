@@ -26,8 +26,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     IRMAA binaries), a lifetime tax of 0 and a row of zeros per year. A solve with a solution
     publishes its figures whatever stopped it, so a limit's incumbent is described in full.
   - New `options.maxNodes` (HiGHS `mip_max_nodes`, default 5,000) and status `'node-limit'`: the
-    same input stops at the same incumbent on any machine. `timeLimitSec` defaults to 60 (was 10),
-    as a guard against a hang. rmd-irmaa, the one library example that does not solve to
+    stop no longer depends on the machine's speed (one single-threaded WebAssembly build, so the same
+    input is expected to stop at the same incumbent anywhere; seen on repeated runs on one machine).
+    `timeLimitSec` defaults to 60 (was 10), as a guard against a hang; a machine too slow to reach
+    the node limit within it stops there instead, with status `'timeout'`. rmd-irmaa, the one library example that does not solve to
     optimality, now stops at the node limit (objective $744,755.92 in about 8 seconds here) where it
     stopped at the machine-dependent 10-second limit.
   - `projection/optimizePlan.ts#buildOptimizerInput` deflates the objective by 1 / the plan's
@@ -54,7 +56,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     `DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-solver-output-codex.md`), every worked figure
     re-derived by hand and bracket-fill-roth re-measured: $282,266.26 (was $275,381.73) against the
     projection's $266,458.08 in today's dollars on the same basis. The census (RetireGolden-Docs
-    ba0a3c53, imported here) makes `projectionDepletionYear` a surface of `longevity-depletion-year`
+    e2841d42, imported here) makes `projectionDepletionYear` a surface of `longevity-depletion-year`
     (field rows 1,266 → 1,267; families and exclusions unchanged). Characterization figures that
     pinned six-digit readings move by cents to dollars (fullPlan's optimized Roth characterization,
     ORACLE-011, the QCD adversarial finding, the Optimize page's cleaned totals); each returns to its

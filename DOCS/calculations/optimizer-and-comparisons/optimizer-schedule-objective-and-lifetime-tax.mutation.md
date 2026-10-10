@@ -1,15 +1,15 @@
 # Mutation receipt: optimizer-schedule-objective-and-lifetime-tax
 
-First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`.
+First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`. Re-executed once more 2026-10-10 against RetireGolden `926577df` (RetireGolden#793's branch), after its first review moved the lines below; the mutation is unchanged.
 
 ## Mutation applied to `packages/engine/src/strategies/optimizer.ts`
 
 ```diff
 diff --git a/packages/engine/src/strategies/optimizer.ts b/packages/engine/src/strategies/optimizer.ts
-index 9085d3e4b..c6772fe27 100644
+index 9f8f2923f..a1e558356 100644
 --- a/packages/engine/src/strategies/optimizer.ts
 +++ b/packages/engine/src/strategies/optimizer.ts
-@@ -1113,7 +1113,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
+@@ -1118,7 +1118,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
    const objTerms: Terms = {
      [`other${n}`]: deflate,
      [`trad${n}`]: deflate * (1 - liquidationRate),
@@ -35,9 +35,9 @@ Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, which restated this record (
 ```
  RUN  v5.0.0 packages/engine
 
- ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 1 failed) 1200ms
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 1 failed) 1164ms
    ❯ optimizer-schedule-objective-and-lifetime-tax — Optimizer's own ending after-tax wealth and lifetime tax (5)
-     × case 2 deflates over one year, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1871227.85, tax 47663.94 23ms
+     × case 2 deflates over one year, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1871227.85, tax 47663.94 20ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 7 passed (8)

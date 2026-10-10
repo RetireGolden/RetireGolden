@@ -1241,6 +1241,8 @@ describe('hand-computed economic optima', () => {
     const columns = { conv0: 12_345.678, wt0: 1_000.004, ti0: 20_000.5, trad1: 90_000.125, other1: 105_000.336 }
     const cases: [string, 'Feasible' | 'Infeasible' | 'None', string][] = [
       ['Optimal', 'Feasible', 'optimal'],
+      ['Optimal', 'None', 'infeasible'],
+      ['Optimal', 'Infeasible', 'infeasible'],
       ['Solution limit reached', 'Feasible', 'node-limit'],
       ['Solution limit reached', 'None', 'node-limit'],
       ['Time limit reached', 'Feasible', 'timeout'],
