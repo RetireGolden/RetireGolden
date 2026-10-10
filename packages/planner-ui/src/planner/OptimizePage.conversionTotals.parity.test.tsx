@@ -135,13 +135,19 @@ describe('the Optimize page reads the published totals (B2-P1 slice 3)', () => {
   }
 
   for (const [id, cleanedPrinted] of [
-    ['bridge-early-retirement', '$1,135,975'],
+    // Both were a dollar or two higher ($1,135,975 and $4,050,076) until
+    // D-OPTIMIZER-SOLVER-OUTPUT: the engine now reads the solver's schedule
+    // from HiGHS's raw solution in cents, where it was the highs package's
+    // six-significant-digit reading, and the cleaned schedule executes the
+    // requested amounts as read. Read at six digits, the new engine gives the
+    // old totals.
+    ['bridge-early-retirement', '$1,135,974'],
     // Was $4,053,361 before engine 0.4.1. The example is in Michigan and its
     // owner, born 2004, converts before 59 and a half; Michigan now counts a
     // conversion toward its retirement deduction only from 59 and a half
     // (mi-treasury-roth-conversion-at-59-and-a-half), so 2027's conversion
     // executes $13,180.74 where it executed $16,465.61. Nothing else moves.
-    ['trump-account-head-start', '$4,050,076'],
+    ['trump-account-head-start', '$4,050,074'],
   ] as const) {
     it(`${id}: the mismatch sentence prints the cleaned schedule's total, and the hero names the unpriced credit`, async () => {
       const plan = appExamplePlanById(id)
@@ -162,32 +168,43 @@ describe('the Optimize page reads the published totals (B2-P1 slice 3)', () => {
     }, 120_000)
   }
 
-  it('a timed-out solve with no schedule says so instead of "No beneficial conversions found"', async () => {
+  it('a solve stopped at a limit with no schedule says so instead of "No beneficial conversions found"', async () => {
     const plan = appExamplePlanById('rmd-irmaa')
     const base = await optimized('bracket-fill-roth')
-    const timedOut = {
-      ...base,
-      schedule: { ...base.schedule, status: 'timeout', conversions: [], conversionTotal: 0, schedule: [] },
-      postProcessed: null,
-      tournament: {
-        ...base.tournament,
-        winnerSource: 'none',
-        winnerCandidateId: null,
-        winnerLabel: null,
-        winnerConversions: [],
-        winnerConversionTotal: 0,
-        winnerValidation: null,
-        acaActionabilityVeto: null,
-        retirementActionReadinessVeto: null,
-        retirementActionPromotion: null,
-      },
-      claimAge: null,
-    } as OptimizeResult
-    await mount(plan, timedOut)
-    const text = container.textContent ?? ''
-    expect(text).toContain('The optimizer ran out of time')
-    expect(text).toContain('does not show that no conversion helps: only the simple strategies were compared on your full projection.')
-    expect(text).not.toContain('No beneficial conversions found')
+    const cases = [
+      ['timeout', 'The optimizer ran out of time', 'time limit'],
+      ['node-limit', 'The optimizer reached its search limit', 'search limit'],
+    ] as const
+    for (const [status, heading, limit] of cases) {
+      const stopped = {
+        ...base,
+        // What the engine publishes for a limit reached before any incumbent.
+        schedule: { ...base.schedule, status, endingAfterTax: null, lifetimeTax: null, conversions: [], conversionTotal: 0, schedule: [] },
+        postProcessed: null,
+        tournament: {
+          ...base.tournament,
+          winnerSource: 'none',
+          winnerCandidateId: null,
+          winnerLabel: null,
+          winnerConversions: [],
+          winnerConversionTotal: 0,
+          winnerValidation: null,
+          acaActionabilityVeto: null,
+          retirementActionReadinessVeto: null,
+          retirementActionPromotion: null,
+        },
+        claimAge: null,
+      } as OptimizeResult
+      await act(async () => root.unmount())
+      root = createRoot(container)
+      await mount(plan, stopped)
+      const text = container.textContent ?? ''
+      expect(text, status).toContain(heading)
+      expect(text, status).toContain(
+        `stopped at its ${limit} before it found a schedule, so this result does not show that no conversion helps: only the simple strategies were compared on your full projection.`,
+      )
+      expect(text, status).not.toContain('No beneficial conversions found')
+    }
   }, 120_000)
 
   it('an incumbent that holds after a timed-out solve with no schedule names only the simple strategies (review F8)', async () => {
@@ -196,7 +213,7 @@ describe('the Optimize page reads the published totals (B2-P1 slice 3)', () => {
     expect(base.tournament.winnerSource).toBe('incumbent')
     const timedOut = {
       ...base,
-      schedule: { ...base.schedule, status: 'timeout', conversions: [], conversionTotal: 0, schedule: [] },
+      schedule: { ...base.schedule, status: 'timeout', endingAfterTax: null, lifetimeTax: null, conversions: [], conversionTotal: 0, schedule: [] },
       postProcessed: null,
     } as OptimizeResult
     await mount(plan, timedOut)

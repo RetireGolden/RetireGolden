@@ -114,8 +114,18 @@ export interface AnnualOptimizerProbeInput {
   readonly totalRothConversion: number
   readonly taxableAmountForGrossConversion: (gross: number) => number
   readonly seppTotal: number
+  /** The exact-basis property sales' net proceeds this year (in `baseCashInflows`). */
+  readonly propertySaleProceedsTotal: number
   readonly peopleAged65Plus: number
   readonly ssa44IrmaaRedetermination: boolean
+}
+
+/** Cash the year's property and insurance close deposits after the probe is published. */
+export interface AnnualOptimizerProbeClosingAssetCash {
+  /** The legacy-path property sales' deposits (`expectedNetProceeds` or value, net of HECM payoff). */
+  readonly legacyPropertySaleDeposits: number
+  /** Permanent-life payouts in their insured's death-age year. */
+  readonly deathBenefitPaid: number
 }
 
 /**
@@ -124,6 +134,9 @@ export interface AnnualOptimizerProbeInput {
  *
  * WHAT IT PRODUCES: one fresh optimizer probe whose movement rows are ordered
  * by account id and whose scalars preserve the ledger's existing fold order.
+ * Its `unbucketedAssetCash` holds the exact-basis sale proceeds only; the
+ * year's close adds the rest through
+ * `annualOptimizerProbeWithClosingAssetCash`.
  *
  * WHAT IT REFUSES: optimizer execution, live ledger reads or writes, annual
  * settlement replay, capture-sink invocation, and final result publication.
@@ -359,6 +372,7 @@ export function annualOptimizerProbePublication(
     exogenousStrategyAccountMovement:
       optimizerExogenousStrategyAccountMovement,
     exogenousStrategyProceeds: input.seppTotal,
+    unbucketedAssetCash: input.propertySaleProceedsTotal,
     forcedDistributionOrdinaryIncomeExclusion:
       optimizerForcedDistributionOrdinaryExclusion,
     forcedDistributionCashDiversion:
@@ -442,4 +456,27 @@ export function annualOptimizerProbePublication(
     peopleAged65Plus: input.peopleAged65Plus,
     ssa44IrmaaRedetermination: input.ssa44IrmaaRedetermination,
   }
+}
+
+/**
+ * WHAT IT TAKES: a probe `annualOptimizerProbePublication` published, and the
+ * cash the same year's property and insurance close deposited afterwards.
+ *
+ * WHAT IT PRODUCES: the probe with that cash added to `unbucketedAssetCash`,
+ * as a fresh object; the probe itself when the close deposited nothing, so a
+ * year with no legacy sale and no death benefit publishes the same probe.
+ *
+ * WHAT IT REFUSES: everything else the probe carries. The close runs after the
+ * year's withdrawals are solved and the probe's balances snapshotted, so only
+ * this cash is late; publishing the whole probe after the close would read
+ * balances the year's flows had already moved.
+ */
+export function annualOptimizerProbeWithClosingAssetCash(
+  probe: OptimizerYearProbe,
+  closing: AnnualOptimizerProbeClosingAssetCash,
+): OptimizerYearProbe {
+  const late = closing.legacyPropertySaleDeposits + closing.deathBenefitPaid
+  return late === 0
+    ? probe
+    : { ...probe, unbucketedAssetCash: probe.unbucketedAssetCash + late }
 }

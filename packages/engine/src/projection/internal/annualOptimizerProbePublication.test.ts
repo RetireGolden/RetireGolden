@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { YearAcaResult } from '../types.js'
 import {
   annualOptimizerProbePublication,
+  annualOptimizerProbeWithClosingAssetCash,
   type AnnualOptimizerProbeInput,
 } from './annualOptimizerProbePublication.js'
 
@@ -79,6 +80,7 @@ function input(
     // skips or changes the gross-to-taxable callback cannot preserve the oracle.
     taxableAmountForGrossConversion: (gross) => gross === 80 ? 53 : Number.NaN,
     seppTotal: 0,
+    propertySaleProceedsTotal: 0,
     peopleAged65Plus: 1,
     ssa44IrmaaRedetermination: false,
     ...overrides,
@@ -149,6 +151,7 @@ describe('annualOptimizerProbePublication', () => {
       incumbentTaxableWithdrawal: 12,
       spendingNeed: 34,
       exogenousCash: 22,
+      unbucketedAssetCash: 0,
       traditionalInflow: 6,
       otherInflow: 7,
       taxableInflow: 8,
@@ -379,5 +382,25 @@ describe('annualOptimizerProbePublication', () => {
     }))
     expect(empty.traditionalWithdrawalTaxableFraction).toBe(1)
     expect(empty.rothConversionTaxableFraction).toBe(1)
+  })
+
+  it('books cash from assets the optimizer carries in no bucket: the exact-basis sale at publication, the legacy sale and the death benefit at the close', () => {
+    // An exact-basis sale nets 250,000 into the year's cash flow; the probe
+    // carries it alone until the close adds a 40,000 legacy deposit and a
+    // 100,000 death benefit: 250,000 + 40,000 + 100,000 = 390,000.
+    const published = annualOptimizerProbePublication(input({ propertySaleProceedsTotal: 250_000 }))
+    expect(published.unbucketedAssetCash).toBe(250_000)
+    // Nothing else the probe reports moves with it.
+    expect(published.exogenousCash).toBe(22)
+    expect(published.capitalGainsBase).toBe(2)
+    const closed = annualOptimizerProbeWithClosingAssetCash(published, {
+      legacyPropertySaleDeposits: 40_000,
+      deathBenefitPaid: 100_000,
+    })
+    expect(closed.unbucketedAssetCash).toBe(390_000)
+    expect(closed).toEqual({ ...published, unbucketedAssetCash: 390_000 })
+    expect(published.unbucketedAssetCash).toBe(250_000)
+    // A close that deposits nothing hands back the published probe itself.
+    expect(annualOptimizerProbeWithClosingAssetCash(published, { legacyPropertySaleDeposits: 0, deathBenefitPaid: 0 })).toBe(published)
   })
 })

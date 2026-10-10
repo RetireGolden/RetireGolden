@@ -80,20 +80,20 @@
       "label": "annual coordinated HECM eligibility invocation",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        713,
-        720
+        716,
+        723
       ],
       "anchors": [
         {
-          "line": 713,
+          "line": 716,
           "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({"
         },
         {
-          "line": 719,
+          "line": 722,
           "text": "priorYearPortfolioReturnPct,"
         },
         {
-          "line": 720,
+          "line": 723,
           "text": "})"
         }
       ]
@@ -131,28 +131,28 @@
       "label": "accepted coordinated allocation invocation, line mutation and source publication",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1171,
-        1185
+        1174,
+        1188
       ],
       "anchors": [
         {
-          "line": 1171,
+          "line": 1174,
           "text": "for (const allocation of annualCoordinatedHecmAllocations({"
         },
         {
-          "line": 1178,
+          "line": 1181,
           "text": "applyHudModeledDraw(line, allocation.amount)"
         },
         {
-          "line": 1179,
+          "line": 1182,
           "text": "hecmCoordinatedByProperty?.set("
         },
         {
-          "line": 1183,
+          "line": 1186,
           "text": "}"
         },
         {
-          "line": 1184,
+          "line": 1187,
           "text": "// Any open HECM line backstops a true portfolio shortfall regardless of"
         }
       ],

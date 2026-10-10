@@ -89,7 +89,7 @@ importers:
   packages/engine:
     dependencies:
       highs:
-        specifier: ^1.15.2
+        specifier: 1.15.2
         version: 1.15.2
       zod:
         specifier: ^4.6.2
@@ -126,7 +126,7 @@ importers:
         specifier: ^0.4.0
         version: link:../engine
       highs:
-        specifier: ^1.15.2
+        specifier: 1.15.2
         version: 1.15.2
       idb:
         specifier: ^8.0.3

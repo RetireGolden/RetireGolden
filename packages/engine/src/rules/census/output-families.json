@@ -3595,6 +3595,14 @@
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.depletionYear"
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Couldn't-optimize well and the solver-limit note \"Your plan's projection runs short of money in YEAR\" (OptimizedSchedule.projectionDepletionYear, when the first solve has no solution)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.projectionDepletionYear (present only when the first solve has no solution)"
       }
     ],
     "transformations": [
@@ -3602,7 +3610,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "ProjectionSummary.depletionYear (compare.ts) copies this value; the compare page derives an age and a last-funded-year delta from it in planner-ui (compare-plan-deltas). RetireGolden-MCP publishes that copy in every summary it returns (run_projection.summary, compare_scenarios.a and .b); the derive round at 3197d359 left the three selectors out, and they were added on 2026-10-09 at the census's MCP pin b2c7f717."
+    "notes": "ProjectionSummary.depletionYear (compare.ts) copies this value; the compare page derives an age and a last-funded-year delta from it in planner-ui (compare-plan-deltas). RetireGolden-MCP publishes that copy in every summary it returns (run_projection.summary, compare_scenarios.a and .b); the derive round at 3197d359 left the three selectors out, and they were added on 2026-10-09 at the census's MCP pin b2c7f717. Since D-OPTIMIZER-SOLVER-OUTPUT (2026-10-10) projection/optimizePlan.ts#optimizePlan copies this value into OptimizedSchedule.projectionDepletionYear when its first solve has no solution: the same simulatePlan run on the same options, so the same number, a surface of this family rather than a family of its own. RetireGolden-MCP returns optimizePlan(...).schedule whole, so run_optimizer publishes it once the tool takes an engine release that carries it (its census pin b2c7f717 predates it); the Optimize page prints it in the no-solution well."
   },
   {
     "transformations": [],
@@ -5439,7 +5447,7 @@
     "id": "optimizer-schedule-ending-after-tax-objective",
     "group": "optimizer-and-comparisons",
     "title": "Optimizer's own ending after-tax wealth",
-    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated over the plan's years to today's dollars, plus a tie-break of one millionth of a dollar per converted dollar. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
+    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated to today's dollars by the plan's general-inflation factor for its last year (the engine's dollar basis), plus a tie-break of one millionth of a dollar per converted dollar; none when the solve has no solution. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
@@ -5452,19 +5460,19 @@
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule.endingAfterTax (null in the JSON when an infeasible solve had IRMAA tiers to decide, where HiGHS reports an infinite objective)"
+        "selector": "run_optimizer.schedule.endingAfterTax (null when the solve has no solution)"
       }
     ],
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-ending-after-tax-estate and optimization-candidate-after-tax-estate, which price a schedule on the full projection: the record optimizer-schedule-objective-and-lifetime-tax states how they differ, and measures the difference on the library example bracket-fill-roth."
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-ending-after-tax-estate and optimization-candidate-after-tax-estate, which price a schedule on the full projection: the record optimizer-schedule-objective-and-lifetime-tax states how they differ, and measures the difference on the library example bracket-fill-roth. Restated on 2026-10-10 under D-OPTIMIZER-SOLVER-OUTPUT: the engine reads the objective from HiGHS's raw solution, deflates by the last plan year's general-inflation factor on its own basis (n − 1 years, where it used n), and publishes null, not HiGHS's objective, when the solve has no solution (an infeasible model, or a node or time limit reached before any incumbent); a limit's incumbent is published with status node-limit or timeout."
   },
   {
     "id": "optimizer-schedule-lifetime-tax",
     "group": "optimizer-and-comparisons",
     "title": "Optimizer's own modeled lifetime tax",
-    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
+    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. None when the solve has no solution. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -5477,7 +5485,7 @@
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule.lifetimeTax"
+        "selector": "run_optimizer.schedule.lifetimeTax (null when the solve has no solution)"
       }
     ],
     "transformations": [],
@@ -5488,13 +5496,13 @@
       "usc-42-1395r-i-5-optimizer-uniform-threshold-indexing"
     ],
     "status": "identified",
-    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-lifetime-taxes-and-penalties: it counts IRMAA surcharges, which the projection books as Medicare premiums, prices every gain at one rate and carries no penalty, and the record optimizer-schedule-objective-and-lifetime-tax measures the difference on bracket-fill-roth. The candidate rules are the registered approximations the solver's tax rests on."
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-lifetime-taxes-and-penalties: it counts IRMAA surcharges, which the projection books as Medicare premiums, prices every gain at one rate and carries no penalty, and the record optimizer-schedule-objective-and-lifetime-tax measures the difference on bracket-fill-roth. The candidate rules are the registered approximations the solver's tax rests on. Restated on 2026-10-10 under D-OPTIMIZER-SOLVER-OUTPUT: computed from the per-year solution read from HiGHS's raw solution in cents (it was the highs package's six-significant-digit reading), and null, where it was 0, when the solve has no solution."
   },
   {
     "id": "optimizer-schedule-withdrawal-by-bucket-annual",
     "group": "optimizer-and-comparisons",
     "title": "Optimizer's planned withdrawals by bucket",
-    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to six significant digits. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
+    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to the cent. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -5551,7 +5559,7 @@
     "id": "optimizer-schedule-taxable-ordinary-income-annual",
     "group": "optimizer-and-comparisons",
     "title": "Optimizer's taxable ordinary income by year",
-    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars to six significant digits. The amount its bracket tax is charged on, not the projection's taxable income.",
+    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars, to the cent. The amount its bracket tax is charged on, not the projection's taxable income.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -5580,7 +5588,7 @@
     "id": "optimizer-schedule-ending-balance-by-bucket-annual",
     "group": "optimizer-and-comparisons",
     "title": "Optimizer's year-end balances by bucket",
-    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars to six significant digits; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
+    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars, to the cent; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [

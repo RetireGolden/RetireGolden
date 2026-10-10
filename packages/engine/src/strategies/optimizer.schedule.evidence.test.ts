@@ -3,7 +3,7 @@ import { expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { packForYear } from '../params/index.js'
 import { summarizeProjection } from '../projection/compare.js'
-import { projectionDollarBasis } from '../projection/dollarBasis.js'
+import { planDollarBasis, projectionDollarBasis } from '../projection/dollarBasis.js'
 import { buildOptimizerInput, optimizePlan, withOptimizedConversions } from '../projection/optimizePlan.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
@@ -19,12 +19,13 @@ import { optimizeSchedule, type OptimizedSchedule, type OptimizerInput, type Opt
  * for the worksheets to derive the solution by hand: the library example
  * rmd-irmaa's facts, without its qualified charitable distribution, entered as
  * a one-year solve, and varied to two years for the branches one year does not
- * reach.
+ * reach; and two inputs no schedule funds.
  *
- * Every figure is HiGHS's solution as the highs package the engine pins prints
- * and reads it, and every one the worksheets state is compared here with the
- * stated value: a solver upgrade (another optimal solution, or other printed
- * digits) that puts one more than half a cent from it fails these cases.
+ * Every figure is read from HiGHS's raw solution through the highs package the
+ * engine pins, and every one the worksheets state is compared here with the
+ * stated value: a figure more than half a cent from the stated value fails
+ * these cases, whatever moved it (another optimal solution after a solver
+ * upgrade, or a change to the model or the readout).
  */
 const PACK_2026 = packForYear(2026).pack
 
@@ -59,7 +60,7 @@ type CaseInputs = {
   readonly taxableBasisRatio: number
   readonly ltcgRate: number
   readonly liquidationRate: number
-  readonly inflation: number
+  readonly inflationPct: number
   readonly irmaaLookback: boolean
 }
 
@@ -72,7 +73,7 @@ const CASE_1: CaseInputs = {
   taxableBasisRatio: 0.7,
   ltcgRate: 0.15,
   liquidationRate: 0.28,
-  inflation: 0.025,
+  inflationPct: 2.5,
   irmaaLookback: true,
 }
 
@@ -88,7 +89,7 @@ const CASE_2: CaseInputs = {
   taxableBasisRatio: 0.7,
   ltcgRate: 0.15,
   liquidationRate: 0.1,
-  inflation: 0.025,
+  inflationPct: 2.5,
   irmaaLookback: false,
 }
 
@@ -112,14 +113,16 @@ const CASE_3: CaseInputs = {
   taxableBasisRatio: 1,
   ltcgRate: 0,
   liquidationRate: 0.28,
-  inflation: 0.025,
+  inflationPct: 2.5,
   irmaaLookback: true,
 }
 const CASE_4: CaseInputs = { ...CASE_3, years: [{ year: 2026, ...UNFUNDED_YEAR }] }
 
 function solverInput(inputs: CaseInputs): OptimizerInput {
+  const years = inputs.years.map((year) => rmdIrmaaYear(year))
+  const basis = planDollarBasis(inputs.inflationPct, years[0]!.year, years[years.length - 1]!.year)
   return {
-    years: inputs.years.map((year) => rmdIrmaaYear(year)),
+    years,
     openingTrad: inputs.openingTrad,
     openingInheritedTrad: inputs.openingInheritedTrad,
     openingOther: inputs.openingOther,
@@ -128,7 +131,9 @@ function solverInput(inputs: CaseInputs): OptimizerInput {
     ltcgRate: inputs.ltcgRate,
     irmaaLookback: inputs.irmaaLookback,
     liquidationRate: inputs.liquidationRate,
-    realDollarFactor: 1 / Math.pow(1 + inputs.inflation, inputs.years.length),
+    // As projection/optimizePlan.ts#buildOptimizerInput deflates: by the last
+    // plan year's general-inflation factor on the engine's basis.
+    realDollarFactor: 1 / basis.factors[years.length - 1]!,
   }
 }
 
@@ -161,13 +166,22 @@ function yearCase(caseLabel: 'Case 1' | 'Case 2'): { year: number; values: Recor
       >,
     }))
 }
+/** A case the worksheet says publishes no rows ("no rows" in its first cell). */
+function yearCaseHasNoRows(caseLabel: 'Case 3' | 'Case 4'): boolean {
+  return yearRows.get(caseLabel)?.[0] === 'no rows'
+}
 
 describeCalculation(
   'optimizer-schedule-year-solution',
   {
     example: {
-      inputs: { example: 'rmd-irmaa', case1: CASE_1, case2: CASE_2 },
-      expected: { case1: yearCase('Case 1'), case2: yearCase('Case 2') },
+      inputs: { example: 'rmd-irmaa', case1: CASE_1, case2: CASE_2, case3: CASE_3, case4: CASE_4 },
+      expected: {
+        case1: yearCase('Case 1'),
+        case2: yearCase('Case 2'),
+        case3NoRows: yearCaseHasNoRows('Case 3'),
+        case4NoRows: yearCaseHasNoRows('Case 4'),
+      },
       tolerance: { abs: 0.005 },
     },
     worksheet: YEAR_WORKSHEET,
@@ -193,29 +207,42 @@ describeCalculation(
       )
     }
 
-    it('case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107029', async () => {
+    it('case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107028.88', async () => {
       const schedule = await optimizeSchedule(solverInput(example.inputs.case1 as CaseInputs))
       expect(schedule.status).toBe('optimal')
       expectYears(schedule, example.expected.case1 as ReturnType<typeof yearCase>)
     })
 
-    it('case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.2, tiers 2 and 1', async () => {
+    it('case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.18, tiers 2 and 1', async () => {
       const schedule = await optimizeSchedule(solverInput(example.inputs.case2 as CaseInputs))
       expect(schedule.status).toBe('optimal')
       expectYears(schedule, example.expected.case2 as ReturnType<typeof yearCase>)
+    })
+
+    it('cases 3 and 4 have no solution and publish no rows and no conversions', async () => {
+      for (const [inputs, noRows] of [
+        [example.inputs.case3, example.expected.case3NoRows],
+        [example.inputs.case4, example.expected.case4NoRows],
+      ] as const) {
+        expect(noRows).toBe(true)
+        const schedule = await optimizeSchedule(solverInput(inputs as CaseInputs))
+        expect(schedule.status).toBe('infeasible')
+        expect(schedule.schedule).toEqual([])
+        expect(schedule.conversions).toEqual([])
+      }
     })
   },
 )
 
 const TOTALS_WORKSHEET = 'DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-objective-and-lifetime-tax.md'
 const totalsRows = worksheetExpectedRows(TOTALS_WORKSHEET)
-/** One worksheet row: status, and the two figures ("infinite" is the infeasible objective). */
-function totalsCase(caseLabel: string): { status: string; endingAfterTax: number; lifetimeTax: number } {
+/** One worksheet row: status, and the two figures ("none" is a null figure, a solve with no solution). */
+function totalsCase(caseLabel: string): { status: string; endingAfterTax: number | null; lifetimeTax: number | null } {
   const [status, endingAfterTax, lifetimeTax] = totalsRows.get(caseLabel)!
   return {
     status: status!,
-    endingAfterTax: endingAfterTax === 'infinite' ? Number.POSITIVE_INFINITY : worksheetNumber(endingAfterTax!),
-    lifetimeTax: worksheetNumber(lifetimeTax!),
+    endingAfterTax: endingAfterTax === 'none' ? null : worksheetNumber(endingAfterTax!),
+    lifetimeTax: lifetimeTax === 'none' ? null : worksheetNumber(lifetimeTax!),
   }
 }
 
@@ -288,12 +315,6 @@ function bracketFillRothPlan(): Plan {
   return parsed.plan
 }
 
-/** Half a unit in the sixth significant digit: how far a value read back from HiGHS can sit from the solution. */
-function sixDigitHalfUnit(value: number): number {
-  if (value === 0) return 0
-  return 0.5 * Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - 5)
-}
-
 describeCalculation(
   'optimizer-schedule-objective-and-lifetime-tax',
   {
@@ -304,7 +325,7 @@ describeCalculation(
         case2: CASE_2,
         case3: CASE_3,
         case4: CASE_4,
-        libraryExample: { id: 'bracket-fill-roth', startYear: 2026, years: 24, inflation: 0.025, heirRate: 0.25 },
+        libraryExample: { id: 'bracket-fill-roth', startYear: 2026, years: 24, inflationPct: 2.5, heirRate: 0.25 },
       },
       expected: {
         case1: totalsCase('Case 1'),
@@ -316,15 +337,14 @@ describeCalculation(
         // example"), and pinned so the dollars the record publishes cannot go
         // stale while the gaps above still hold.
         libraryMeasured: {
-          endingAfterTax: 275_381.73,
-          projectionEstateNominal: 470_194.82,
-          projectionEstateToday: 266_458.11,
-          projectionEstateSolverDeflated: 259_959.13,
-          lifetimeTax: 181_976.49,
-          projectionLifetimeTax: 251_819.58,
+          endingAfterTax: 282_266.26,
+          projectionEstateNominal: 470_194.78,
+          projectionEstateToday: 266_458.08,
+          lifetimeTax: 181_976.47,
+          projectionLifetimeTax: 251_819.64,
         },
-        // The worksheet's written weights for the 24-year solve.
-        libraryWeights: { full: 0.55287535, haircut: 0.41465652 },
+        // The worksheet's written weights for the 24-year solve, deflated over 23 years.
+        libraryWeights: { full: 0.56669724, haircut: 0.42502293 },
       },
       tolerance: { abs: 0.005 },
     },
@@ -333,37 +353,44 @@ describeCalculation(
   },
   ({ example }) => {
     type Totals = ReturnType<typeof totalsCase>
-    async function expectTotals(inputs: CaseInputs, want: Totals): Promise<void> {
+    function same(actual: number | null, want: number | null, label: string): void {
+      if (want === null) {
+        expect(actual, label).toBeNull()
+        return
+      }
+      expect(actual, label).not.toBeNull()
+      expect(withinTolerance(actual!, want, example.tolerance), `${label}: actual ${actual}, worksheet ${want}`).toBe(true)
+    }
+    async function expectTotals(inputs: CaseInputs, want: Totals): Promise<OptimizedSchedule> {
       const schedule = await optimizeSchedule(solverInput(inputs))
       expect(schedule.status).toBe(want.status)
-      expect(
-        withinTolerance(schedule.endingAfterTax, want.endingAfterTax, example.tolerance),
-        `endingAfterTax: actual ${schedule.endingAfterTax}, worksheet ${want.endingAfterTax}`,
-      ).toBe(true)
-      expect(
-        withinTolerance(schedule.lifetimeTax, want.lifetimeTax, example.tolerance),
-        `lifetimeTax: actual ${schedule.lifetimeTax}, worksheet ${want.lifetimeTax}`,
-      ).toBe(true)
+      same(schedule.endingAfterTax, want.endingAfterTax, 'endingAfterTax')
+      same(schedule.lifetimeTax, want.lifetimeTax, 'lifetimeTax')
+      return schedule
     }
 
-    it('case 1 weighs the end buckets at the written weights and adds the conversion reward: 1769100.80, tax 41024', async () => {
+    it('case 1 does not deflate a one-year plan, haircuts the traditional bucket and adds the conversion reward: 1813328.33, tax 41024', async () => {
       await expectTotals(example.inputs.case1 as CaseInputs, example.expected.case1 as Totals)
     })
 
-    it('case 2 deflates over two years, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1825588.15, tax 47664.03', async () => {
+    it('case 2 deflates over one year, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1871227.85, tax 47663.94', async () => {
       await expectTotals(example.inputs.case2 as CaseInputs, example.expected.case2 as Totals)
     })
 
-    it('case 3, infeasible with tier binaries to decide, publishes an infinite objective and no tax', async () => {
-      await expectTotals(example.inputs.case3 as CaseInputs, example.expected.case3 as Totals)
+    it('case 3, infeasible with tier binaries to decide, publishes no figures and no schedule', async () => {
+      const schedule = await expectTotals(example.inputs.case3 as CaseInputs, example.expected.case3 as Totals)
+      expect(schedule.schedule).toEqual([])
+      expect(schedule.conversionTotal).toBe(0)
     })
 
-    it('case 4, infeasible with no binaries, publishes an objective of 0 and no tax', async () => {
-      await expectTotals(example.inputs.case4 as CaseInputs, example.expected.case4 as Totals)
+    it('case 4, infeasible with no binaries, publishes no figures and no schedule', async () => {
+      const schedule = await expectTotals(example.inputs.case4 as CaseInputs, example.expected.case4 as Totals)
+      expect(schedule.schedule).toEqual([])
+      expect(schedule.conversionTotal).toBe(0)
     })
 
     it('bracket-fill-roth: the solver\'s own figures, not the projection of the same schedule', async () => {
-      const library = example.inputs.libraryExample as { startYear: number; years: number; inflation: number; heirRate: number }
+      const library = example.inputs.libraryExample as { startYear: number; years: number; inflationPct: number; heirRate: number }
       const gapAtLeast = example.expected.libraryGapAtLeast as number
       const plan = bracketFillRothPlan()
       // As RetireGolden-MCP's runOptimizer calls it (its taxCalc: federal plus state).
@@ -381,29 +408,30 @@ describeCalculation(
       expect(input.liquidationRate).toBe(library.heirRate)
 
       // The objective at the published last row, with the weights the model
-      // text writes (eight decimal places), agrees with endingAfterTax to the
-      // six-significant-digit reading of that row.
-      const deflator = 1 / Math.pow(1 + library.inflation, library.years)
+      // text writes (eight decimal places) for the deflator over the 23 years
+      // from the first plan year to the last, agrees with endingAfterTax to
+      // the cent the row is published in.
+      const deflator = 1 / planDollarBasis(library.inflationPct, library.startYear, library.startYear + library.years - 1).factors[library.years - 1]!
+      expect(input.realDollarFactor).toBe(deflator)
       const weightFull = Number(deflator.toFixed(8))
       const weightHaircut = Number((deflator * (1 - library.heirRate)).toFixed(8))
       const weights = example.expected.libraryWeights as { full: number; haircut: number }
       expect(weightFull).toBe(weights.full)
       expect(weightHaircut).toBe(weights.haircut)
+      const endingAfterTax = schedule.endingAfterTax!
+      const lifetimeTax = schedule.lifetimeTax!
       const last = schedule.schedule[schedule.schedule.length - 1]!
       const conversions = schedule.schedule.map((row) => row.conversion)
       const objective =
         weightFull * (last.endOther + last.endTaxable) +
         weightHaircut * (last.endTrad + last.endInheritedTrad) +
         0.000001 * conversions.reduce((sum, amount) => sum + amount, 0)
-      const readingSlack =
-        weightFull * (sixDigitHalfUnit(last.endOther) + sixDigitHalfUnit(last.endTaxable) + 0.01) +
-        weightHaircut * (sixDigitHalfUnit(last.endTrad) + sixDigitHalfUnit(last.endInheritedTrad) + 0.01) +
-        0.000001 * conversions.reduce((sum, amount) => sum + sixDigitHalfUnit(amount) + 0.005, 0) +
-        0.005
+      const centSlack =
+        weightFull * 0.01 + weightHaircut * 0.01 + 0.000001 * conversions.length * 0.005 + 0.005
       expect(
-        Math.abs(schedule.endingAfterTax - objective),
-        `endingAfterTax ${schedule.endingAfterTax} against the objective at the published last row ${objective}`,
-      ).toBeLessThanOrEqual(readingSlack)
+        Math.abs(endingAfterTax - objective),
+        `endingAfterTax ${endingAfterTax} against the objective at the published last row ${objective}`,
+      ).toBeLessThanOrEqual(centSlack)
 
       // The projection of the same schedule: its conversions installed in the plan.
       const installed = withOptimizedConversions(plan, schedule.conversions)
@@ -411,29 +439,26 @@ describeCalculation(
       const summary = summarizeProjection(installed, projection, { conversionFreeRun: null })
       const basis = projectionDollarBasis(projection)
       const estateToday = summary.endingAfterTaxEstate / basis.factors[basis.factors.length - 1]!
+      // The solver's deflator is the projection's own last-year factor.
+      expect(basis.factors[basis.factors.length - 1]!).toBe(1 / deflator)
+      expect(endingAfterTax - estateToday, `solver ${endingAfterTax}, projection in today's dollars ${estateToday}`).toBeGreaterThan(gapAtLeast)
       expect(
-        schedule.endingAfterTax - estateToday,
-        `solver ${schedule.endingAfterTax}, projection in today's dollars ${estateToday}`,
-      ).toBeGreaterThan(gapAtLeast)
-      expect(
-        summary.lifetimeTaxesAndPenalties - schedule.lifetimeTax,
-        `projection ${summary.lifetimeTaxesAndPenalties}, solver ${schedule.lifetimeTax}`,
+        summary.lifetimeTaxesAndPenalties - lifetimeTax,
+        `projection ${summary.lifetimeTaxesAndPenalties}, solver ${lifetimeTax}`,
       ).toBeGreaterThan(gapAtLeast)
 
       const measured = example.expected.libraryMeasured as {
         endingAfterTax: number
         projectionEstateNominal: number
         projectionEstateToday: number
-        projectionEstateSolverDeflated: number
         lifetimeTax: number
         projectionLifetimeTax: number
       }
       const pinned: [string, number, number][] = [
-        ['endingAfterTax', schedule.endingAfterTax, measured.endingAfterTax],
+        ['endingAfterTax', endingAfterTax, measured.endingAfterTax],
         ["projection's estate, nominal", summary.endingAfterTaxEstate, measured.projectionEstateNominal],
         ["projection's estate in today's dollars", estateToday, measured.projectionEstateToday],
-        ["projection's estate deflated over the solver's years", summary.endingAfterTaxEstate * deflator, measured.projectionEstateSolverDeflated],
-        ['lifetimeTax', schedule.lifetimeTax, measured.lifetimeTax],
+        ['lifetimeTax', lifetimeTax, measured.lifetimeTax],
         ["projection's lifetime taxes and penalties", summary.lifetimeTaxesAndPenalties, measured.projectionLifetimeTax],
       ]
       for (const [label, actual, want] of pinned) {

@@ -92,7 +92,7 @@
   },
   "dependencies": {
     "@retiregolden/engine": "^0.4.0",
-    "highs": "^1.15.2",
+    "highs": "1.15.2",
     "idb": "^8.0.3",
     "recharts": "^3.10.1"
   },
