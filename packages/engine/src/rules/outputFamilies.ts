@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 6860969d56b8eeefa1d77be6688c280e2e0be3b5.
+ * Output families imported from the output-family census at commit c0903bc3e5660c7a40f7b1934e358ad9da47bdfd.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -3908,11 +3908,11 @@ const families = {
       },
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline"
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline, in today's (start-year) dollars when the two plans end in different years (headline.moneyBasis)"
       },
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal"
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal, in today's (start-year) dollars when the two plans end in different years (headline.moneyBasis)"
       }
     ],
     "relocation": null

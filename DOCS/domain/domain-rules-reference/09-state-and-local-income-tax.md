@@ -219,7 +219,12 @@
   adjustment not applied; a California or New Jersey slice that is not the
   year-end state is incomplete when the year has HSA facts; and a residency
   whose segments do not give 12 months or name a state twice, or a state
-  without published parameters, marks the year incomplete.
+  without published parameters, marks the year incomplete. A state whose
+  parameters carry no part-year method takes the months share of a full-year
+  resident's tax and marks the year incomplete: each of the 42 jurisdictions
+  that tax income in 2026 carries a method, but Washington's income tax from
+  2028 (ESSB 6346; Initiative 645 would repeal it) has none yet, so a
+  Washington split year from 2028 takes that months share.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,

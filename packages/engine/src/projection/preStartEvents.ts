@@ -12,8 +12,11 @@
  * 2026 with a 2026 goal, inheritance or annuity purchase, reopened in 2027,
  * lost the goal and the inheritance with nothing on the page to say so, and
  * the annuity paid out while its premium stayed in the balance the household
- * had typed before buying it (in the derivation's U1 household, a $147,623
- * cost from a 2026 start became a $454,837 gain from a 2027 start).
+ * had typed before buying it. In the U1 household the D-2027-ROLLOVER
+ * derivation (2026-09-28) measured a $147,623 cost from a 2026 start that
+ * became a $454,837 gain from a 2027 start; the figures now pinned are
+ * -$151,691.59 and +$455,159.49
+ * (planner-ui/src/planner/preStartEvents.figures.test.ts).
  *
  * The engine cannot know whether that balance was updated after the purchase,
  * so it cannot correct the figure without guessing: deducting the premium at

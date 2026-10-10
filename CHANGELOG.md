@@ -4,6 +4,44 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the texts the methodology site snapshots say what the engine does** (2026-10-10,
+  the findings of the retiregolden.org#150 review and of RetireGolden#790's first review). No
+  figure changes.
+  - `income-annuity-annual`: the pre-start purchase limit and its worksheet gave the D-2027-ROLLOVER
+    derivation's U1 measurement (2026-09-28) as the purchase's effect, beside the figures the U1
+    test pins. Both now state the pinned figures, -$151,691.59 from a 2026 start and +$455,159.49
+    from a 2027 start, and keep the derivation's as history; so does the header of
+    `projection/preStartEvents.ts`. The worksheet says what reviewed each: -$151,691.59 was
+    recomputed by Codex's 2026-10-08 re-check, and +$455,159.49 is the test's pin, which Grok's
+    2026-09-30 re-check recorded without recomputing it.
+  - Eight worksheets restated on 2026-09-28 and 2026-09-29 (`income-annuity-annual`,
+    `income-one-time-annual`, `spending-debt-service-annual`, `spending-one-time-goals-annual`,
+    `spending-property-costs-annual`, `income-tips-ladder-and-ladder-value-annual`,
+    `medicare-base-part-b-premium`, `qcd-limit-and-age-proxy`) still said "Not yet reviewed";
+    each now says, in the past tense, which review followed, citing its file.
+  - The output census (RetireGolden-Docs c0903bc3, re-imported here):
+    `compare_scenarios.headline.endingAfterTaxEstate.baseline` and `.proposal`, surfaces of the
+    nominal family `projection-summary-ending-after-tax-estate`, carry the exception the family's
+    Compare page selector carries: today's (start-year) dollars when the two plans end in
+    different years, as `headline.moneyBasis` says.
+  - The `tax/stateTax.ts` coverage note said Ohio's part-year residency was month scaling, not a
+    legal part-year claim. Since 0.4.3 `computeSplitYearResult` prices a split year by each
+    state's own method, Ohio's the IT NRC credit form, and keeps the months share for a state
+    whose parameters carry none. That note, the `params/state/data/year2026.ts` note, the Maine
+    record `mrs-36-5124-c-2-standard-deduction-phaseout` and the header of
+    `DOCS/domain/state-tax-research/ME.md` called Maine's part year a month approximation; it is
+    Schedule NR's credit form. The Ohio record
+    `oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule`, settled for the pre-credit
+    schedule only, now points to the shared part-year record
+    (`va-code-58-1-322-03-2-personal-exemptions`) for Ohio's method instead of naming the
+    function.
+  - A stated limit, newly: each of the 42 jurisdictions that tax income in 2026 carries a
+    part-year method, but Washington's income tax from 2028 (ESSB 6346, which Initiative 645
+    would repeal) has none yet, so a Washington split year from 2028 takes the months share of a
+    full-year resident's tax and is marked incomplete (`state-rich-split-year-adapter-required`,
+    `partYearMethod`). The shared part-year record, the part-year section of
+    `state-enacted-tax-year-figures.md`, domain 09 and the coverage note say so.
+
 - **Changed: the output census and the RetireGolden-MCP calculation records follow
   RetireGolden-MCP 0.12.0** (2026-10-09). MCP 0.12.0 (RetireGolden-MCP #91, b2c7f717) renames
   `compare_scenarios`' `deltaEndingAfterTaxEstate` to `deltaEndingAfterTaxEstateNominal`, with
