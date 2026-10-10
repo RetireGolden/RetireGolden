@@ -63,3 +63,5 @@ feeds: `projection-summary-average-pre-retirement-savings-rate-pct`, the unweigh
 Derived by: claude (Opus 5.5), 2026-10-10, for D-MCP-CENSUS-PIN, from `projection/compare.ts#summarizeProjection` and the doc comments of `ProjectionSummary.savingsRates` and of the four `YearResult` fields at RetireGolden main `43876e8d`. The arithmetic above was done by hand, without running the engine, and the evidence reads these figures from the table above. Implemented by the same session. Reviewed by: unreviewed when written; the independent review is recorded below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-10-10, by independent recomputation of the four rows, `DOCS/calculations/reviews/REVIEW-2026-10-10-census-completion-codex.md` (approved).
+
+Reviewed by: Codex (GPT-6-Sol), 2026-10-10, the fifth row (2074) and the reworded wrong readings, `DOCS/calculations/reviews/REVIEW-2026-10-10-census-completion-savings-recheck-codex.md` (approved).
