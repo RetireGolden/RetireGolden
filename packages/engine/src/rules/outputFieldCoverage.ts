@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 536da209ce7776eed5e69a9dbf8e5559cca92634.
+ * Output field coverage imported from the output-family census at commit 97de7f0cc495e28426c200d6a662d53981f4e92f.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -1124,6 +1124,56 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "funded-ratio-result-unfunded-pv",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/ladder/fundedRatio.ts",
+    "owner": "FundedRatioStart",
+    "field": "fromYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year the funded ratio counts: the household's later retirement year, never before the start year; null when nobody retires in the plan. A calendar year derived from plan inputs that places the ratio's present values, as FundedRatioResult.fromYear and FiBasis.spendingYear are; not a modeled amount.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/ladder/fundedRatio.ts",
+    "owner": "FundedRatioStart",
+    "field": "lastYearAlive",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's last year alive at the planning age (birth year plus planning age). A calendar year derived from plan inputs, as FiBasis.personLastYearAlive is.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/ladder/fundedRatio.ts",
+    "owner": "FundedRatioStart",
+    "field": "personId",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "identifier",
+    "reason": "The id of the person whose retirement is the household's later one; the funded-ratio card and the income-floor insight name the person by it. An identifier, as FiBasis.personId is.",
+    "tsType": "string | null"
+  },
+  {
+    "source": "engine/src/ladder/fundedRatio.ts",
+    "owner": "FundedRatioStart",
+    "field": "retirementYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's retirement year: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs, as FiBasis.retirementYear is; not a modeled amount.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/ladder/fundedRatio.ts",
+    "owner": "FundedRatioStart",
+    "field": "rule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the retirement year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the card words its clause by it. A classification, as FiBasis.retirementRule is.",
+    "tsType": "RetirementYearRule | null"
   },
   {
     "source": "engine/src/ladder/fundedRatio.ts",
@@ -8158,20 +8208,16 @@ const coverageCensus = [
     "source": "engine/src/strategies/optimizer.ts",
     "owner": "OptimizedSchedule",
     "field": "endingAfterTax",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "The solver's linearised objective (ending after-tax wealth in today's dollars) for the raw schedule; no planner surface prints it, because the page's estate figures come from re-running the full projection.",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-ending-after-tax-objective",
     "tsType": "number"
   },
   {
     "source": "engine/src/strategies/optimizer.ts",
     "owner": "OptimizedSchedule",
     "field": "lifetimeTax",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "The solver's own modeled lifetime tax for the raw schedule; no planner surface prints it, because the page's tax figures come from re-running the full projection.",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-lifetime-tax",
     "tsType": "number"
   },
   {
@@ -8191,7 +8237,115 @@ const coverageCensus = [
     "disposition": "excluded",
     "familyId": null,
     "reasonKind": "dimension-coordinate",
-    "reason": "Calendar year of each schedule row and each conversion entry.",
+    "reason": "Calendar year of each entry of the schedule's conversions list; each row of the per-year solution carries its own year (OptimizedYear.year).",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "conversion",
+    "disposition": "family",
+    "familyId": "optimizer-recommended-conversion-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "endInheritedTrad",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-ending-balance-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "endOther",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-ending-balance-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "endTaxable",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-ending-balance-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "endTrad",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-ending-balance-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "irmaaTier",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The IRMAA tier the solver's binaries put the year in: 0 for none, else the highest tier whose binary is above one half. Its surcharges enter the solver's lifetime tax (optimizer-schedule-lifetime-tax); the tier itself is a classification, as YearResult.irmaaTier is.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "taxableGainRealized",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-taxable-gain-realized-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "taxableOrdinary",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-taxable-ordinary-income-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "withdrawInheritedTraditional",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-withdrawal-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "withdrawOther",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-withdrawal-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "withdrawTaxable",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-withdrawal-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "withdrawTraditional",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-withdrawal-by-bucket-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedYear",
+    "field": "year",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan year a row of the solver's per-year solution describes; the solution has one row for every plan year, in order. A coordinate, as the year of each conversion entry (OptimizedSchedule.year) is.",
     "tsType": "number"
   },
   {
@@ -9367,6 +9521,136 @@ const coverageCensus = [
     "reasonKind": "label-or-category",
     "reason": "WhySuccessPanel.precision: a fixed label, \"±0.5\" at 10,000 paths or more and \"±1.5\" below, printed as how many points the success rate is good to; chosen by run size, not computed from the plan or the paths. It is about one binomial standard error at a 50% success rate (0.5 points at 10,000 paths, 1.6 at 1,000).",
     "tsType": "string"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiNotRetiringFact",
+    "field": "lastYearAlive",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.lastYearAlive as the copy carries it: that person's last year alive at the planning age. A calendar year derived from plan inputs, as the engine row is.",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiNotRetiringFact",
+    "field": "personName",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The plan's name for a person who never retires in the plan (PersonRetirement.personId looked up in the plan); the sentence names them by it. A label.",
+    "tsType": "string | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiNotRetiringFact",
+    "field": "rule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "PersonRetirement.rule as the copy carries it: which rule gave that person's retirement year. A classification, as the engine row is.",
+    "tsType": "RetirementYearRule"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiNotRetiringFact",
+    "field": "year",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.year as the copy carries it: that person's retirement year, which falls after their last year alive. A calendar year derived from plan inputs, as the engine row is.",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "conversionExecuted",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "boolean-flag",
+    "reason": "Whether any Roth conversion went through in the projection (lifetimeRothConversions above 0), which decides whether the sentence may say the plan converts: a flag, as PersonRetirement.retiresInPlan is.",
+    "tsType": "boolean"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "householdSize",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "How many people the plan lists (plan.household.people.length); the sentences name the person only for a couple. A count of plan inputs, as YearAcaResult.taxFamilySize is; not a modeled amount.",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "personLastYearAlive",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.personLastYearAlive as the copy carries it: that person's last year alive at the planning age. A calendar year derived from plan inputs, as the engine row is.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "personName",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The plan's name for the person whose retirement is the household's later one (FiBasis.personId looked up in the plan); the sentence names a couple's person by it. A label, as EstateAccountBreakdown.name is.",
+    "tsType": "string | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "retirementRule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.retirementRule as the copy carries it: which rule gave the retirement year, which words the clause. A classification, as the engine row is.",
+    "tsType": "RetirementYearRule | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "retirementYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.retirementYear as the copy carries it: that person's retirement year. A calendar year derived from plan inputs, as the engine row is.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "spendingSource",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.spendingSource as the copy carries it: which outflows the FI number prices, which chooses the sentence. A classification, as the engine row is.",
+    "tsType": "FiSpendingSource"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "spendingYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.spendingYear as the FI target copy carries it, and the report model with it: the calendar year whose outflows the FI number prices. A coordinate, as the engine row is.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "planner-ui/src/planner/fiTargetCopy.ts",
+    "owner": "FiTargetBasisFacts",
+    "field": "withdrawalRatePct",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "The plan's safe withdrawal rate (assumptions.safeWithdrawalRatePct, 4 when the plan leaves it unset), which the sentence prints as the rate the FI target is divided by: a plan input restated, as ReportAssumptionsBlock.safeWithdrawalRatePct is.",
+    "tsType": "number"
   },
   {
     "source": "planner-ui/src/planner/format.ts",
@@ -12217,6 +12501,22 @@ const exclusionCensus = [
     "reason": "OptimizedSchedule.solveMs, the solve's wall-clock time, published with the schedule. The engine row is the same runtime-diagnostic exclusion."
   },
   {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.schedule.schedule[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "OptimizedYear.year of each row of the solver's per-year solution, published with the schedule. The engine row is the same dimension-coordinate exclusion, which the summaries' savingsRates[].year also takes from its engine row."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.schedule.schedule[].irmaaTier",
+    "reasonKind": "label-or-category",
+    "reason": "OptimizedYear.irmaaTier of each row of the solver's per-year solution: the tier its binaries put the year in, published with the schedule. The engine row is the same label-or-category exclusion, as run_projection.years[].irmaaTier is."
+  },
+  {
     "id": "csv-filing-status",
     "path": "planner-ui/src/planner/resultsRows.ts",
     "symbol": "LEDGER_CSV_COLUMNS",
@@ -12647,6 +12947,46 @@ const exclusionCensus = [
     "field": "toYear",
     "reasonKind": "dimension-coordinate",
     "reason": "Last year the funded-ratio present value covers."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratiostart-fromyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioStart",
+    "field": "fromYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year the funded ratio counts: the household's later retirement year, never before the start year; null when nobody retires in the plan. A calendar year derived from plan inputs that places the ratio's present values, as FundedRatioResult.fromYear and FiBasis.spendingYear are; not a modeled amount."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratiostart-lastyearalive",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioStart",
+    "field": "lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's last year alive at the planning age (birth year plus planning age). A calendar year derived from plan inputs, as FiBasis.personLastYearAlive is."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratiostart-personid",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioStart",
+    "field": "personId",
+    "reasonKind": "identifier",
+    "reason": "The id of the person whose retirement is the household's later one; the funded-ratio card and the income-floor insight name the person by it. An identifier, as FiBasis.personId is."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratiostart-retirementyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioStart",
+    "field": "retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's retirement year: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs, as FiBasis.retirementYear is; not a modeled amount."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratiostart-rule",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioStart",
+    "field": "rule",
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the retirement year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the card words its clause by it. A classification, as FiBasis.retirementRule is."
   },
   {
     "id": "field-engine-src-ladder-laddermath-ts-buildladder-m",
@@ -14710,7 +15050,23 @@ const exclusionCensus = [
     "symbol": "OptimizedSchedule",
     "field": "year",
     "reasonKind": "dimension-coordinate",
-    "reason": "Calendar year of each schedule row and each conversion entry."
+    "reason": "Calendar year of each entry of the schedule's conversions list; each row of the per-year solution carries its own year (OptimizedYear.year)."
+  },
+  {
+    "id": "field-engine-src-strategies-optimizer-ts-optimizedyear-irmaatier",
+    "path": "engine/src/strategies/optimizer.ts",
+    "symbol": "OptimizedYear",
+    "field": "irmaaTier",
+    "reasonKind": "label-or-category",
+    "reason": "The IRMAA tier the solver's binaries put the year in: 0 for none, else the highest tier whose binary is above one half. Its surcharges enter the solver's lifetime tax (optimizer-schedule-lifetime-tax); the tier itself is a classification, as YearResult.irmaaTier is."
+  },
+  {
+    "id": "field-engine-src-strategies-optimizer-ts-optimizedyear-year",
+    "path": "engine/src/strategies/optimizer.ts",
+    "symbol": "OptimizedYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan year a row of the solver's per-year solution describes; the solution has one row for every plan year, in order. A coordinate, as the year of each conversion entry (OptimizedSchedule.year) is."
   },
   {
     "id": "field-engine-src-tax-aca-ts-acaapplicablepct-fplpct",
@@ -14943,6 +15299,110 @@ const exclusionCensus = [
     "field": "precision",
     "reasonKind": "label-or-category",
     "reason": "WhySuccessPanel.precision: a fixed label, \"±0.5\" at 10,000 paths or more and \"±1.5\" below, printed as how many points the success rate is good to; chosen by run size, not computed from the plan or the paths. It is about one binomial standard error at a 50% success rate (0.5 points at 10,000 paths, 1.6 at 1,000)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-finotretiringfact-lastyearalive",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiNotRetiringFact",
+    "field": "lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.lastYearAlive as the copy carries it: that person's last year alive at the planning age. A calendar year derived from plan inputs, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-finotretiringfact-personname",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiNotRetiringFact",
+    "field": "personName",
+    "reasonKind": "label-or-category",
+    "reason": "The plan's name for a person who never retires in the plan (PersonRetirement.personId looked up in the plan); the sentence names them by it. A label."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-finotretiringfact-rule",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiNotRetiringFact",
+    "field": "rule",
+    "reasonKind": "label-or-category",
+    "reason": "PersonRetirement.rule as the copy carries it: which rule gave that person's retirement year. A classification, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-finotretiringfact-year",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiNotRetiringFact",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.year as the copy carries it: that person's retirement year, which falls after their last year alive. A calendar year derived from plan inputs, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-conversionexecuted",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "conversionExecuted",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether any Roth conversion went through in the projection (lifetimeRothConversions above 0), which decides whether the sentence may say the plan converts: a flag, as PersonRetirement.retiresInPlan is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-householdsize",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "householdSize",
+    "reasonKind": "input-parameter",
+    "reason": "How many people the plan lists (plan.household.people.length); the sentences name the person only for a couple. A count of plan inputs, as YearAcaResult.taxFamilySize is; not a modeled amount."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-personlastyearalive",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "personLastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.personLastYearAlive as the copy carries it: that person's last year alive at the planning age. A calendar year derived from plan inputs, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-personname",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "personName",
+    "reasonKind": "label-or-category",
+    "reason": "The plan's name for the person whose retirement is the household's later one (FiBasis.personId looked up in the plan); the sentence names a couple's person by it. A label, as EstateAccountBreakdown.name is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-retirementrule",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "retirementRule",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.retirementRule as the copy carries it: which rule gave the retirement year, which words the clause. A classification, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-retirementyear",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.retirementYear as the copy carries it: that person's retirement year. A calendar year derived from plan inputs, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-spendingsource",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "spendingSource",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.spendingSource as the copy carries it: which outflows the FI number prices, which chooses the sentence. A classification, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-spendingyear",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "spendingYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.spendingYear as the FI target copy carries it, and the report model with it: the calendar year whose outflows the FI number prices. A coordinate, as the engine row is."
+  },
+  {
+    "id": "field-planner-ui-src-planner-fitargetcopy-ts-fitargetbasisfacts-withdrawalratepct",
+    "path": "planner-ui/src/planner/fiTargetCopy.ts",
+    "symbol": "FiTargetBasisFacts",
+    "field": "withdrawalRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "The plan's safe withdrawal rate (assumptions.safeWithdrawalRatePct, 4 when the plan leaves it unset), which the sentence prints as the rate the FI target is divided by: a plan input restated, as ReportAssumptionsBlock.safeWithdrawalRatePct is."
   },
   {
     "id": "field-planner-ui-src-planner-montecarlopage-tsx-modelkind-pathcount",

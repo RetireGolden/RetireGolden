@@ -4,6 +4,40 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the output census covers the whole optimizer schedule RetireGolden-MCP returns, and
+  says that its dollar figures are the solver's own** (2026-10-10, D-MCP-OPTIMIZER-SCHEDULE). The
+  census (RetireGolden-Docs 97de7f0c, imported here) adds six engine families for what
+  `run_optimizer.schedule` publishes beyond its conversions: `optimizer-schedule-ending-after-tax-objective`
+  (`endingAfterTax`, today's dollars) and `optimizer-schedule-lifetime-tax` (`lifetimeTax`), whose
+  engine rows were unsurfaced evidence, and, for the per-year solution `schedule[]` (`OptimizedYear`,
+  which had no rows), `optimizer-schedule-withdrawal-by-bucket-annual`,
+  `optimizer-schedule-taxable-gain-realized-annual`, `optimizer-schedule-taxable-ordinary-income-annual`
+  and `optimizer-schedule-ending-balance-by-bucket-annual`. The per-year conversion is
+  the number `schedule.conversions[].amount` already publishes, so it is a new surface of
+  `optimizer-recommended-conversion-annual`; `year` and `irmaaTier` are exclusions. `FundedRatioStart`
+  and planner-ui's `FiTargetBasisFacts` and `FiNotRetiringFact` get the rows they lacked, all
+  exclusions. Families go from 243 to 249, exclusions from 599 to 621 and field rows from 1,235 to 1,266.
+  - `optimizer-schedule-objective-and-lifetime-tax` (new) states that `endingAfterTax` is HiGHS's
+    objective value (the solver's end-of-horizon buckets, traditional ones net of the heir rate,
+    deflated over the plan's n years, plus a reward of one millionth of a dollar per converted
+    dollar, with eight-decimal weights) and `lifetimeTax` the solver's readout of its own tax, both
+    different from the projection of the same schedule: on the library example bracket-fill-roth
+    the solver reports $275,381.73 and $181,976.49 where the projection shows $266,458.11 in today's
+    dollars and $251,819.58 (measured; the evidence asserts the gaps exceed $1,000). It also states
+    that an infeasible solve publishes HiGHS's objective, infinite (null in JSON) when the model has
+    IRMAA binaries and 0 when it has none, and that a solve stopped at the 10-second limit describes
+    the incumbent, so it depends on the machine (the library example rmd-irmaa stopped there).
+  - `optimizer-schedule-year-solution` (new) states the per-year amounts, which the highs package
+    reads back to six significant digits (a $107,028.88 conversion is published as $107,029), and
+    adds the solver's per-year conversion to `optimizer-recommended-conversion-annual`'s outputs.
+  - Both are evidenced on hand-derived solves of the library example rmd-irmaa's facts (one year
+    as built, two years varied). Codex reviewed both by independent recomputation and approved
+    (`DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-codex.md`), so all 249
+    families are complete. The behaviors the records state as limits (a failed solve's objective
+    published as the estate figure, six-significant-digit read-back, a machine-dependent timeout
+    incumbent, the n-year deflation) are decided for the engine in tracker D-OPTIMIZER-SOLVER-OUTPUT.
+    No computation changes and no figure moves.
+
 - **Changed: the output census covers the rest of RetireGolden-MCP's output at its pin b2c7f717,
   with six new families and their calculation records** (2026-10-10, D-MCP-CENSUS-PIN). The
   census (RetireGolden-Docs 1ae33819, re-imported here) adds a family for each MCP figure the

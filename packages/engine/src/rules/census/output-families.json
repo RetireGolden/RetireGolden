@@ -2825,6 +2825,10 @@
       },
       {
         "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].conversion (every plan year; schedule.conversions[] lists the same amount for each year above $0.50)"
+      },
+      {
+        "surface": "mcp",
         "selector": "run_optimizer.tournament.winnerConversions[].amount"
       }
     ],
@@ -2833,7 +2837,7 @@
       "irc-1-h-optimizer-flat-fifteen-percent-preferential-rate"
     ],
     "status": "identified",
-    "notes": "The executed ledger conversion for a year is roth-conversion-annual; this family is the recommendation the ledger is asked to execute. Totals shown on the page are optimizer-schedule-conversion-total (UI sum)."
+    "notes": "The executed ledger conversion for a year is roth-conversion-annual; this family is the recommendation the ledger is asked to execute. Totals shown on the page are optimizer-schedule-conversion-total (UI sum). Since 2026-10-10 (D-MCP-OPTIMIZER-SCHEDULE) the solver schedule's per-year amount is published twice by RetireGolden-MCP, in schedule.conversions[] and in the per-year solution schedule.schedule[], the same number; the record optimizer-schedule-year-solution states the solver's amount, as exact-ledger-cleaned-schedule states the cleaned one."
   },
   {
     "transformations": [
@@ -5430,6 +5434,175 @@
     "candidateRuleIds": [],
     "status": "identified",
     "notes": "No registry record implements this result-type publication path; governing rules attach to upstream calculators. No registry record implements this result-type publication path; governing rules attach to upstream calculators. No registry record implements this result-type publication path; governing rules attach to upstream calculators. No registry record implements this result-type publication path; governing rules attach to upstream calculators. No registry record implements this result-type publication path; governing rules attach to upstream calculators."
+  },
+  {
+    "id": "optimizer-schedule-ending-after-tax-objective",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's own ending after-tax wealth",
+    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated over the plan's years to today's dollars, plus a tie-break of one millionth of a dollar per converted dollar. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedSchedule.endingAfterTax"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.endingAfterTax (null in the JSON when an infeasible solve had IRMAA tiers to decide, where HiGHS reports an infinite objective)"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-ending-after-tax-estate and optimization-candidate-after-tax-estate, which price a schedule on the full projection: the record optimizer-schedule-objective-and-lifetime-tax states how they differ, and measures the difference on the library example bracket-fill-roth."
+  },
+  {
+    "id": "optimizer-schedule-lifetime-tax",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's own modeled lifetime tax",
+    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedSchedule.lifetimeTax"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.lifetimeTax"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-1-h-optimizer-flat-fifteen-percent-preferential-rate",
+      "irc-86-a-optimizer-taxable-social-security-linearization",
+      "usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure",
+      "usc-42-1395r-i-5-optimizer-uniform-threshold-indexing"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. A different quantity from projection-summary-lifetime-taxes-and-penalties: it counts IRMAA surcharges, which the projection books as Medicare premiums, prices every gain at one rate and carries no penalty, and the record optimizer-schedule-objective-and-lifetime-tax measures the difference on bracket-fill-roth. The candidate rules are the registered approximations the solver's tax rests on."
+  },
+  {
+    "id": "optimizer-schedule-withdrawal-by-bucket-annual",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's planned withdrawals by bucket",
+    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to six significant digits. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year",
+      "bucket"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.withdrawTraditional / withdrawInheritedTraditional / withdrawOther / withdrawTaxable"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].withdrawTraditional / .withdrawInheritedTraditional / .withdrawOther / .withdrawTaxable"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. One family along the bucket dimension, as withdrawals-by-category-annual is along the account category; the record optimizer-schedule-year-solution states each value."
+  },
+  {
+    "id": "optimizer-schedule-taxable-gain-realized-annual",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's realized gain by year",
+    "meaning": "For each plan year, the long-term gain the conversion optimizer's readout books on its taxable-bucket withdrawal: the published withdrawal times one gain fraction for the whole plan (one minus the opening taxable basis ratio), in that year's nominal dollars. Not the projection's realized gains (tax-realized-gains-annual), which follow each account's basis.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.taxableGainRealized"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].taxableGainRealized"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-1-h-optimizer-flat-fifteen-percent-preferential-rate"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. The record optimizer-schedule-year-solution states it."
+  },
+  {
+    "id": "optimizer-schedule-taxable-ordinary-income-annual",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's taxable ordinary income by year",
+    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars to six significant digits. The amount its bracket tax is charged on, not the projection's taxable income.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.taxableOrdinary"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].taxableOrdinary"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-86-a-optimizer-taxable-social-security-linearization"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. The record optimizer-schedule-year-solution states it."
+  },
+  {
+    "id": "optimizer-schedule-ending-balance-by-bucket-annual",
+    "group": "optimizer-and-comparisons",
+    "title": "Optimizer's year-end balances by bucket",
+    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars to six significant digits; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year",
+      "bucket"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.endTrad / endInheritedTrad / endOther / endTaxable"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].endTrad / .endInheritedTrad / .endOther / .endTaxable"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-OPTIMIZER-SCHEDULE (the census's RetireGolden-MCP pin b2c7f717): run_optimizer returns the engine's whole OptimizedSchedule, the raw MILP solve optimizePlan starts from (the tool asks for no convergence loop, so it is the first solve), and no planner page prints this figure, so the tool is its only surface. The last year's four balances are what the solver's ending after-tax wealth weighs (optimizer-schedule-ending-after-tax-objective); the record optimizer-schedule-year-solution states each value."
   },
   {
     "id": "bucket-lens-allocation",

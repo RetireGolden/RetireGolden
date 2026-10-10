@@ -666,6 +666,218 @@
       }
     },
     {
+      "id": "optimizer-schedule-objective-and-lifetime-tax",
+      "title": "Optimizer's own ending after-tax wealth and lifetime tax",
+      "kind": "model",
+      "outputs": [
+        "optimizer-schedule-ending-after-tax-objective",
+        "optimizer-schedule-lifetime-tax"
+      ],
+      "feeds": [],
+      "purpose": "What the conversion optimizer's solver reports as its schedule's ending after-tax wealth and lifetime tax: its own linear model's figures, which differ from what the projection of the same schedule shows.",
+      "statement": "strategies/optimizer.ts#optimizeSchedule solves, with HiGHS, the multi-year conversion and withdrawal model #buildOptimizerModel writes from the input projection/optimizePlan.ts#buildOptimizerInput builds, and publishes two figures with the schedule; RetireGolden-MCP returns them (run_optimizer.schedule) without running the projection of that schedule. endingAfterTax is the objective value HiGHS reports at the solution it returns, rounded to cents: c_D times the tax-free bucket (Roth, cash and HSA) and the taxable bucket at the end of the last year, plus c_DL times the traditional and inherited traditional buckets, plus 0.000001 times every year's conversion, where c_D is the deflator 1 / (1 + inflation)^n over the plan's n years and c_DL is that deflator times one minus the heir rate L (the plan's heirTaxRatePct over 100 unless a caller passes liquidationRatePct), each written into the model text to at most eight decimal places (1 / 1.025 is written 0.97560976). It is in today's dollars at the start of the plan, deflated over n years, where the engine's dollar basis deflates the last year's figures over n − 1. lifetimeTax is, rounded to cents, the sum over the plan's years in each year's nominal dollars of the federal bracket tax on the year's published taxable ordinary income, that income times the year's flat state rate, the state bracket tax on it when the year has state brackets, the cumulative IRMAA surcharges of the year's published tier (each tier's Part B increase over the tier below and its Part D increase, times 12, summed up to the tier) and the published realized gain times the solver's gain rate (0.15 when the plan has a taxable balance). Both are the solver's own figures and differ from the projection of the same schedule's ending after-tax estate and lifetime taxes and penalties.",
+      "formula": {
+        "expression": "endingAfterTax = round2(c_D × (O_n + X_n) + c_DL × (T_n + I_n) + 0.000001 × Σ_t conv_t), c_D = fmt8(1 / (1 + i)^n), c_DL = fmt8((1 / (1 + i)^n) × (1 − L)); lifetimeTax = round2(Σ_t [F_t(ti_t) + s_t × ti_t + S_t(ti_t) + Σ_{k ≤ tier_t} m_k + r × gain_t])",
+        "variables": [
+          {
+            "symbol": "O_n, X_n",
+            "meaning": "The solver's tax-free bucket (Roth, cash and HSA) and taxable bucket at the end of the last plan year",
+            "unit": "nominal USD",
+            "domain": "nonnegative; X_n is 0 when the plan has no taxable bucket"
+          },
+          {
+            "symbol": "T_n, I_n",
+            "meaning": "The solver's traditional and inherited traditional buckets at the end of the last plan year",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "conv_t",
+            "meaning": "The solver's conversion in year t",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "i",
+            "meaning": "The plan's inflation rate",
+            "unit": "fraction per year",
+            "domain": "finite"
+          },
+          {
+            "symbol": "n",
+            "meaning": "Number of plan years in the solve",
+            "unit": "years",
+            "domain": "positive integer"
+          },
+          {
+            "symbol": "L",
+            "meaning": "Heir tax rate the traditional buckets are haircut at: heirTaxRatePct, or liquidationRatePct when a caller passes it, over 100",
+            "unit": "fraction",
+            "domain": "0..1"
+          },
+          {
+            "symbol": "fmt8",
+            "meaning": "The model text's number format: a whole number as it is, anything else to eight decimal places",
+            "unit": "none",
+            "domain": "finite"
+          },
+          {
+            "symbol": "ti_t",
+            "meaning": "Year t's published taxable ordinary income, six significant digits",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "F_t, S_t",
+            "meaning": "Year t's federal bracket tax for the filing status, and its state bracket tax (0 when the year has no state brackets)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "s_t",
+            "meaning": "Year t's flat state and local rate",
+            "unit": "fraction",
+            "domain": "0..1"
+          },
+          {
+            "symbol": "m_k",
+            "meaning": "IRMAA tier k's annual increase over tier k − 1: its Part B total minus the lower one's, plus its Part D amount minus the lower one's, times 12",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "tier_t, gain_t",
+            "meaning": "Year t's published IRMAA tier and realized gain",
+            "unit": "tier index; nominal USD",
+            "domain": "0..5; nonnegative"
+          },
+          {
+            "symbol": "r",
+            "meaning": "The solver's single gain rate",
+            "unit": "fraction",
+            "domain": "0.15 with a taxable bucket, else 0"
+          }
+        ],
+        "timing": "once per solve; the lifetime tax adds every plan year",
+        "rounding": "Each figure to cents. The model's coefficients and constants are written to at most eight decimal places; the objective value HiGHS reports keeps full precision, while the per-year values the lifetime tax is computed from are read back to six significant digits."
+      },
+      "limits": [
+        "Not the projection of the same schedule, which RetireGolden-MCP does not run. The solver's buckets hold only the investable accounts (no property, debt, insurance, ladder, pension or annuity value) and grow at one blended rate a year; its tax is linear in its variables, resting on the registered approximations irc-1-h-optimizer-flat-fifteen-percent-preferential-rate, irc-86-a-optimizer-taxable-social-security-linearization, usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure and usc-42-1395r-i-5-optimizer-uniform-threshold-indexing; and the heir rate falls flat on every traditional dollar, with no basis share, no spouse destination and no HSA heir tax. Measured on the library example bracket-fill-roth (2026-10-10, the solve optimal in milliseconds): endingAfterTax is $275,381.73, while the projection of the same schedule ends with an after-tax estate of $470,194.82 in 2049, $266,458.11 in today's dollars on the engine's basis and $259,959.13 deflated over the solver's 24 years; lifetimeTax is $181,976.49, against the projection's lifetime taxes and penalties of $251,819.58. Those dollars are measured, not derived; the evidence asserts that each gap exceeds $1,000 in the direction measured.",
+        "lifetimeTax counts the IRMAA surcharges the projection books as Medicare premiums, prices every realized gain at one rate, carries no penalty, and is computed from the taxable income and gain as published, to six significant digits, not from the solver's own values: in the evidence's two-year case it is $47,664.03, where the same terms on the solver's unrounded income give $47,663.94.",
+        "endingAfterTax includes the reward of one millionth of a dollar per converted dollar ($0.11 in the evidence's one-year case), and its weights are the eight-decimal forms of the deflator and the haircut, which move that case from $1,769,100.81 to $1,769,100.80.",
+        "A failed solve still publishes the objective HiGHS reports, with a lifetime tax of 0 and every year 0. For an infeasible model, which no schedule funds in the solver's terms, HiGHS reports positive infinity when the model has IRMAA tier binaries to decide (under the plan-built input, any plan longer than two years), which JSON, and so RetireGolden-MCP, writes as null, and 0 when it has none: 10 of the 29 library examples solve infeasible when run as RetireGolden-MCP runs them, each with an infinite figure. A solve stopped at the time limit (10 seconds unless a caller sets one) has status timeout, and with an incumbent both figures describe that incumbent, so they depend on the machine: the library example rmd-irmaa stopped there when measured.",
+        "Evidence: two cases derived by hand from the library example rmd-irmaa's facts, entered as solver inputs (one year as built, and two years varied: an inherited IRA drawn $40,000 a year, a smaller traditional IRA, no cash, a $60,000 one-off cost, a 10% heir rate and IRMAA on the same year's income), two infeasible inputs, one with tier binaries and one without, and bracket-fill-roth run as RetireGolden-MCP runs it. The hand cases solve without the senior deduction's phase-out, the taxable Social Security phase-in and state tax, which the plan-built input adds where they apply, and with IRMAA on the same year's income where the plan-built input uses the income two years before; the readout is the same."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-objective-and-lifetime-tax.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-objective-and-lifetime-tax.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/strategies/optimizer.ts",
+        "packages/engine/src/projection/optimizePlan.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/strategies/optimizer.schedule.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "optimizer-schedule-year-solution",
+      "title": "Optimizer's per-year solution",
+      "kind": "model",
+      "outputs": [
+        "optimizer-recommended-conversion-annual",
+        "optimizer-schedule-withdrawal-by-bucket-annual",
+        "optimizer-schedule-taxable-gain-realized-annual",
+        "optimizer-schedule-taxable-ordinary-income-annual",
+        "optimizer-schedule-ending-balance-by-bucket-annual"
+      ],
+      "feeds": [
+        "optimizer-schedule-lifetime-tax",
+        "optimizer-schedule-ending-after-tax-objective",
+        "optimizer-schedule-conversion-total"
+      ],
+      "purpose": "What the conversion optimizer's solver plans for each year: its conversion, its withdrawal from each bucket, the gain and taxable income it books, and its year-end balances.",
+      "statement": "strategies/optimizer.ts#optimizeSchedule publishes OptimizedSchedule.schedule, one OptimizedYear per plan year in order, from the solution HiGHS returns for the model #buildOptimizerModel writes. conversion, withdrawTraditional (the required-distribution floor included), withdrawInheritedTraditional, withdrawOther (from the tax-free bucket of Roth, cash and HSA), withdrawTaxable and taxableOrdinary are the solution's values of the year's conversion, withdrawal, sale and taxable-income columns; endTrad, endInheritedTrad, endOther and endTaxable are the four buckets' balances at the start of the next year, after the year's flows and growth, endTaxable 0 when the plan has no taxable bucket; taxableGainRealized is the published withdrawTaxable times the gain fraction min(1, max(0, 1 − the taxable basis ratio)); irmaaTier is the highest tier whose binary is above one half, 0 for none. The highs package reads each value back from the solution HiGHS prints, which carries six significant digits; each is then rounded to cents, and a column the solution does not carry reads 0. In the model, taxable ordinary income is at least the year's ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and the senior deduction net of its phase-out when the solve prices it), and at least 0; minimizing tax holds it there. The tax-free withdrawal enters the model only as a difference with the surplus the year saves, which is not published, so a solution sets one of the two to 0; and a reward of one millionth of a dollar per converted dollar reports traditional drainage as a conversion, leaving withdrawTraditional at its floor unless the year needs the cash. OptimizedSchedule.conversions lists each year whose conversion is above $0.50, with the same amount. Units: each year's nominal dollars.",
+      "formula": {
+        "expression": "v_t = round2(sig6(column_t)); taxableGainRealized_t = round2(withdrawTaxable_t × gf), gf = min(1, max(0, 1 − basisRatio)); irmaaTier_t = max{k : b_{t,k} > 0.5}, else 0; endBucket_t = bucket_{t+1}; conversions = [(t, conversion_t) : conversion_t > 0.5]",
+        "variables": [
+          {
+            "symbol": "column_t",
+            "meaning": "The solution's value of year t's conversion, withdrawal, sale, taxable-income or next-year balance column",
+            "unit": "nominal USD",
+            "domain": "nonnegative; 0 when the solution carries none"
+          },
+          {
+            "symbol": "sig6",
+            "meaning": "The value as HiGHS prints it, to six significant digits",
+            "unit": "nominal USD",
+            "domain": "finite"
+          },
+          {
+            "symbol": "basisRatio",
+            "meaning": "The opening taxable balance's cost basis over the balance, one ratio for the whole plan",
+            "unit": "fraction",
+            "domain": "0..1; 1 when not given"
+          },
+          {
+            "symbol": "b_{t,k}",
+            "meaning": "The solution's value of year t's IRMAA tier k binary",
+            "unit": "none",
+            "domain": "0 or 1"
+          }
+        ],
+        "timing": "every plan year of one solve",
+        "rounding": "six significant digits as HiGHS prints them, then cents"
+      },
+      "limits": [
+        "Six significant digits: a planned conversion of $107,028.88 is published as $107,029 and a year-end traditional balance of $1,756,817.79 as $1,756,820, in schedule[] and in schedule.conversions[] alike; an amount of a million dollars or more is good to about $10.",
+        "The solver's plan, not what the projection of the same conversions does. The projection executes each conversion only up to what the owners' accounts hold (the cleaned schedule), funds spending in the plan's own withdrawal order and taxes each account by its own basis and rules, so its withdrawals, realized gains, taxable income and balances (withdrawals-by-category-annual, tax-realized-gains-annual, accounts-balance-per-account-annual) can differ from these in every year. The solver's buckets grow at one blended rate a year and its sale realizes one gain fraction for the whole plan.",
+        "withdrawOther is the net draw on the tax-free bucket when the year needs one and 0 when the year saves; the saving itself is not published and shows only in the next year-end balance (in the evidence's two-year case, $7,057.25 saved in 2027 ends as $7,410.11).",
+        "irmaaTier is a classification, a census exclusion; its surcharges enter the solver's lifetime tax.",
+        "Evidence: the two cases of optimizer-schedule-objective-and-lifetime-tax, derived by hand from the library example rmd-irmaa's facts: the one-year case's conversion through the 24% bracket, required distribution, tax-free draw and year-end balances, and the two-year case's required distributions, inherited draws, sale and its gain, two tiers and saved surplus. A year with both a conversion and a sale, and an inherited distribution set by a divisor, are not exercised; they follow the same readout."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-year-solution.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/optimizer-schedule-year-solution.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/strategies/optimizer.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/strategies/optimizer.schedule.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "plan-headline-longevity-comparison",
       "title": "Compare plans: how long the money lasts, deterministic success and depletion age",
       "kind": "composition",
