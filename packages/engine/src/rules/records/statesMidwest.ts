@@ -2013,6 +2013,7 @@ export const midwestStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.OH',
       'packages/engine/src/tax/stateTax.ts#bracketTax',
+      'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
     ],
   },
 

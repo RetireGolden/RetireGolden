@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 6860969d56b8eeefa1d77be6688c280e2e0be3b5.
+ * Output field coverage imported from the output-family census at commit c0903bc3e5660c7a40f7b1934e358ad9da47bdfd.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 

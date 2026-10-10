@@ -2503,11 +2503,11 @@
       },
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline"
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.baseline, in today's (start-year) dollars when the two plans end in different years (headline.moneyBasis)"
       },
       {
         "surface": "mcp",
-        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal"
+        "selector": "compare_scenarios.headline.endingAfterTaxEstate.proposal, in today's (start-year) dollars when the two plans end in different years (headline.moneyBasis)"
       }
     ],
     "transformations": [],

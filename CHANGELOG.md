@@ -4,6 +4,27 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the texts the methodology site snapshots say what the engine does** (2026-10-10,
+  four findings of the retiregolden.org#150 review). No figure changes.
+  - `income-annuity-annual`: the pre-start purchase limit and its worksheet gave the derivation's
+    first U1 measurement as the purchase's effect, beside the figure the U1 test pins. Both now
+    state the pinned figure, -$151,691.59 from a 2026 start, and keep the derivation's as
+    history; the worksheet's 2026-09-28 "not yet reviewed" line is dated as past.
+  - The output census (RetireGolden-Docs c0903bc3, re-imported here):
+    `compare_scenarios.headline.endingAfterTaxEstate.baseline` and `.proposal`, surfaces of the
+    nominal family `projection-summary-ending-after-tax-estate`, carry the exception the family's
+    Compare page selector carries: today's (start-year) dollars when the two plans end in
+    different years, as `headline.moneyBasis` says.
+  - The `tax/stateTax.ts` coverage note said Ohio's part-year residency was month scaling, not a
+    legal part-year claim. Since 0.4.3 `computeSplitYearResult` prices a split year by each
+    state's own method, Ohio's the IT NRC credit form, and keeps the months share only for a
+    state with none. That note, the `params/state/data/year2026.ts` note and the Maine record
+    `mrs-36-5124-c-2-standard-deduction-phaseout` called Maine's part year a month approximation;
+    it is Schedule NR's credit form.
+  - The Ohio record `oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule` registers
+    `tax/stateTax.ts#computeSplitYearResult`, the function its rationale names, as the sibling
+    part-year records do.
+
 - **Changed: the output census and the RetireGolden-MCP calculation records follow
   RetireGolden-MCP 0.12.0** (2026-10-09). MCP 0.12.0 (RetireGolden-MCP #91, b2c7f717) renames
   `compare_scenarios`' `deltaEndingAfterTaxEstate` to `deltaEndingAfterTaxEstateNominal`, with
