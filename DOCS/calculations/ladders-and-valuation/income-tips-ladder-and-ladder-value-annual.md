@@ -50,7 +50,7 @@ A ladder whose purchase year is before the start is treated as already paid, anc
 
 Worked case for the evidence file: the check's ladder on a $700,000 brokerage, zero returns, inflation and spending. From a 2026 start more than $100,000 leaves the brokerage in 2026 and no warning is added. From a 2027 start the 2027 brokerage row is the no-ladder row plus that year's coupons (no cost taken), and the warning above is added.
 
-Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). It was then unreviewed (`reviewedBy: 'unreviewed'`); Grok reviewed the restated record on 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`, and re-checked its later revision on 2026-09-30, `DOCS/calculations/reviews/REVIEW-2026-09-30-recheck-grok.md`.
 
 ## Provenance
 

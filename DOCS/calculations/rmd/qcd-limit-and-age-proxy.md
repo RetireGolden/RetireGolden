@@ -47,7 +47,7 @@ feeds: `tax-total-annual`; `magi-annual`.
 
 The named arm executes a gift only in a tax year whose QCD limit is published (`actions/annualQcdTaxCharacterPostPass.ts#qcdLimitPublishedFor`), so a 2027 gift executes once the 2027 notice lands even while the 2027 brackets are still projected (`actions/qcdLimitGate.test.ts`).
 
-Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-28 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), from the derivation and the independent check (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-derivation.md` and `rollover-2027-check.md`). It was then unreviewed (`reviewedBy: 'unreviewed'`); Grok reviewed the restated record on 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-2.md`.
 
 ## Provenance
 

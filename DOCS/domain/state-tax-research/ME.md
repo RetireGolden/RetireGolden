@@ -25,9 +25,13 @@ Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05;
 > plus age total once modeled Maine AGI exceeds **$102,250** single /
 > **$204,550** MFJ (over **$75,000 / $150,000** ranges; fully out at
 > **$177,250 / $354,550**). Phase-out income is a **modeled Maine-AGI proxy**
-> (wages plus represented modifications), not certified Form 1040ME AGI. Split-
-> year residency uses the annual fraction before month proration — still the
-> existing month approximation, not statutory apportionment.
+> (wages plus represented modifications), not certified Form 1040ME AGI. A
+> split year takes Schedule NR's credit form from 2026-10-08 (Part-year
+> residents, below; `partYear: { method: 'incomePercentage', ratioBasis:
+> 'stateIncome', exclusionCap: 'retirementShare' }`): the tax as a full-year
+> resident, its phase-out fraction chosen from the full year's modeled income,
+> times the resident period's share of that income. Until then the slice was
+> the months share of that tax, its fraction also chosen from the full year.
 >
 > **§5403 annual indexing:** the basic standard deduction (§5124-C(1-B)) and the
 > phase-out numerator starts (§5124-C(2)) are restated each year under 36 M.R.S.

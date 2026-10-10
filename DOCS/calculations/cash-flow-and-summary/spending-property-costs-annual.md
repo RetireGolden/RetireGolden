@@ -53,7 +53,7 @@ Both sale paths sell only a property with a value, so a property at $0 with a pa
 
 Worked case (the evidence file): Home B's sale moved to the year before a projection that starts in 2030. Its effective sale year is 2030, so it is charged nothing in 2030, and Home A is still charged `(3,000 + 1,200) x 1.10 = 4,620`. `projection/propertySaleYear.test.ts` holds the ledger: a sale dated 2026 in a run from 2027 is the same projection as a sale dated 2027, apart from the warning.
 
-Restated 2026-09-29 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), after the independent review (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-review.md`, finding H1). Not yet reviewed: the record is `reviewedBy: 'unreviewed'`.
+Restated 2026-09-29 by the implementer of decision D-2027-ROLLOVER (Claude Opus 5.5), after the independent review (RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/rollover-2027-review.md`, finding H1). It was then unreviewed (`reviewedBy: 'unreviewed'`); Grok reviewed the restated record on 2026-09-29, `DOCS/calculations/reviews/REVIEW-2026-09-29-grok-1.md`.
 
 ## Provenance
 
