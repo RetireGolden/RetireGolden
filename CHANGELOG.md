@@ -4,6 +4,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.5.0** (2026-10-10) — a **minor**, breaking before 1.0:
+  the conversion optimizer's solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, RetireGolden#793,
+  the entry below). `OptimizedSchedule.endingAfterTax` and `.lifetimeTax` become `number | null`,
+  `status` gains `'node-limit'`, and the solver seam's `OptimizerSolveResult` is now
+  `{ modelStatus, primalStatus, objective, columns }`; `highs` is pinned at exactly 1.15.2.
+  Plans stay schema 7, and no export is removed. planner-ui's range moves to `^0.5.0`, since its
+  Optimize page reads the new status and the null figures; it reaches hosts with the next
+  planner-ui release. RetireGolden-MCP returns the schedule whole and its tool schema does not
+  type it, so the new fields reach agents when MCP takes this release; RetireGolden-Pro does not
+  read the schedule.
 - **Changed (breaking for engine consumers): the conversion optimizer's first solve publishes no
   figures without a solution, reads HiGHS at full precision, stops at a deterministic node limit,
   deflates on the engine's basis, and sees the cash a property sale or a death benefit brings**
@@ -3695,6 +3705,15 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Optimizer solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, engine 0.5.0):**
+  `OptimizedSchedule.endingAfterTax` and `OptimizedSchedule.lifetimeTax`
+  (`@retiregolden/engine/strategies/optimizer`) are `number | null`: null, with an empty
+  `schedule` and `conversions`, when HiGHS holds no feasible solution. `status` gains
+  `'node-limit'`, and the new optional `projectionDepletionYear` is set by `optimizePlan` beside a
+  first solve with no solution. `OptimizerSolveResult`, the type `options.solve` injects, is
+  `{ modelStatus, primalStatus, objective, columns }` in place of the highs package's solution
+  object. A host that reads either figure must handle null, and one that switches on the status
+  must handle the new value.
 - **Freeze additions (B2-P1 under D-UI-SS), engine and planner-ui:** `MonteCarloSummary`
   (`@retiregolden/engine/montecarlo/run`) gains the required fields `lastingPathCount` and
   `medianFirstDepletionYear` (`number | null`), so a host that constructs a summary must set
