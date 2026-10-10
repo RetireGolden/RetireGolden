@@ -1296,15 +1296,15 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 591
+              "line": 672
             },
             {
               "name": "irmaaIncrements",
-              "line": 572
+              "line": 653
             },
             {
               "name": "irmaaSurchargeFor",
-              "line": 1233
+              "line": 1506
             }
           ]
         }
@@ -1376,7 +1376,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 456
+              "line": 459
             }
           ]
         },
@@ -1440,7 +1440,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 456
+              "line": 459
             }
           ]
         },
@@ -1710,7 +1710,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 591
+              "line": 672
             }
           ]
         }

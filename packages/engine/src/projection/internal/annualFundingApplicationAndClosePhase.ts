@@ -76,7 +76,10 @@ import {
   annualAcaResultPublication,
   type AnnualAcaResultPublicationResult,
 } from './annualAcaResultPublication.js'
-import { annualOptimizerProbePublication } from './annualOptimizerProbePublication.js'
+import {
+  annualOptimizerProbePublication,
+  annualOptimizerProbeWithClosingAssetCash,
+} from './annualOptimizerProbePublication.js'
 import { annualPropertyAndInsuranceClosePhase } from './annualPropertyAndInsuranceClosePhase.js'
 import { annualSnapshot } from './annualSnapshot.js'
 import { annualWithdrawalApplyFlowPlan } from './annualWithdrawalApplyFlowPlan.js'
@@ -1635,6 +1638,7 @@ export function annualFundingApplicationAndClosePhase(
         taxableAmountForGrossConversion: (gross: number) =>
           aggregateRothConversionTarget.taxableAmountForGross(gross),
         seppTotal,
+        propertySaleProceedsTotal,
         peopleAged65Plus,
         ssa44IrmaaRedetermination: ssa44ActiveInYear(year),
       }))
@@ -1971,6 +1975,15 @@ export function annualFundingApplicationAndClosePhase(
       warnings,
     })
     const deathBenefitPaid = propertyAndInsurance.deathBenefitPaid
+    // The legacy sale and the death benefit land here, after the probe was
+    // published; they are cash from assets the optimizer carries in no
+    // bucket, so they join the probe's `unbucketedAssetCash`.
+    if (optimizerProbe !== null) {
+      optimizerProbe = annualOptimizerProbeWithClosingAssetCash(optimizerProbe, {
+        legacyPropertySaleDeposits: propertyAndInsurance.legacyPropertySaleDeposited,
+        deathBenefitPaid,
+      })
+    }
 
     // --- post-solve growth + owned-non-Roth-IRA capture ---------------------
     // The sub-phase lives in `internal/annualPostGrowthCapturePhase.ts`. It is

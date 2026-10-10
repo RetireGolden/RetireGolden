@@ -9993,7 +9993,7 @@
     "source": "engine/src/strategies/optimizer.ts",
     "owner": "OptimizedSchedule",
     "field": "endingAfterTax",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "optimizer-schedule-ending-after-tax-objective"
   },
@@ -10001,7 +10001,7 @@
     "source": "engine/src/strategies/optimizer.ts",
     "owner": "OptimizedSchedule",
     "field": "lifetimeTax",
-    "tsType": "number",
+    "tsType": "number | null",
     "disposition": "family",
     "familyId": "optimizer-schedule-lifetime-tax"
   },
@@ -10014,6 +10014,14 @@
     "familyId": null,
     "reason": "Wall-clock time of the solve, printed as \"solved in N ms\" under the Optimize page's chart.",
     "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "projectionDepletionYear",
+    "tsType": "number | null | undefined",
+    "disposition": "family",
+    "familyId": "longevity-depletion-year"
   },
   {
     "source": "engine/src/strategies/optimizer.ts",

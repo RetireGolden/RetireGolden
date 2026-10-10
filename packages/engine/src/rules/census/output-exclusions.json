@@ -3137,7 +3137,7 @@
     "path": "RetireGolden-MCP/src/adapter.ts",
     "field": "run_optimizer.schedule.status",
     "reasonKind": "label-or-category",
-    "reason": "OptimizedSchedule.status, the MILP solve's status (optimal, feasible, infeasible or timeout), published with the schedule: a classification, as the tool's tournament.winnerSource is."
+    "reason": "OptimizedSchedule.status, the MILP solve's status (optimal, feasible, infeasible, timeout, or node-limit since D-OPTIMIZER-SOLVER-OUTPUT on 2026-10-10), published with the schedule: a classification, as the tool's tournament.winnerSource is."
   },
   {
     "path": "RetireGolden-MCP/src/adapter.ts",

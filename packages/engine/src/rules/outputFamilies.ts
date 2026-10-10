@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 97de7f0cc495e28426c200d6a662d53981f4e92f.
+ * Output families imported from the output-family census at commit ba0a3c53a6dcf45d07bf1ba7ce69dc08f8c0e91a.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -2727,6 +2727,14 @@ const families = {
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.depletionYear"
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Couldn't-optimize well and the solver-limit note \"Your plan's projection runs short of money in YEAR\" (OptimizedSchedule.projectionDepletionYear, when the first solve has no solution)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.projectionDepletionYear (present only when the first solve has no solution)"
       }
     ],
     "relocation": null
@@ -3802,7 +3810,7 @@ const families = {
   "optimizer-schedule-ending-after-tax-objective": {
     "title": "Optimizer's own ending after-tax wealth",
     "group": "optimizer-and-comparisons",
-    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated over the plan's years to today's dollars, plus a tie-break of one millionth of a dollar per converted dollar. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
+    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated to today's dollars by the plan's general-inflation factor for its last year (the engine's dollar basis), plus a tie-break of one millionth of a dollar per converted dollar; none when the solve has no solution. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
@@ -3814,7 +3822,7 @@ const families = {
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule.endingAfterTax (null in the JSON when an infeasible solve had IRMAA tiers to decide, where HiGHS reports an infinite objective)"
+        "selector": "run_optimizer.schedule.endingAfterTax (null when the solve has no solution)"
       }
     ],
     "relocation": null
@@ -3822,7 +3830,7 @@ const families = {
   "optimizer-schedule-ending-balance-by-bucket-annual": {
     "title": "Optimizer's year-end balances by bucket",
     "group": "optimizer-and-comparisons",
-    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars to six significant digits; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
+    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars, to the cent; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -3845,7 +3853,7 @@ const families = {
   "optimizer-schedule-lifetime-tax": {
     "title": "Optimizer's own modeled lifetime tax",
     "group": "optimizer-and-comparisons",
-    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
+    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. None when the solve has no solution. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -3857,7 +3865,7 @@ const families = {
     "surfaces": [
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule.lifetimeTax"
+        "selector": "run_optimizer.schedule.lifetimeTax (null when the solve has no solution)"
       }
     ],
     "relocation": null
@@ -3887,7 +3895,7 @@ const families = {
   "optimizer-schedule-taxable-ordinary-income-annual": {
     "title": "Optimizer's taxable ordinary income by year",
     "group": "optimizer-and-comparisons",
-    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars to six significant digits. The amount its bracket tax is charged on, not the projection's taxable income.",
+    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars, to the cent. The amount its bracket tax is charged on, not the projection's taxable income.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -3909,7 +3917,7 @@ const families = {
   "optimizer-schedule-withdrawal-by-bucket-annual": {
     "title": "Optimizer's planned withdrawals by bucket",
     "group": "optimizer-and-comparisons",
-    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to six significant digits. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
+    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to the cent. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [

@@ -57,7 +57,7 @@ async function mount(plan: Plan) {
 
 function resultWith(claimAge: ClaimAgeCoOptimization): OptimizeResult {
   return {
-    schedule: { status: 'infeasible', endingAfterTax: 0, lifetimeTax: 0, schedule: [], conversions: [], solveMs: 1 },
+    schedule: { status: 'infeasible', endingAfterTax: null, lifetimeTax: null, schedule: [], conversions: [], conversionTotal: 0, solveMs: 1, projectionDepletionYear: null },
     postProcessed: null,
     tournament: {
       policyId: 'max-after-tax-estate',

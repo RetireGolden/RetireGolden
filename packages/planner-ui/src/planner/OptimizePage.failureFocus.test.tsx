@@ -66,7 +66,7 @@ async function settle() {
 /** The shape the page reads for a run that found no feasible schedule. */
 function infeasibleResult(): OptimizeResult {
   return {
-    schedule: { status: 'infeasible', endingAfterTax: 0, lifetimeTax: 0, schedule: [], conversions: [], solveMs: 1 },
+    schedule: { status: 'infeasible', endingAfterTax: null, lifetimeTax: null, schedule: [], conversions: [], conversionTotal: 0, solveMs: 1, projectionDepletionYear: null },
     postProcessed: null,
     tournament: {
       policyId: 'max-after-tax-estate',
@@ -145,6 +145,23 @@ describe('Optimize failure well (#525)', () => {
     const well = container.querySelector<HTMLElement>('.card.optimizer-failure')!
     expect(well.textContent).toContain("Couldn't optimize this plan")
     expect(document.activeElement).toBe(well)
+  })
+
+  it("names the year the plan's projection runs short when the engine publishes it with no schedule", async () => {
+    const result = infeasibleResult()
+    mockedRunOptimize.mockResolvedValue({ ...result, schedule: { ...result.schedule, projectionDepletionYear: 2041 } })
+    await mount(createSamplePlan())
+    const well = container.querySelector<HTMLElement>('.card.optimizer-failure')!
+    expect(well.textContent).toContain("Your plan's projection runs short of money in 2041")
+    expect(well.textContent).not.toContain('usually because')
+
+    // Without the year, the general reason stands.
+    mockedRunOptimize.mockResolvedValue(infeasibleResult())
+    await act(async () => findButton('Re-run optimizer')!.click())
+    await settle()
+    const general = container.querySelector<HTMLElement>('.card.optimizer-failure')!
+    expect(general.textContent).toContain('usually because the plan runs out of money before the end')
+    expect(general.textContent).not.toContain('runs short of money in')
   })
 
   it('an auto-run that supersedes an in-flight explicit run does not inherit the focus move', async () => {

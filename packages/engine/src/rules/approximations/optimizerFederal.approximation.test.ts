@@ -127,7 +127,7 @@ describeRule('irc-86-a-optimizer-taxable-social-security-linearization', {
       taxableSS.push(money(
         row.taxableOrdinary + STD - (rowSpec.nonSsOrdinary + grossAdditional),
       ))
-      lifetimeTax.push(result.lifetimeTax)
+      lifetimeTax.push(result.lifetimeTax!)
     }
 
     expect(conversions).toEqual([9_500, 100_000, 100])

@@ -60,6 +60,8 @@ import {
 } from './optimizePageClaim'
 import {
   optimizerProducedNoRecommendation,
+  optimizerStatusText,
+  optimizerStopLimit,
   publicationValidation,
   recommendationBody,
   recommendationHeading,
@@ -406,17 +408,25 @@ export function OptimizePage() {
   // here only for the list this page chooses to display.
   const totalConversions = conversionScheduleTotal(displayedConversions)
   const rawConversions = schedule?.conversionTotal ?? 0
-  // HiGHS stopped at its time limit: whatever schedule it held is not a proven
-  // optimum, and an empty one is not evidence that no conversion helps.
-  const solverTimedOut = schedule?.status === 'timeout'
-  // A solve that timed out with no schedule compared nothing of its own; the
-  // cards then name only the simple strategies, as the time-limit note does.
+  // HiGHS stopped at a limit (its search limit, or its time limit): whatever
+  // schedule it held is not a proven optimum, and none at all is not evidence
+  // that no conversion helps. The engine publishes no figures exactly when
+  // the solve has no schedule.
+  const solverLimit = optimizerStopLimit(schedule?.status ?? null)
+  const solverTimedOut = solverLimit !== null
+  const solverHasNoSchedule = schedule !== null && schedule.endingAfterTax === null
+  // A solve that stopped with no schedule compared nothing of its own; the
+  // cards then name only the simple strategies, as the limit note does.
   const solverScheduleCompared = !(solverTimedOut && rawConversions < 1)
+  // Why there is no schedule, when the plan's own projection says: the year it runs short.
+  const projectionShortYear = schedule?.projectionDepletionYear ?? null
   const timeoutNote = solverTimedOut ? (
     <p className="field-hint mt-sm">
-      {rawConversions < 1
-        ? 'The conversion solver stopped at its time limit before it found a schedule, so this result does not show that no conversion helps: only the simple strategies were compared on your full projection.'
-        : "The conversion solver stopped at its time limit, so the solver's schedule here is the best it had found by then, not a proven best."}
+      {solverHasNoSchedule
+        ? `The conversion solver stopped at its ${solverLimit} before it found a schedule, so this result does not show that no conversion helps: only the simple strategies were compared on your full projection.${
+            projectionShortYear !== null ? ` Your plan's projection runs short of money in ${projectionShortYear}.` : ''
+          }`
+        : `The conversion solver stopped at its ${solverLimit}, so the solver's schedule here is the best it had found by then, not a proven best.`}
     </p>
   ) : null
   const executedConversions = validation?.executedConversionTotal ?? 0
@@ -772,9 +782,10 @@ export function OptimizePage() {
           <div className="card optimizer-failure" tabIndex={-1} ref={failureWell}>
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">
-              The optimizer couldn't find a feasible schedule, usually because the plan runs out of money before the end
-              (spending exceeds what the portfolio can cover), so there's no conversion strategy to weigh. Resolve the
-              shortfall in Results or Monte Carlo, then try again.
+              {projectionShortYear !== null
+                ? `The optimizer couldn't find a feasible schedule. Your plan's projection runs short of money in ${projectionShortYear} (spending exceeds what the portfolio can cover), so there's no conversion strategy to weigh.`
+                : "The optimizer couldn't find a feasible schedule, usually because the plan runs out of money before the end (spending exceeds what the portfolio can cover), so there's no conversion strategy to weigh."}{' '}
+              Resolve the shortfall in Results or Monte Carlo, then try again.
             </p>
             {tournament?.acaActionabilityVeto ? (
               <p className="field-hint mt-sm">
@@ -788,7 +799,13 @@ export function OptimizePage() {
           !candidateWins &&
           !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
-            <h2>{solverTimedOut ? 'The optimizer ran out of time' : 'No beneficial conversions found'}</h2>
+            <h2>
+              {solverLimit === 'time limit'
+                ? 'The optimizer ran out of time'
+                : solverLimit === 'search limit'
+                  ? 'The optimizer reached its search limit'
+                  : 'No beneficial conversions found'}
+            </h2>
             {solverTimedOut ? (
               timeoutNote
             ) : (
@@ -944,7 +961,7 @@ export function OptimizePage() {
                 </ResponsiveContainer>
               </div>
               <p className="field-hint">
-                Optimizer status: {schedule.status} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
+                Optimizer status: {optimizerStatusText(schedule.status)} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
                 over a simplified plan; the headline figures above come from{' '}
                 {displayedScheduleAlreadyExecuted
                   ? 'the displayed schedule, already run through your full projection.'

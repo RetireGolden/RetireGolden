@@ -125,7 +125,7 @@ describeRule('usc-42-1395r-i-5-optimizer-uniform-threshold-indexing', {
         }),
       ]))
       tiers.push(result.schedule[2]!.irmaaTier)
-      costs.push(result.lifetimeTax)
+      costs.push(result.lifetimeTax!)
     }
     expect(tiers).toEqual([4, 4, 4, 5, 0])
     expectCostVector(costs, produced as readonly number[])
@@ -164,7 +164,7 @@ describeRule('usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposur
         year({ year: 2028, pack: PACK_2026, filingStatus: mfj, peopleAged65Plus: n }),
       ]))
       expect(result.schedule[2]!.irmaaTier).toBe(1)
-      costs.push(result.lifetimeTax)
+      costs.push(result.lifetimeTax!)
     }
     expectCostVector(costs, produced as readonly number[])
     expect(costs).not.toEqual(accepted)

@@ -3628,11 +3628,11 @@
           "functions": [
             {
               "name": "buildOptimizerInput",
-              "line": 518
+              "line": 519
             },
             {
               "name": "stateBracketSegmentsFor",
-              "line": 110
+              "line": 111
             }
           ]
         },
@@ -3641,7 +3641,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 591
+              "line": 672
             }
           ]
         }

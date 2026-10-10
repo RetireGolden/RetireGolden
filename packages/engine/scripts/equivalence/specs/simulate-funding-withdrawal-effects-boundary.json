@@ -212,28 +212,28 @@
       "label": "annual account-identity snapshot for every supported withdrawal domain",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        871,
-        922
+        874,
+        925
       ],
       "anchors": [
         {
-          "line": 871,
+          "line": 874,
           "text": "const fundingWithdrawalEffectAccounts = Object.freeze("
         },
         {
-          "line": 873,
+          "line": 876,
           "text": "if (state.account.type === 'traditional') {"
         },
         {
-          "line": 886,
+          "line": 889,
           "text": "if (state.account.type === 'roth') {"
         },
         {
-          "line": 908,
+          "line": 911,
           "text": "if (state.account.type === 'hsa') {"
         },
         {
-          "line": 920,
+          "line": 923,
           "text": "const fundingHsaEffectAccounts = fundingWithdrawalEffectAccounts.filter("
         }
       ]
@@ -293,20 +293,20 @@
       "label": "accepted candidate withdrawal-character reuse and final IRA character",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1209,
-        1215
+        1212,
+        1218
       ],
       "anchors": [
         {
-          "line": 1212,
+          "line": 1215,
           "text": "const withdrawalEffectsFinal = acceptedWithdrawalEffects"
         },
         {
-          "line": 1213,
+          "line": 1216,
           "text": "const rothEffectFinal = withdrawalEffectsFinal.roth"
         },
         {
-          "line": 1214,
+          "line": 1217,
           "text": "const hsaEffectFinal = withdrawalEffectsFinal.hsa"
         }
       ]
@@ -316,24 +316,24 @@
       "label": "traditional/HSA cash-flow character and Roth-row routing",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1219,
-        1247
+        1222,
+        1250
       ],
       "anchors": [
         {
-          "line": 1219,
+          "line": 1222,
           "text": "for (const row of withdrawalEffectsFinal.traditional.rows) {"
         },
         {
-          "line": 1227,
+          "line": 1230,
           "text": "for (const row of withdrawalEffectsFinal.hsa.rows) {"
         },
         {
-          "line": 1243,
+          "line": 1246,
           "text": "for (const row of withdrawalEffectsFinal.roth.rows) {"
         },
         {
-          "line": 1245,
+          "line": 1248,
           "text": "if (row.poolKey.startsWith('rothira:')) {"
         }
       ]
@@ -343,20 +343,20 @@
       "label": "accepted Roth split identity enters the existing basis commit",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1756,
-        1764
+        1760,
+        1768
       ],
       "anchors": [
         {
-          "line": 1756,
+          "line": 1760,
           "text": "for (const row of withdrawalEffectsFinal.roth.rows) {"
         },
         {
-          "line": 1761,
+          "line": 1765,
           "text": "const split = row.split"
         },
         {
-          "line": 1764,
+          "line": 1768,
           "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0"
         }
       ]

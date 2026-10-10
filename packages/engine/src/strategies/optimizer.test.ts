@@ -230,7 +230,7 @@ describe('taxable-gain realization in the solve (Step 2)', () => {
     expect(allBasis.schedule[0]!.withdrawTaxable).toBeCloseTo(50_000, 0)
     expect(allBasis.schedule[0]!.taxableGainRealized).toBeCloseTo(0, 0)
     expect(allBasis.endingAfterTax).toBeCloseTo(50_000, 0)
-    expect(allBasis.endingAfterTax).toBeGreaterThan(lowBasis.endingAfterTax)
+    expect(allBasis.endingAfterTax).toBeGreaterThan(lowBasis.endingAfterTax!)
   })
 
   it('prefers the tax-free bucket over an equal-size all-gain taxable bucket', async () => {
@@ -1195,7 +1195,7 @@ describe('hand-computed economic optima', () => {
     expect(withoutInflow.status).toBe('infeasible')
   })
 
-  it('reports timeout without inventing conversions when the solver has no incumbent', async () => {
+  it('reports timeout without inventing a schedule when the solver has no incumbent', async () => {
     const sol = await optimizeSchedule({
       years: [year()],
       openingTrad: 100_000,
@@ -1203,16 +1203,134 @@ describe('hand-computed economic optima', () => {
       openingOther: 100_000,
       liquidationRate: 0.24,
       options: {
-        solve: () => ({ Status: 'Time limit reached' }),
+        solve: () => ({ modelStatus: 'Time limit reached', primalStatus: 'None', objective: null, columns: {} }),
       },
     })
 
     expect(sol.status).toBe('timeout')
-    expect(sol.endingAfterTax).toBe(0)
+    expect(sol.endingAfterTax).toBeNull()
+    expect(sol.lifetimeTax).toBeNull()
     expect(sol.conversions).toEqual([])
-    expect(sol.schedule).toHaveLength(1)
-    expect(sol.schedule[0]!.conversion).toBe(0)
-    expect(sol.schedule[0]!.withdrawTraditional).toBe(0)
+    expect(sol.conversionTotal).toBe(0)
+    expect(sol.schedule).toEqual([])
+  })
+
+  it('publishes an infeasible model as no solution: null figures and an empty schedule', async () => {
+    // Spending nothing can fund, over three years, so the model carries IRMAA
+    // binaries (HiGHS reports an infinite objective for it) and is a
+    // mixed-integer one; over one year it is a linear one (HiGHS reports 0).
+    for (const years of [[year({ year: 2030 }), year({ year: 2031 }), year({ year: 2032 })], [year({ year: 2030 })]]) {
+      const sol = await optimizeSchedule({
+        years: years.map((y) => ({ ...y, ordinaryIncomeBase: 0, exogenousCash: 0, spendingNeed: 100_000, rmdDivisor: null })),
+        openingTrad: 0,
+        openingInheritedTrad: 0,
+        openingOther: 0,
+        liquidationRate: 0.24,
+        irmaaLookback: true,
+      })
+      expect(sol.status).toBe('infeasible')
+      expect(sol.endingAfterTax).toBeNull()
+      expect(sol.lifetimeTax).toBeNull()
+      expect(sol.schedule).toEqual([])
+      expect(sol.conversions).toEqual([])
+      expect(sol.conversionTotal).toBe(0)
+    }
+  })
+
+  it('maps HiGHS\'s raw model status, and publishes a limit\'s incumbent in full', async () => {
+    const columns = { conv0: 12_345.678, wt0: 1_000.004, ti0: 20_000.5, trad1: 90_000.125, other1: 105_000.336 }
+    const cases: [string, 'Feasible' | 'Infeasible' | 'None', string][] = [
+      ['Optimal', 'Feasible', 'optimal'],
+      ['Solution limit reached', 'Feasible', 'node-limit'],
+      ['Solution limit reached', 'None', 'node-limit'],
+      ['Time limit reached', 'Feasible', 'timeout'],
+      ['Iteration limit reached', 'Feasible', 'timeout'],
+      ['Infeasible', 'None', 'infeasible'],
+      ['Primal infeasible or unbounded', 'None', 'infeasible'],
+      ['Unknown', 'Feasible', 'feasible'],
+      ['Unknown', 'Infeasible', 'infeasible'],
+      ['Unknown', 'None', 'infeasible'],
+    ]
+    for (const [modelStatus, primalStatus, status] of cases) {
+      const sol = await optimizeSchedule({
+        years: [year()],
+        openingTrad: 100_000,
+        openingInheritedTrad: 0,
+        openingOther: 100_000,
+        liquidationRate: 0.24,
+        options: {
+          solve: () => ({
+            modelStatus,
+            primalStatus,
+            objective: primalStatus === 'None' ? null : 150_000.006,
+            columns: primalStatus === 'None' ? {} : columns,
+          }),
+        },
+      })
+      expect(sol.status, `${modelStatus} / ${primalStatus}`).toBe(status)
+      if (primalStatus === 'Feasible') {
+        // Every figure describes the point HiGHS returned, whatever stopped it.
+        expect(sol.endingAfterTax).toBe(150_000.01)
+        expect(sol.schedule[0]).toMatchObject({ conversion: 12_345.68, withdrawTraditional: 1_000, taxableOrdinary: 20_000.5, endTrad: 90_000.13, endOther: 105_000.34 })
+        expect(sol.conversions).toEqual([{ year: 2030, amount: 12_345.68 }])
+        expect(sol.lifetimeTax).not.toBeNull()
+      } else {
+        expect(sol.endingAfterTax).toBeNull()
+        expect(sol.lifetimeTax).toBeNull()
+        expect(sol.schedule).toEqual([])
+      }
+    }
+  })
+
+  it('stops at a node limit and a time limit it passes to HiGHS: 5000 nodes and 60 s by default', async () => {
+    const seen: Record<string, unknown>[] = []
+    const solve = (_lp: string, opts: Record<string, unknown>) => {
+      seen.push(opts)
+      return { modelStatus: 'Optimal', primalStatus: 'Feasible' as const, objective: 0, columns: {} }
+    }
+    const base = { years: [year()], openingTrad: 0, openingInheritedTrad: 0, openingOther: 0, liquidationRate: 0.24 }
+    await optimizeSchedule({ ...base, options: { solve } })
+    await optimizeSchedule({ ...base, options: { solve, maxNodes: 7, timeLimitSec: 3 } })
+    expect(seen).toEqual([
+      { output_flag: false, time_limit: 60, mip_max_nodes: 5000 },
+      { output_flag: false, time_limit: 3, mip_max_nodes: 7 },
+    ])
+    for (const maxNodes of [0, 1.5, -1, Number.NaN, 2_147_483_648]) {
+      await expect(optimizeSchedule({ ...base, options: { solve, maxNodes } })).rejects.toThrow(RangeError)
+    }
+  })
+
+  it('refuses a feasible point that carries no objective', async () => {
+    await expect(
+      optimizeSchedule({
+        years: [year()],
+        openingTrad: 0,
+        openingInheritedTrad: 0,
+        openingOther: 0,
+        liquidationRate: 0.24,
+        options: { solve: () => ({ modelStatus: 'Optimal', primalStatus: 'Feasible', objective: null, columns: {} }) },
+      }),
+    ).rejects.toThrow('finite objective')
+  })
+
+  it('reads HiGHS\'s raw solution past the six significant digits of the pretty print (the pinned highs package)', async () => {
+    // A 50% haircut makes every converted dollar worth more than any bracket
+    // charges, so the solve converts up to the per-year ceiling, which the
+    // model text writes as 123456.789. The highs package's own parse reads
+    // that column to six significant digits (123,457); the engine reads
+    // HiGHS's raw solution and publishes it in cents.
+    const sol = await optimizeSchedule({
+      years: [year()],
+      openingTrad: 1_000_000,
+      openingInheritedTrad: 0,
+      openingOther: 1_000_000,
+      liquidationRate: 0.5,
+      options: { maxConversionPerYear: 123_456.789 },
+    })
+    expect(sol.status).toBe('optimal')
+    expect(Number((123_456.789).toPrecision(6))).toBe(123_457)
+    expect(sol.schedule[0]!.conversion).toBe(123_456.79)
+    expect(sol.conversions).toEqual([{ year: 2030, amount: 123_456.79 }])
   })
 })
 
@@ -1224,7 +1342,7 @@ describe('multi-year value', () => {
     const forbidden = await optimizeSchedule({ ...base, options: { maxConversionPerYear: 0 } })
     expect(free.status).toBe('optimal')
     expect(forbidden.status).toBe('optimal')
-    expect(free.endingAfterTax).toBeGreaterThanOrEqual(forbidden.endingAfterTax - 1)
+    expect(free.endingAfterTax).toBeGreaterThanOrEqual(forbidden.endingAfterTax! - 1)
     // The lever should actually be used here (haircut 24% beats the low brackets).
     expect(free.conversions.reduce((a, c) => a + c.amount, 0)).toBeGreaterThan(0)
   })

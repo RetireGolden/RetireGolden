@@ -136,16 +136,22 @@ describe('ORACLE-011: Roth bridge optimizer direction vs Owl', () => {
       // 2026 law sync, Step 2): 2027–28 bridge conversions fill the 12%
       // bracket plus the $6k senior deduction (74,550 = 50,400 + 24,150); the
       // exact-ledger estate improved ~$1.2k over the deduction-blind solve.
-      requestedConversions: 538_917.7,
-      bridgeRequested: 348_881.5,
-      rmdYearRequested: 190_036.2,
-      exactConversions: 423_639.14,
+      // Re-baselined for D-OPTIMIZER-SOLVER-OUTPUT: the schedule is read from
+      // HiGHS's raw solution in cents, where it was the highs package's
+      // six-significant-digit reading (62,681.5 for 2026; requested totals
+      // 538,917.7, 348,881.5 and 190,036.2), and the exact ledger executes
+      // that schedule (conversions .14, estate .76 and RMDs 5,393.72 before).
+      // Read at six digits, the new code gives the old figures.
+      requestedConversions: 538_917.64,
+      bridgeRequested: 348_881.49,
+      rmdYearRequested: 190_036.15,
+      exactConversions: 423_639.15,
       baselineEstate: 381_703.41,
-      exactEstate: 444_057.76,
+      exactEstate: 444_057.77,
       baselineRmd: 64_428.89,
-      exactRmd: 5_393.72,
+      exactRmd: 5_393.73,
       firstConversions: [
-        { year: 2026, amount: 62_681.5 },
+        { year: 2026, amount: 62_681.49 },
         { year: 2027, amount: 74_550 },
         { year: 2028, amount: 74_550 },
         { year: 2029, amount: 68_550 },
