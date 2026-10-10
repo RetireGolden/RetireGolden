@@ -33,9 +33,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     example changes no estate figure, because an annuity has no row.
   - `projection-summary-savings-rate-annual` (new) states the per-year rate, evidenced on four
     years of the library example early-career-match, including the zero-income guard and the
-    100% clamp.
+    100% clamp, and a fifth year with a pension, so `incomes.total` differs from wages plus Social
+    Security.
   - Codex reviewed all three by independent recomputation (`DOCS/calculations/reviews/REVIEW-2026-10-10-census-completion-codex.md`,
-    then a re-check of the estate record's wording): the two new records are `reviewedBy: 'codex'`, and
+    then re-checks of the estate record's wording and of the savings record's fifth row,
+    `REVIEW-2026-10-10-census-completion-recheck-codex.md` and
+    `REVIEW-2026-10-10-census-completion-savings-recheck-codex.md`): the two new records are `reviewedBy: 'codex'`, and
     `sustainable-spending-bisection`, which Codex derived, keeps Grok as its record-level reviewer with
     the restatement's review recorded in its worksheet. All 243 families are complete. Decided as the next census slice (tracker D-MCP-OPTIMIZER-SCHEDULE), as `output-census.md` lists: the rest of
     `run_optimizer.schedule` (the optimizer's own objective, lifetime tax and per-year solution,
