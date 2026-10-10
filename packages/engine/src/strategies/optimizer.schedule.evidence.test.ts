@@ -17,8 +17,14 @@ import { optimizeSchedule, type OptimizedSchedule, type OptimizerInput, type Opt
  * lifetime tax, and its per-year solution. These cases solve the real model
  * with HiGHS, as the engine's other optimizer tests do, on inputs short enough
  * for the worksheets to derive the solution by hand: the library example
- * rmd-irmaa's facts entered as a one-year solve, and varied to two years for
- * the branches one year does not reach.
+ * rmd-irmaa's facts, without its qualified charitable distribution, entered as
+ * a one-year solve, and varied to two years for the branches one year does not
+ * reach.
+ *
+ * Every figure is HiGHS's solution as the highs package the engine pins prints
+ * and reads it, and every one the worksheets state is compared here with the
+ * stated value: a solver upgrade (another optimal solution, or other printed
+ * digits) that puts one more than half a cent from it fails these cases.
  */
 const PACK_2026 = packForYear(2026).pack
 
@@ -306,6 +312,19 @@ describeCalculation(
         case3: totalsCase('Case 3'),
         case4: totalsCase('Case 4'),
         libraryGapAtLeast: 1_000,
+        // Measured, not derived (the worksheet's "Measured on a library
+        // example"), and pinned so the dollars the record publishes cannot go
+        // stale while the gaps above still hold.
+        libraryMeasured: {
+          endingAfterTax: 275_381.73,
+          projectionEstateNominal: 470_194.82,
+          projectionEstateToday: 266_458.11,
+          projectionEstateSolverDeflated: 259_959.13,
+          lifetimeTax: 181_976.49,
+          projectionLifetimeTax: 251_819.58,
+        },
+        // The worksheet's written weights for the 24-year solve.
+        libraryWeights: { full: 0.55287535, haircut: 0.41465652 },
       },
       tolerance: { abs: 0.005 },
     },
@@ -367,6 +386,9 @@ describeCalculation(
       const deflator = 1 / Math.pow(1 + library.inflation, library.years)
       const weightFull = Number(deflator.toFixed(8))
       const weightHaircut = Number((deflator * (1 - library.heirRate)).toFixed(8))
+      const weights = example.expected.libraryWeights as { full: number; haircut: number }
+      expect(weightFull).toBe(weights.full)
+      expect(weightHaircut).toBe(weights.haircut)
       const last = schedule.schedule[schedule.schedule.length - 1]!
       const conversions = schedule.schedule.map((row) => row.conversion)
       const objective =
@@ -397,6 +419,26 @@ describeCalculation(
         summary.lifetimeTaxesAndPenalties - schedule.lifetimeTax,
         `projection ${summary.lifetimeTaxesAndPenalties}, solver ${schedule.lifetimeTax}`,
       ).toBeGreaterThan(gapAtLeast)
+
+      const measured = example.expected.libraryMeasured as {
+        endingAfterTax: number
+        projectionEstateNominal: number
+        projectionEstateToday: number
+        projectionEstateSolverDeflated: number
+        lifetimeTax: number
+        projectionLifetimeTax: number
+      }
+      const pinned: [string, number, number][] = [
+        ['endingAfterTax', schedule.endingAfterTax, measured.endingAfterTax],
+        ["projection's estate, nominal", summary.endingAfterTaxEstate, measured.projectionEstateNominal],
+        ["projection's estate in today's dollars", estateToday, measured.projectionEstateToday],
+        ["projection's estate deflated over the solver's years", summary.endingAfterTaxEstate * deflator, measured.projectionEstateSolverDeflated],
+        ['lifetimeTax', schedule.lifetimeTax, measured.lifetimeTax],
+        ["projection's lifetime taxes and penalties", summary.lifetimeTaxesAndPenalties, measured.projectionLifetimeTax],
+      ]
+      for (const [label, actual, want] of pinned) {
+        expect(withinTolerance(actual, want, example.tolerance), `${label}: actual ${actual}, measured ${want}`).toBe(true)
+      }
     })
   },
 )

@@ -1,6 +1,6 @@
 # Mutation receipt: optimizer-schedule-year-solution
 
-Executed 2026-10-10 against RetireGolden `429bbca7` (branch `claude/census-optimizer-schedule`, on RetireGolden#791's head `claude/census-completion`; no pull request is open yet) in `packages/engine`.
+First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below, in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/strategies/optimizer.ts`
 
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/strategies/
 
 ## Captured failing output
 
-First execution, 2026-10-10 (D-MCP-OPTIMIZER-SCHEDULE). The baseline is green (optimizer.schedule.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-execution, 2026-10-10 (D-MCP-OPTIMIZER-SCHEDULE, RetireGolden#792's first review); the same tests fail with the same messages as at the first execution. The baseline is green (optimizer.schedule.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
  RUN  v5.0.0 packages/engine
 
- ❯ src/strategies/optimizer.schedule.evidence.test.ts (7 tests | 2 failed) 1196ms
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts (7 tests | 2 failed) 1260ms
    ❯ optimizer-schedule-year-solution — Optimizer's per-year solution (2)
-     × case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107029 48ms
-     × case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.2, tiers 2 and 1 41ms
+     × case 1 converts through the 24% bracket, draws the floor and pays the tax from the tax-free bucket: conversion 107029 49ms
+     × case 2 draws both floors, sells to fund 2026 and saves in 2027: sale 59245.2, tiers 2 and 1 44ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 5 passed (7)
@@ -57,14 +57,14 @@ AssertionError: 2026 endTaxable: actual 400000, worksheet 420000: expected false
 - true
 + false
 
- ❯ expectYears src/strategies/optimizer.schedule.evidence.test.ts:179:13
-    177|             withinTolerance(row[column], want.values[column], example.…
-    178|             `${want.year} ${column}: actual ${row[column]}, worksheet …
-    179|           ).toBe(true)
+ ❯ expectYears src/strategies/optimizer.schedule.evidence.test.ts:185:13
+    183|             withinTolerance(row[column], want.values[column], example.…
+    184|             `${want.year} ${column}: actual ${row[column]}, worksheet …
+    185|           ).toBe(true)
        |             ^
-    180|         }
-    181|       }
- ❯ src/strategies/optimizer.schedule.evidence.test.ts:193:7
+    186|         }
+    187|       }
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts:199:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -77,14 +77,14 @@ AssertionError: 2026 endTaxable: actual 400000, worksheet 357793: expected false
 - true
 + false
 
- ❯ expectYears src/strategies/optimizer.schedule.evidence.test.ts:179:13
-    177|             withinTolerance(row[column], want.values[column], example.…
-    178|             `${want.year} ${column}: actual ${row[column]}, worksheet …
-    179|           ).toBe(true)
+ ❯ expectYears src/strategies/optimizer.schedule.evidence.test.ts:185:13
+    183|             withinTolerance(row[column], want.values[column], example.…
+    184|             `${want.year} ${column}: actual ${row[column]}, worksheet …
+    185|           ).toBe(true)
        |             ^
-    180|         }
-    181|       }
- ❯ src/strategies/optimizer.schedule.evidence.test.ts:199:7
+    186|         }
+    187|       }
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts:205:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

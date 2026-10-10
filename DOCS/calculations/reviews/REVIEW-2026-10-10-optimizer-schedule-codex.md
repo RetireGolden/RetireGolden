@@ -1,12 +1,12 @@
 # Review, 2026-10-10 (optimizer-schedule-codex)
 
-Reviewer: Codex (GPT-6-Sol), headless and read-only, by independent recomputation without executing the engine's tests, on a snapshot of RetireGolden branch `claude/census-optimizer-schedule` at `163ebc56a` and RetireGolden-MCP at `b2c7f717` (paths under `mcp/` are RetireGolden-MCP's). The work was done by Claude (Opus). Scope: the two calculation records of decision D-MCP-OPTIMIZER-SCHEDULE, `optimizer-schedule-objective-and-lifetime-tax` and `optimizer-schedule-year-solution`, and their census selectors. Verdicts: 2 approve, 0 reject. The case-2 intermediate product it flags is corrected in the worksheet to 364,632.76634; the objective and the published cents were already right. The only edits to the report below replace local snapshot paths with repository paths and drop the snapshot's `engine/` prefix. Verbatim output follows.
+Reviewer: Codex (GPT-6-Sol), headless and read-only, by independent recomputation without executing the engine's tests, on a snapshot of RetireGolden branch `claude/census-optimizer-schedule` at `163ebc56a` and RetireGolden-MCP at `b2c7f717` (paths under `mcp/` are RetireGolden-MCP's). The work was done by Claude (Opus). Scope: the two calculation records of decision D-MCP-OPTIMIZER-SCHEDULE, `optimizer-schedule-objective-and-lifetime-tax` and `optimizer-schedule-year-solution`, and their census selectors. Verdicts: 2 approve, 0 reject. `163ebc56a` is the slice's commit on RetireGolden#791's head `429bbca7`, before it was rebased onto main and squashed into RetireGolden#792; at the pull request's first head the reviewed records, worksheets, evidence and census rows are the same except for the `reviewedBy` flips, these Reviewed-by lines and the corrected digit below. The case-2 intermediate product it flags is corrected in the worksheet to 364,632.76634; the objective and the published cents were already right. The only edits to the report below replace local snapshot paths with repository paths (the RetireGolden snapshot's root is the repository root) and drop the snapshot's `engine/` prefix. Verbatim output follows.
 
 ---
 
 # Independent review — optimizer schedule published figures
 
-Reviewer: Codex GPT; headless, read-only review. Date: 2026-10-10. Supplied snapshots: RetireGolden `163ebc56a` (``) and RetireGolden-MCP `b2c7f717` (`mcp/`). No repository files were changed, no tests were run, and no engine package was imported. The calculations below use independent decimal arithmetic from the stated model and code.
+Reviewer: Codex GPT; headless, read-only review. Date: 2026-10-10. Supplied snapshots: RetireGolden `163ebc56a` (the repository root) and RetireGolden-MCP `b2c7f717` (`mcp/`). No repository files were changed, no tests were run, and no engine package was imported. The calculations below use independent decimal arithmetic from the stated model and code.
 
 ## `optimizer-schedule-objective-and-lifetime-tax` — approve
 

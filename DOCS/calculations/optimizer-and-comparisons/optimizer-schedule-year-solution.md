@@ -26,9 +26,9 @@ This is the solver's own model, read from `buildOptimizerModel`, not a statute's
 
 ## Inputs
 
-The library example `rmd-irmaa` ("High balances: RMDs & IRMAA", `packages/planner-ui/src/planner/examples/buildRmdIrmaa.ts`): Dana, born 1953, single, 73 in 2026, in Florida (no state income tax); a $1,850,000 traditional IRA, $50,000 of cash and a $400,000 brokerage at a $280,000 cost basis; Social Security at a $3,200 primary insurance amount claimed at 70; base spending of $110,000 and $350 a month of Medicare extras; a 28% heir rate, a 5% return and 2.5% inflation. Each case is an `OptimizerInput` entered by hand from those facts, in the shape `projection/optimizePlan.ts#buildOptimizerInput` builds, short enough for the solution to be derived by hand. Both use the 2026 federal brackets, standard deduction and Medicare amounts (an inflation scale of 1), one person 65 or older, no state tax, no taxable Social Security phase-in and no senior deduction in the solve.
+The library example `rmd-irmaa` ("High balances: RMDs & IRMAA", `packages/planner-ui/src/planner/examples/buildRmdIrmaa.ts`): Dana, born 1953, single, 73 in 2026, in Florida (no state income tax); a $1,850,000 traditional IRA, $50,000 of cash and a $400,000 brokerage at a $280,000 cost basis; Social Security at a $3,200 primary insurance amount claimed at 70; base spending of $110,000 and $350 a month of Medicare extras; a 28% heir rate, a 5% return and 2.5% inflation. Each case is an `OptimizerInput` entered by hand from those facts, in the shape `projection/optimizePlan.ts#buildOptimizerInput` builds, short enough for the solution to be derived by hand. Both use the 2026 federal brackets, standard deduction and Medicare amounts (an inflation scale of 1), one person 65 or older, no state tax, no taxable Social Security phase-in and no senior deduction in the solve. Neither carries the example's qualified charitable distribution, $15,000 a year from the IRA: the plan-built input would carry it as an exclusion from the year's ordinary income and a diversion of its required distribution's cash, and it would change the one-year case's figures.
 
-| Input | Case 1 (as built, one year) | Case 2 (varied, two years) |
+| Input | Case 1 (one year) | Case 2 (varied, two years) |
 |---|---:|---:|
 | Years | 2026 | 2026, 2027 |
 | `base` (taxable Social Security: 85% of `12 × 3,200 × 1.32 = 50,688`) | 43,084.80 | 43,084.80 each year |
@@ -84,7 +84,7 @@ Published to six significant digits, then cents: case 1's `conv` 107,028.8775 be
 | Case 2, 2026 | 0 | 50,000 | 40,000 | 0 | 59,245.2 | 17,773.56 | 114,935 | 2 | 1,338,750 | 378,000 | 0 | 357,793 |
 | Case 2, 2027 | 0 | 52,500 | 40,000 | 0 | 0 | 0 | 117,435 | 1 | 1,350,560 | 354,900 | 7,410.11 | 375,682 |
 
-One row per plan year, in this order. `conversions` is `[{ 2026, 107,029 }]` in case 1 and empty in case 2. Every amount to an absolute tolerance of 0.005: each is a six-significant-digit reading rounded to cents, and none of the solution's values above lies within a few cents of a rounding boundary.
+One row per plan year, in this order. `conversions` is `[{ 2026, 107,029 }]` in case 1 and empty in case 2. Every amount to an absolute tolerance of 0.005: each is a six-significant-digit reading rounded to cents, and none of the solution's values above lies within a few cents of a rounding boundary. The figures are the solution of the highs package the engine pins; an upgrade that puts any of them more than half a cent from the value stated here fails the evidence.
 
 ## Wrong readings
 
@@ -105,6 +105,8 @@ feeds: `optimizer-schedule-lifetime-tax` (taxable income, tier and gain are its 
 
 ## Provenance
 
-Derived by: claude (Opus 5.5), 2026-10-10, for D-MCP-OPTIMIZER-SCHEDULE, from `strategies/optimizer.ts#buildOptimizerModel`, `#optimizeSchedule` and `projection/optimizePlan.ts#buildOptimizerInput` at RetireGolden main `43876e8d`, and the highs package's solution reader. The arithmetic above was done by hand from the code (a decimal calculator for the products). Two facts it uses were found by running the engine and then read in the code that produces them: the six significant digits of the highs package's solution reader, and the eight-decimal coefficients of the model text (worksheet `optimizer-schedule-objective-and-lifetime-tax`). No expected figure was copied from an engine run; the evidence reads them from the table above. Implemented by the same session. Reviewed by: unreviewed.
+Derived by: claude (Opus 5.5), 2026-10-10, for D-MCP-OPTIMIZER-SCHEDULE, from `strategies/optimizer.ts#buildOptimizerModel`, `#optimizeSchedule` and `projection/optimizePlan.ts#buildOptimizerInput` at RetireGolden main `43876e8d`, and the highs package's solution reader. The arithmetic above was done by hand from the code (a decimal calculator for the products). Two facts it uses were found by running the engine and then read in the code that produces them: the six significant digits of the highs package's solution reader, and the eight-decimal coefficients of the model text (worksheet `optimizer-schedule-objective-and-lifetime-tax`). No expected figure was copied from an engine run; the evidence reads them from the table above. Implemented by the same session. Reviewed by: unreviewed when written; the independent review is recorded below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-10-10, by independent recomputation, `DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-codex.md` (approved).
+
+Reviewed by: Codex (GPT-6-Sol), 2026-10-10, the sentences added after RetireGolden#792's first review (the example's charitable distribution, the time limit with no incumbent, and what the evidence holds the figures to), `DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-recheck-codex.md` (approved in the third round, after two rejections of the solver-coupling sentence).

@@ -23,16 +23,18 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     dollar, with eight-decimal weights) and `lifetimeTax` the solver's readout of its own tax, both
     different from the projection of the same schedule: on the library example bracket-fill-roth
     the solver reports $275,381.73 and $181,976.49 where the projection shows $266,458.11 in today's
-    dollars and $251,819.58 (measured; the evidence asserts the gaps exceed $1,000). It also states
+    dollars and $251,819.58 (measured, not derived; the evidence fails when one lands more than half a cent from it). It also states
     that an infeasible solve publishes HiGHS's objective, infinite (null in JSON) when the model has
     IRMAA binaries and 0 when it has none, and that a solve stopped at the 10-second limit describes
     the incumbent, so it depends on the machine (the library example rmd-irmaa stopped there).
   - `optimizer-schedule-year-solution` (new) states the per-year amounts, which the highs package
     reads back to six significant digits (a $107,028.88 conversion is published as $107,029), and
     adds the solver's per-year conversion to `optimizer-recommended-conversion-annual`'s outputs.
-  - Both are evidenced on hand-derived solves of the library example rmd-irmaa's facts (one year
-    as built, two years varied). Codex reviewed both by independent recomputation and approved
-    (`DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-codex.md`), so all 249
+  - Both are evidenced on hand-derived solves of the library example rmd-irmaa's facts without its
+    charitable distribution (one year, and two years varied). Codex reviewed both by independent recomputation and approved
+    (`DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-codex.md`), and the sentences
+    the pull request's first review added in a re-check
+    (`DOCS/calculations/reviews/REVIEW-2026-10-10-optimizer-schedule-recheck-codex.md`), so all 249
     families are complete. The behaviors the records state as limits (a failed solve's objective
     published as the estate figure, six-significant-digit read-back, a machine-dependent timeout
     incumbent, the n-year deflation) are decided for the engine in tracker D-OPTIMIZER-SOLVER-OUTPUT.
