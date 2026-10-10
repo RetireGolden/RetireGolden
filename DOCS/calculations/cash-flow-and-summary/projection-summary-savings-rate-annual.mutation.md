@@ -28,25 +28,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-First execution, 2026-10-10 (D-MCP-CENSUS-PIN). The baseline is green (compareSummary.breakdowns.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-10-10 after the RetireGolden#791 review added the 2074 row (a pension, so `incomes.total` differs from wages plus Social Security) and renamed the test. The mutation and command are unchanged; the baseline is green (the evidence file passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
 
- ❯ src/projection/compareSummary.breakdowns.evidence.test.ts (3 tests | 1 failed) 20ms
+ RUN  v5.0.0 packages/engine
+
+ ❯ src/projection/compareSummary.breakdowns.evidence.test.ts (3 tests | 1 failed) 19ms
    ❯ projection-summary-savings-rate-annual — Savings rate by year (1)
-     × publishes 20, 0, 25 and 100 for the four years, each with its year 4ms
-
- Test Files  1 failed (1)
-      Tests  1 failed | 2 passed (3)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
-
+     × publishes 20, 0, 25, 20 and 100 for the five years, each with its year 4ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/projection/compareSummary.breakdowns.evidence.test.ts > projection-summary-savings-rate-annual — Savings rate by year > publishes 20, 0, 25 and 100 for the four years, each with its year
+ FAIL  src/projection/compareSummary.breakdowns.evidence.test.ts > projection-summary-savings-rate-annual — Savings rate by year > publishes 20, 0, 25, 20 and 100 for the five years, each with its year
 AssertionError: 2026 ratePct: actual 16, worksheet 20: expected false to be true // Object.is equality
 
 - Expected
@@ -55,15 +49,22 @@ AssertionError: 2026 ratePct: actual 16, worksheet 20: expected false to be true
 - true
 + false
 
- ❯ src/projection/compareSummary.breakdowns.evidence.test.ts:374:11
-    372|           withinTolerance(entry.ratePct, worksheet, example.tolerance),
-    373|           `${entry.year} ratePct: actual ${entry.ratePct}, worksheet $…
-    374|         ).toBe(true)
+ ❯ src/projection/compareSummary.breakdowns.evidence.test.ts:377:11
+    375|           withinTolerance(entry.ratePct, worksheet, example.tolerance),
+    376|           `${entry.year} ratePct: actual ${entry.ratePct}, worksheet $…
+    377|         ).toBe(true)
        |           ^
-    375|       }
-    376|     })
+    378|       }
+    379|     })
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 ```
 
 ## Revert
