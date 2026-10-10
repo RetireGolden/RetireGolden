@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 536da209ce7776eed5e69a9dbf8e5559cca92634.
+ * Output families imported from the output-family census at commit 97de7f0cc495e28426c200d6a662d53981f4e92f.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -3750,6 +3750,10 @@ const families = {
       },
       {
         "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].conversion (every plan year; schedule.conversions[] lists the same amount for each year above $0.50)"
+      },
+      {
+        "surface": "mcp",
         "selector": "run_optimizer.tournament.winnerConversions[].amount"
       }
     ],
@@ -3794,6 +3798,136 @@ const families = {
       "status": "done",
       "target": "engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal"
     }
+  },
+  "optimizer-schedule-ending-after-tax-objective": {
+    "title": "Optimizer's own ending after-tax wealth",
+    "group": "optimizer-and-comparisons",
+    "meaning": "The value of the conversion optimizer's objective at the schedule its solver returned: its linear model's end-of-horizon tax-free and taxable buckets in full and its traditional and inherited traditional buckets net of the plan's heir rate, deflated over the plan's years to today's dollars, plus a tie-break of one millionth of a dollar per converted dollar. The solver's own figure, not the after-tax estate the projection of the same schedule ends with.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedSchedule.endingAfterTax"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.endingAfterTax (null in the JSON when an infeasible solve had IRMAA tiers to decide, where HiGHS reports an infinite objective)"
+      }
+    ],
+    "relocation": null
+  },
+  "optimizer-schedule-ending-balance-by-bucket-annual": {
+    "title": "Optimizer's year-end balances by bucket",
+    "group": "optimizer-and-comparisons",
+    "meaning": "For each plan year, the year-end balance of each of the conversion optimizer's buckets (traditional, inherited traditional, tax-free and taxable) in its solution, after the year's flows and one blended growth rate, in that year's nominal dollars to six significant digits; the taxable bucket is 0 when the plan has none. The solver's balances, not the projection's (accounts-balance-per-account-annual).",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year",
+      "bucket"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.endTrad / endInheritedTrad / endOther / endTaxable"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].endTrad / .endInheritedTrad / .endOther / .endTaxable"
+      }
+    ],
+    "relocation": null
+  },
+  "optimizer-schedule-lifetime-tax": {
+    "title": "Optimizer's own modeled lifetime tax",
+    "group": "optimizer-and-comparisons",
+    "meaning": "The tax the conversion optimizer's readout charges the schedule its solver returned, summed over the plan's years in each year's nominal dollars: federal bracket tax and state tax on the solver's taxable ordinary income, the year's cumulative IRMAA surcharges, and the solver's single 15% rate on its realized gains. The solver's own figure, not the projection's lifetime taxes and penalties of the same schedule.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedSchedule.lifetimeTax"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.lifetimeTax"
+      }
+    ],
+    "relocation": null
+  },
+  "optimizer-schedule-taxable-gain-realized-annual": {
+    "title": "Optimizer's realized gain by year",
+    "group": "optimizer-and-comparisons",
+    "meaning": "For each plan year, the long-term gain the conversion optimizer's readout books on its taxable-bucket withdrawal: the published withdrawal times one gain fraction for the whole plan (one minus the opening taxable basis ratio), in that year's nominal dollars. Not the projection's realized gains (tax-realized-gains-annual), which follow each account's basis.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.taxableGainRealized"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].taxableGainRealized"
+      }
+    ],
+    "relocation": null
+  },
+  "optimizer-schedule-taxable-ordinary-income-annual": {
+    "title": "Optimizer's taxable ordinary income by year",
+    "group": "optimizer-and-comparisons",
+    "meaning": "For each plan year, the taxable ordinary income in the conversion optimizer's solution: its ordinary income base plus the taxable part of its conversion and its traditional and inherited withdrawals, less the standard deduction with the age-65 addition (and, where the solve prices it, the senior deduction net of its phase-out), not below 0, in that year's nominal dollars to six significant digits. The amount its bracket tax is charged on, not the projection's taxable income.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.taxableOrdinary"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].taxableOrdinary"
+      }
+    ],
+    "relocation": null
+  },
+  "optimizer-schedule-withdrawal-by-bucket-annual": {
+    "title": "Optimizer's planned withdrawals by bucket",
+    "group": "optimizer-and-comparisons",
+    "meaning": "For each plan year, what the conversion optimizer's solution withdraws from each of its buckets: traditional (the required distribution included), inherited traditional, the tax-free bucket (Roth, cash and HSA) and the taxable bucket, in that year's nominal dollars, to six significant digits. The solver's plan, not the withdrawals the projection makes (withdrawals-by-category-annual), which follow the plan's withdrawal order and its own taxes.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "year",
+      "bucket"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/strategies/optimizer.ts",
+      "symbol": "OptimizedYear.withdrawTraditional / withdrawInheritedTraditional / withdrawOther / withdrawTaxable"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.schedule[].withdrawTraditional / .withdrawInheritedTraditional / .withdrawOther / .withdrawTaxable"
+      }
+    ],
+    "relocation": null
   },
   "pension-election-annuity-present-value": {
     "title": "Pension annuity present value",

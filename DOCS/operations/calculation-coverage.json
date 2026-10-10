@@ -2,7 +2,7 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 243,
+    "identified": 249,
     "byGroup": {
       "accounts-and-growth": 14,
       "cash-flow-and-summary": 62,
@@ -11,7 +11,7 @@
       "longevity": 4,
       "medicare-and-aca": 10,
       "monte-carlo": 37,
-      "optimizer-and-comparisons": 28,
+      "optimizer-and-comparisons": 34,
       "rmd": 3,
       "roth": 4,
       "social-security": 18,
@@ -19,7 +19,7 @@
       "taxes": 20
     },
     "byKind": {
-      "engine": 198,
+      "engine": 204,
       "ui-native": 24,
       "ui-transformation": 21
     },
@@ -170,6 +170,12 @@
       "optimizer-candidate-trailing-estate-amount",
       "optimizer-recommended-conversion-annual",
       "optimizer-schedule-conversion-total",
+      "optimizer-schedule-ending-after-tax-objective",
+      "optimizer-schedule-ending-balance-by-bucket-annual",
+      "optimizer-schedule-lifetime-tax",
+      "optimizer-schedule-taxable-gain-realized-annual",
+      "optimizer-schedule-taxable-ordinary-income-annual",
+      "optimizer-schedule-withdrawal-by-bucket-annual",
       "pension-election-annuity-present-value",
       "portfolio-need-annual",
       "projection-result-ending-investable",
@@ -688,7 +694,14 @@
       "optimizer-schedule-conversion-total": [
         "allocation-account-expected-return",
         "allocation-blended-expected-return",
-        "conversion-coordinate-descent-search"
+        "conversion-coordinate-descent-search",
+        "optimizer-schedule-year-solution"
+      ],
+      "optimizer-schedule-ending-after-tax-objective": [
+        "optimizer-schedule-year-solution"
+      ],
+      "optimizer-schedule-lifetime-tax": [
+        "optimizer-schedule-year-solution"
       ],
       "portfolio-need-annual": [
         "income-total-annual",
@@ -955,16 +968,16 @@
     }
   },
   "records": {
-    "total": 283,
+    "total": 285,
     "byKind": {
       "composition": 89,
       "data": 24,
       "formula": 100,
-      "model": 70
+      "model": 72
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 278
+      "derivation": 280
     }
   },
   "oracleExamples": [
@@ -1170,7 +1183,7 @@
     {
       "group": "optimizerAndComparisons",
       "path": "calculation-coverage/optimizerAndComparisons.json",
-      "recordCount": 21
+      "recordCount": 23
     },
     {
       "group": "rmd",
