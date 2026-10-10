@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit c0903bc3e5660c7a40f7b1934e358ad9da47bdfd.
+ * Output field coverage imported from the output-family census at commit 536da209ce7776eed5e69a9dbf8e5559cca92634.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -501,10 +501,8 @@ const coverageCensus = [
     "source": "engine/src/decisions/spendingSolver.ts",
     "owner": "SustainableSpendingResult",
     "field": "feasibleBaseAnnual",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "The highest level the search found feasible, a whole number of dollars; the published answer maxBaseAnnual is this rounded down to $100 when that level is known to pass. Pages judge whether today's spending is sustained on it but print only the published amount.",
+    "disposition": "family",
+    "familyId": "sustainable-spending-result-feasible-base-annual",
     "tsType": "number | null"
   },
   {
@@ -2907,62 +2905,152 @@ const coverageCensus = [
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
-    "field": "charityAmount",
-    "disposition": "unsurfaced-evidence",
+    "field": "accountId",
+    "disposition": "excluded",
     "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown charityAmount. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "reasonKind": "identifier",
+    "reason": "The plan account id each estate breakdown row describes: it places the row's amounts on an account and is not a quantity.",
+    "tsType": "string"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "category",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The account class whose estate treatment the row follows (an equity-compensation account is reported as taxable): a classification, not a quantity.",
+    "tsType": "'cash' | 'taxable' | 'traditional' | 'roth' | 'hsa'"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "charityAmount",
+    "disposition": "family",
+    "familyId": "estate-to-charity-by-account",
     "tsType": "number"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
-    "field": "grossBalance",
-    "disposition": "unsurfaced-evidence",
+    "field": "destination",
+    "disposition": "excluded",
     "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown grossBalance. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "reasonKind": "label-or-category",
+    "reason": "The resolved estate destination (spouse, nonSpouse or charity): the account's estateBeneficiary when set, else an HSA's beneficiary shorthand, nonSpouse for a traditional account and spouse for any other; a classification, not a quantity.",
+    "tsType": "EstateDestination"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "grossBalance",
+    "disposition": "family",
+    "familyId": "accounts-balance-per-account-annual",
     "tsType": "number"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "heirTax",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown heirTax. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "disposition": "family",
+    "familyId": "estate-heir-income-tax-by-account",
     "tsType": "number"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "heirTaxRatePct",
-    "disposition": "unsurfaced-evidence",
+    "disposition": "excluded",
     "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown heirTaxRatePct. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "reasonKind": "input-parameter",
+    "reason": "The heir income-tax rate the row was priced at, in percent: the plan's heirTaxByClass rate for a traditional or HSA account when one is set, else the plan's heirTaxRatePct, carried on every row including those it does not tax. An input echoed beside the figures it produced, not an output.",
     "tsType": "number"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
-    "field": "netToHeirs",
-    "disposition": "unsurfaced-evidence",
+    "field": "name",
+    "disposition": "excluded",
     "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown netToHeirs. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "reasonKind": "label-or-category",
+    "reason": "The account's name as the plan enters it, echoed on each estate breakdown row: a label, not a quantity.",
+    "tsType": "string"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "netToHeirs",
+    "disposition": "family",
+    "familyId": "estate-net-to-heirs-by-account",
     "tsType": "number"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "taxablePretaxBase",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown taxablePretaxBase. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
+    "disposition": "family",
+    "familyId": "estate-taxable-pretax-base-by-account",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "personId",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "identifier",
+    "reason": "The id of the person whose retirement is the household's later one, whose age fiAge is; the FI target copy names the person by it. An identifier, not a quantity.",
+    "tsType": "string | null"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "personLastYearAlive",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's last year alive at the planning age (birth year plus planning age), which the FI target copy uses to say who works through the plan. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "retirementRule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the retirement year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy words its clause by it. A classification.",
+    "tsType": "RetirementYearRule | null"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "retirementYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's retirement year: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs that places the FI pricing, as SurvivorTimingRow.deathYear (birth year plus death age) is; not a modeled amount.",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "spendingSource",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which outflows the FI number prices (projection, conversionFreeProjection, conversionTaxIncluded, baseAnnual or noRetirementInPlan); the FI target copy chooses its sentence by it. A classification, as SustainableSpendingResult.maxBaseAnnualRounding is.",
+    "tsType": "FiSpendingSource"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "spendingYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year whose outflows the FI number prices: the later of the start year and the household's later retirement year, else the first ledger year; null for an empty ledger or when nobody retires in the plan. The FI target copy on Results and in the report names it. It places the priced spending, as SurvivorTimingRow.deathYear places a survivor row; it is not a modeled amount.",
+    "tsType": "number | null"
   },
   {
     "source": "engine/src/projection/compare.ts",
@@ -3088,10 +3176,8 @@ const coverageCensus = [
     "source": "engine/src/projection/compare.ts",
     "owner": "ProjectionSummary",
     "field": "ratePct",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-year savings rate (contributions + match + surplus invested over gross income); only its pre-retirement average is displayed. Searched planner-ui/src for savingsRates: no consumer.",
+    "disposition": "family",
+    "familyId": "projection-summary-savings-rate-pct-annual",
     "tsType": "number"
   },
   {
@@ -3180,6 +3266,56 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "dimension-coordinate",
     "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "lastYearAlive",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The person's last year alive at the planning age (birth year plus planning age). A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "personId",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "identifier",
+    "reason": "The person the retirement describes; FiBasis.notRetiring and the funded ratio's start list people by it. An identifier, not a quantity.",
+    "tsType": "string"
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "retiresInPlan",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "boolean-flag",
+    "reason": "Whether the person is alive in the later of their retirement year and the start year, the year a household figure would be priced on this retirement: a flag, as SustainableSpendingResult.sustainsCurrentBase is.",
+    "tsType": "boolean"
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "rule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy and the funded-ratio card word their clauses by it. A classification.",
+    "tsType": "RetirementYearRule"
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "year",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year without this person's work under rule: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is; not a modeled amount.",
     "tsType": "number"
   },
   {
@@ -11276,7 +11412,7 @@ const exclusionCensus = [
     "id": "",
     "path": "RetireGolden-MCP/src/adapter.ts",
     "symbol": "",
-    "field": "run_optimizer.schedule[].year",
+    "field": "run_optimizer.schedule.conversions[].year",
     "reasonKind": "protocol-metadata",
     "reason": "Schedule year coordinate."
   },
@@ -11447,6 +11583,638 @@ const exclusionCensus = [
     "field": "solve_max_spending.sustainsCurrentBase",
     "reasonKind": "boolean-flag",
     "reason": "The engine's verdict whether the plan sustains its current base spending, returned since RetireGolden-MCP 0.11.0. The engine field it echoes, SustainableSpendingResult.sustainsCurrentBase, is the same boolean-flag exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.spendingYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.spendingYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.spendingSource",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.spendingSource, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.personId",
+    "reasonKind": "identifier",
+    "reason": "FiBasis.personId, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.retirementYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.retirementRule",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.retirementRule, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.personLastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.personLastYearAlive, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.notRetiring[].personId",
+    "reasonKind": "identifier",
+    "reason": "PersonRetirement.personId of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.notRetiring[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.year of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.notRetiring[].rule",
+    "reasonKind": "label-or-category",
+    "reason": "PersonRetirement.rule of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.notRetiring[].lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.lastYearAlive of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.fiBasis.notRetiring[].retiresInPlan",
+    "reasonKind": "boolean-flag",
+    "reason": "PersonRetirement.retiresInPlan of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same boolean-flag exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.estateBreakdown[].accountId",
+    "reasonKind": "identifier",
+    "reason": "EstateAccountBreakdown.accountId of each estate breakdown row, published whole in the summary. The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.estateBreakdown[].name",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.name of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.estateBreakdown[].category",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.category of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.estateBreakdown[].destination",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.destination of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.estateBreakdown[].heirTaxRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.summary.savingsRates[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year of each per-year savings rate, published whole in the summary. The engine row (ProjectionSummary.year, the savingsRates[] year) is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.spendingYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.spendingYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.spendingSource",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.spendingSource, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.personId",
+    "reasonKind": "identifier",
+    "reason": "FiBasis.personId, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.retirementYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.retirementRule",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.retirementRule, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.personLastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.personLastYearAlive, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.notRetiring[].personId",
+    "reasonKind": "identifier",
+    "reason": "PersonRetirement.personId of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.notRetiring[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.year of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.notRetiring[].rule",
+    "reasonKind": "label-or-category",
+    "reason": "PersonRetirement.rule of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.notRetiring[].lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.lastYearAlive of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.fiBasis.notRetiring[].retiresInPlan",
+    "reasonKind": "boolean-flag",
+    "reason": "PersonRetirement.retiresInPlan of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same boolean-flag exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.estateBreakdown[].accountId",
+    "reasonKind": "identifier",
+    "reason": "EstateAccountBreakdown.accountId of each estate breakdown row, published whole in the summary. The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.estateBreakdown[].name",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.name of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.estateBreakdown[].category",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.category of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.estateBreakdown[].destination",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.destination of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.estateBreakdown[].heirTaxRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.a.savingsRates[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year of each per-year savings rate, published whole in the summary. The engine row (ProjectionSummary.year, the savingsRates[] year) is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.spendingYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.spendingYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.spendingSource",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.spendingSource, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.personId",
+    "reasonKind": "identifier",
+    "reason": "FiBasis.personId, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.retirementYear, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.retirementRule",
+    "reasonKind": "label-or-category",
+    "reason": "FiBasis.retirementRule, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.personLastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "FiBasis.personLastYearAlive, published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.notRetiring[].personId",
+    "reasonKind": "identifier",
+    "reason": "PersonRetirement.personId of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.notRetiring[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.year of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.notRetiring[].rule",
+    "reasonKind": "label-or-category",
+    "reason": "PersonRetirement.rule of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.notRetiring[].lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "PersonRetirement.lastYearAlive of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.fiBasis.notRetiring[].retiresInPlan",
+    "reasonKind": "boolean-flag",
+    "reason": "PersonRetirement.retiresInPlan of each person who never retires in the plan (FiBasis.notRetiring), published in the summary since RetireGolden-MCP 0.11.0 (the engine added it after the census pin fb398216). The engine row is the same boolean-flag exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.estateBreakdown[].accountId",
+    "reasonKind": "identifier",
+    "reason": "EstateAccountBreakdown.accountId of each estate breakdown row, published whole in the summary. The engine row is the same identifier exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.estateBreakdown[].name",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.name of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.estateBreakdown[].category",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.category of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.estateBreakdown[].destination",
+    "reasonKind": "label-or-category",
+    "reason": "EstateAccountBreakdown.destination of each estate breakdown row, published whole in the summary. The engine row is the same label-or-category exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.estateBreakdown[].heirTaxRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.b.savingsRates[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year of each per-year savings rate, published whole in the summary. The engine row (ProjectionSummary.year, the savingsRates[] year) is the same dimension-coordinate exclusion."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Whether the call answered (true) or returned its failure envelope (false): call status, classified as batch_evaluate.results[].ok, the per-row status, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.caveats",
+    "reasonKind": "not-numeric",
+    "reason": "The session's caveat sentences (snapshotCaveats), returned on success: text about the plan and how it was built, not a modeled number; classified as the tools' warnings are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.caveats",
+    "reasonKind": "not-numeric",
+    "reason": "The session's caveat sentences (snapshotCaveats), returned on success: text about the plan and how it was built, not a modeled number; classified as the tools' warnings are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.caveats",
+    "reasonKind": "not-numeric",
+    "reason": "The session's caveat sentences (snapshotCaveats), returned on success and in its failure envelope: text about the plan and how it was built, not a modeled number; classified as the tools' warnings are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.caveats",
+    "reasonKind": "not-numeric",
+    "reason": "The session's caveat sentences (snapshotCaveats), returned on success and in its failure envelope: text about the plan and how it was built, not a modeled number; classified as the tools' warnings are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.results[].caveats",
+    "reasonKind": "not-numeric",
+    "reason": "The session's caveat sentences for that row, with the claim-age notes and the traditional-first ordering caveat the row adds: text, not a modeled number; classified as the tools' warnings are."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.results[].error",
+    "reasonKind": "not-numeric",
+    "reason": "Why a row has no objective (ok false): the claim-age refusal, the plan's issues joined, or the thrown error's message. Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.objective",
+    "reasonKind": "protocol-metadata",
+    "reason": "The objective the caller asked for (after_tax_estate, cumulative_tax or ending_trad; after_tax_estate when omitted), echoed: an input, classified as batch_evaluate.results[].policy, the echoed policy, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (NO_PLAN): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (NO_PLAN): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (NO_PLAN): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (NO_PLAN or OPTIMIZER_FAILED): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (NO_PLAN or SPENDING_SOLVER_FAILED): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.error",
+    "reasonKind": "protocol-metadata",
+    "reason": "The failure envelope's code (INVALID_PLAN_A, INVALID_PLAN_B or COMPARISON_FAILED): a call status, classified as solve_max_spending.converged, the solver's status flag, is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_projection.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: \"Call build_plan first\". Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_monte_carlo.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: \"Call build_plan first\". Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "batch_evaluate.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: \"Call build_plan with a household first\". Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: \"Call build_plan first\", or the optimizer's error message. Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "solve_max_spending.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: \"Call build_plan first\", or the solver's error message. Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.message",
+    "reasonKind": "not-numeric",
+    "reason": "The failure envelope's sentence: the comparison's error message (COMPARISON_FAILED). Text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "compare_scenarios.issues",
+    "reasonKind": "not-numeric",
+    "reason": "The plan issues that refused Plan A or Plan B (INVALID_PLAN_A, INVALID_PLAN_B): text, not a modeled number."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.schedule.status",
+    "reasonKind": "label-or-category",
+    "reason": "OptimizedSchedule.status, the MILP solve's status (optimal, feasible, infeasible or timeout), published with the schedule: a classification, as the tool's tournament.winnerSource is."
+  },
+  {
+    "id": "",
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "symbol": "",
+    "field": "run_optimizer.schedule.solveMs",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "OptimizedSchedule.solveMs, the solve's wall-clock time, published with the schedule. The engine row is the same runtime-diagnostic exclusion."
   },
   {
     "id": "csv-filing-status",
@@ -12441,6 +13209,94 @@ const exclusionCensus = [
     "reason": "The two bucket presets the planner offers, [2, 8] and [3] years; inputs."
   },
   {
+    "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-accountid",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "EstateAccountBreakdown",
+    "field": "accountId",
+    "reasonKind": "identifier",
+    "reason": "The plan account id each estate breakdown row describes: it places the row's amounts on an account and is not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-category",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "EstateAccountBreakdown",
+    "field": "category",
+    "reasonKind": "label-or-category",
+    "reason": "The account class whose estate treatment the row follows (an equity-compensation account is reported as taxable): a classification, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-destination",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "EstateAccountBreakdown",
+    "field": "destination",
+    "reasonKind": "label-or-category",
+    "reason": "The resolved estate destination (spouse, nonSpouse or charity): the account's estateBeneficiary when set, else an HSA's beneficiary shorthand, nonSpouse for a traditional account and spouse for any other; a classification, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-heirtaxratepct",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "EstateAccountBreakdown",
+    "field": "heirTaxRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "The heir income-tax rate the row was priced at, in percent: the plan's heirTaxByClass rate for a traditional or HSA account when one is set, else the plan's heirTaxRatePct, carried on every row including those it does not tax. It is the rate the row was priced at, derived from the plan's input as 100 times the plan's percentage over 100, so it can differ from the entry in the last binary digit (a 28% rate is carried as 28.000000000000004, as the estate-account-breakdown record states); an input-parameter beside the figures it produced, not a modeled output."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-name",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "EstateAccountBreakdown",
+    "field": "name",
+    "reasonKind": "label-or-category",
+    "reason": "The account's name as the plan enters it, echoed on each estate breakdown row: a label, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-personid",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "personId",
+    "reasonKind": "identifier",
+    "reason": "The id of the person whose retirement is the household's later one, whose age fiAge is; the FI target copy names the person by it. An identifier, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-personlastyearalive",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "personLastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's last year alive at the planning age (birth year plus planning age), which the FI target copy uses to say who works through the plan. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-retirementrule",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "retirementRule",
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the retirement year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy words its clause by it. A classification."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-retirementyear",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "retirementYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's retirement year: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs that places the FI pricing, as SurvivorTimingRow.deathYear (birth year plus death age) is; not a modeled amount."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-spendingsource",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "spendingSource",
+    "reasonKind": "label-or-category",
+    "reason": "Which outflows the FI number prices (projection, conversionFreeProjection, conversionTaxIncluded, baseAnnual or noRetirementInPlan); the FI target copy chooses its sentence by it. A classification, as SustainableSpendingResult.maxBaseAnnualRounding is."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-fibasis-spendingyear",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "FiBasis",
+    "field": "spendingYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year whose outflows the FI number prices: the later of the start year and the household's later retirement year, else the first ledger year; null for an empty ledger or when nobody retires in the plan. The FI target copy on Results and in the report names it. It places the priced spending, as SurvivorTimingRow.deathYear places a survivor row; it is not a modeled amount."
+  },
+  {
     "id": "field-engine-src-projection-compare-ts-module-charitypct",
     "path": "engine/src/projection/compare.ts",
     "symbol": "module",
@@ -12471,6 +13327,46 @@ const exclusionCensus = [
     "field": "startYear",
     "reasonKind": "dimension-coordinate",
     "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-householdretirement-ts-personretirement-lastyearalive",
+    "path": "engine/src/projection/householdRetirement.ts",
+    "symbol": "PersonRetirement",
+    "field": "lastYearAlive",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The person's last year alive at the planning age (birth year plus planning age). A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is."
+  },
+  {
+    "id": "field-engine-src-projection-householdretirement-ts-personretirement-personid",
+    "path": "engine/src/projection/householdRetirement.ts",
+    "symbol": "PersonRetirement",
+    "field": "personId",
+    "reasonKind": "identifier",
+    "reason": "The person the retirement describes; FiBasis.notRetiring and the funded ratio's start list people by it. An identifier, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-householdretirement-ts-personretirement-retiresinplan",
+    "path": "engine/src/projection/householdRetirement.ts",
+    "symbol": "PersonRetirement",
+    "field": "retiresInPlan",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether the person is alive in the later of their retirement year and the start year, the year a household figure would be priced on this retirement: a flag, as SustainableSpendingResult.sustainsCurrentBase is."
+  },
+  {
+    "id": "field-engine-src-projection-householdretirement-ts-personretirement-rule",
+    "path": "engine/src/projection/householdRetirement.ts",
+    "symbol": "PersonRetirement",
+    "field": "rule",
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy and the funded-ratio card word their clauses by it. A classification."
+  },
+  {
+    "id": "field-engine-src-projection-householdretirement-ts-personretirement-year",
+    "path": "engine/src/projection/householdRetirement.ts",
+    "symbol": "PersonRetirement",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year without this person's work under rule: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is; not a modeled amount."
   },
   {
     "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-convergence-iterations",

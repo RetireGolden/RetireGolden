@@ -4,6 +4,47 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the output census covers the rest of RetireGolden-MCP's output at its pin b2c7f717,
+  with six new families and their calculation records** (2026-10-10, D-MCP-CENSUS-PIN). The
+  census (RetireGolden-Docs 1ae33819, re-imported here) adds a family for each MCP figure the
+  2026-10-09 census entry below listed as not yet covered: `sustainable-spending-result-feasible-base-annual`
+  (`solve_max_spending.feasibleBaseAnnual`, the level that passed, in today's dollars); four
+  per-account estate families for the published summaries' `estateBreakdown[]`, one per amount
+  kind as the census already splits the breakdown's two totals (`estate-taxable-pretax-base-by-account`
+  and `estate-heir-income-tax-by-account` in taxes, `estate-to-charity-by-account` and
+  `estate-net-to-heirs-by-account` in accounts and growth; `grossBalance`, the last year's balance,
+  is a surface of `accounts-balance-per-account-annual`); and
+  `projection-summary-savings-rate-pct-annual` for `savingsRates[].ratePct`. `fiBasis` gets the
+  engine rows the census lacked (`FiBasis` and `PersonRetirement`), all exclusions: years,
+  labels, ids and a flag, no modeled amount. The rest of the computed output the first MCP round
+  left unlisted (`ok`, `caveats`, the failure envelopes, `batch_evaluate.objective`,
+  `run_optimizer.schedule.status` and `.solveMs`) is classified by the census's precedents, and
+  two selectors and one exclusion that named paths the tools do not return are corrected
+  (`run_projection.years[].withdrawals.total`, `run_optimizer.schedule.conversions[]`). Families
+  go from 237 to 243, exclusions from 504 to 599 and field rows from 1,220 to 1,235.
+  - `sustainable-spending-bisection` lists the new family in its outputs and gains a second
+    worked case: the same search at a $100 resolution passes $62,969 and publishes $62,900, so
+    the two figures differ and the evidence asserts both; its mutation receipt is re-executed.
+  - `estate-account-breakdown` (new) states the per-account split from
+    `projection/compare.ts#summarizeProjection` and its two base helpers, evidenced on the
+    library example annuity-purchases-estate as built and varied to reach the branches it does not (a
+    spread IRA basis, class heir rates, a charity share, a non-spouse HSA, equity compensation,
+    a zero balance). Its limits say that the single-premium annuity's charity designation in that
+    example changes no estate figure, because an annuity has no row.
+  - `projection-summary-savings-rate-annual` (new) states the per-year rate, evidenced on four
+    years of the library example early-career-match, including the zero-income guard and the
+    100% clamp, and a fifth year with a pension, so `incomes.total` differs from wages plus Social
+    Security.
+  - Codex reviewed all three by independent recomputation (`DOCS/calculations/reviews/REVIEW-2026-10-10-census-completion-codex.md`,
+    then re-checks of the estate record's wording and of the savings record's fifth row,
+    `REVIEW-2026-10-10-census-completion-recheck-codex.md` and
+    `REVIEW-2026-10-10-census-completion-savings-recheck-codex.md`): the two new records are `reviewedBy: 'codex'`, and
+    `sustainable-spending-bisection`, which Codex derived, keeps Grok as its record-level reviewer with
+    the restatement's review recorded in its worksheet. All 243 families are complete. Decided as the next census slice (tracker D-MCP-OPTIMIZER-SCHEDULE), as `output-census.md` lists: the rest of
+    `run_optimizer.schedule` (the optimizer's own objective, lifetime tax and per-year solution,
+    which the tool returns whole), and the funded-ratio start and planner-ui's FI target facts,
+    which have no rows. No computation changes and no figure moves.
+
 - **Fixed: the texts the methodology site snapshots say what the engine does** (2026-10-10,
   the findings of the retiregolden.org#150 review and of RetireGolden#790's first review). No
   figure changes.

@@ -2810,6 +2810,80 @@
       }
     },
     {
+      "id": "projection-summary-savings-rate-annual",
+      "title": "Savings rate by year",
+      "kind": "formula",
+      "outputs": [
+        "projection-summary-savings-rate-pct-annual"
+      ],
+      "feeds": [
+        "projection-summary-average-pre-retirement-savings-rate-pct"
+      ],
+      "purpose": "What share of each year's gross income the household saves, as a percentage.",
+      "statement": "projection/compare.ts#summarizeProjection publishes ProjectionSummary.savingsRates, one entry per ledger row in ledger order. Its year is the row's year, and ratePct = min(100, max(0, S / I × 100)) when I > 0, else 0, where S = contributions + employerMatch + surplusInvested and I = incomes.total, all four from that row in that year's nominal dollars. The rate is in percentage points (20 means 20%). Rounding: none.",
+      "formula": {
+        "expression": "ratePct_y = I_y > 0 ? min(100, max(0, (C_y + M_y + U_y) / I_y × 100)) : 0",
+        "variables": [
+          {
+            "symbol": "C_y",
+            "meaning": "Contributions made in year y (YearResult.contributions)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "M_y",
+            "meaning": "Employer match made in year y (YearResult.employerMatch)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "U_y",
+            "meaning": "Surplus cash flow invested in year y (YearResult.surplusInvested)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "I_y",
+            "meaning": "Gross cash income of year y (YearResult.incomes.total)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "every projection year",
+        "rounding": "none"
+      },
+      "limits": [
+        "The denominator is the year's gross cash income as the ledger totals it (wages, Social Security, pensions, annuities, ladder income, recurring and one-time income, taxable yield and tax-exempt interest), not wages alone, so a retired year whose surplus is reinvested shows a positive rate with no wages.",
+        "Savings count the employer match and the surplus the ledger invests as well as the household's own contributions. A year whose savings exceed its income, such as a required distribution larger than spending and reinvested, is clamped to 100. The floor at 0 binds only on a negative savings amount, which the ledger does not publish. A year with no gross income publishes 0 whatever it saves.",
+        "Evidence: summarizeProjection on four rows of the early-career-match example (wages of $65,000 with $9,000 contributed and a $2,600 match, a retired year with no income, and two Social Security years with reinvested surpluses), entered as ledger rows; the rate reads only the row, so how a projection reaches those amounts does not enter it."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/projection-summary-savings-rate-annual.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/projection-summary-savings-rate-annual.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/compare.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude",
+        "reviewedBy": "codex"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/compareSummary.breakdowns.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "spending-care-cost-gross-and-ltc-benefit-annual",
       "title": "Annual gross care cost and the LTC benefit against it",
       "kind": "model",
@@ -3675,7 +3749,8 @@
       "kind": "model",
       "outputs": [
         "sustainable-spending-result-max-base-annual",
-        "sustainable-spending-result-spending-slack-dollars"
+        "sustainable-spending-result-spending-slack-dollars",
+        "sustainable-spending-result-feasible-base-annual"
       ],
       "feeds": [
         "sustainable-spending-result-simulation-count",
@@ -3683,7 +3758,7 @@
         "solved-spending-rounded-to-hundred"
       ],
       "purpose": "Find a feasible lower bound for constant annual base spending within a simulation budget.",
-      "statement": "decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today's dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor. The highest level that passed is published as feasibleBaseAnnual; the published answer maxBaseAnnual is that level rounded down to $100 when that level is known to pass (the record solved-spending-rounding), and spendingSlackDollars is measured from maxBaseAnnual.",
+      "statement": "decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today's dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor. Each bisection probe is the half-sum of the bracket rounded to the nearest dollar, a half rounded up. The highest level that passed, a whole number of dollars, is published as feasibleBaseAnnual; the published answer maxBaseAnnual is that level rounded down to $100 when that level is known to pass (the record solved-spending-rounding), and spendingSlackDollars is measured from maxBaseAnnual.",
       "formula": {
         "expression": "probe integer midpoint; keep feasible lower and infeasible upper until upper-lower <= resolution; feasibleBaseAnnual = best feasible lower; maxBaseAnnual = its $100 floor when that level is known to pass, else feasibleBaseAnnual",
         "variables": [
@@ -3704,12 +3779,12 @@
         "rounding": "integer-dollar midpoint"
       },
       "limits": [
-        "simulationCount is not derivable from the stated contract because the bracketing rule is not documented. The quantity enters the published result, so its family is fed, not output.",
-        "The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed at fixed-target spending (under guardrails it does not hold; see below); budgets can stop convergence.",
+        "simulationCount has its own record (sustainable-spending-result-simulation-count); the count enters the published result, so this record feeds its family rather than computing it.",
+        "The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result, then runs the same search at a $100 resolution, which probes three more levels and passes 62969. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed at fixed-target spending (under guardrails it does not hold; see below); budgets can stop convergence.",
         "A Marketplace year whose premium tax credit the ledger could not price (aca.readiness nonActionable) counts its full premium, as the ledger funds it; the credit lies between 0 and that premium (26 U.S.C. 36B(b)(2)). The solver always evaluates its probes with nonActionableAca 'disclose' (its options leave callers no way to ask for 'refuse'), so such a year is a disclosed limit, not a refusal. Those years of the run the result rests on (the best feasible probe; with no answer, the probe the failure diagnostic describes: the floor probe when it ran, else the seed), the codes that blocked pricing (every code but the informational ones, INFORMATIONAL_ACA_SUPPORT_CODES, the list the ledger's readiness reads) and acaGrossPremiumDirection are published, and the last diagnostic names them.",
         "acaGrossPremiumDirection is 'conservative' only at fixed-target spending: at fixed spending a lower premium lowers what that year must withdraw, so a credit would likely leave room to spend more. That is measured, not proven for every plan: an independent check priced the stand-in years in a counterfactual and re-solved the 20 fixed-target example answers at $1 resolution (about 6,700 grid points) without finding a credit-priced answer below the gross one (gaps 0 to $6,357 a year). Under guardrails it is 'uncertain': a lower cost keeps the withdrawal rate under the upper guardrail longer, so cuts start later, and the same check found credit-priced ledgers that solve lower (the aggressive-saver example under 125/90/20 guardrails with raises: $76,707 on the gross premium, $75,170 with the credit priced) or deplete at the gross answer (the barista-fire example under the same 125/90/20 guardrails with raises).",
         "Under an adaptive spending policy (guardrails) feasibility is not monotone in the base amount, so the answer is a level the search found feasible and a higher feasible level can exist. Measured with no Marketplace year at all: the example-couple plan with no Marketplace premium or credit, withdrawal-rate guardrails (upper 125%) and an $86,400 required floor depletes in 2059 at a base of $164,391 and never depletes at $166,971, because the higher base makes its first cut a year earlier (2030 against 2031). The independent check of 2026-09-26 also found it on Marketplace plans, under both the gross-premium and the credit-priced ledgers.",
-        "The published answer is rounded down to $100 (owner decision R4, the record solved-spending-rounding); this record's evidence answer, $62,500, is already a whole $100, so it is both the level that passed and the published answer.",
+        "The published answer is rounded down to $100 (owner decision R4, the record solved-spending-rounding). In this record's first evidence case the level that passed, $62,500, is already a whole $100, so it is both feasibleBaseAnnual and the published answer; in the second the level that passed is $62,969 and the published answer $62,900, so the two figures differ and each is asserted.",
         "When the seed is infeasible the downward bracket starts at the required spending floor (expenses.requiredAnnual rounded up, 0 when the plan has none), the lowest level the plan checks accept; no probe goes below it, and a failure there is reported as the floor failing, naming the constraint that failed. The seed itself is raised to that floor when the base spending would round below it. zeroSpendingDepletes is true only when a probe at 0 ran and depleted."
       ],
       "worksheet": "DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.md",

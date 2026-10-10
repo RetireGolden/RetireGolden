@@ -2,10 +2,10 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 237,
+    "identified": 243,
     "byGroup": {
-      "accounts-and-growth": 12,
-      "cash-flow-and-summary": 60,
+      "accounts-and-growth": 14,
+      "cash-flow-and-summary": 62,
       "insights": 12,
       "ladders-and-valuation": 15,
       "longevity": 4,
@@ -16,10 +16,10 @@
       "roth": 4,
       "social-security": 18,
       "spending-and-withdrawals": 16,
-      "taxes": 18
+      "taxes": 20
     },
     "byKind": {
-      "engine": 192,
+      "engine": 198,
       "ui-native": 24,
       "ui-transformation": 21
     },
@@ -62,7 +62,11 @@
       "display-upside-spending-annual",
       "display-years-before-plan-end",
       "estate-heir-income-tax",
+      "estate-heir-income-tax-by-account",
+      "estate-net-to-heirs-by-account",
+      "estate-taxable-pretax-base-by-account",
       "estate-to-charity",
+      "estate-to-charity-by-account",
       "exact-ledger-tournament-margin-over-milp-dollars",
       "exact-ledger-validation-ending-net-worth-delta",
       "exact-ledger-validation-executed-conversion-ratio",
@@ -180,6 +184,7 @@
       "projection-summary-fi-year",
       "projection-summary-lifetime-roth-conversions",
       "projection-summary-lifetime-taxes-and-penalties",
+      "projection-summary-savings-rate-pct-annual",
       "qcd-annual",
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
@@ -239,6 +244,7 @@
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years",
+      "sustainable-spending-result-feasible-base-annual",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars",
@@ -374,6 +380,12 @@
       ],
       "display-years-before-plan-end": [
         "longevity-depletion-year"
+      ],
+      "estate-heir-income-tax": [
+        "estate-account-breakdown"
+      ],
+      "estate-to-charity": [
+        "estate-account-breakdown"
       ],
       "exact-ledger-tournament-margin-over-milp-dollars": [
         "exact-ledger-cleaned-schedule"
@@ -692,7 +704,8 @@
       ],
       "projection-summary-average-pre-retirement-savings-rate-pct": [
         "household-later-retirement",
-        "projection-summary-fi-spending-base"
+        "projection-summary-fi-spending-base",
+        "projection-summary-savings-rate-annual"
       ],
       "projection-summary-coast-fire-number": [
         "household-later-retirement",
@@ -942,16 +955,16 @@
     }
   },
   "records": {
-    "total": 281,
+    "total": 283,
     "byKind": {
       "composition": 89,
       "data": 24,
-      "formula": 98,
+      "formula": 100,
       "model": 70
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 276
+      "derivation": 278
     }
   },
   "oracleExamples": [
@@ -1122,12 +1135,12 @@
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 19
+      "recordCount": 20
     },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 61
+      "recordCount": 62
     },
     {
       "group": "insights",
