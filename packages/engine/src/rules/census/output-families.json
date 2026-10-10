@@ -484,6 +484,10 @@
       {
         "surface": "cash-flow-drilldown",
         "selector": "needBasedPortfolioWithdrawal and retirementActionWithdrawal source lines"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.years[].withdrawals.cash / .taxable / .traditional / .roth / .hsa"
       }
     ]
   },
@@ -532,7 +536,7 @@
       },
       {
         "surface": "mcp",
-        "selector": "run_projection.years[].withdrawals"
+        "selector": "run_projection.years[].withdrawals.total"
       }
     ],
     "transformations": [],
@@ -713,6 +717,84 @@
         "selector": "compare_scenarios.b.endingEstateHeirTax"
       }
     ]
+  },
+  {
+    "id": "estate-heir-income-tax-by-account",
+    "group": "taxes",
+    "title": "Heir income tax by account",
+    "meaning": "For each investable account with a positive ending balance, the income tax the plan assumes its heirs pay on it at the horizon: the non-charity slice of the account's taxable pre-tax base at the account class's heir rate, and nothing for a spouse destination. The amounts sum to estate-heir-income-tax.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.heirTax"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].heirTax"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].heirTax"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].heirTax"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-408-d-2-estate-household-basis-allocation",
+      "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "irc-1014-a-1-basis-at-death-fair-market-value"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes the per-account estate breakdown (ProjectionSummary.estateBreakdown) in every summary it returns, run_projection's and compare_scenarios' two; no planner page, chart, CSV column, report block or drilldown reads it. A breakdown along a dimension is a family of its own beside its total, as withdrawals-by-category-annual is beside withdrawals-total-annual, and each amount kind is its own family, as the breakdown's two totals are (estate-heir-income-tax in taxes, estate-to-charity in accounts-and-growth). grossBalance is not one of them: it is the last projection year's balance of the account, a selection, and is a surface of accounts-balance-per-account-annual."
+  },
+  {
+    "id": "estate-taxable-pretax-base-by-account",
+    "group": "taxes",
+    "title": "Taxable pre-tax estate base by account",
+    "meaning": "For each investable account with a positive ending balance, the part of it the plan treats as exposed to heir income tax: a traditional account's gross less its share of the household's remaining nondeductible IRA basis (spread across traditional accounts by gross), an HSA's whole gross unless its destination is the spouse, and 0 for cash, taxable, equity-compensation and Roth accounts.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.taxablePretaxBase"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].taxablePretaxBase"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].taxablePretaxBase"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].taxablePretaxBase"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-408-d-2-estate-household-basis-allocation",
+      "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "irc-1014-a-1-basis-at-death-fair-market-value"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes the per-account estate breakdown (ProjectionSummary.estateBreakdown) in every summary it returns, run_projection's and compare_scenarios' two; no planner page, chart, CSV column, report block or drilldown reads it. A breakdown along a dimension is a family of its own beside its total, as withdrawals-by-category-annual is beside withdrawals-total-annual, and each amount kind is its own family, as the breakdown's two totals are (estate-heir-income-tax in taxes, estate-to-charity in accounts-and-growth). grossBalance is not one of them: it is the last projection year's balance of the account, a selection, and is a surface of accounts-balance-per-account-annual."
   },
   {
     "id": "projection-summary-lifetime-taxes-and-penalties",
@@ -2086,6 +2168,18 @@
       {
         "surface": "results-table",
         "selector": "Inherited schedule and carryforward callouts read individual balances indirectly; no per-account column is printed"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
       }
     ],
     "transformations": [],
@@ -2330,6 +2424,78 @@
         "selector": "compare_scenarios.b.endingEstateToCharity"
       }
     ]
+  },
+  {
+    "id": "estate-to-charity-by-account",
+    "group": "accounts-and-growth",
+    "title": "Estate to charity by account",
+    "meaning": "For each investable account with a positive ending balance whose estate destination is charity, its gross ending balance times the charity share (capped at 100%), passing untaxed; 0 for every other destination. The amounts sum to estate-to-charity.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.charityAmount"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].charityAmount"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].charityAmount"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].charityAmount"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [
+      "irc-1014-a-1-basis-at-death-fair-market-value"
+    ],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes the per-account estate breakdown (ProjectionSummary.estateBreakdown) in every summary it returns, run_projection's and compare_scenarios' two; no planner page, chart, CSV column, report block or drilldown reads it. A breakdown along a dimension is a family of its own beside its total, as withdrawals-by-category-annual is beside withdrawals-total-annual, and each amount kind is its own family, as the breakdown's two totals are (estate-heir-income-tax in taxes, estate-to-charity in accounts-and-growth). grossBalance is not one of them: it is the last projection year's balance of the account, a selection, and is a surface of accounts-balance-per-account-annual."
+  },
+  {
+    "id": "estate-net-to-heirs-by-account",
+    "group": "accounts-and-growth",
+    "title": "Net to heirs by account",
+    "meaning": "For each investable account with a positive ending balance, what passes on after its charity share and the assumed heir income tax: gross ending balance minus charity amount minus heir tax, in nominal dollars of the projection's end year. The breakdown covers investable accounts only, so these amounts do not add up to the after-tax estate, which also carries property, debts and the other net-worth items.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.netToHeirs"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].netToHeirs"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].netToHeirs"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].netToHeirs"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes the per-account estate breakdown (ProjectionSummary.estateBreakdown) in every summary it returns, run_projection's and compare_scenarios' two; no planner page, chart, CSV column, report block or drilldown reads it. A breakdown along a dimension is a family of its own beside its total, as withdrawals-by-category-annual is beside withdrawals-total-annual, and each amount kind is its own family, as the breakdown's two totals are (estate-heir-income-tax in taxes, estate-to-charity in accounts-and-growth). grossBalance is not one of them: it is the last projection year's balance of the account, a selection, and is a surface of accounts-balance-per-account-annual."
   },
   {
     "transformations": [],
@@ -2655,7 +2821,7 @@
       },
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule[].amount"
+        "selector": "run_optimizer.schedule.conversions[].amount"
       },
       {
         "surface": "mcp",
@@ -2726,6 +2892,10 @@
       {
         "surface": "assumptions-card",
         "selector": "Strategy group \"optimized schedule (N years, $X total)\""
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.conversionTotal"
       }
     ],
     "relocation": {
@@ -6415,6 +6585,41 @@
     "notes": ""
   },
   {
+    "id": "projection-summary-savings-rate-pct-annual",
+    "group": "cash-flow-and-summary",
+    "title": "Savings rate by year",
+    "meaning": "Each projection year's savings (employee contributions plus employer match plus surplus invested) as a percentage of that year's gross income, clamped to 0 through 100, and 0 in a year with no gross income. Its pre-retirement average is projection-summary-average-pre-retirement-savings-rate-pct.",
+    "unit": "percent",
+    "basis": "n/a",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.savingsRates[].ratePct"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.savingsRates[].ratePct"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.savingsRates[].ratePct"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.savingsRates[].ratePct"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes the per-year rates (ProjectionSummary.savingsRates) in every summary it returns; no planner page reads them, only their pre-retirement average. Raw scale: percentage points, 0 through 100 (20 means 20%)."
+  },
+  {
     "id": "projection-summary-coast-fire-number",
     "group": "cash-flow-and-summary",
     "title": "coastFireNumber",
@@ -7245,6 +7450,31 @@
     "candidateRuleIds": [],
     "status": "identified",
     "notes": "Since B2-P1 slice 2 (owner decision R4) this is the published amount; the level that passed is SustainableSpendingResult.feasibleBaseAnnual, on which whether today's spending is sustained is judged."
+  },
+  {
+    "id": "sustainable-spending-result-feasible-base-annual",
+    "group": "cash-flow-and-summary",
+    "title": "feasibleBaseAnnual",
+    "meaning": "Highest annual base spending the solver's search found feasible (no depletion, and an ending after-tax estate at or above the floor), a whole number of today's dollars: the level maxBaseAnnual is rounded down from to the nearest $100, and the one on which whether today's spending is sustained is judged.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/decisions/spendingSolver.ts",
+      "symbol": "SustainableSpendingResult.feasibleBaseAnnual"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "solve_max_spending.feasibleBaseAnnual"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added 2026-10-10 under D-MCP-CENSUS-PIN (the census's RetireGolden-MCP pin b2c7f717): RetireGolden-MCP publishes it since 0.11.0 beside maxBaseAnnual. No planner page prints it (the solver page, the Scenarios capacity table and the spending-headroom insight print maxBaseAnnual), so the tool is its only surface."
   },
   {
     "id": "sustainable-spending-result-simulation-count",

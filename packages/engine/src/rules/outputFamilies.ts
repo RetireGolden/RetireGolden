@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit c0903bc3e5660c7a40f7b1934e358ad9da47bdfd.
+ * Output families imported from the output-family census at commit 1ae338190c2bdabdeb436b50e9a149025c4ad317.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -155,6 +155,18 @@ const families = {
       {
         "surface": "results-table",
         "selector": "Inherited schedule and carryforward callouts read individual balances indirectly; no per-account column is printed"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].grossBalance (the last projection year's balance, for each investable account whose balance is positive)"
       }
     ],
     "relocation": null
@@ -1034,6 +1046,96 @@ const families = {
     ],
     "relocation": null
   },
+  "estate-heir-income-tax-by-account": {
+    "title": "Heir income tax by account",
+    "group": "taxes",
+    "meaning": "For each investable account with a positive ending balance, the income tax the plan assumes its heirs pay on it at the horizon: the non-charity slice of the account's taxable pre-tax base at the account class's heir rate, and nothing for a spouse destination. The amounts sum to estate-heir-income-tax.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.heirTax"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].heirTax"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].heirTax"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].heirTax"
+      }
+    ],
+    "relocation": null
+  },
+  "estate-net-to-heirs-by-account": {
+    "title": "Net to heirs by account",
+    "group": "accounts-and-growth",
+    "meaning": "For each investable account with a positive ending balance, what passes on after its charity share and the assumed heir income tax: gross ending balance minus charity amount minus heir tax, in nominal dollars of the projection's end year. The breakdown covers investable accounts only, so these amounts do not add up to the after-tax estate, which also carries property, debts and the other net-worth items.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.netToHeirs"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].netToHeirs"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].netToHeirs"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].netToHeirs"
+      }
+    ],
+    "relocation": null
+  },
+  "estate-taxable-pretax-base-by-account": {
+    "title": "Taxable pre-tax estate base by account",
+    "group": "taxes",
+    "meaning": "For each investable account with a positive ending balance, the part of it the plan treats as exposed to heir income tax: a traditional account's gross less its share of the household's remaining nondeductible IRA basis (spread across traditional accounts by gross), an HSA's whole gross unless its destination is the spouse, and 0 for cash, taxable, equity-compensation and Roth accounts.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.taxablePretaxBase"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].taxablePretaxBase"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].taxablePretaxBase"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].taxablePretaxBase"
+      }
+    ],
+    "relocation": null
+  },
   "estate-to-charity": {
     "title": "Estate passing to charity",
     "group": "accounts-and-growth",
@@ -1062,6 +1164,36 @@ const families = {
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.endingEstateToCharity"
+      }
+    ],
+    "relocation": null
+  },
+  "estate-to-charity-by-account": {
+    "title": "Estate to charity by account",
+    "group": "accounts-and-growth",
+    "meaning": "For each investable account with a positive ending balance whose estate destination is charity, its gross ending balance times the charity share (capped at 100%), passing untaxed; 0 for every other destination. The amounts sum to estate-to-charity.",
+    "unit": "usd",
+    "basis": "nominal",
+    "dimensions": [
+      "account"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "EstateAccountBreakdown.charityAmount"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.estateBreakdown[].charityAmount"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.estateBreakdown[].charityAmount"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.estateBreakdown[].charityAmount"
       }
     ],
     "relocation": null
@@ -3614,7 +3746,7 @@ const families = {
       },
       {
         "surface": "mcp",
-        "selector": "run_optimizer.schedule[].amount"
+        "selector": "run_optimizer.schedule.conversions[].amount"
       },
       {
         "surface": "mcp",
@@ -3652,6 +3784,10 @@ const families = {
       {
         "surface": "assumptions-card",
         "selector": "Strategy group \"optimized schedule (N years, $X total)\""
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_optimizer.schedule.conversionTotal"
       }
     ],
     "relocation": {
@@ -4213,6 +4349,36 @@ const families = {
       {
         "surface": "mcp",
         "selector": "compare_scenarios.b.lifetimeTaxesAndPenalties"
+      }
+    ],
+    "relocation": null
+  },
+  "projection-summary-savings-rate-pct-annual": {
+    "title": "Savings rate by year",
+    "group": "cash-flow-and-summary",
+    "meaning": "Each projection year's savings (employee contributions plus employer match plus surplus invested) as a percentage of that year's gross income, clamped to 0 through 100, and 0 in a year with no gross income. Its pre-retirement average is projection-summary-average-pre-retirement-savings-rate-pct.",
+    "unit": "percent",
+    "basis": "n/a",
+    "dimensions": [
+      "year"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/compare.ts",
+      "symbol": "ProjectionSummary.savingsRates[].ratePct"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "run_projection.summary.savingsRates[].ratePct"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.a.savingsRates[].ratePct"
+      },
+      {
+        "surface": "mcp",
+        "selector": "compare_scenarios.b.savingsRates[].ratePct"
       }
     ],
     "relocation": null
@@ -5649,6 +5815,26 @@ const families = {
       "target": "engine/src/projection/survivorTransition.ts#SurvivorTimingRow.survivorShortfallYears"
     }
   },
+  "sustainable-spending-result-feasible-base-annual": {
+    "title": "feasibleBaseAnnual",
+    "group": "cash-flow-and-summary",
+    "meaning": "Highest annual base spending the solver's search found feasible (no depletion, and an ending after-tax estate at or above the floor), a whole number of today's dollars: the level maxBaseAnnual is rounded down from to the nearest $100, and the one on which whether today's spending is sustained is judged.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/decisions/spendingSolver.ts",
+      "symbol": "SustainableSpendingResult.feasibleBaseAnnual"
+    },
+    "surfaces": [
+      {
+        "surface": "mcp",
+        "selector": "solve_max_spending.feasibleBaseAnnual"
+      }
+    ],
+    "relocation": null
+  },
   "sustainable-spending-result-max-base-annual": {
     "title": "maxBaseAnnual",
     "group": "cash-flow-and-summary",
@@ -6084,6 +6270,10 @@ const families = {
       {
         "surface": "cash-flow-drilldown",
         "selector": "needBasedPortfolioWithdrawal and retirementActionWithdrawal source lines"
+      },
+      {
+        "surface": "mcp",
+        "selector": "run_projection.years[].withdrawals.cash / .taxable / .traditional / .roth / .hsa"
       }
     ],
     "relocation": null
@@ -6126,7 +6316,7 @@ const families = {
       },
       {
         "surface": "mcp",
-        "selector": "run_projection.years[].withdrawals"
+        "selector": "run_projection.years[].withdrawals.total"
       }
     ],
     "relocation": null

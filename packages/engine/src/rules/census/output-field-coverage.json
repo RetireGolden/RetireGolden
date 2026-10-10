@@ -568,60 +568,90 @@
     "owner": "EstateAccountBreakdown",
     "field": "grossBalance",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown grossBalance. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate."
+    "disposition": "family",
+    "familyId": "accounts-balance-per-account-annual"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "taxablePretaxBase",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown taxablePretaxBase. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate."
+    "disposition": "family",
+    "familyId": "estate-taxable-pretax-base-by-account"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "heirTaxRatePct",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
+    "disposition": "excluded",
     "familyId": null,
-    "reason": "Per-account estate breakdown heirTaxRatePct. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
-    "reasonKind": "runtime-diagnostic"
+    "reason": "The heir income-tax rate the row was priced at, in percent: the plan's heirTaxByClass rate for a traditional or HSA account when one is set, else the plan's heirTaxRatePct, carried on every row including those it does not tax. An input echoed beside the figures it produced, not an output.",
+    "reasonKind": "input-parameter"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "charityAmount",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown charityAmount. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate."
+    "disposition": "family",
+    "familyId": "estate-to-charity-by-account"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "heirTax",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reason": "Per-account estate breakdown heirTax. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate.",
-    "reasonKind": "runtime-diagnostic"
+    "disposition": "family",
+    "familyId": "estate-heir-income-tax-by-account"
   },
   {
     "source": "engine/src/projection/compare.ts",
     "owner": "EstateAccountBreakdown",
     "field": "netToHeirs",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
+    "disposition": "family",
+    "familyId": "estate-net-to-heirs-by-account"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "accountId",
+    "tsType": "string",
+    "disposition": "excluded",
     "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-account estate breakdown netToHeirs. Searched planner-ui/src at pin fb398216 for estateBreakdown, grossBalance, taxablePretaxBase, charityAmount, netToHeirs, heirTax and heirTaxRatePct: no page, chart, CSV column, report block or drilldown reads the per-account breakdown; it is consumed only inside summarizeProjection to produce endingEstateHeirTax and endingEstateToCharity (Scenarios page) and endingAfterTaxEstate."
+    "reasonKind": "identifier",
+    "reason": "The plan account id each estate breakdown row describes: it places the row's amounts on an account and is not a quantity."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "name",
+    "tsType": "string",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The account's name as the plan enters it, echoed on each estate breakdown row: a label, not a quantity."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "category",
+    "tsType": "'cash' | 'taxable' | 'traditional' | 'roth' | 'hsa'",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The account class whose estate treatment the row follows (an equity-compensation account is reported as taxable): a classification, not a quantity."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "EstateAccountBreakdown",
+    "field": "destination",
+    "tsType": "EstateDestination",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "The resolved estate destination (spouse, nonSpouse or charity): the account's estateBeneficiary when set, else an HSA's beneficiary shorthand, nonSpouse for a traditional account and spouse for any other; a classification, not a quantity."
   },
   {
     "source": "engine/src/projection/compare.ts",
@@ -752,10 +782,8 @@
     "owner": "ProjectionSummary",
     "field": "ratePct",
     "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Per-year savings rate (contributions + match + surplus invested over gross income); only its pre-retirement average is displayed. Searched planner-ui/src for savingsRates: no consumer."
+    "disposition": "family",
+    "familyId": "projection-summary-savings-rate-pct-annual"
   },
   {
     "source": "engine/src/projection/compare.ts",
@@ -812,6 +840,116 @@
     "tsType": "number | null",
     "disposition": "family",
     "familyId": "projection-summary-fi-age"
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "spendingYear",
+    "tsType": "number | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year whose outflows the FI number prices: the later of the start year and the household's later retirement year, else the first ledger year; null for an empty ledger or when nobody retires in the plan. The FI target copy on Results and in the report names it. It places the priced spending, as SurvivorTimingRow.deathYear places a survivor row; it is not a modeled amount."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "spendingSource",
+    "tsType": "FiSpendingSource",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which outflows the FI number prices (projection, conversionFreeProjection, conversionTaxIncluded, baseAnnual or noRetirementInPlan); the FI target copy chooses its sentence by it. A classification, as SustainableSpendingResult.maxBaseAnnualRounding is."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "personId",
+    "tsType": "string | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "identifier",
+    "reason": "The id of the person whose retirement is the household's later one, whose age fiAge is; the FI target copy names the person by it. An identifier, not a quantity."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "retirementYear",
+    "tsType": "number | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's retirement year: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs that places the FI pricing, as SurvivorTimingRow.deathYear (birth year plus death age) is; not a modeled amount."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "retirementRule",
+    "tsType": "RetirementYearRule | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the retirement year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy words its clause by it. A classification."
+  },
+  {
+    "source": "engine/src/projection/compare.ts",
+    "owner": "FiBasis",
+    "field": "personLastYearAlive",
+    "tsType": "number | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "That person's last year alive at the planning age (birth year plus planning age), which the FI target copy uses to say who works through the plan. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is."
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "personId",
+    "tsType": "string",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "identifier",
+    "reason": "The person the retirement describes; FiBasis.notRetiring and the funded ratio's start list people by it. An identifier, not a quantity."
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year without this person's work under rule: birth year plus retirement age, else the first year without their wages, else the start year. A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is; not a modeled amount."
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "rule",
+    "tsType": "RetirementYearRule",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which rule gave the year (retirementAge, wagesPastRetirementAge, wagesEnd or startYear); the FI target copy and the funded-ratio card word their clauses by it. A classification."
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "lastYearAlive",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The person's last year alive at the planning age (birth year plus planning age). A calendar year derived from plan inputs, as SurvivorTimingRow.deathYear is."
+  },
+  {
+    "source": "engine/src/projection/householdRetirement.ts",
+    "owner": "PersonRetirement",
+    "field": "retiresInPlan",
+    "tsType": "boolean",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "boolean-flag",
+    "reason": "Whether the person is alive in the later of their retirement year and the start year, the year a household figure would be priced on this retirement: a flag, as SustainableSpendingResult.sustainsCurrentBase is."
   },
   {
     "source": "engine/src/montecarlo/run.ts",
@@ -2668,10 +2806,8 @@
     "owner": "SustainableSpendingResult",
     "field": "feasibleBaseAnnual",
     "tsType": "number | null",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reason": "The highest level the search found feasible, a whole number of dollars; the published answer maxBaseAnnual is this rounded down to $100 when that level is known to pass. Pages judge whether today's spending is sustained on it but print only the published amount.",
-    "reasonKind": "runtime-diagnostic"
+    "disposition": "family",
+    "familyId": "sustainable-spending-result-feasible-base-annual"
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",

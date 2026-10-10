@@ -487,6 +487,58 @@ export const accountsAndGrowthRecords = {
     // its cursor review cover the earlier text, not the restatement.
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'grok' },
   },
+  'estate-account-breakdown': {
+    title: 'Estate breakdown by account',
+    purpose: 'How each investable account\'s ending balance divides between charity, the heirs\' assumed income tax and what passes on.',
+    kind: 'formula',
+    outputs: [
+      'estate-taxable-pretax-base-by-account',
+      'estate-heir-income-tax-by-account',
+      'estate-to-charity-by-account',
+      'estate-net-to-heirs-by-account',
+    ],
+    feeds: ['estate-heir-income-tax', 'estate-to-charity'],
+    statement:
+      'projection/compare.ts#summarizeProjection publishes ProjectionSummary.estateBreakdown: one row for each logical balance account of the plan (cash, taxable, equity compensation, traditional, Roth and HSA, one row per account id, in the order the plan first lists them) whose balance G in the last ledger row is positive; an equity-compensation account is reported in the taxable category. The destination is the account\'s estateBeneficiary destination when set (with its charityPct, 0 when absent); otherwise nonSpouse for an HSA whose beneficiary field says nonSpouse, spouse for any other HSA, nonSpouse for a traditional account and spouse for any other account. The taxable pre-tax base B is, for a traditional account, projection/estateTraditionalBasis.ts#estateTraditionalTaxableBase: G less min(N, T) × G / T, floored at 0, where T is the last row\'s traditional balances summed by category and N the projection\'s ending nondeductible IRA basis (no basis is allocated when T is not positive); for an HSA, projection/estateHsaIncome.ts#estateHsaIncomeBase: 0 for a spouse destination and G otherwise; for any other category 0. The heir rate r is the plan\'s heirTaxByClass rate for a traditional account or an HSA when that class is set, else heirTaxRatePct, divided by 100, and the row carries heirTaxRatePct = 100 × r. With f = min(1, charityPct / 100) for a charity destination and 0 otherwise: charityAmount = G × f; heirTax = 0 for a spouse destination, else B × (1 − f) × r; netToHeirs = G − charityAmount − heirTax. Units: nominal dollars of the projection\'s end year. Rounding: none. endingEstateHeirTax and endingEstateToCharity are the sums of the rows\' heirTax and charityAmount.',
+    formula: {
+      expression: 'B = traditional: max(0, G − min(N, T) × G / T); hsa: (spouse ? 0 : G); otherwise 0. f = charity ? min(1, p / 100) : 0. charityAmount = G × f. heirTax = spouse ? 0 : B × (1 − f) × r. netToHeirs = G − charityAmount − heirTax',
+      variables: [
+        { symbol: 'G', meaning: 'The account\'s balance in the last ledger row (grossBalance)', unit: 'nominal USD', domain: 'positive; accounts at or below 0 have no row' },
+        { symbol: 'T', meaning: 'Traditional balances of the last ledger row, summed by category', unit: 'nominal USD', domain: 'any; no basis is allocated when not positive' },
+        { symbol: 'N', meaning: 'The household\'s remaining nondeductible IRA basis at the end of the projection', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'p', meaning: 'The account\'s estate charity share', unit: 'percent', domain: '0..100; 0 when not set' },
+        { symbol: 'r', meaning: 'Heir income-tax rate for the account class: heirTaxByClass for traditional or HSA when set, else heirTaxRatePct, over 100', unit: 'fraction', domain: '0..0.5 for a class rate' },
+        { symbol: 'f', meaning: 'Charity fraction of the account', unit: 'fraction', domain: '0..1' },
+        { symbol: 'B', meaning: 'Taxable pre-tax base (taxablePretaxBase)', unit: 'nominal USD', domain: '0..G' },
+      ],
+      timing: 'once per projection, on the last ledger row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/estate-account-breakdown.md',
+    },
+    limits: [
+      'The breakdown covers investable accounts only. Property, debts, insurance cash value, TIPS ladder value and a HECM loan reach the after-tax estate through net worth and have no row, so the rows\' netToHeirs do not add up to endingAfterTaxEstate. A pension or an annuity has no row whatever its estateBeneficiary says: in the annuity-purchases-estate example the single-premium annuity\'s charity designation changes no figure here.',
+      'The basis share is the household\'s remaining nondeductible IRA basis spread over every traditional account by gross, employer plans and both spouses\' accounts included (the registered approximation irc-408-d-2-estate-household-basis-allocation). A spouse destination keeps that base on its row although its heir tax is 0.',
+      'An HSA left to anyone but the spouse takes its whole ending balance as its taxable base, and heir tax falls on the part not left to charity (B × (1 − charityFraction) × r), without the 223(f)(8)(B)(ii)(I) reduction for the decedent\'s last medical expenses (irc-223-f-8-B-estate-predeath-expense-reduction). Taxable, equity-compensation, cash and Roth balances pass untaxed, the step-up convention irc-1014-a-1-basis-at-death-fair-market-value records.',
+      'heirTaxRatePct is the rate as the row applied it, 100 times the plan\'s percentage over 100, so it can differ from the plan\'s entry in the last binary digit: a 28% rate is carried as 28.000000000000004.',
+      'Evidence: summarizeProjection on the annuity-purchases-estate example as built (a spouse traditional IRA, a non-spouse 401(k), cash and Roth defaults, an annuity left to charity, a 28% heir rate) and varied to reach the branches the example does not (household basis of $49,000, class rates of 32% and 24%, the 401(k) 25% to charity, a non-spouse HSA, an equity-compensation account and a Roth IRA at a zero balance); a spouse-designated HSA and an HSA left partly to charity are not exercised, and follow the same formulas. Each case reads a one-row ledger at the example\'s opening balances: the breakdown reads only the last row, so how a projection reaches those balances does not enter it.',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/compare.ts',
+      'packages/engine/src/projection/estateTraditionalBasis.ts',
+      'packages/engine/src/projection/estateHsaIncome.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/compare.ts#EstateAccountBreakdown',
+      'packages/engine/src/projection/estateTraditionalBasis.ts#estateTraditionalTaxableBase',
+      'packages/engine/src/projection/estateHsaIncome.ts#estateHsaIncomeBase',
+    ],
+    verifiedOn: '2026-10-10',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'codex' },
+  },
   'estate-to-charity': {
     title: 'Ending estate passing to charity',
     purpose: 'How much of the ending estate is carved out to charity, before any heir tax.',
