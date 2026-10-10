@@ -255,7 +255,7 @@ describeCalculation(
       })
     }
 
-    /** The worksheet's last-row balances, by account name. */
+    /** The worksheet's last-row balances, by account id (summarizeProjection reads last.balances[account.id]). */
     const lastRowBalances = {
       'as built': { cash: 315_000, tira: 915_000, '401k': 310_000, roth: 50_000 },
       'case 2': { cash: 315_000, tira: 915_000, '401k': 310_000, roth: 0, hsa: 40_000, rsu: 20_000 },
@@ -318,6 +318,7 @@ describeCalculation(
           { year: 2026, contributions: 9_000, employerMatch: 2_600, surplusInvested: 1_400, wages: 65_000, socialSecurity: 0 },
           { year: 2062, contributions: 0, employerMatch: 0, surplusInvested: 0, wages: 0, socialSecurity: 0 },
           { year: 2070, contributions: 0, employerMatch: 0, surplusInvested: 6_000, wages: 0, socialSecurity: 24_000 },
+          { year: 2074, contributions: 0, employerMatch: 0, surplusInvested: 6_000, wages: 0, socialSecurity: 24_000, pension: 6_000 },
           { year: 2076, contributions: 0, employerMatch: 0, surplusInvested: 30_000, wages: 0, socialSecurity: 24_000 },
         ],
       },
@@ -335,9 +336,10 @@ describeCalculation(
       surplusInvested: number
       wages: number
       socialSecurity: number
+      pension?: number
     }[]
 
-    it('publishes 20, 0, 25 and 100 for the four years, each with its year', () => {
+    it('publishes 20, 0, 25, 20 and 100 for the five years, each with its year', () => {
       // Alex of the early-career-match example (planner-ui
       // examples/buildEarlyCareerMatch.ts); the rates read only the rows.
       const plan = evidencePlan((draft) => {
@@ -359,7 +361,8 @@ describeCalculation(
             ...ledgerYear(row.year).incomes,
             wages: row.wages,
             socialSecurity: row.socialSecurity,
-            total: row.wages + row.socialSecurity,
+            pension: row.pension ?? 0,
+            total: row.wages + row.socialSecurity + (row.pension ?? 0),
           },
         }),
       )

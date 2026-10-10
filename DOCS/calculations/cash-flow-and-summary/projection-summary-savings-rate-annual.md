@@ -12,13 +12,14 @@ Savings are everything the year puts into the portfolio: the household's own con
 
 ## Inputs
 
-The library example `early-career-match` ("Just getting started", `packages/planner-ui/src/planner/examples/buildEarlyCareerMatch.ts`): Alex, born 2001, retiring at 60 (2061) and claiming Social Security at 67 (2068) on a $2,000 monthly PIA; wages $65,000; a 401(k) contribution of $6,000 a year with the employer matching 100% of deferrals up to 4% of pay, and a Roth IRA contribution of $3,000 a year. The evidence enters four of its years as ledger rows, built from those entries and stated surpluses; the rate depends only on the row's four amounts, so how a projection produces them does not enter it.
+The library example `early-career-match` ("Just getting started", `packages/planner-ui/src/planner/examples/buildEarlyCareerMatch.ts`): Alex, born 2001, retiring at 60 (2061) and claiming Social Security at 67 (2068) on a $2,000 monthly PIA; wages $65,000; a 401(k) contribution of $6,000 a year with the employer matching 100% of deferrals up to 4% of pay, and a Roth IRA contribution of $3,000 a year. The evidence enters four of its years as ledger rows, and a fifth row with a pension, built from those entries and stated surpluses; the rate depends only on the row's four amounts, so how a projection produces them does not enter it.
 
 | Year | What the row is | contributions | employerMatch | surplusInvested | incomes.total |
 |---|---|---:|---:|---:|---:|
 | 2026 | first working year: $6,000 + $3,000 contributed; match `100% × min(6,000, 4% × 65,000) = 2,600`; a $1,400 surplus | 9,000 | 2,600 | 1,400 | 65,000 |
 | 2062 | retired, before Social Security: no gross income, living on withdrawals | 0 | 0 | 0 | 0 |
 | 2070 | Social Security entered at the PIA, `12 × 2,000 = 24,000` (the ledger's own nominal benefit would carry cost-of-living increases), with $6,000 left over and reinvested | 0 | 0 | 6,000 | 24,000 |
+| 2074 | the same Social Security with a $6,000 pension (not in the example; it makes `incomes.total` differ from wages plus Social Security), $6,000 reinvested | 0 | 0 | 6,000 | 30,000 |
 | 2076 | the same income in a year whose required distribution exceeds spending by $30,000, reinvested | 0 | 0 | 30,000 | 24,000 |
 
 ## Arithmetic
@@ -26,6 +27,7 @@ The library example `early-career-match` ("Just getting started", `packages/plan
 - 2026: savings `9,000 + 2,600 + 1,400 = 13,000`; `13,000 / 65,000 × 100 = 20`.
 - 2062: gross income 0, so the rate is 0.
 - 2070: savings `6,000`; `6,000 / 24,000 × 100 = 25`.
+- 2074: savings `6,000`; gross income `24,000 + 6,000 = 30,000`; `6,000 / 30,000 × 100 = 20`.
 - 2076: savings `30,000`; `30,000 / 24,000 × 100 = 125`, clamped to `100`.
 
 ## Expected
@@ -35,6 +37,7 @@ The library example `early-career-match` ("Just getting started", `packages/plan
 | 2026 | 20 |
 | 2062 | 0 |
 | 2070 | 25 |
+| 2074 | 20 |
 | 2076 | 100 |
 
 One entry per row, in this order, each with its row's year. Percentage points to an absolute tolerance of 1e-9: each is one binary floating-point division and one multiplication, with no stated rounding.
@@ -43,7 +46,8 @@ One entry per row, in this order, each with its row's year. Percentage points to
 
 - Leaving out the employer match gives 2026 `10,400 / 65,000 × 100 = 16`.
 - Leaving out the invested surplus gives 2026 `11,600 / 65,000 × 100 = 17.846...` and 2070 `0`.
-- Dividing by wages instead of gross income gives 2070 no rate at all (no wages) instead of `25`.
+- Dividing by wages instead of gross income gives 2070 `0` (no wages, so the guard applies) instead of `25`.
+- Dividing by wages plus Social Security instead of the whole `incomes.total` gives 2074 `6,000 / 24,000 × 100 = 25` instead of `20`.
 - Publishing the share as a fraction gives 2026 `0.2`.
 - Not clamping gives 2076 `125`.
 - Dividing without the guard gives 2062 `0 / 0`, not a number.

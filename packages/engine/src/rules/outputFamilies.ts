@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 1ae338190c2bdabdeb436b50e9a149025c4ad317.
+ * Output families imported from the output-family census at commit 536da209ce7776eed5e69a9dbf8e5559cca92634.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 

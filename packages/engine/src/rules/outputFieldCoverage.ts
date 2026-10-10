@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 1ae338190c2bdabdeb436b50e9a149025c4ad317.
+ * Output field coverage imported from the output-family census at commit 536da209ce7776eed5e69a9dbf8e5559cca92634.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -11710,7 +11710,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "run_projection.summary.estateBreakdown[].heirTaxRatePct",
     "reasonKind": "input-parameter",
-    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row, the plan's heir rate for that account class, published whole in the summary. The engine row is the same input-parameter exclusion."
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
   },
   {
     "id": "",
@@ -11846,7 +11846,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "compare_scenarios.a.estateBreakdown[].heirTaxRatePct",
     "reasonKind": "input-parameter",
-    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row, the plan's heir rate for that account class, published whole in the summary. The engine row is the same input-parameter exclusion."
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
   },
   {
     "id": "",
@@ -11982,7 +11982,7 @@ const exclusionCensus = [
     "symbol": "",
     "field": "compare_scenarios.b.estateBreakdown[].heirTaxRatePct",
     "reasonKind": "input-parameter",
-    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row, the plan's heir rate for that account class, published whole in the summary. The engine row is the same input-parameter exclusion."
+    "reason": "EstateAccountBreakdown.heirTaxRatePct of each estate breakdown row: the rate the row was priced at, derived from the plan's heir rate for that account class (it can differ from the entry in the last binary digit), published whole in the summary. The engine row is the same input-parameter exclusion."
   },
   {
     "id": "",
@@ -13238,7 +13238,7 @@ const exclusionCensus = [
     "symbol": "EstateAccountBreakdown",
     "field": "heirTaxRatePct",
     "reasonKind": "input-parameter",
-    "reason": "The heir income-tax rate the row was priced at, in percent: the plan's heirTaxByClass rate for a traditional or HSA account when one is set, else the plan's heirTaxRatePct, carried on every row including those it does not tax. An input echoed beside the figures it produced, not an output."
+    "reason": "The heir income-tax rate the row was priced at, in percent: the plan's heirTaxByClass rate for a traditional or HSA account when one is set, else the plan's heirTaxRatePct, carried on every row including those it does not tax. It is the rate the row was priced at, derived from the plan's input as 100 times the plan's percentage over 100, so it can differ from the entry in the last binary digit (a 28% rate is carried as 28.000000000000004, as the estate-account-breakdown record states); an input-parameter beside the figures it produced, not a modeled output."
   },
   {
     "id": "field-engine-src-projection-compare-ts-estateaccountbreakdown-name",
