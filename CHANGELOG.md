@@ -4,6 +4,25 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.5.0** (2026-10-10) — a **minor**, breaking before 1.0:
+  the conversion optimizer's solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, RetireGolden#793,
+  the entry below). `OptimizedSchedule.endingAfterTax` and `.lifetimeTax` become `number | null`,
+  `status` gains `'node-limit'`, and the solver seam's `OptimizerSolveResult` is now
+  `{ modelStatus, primalStatus, objective, columns }`; `highs` is pinned at exactly 1.15.2.
+  Plans stay schema 7, and no export is removed. planner-ui's range moves to `^0.5.0`, since its
+  Optimize page reads the new status and the null figures, with its own version, 0.12.0 (the
+  entry below). RetireGolden-MCP returns the schedule whole and its tool schema does not
+  type it, so the new fields reach agents when MCP takes this release; RetireGolden-Pro does not
+  read the schedule.
+- Prepared **`@retiregolden/planner-ui` 0.12.0** (2026-10-10) — a **minor** bump, because its
+  engine dependency is now `^0.5.0`: its Optimize page reads the nullable `endingAfterTax` and
+  `lifetimeTax` and the `'node-limit'` status of engine 0.5.0, which 0.4.x does not have. It
+  carries every planner-ui change in this file since 0.11.0, which npm has served since
+  2026-10-06 (tag `planner-ui-v0.11.0`), including the worker loading the Optimize channel on
+  first use (the engine 0.4.3 entry). Its peer ranges are unchanged. **Not yet published**; once
+  npm serves engine 0.5.0, the owner tags `planner-ui-v0.12.0` and approves the `npm-publish`
+  environment, and the publish job's pack smoke resolves the engine floor 0.5.0 from npm. A
+  host moves to engine 0.5.0 together with planner-ui 0.12.0.
 - **Changed (breaking for engine consumers): the conversion optimizer's first solve publishes no
   figures without a solution, reads HiGHS at full precision, stops at a deterministic node limit,
   deflates on the engine's basis, and sees the cash a property sale or a death benefit brings**
@@ -748,9 +767,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   and RetireGolden-Pro can move to engine 0.4.0 only together with this release. It carries
   every planner-ui change in this file since 0.10.0, which npm has served since 2026-09-04
   (tag `planner-ui-v0.10.0`). Its exports map and peer
-  ranges are unchanged. **Not yet published**; the owner tags `planner-ui-v0.11.0` and
-  approves the `npm-publish` environment. The publish job's pack smoke resolves engine 0.4.0
-  from npm.
+  ranges are unchanged. **Published 2026-10-06** from the tag `planner-ui-v0.11.0` on
+  c0e9087a; the publish job's pack smoke resolved engine 0.4.0 from npm.
 - Prepared **`@retiregolden/engine` 0.4.0** (2026-09-30) — a **minor** bump, because
   plans it writes carry `schemaVersion` 7 and engine 0.3.x refuses them as
   `newer_than_app` (it migrates only up to 5). It carries every engine change in this file
@@ -3695,6 +3713,16 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Optimizer solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, engine 0.5.0):**
+  `OptimizedSchedule.endingAfterTax` and `OptimizedSchedule.lifetimeTax`
+  (`@retiregolden/engine/strategies/optimizer`) are `number | null`: null, with an empty
+  `schedule` and `conversions`, when HiGHS holds no feasible solution. `status` gains
+  `'node-limit'`, and the new optional `projectionDepletionYear` (`number | null`: the plan's
+  projection's depletion year, or null when it does not deplete) is set by `optimizePlan` beside a
+  first solve with no solution, and only there. `OptimizerSolveResult`, the type `options.solve` injects, is
+  `{ modelStatus, primalStatus, objective, columns }` in place of the highs package's solution
+  object. A host that reads either figure must handle null, and one that switches on the status
+  must handle the new value.
 - **Freeze additions (B2-P1 under D-UI-SS), engine and planner-ui:** `MonteCarloSummary`
   (`@retiregolden/engine/montecarlo/run`) gains the required fields `lastingPathCount` and
   `medianFirstDepletionYear` (`number | null`), so a host that constructs a summary must set
