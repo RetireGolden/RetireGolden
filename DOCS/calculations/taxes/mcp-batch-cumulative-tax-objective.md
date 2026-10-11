@@ -10,7 +10,7 @@ Through mcp-v0.10.0 (RetireGolden-MCP `3197d359`, the census's MCP pin until 202
 obj = proj.years.reduce((s, y) => s + y.tax + y.penalties, 0)
 ```
 
-Since RetireGolden-MCP #81 (`fc13b94`, 2026-09-24, released in 0.11.0 on 2026-10-07) it reads `summary.lifetimeTaxesAndPenalties`, as it still does at the census's MCP pin `b2c7f717` (0.12.0), with a wiring test that fails if the adapter goes back to its own arithmetic. The two agree to the cent (see Limits); they can differ only in the order the additions are made.
+Since RetireGolden-MCP #81 (`fc13b94`, 2026-09-24, released in 0.11.0 on 2026-10-07) it reads `summary.lifetimeTaxesAndPenalties`, as it still does at `b2c7f717` (0.12.0, the census's MCP pin until 2026-10-11), with a wiring test that fails if the adapter goes back to its own arithmetic. The two agree to the cent (see Limits); they can differ only in the order the additions are made.
 
 ## Justification
 
@@ -66,3 +66,7 @@ Reviewed by: Codex (GPT-6-Sol), 2026-09-30, `DOCS/calculations/reviews/REVIEW-20
 Restated 2026-10-09 by claude (Opus 5.5) when the census's MCP pin moved to RetireGolden-MCP `b2c7f717` (0.12.0): the record now names `3197d359` as mcp-v0.10.0's adapter rather than as the census pin, and says #81 is released. The objective, its arithmetic and the evidence are unchanged. The record's text changed after the review above, so it was unreviewed until the independent review of the restated text below.
 
 Reviewed by: Codex (GPT-6-Sol), 2026-10-09, the 2026-10-09 restatement against RetireGolden-MCP b2c7f717 (0.12.0), `DOCS/calculations/reviews/REVIEW-2026-10-09-mcp-012-records-codex.md`.
+
+Restated 2026-10-11 by claude (Opus 5.5) when the census's MCP pin moved from RetireGolden-MCP `b2c7f717` (0.12.0) to `34332e64` (0.13.0): the record's statement and the "What the adapter computed" section above called `b2c7f717` the census's MCP pin in the present tense; each now says it was the pin until 2026-10-11, and nothing else in them changes. 0.13.0 changes only `run_optimizer`: in RetireGolden-MCP, `git diff b2c7f717 34332e64 -- src` changes only `src/toolTable.ts` (that tool's description), `src/adapter.ts` is byte-identical, and `run_optimizer`'s output changes only through engine 0.5.0. So what the record says of this tool at `b2c7f717` holds at `34332e64` too, as the census's rerunnable selector probe at that pin also found (RetireGolden-Docs `evidence/mcp-34332e64-selector-probe.mjs`). The arithmetic, the expected values and the evidence are unchanged. The provenance above is kept as it was; the restated text is unreviewed until Codex's review of the restatement.
+
+Restatement reviewed by: Codex (GPT-6-Sol), 2026-10-11, `DOCS/calculations/reviews/REVIEW-2026-10-11-site151-restatements-codex.md` (approved in the first round).
