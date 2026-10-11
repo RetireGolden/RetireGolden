@@ -4,6 +4,42 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the texts the methodology site snapshots say what the engine does, and the output
+  census follows RetireGolden-MCP 0.13.0** (2026-10-11, after engine 0.5.0; the findings of the
+  retiregolden.org#151 review, which snapshots engine 8728d7b4). No figure changes.
+  - `estate-account-breakdown`: the formula expression wrote the traditional base as
+    `max(0, G − min(N, T) × G / T)`, with no guard, though the statement and `T`'s domain say no
+    basis is allocated when `T` is not positive. The expression, and the same one in its
+    worksheet, now branch as `projection/estateTraditionalBasis.ts#estateTraditionalTaxableBase`
+    does: `max(0, G − (T > 0 ? min(N, T) × G / T : 0))`.
+  - `optimizer-schedule-objective-and-lifetime-tax`: the statement said `c_DL` is `c_D` times one
+    minus the heir rate, which can read as the eight-decimal `c_D` times `(1 − L)`. It and the
+    worksheet now say what `buildOptimizerModel` writes and the formula already said
+    (`fmt8((1 / f) × (1 − L))`): the unrounded deflator times one minus the heir rate, then
+    written to at most eight decimal places.
+  - `projection-summary-savings-rate-annual`: the limit's example of the clamp to 100, a required
+    distribution larger than spending and reinvested, left out that a distribution is not income
+    (`incomes.total`), so a year whose only cash is one publishes 0. The record and the worksheet
+    now give a Social Security year whose surplus, reinvested from such a distribution, exceeds
+    that year's income.
+  - The output census (RetireGolden-Docs 1ea84e14, re-imported here) moves its RetireGolden-MCP
+    pin from b2c7f717 to 34332e64 (0.13.0, which takes engine 0.5.0; D-MCP-CENSUS-PIN,
+    continued). Only `run_optimizer` moved, to the schedule D-OPTIMIZER-SOLVER-OUTPUT describes:
+    `longevity-depletion-year`'s note now says 0.13.0 publishes
+    `run_optimizer.schedule.projectionDepletionYear`, and every MCP selector and MCP exclusion
+    names a path the tools return at the new pin. No count moves: 249 families, 621 exclusions,
+    1,267 field rows. The records `mcp-batch-ending-traditional-objective`,
+    `mcp-batch-cumulative-tax-objective` and `mcp-compare-ending-after-tax-estate-delta`, and
+    their worksheets, called b2c7f717 the census's MCP pin in the present tense; each now says it
+    was the pin until 2026-10-11.
+  - `optimizer-schedule-objective-and-lifetime-tax` also said RetireGolden-MCP returns the solver's
+    figures "without running the projection of that schedule". `optimizePlan` does project the
+    schedule's conversions, to clean them and to run its tournament, and publishes those results
+    separately. The statement, its first limit and the worksheet now say the two figures are the
+    solver's own.
+  - The six records keep their provenance. Codex reviewed the restatements by independent
+    recomputation and approved them, the optimizer record in a second round
+    (`DOCS/calculations/reviews/REVIEW-2026-10-11-site151-restatements-codex.md`).
 - Prepared **`@retiregolden/engine` 0.5.0** (2026-10-10) — a **minor**, breaking before 1.0:
   the conversion optimizer's solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, RetireGolden#793,
   the entry below). `OptimizedSchedule.endingAfterTax` and `.lifetimeTax` become `number | null`,
@@ -13,16 +49,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   Optimize page reads the new status and the null figures, with its own version, 0.12.0 (the
   entry below). RetireGolden-MCP returns the schedule whole and its tool schema does not
   type it, so the new fields reach agents when MCP takes this release; RetireGolden-Pro does not
-  read the schedule.
+  read the schedule. **Published 2026-10-11** from the tag `engine-v0.5.0` on 8728d7b4, with npm
+  provenance.
 - Prepared **`@retiregolden/planner-ui` 0.12.0** (2026-10-10) — a **minor** bump, because its
   engine dependency is now `^0.5.0`: its Optimize page reads the nullable `endingAfterTax` and
   `lifetimeTax` and the `'node-limit'` status of engine 0.5.0, which 0.4.x does not have. It
   carries every planner-ui change in this file since 0.11.0, which npm has served since
   2026-10-06 (tag `planner-ui-v0.11.0`), including the worker loading the Optimize channel on
-  first use (the engine 0.4.3 entry). Its peer ranges are unchanged. **Not yet published**; once
-  npm serves engine 0.5.0, the owner tags `planner-ui-v0.12.0` and approves the `npm-publish`
-  environment, and the publish job's pack smoke resolves the engine floor 0.5.0 from npm. A
-  host moves to engine 0.5.0 together with planner-ui 0.12.0.
+  first use (the engine 0.4.3 entry). Its peer ranges are unchanged. A host moves to engine 0.5.0
+  together with planner-ui 0.12.0. **Published 2026-10-11** from the tag `planner-ui-v0.12.0` on
+  8728d7b4, with npm provenance.
 - **Changed (breaking for engine consumers): the conversion optimizer's first solve publishes no
   figures without a solution, reads HiGHS at full precision, stops at a deterministic node limit,
   deflates on the engine's basis, and sees the cash a property sale or a death benefit brings**
