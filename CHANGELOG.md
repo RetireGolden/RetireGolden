@@ -11,7 +11,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     `max(0, G − min(N, T) × G / T)`, with no guard, though the statement and `T`'s domain say no
     basis is allocated when `T` is not positive. The expression, and the same one in its
     worksheet, now branch as `projection/estateTraditionalBasis.ts#estateTraditionalTaxableBase`
-    does: `max(0, G − (T > 0 ? min(N, T) × G / T : 0))`.
+    does: `max(0, G − (T > 0 ? min(N, T) × (G / T) : 0))`.
   - `optimizer-schedule-objective-and-lifetime-tax`: the statement said `c_DL` is `c_D` times one
     minus the heir rate, which can read as the eight-decimal `c_D` times `(1 − L)`. It and the
     worksheet now say what `buildOptimizerModel` writes and the formula already said
@@ -37,8 +37,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     schedule's conversions, to clean them and to run its tournament, and publishes those results
     separately. The statement, its first limit and the worksheet now say the two figures are the
     solver's own.
-  - The six records keep their provenance. Codex reviewed the restatements by independent
-    recomputation and approved them, the optimizer record in a second round
+  - The six records keep their provenance. Codex checked each restated statement against the
+    code, recomputing the estate and savings-rate cases and reading the three MCP records against
+    the adapter at 34332e64, and approved them, the optimizer record in a second round, and the
+    wording this pull request's review refined in a third
     (`DOCS/calculations/reviews/REVIEW-2026-10-11-site151-restatements-codex.md`).
 - Prepared **`@retiregolden/engine` 0.5.0** (2026-10-10) — a **minor**, breaking before 1.0:
   the conversion optimizer's solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, RetireGolden#793,

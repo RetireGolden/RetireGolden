@@ -152,3 +152,33 @@ Items **2** and **5** now pass. The revised optimizer statement, first limit, an
 - The additional coefficient clarification in `CHANGES.diff` lines 12 and 40 matches the code: `buildOptimizerInput` sets the deflator (`optimizePlan.ts` lines 741–747); the model computes the traditional weight from the unrounded `deflate * (1 - liquidationRate)` and `expr` formats it to eight decimal places (`optimizer.ts` lines 633–645, 1116–1127).
 
 Read-only review; no tests were run.
+
+---
+
+## Round 3
+
+After RetireGolden#796's first automated review, on a snapshot holding ROUND1.diff: the optimizer record says the schedule's conversions are projected only when it has some, the estate statement carries the T > 0 branch and groups the share as the code does, the sibling worksheet words c_DL as the record does, and the three MCP worksheets say how to check that only run_optimizer changed between the pins. Verdict: approve, 5 of 5 items. The split source reference this round noted is corrected. Verbatim output follows.
+
+# Review of ROUND1.diff
+
+**Verdict: approve.** Read-only comparison against the supplied snapshot. No tests were run.
+
+## 1. Optimizer schedule objective and lifetime tax — approve
+
+The changed statement and worksheet claim match the code. `optimizePlan` calls `optimizeSchedule`, projects the baseline, calls `postProcessExactLedgerSchedule` when the schedule has conversions, calls `runExactLedgerTournament` even when the solver schedule is empty or infeasible, and returns `schedule` and `tournament` separately (`packages/engine/src/projection/optimizePlan.ts:2873–2876, 2907–2911, 2941–2947`). The post-processor installs conversions and runs `simulatePlan` (`optimizePlan.ts:2545–2557, 2582–2587`); tournament candidates use full candidate projection results (`optimizePlan.ts:1289–1313, 1404–1428`). The solver supplies `endingAfterTax` from its objective and computes `lifetimeTax` from its solution columns (`packages/engine/src/strategies/optimizer.ts:1424–1484`), while `runOptimizer` returns `result.schedule` and a separate `result.tournament` (`mcp/src/adapter.ts:658–683`). Changed lines: `ROUND1.diff:64, 72, 81, 84, 136, 145`.
+
+## 2. Estate account breakdown — approve
+
+`estateTraditionalTaxableBase` computes `basisTotal = min(N, T)`, then `basisTotal * (G / T)` only for positive `T`, otherwise zero, and returns `max(0, G - allocatedBasis)` (`packages/engine/src/projection/estateTraditionalBasis.ts:9–16`). This matches the changed record and worksheet expression, including the grouping. Changed lines: `ROUND1.diff:10, 120, 123`.
+
+## 3. Optimizer schedule year solution objective — approve
+
+`buildOptimizerModel` uses the full `deflate` for `other` and `taxable`, and separately computes `deflate * (1 - liquidationRate)` for `trad` and `inh` before `expr` formats each coefficient (`packages/engine/src/strategies/optimizer.ts:1116–1127`). `fmt` rounds nonintegers to eight decimal places and trims trailing zeros (`optimizer.ts:633–645`). Thus the worksheet's “written to eight decimal places” describes the rounding precision, not a promise of eight displayed digits. Changed line: `ROUND1.diff:94`.
+
+## 4. Three MCP worksheets' pin sentence — approve
+
+At the supplied MCP pin, `batch_evaluate` selects `summary.lifetimeTaxesAndPenalties` for `cumulative_tax` and `summary.endingByCategory.traditional` for `ending_trad` (`mcp/src/adapter.ts:621–635`); `compare_scenarios` returns the engine's `headline` and nominal estate delta (`adapter.ts:943–973`). `toolTable.ts:269–295, 309–323` wires those tools and describes `run_optimizer` separately. Nothing in these files contradicts the new sentence. The sentence gives a means to check its historical claim: `git diff b2c7f717 34332e64 -- src`, plus the named RetireGolden-Docs selector probe. Only the 34332e64 MCP source is supplied here, so this review does not independently establish byte identity or the full inter-pin history. Changed lines: `ROUND1.diff:29, 52, 107`; worksheets: `DOCS/calculations/accounts-and-growth/mcp-batch-ending-traditional-objective.md:77`, `DOCS/calculations/optimizer-and-comparisons/mcp-compare-ending-after-tax-estate-delta.md:74`, `DOCS/calculations/taxes/mcp-batch-cumulative-tax-objective.md:70`.
+
+## 5. Other changed statements — approve
+
+No other changed statement is contradicted by the inspected code. The optimizer restatement's coefficient explanation follows `fmt` and the objective construction (`packages/engine/src/strategies/optimizer.ts:633–645, 1116–1127`). The changed review-provenance wording matches the existing review's account of first-round approvals and the optimizer's second-round approval (`DOCS/calculations/reviews/REVIEW-2026-10-11-site151-restatements-codex.md:11–13, 143–154`; `ROUND1.diff:19, 32, 42, 55, 84, 110`). The new record text at `ROUND1.diff:136` has a malformed source reference, `projection/optimizePlan.ts#when the schedule has conversions, optimizePlan`; that is a wording defect, but its behavioral claim matches `optimizePlan.ts:2907–2911, 2941–2947` and does not meet the stated rejection rule.
