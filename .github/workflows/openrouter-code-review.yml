@@ -33,10 +33,10 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
-# Standard: required Grok 4.6 + optional GLM 5.3 Flash; Luna judge.
+# Standard: required GPT-6 Sol (Azure route) + optional GLM 5.3 Flash; Luna judge.
 # Deep adds required Astra Flex; effort and limits follow the selected profile.
-# Shared configuration: https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/.github/workflows/openrouter-code-review.yml
-# Policy reference: https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/README.md
+# Shared configuration: https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/README.md
 
 name: OpenRouter code review
 run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || inputs.pr_number, inputs.review_level || 'auto') }}"
@@ -75,7 +75,7 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a190c3d834f2e3048b4eef8129fa3c8e10891aa0 # .github#51; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0 (trusted profiles and request gates)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@7cb4c04abfb03f81cd70c2e16a5d48e389e944dd # .github#52; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0 (GPT-6 Sol on Azure replaces Grok)
     with:
       review_policy: base
       review_profiles_enabled: true
