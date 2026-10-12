@@ -139,9 +139,9 @@ Manual-only from the Actions tab. A human supplies the PR number when an indepen
 
 [`.github/workflows/openrouter-code-review.yml`](.github/workflows/openrouter-code-review.yml)
 
-Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); GitHub prevents draft PRs from merging, and the review starts when a draft is marked ready. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow. The OpenRouter roster may route an `x-ai/grok-4.6` model lane through OpenRouter, but it never invokes the standalone Grok workflow, never receives `XAI_API_KEY`, and has no fallback to that legacy stack. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently. If the initial run fails before seeding that proof, rerun it with this workflow's manual `pr_number` dispatch; synchronize events deliberately do not restart an unseeded full review and its token spend automatically.
+Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); GitHub prevents draft PRs from merging, and the review starts when a draft is marked ready. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow. The OpenRouter roster may route an `openai/gpt-6-sol` model lane through OpenRouter, but it never invokes the standalone Grok workflow, never receives `XAI_API_KEY`, and has no fallback to that legacy stack. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently. If the initial run fails before seeding that proof, rerun it with this workflow's manual `pr_number` dispatch; synchronize events deliberately do not restart an unseeded full review and its token spend automatically.
 
-Cutover requires this ordered operation: first merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
+Historical, already completed: the cutover from Grok used this ordered operation. First merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
 
 ### OpenRouter profile completion
 
@@ -201,7 +201,7 @@ current profile proof are still required; old-lineage evidence cannot unlock CI.
 
 ## Review profiles and CI proof
 
-The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/README.md). Code uses required GPT-6 Sol (Azure route) plus optional GLM; deep adds required Astra Flex. The standard/deep profile structure is unchanged; `REVIEW.md` cannot name arbitrary models or remove required lanes.
 
 From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
 
@@ -230,7 +230,7 @@ not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
 fails visibly with the source-run recovery instruction. Retry its dispatch after
 the source finishes; do not rerun the model panel.
 
-The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/.github/workflows/openrouter-code-review.yml#L169)
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/.github/workflows/openrouter-code-review.yml#L169)
 sets `actions: read` as its default, inherited by both model-review jobs. Its
 notification job explicitly overrides that default with `actions: write`.
 GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)

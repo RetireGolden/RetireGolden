@@ -110,7 +110,7 @@ const cleanReviewBody = [
   '',
   '### Lanes',
   '',
-  '- `x-ai/grok-4.6`: ok (0 finding(s))',
+  '- `openai/gpt-6-sol`: ok (0 finding(s))',
   '- `z-ai/glm-5.3-flash`: ok (0 finding(s))',
   '',
   'No structured findings from the successful lane(s).',
@@ -131,7 +131,7 @@ const producerReviewContext = {
 
 const profileConsumerFixture = [
   'export async function authorizeProfileReceipt(_github, input) {',
-  '  if (input.orgWorkflowSha !== "a190c3d834f2e3048b4eef8129fa3c8e10891aa0") throw new Error("missing or wrong org pin");',
+  '  if (input.orgWorkflowSha !== "7cb4c04abfb03f81cd70c2e16a5d48e389e944dd") throw new Error("missing or wrong org pin");',
   '  if (typeof input?.review?.body === "string" && input.review.body.includes("PROFILE_DENY")) {',
   '    return { authorized: false, reason: "fixture profile denied" }',
   '  }',

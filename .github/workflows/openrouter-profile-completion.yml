@@ -29,7 +29,7 @@ jobs:
   # The shared CI validator authenticates this exact calling job id.
   complete:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    uses: RetireGolden/.github/.github/workflows/openrouter-profile-completion.yml@a190c3d834f2e3048b4eef8129fa3c8e10891aa0 # .github#51
+    uses: RetireGolden/.github/.github/workflows/openrouter-profile-completion.yml@7cb4c04abfb03f81cd70c2e16a5d48e389e944dd # .github#52
     with:
       pr_number: ${{ inputs.pr_number || '' }}
       source_run_id: ${{ inputs.source_run_id || (github.event.workflow_run.id && format('{0}', github.event.workflow_run.id)) || '' }}
