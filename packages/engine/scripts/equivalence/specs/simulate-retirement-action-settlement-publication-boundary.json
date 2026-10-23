@@ -156,20 +156,20 @@
       "label": "post-settlement invocation before entity facts and YearResult publication",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        2096,
-        2110
+        2103,
+        2117
       ],
       "anchors": [
         {
-          "line": 2096,
+          "line": 2103,
           "text": "const settlementPublication = annualRetirementActionSettlementPublication({"
         },
         {
-          "line": 2099,
+          "line": 2106,
           "text": "taxPlanDollars: tax,"
         },
         {
-          "line": 2109,
+          "line": 2116,
           "text": "annualLiabilityNonGroupTaxInputs,"
         }
       ]

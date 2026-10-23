@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 892,
+          "line": 1005,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 893
+              "line": 1006
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 895,
+          "line": 1008,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 896
+              "line": 1009
             }
           ]
         }
@@ -1615,12 +1615,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 498,
+          "line": 611,
           "note": null,
           "tests": [
             {
               "title": "deducts $3,360 once from $10,000 on a joint return",
-              "line": 499
+              "line": 612
             }
           ]
         },
@@ -1961,16 +1961,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 168,
+          "line": 191,
           "note": null,
           "tests": [
             {
               "title": "applies the 2026 indexed cap once per age-65 owner",
-              "line": 171
+              "line": 194
             },
             {
               "title": "limits each Louisiana recipient to own income and own indexed allowance",
-              "line": 176
+              "line": 199
             }
           ]
         },
@@ -2136,12 +2136,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 159,
+          "line": 182,
           "note": null,
           "tests": [
             {
               "title": "fully excludes proven federal and railroad sources, not a private under-65 pension",
-              "line": 162
+              "line": 185
             }
           ]
         },

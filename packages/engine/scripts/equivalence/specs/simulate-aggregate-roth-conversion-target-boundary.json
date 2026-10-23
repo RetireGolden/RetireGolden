@@ -257,24 +257,24 @@
       "label": "annual target invocation and ordered conversion-source contract",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        482,
-        500
+        483,
+        501
       ],
       "anchors": [
         {
-          "line": 482,
+          "line": 483,
           "text": "const aggregateRothConversionTarget ="
         },
         {
-          "line": 483,
+          "line": 484,
           "text": "annualAggregateRothConversionTargetPlan(Object.freeze({"
         },
         {
-          "line": 489,
+          "line": 490,
           "text": "readSources: () => rmdBalances.map((state) => {"
         },
         {
-          "line": 500,
+          "line": 501,
           "text": "}),"
         }
       ]
@@ -284,20 +284,20 @@
       "label": "annual tax and ACA sizing envelope",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        501,
-        521
+        502,
+        522
       ],
       "anchors": [
         {
-          "line": 501,
+          "line": 502,
           "text": "sizing: Object.freeze({"
         },
         {
-          "line": 514,
+          "line": 515,
           "text": "aca: Object.freeze({"
         },
         {
-          "line": 521,
+          "line": 522,
           "text": "}),"
         }
       ]
@@ -307,17 +307,17 @@
       "label": "safety-net floor and lazy liquid-balance callback contract",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        523,
-        526
+        524,
+        527
       ],
       "note": "The lazy callback body is corpus-cold with the safety trim and is pinned by direct and hostile delegation tests; this range proves it is supplied at the original annual boundary.",
       "anchors": [
         {
-          "line": 523,
+          "line": 524,
           "text": "safetyNet: Object.freeze({"
         },
         {
-          "line": 526,
+          "line": 527,
           "text": "readSpendableLiquidBalances: () => balances.flatMap((state) =>"
         }
       ]
@@ -327,21 +327,21 @@
       "label": "pre-conversion liquidity and lazy annual tax-pricing contract",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        532,
-        544
+        533,
+        545
       ],
       "note": "The tax-pricing callback body is exercised by direct safety-net tests and its caller-timed replacement is consumed by hostile delegation; this range proves the callback and its unchanged pre-conversion inputs are wired at the coordinator boundary.",
       "anchors": [
         {
-          "line": 532,
+          "line": 533,
           "text": "preConversionInflows:"
         },
         {
-          "line": 542,
+          "line": 543,
           "text": "totalExpenses: expensesTotal,"
         },
         {
-          "line": 544,
+          "line": 545,
           "text": "computeTaxForTaxableConversion: (extraOrdinary: number) => {"
         }
       ]
@@ -351,16 +351,16 @@
       "label": "frozen safety and coordinator contract closure",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        635,
-        636
+        645,
+        646
       ],
       "anchors": [
         {
-          "line": 635,
+          "line": 645,
           "text": "}),"
         },
         {
-          "line": 636,
+          "line": 646,
           "text": "}))"
         }
       ]
@@ -370,17 +370,17 @@
       "label": "desired-amount consumption at the original conversion boundary",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        647,
-        648
+        657,
+        658
       ],
       "note": "The immediately preceding warning-loop body is corpus-cold because the coordinator's fail-closed and safety-trim warnings require synthetic evidence. Direct tests pin warning production and hostile delegation pins ordered caller insertion.",
       "anchors": [
         {
-          "line": 647,
+          "line": 657,
           "text": "const desired = aggregateRothConversionTarget.desiredPlanDollars"
         },
         {
-          "line": 648,
+          "line": 658,
           "text": "if (desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {"
         }
       ]
@@ -390,25 +390,25 @@
       "label": "downstream fill-to-target strategy signal",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1375,
-        1381
+        1382,
+        1388
       ],
       "note": "The exact true-arm output consumption is pinned by hostile delegation; corpus reach proves the coordinator-owned signal is the condition used at the downstream boundary.",
       "anchors": [
         {
-          "line": 1375,
+          "line": 1382,
           "text": "if ("
         },
         {
-          "line": 1376,
+          "line": 1383,
           "text": "aggregateRothConversionTarget.fillToTargetSelected &&"
         },
         {
-          "line": 1379,
+          "line": 1386,
           "text": "withdrawalPlan.byCategory.traditional > 0.01 &&"
         },
         {
-          "line": 1381,
+          "line": 1388,
           "text": "fillTarget.ceiling + AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS"
         }
       ]
@@ -418,17 +418,17 @@
       "label": "optimizer probe then-current gross-to-taxable translation",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1638,
-        1639
+        1645,
+        1646
       ],
       "note": "The callback's source reread timing and injected non-economic return are hostile-delegation claims; this range proves the extracted optimizer-publication boundary receives the original aggregate-target translation.",
       "anchors": [
         {
-          "line": 1638,
+          "line": 1645,
           "text": "taxableAmountForGrossConversion: (gross: number) =>"
         },
         {
-          "line": 1639,
+          "line": 1646,
           "text": "aggregateRothConversionTarget.taxableAmountForGross(gross),"
         }
       ]

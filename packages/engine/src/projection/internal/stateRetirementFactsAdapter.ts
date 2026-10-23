@@ -427,43 +427,182 @@ export function buildNjIraOwnerPoolFacts(input: {
   }
 }
 
+/** Traditional IRA balances and distributions already on the year's ledger. */
+export interface NjIraProjectedYear {
+  readonly residenceState?: string
+  readonly traditionalIraBalances: readonly {
+    readonly ownerPersonId: string
+    readonly accountId: string
+    readonly balance: number
+  }[]
+  readonly qcdEvents: readonly {
+    readonly eventId: string
+    readonly accountId: string
+    readonly ownerPersonId: string
+    readonly grossIraDistribution: number
+  }[]
+  readonly iraDistributions: readonly {
+    readonly eventId?: string
+    readonly accountId?: string
+    readonly ownerPersonId: string
+    readonly sourceKind: string
+    readonly accountTaxTreatment?: string
+    readonly grossDistribution?: number
+  }[]
+}
+
 /**
- * Derive NJ owner pools from Plan state IRA basis evidence for a tax year.
- * Unknown unrecovered basis stays `{ known: false }` — never zero-filled.
+ * NJ projection snapshot for one residence year. Other states return undefined
+ * so a non-NJ year keeps the evidence-only pool lookup.
+ */
+export function njIraYearProjection(input: {
+  readonly residenceState: string | undefined
+  readonly primaryPersonId: string
+  readonly balances: readonly { readonly account: Account; readonly balance: number }[]
+  readonly qcdEvents?: readonly StateQcdEventFactsInput[]
+  readonly retirementDistributions?: readonly StateRetirementDistributionFactInput[]
+}): NjIraProjectedYear | undefined {
+  if (!isNjState(input.residenceState)) return undefined
+  return {
+    residenceState: input.residenceState,
+    traditionalIraBalances: input.balances.flatMap((state) => {
+      const account = state.account
+      if (account.type !== 'traditional' || account.kind !== 'ira') return []
+      return [{
+        ownerPersonId: account.ownerPersonId ?? input.primaryPersonId,
+        accountId: account.id,
+        balance: state.balance,
+      }]
+    }),
+    qcdEvents: (input.qcdEvents ?? []).map((event) => ({
+      eventId: event.eventId,
+      accountId: event.accountId,
+      ownerPersonId: event.ownerPersonId,
+      grossIraDistribution: event.grossIraDistribution,
+    })),
+    iraDistributions: (input.retirementDistributions ?? []).map((row) => ({
+      eventId: row.eventId,
+      accountId: row.accountId,
+      ownerPersonId: row.ownerPersonId,
+      sourceKind: row.sourceKind,
+      ...(row.accountTaxTreatment === undefined ? {} : { accountTaxTreatment: row.accountTaxTreatment }),
+      ...(row.grossDistribution === undefined ? {} : { grossDistribution: row.grossDistribution }),
+    })),
+  }
+}
+
+/**
+ * Derive NJ owner pools for a tax year.
+ *
+ * Evidence rows win when any New Jersey row exists for the year. A missing
+ * unrecovered-basis field stays `{ known: false }` and is never zero-filled.
+ * An omitted exempt-obligation adjustment contributes none of that income; it
+ * does not drop an amount another IRA of the same owner asserted. A negative
+ * adjustment is passed through so Worksheet C rejects the pool.
+ *
+ * With no evidence rows, a projected New Jersey QCD still forms a pool from
+ * the modeled traditional IRA balances and the year's IRA distributions.
+ * GIT-1 & 2 makes the excludable portion the previously taxed contributions,
+ * so none asserted means that portion is zero.
  */
 export function njIraOwnerPoolsForYear(
   plan: Readonly<Plan>,
   year: number,
+  projected?: NjIraProjectedYear,
 ): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
   const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter(
-    (row) => row.taxYear === year && row.state === 'NJ',
+    (row) => row.taxYear === year && isNjState(row.state),
   )
-  if (rows.length === 0) return evidenceComplete(plan, year, 'NJ', 'iraBasis') ? [] : undefined
+  if (rows.length === 0) {
+    if (evidenceComplete(plan, year, 'NJ', 'iraBasis')) return []
+    return projectedNjIraOwnerPools(projected)
+  }
   const byOwner = new Map<string, typeof rows>()
   for (const row of rows) byOwner.set(row.ownerPersonId, [...(byOwner.get(row.ownerPersonId) ?? []), row])
   return [...byOwner.entries()].map(([ownerPersonId, ownerRows]) => {
-    const complete = ownerRows.every((row) => row.yearEndAccountValue !== undefined &&
+    const fieldsComplete = ownerRows.every((row) => row.yearEndAccountValue !== undefined &&
       row.distributionsDuringYear !== undefined && row.postYearContributionsThroughFilingDeadline !== undefined &&
       row.unrecoveredStateBasis !== undefined && row.annualDistributionsComplete === true) &&
       new Set(ownerRows.map((row) => row.accountId ?? '__ownerPool')).size === ownerRows.length &&
       !(ownerRows.length > 1 && ownerRows.some((row) => row.accountId === undefined))
+    const adjustments = ownerRows.flatMap((row) =>
+      row.exemptObligationAdjustment === undefined ? [] : [row.exemptObligationAdjustment])
+    const invalidAdjustment = adjustments.find((value) => !Number.isFinite(value) || value < 0)
+    const adjustmentInvalid = invalidAdjustment !== undefined
+    const assertedLiquidation = ownerRows.flatMap((row) =>
+      row.fullLiquidation === undefined ? [] : [row.fullLiquidation])
+    const liquidationConflict = assertedLiquidation.includes(true) && assertedLiquidation.includes(false)
     // The leaf's denominator is numeric. A missing component poisons the basis
     // evidence, so placeholders cannot be interpreted as a valid zero ratio.
     const december31IraValue = ownerRows.reduce((sum, row) => sum + (row.yearEndAccountValue ?? 0) +
       (row.postYearContributionsThroughFilingDeadline ?? 0), 0)
     const allAnnualDistributions = ownerRows.reduce((sum, row) => sum + (row.distributionsDuringYear ?? 0), 0)
+    const complete = fieldsComplete && !adjustmentInvalid && !liquidationConflict
+    const fullLiquidation = liquidationConflict
+      ? false
+      : assertedLiquidation.length > 0
+        ? assertedLiquidation.every((value) => value)
+        : fieldsComplete && december31IraValue === 0 && allAnnualDistributions > 0
     return {
       ownerPersonId, december31IraValue, allAnnualDistributions,
-      unrecoveredNjTaxedContributions: complete
+      unrecoveredNjTaxedContributions: fieldsComplete
         ? knownAmount(ownerRows.reduce((sum, row) => sum + (row.unrecoveredStateBasis ?? 0), 0))
         : unknownAmount(),
-      ...(ownerRows.every((row) => row.exemptObligationAdjustment !== undefined)
-        ? { exemptObligationIncome: ownerRows.reduce((sum, row) => sum + (row.exemptObligationAdjustment ?? 0), 0) } : {}),
-      fullLiquidation: complete && december31IraValue === 0 && allAnnualDistributions > 0,
+      ...(adjustments.length === 0 || invalidAdjustment === undefined ? {} : {
+        exemptObligationIncome: invalidAdjustment,
+      }),
+      ...(adjustments.length === 0 || adjustmentInvalid ? {} : {
+        exemptObligationIncome: adjustments.reduce((sum, value) => sum + value, 0),
+      }),
+      fullLiquidation,
       accounts: ownerRows,
       annualInputsComplete: complete,
     }
   })
+}
+
+/**
+ * Owner gross the state calculator reconciles against `allAnnualDistributions`:
+ * traditional IRA rows that are not the QCD event, plus each QCD gross once.
+ */
+function projectedOwnerDistributionTotal(projected: NjIraProjectedYear, ownerPersonId: string): number {
+  const qcd = projected.qcdEvents.filter((event) => event.ownerPersonId === ownerPersonId)
+  const unmatched = projected.iraDistributions.filter((row) =>
+    row.ownerPersonId === ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth' &&
+    !qcd.some((event) => event.eventId === row.eventId && event.accountId === row.accountId))
+  return unmatched.reduce((sum, row) => sum + Math.max(0, row.grossDistribution ?? 0), 0) +
+    qcd.reduce((sum, event) => sum + Math.max(0, event.grossIraDistribution), 0)
+}
+
+function projectedNjIraOwnerPools(
+  projected: NjIraProjectedYear | undefined,
+): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
+  if (projected === undefined || !isNjState(projected.residenceState)) return undefined
+  const owners = [...new Set(projected.qcdEvents.map((event) => event.ownerPersonId))]
+  const pools: StateNjIraOwnerPoolFactsInput[] = []
+  for (const ownerPersonId of owners) {
+    const allAnnualDistributions = projectedOwnerDistributionTotal(projected, ownerPersonId)
+    if (!(allAnnualDistributions > 0)) continue
+    const balances = projected.traditionalIraBalances.filter((row) => row.ownerPersonId === ownerPersonId)
+    const december31IraValue = balances.reduce((sum, row) => sum + row.balance, 0)
+    if (!Number.isFinite(december31IraValue) || december31IraValue < 0 ||
+      !Number.isFinite(allAnnualDistributions)) continue
+    pools.push({
+      ownerPersonId,
+      december31IraValue,
+      allAnnualDistributions,
+      // GIT-1 & 2: the excludable portion is previously taxed contributions.
+      // None were asserted for this projected year.
+      unrecoveredNjTaxedContributions: knownAmount(0),
+      fullLiquidation: december31IraValue === 0 && allAnnualDistributions > 0,
+      annualInputsComplete: true,
+    })
+  }
+  return pools.length === 0 ? undefined : pools
+}
+
+function isNjState(state: string | undefined): boolean {
+  return state?.toUpperCase() === 'NJ'
 }
 
 /** @deprecated Prefer buildStateQcdEventFacts + pack-authoritative policy. */

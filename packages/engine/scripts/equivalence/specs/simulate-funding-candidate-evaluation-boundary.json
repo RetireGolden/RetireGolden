@@ -281,25 +281,25 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        937,
-        992
+        938,
+        993
       ],
       "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 990 (`? {}`), the `? {}` arm for an undefined `facts.stateRetirementDistributions`, which simulatePlan always passes as an array literal. No direct test pins it. Also line 1007 (`? {}`), the `? {}` arm for an undefined `facts.stateQcdEventFacts`, which the forced-distribution phase always defines (see AF.helper.tax). No direct test pins it. Also line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`), the defined arm for `facts.stateQcdYearFacts`, which simulatePlan never sets. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
-          "line": 937,
+          "line": 938,
           "text": "const fundingCandidateAcaContract = acaContract"
         },
         {
-          "line": 954,
+          "line": 955,
           "text": "const fundingCandidateEvaluationContext:"
         },
         {
-          "line": 974,
+          "line": 975,
           "text": "taxInputBase: Object.freeze({"
         },
         {
-          "line": 992,
+          "line": 993,
           "text": "...(facts.stateRetirementDistributions === undefined"
         }
       ]
@@ -309,17 +309,17 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        994,
-        1009
+        995,
+        1016
       ],
       "note": "Continues AF.callsite.context past its excluded line 990 (`? {}`); see that entry's note.",
       "anchors": [
         {
-          "line": 999,
+          "line": 1000,
           "text": "return household === undefined ? {} : { stateHouseholdFacts: household }"
         },
         {
-          "line": 1009,
+          "line": 1016,
           "text": "...(facts.stateQcdEventFacts === undefined"
         }
       ]
@@ -329,17 +329,17 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1011,
-        1018
+        1018,
+        1025
       ],
       "note": "Continues AF.callsite.context past its excluded line 1007 (`? {}`); see that entry's note.",
       "anchors": [
         {
-          "line": 1011,
+          "line": 1018,
           "text": ": { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({"
         },
         {
-          "line": 1018,
+          "line": 1025,
           "text": "? {}"
         }
       ]
@@ -349,21 +349,21 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1020,
-        1050
+        1027,
+        1057
       ],
       "note": "Continues AF.callsite.context past its excluded line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`); see that entry's note.",
       "anchors": [
         {
-          "line": 1027,
+          "line": 1034,
           "text": "aca: Object.freeze({"
         },
         {
-          "line": 1039,
+          "line": 1046,
           "text": "hsa: Object.freeze({"
         },
         {
-          "line": 1050,
+          "line": 1057,
           "text": "})"
         }
       ]
@@ -373,28 +373,28 @@
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1051,
-        1075
+        1058,
+        1082
       ],
       "anchors": [
         {
-          "line": 1054,
+          "line": 1061,
           "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
         },
         {
-          "line": 1061,
+          "line": 1068,
           "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
         },
         {
-          "line": 1064,
+          "line": 1071,
           "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
         },
         {
-          "line": 1070,
+          "line": 1077,
           "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {"
         },
         {
-          "line": 1075,
+          "line": 1082,
           "text": "return evaluation"
         }
       ]

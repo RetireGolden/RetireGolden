@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -2041,6 +2041,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -2048,6 +2048,7 @@ export function annualFundingApplicationAndClosePhase(
        traditional:
          withdrawalPlan.byCategory.traditional +
          rmdTotal +

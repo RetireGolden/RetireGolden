@@ -1992,7 +1992,7 @@ export const northeastStateRecords = {
 
   "nj-direct-qcd-ira-basis-treatment": {
   "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
-  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. A1290 is proposed legislation, not a current charitable carve-out.",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. A present basis row that omits unrecovered basis, a negative exempt-obligation amount, or an incomplete annual total produces an incomplete result. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A projected year with no IRA-basis evidence uses the modeled December 31 traditional IRA value and that year's distributions, including direct charitable transfers; with no previously taxed contributions asserted, the excludable portion is zero. A1290 is proposed legislation, not a current charitable carve-out.",
   "classification": "settled",
   "contraryReading": null,
   "errorDirection": null,
@@ -2013,13 +2013,15 @@ export const northeastStateRecords = {
   "implementedBy": [
     "packages/engine/src/tax/stateQcdHsa.ts",
     "packages/engine/src/tax/stateTax.ts",
-    "packages/engine/src/params/state/data/year2026.ts"
+    "packages/engine/src/params/state/data/year2026.ts",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts"
   ],
   "implementedByFunctions": [
     "packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment",
     "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
     "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
-    "packages/engine/src/params/state/data/year2026.ts#NJ"
+    "packages/engine/src/params/state/data/year2026.ts#NJ",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

@@ -26,6 +26,7 @@ import {
   householdFactsForYear,
   hsaAccountYearFactsForYear,
   njIraOwnerPoolsForYear,
+  njIraYearProjection,
 } from './stateRetirementFactsAdapter.js'
 import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
@@ -616,7 +617,16 @@ export function annualAggregateRothConversionPhase(
             })(),
             ...(() => {
               const pools =
-                facts.stateNjIraOwnerPools ?? njIraOwnerPoolsForYear(plan, year)
+                facts.stateNjIraOwnerPools ?? njIraOwnerPoolsForYear(plan, year, njIraYearProjection({
+                  residenceState,
+                  primaryPersonId: primary.id,
+                  balances: annualIdKeyedBalances,
+                  qcdEvents: facts.stateQcdEventFacts,
+                  retirementDistributions: [
+                    ...(facts.stateRetirementDistributions ?? []),
+                    ...conversionStateFacts,
+                  ],
+                }))
               return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
             })(),
             ...(facts.stateQcdEventFacts === undefined

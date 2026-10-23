@@ -1,7 +1,8 @@
 import { createStateTaxCalculator } from '../tax/stateTax.js'
+import { newJerseyWorksheetCTaxableAmount } from '../tax/stateQcdHsa.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
-import { couplePlan, singlePersonPlan, traditionalAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
+import { couplePlan, singlePersonPlan, traditionalAccount, cashAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxYearInput } from './types.js'
 
@@ -90,6 +91,43 @@ it('publishes conversion source gross and taxable dollars to final state computa
   }))
 })
 
+
+it('prices a projected 2027 New Jersey QCD from the modeled IRA pool when no basis evidence exists', () => {
+  // GIT-1 & 2 Worksheet C. Opening IRA 200,000, return 0, QCD 10,000, no other
+  // IRA distribution: December 31 value 190,000 and distributions 10,000.
+  // No previously taxed contributions are asserted, so the excludable portion
+  // is 0 and the $10,000 transfer is $10,000 of New Jersey IRA income.
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.strategies.qcdAnnual = 10_000
+  const result = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2027,
+    taxCalculator: createStateTaxCalculator({}),
+  })
+  const year = result.years[0]!
+  const pool = year.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+  expect(pool).toMatchObject({
+    ownerPersonId: 'p1', december31IraValue: 190_000, allAnnualDistributions: 10_000,
+    unrecoveredNjTaxedContributions: { known: true, amount: 0 },
+  })
+  expect(year.balances.ira).toBeCloseTo(190_000, 6)
+  const priced = newJerseyWorksheetCTaxableAmount({
+    pool: {
+      ownerPersonId: pool!.ownerPersonId,
+      december31IraValue: pool!.december31IraValue,
+      allAnnualDistributions: pool!.allAnnualDistributions,
+      unrecoveredNjTaxedContributions: pool!.unrecoveredNjTaxedContributions,
+      fullLiquidation: pool!.fullLiquidation,
+      annualInputsComplete: pool!.annualInputsComplete,
+    },
+    correspondingGrossDistributions: 10_000,
+  })
+  expect(priced.stateTaxableIraAmount).toBe(10_000)
+  expect(year.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
+})
 
 it('commits NJ Worksheet C basis once and carries closing basis to the next actual year', () => {
   // NJ GIT-2 Worksheet C:100 basis/(900 December31 +100 distributed)=10%.
