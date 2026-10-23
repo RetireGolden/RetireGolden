@@ -276,32 +276,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        909,
-        973
+        893,
+        957
       ],
       "anchors": [
         {
-          "line": 909,
+          "line": 893,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 921,
+          "line": 905,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 922,
+          "line": 906,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 932,
+          "line": 916,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 964,
+          "line": 948,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 972,
+          "line": 956,
           "text": "}"
         }
       ],

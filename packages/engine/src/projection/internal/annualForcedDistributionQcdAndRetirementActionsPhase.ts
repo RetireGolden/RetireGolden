@@ -351,22 +351,6 @@ function immutablePlainSnapshot<T>(value: T): T {
   return snapshot
 }
 
-/**
- * An empty runtime list is a known-empty QCD year only when nobody attested
- * a custodian row and no state being priced marks the year unknown. Otherwise
- * the adapter's completeness branch must see `undefined`, or evidence-only
- * QCDs are dropped and the year is reported complete.
- */
-function qcdRuntimeEventsForFacts(
-  plan: Readonly<Plan>,
-  year: number,
-  runtime: readonly StateQcdEventFactsInput[],
-  state: string,
-): readonly StateQcdEventFactsInput[] | undefined {
-  if (runtime.length > 0) return runtime
-  return qcdEmptyRuntimeIsUnobserved(plan, year, state) ? undefined : runtime
-}
-
 export function annualForcedDistributionQcdAndRetirementActionsPhase(
   input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
 ): AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
@@ -2615,4 +2599,20 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     ownedRothAssumedBasisConsequentialByOwner,
     employerRothAssumedBasisConsequentialByAccount,
   }
+}
+
+/**
+ * An empty runtime list is a known-empty QCD year only when nobody attested
+ * a custodian row and no state being priced marks the year unknown. Otherwise
+ * the adapter's completeness branch must see `undefined`, or evidence-only
+ * QCDs are dropped and the year is reported complete.
+ */
+function qcdRuntimeEventsForFacts(
+  plan: Readonly<Plan>,
+  year: number,
+  runtime: readonly StateQcdEventFactsInput[],
+  state: string,
+): readonly StateQcdEventFactsInput[] | undefined {
+  if (runtime.length > 0) return runtime
+  return qcdEmptyRuntimeIsUnobserved(plan, year, state) ? undefined : runtime
 }
