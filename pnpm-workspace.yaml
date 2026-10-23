@@ -63,11 +63,12 @@ trustPolicyExclude:
 #   GHSA-f88m-g3jw-g9cj set the original `^0.35.0` (commit 0ca3b2a7);
 #   GHSA-rgj7-g3m4-5g8c (libheif, patched in 0.35.4) and
 #   GHSA-wq5f-xc86-pv6w (librsvg, patched in 0.35.5) raised it to `^0.35.5`
-#   on 2026-10-07. The lockfile resolves assets-generator 1.0.2, which
-#   still declares `sharp: ^0.33.5`; 1.0.3 and later declare `^0.35.4`,
-#   which still admits the librsvg-vulnerable 0.35.4; sharp-ico declares
-#   `*`. Without this override a non-frozen install under the committed
-#   lockfile lands back on the vulnerable 0.33 line.
+#   on 2026-10-07. The lockfile resolves assets-generator 2.0.0, which
+#   declares `sharp: ^0.35.4` (as 1.0.3 and later do), and sharp-ico 0.1.5
+#   declares `sharp: *` (both per the npm registry manifests). Neither
+#   range enforces the patched 0.35.5 floor, so without this override any
+#   re-resolution of sharp (a fresh resolve, or an update that moves it)
+#   may pick the librsvg-vulnerable 0.35.4.
 #   Drop when the assets-generator version the lockfile resolves declares
 #   a sharp range whose floor is 0.35.5 or later, so that range alone
 #   excludes every advisory above.
