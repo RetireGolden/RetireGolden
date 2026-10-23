@@ -444,28 +444,28 @@
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        336,
-        350
+        337,
+        351
       ],
       "anchors": [
         {
-          "line": 336,
+          "line": 337,
           "text": "function immutablePlainSnapshot<T>(value: T): T {"
         },
         {
-          "line": 337,
+          "line": 338,
           "text": "const snapshot = structuredClone(value)"
         },
         {
-          "line": 344,
+          "line": 345,
           "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {"
         },
         {
-          "line": 347,
+          "line": 348,
           "text": "Object.freeze(candidate)"
         },
         {
-          "line": 350,
+          "line": 351,
           "text": "return snapshot"
         }
       ],
@@ -476,37 +476,37 @@
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        970,
-        1084
+        987,
+        1101
       ],
       "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 1086 (`: { amount: 0, evidence: 'none' as const }`), the fallback when the election-year row's account is not found: rows come only from inherited traditional or Roth accounts in `rmdBalances`, and the lookup is into that same list. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors. Hostile delegation tests own the deliberately unreachable validation failures, prove the full operation set is checked before any logical balance setter runs, and enforce one getter read for operation identity/balances/execution plus rows, evidence, totals, and obligations.",
       "anchors": [
         {
-          "line": 970,
+          "line": 987,
           "text": "const inheritedPlan = immutablePlainSnapshot("
         },
         {
-          "line": 971,
+          "line": 988,
           "text": "annualInheritedIraDistributions({"
         },
         {
-          "line": 976,
+          "line": 993,
           "text": "balances: rmdBalances,"
         },
         {
-          "line": 1040,
+          "line": 1057,
           "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>"
         },
         {
-          "line": 1050,
+          "line": 1067,
           "text": "let inheritedTotal = 0"
         },
         {
-          "line": 1078,
+          "line": 1095,
           "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] ="
         },
         {
-          "line": 1084,
+          "line": 1101,
           "text": "? acceptedElectionYearQualifyingDistributions({ account, taxYear: year })"
         }
       ]
@@ -516,17 +516,17 @@
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup (continued)",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1086,
-        1115
+        1103,
+        1132
       ],
       "note": "Continues I.delegate past its excluded line 1086 (`: { amount: 0, evidence: 'none' as const }`); see that entry's note.",
       "anchors": [
         {
-          "line": 1112,
+          "line": 1129,
           "text": "const inheritedRmdShortfallObligations ="
         },
         {
-          "line": 1115,
+          "line": 1132,
           "text": "for (const operation of inheritedOperations) {"
         }
       ]
@@ -536,28 +536,28 @@
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1144,
-        1185
+        1161,
+        1202
       ],
       "anchors": [
         {
-          "line": 1144,
+          "line": 1161,
           "text": "for (const operation of inheritedOperations) {"
         },
         {
-          "line": 1146,
+          "line": 1163,
           "text": "state.balance = operation.sourceBalanceAfter"
         },
         {
-          "line": 1149,
+          "line": 1166,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1175,
+          "line": 1192,
           "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)"
         },
         {
-          "line": 1182,
+          "line": 1199,
           "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce("
         }
       ]
