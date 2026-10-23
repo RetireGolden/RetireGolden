@@ -1992,7 +1992,7 @@ export const northeastStateRecords = {
 
   "nj-direct-qcd-ira-basis-treatment": {
   "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
-  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. A Roth conversion is counted once on Worksheet C line 2, which flows to line 3, and not also in the line 1 December 31 value. OWL infers that placement from NJ GIT-1 & 2 (January 2026), under which only earnings are taxable on a conversion and the excludable portion goes on line 20b, and from the 2025 NJ-1040 instructions, where line 20b is Worksheet C line 8 and line 8 is line 2 minus line 7. That placement is OWL's inference from those two sources, not literal text of either publication. A1290 is proposed legislation, not a current charitable carve-out.",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. The confirmed placement, when a pool is built from the ledger, is that a Roth conversion is counted once on Worksheet C line 2, which flows to line 3, and not also in the line 1 December 31 value. OWL infers that placement from NJ GIT-1 & 2 (January 2026), under which only earnings are taxable on a conversion and the excludable portion goes on line 20b, and from the 2025 NJ-1040 instructions, where line 20b is Worksheet C line 8 and line 8 is line 2 minus line 7. That placement is OWL's inference from those two sources, not literal text of either publication. The projection does not apply it. A1290 is proposed legislation, not a current charitable carve-out.",
   "classification": "settled",
   "contraryReading": null,
   "errorDirection": null,
@@ -2039,9 +2039,7 @@ export const northeastStateRecords = {
     "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
     "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
     "packages/engine/src/params/state/data/year2026.ts#NJ",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraProjectedDistributionTotal",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraLedgerBalancesNetOfGross"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

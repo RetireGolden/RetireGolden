@@ -498,10 +498,10 @@ export function njIraOwnerPoolsForYear(
 }
 
 /**
- * Worksheet C line 2 for one owner: traditional IRA rows other than the QCD,
- * plus each QCD gross once. A Roth conversion is one of those rows, so it is
- * counted once here and flows into line 3. OWL infers that placement from
- * GIT-1 & 2 (January 2026) and the 2025 NJ-1040 line 20b instructions.
+ * Line 2 arithmetic for one owner: traditional IRA rows other than the QCD,
+ * plus each QCD gross once, a Roth conversion included. OWL's inference puts
+ * that amount on Worksheet C line 2, flowing to line 3. The projection does
+ * not call this helper.
  */
 export function njIraProjectedDistributionTotal(
   ownerPersonId: string,
@@ -521,10 +521,10 @@ function isNjState(state: string | undefined): boolean {
 }
 
 /**
- * December 31 IRA balances with a Roth conversion's gross removed, so those
- * dollars sit on Worksheet C line 2 and not also on line 1. The probe still
- * holds the pre-debit balance. This is the line 1 side of the same inference
- * as njIraProjectedDistributionTotal.
+ * Line 1 arithmetic: December 31 balances with a Roth conversion's gross
+ * removed, so those dollars are not also on line 1. The projection does not
+ * call this helper. A year with no basis evidence still has no priced pool.
+ * The probe balance this helper receives is unchanged.
  */
 export function njIraLedgerBalancesNetOfGross<T extends { readonly account: { readonly id: string }; readonly balance: number }>(
   balances: readonly T[],
