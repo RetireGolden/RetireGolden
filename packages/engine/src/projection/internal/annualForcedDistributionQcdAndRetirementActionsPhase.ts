@@ -2,7 +2,7 @@ import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
 import { ageOnDate, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
-import type { Account, Person, Plan } from '../../model/plan.js'
+import { stateForYear, type Account, type Person, type Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
@@ -349,6 +349,25 @@ function immutablePlainSnapshot<T>(value: T): T {
   }
   freeze(snapshot)
   return snapshot
+}
+
+/**
+ * An empty runtime list is a known-empty QCD year only when nobody attested
+ * a custodian row and the plan does not mark the year unknown. Otherwise the
+ * adapter's completeness branch must see `undefined`, or evidence-only QCDs
+ * are dropped and the year is reported complete.
+ */
+function qcdRuntimeEventsForFacts(
+  plan: Readonly<Plan>,
+  year: number,
+  runtime: readonly StateQcdEventFactsInput[],
+): readonly StateQcdEventFactsInput[] | undefined {
+  if (runtime.length > 0) return runtime
+  const state = stateForYear(plan.household, year)
+  const yearEvidence = plan.stateTaxFacts.qcdEventEvidence?.some((row) => row.taxYear === year) === true
+  const markedUnknown = plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
+    row.taxYear === year && row.state.toUpperCase() === state.toUpperCase() && row.qcd === 'unknown') === true
+  return yearEvidence || markedUnknown ? undefined : runtime
 }
 
 export function annualForcedDistributionQcdAndRetirementActionsPhase(
@@ -2502,7 +2521,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     stateForcedTaxableByAccount.set(accountId, 0)
   }
   return {
-    stateQcdEventFacts: qcdEventFactsForYear(plan, year, stateQcdEvents),
+    stateQcdEventFacts: qcdEventFactsForYear(plan, year, qcdRuntimeEventsForFacts(plan, year, stateQcdEvents), stateForYear(plan.household, year)),
     stateRetirementDistributionFacts: [
       ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount, {
         taxableByAccount: stateNamedConversionTaxableByAccount,

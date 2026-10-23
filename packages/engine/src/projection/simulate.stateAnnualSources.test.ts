@@ -70,6 +70,43 @@ it('publishes known-empty runtime HSA and QCD facts for a feature-off CA plan', 
   expect(inputs.at(-1)?.stateQcdEventFacts).toEqual([])
 })
 
+it('surfaces an evidence-only QCD through the forced-distribution caller', () => {
+  // IRC 408(d)(8)(A). The projection executed no QCD; the custodian row is
+  // still the year's direct transfer and must not be dropped as a complete [].
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.qcdEventEvidence = [{
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident', directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toEqual([expect.objectContaining({
+    eventId: 'custodian-2026-qcd', accountId: 'ira', ownerPersonId: 'p1',
+    grossIraDistribution: 10_000, federalExcludedAmount: 10_000, federalTaxableAmount: 0,
+    residency: 'fullYearResident', directTransfer: true, splitInterest: false,
+  })])
+})
+
+it('reaches the QCD completeness branch when the plan marks the year unknown', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
 
 it('publishes conversion source gross and taxable dollars to final state computation', () => {
   // IRC408A(d)(3): a100 zero-basis conversion is100 ordinary income and
