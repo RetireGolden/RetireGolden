@@ -1,5 +1,5 @@
 import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
-import { ageOnDate, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
+import { ageOnDate, qcdEmptyRuntimeIsUnobserved, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
 import { stateForYear, type Account, type Person, type Plan } from '../../model/plan.js'
@@ -353,21 +353,18 @@ function immutablePlainSnapshot<T>(value: T): T {
 
 /**
  * An empty runtime list is a known-empty QCD year only when nobody attested
- * a custodian row and the plan does not mark the year unknown. Otherwise the
- * adapter's completeness branch must see `undefined`, or evidence-only QCDs
- * are dropped and the year is reported complete.
+ * a custodian row and no state being priced marks the year unknown. Otherwise
+ * the adapter's completeness branch must see `undefined`, or evidence-only
+ * QCDs are dropped and the year is reported complete.
  */
 function qcdRuntimeEventsForFacts(
   plan: Readonly<Plan>,
   year: number,
   runtime: readonly StateQcdEventFactsInput[],
+  state: string,
 ): readonly StateQcdEventFactsInput[] | undefined {
   if (runtime.length > 0) return runtime
-  const state = stateForYear(plan.household, year)
-  const yearEvidence = plan.stateTaxFacts.qcdEventEvidence?.some((row) => row.taxYear === year) === true
-  const markedUnknown = plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
-    row.taxYear === year && row.state.toUpperCase() === state.toUpperCase() && row.qcd === 'unknown') === true
-  return yearEvidence || markedUnknown ? undefined : runtime
+  return qcdEmptyRuntimeIsUnobserved(plan, year, state) ? undefined : runtime
 }
 
 export function annualForcedDistributionQcdAndRetirementActionsPhase(
@@ -1781,6 +1778,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       ownerPersonId: entry.ownerId, grossIraDistribution: gross, directCharityTransfer: gross,
       federalExcludedAmount: excluded, federalBasisAllocated: basis,
       federalTaxableAmount: Math.max(0, gross - excluded - basis),
+      transactionKind: 'directQcd',
       residency: 'unknown', splitInterest: false, directTransfer: true,
     })
   }
@@ -1895,6 +1893,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         directCharityTransfer: entry.amount, federalExcludedAmount: exclusionTake,
         federalTaxableAmount: leftoverTake + taxableFromExcess,
         federalBasisAllocated: nonQualified - taxableFromExcess,
+        transactionKind: 'directQcd',
         residency: 'unknown', splitInterest: false, directTransfer: true,
       })
       qcdBeyondRmdCharacterByOccurrence?.push({
@@ -2520,8 +2519,9 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   for (const accountId of stateForcedGrossByAccount.keys()) if (!stateForcedTaxableByAccount.has(accountId)) {
     stateForcedTaxableByAccount.set(accountId, 0)
   }
+  const residenceState = stateForYear(plan.household, year)
   return {
-    stateQcdEventFacts: qcdEventFactsForYear(plan, year, qcdRuntimeEventsForFacts(plan, year, stateQcdEvents), stateForYear(plan.household, year)),
+    stateQcdEventFacts: qcdEventFactsForYear(plan, year, qcdRuntimeEventsForFacts(plan, year, stateQcdEvents, residenceState), residenceState),
     stateRetirementDistributionFacts: [
       ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount, {
         taxableByAccount: stateNamedConversionTaxableByAccount,

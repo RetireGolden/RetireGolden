@@ -285,6 +285,13 @@ export function stateDirectQcdCollectionAdjustment(args: {
     const pools = new Map((args.njPools ?? []).map((pool) => [pool.ownerPersonId, pool]))
     for (const [owner, events] of byOwner) {
       const pool = pools.get(owner)
+      // IRC 408(d)(8)(F) and the direct-transfer gate do not depend on
+      // Worksheet C basis. A missing pool must not hide those refusals.
+      for (const event of events) {
+        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
+        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
+        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
+      }
       if (!pool) {
         parts.push(incomplete('nj-qcd-basis-unknown', 'state-direct-qcd-conformity', 'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.', ['njIraOwnerPool', 'unrecoveredNjTaxedContributions']))
         continue
@@ -293,11 +300,6 @@ export function stateDirectQcdCollectionAdjustment(args: {
         event.transactionKind !== 'splitInterest' && event.transactionKind !== 'other' && event.transactionKind !== 'unknown' &&
         event.directTransfer && event.directCharityTransfer > 0 && !event.splitInterest
       const eligible = events.filter((event) => directQcd(event) && event.residency === 'fullYearResident')
-      for (const event of events) {
-        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
-        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
-        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
-      }
       const totalCorresponding = eligible.reduce((sum, event) => sum + Math.max(0, event.directCharityTransfer), 0)
       const worksheet = newJerseyWorksheetCTaxableAmount({ pool, correspondingGrossDistributions: totalCorresponding })
       if (worksheet.warnings.length > 0 || worksheet.stateTaxableIraAmount === undefined || totalCorresponding === 0) {

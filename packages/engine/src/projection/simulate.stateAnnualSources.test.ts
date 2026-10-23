@@ -54,6 +54,7 @@ describe('actual annual state source facts', () => {
     expect(input.stateQcdEventFacts).toEqual([expect.objectContaining({
       accountId: 'ira', ownerPersonId: 'p1', directCharityTransfer: 10000,
       federalExcludedAmount: 10000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+      transactionKind: 'directQcd',
     })])
   })
 })
@@ -105,6 +106,66 @@ it('reaches the QCD completeness branch when the plan marks the year unknown', (
     taxCalculator: { compute(input) { inputs.push(input); return 0 } },
   })
   expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('withholds the state QCD collection when a QCD was executed but the year is unknown', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(structuredClone(input)); return 0 } },
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('keeps a NJ QCD-unknown mark after a mid-year move to CA', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.household.stateMoves = [{ fromYear: 2026, fromMonth: 7, state: 'CA' }]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(Object.prototype.hasOwnProperty.call(inputs.at(-1), 'stateQcdEventFacts')).toBe(true)
+})
+
+it('does not let a calculator-level QCD list fill a year the plan marked unknown', () => {
+  // The configured event is a split-interest transfer. If the unknown year
+  // fell back to it, the leaf would refuse that transfer instead of reporting
+  // the collection unavailable. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdEvents: [{
+        eventId: 'configured', accountId: 'ira', ownerPersonId: 'p1',
+        grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        residency: 'fullYearResident', splitInterest: true, directTransfer: true,
+        transactionKind: 'splitInterest',
+      }],
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
 })
 
 

@@ -4,13 +4,14 @@
  * Preserves source evidence and unknown facts while preparing annual state
  * calculator inputs. Policy and tax arithmetic remain in the state leaves.
  */
-import type {
-  Account,
-  PensionSourceKind,
-  Plan,
-  StateTaxYearHouseholdFacts,
-  PensionStateEligibility,
-  StateHsaYearEvidence,
+import {
+  stateResidencySegmentsForYear,
+  type Account,
+  type PensionSourceKind,
+  type Plan,
+  type StateTaxYearHouseholdFacts,
+  type PensionStateEligibility,
+  type StateHsaYearEvidence,
 } from '../../model/plan.js'
 import type {
   KnownMoneyInput,
@@ -616,7 +617,28 @@ type QcdTransactionKind = NonNullable<StateQcdEventFactsInput['transactionKind']
 
 /** Identity is the custodian row, not the event id alone. Two accounts can share an id. */
 function qcdFactKey(row: { eventId: string; accountId: string; ownerPersonId: string }): string {
-  return `${row.eventId}\0${row.accountId}\0${row.ownerPersonId}`
+  // JSON encoding keeps schema-valid ids that contain NUL distinct. A raw
+  // separator would collapse `a` + `b\0c` with `a\0b` + `c`.
+  return JSON.stringify([row.eventId, row.accountId, row.ownerPersonId])
+}
+
+function identityRepeated(rows: readonly { eventId: string; accountId: string; ownerPersonId: string }[]): boolean {
+  const seen = new Set<string>()
+  for (const row of rows) {
+    const key = qcdFactKey(row)
+    if (seen.has(key)) return true
+    seen.add(key)
+  }
+  return false
+}
+
+/** Year-end state plus any state left during the year. A move year prices both. */
+function qcdActivityStates(plan: Readonly<Plan>, year: number, state: string | undefined): readonly string[] {
+  const states = stateResidencySegmentsForYear(plan.household, year).map((segment) => segment.state)
+  if (state !== undefined && !states.some((code) => code.toUpperCase() === state.toUpperCase())) {
+    return [...states, state]
+  }
+  return states
 }
 
 /**
@@ -692,16 +714,33 @@ function factFromQcdEvidence(row: QcdEventEvidenceRow): StateQcdEventFactsInput 
 }
 
 function qcdMarkedUnknown(plan: Readonly<Plan>, year: number, state: string | undefined): boolean {
-  return state !== undefined && plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
-    row.taxYear === year && row.state.toUpperCase() === state.toUpperCase() && row.qcd === 'unknown') === true
+  const states = qcdActivityStates(plan, year, state)
+  return plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
+    row.taxYear === year && row.qcd === 'unknown' &&
+    states.some((code) => code.toUpperCase() === row.state.toUpperCase())) === true
+}
+
+/**
+ * An empty runtime list is a known-empty QCD year only when no custodian row
+ * exists and no state being priced marks QCD activity unknown. Evidence rows
+ * have no state column, so they are year-scoped.
+ */
+export function qcdEmptyRuntimeIsUnobserved(plan: Readonly<Plan>, year: number, state?: string): boolean {
+  const yearEvidence = plan.stateTaxFacts.qcdEventEvidence?.some((row) => row.taxYear === year) === true
+  return yearEvidence || qcdMarkedUnknown(plan, year, state)
 }
 
 export function qcdEventFactsForYear(plan: Readonly<Plan>, year: number,
   events: readonly StateQcdEventFactsInput[] | undefined, state?: string): readonly StateQcdEventFactsInput[] | undefined {
   const asserted = plan.stateTaxFacts.qcdEventEvidence?.filter((row) => row.taxYear === year) ?? []
+  const runtime = events ?? []
+  // Two custodian or runtime rows with one identity do not elect a dollar
+  // amount by array order, and a later unmatched row must not replace the
+  // executed distribution.
+  if (identityRepeated(asserted) || identityRepeated(runtime)) return undefined
   const byKey = new Map<string, StateQcdEventFactsInput>()
   const matched = new Set<QcdEventEvidenceRow>()
-  for (const event of events ?? []) {
+  for (const event of runtime) {
     const evidence = asserted.find((row) => row.eventId === event.eventId && row.accountId === event.accountId && row.ownerPersonId === event.ownerPersonId)
     if (evidence !== undefined) matched.add(evidence)
     byKey.set(qcdFactKey(event), mergeQcdRuntimeWithEvidence(event, evidence))
@@ -717,5 +756,7 @@ export function qcdEventFactsForYear(plan: Readonly<Plan>, year: number,
     // or carries evidence; an empty runtime list with qcd: 'unknown' does too.
     if (events === undefined || qcdMarkedUnknown(plan, year, state)) return undefined
   }
+  // One observed event does not make an explicitly unknown year complete.
+  if (qcdMarkedUnknown(plan, year, state)) return undefined
   return [...byKey.values()]
 }
