@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import { AssumptionsCardPage } from './AssumptionsCardPage'
 import { ProvenancePanel } from './ProvenancePanel'
+import { ParameterFigures } from './ParameterFigures'
 import { PlanCtx } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { assumptionsExportJson, assumptionsExportText, buildAssumptionsSnapshot } from './assumptionsExport'
@@ -38,6 +39,9 @@ describe('parameter source presentation (#783)', () => {
       expect(row.textContent).not.toMatch(/`|https?:\/\//u)
       expect(row.textContent).not.toContain('la-ldr-it540es')
       expect(row.textContent).not.toContain('ut-code-59-10')
+      // A future catalog citation format must fail here instead of leaking
+      // audit IDs or bare URLs silently on either surface.
+      expect([...container.querySelectorAll('.provenance-figures')].map((e) => e.textContent).join(' ')).not.toMatch(/`|https?:\/\//u)
       // These qualifications survive the presentation cleanup.
       expect(details.textContent).toContain('without SS/RRB offset, M-3 phaseout, or plan qualification')
       expect(details.textContent).toContain('§59-10-1042 Social Security')
@@ -53,4 +57,12 @@ describe('parameter source presentation (#783)', () => {
       expect(JSON.parse(assumptionsExportJson(snapshot)).groups.find((g: { id: string }) => g.id === 'tax-parameters').rows.find((r: { id: string }) => r.id === 'state-income-tax').value).toBe(original)
     })
   }
+
+  it('keeps abbreviations and nested qualifications intact instead of splitting prose at a period', () => {
+    container = document.createElement('div')
+    root = createRoot(container)
+    const figures = 'U.S. figures. A limitation (including (nested) text) remains. Source (`audit-only-id`).'
+    act(() => root.render(<ParameterFigures id="state-income-tax" figures={figures} />))
+    expect(container.querySelector('details > div')!.textContent).toBe('U.S. figures. A limitation (including (nested) text) remains. Source.')
+  })
 })

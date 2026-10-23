@@ -114,7 +114,8 @@ export function AssumptionsCardPage() {
                     <th scope="row">
                       <span className="provenance-label">{row.label}</span>
                       <div className="provenance-figures muted small">
-                        {group.id === 'tax-parameters' ? <ParameterFigures id={row.id} figures={row.value} /> : row.value}
+                        {/* Format catalog prose wherever it is reused; plan-owned values stay literal. */}
+                        {source && row.value === source.figures ? <ParameterFigures id={source.id} figures={row.value} /> : row.value}
                       </div>
                     </th>
                     <td>

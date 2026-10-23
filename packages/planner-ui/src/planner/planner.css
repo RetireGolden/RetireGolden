@@ -1896,6 +1896,13 @@ html:has(.kpi-bar) {
   border-radius: 2px;
 }
 
+@media (pointer: coarse) {
+  .survivor-lever-details > summary,
+  .provenance-details > summary {
+    min-height: 44px;
+  }
+}
+
 /* This header carries a paragraph: let it read at the full phone width. */
 .spending-capacity-head > .btn {
   flex-shrink: 0;

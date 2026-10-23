@@ -83,7 +83,8 @@ describe('the convert-early lever', () => {
     for (const note of container.querySelectorAll('[data-lever-notes], [data-lever-window]')) {
       expect(note.closest('details')).not.toBeNull()
     }
-    expect(details[0]!.querySelector('summary')!.textContent).toMatch(/Conversion details for death at \d+/u)
+    expect(details[0]!.querySelector('summary')!.textContent).toMatch(/Conversion details if Alex dies at \d+/u)
+    expect(new Set(details.map((d) => d.querySelector('summary')!.textContent)).size).toBe(details.length)
     expect(page).not.toContain('already converts past the 12% bracket in these years')
     expect(page).toMatch(/adding a 12% bracket fill through \d{4}, in \d{4} dollars/u)
     expect(page).toContain('on top of any your plan already makes')

@@ -1,8 +1,13 @@
 import { Fragment } from 'react'
+import { PrintableDetails } from './PrintableDetails'
 
 /** Catalog prose carries audit record IDs; the card keeps its human citations. */
 function readableFigures(figures: string): string {
-  return figures.replace(/\s*\([^()]*`[^()]*\)/gu, '')
+  // Remove only citation-only parentheticals, not arbitrary prose containing
+  // an audit ID. The catalog rendering test guards newly added citation forms.
+  return figures
+    .replace(/\s*\(`[a-z0-9-]+`\)/gu, '')
+    .replace(/\s*\(records `[^()]+`\)/gu, '')
 }
 
 function LinkedFigures({ text }: { text: string }) {
@@ -19,14 +24,13 @@ function LinkedFigures({ text }: { text: string }) {
 export function ParameterFigures({ id, figures }: { id: string; figures: string }) {
   const readable = readableFigures(figures)
   if (id !== 'state-income-tax') return <LinkedFigures text={readable} />
-  const endOfIntro = readable.indexOf('. ') + 1
   return (
     <>
-      {readable.slice(0, endOfIntro)}
-      <details className="provenance-details">
+      Tax schedules and modeling limitations for all 50 states and DC.
+      <PrintableDetails className="provenance-details">
         <summary>State details and limitations</summary>
-        <div className="mt-sm"><LinkedFigures text={readable.slice(endOfIntro).trim()} /></div>
-      </details>
+        <div className="mt-sm"><LinkedFigures text={readable} /></div>
+      </PrintableDetails>
     </>
   )
 }
