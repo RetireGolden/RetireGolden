@@ -746,7 +746,7 @@
           "functions": [
             {
               "name": "inferEarlyDistributionDisqualifier",
-              "line": 580
+              "line": 597
             }
           ]
         },
@@ -2771,7 +2771,7 @@
           "functions": [
             {
               "name": "inferEarlyDistributionDisqualifier",
-              "line": 580
+              "line": 597
             }
           ]
         },

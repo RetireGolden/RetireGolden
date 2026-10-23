@@ -255,10 +255,15 @@ export function householdFactsForYear(
 
 /**
  * Per-account HSA facts for a tax year and residence state. Missing Plan
- * evidence for that state -> undefined (unavailable). Present rows keep omitted
- * numeric members as `{ known: false }` rather than inventing known zero. Basis
- * asserted for another state is never reused. No New Jersey cash-withdrawal
- * income category.
+ * evidence for that state, with no runtime rows supplied, is undefined
+ * (unavailable). An empty runtime list is not a complete year until persisted
+ * evidence for that state and year is read; when that evidence is also empty,
+ * the empty list remains an explicit empty year. A runtime numeric zero does
+ * not replace an asserted evidence amount: callers use `?? 0` for an unmodeled
+ * contribution or withdrawal. A present non-zero runtime amount does replace
+ * evidence. Omitted runtime members stay evidence-backed or `{ known: false }`.
+ * Basis asserted for another state is never reused. No New Jersey
+ * cash-withdrawal income category.
  */
 export type ProjectedStateHsaAccountYearFacts = Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'> &
   Partial<Pick<StateHsaYearEvidence,
@@ -275,25 +280,37 @@ export function hsaAccountYearFactsForYear(
   residenceState?: string,
   projected?: readonly ProjectedStateHsaAccountYearFacts[],
 ): readonly StateHsaAccountYearFactsInput[] | undefined {
-  if (projected !== undefined && projected.length === 0) return []
   const stateCode = residenceState?.toUpperCase()
   const persisted = plan.stateTaxFacts.hsaYearEvidence.filter((row) => {
     if (row.taxYear !== year) return false
     if (stateCode === undefined) return true
     return row.state.toUpperCase() === stateCode
   })
+  // Read persisted evidence before an empty runtime list can count as a
+  // complete year. With no evidence, a passed empty list is still the
+  // explicit empty year; a missing runtime argument stays unavailable.
+  if ((projected === undefined || projected.length === 0) && persisted.length === 0) {
+    if (projected !== undefined) return []
+    return evidenceComplete(plan, year, stateCode, 'hsa') ? [] : undefined
+  }
   const rows: Array<Partial<StateHsaYearEvidence> & Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'>> = [...persisted]
   for (const actual of projected ?? []) {
     const index = rows.findIndex((row) => row.accountId === actual.accountId && row.ownerPersonId === actual.ownerPersonId)
-    // Only present runtime fields replace evidence. An omitted runtime category
-    // remains evidence-backed or unknown, never fabricated as zero.
-    const present = Object.fromEntries(Object.entries(actual).filter(([, value]) => value !== undefined))
-    const merged = { ...(index < 0 ? {} : rows[index]), ...present,
+    const evidence = index < 0 ? undefined : rows[index]
+    // Only present runtime fields replace evidence. A numeric zero is the
+    // `?? 0` default for an unmodeled category and does not replace an
+    // asserted amount. An omitted runtime category stays evidence-backed or
+    // unknown, never fabricated as zero.
+    const present = Object.fromEntries(Object.entries(actual).filter(([key, value]) => {
+      if (value === undefined) return false
+      if (evidence === undefined || typeof value !== 'number' || value !== 0) return true
+      return typeof evidence[key as keyof StateHsaYearEvidence] !== 'number'
+    }))
+    const merged = { ...(evidence ?? {}), ...present,
       accountId: actual.accountId, ownerPersonId: actual.ownerPersonId }
     if (index < 0) rows.push(merged)
     else rows[index] = merged
   }
-  if (rows.length === 0) return evidenceComplete(plan, year, stateCode, 'hsa') ? [] : undefined
   return rows.map((row) => {
     const fact = {
       ...row,
