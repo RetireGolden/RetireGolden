@@ -1,3 +1,4 @@
+import { californiaHsaAccountAdjustment } from '../tax/stateQcdHsa.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
@@ -112,7 +113,12 @@ it('keeps an asserted CA HSA deduction when candidate scoring supplies only zero
   const scored = inputs.filter((input) => input.stateHsaAccountYearFacts !== undefined)
   expect(scored.length).toBeGreaterThan(0)
   for (const input of scored) {
-    expect(input.stateHsaAccountYearFacts?.[0]?.federalHsaDeduction).toEqual({ known: true, amount: 4_300 })
+    const fact = input.stateHsaAccountYearFacts?.[0]
+    expect(fact?.federalHsaDeduction).toEqual({ known: true, amount: 4_300 })
+    expect(fact?.annualActivityComplete).toBe(true)
+    const addition = californiaHsaAccountAdjustment(fact!)
+    expect(addition.warnings).toEqual([])
+    expect(addition.taxableIncomeDelta).toBe(4_300)
   }
 })
 

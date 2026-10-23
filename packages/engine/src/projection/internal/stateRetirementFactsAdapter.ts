@@ -256,11 +256,14 @@ export function householdFactsForYear(
 /**
  * Per-account HSA facts for a tax year and residence state. Missing Plan
  * evidence for that state, with no runtime rows supplied, is undefined
- * (unavailable). An empty runtime list is not a complete year until persisted
- * evidence for that state and year is read; when that evidence is also empty,
- * the empty list remains an explicit empty year. A runtime numeric zero does
- * not replace an asserted evidence amount: callers use `?? 0` for an unmodeled
- * contribution or withdrawal. A present non-zero runtime amount does replace
+ * (unavailable) unless the plan certifies that HSA year complete, in which
+ * case the result is an empty list. An empty runtime list is not a complete
+ * year until persisted evidence for that state and year is read; when that
+ * evidence is also empty, the empty list remains an explicit empty year.
+ * The funding caller passes `federalHsaDeduction: 0` when it did not model a
+ * contribution. That default does not replace an asserted deduction. A
+ * present non-zero deduction does. Every other present runtime amount,
+ * including a measured zero from a characterized withdrawal, replaces
  * evidence. Omitted runtime members stay evidence-backed or `{ known: false }`.
  * Basis asserted for another state is never reused. No New Jersey
  * cash-withdrawal income category.
@@ -288,7 +291,8 @@ export function hsaAccountYearFactsForYear(
   })
   // Read persisted evidence before an empty runtime list can count as a
   // complete year. With no evidence, a passed empty list is still the
-  // explicit empty year; a missing runtime argument stays unavailable.
+  // explicit empty year. A missing runtime argument stays unavailable unless
+  // the plan certifies this HSA year complete, which returns [].
   if ((projected === undefined || projected.length === 0) && persisted.length === 0) {
     if (projected !== undefined) return []
     return evidenceComplete(plan, year, stateCode, 'hsa') ? [] : undefined
@@ -297,14 +301,15 @@ export function hsaAccountYearFactsForYear(
   for (const actual of projected ?? []) {
     const index = rows.findIndex((row) => row.accountId === actual.accountId && row.ownerPersonId === actual.ownerPersonId)
     const evidence = index < 0 ? undefined : rows[index]
-    // Only present runtime fields replace evidence. A numeric zero is the
-    // `?? 0` default for an unmodeled category and does not replace an
-    // asserted amount. An omitted runtime category stays evidence-backed or
-    // unknown, never fabricated as zero.
+    // Present runtime fields replace evidence, including a measured zero.
+    // federalHsaDeduction is the exception: the funding caller passes 0 for
+    // every account whose contribution was not modeled, and that default is
+    // not a finding that an asserted federal deduction is zero. An omitted
+    // runtime category stays evidence-backed or unknown, never fabricated.
     const present = Object.fromEntries(Object.entries(actual).filter(([key, value]) => {
       if (value === undefined) return false
-      if (evidence === undefined || typeof value !== 'number' || value !== 0) return true
-      return typeof evidence[key as keyof StateHsaYearEvidence] !== 'number'
+      if (key !== 'federalHsaDeduction' || value !== 0 || evidence === undefined) return true
+      return typeof evidence.federalHsaDeduction !== 'number'
     }))
     const merged = { ...(evidence ?? {}), ...present,
       accountId: actual.accountId, ownerPersonId: actual.ownerPersonId }

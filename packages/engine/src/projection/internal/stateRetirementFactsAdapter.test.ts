@@ -405,9 +405,10 @@ it('keeps an asserted California HSA deduction when the runtime row is only zero
   // employer contribution excluded federally $0, interest $0, dividends $0,
   // realized gains $0, and subtract the federally included nonqualified
   // distribution $0. Addition = 4,300 + 0 + 0 + 0 + 0 − 0 = 4,300.
-  // The runtime zeros are the candidate `?? 0` defaults for no modeled
-  // contribution and no withdrawal (issue #803). They are not a measurement
-  // that replaces the asserted deduction.
+  // The runtime deduction of 0 is the candidate default for no modeled
+  // contribution (issue #803). It is not a measurement that replaces the
+  // asserted deduction. Withdrawal categories are omitted: the funding caller
+  // passes them only when a withdrawal row exists.
   const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
   plan.accounts.push({
     type: 'hsa',
@@ -440,10 +441,6 @@ it('keeps an asserted California HSA deduction when the runtime row is only zero
     accountId: 'hsa1',
     ownerPersonId: 'p1',
     federalHsaDeduction: 0,
-    grossDistributions: 0,
-    qualifiedCashWithdrawals: 0,
-    nonqualifiedDistributionFederalAmount: 0,
-    nonqualifiedCashWithdrawals: 0,
   }])!
   expect(fact!.federalHsaDeduction).toEqual({ known: true, amount: 4_300 })
   const addition = californiaHsaAccountAdjustment(fact!)
@@ -454,17 +451,26 @@ it('keeps an asserted California HSA deduction when the runtime row is only zero
 it('reads persisted HSA evidence when the runtime account list is empty (#805)', () => {
   // California taxes HSA interest in the year earned
   // (ca-hsa-state-basis-nonconformity; DOCS/domain/state-tax-research/CA.md).
-  // The account is closed, so it is not on the plan and the runtime list is
-  // empty. Asserted 2026 interest of $1,200 is still that year's evidence
-  // (issue #805). An empty runtime list is not a complete year until that
-  // evidence has been read.
+  // Issue #805 calls the adapter with an empty runtime list for a closed
+  // account that is not on the plan. Plan validation still requires
+  // evidence to name an on-plan HSA account, so simulatePlan does not reach
+  // this call; the next test is the on-plan runtime row. The
+  // leaf needs every Schedule CA category known. Interest is the asserted
+  // $1,200 and the other categories are explicit known zeros, so the year
+  // is complete. Addition = 0 + 0 + 1,200 + 0 + 0 − 0 = 1,200.
   const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
   plan.stateTaxFacts.hsaYearEvidence = [{
     taxYear: 2026,
     state: 'CA',
     accountId: 'closed',
     ownerPersonId: 'p1',
+    federalHsaDeduction: 0,
+    employerContributionExcludedFederally: 0,
     interest: 1_200,
+    dividends: 0,
+    realizedGains: 0,
+    nonqualifiedDistributionFederalAmount: 0,
+    annualActivityComplete: true,
     provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
   }, {
     taxYear: 2026,
@@ -483,12 +489,140 @@ it('reads persisted HSA evidence when the runtime account list is empty (#805)',
   expect(hsaAccountYearFactsForYear(plan, 2026, 'NJ', [])).toEqual([
     expect.objectContaining({ interest: { known: true, amount: 50 } }),
   ])
+  const addition = californiaHsaAccountAdjustment(facts![0]!)
+  expect(addition.warnings).toEqual([])
+  expect(addition.taxableIncomeDelta).toBe(1_200)
+})
+
+it('keeps asserted HSA interest when the on-plan runtime row is only the deduction default', () => {
+  // Reachable candidate shape: the HSA account stays on the plan, so the
+  // funding caller sends a row whose only numeric default is
+  // federalHsaDeduction 0. Asserted interest of $1,200 is omitted from that
+  // row and stays. Worksheet matches the empty-list fixture: addition = 1,200.
+  const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+  plan.accounts.push({
+    type: 'hsa',
+    id: 'hsa1',
+    name: 'HSA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    balance: 1_000,
+    annualContribution: 0,
+  })
+  plan.stateTaxFacts.hsaYearEvidence = [{
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 0,
+    employerContributionExcludedFederally: 0,
+    interest: 1_200,
+    dividends: 0,
+    realizedGains: 0,
+    nonqualifiedDistributionFederalAmount: 0,
+    annualActivityComplete: true,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }]
+  const [fact] = hsaAccountYearFactsForYear(plan, 2026, 'CA', [{
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 0,
+  }])!
+  expect(fact!.interest).toEqual({ known: true, amount: 1_200 })
+  expect(fact!.annualActivityComplete).toBe(true)
+  expect(californiaHsaAccountAdjustment(fact!).taxableIncomeDelta).toBe(1_200)
+})
+
+it('lets a characterized withdrawal zero replace a stale nonqualified amount', () => {
+  // A qualified withdrawal is a measurement, not a `?? 0` default.
+  // Schedule CA subtracts only the federally included nonqualified amount.
+  // Evidence said that amount was $800; the characterized withdrawal used
+  // none of it. The subtraction becomes 0. The unmodeled deduction default
+  // of 0 still leaves the asserted $4,300 in place. Worksheet: 4,300 + 0 +
+  // 0 + 0 + 0 − 0 = 4,300.
+  const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+  plan.stateTaxFacts.hsaYearEvidence = [{
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 4_300,
+    employerContributionExcludedFederally: 0,
+    interest: 0,
+    dividends: 0,
+    realizedGains: 0,
+    nonqualifiedDistributionFederalAmount: 800,
+    annualActivityComplete: true,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }]
+  const [fact] = hsaAccountYearFactsForYear(plan, 2026, 'CA', [{
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 0,
+    grossDistributions: 2_000,
+    qualifiedCashWithdrawals: 2_000,
+    nonqualifiedDistributionFederalAmount: 0,
+    nonqualifiedCashWithdrawals: 0,
+  }])!
+  expect(fact).toMatchObject({
+    federalHsaDeduction: { known: true, amount: 4_300 },
+    nonqualifiedDistributionFederalAmount: { known: true, amount: 0 },
+    qualifiedCashWithdrawals: { known: true, amount: 2_000 },
+  })
+  expect(californiaHsaAccountAdjustment(fact!).taxableIncomeDelta).toBe(4_300)
+})
+
+it('keeps a closed account beside an open account in one HSA year', () => {
+  // One adapter call can carry both shapes: an on-plan account whose runtime
+  // row is only the deduction default, and a closed account with no runtime
+  // row. Each account keeps its own asserted amount.
+  const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+  plan.accounts.push({
+    type: 'hsa',
+    id: 'open',
+    name: 'Open HSA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    balance: 1_000,
+    annualContribution: 0,
+  })
+  plan.stateTaxFacts.hsaYearEvidence = [{
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'open',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 4_300,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }, {
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'closed',
+    ownerPersonId: 'p1',
+    interest: 1_200,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }]
+  const facts = hsaAccountYearFactsForYear(plan, 2026, 'CA', [{
+    accountId: 'open',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 0,
+  }])
+  expect(facts).toEqual([
+    expect.objectContaining({
+      accountId: 'open',
+      federalHsaDeduction: { known: true, amount: 4_300 },
+    }),
+    expect.objectContaining({
+      accountId: 'closed',
+      interest: { known: true, amount: 1_200 },
+    }),
+  ])
 })
 
 it('lets a modeled non-zero HSA deduction replace asserted evidence', () => {
-  // Boundary of the zero-default rule, not a second tax oracle: a present
-  // runtime amount is the modeled year fact and replaces evidence. A runtime
-  // zero does not.
+  // Boundary of the deduction-default rule, not a second tax oracle: a
+  // present non-zero runtime deduction is the modeled year fact and replaces
+  // evidence. An omitted interest member stays evidence-backed. A present
+  // interest of 0 is a measurement and replaces the asserted interest.
   const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
   plan.stateTaxFacts.hsaYearEvidence = [{
     taxYear: 2026,
@@ -503,10 +637,15 @@ it('lets a modeled non-zero HSA deduction replace asserted evidence', () => {
     accountId: 'hsa1',
     ownerPersonId: 'p1',
     federalHsaDeduction: 1_000,
-    interest: 0,
   }])
   expect(replaced?.[0]).toMatchObject({
     federalHsaDeduction: { known: true, amount: 1_000 },
     interest: { known: true, amount: 1_200 },
   })
+  const measuredInterest = hsaAccountYearFactsForYear(plan, 2026, 'CA', [{
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    interest: 0,
+  }])
+  expect(measuredInterest?.[0]?.interest).toEqual({ known: true, amount: 0 })
 })
