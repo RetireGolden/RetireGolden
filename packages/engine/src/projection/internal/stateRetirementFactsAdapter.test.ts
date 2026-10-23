@@ -523,9 +523,11 @@ describe('QCD event evidence merge (D48, D49)', () => {
     expect(adjustment.taxableIncomeDelta).toBe(0)
   })
 
-  it('surfaces an evidence-only QCD instead of reporting the year complete and empty', () => {
-    // IRC 408(d)(8)(A): the exclusion applies to the direct charitable transfer.
-    // A custodian row with no matching runtime event is still that transfer.
+  it('withholds an evidence-only QCD instead of pricing dollars the projection did not execute', () => {
+    // IRC 408(d)(8)(A) excludes an executed direct transfer. A custodian row
+    // with no matching runtime event is not that execution. NJ Worksheet C
+    // subtracts federalTaxableAmount from the state taxable amount, which
+    // assumes the federal base already includes it. The year stays incomplete.
     const plan = planWithEvidence(qcdEvidence({
       eventId: 'custodian-2026-qcd',
       grossIraDistribution: 10_000,
@@ -533,19 +535,7 @@ describe('QCD event evidence merge (D48, D49)', () => {
       federalExcludedAmount: 10_000,
       federalTaxableAmount: 0,
     }))
-    const facts = qcdEventFactsForYear(plan, 2026, [], 'NJ')
-    expect(facts).toEqual([expect.objectContaining({
-      eventId: 'custodian-2026-qcd',
-      accountId: 'ira',
-      ownerPersonId: 'p1',
-      grossIraDistribution: 10_000,
-      directCharityTransfer: 10_000,
-      federalExcludedAmount: 10_000,
-      federalTaxableAmount: 0,
-      residency: 'fullYearResident',
-      directTransfer: true,
-      splitInterest: false,
-    })])
+    expect(qcdEventFactsForYear(plan, 2026, [], 'NJ')).toBeUndefined()
   })
 
   it('keeps two QCD facts when two accounts share an eventId', () => {
@@ -553,8 +543,6 @@ describe('QCD event evidence merge (D48, D49)', () => {
       qcdEvidence({ eventId: 'shared', accountId: 'ira' }),
       qcdEvidence({ eventId: 'shared', accountId: 'ira-2', grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }),
     )
-    const facts = qcdEventFactsForYear(plan, 2026, [], 'NJ')
-    expect(facts?.map((fact) => fact.accountId).sort()).toEqual(['ira', 'ira-2'])
     const matchedRuntime = qcdEventFactsForYear(plan, 2026, [
       runtimeQcd({ eventId: 'shared', accountId: 'ira' }),
       runtimeQcd({ eventId: 'shared', accountId: 'ira-2', grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }),
@@ -612,7 +600,13 @@ describe('QCD event evidence merge (D48, D49)', () => {
         grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000,
       }),
     )
-    const facts = qcdEventFactsForYear(plan, 2026, [], 'NJ')
+    const facts = qcdEventFactsForYear(plan, 2026, [
+      runtimeQcd({ eventId: 'a', accountId: 'b\u0000c' }),
+      runtimeQcd({
+        eventId: 'a\u0000b', accountId: 'c',
+        grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000,
+      }),
+    ], 'NJ')
     expect(facts).toHaveLength(2)
     expect(facts).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventId: 'a', accountId: 'b\u0000c', grossIraDistribution: 10_000 }),

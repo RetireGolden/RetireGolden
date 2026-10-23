@@ -2519,6 +2519,15 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   for (const accountId of stateForcedGrossByAccount.keys()) if (!stateForcedTaxableByAccount.has(accountId)) {
     stateForcedTaxableByAccount.set(accountId, 0)
   }
+  for (const row of plan.stateTaxFacts.qcdEventEvidence ?? []) {
+    if (row.taxYear !== year) continue
+    const executed = stateQcdEvents.some((event) =>
+      event.eventId === row.eventId && event.accountId === row.accountId && event.ownerPersonId === row.ownerPersonId)
+    if (executed) continue
+    warnings.add(
+      `Custodian QCD evidence ${row.eventId} on account ${row.accountId} for ${year} has no executed distribution, so this year's state QCD collection is incomplete.`,
+    )
+  }
   const residenceState = stateForYear(plan.household, year)
   return {
     stateQcdEventFacts: qcdEventFactsForYear(plan, year, qcdRuntimeEventsForFacts(plan, year, stateQcdEvents, residenceState), residenceState),

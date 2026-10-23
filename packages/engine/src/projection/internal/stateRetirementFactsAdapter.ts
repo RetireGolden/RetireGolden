@@ -689,30 +689,6 @@ function mergeQcdRuntimeWithEvidence(
   }
 }
 
-function factFromQcdEvidence(row: QcdEventEvidenceRow): StateQcdEventFactsInput {
-  const kind = row.transactionKind
-  const directTransfer = qcdDirectTransfer(kind, undefined, row.directTransfer)
-  return {
-    eventId: row.eventId,
-    accountId: row.accountId,
-    ownerPersonId: row.ownerPersonId,
-    grossIraDistribution: row.grossIraDistribution,
-    directCharityTransfer: row.directCharityTransfer,
-    federalExcludedAmount: row.federalExcludedAmount,
-    federalTaxableAmount: row.federalTaxableAmount,
-    federalBasisAllocated: row.federalBasisAllocated,
-    residency: row.residency,
-    splitInterest: qcdSplitInterest(kind, false),
-    transactionKind: kind,
-    ...(directTransfer !== undefined ? { directTransfer } : {}),
-    ...(row.transferDate !== undefined ? { transferDate: row.transferDate } : {}),
-    ...(row.kansasCoveredCharitableCreditClaimed !== undefined
-      ? { kansasCoveredCharitableCreditClaimed: row.kansasCoveredCharitableCreditClaimed }
-      : {}),
-    ...(row.stateAllocation !== undefined ? { stateAllocation: row.stateAllocation } : {}),
-  }
-}
-
 function qcdMarkedUnknown(plan: Readonly<Plan>, year: number, state: string | undefined): boolean {
   const states = qcdActivityStates(plan, year, state)
   return plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
@@ -745,15 +721,17 @@ export function qcdEventFactsForYear(plan: Readonly<Plan>, year: number,
     if (evidence !== undefined) matched.add(evidence)
     byKey.set(qcdFactKey(event), mergeQcdRuntimeWithEvidence(event, evidence))
   }
-  for (const row of asserted) {
-    if (matched.has(row)) continue
-    byKey.set(qcdFactKey(row), factFromQcdEvidence(row))
-  }
+  // An unmatched custodian row was not debited and its federal taxable
+  // amount is not in the projected base. Pricing it as a QCD would make the
+  // NJ Worksheet C delta (state taxable minus federalTaxableAmount) land on
+  // a federal base that omits that distribution. IRC 408(d)(8)(A) applies to
+  // the executed transfer. The year stays incomplete instead.
+  if (asserted.some((row) => !matched.has(row))) return undefined
   if (byKey.size === 0 && !evidenceComplete(plan, year, state, 'qcd')) {
     // An unobserved list, or a year the plan marks unknown, is not a
     // known-empty collection. The forced-distribution caller reaches this
-    // by passing undefined when it executed no QCD and the year is unknown
-    // or carries evidence; an empty runtime list with qcd: 'unknown' does too.
+    // by passing undefined when it executed no QCD and the year is unknown.
+    // Unmatched custodian evidence returns above, also incomplete.
     if (events === undefined || qcdMarkedUnknown(plan, year, state)) return undefined
   }
   // One observed event does not make an explicitly unknown year complete.

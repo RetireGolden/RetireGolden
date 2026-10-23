@@ -419,7 +419,7 @@
     {
       "path": "projection/internal/stateRetirementFactsAdapter.ts",
       "sweptOn": "2026-10-23",
-      "note": "Maps source systems, HSA facts, QCD events and state basis to tax leaves. QCD runtime literal defaults no longer overwrite attested residency, split-interest, or direct-transfer; transactionKind is honored and evidence-only QCD rows are surfaced; the qcd completeness branch is reached from the forced-distribution caller when the year is unknown or carries custodian evidence. A qcd unknown mark on any residency segment withholds the collection even when one event was observed. Duplicate event/account/owner identities withhold the collection instead of collapsing. HSA eligibility/completeness mappings and source attribution remain residual caller contracts."
+      "note": "Maps source systems, HSA facts, QCD events and state basis to tax leaves. QCD runtime literal defaults no longer overwrite attested residency, split-interest, or direct-transfer; transactionKind is honored. Unmatched custodian rows are not priced as executed QCDs: the collection is withheld and the projection names the row. The qcd completeness branch is reached from the forced-distribution caller when the year is unknown or carries custodian evidence. A qcd unknown mark on any residency segment withholds the collection even when one event was observed. Duplicate event/account/owner identities withhold the collection instead of collapsing. HSA eligibility/completeness mappings and source attribution remain residual caller contracts."
     },
     {
       "path": "projection/internal/types/tax.ts",
