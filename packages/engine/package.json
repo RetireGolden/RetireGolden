@@ -238,16 +238,16 @@
   },
   "dependencies": {
     "highs": "1.15.2",
-    "zod": "^4.6.2"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.5",
     "ajv": "^8.20.0",
-    "eslint": "^10.10.0",
-    "globals": "^17.12.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.70.0",
-    "vitest": "^5.0.0"
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
   }
 }
