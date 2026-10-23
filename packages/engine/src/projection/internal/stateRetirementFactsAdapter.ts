@@ -500,10 +500,9 @@ export function njIraYearProjection(input: {
  * does not drop an amount another IRA of the same owner asserted. A negative
  * adjustment is passed through so Worksheet C rejects the pool.
  *
- * With no evidence rows, a projected New Jersey QCD still forms a pool from
- * the modeled traditional IRA balances and the year's IRA distributions.
- * GIT-1 & 2 makes the excludable portion the previously taxed contributions,
- * so none asserted means that portion is zero.
+ * A projected New Jersey QCD with no basis evidence is detected from the
+ * year's ledger. Unknown basis stays incomplete: no pool is synthesized, so
+ * Worksheet C reports nj-qcd-basis-unknown and the transfer is not priced.
  */
 export function njIraOwnerPoolsForYear(
   plan: Readonly<Plan>,
@@ -515,8 +514,12 @@ export function njIraOwnerPoolsForYear(
   )
   const basisList = evidenceMark(plan, year, 'NJ', 'iraBasis')
   if (rows.length === 0) {
-    if (basisList === 'complete' || basisList === 'unknown') return basisList === 'complete' ? [] : undefined
-    return projectedNjIraOwnerPools(projected)
+    if (basisList === 'complete') return []
+    // The call recognizes a projected QCD, including Roth-conversion dollars
+    // in the distribution total. That total is not priced until a Worksheet C
+    // citation says a conversion belongs in the denominator.
+    projectedNjQcdDetected(projected)
+    return undefined
   }
   const byOwner = new Map<string, typeof rows>()
   for (const row of rows) byOwner.set(row.ownerPersonId, [...(byOwner.get(row.ownerPersonId) ?? []), row])
@@ -560,10 +563,7 @@ export function njIraOwnerPoolsForYear(
       annualInputsComplete: complete,
     }
   })
-  if (basisList === 'complete' || basisList === 'unknown' || projected === undefined) return evidencePools
-  const covered = new Set(evidencePools.map((pool) => pool.ownerPersonId))
-  const projectedPools = projectedNjIraOwnerPools(projected)?.filter((pool) => !covered.has(pool.ownerPersonId)) ?? []
-  return projectedPools.length === 0 ? evidencePools : [...evidencePools, ...projectedPools]
+  return evidencePools
 }
 
 /**
@@ -579,32 +579,9 @@ function projectedOwnerDistributionTotal(projected: NjIraProjectedYear, ownerPer
     qcd.reduce((sum, event) => sum + Math.max(0, event.grossIraDistribution), 0)
 }
 
-function projectedNjIraOwnerPools(
-  projected: NjIraProjectedYear | undefined,
-): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
-  if (projected === undefined || !isNjState(projected.residenceState)) return undefined
-  const owners = [...new Set(projected.qcdEvents.map((event) => event.ownerPersonId))]
-  const pools: StateNjIraOwnerPoolFactsInput[] = []
-  for (const ownerPersonId of owners) {
-    const allAnnualDistributions = projectedOwnerDistributionTotal(projected, ownerPersonId)
-    if (!(allAnnualDistributions > 0)) continue
-    const balances = projected.traditionalIraBalances.filter((row) => row.ownerPersonId === ownerPersonId)
-    const december31IraValue = balances.reduce((sum, row) => sum + row.balance, 0)
-    if (!Number.isFinite(december31IraValue) || december31IraValue < 0 ||
-      !Number.isFinite(allAnnualDistributions)) continue
-    pools.push({
-      ownerPersonId,
-      december31IraValue,
-      allAnnualDistributions,
-      // GIT-1 & 2: the excludable portion is previously taxed contributions.
-      // None were asserted for this projected year.
-      unrecoveredNjTaxedContributions: knownAmount(0),
-      assumedUnrecoveredBasis: true,
-      fullLiquidation: december31IraValue === 0 && allAnnualDistributions > 0,
-      annualInputsComplete: true,
-    })
-  }
-  return pools.length === 0 ? undefined : pools
+function projectedNjQcdDetected(projected: NjIraProjectedYear | undefined): boolean {
+  if (projected === undefined || !isNjState(projected.residenceState)) return false
+  return projected.qcdEvents.some((event) => projectedOwnerDistributionTotal(projected, event.ownerPersonId) > 0)
 }
 
 function isNjState(state: string | undefined): boolean {
@@ -625,42 +602,6 @@ export function njIraLedgerBalancesNetOfGross<T extends { readonly account: { re
     const gross = distributions.reduce((sum, row) =>
       row.accountId === state.account.id ? sum + Math.max(0, row.grossDistribution ?? 0) : sum, 0)
     return gross === 0 ? state : { ...state, balance: state.balance - gross }
-  })
-}
-
-/**
- * A funding candidate appends need-based IRA withdrawals after the projected
- * pool was snapshotted. Move that gross from the December 31 value into the
- * distribution total so Worksheet C's total value is unchanged and the
- * calculator's reconciliation still matches. Evidence pools are left alone.
- */
-export function shiftAssumedNjIraOwnerPools(
-  pools: readonly StateNjIraOwnerPoolFactsInput[] | undefined,
-  added: readonly { readonly ownerPersonId: string; readonly sourceKind: string; readonly accountTaxTreatment?: string; readonly grossDistribution?: number }[],
-): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
-  if (pools === undefined || added.length === 0) return pools
-  const byOwner = new Map<string, number>()
-  for (const row of added) {
-    if (row.sourceKind !== 'ira' || row.accountTaxTreatment === 'roth') continue
-    byOwner.set(row.ownerPersonId, (byOwner.get(row.ownerPersonId) ?? 0) + Math.max(0, row.grossDistribution ?? 0))
-  }
-  if (byOwner.size === 0) return pools
-  return pools.map((pool) => {
-    if (pool.assumedUnrecoveredBasis !== true) return pool
-    const gross = byOwner.get(pool.ownerPersonId) ?? 0
-    if (!(gross > 0)) return pool
-    const december31IraValue = pool.december31IraValue - gross
-    if (!Number.isFinite(december31IraValue) || december31IraValue < -0.005) {
-      return { ...pool, annualInputsComplete: false }
-    }
-    const december31 = Math.max(0, december31IraValue)
-    const allAnnualDistributions = pool.allAnnualDistributions + gross
-    return {
-      ...pool,
-      december31IraValue: december31,
-      allAnnualDistributions,
-      fullLiquidation: december31 === 0 && allAnnualDistributions > 0,
-    }
   })
 }
 

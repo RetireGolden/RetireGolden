@@ -243,24 +243,24 @@
       "label": "candidate withdrawal-character invocation inside the funding evaluator",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        197,
-        249
+        196,
+        248
       ],
       "anchors": [
         {
-          "line": 197,
+          "line": 196,
           "text": "const { request, withdrawalPlan, iraCharacter, aca } = input"
         },
         {
-          "line": 202,
+          "line": 201,
           "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({"
         },
         {
-          "line": 205,
+          "line": 204,
           "text": "traditionalTaxableByAccountId:"
         },
         {
-          "line": 248,
+          "line": 247,
           "text": "hsaQualifiedCap: candidateHsaCap,"
         }
       ]
@@ -270,20 +270,20 @@
       "label": "complete candidate penalty and warning-gate handoff",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        460,
-        486
+        458,
+        484
       ],
       "anchors": [
         {
-          "line": 460,
+          "line": 458,
           "text": "const penalties ="
         },
         {
-          "line": 461,
+          "line": 459,
           "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +"
         },
         {
-          "line": 485,
+          "line": 483,
           "text": "traditionalEarlyWithdrawalPenaltyCharged:"
         }
       ]

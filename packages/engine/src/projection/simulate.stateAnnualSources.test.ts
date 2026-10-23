@@ -91,12 +91,9 @@ it('publishes conversion source gross and taxable dollars to final state computa
 })
 
 
-it('prices a projected 2027 New Jersey QCD from the modeled IRA pool when no basis evidence exists', () => {
-  // GIT-1 & 2 Worksheet C. Opening IRA 200,000, return 0, QCD 10,000, no other
-  // IRA distribution: December 31 value 190,000 and distributions 10,000.
-  // No previously taxed contributions are asserted, so the excludable portion
-  // is 0 and the $10,000 transfer is $10,000 of New Jersey IRA income.
-  // Wages of $200,000 keep the transfer above the $150,000 pension exclusion.
+it('detects a projected 2027 New Jersey QCD and leaves unknown basis unpriced', () => {
+  // Opening IRA 200,000, QCD 10,000, no basis evidence. The transfer is seen
+  // and is not added to New Jersey income.
   const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
   plan.incomes = [{ type: 'wages', id: 'wages', personId: 'p1', annualGross: 200_000, endAge: null, realGrowthPct: 0 }]
@@ -108,24 +105,21 @@ it('prices a projected 2027 New Jersey QCD from the modeled IRA pool when no bas
     startYear: 2027, horizonEndYear: 2027,
     taxCalculator: createStateTaxCalculator({}),
   }).years[0]!
-  const pool = priced.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
-  expect(pool).toMatchObject({
-    ownerPersonId: 'p1', december31IraValue: 190_000, allAnnualDistributions: 10_000,
-    unrecoveredNjTaxedContributions: { known: true, amount: 0 }, assumedUnrecoveredBasis: true,
-  })
+  expect(priced.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+  expect(priced.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
   expect(priced.balances.ira).toBeCloseTo(190_000, 6)
   const tax = priced.taxComputation as unknown as { taxableIncome: number; status: string; issues: { code: string }[] }
-  expect(tax.status).toBe('complete')
-  expect(tax.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
+  expect(tax.status).toBe('incomplete')
+  expect(tax.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
   plan.strategies.qcdAnnual = 0
   const baseline = simulatePlan(validatePlan(plan), {
     startYear: 2027, horizonEndYear: 2027,
     taxCalculator: createStateTaxCalculator({}),
   }).years[0]!.taxComputation as unknown as { taxableIncome: number }
-  expect(tax.taxableIncome - baseline.taxableIncome).toBe(10_000)
+  expect(tax.taxableIncome).toBe(baseline.taxableIncome)
 })
 
-it('keeps a second projected New Jersey QCD year at the unasserted basis instead of dropping it', () => {
+it('keeps a second projected New Jersey QCD year incomplete instead of assuming basis', () => {
   const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
   plan.assumptions.defaultReturnPct = 0
@@ -137,17 +131,14 @@ it('keeps a second projected New Jersey QCD year at the unasserted basis instead
     taxCalculator: createStateTaxCalculator({}),
   }).years
   for (const year of years) {
-    expect(year.taxComputation?.status).toBe('complete')
-    expect(year.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
-    expect(year.acceptedTaxInput?.stateNjIraOwnerPools?.[0]).toMatchObject({
-      unrecoveredNjTaxedContributions: { known: true, amount: 0 }, assumedUnrecoveredBasis: true,
-    })
+    expect(year.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+    expect(year.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+    expect(year.taxComputation?.status).toBe('incomplete')
+    expect(year.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
   }
-  expect(years[1]!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]?.december31IraValue).toBeCloseTo(180_000, 4)
-  expect(years[1]!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]?.allAnnualDistributions).toBeCloseTo(10_000, 4)
 })
 
-it('does not let a projected zero replace later evidenced New Jersey basis', () => {
+it('does not let a projected year replace later evidenced New Jersey basis', () => {
   const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
   plan.assumptions.defaultReturnPct = 0
@@ -184,10 +175,7 @@ it('carries lowercase nj basis evidence into the next year', () => {
   expect(result.years[1]!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 90, basisConsumed: 10, closingBasis: 80 })
 })
 
-it('keeps a projected New Jersey QCD pool complete when spending also draws the IRA', () => {
-  // No cash and no wages, so the $20,000 of spending comes from the IRA after
-  // the $10,000 QCD. Opening 200,000 and return 0: the December 31 value plus
-  // the distributions, including that draw, stay 200,000. Basis 0.
+it('leaves a projected New Jersey QCD incomplete when spending also draws the IRA', () => {
   const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira')]
   plan.assumptions.defaultReturnPct = 0
@@ -198,12 +186,10 @@ it('keeps a projected New Jersey QCD pool complete when spending also draws the 
   const year = simulatePlan(validatePlan(plan), {
     startYear: 2027, horizonEndYear: 2027, taxCalculator: createStateTaxCalculator({}),
   }).years[0]!
-  const pool = year.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
-  expect(pool?.allAnnualDistributions).toBeGreaterThan(10_000)
-  expect((pool?.december31IraValue ?? 0) + (pool?.allAnnualDistributions ?? 0)).toBeCloseTo(200_000, 4)
-  expect(year.taxComputation?.status).toBe('complete')
-  expect(year.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
-  expect(year.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-ira-annual-inputs-incomplete')
+  expect(year.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+  expect(year.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+  expect(year.taxComputation?.status).toBe('incomplete')
+  expect(year.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
 })
 
 it('commits NJ Worksheet C basis once and carries closing basis to the next actual year', () => {

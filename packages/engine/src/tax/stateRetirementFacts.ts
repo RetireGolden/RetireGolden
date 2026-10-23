@@ -394,11 +394,6 @@ export interface StateNjIraOwnerPoolFacts {
   unrecoveredNjTaxedContributions: KnownMoney
   exemptObligationIncome?: number
   fullLiquidation: boolean
-  /**
-   * True when no New Jersey basis row was asserted and the excludable portion
-   * is zero for this pricing. It is not a measured Worksheet C recovery.
-   */
-  assumedUnrecoveredBasis?: boolean
 }
 
 /** @deprecated Prefer StateQcdEventFacts[] + StateNjIraOwnerPoolFacts. */

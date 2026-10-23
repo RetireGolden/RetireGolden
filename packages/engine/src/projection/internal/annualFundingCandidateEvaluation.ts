@@ -22,7 +22,6 @@ import {
   type YearWithdrawals,
 } from '../types.js'
 import type { AnnualFundingFixedPointEvaluationRequest } from './annualFundingFixedPoint.js'
-import { shiftAssumedNjIraOwnerPools } from './stateRetirementFactsAdapter.js'
 import {
   annualFundingWithdrawalEffects,
   recharacterizeAnnualFundingWithdrawalHsaCap,
@@ -348,7 +347,6 @@ export function annualFundingCandidateEvaluation<
         ...(taxInput.stateRetirementDistributions ?? []),
         ...addedStateWithdrawals,
       ]
-      taxInput.stateNjIraOwnerPools = shiftAssumedNjIraOwnerPools(taxInput.stateNjIraOwnerPools, addedStateWithdrawals)
     }
     taxInput = input.taxCalculator.prepareInput?.(taxInput) ?? taxInput
     taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)

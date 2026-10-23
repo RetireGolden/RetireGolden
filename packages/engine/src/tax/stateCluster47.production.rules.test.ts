@@ -351,13 +351,12 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     })])
     expect(njIraOwnerPoolsForYear(open, 2026)?.[0]?.fullLiquidation).toBe(false)
   })
-  it('taxes a projected New Jersey QCD with no basis evidence at the full transfer', () => {
-    // GIT-1 & 2: the excludable portion is previously taxed contributions.
-    // None asserted. December 31 value 190,000 + distributions 10,000.
-    // Basis 0, so the $10,000 QCD is $10,000 of New Jersey IRA income.
-    // Ordinary income $200,000 is over the $150,000 pension-exclusion limit.
+  it('detects a projected New Jersey QCD with no basis evidence and leaves it unpriced', () => {
+    // Unknown owner basis stays incomplete. The projected QCD is seen and
+    // does not become a known-zero pool, so the $10,000 transfer is not
+    // added to New Jersey income.
     const plan = createEmptyPlan({ newId: () => 'x', now: () => new Date('2026-01-01T00:00:00.000Z') })
-    const pools = njIraOwnerPoolsForYear(plan, 2027, {
+    const projection = {
       residenceState: 'NJ',
       traditionalIraBalances: [{ ownerPersonId: 'owner', accountId: 'ira', balance: 190_000 }],
       qcdEvents: [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
@@ -365,15 +364,13 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
         eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira',
         accountTaxTreatment: 'traditional', grossDistribution: 10_000,
       }],
-    })
-    expect(pools?.[0]).toMatchObject({
-      december31IraValue: 190_000, allAnnualDistributions: 10_000,
-      unrecoveredNjTaxedContributions: { known: true, amount: 0 },
-    })
+    }
+    expect(njIraOwnerPoolsForYear(plan, 2027, projection)).toBeUndefined()
     const year = { year: 2027, ordinaryIncome: 200_000, agesAlive: [71] }
-    const result = annual('NJ', { qcdEvents: [qcd()], njIraOwnerPools: pools }, year)
-    expect(result.taxableIncome - annual('NJ', {}, year).taxableIncome).toBe(10_000)
-    expect(result.warnings.map((warning) => warning.code)).not.toContain('nj-qcd-basis-unknown')
+    const result = annual('NJ', { qcdEvents: [qcd()] }, year)
+    expect(result.status).toBe('incomplete')
+    expect(result.warnings.map((warning) => warning.code)).toContain('nj-qcd-basis-unknown')
+    expect(result.taxableIncome).toBe(annual('NJ', {}, year).taxableIncome)
   })
   it('leaves an explicit unknown basis list incomplete instead of assuming zero', () => {
     const plan = njBasisPlan([], [{ taxYear: 2027, state: 'NJ', iraBasis: 'unknown' }])
@@ -384,7 +381,7 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
       iraDistributions: [],
     })).toBeUndefined()
   })
-  it('projects the owner with no basis row when another owner has one', () => {
+  it('does not invent a zero-basis pool for an owner with no basis row', () => {
     const plan = njBasisPlan([njBasisRow({ ownerPersonId: 'owner' })])
     const pools = njIraOwnerPoolsForYear(plan, 2026, {
       residenceState: 'NJ',
@@ -398,23 +395,27 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
         accountTaxTreatment: 'traditional', grossDistribution: 10_000,
       }],
     })
-    const spouse = pools?.find((pool) => pool.ownerPersonId === 'spouse')
-    expect(spouse).toMatchObject({
-      december31IraValue: 190_000, allAnnualDistributions: 10_000, assumedUnrecoveredBasis: true,
-      unrecoveredNjTaxedContributions: { known: true, amount: 0 },
-    })
     expect(pools?.some((pool) => pool.ownerPersonId === 'owner')).toBe(true)
+    expect(pools?.some((pool) => pool.ownerPersonId === 'spouse')).toBe(false)
+    const result = annual('NJ', {
+      qcdEvents: [qcd({ eventId: 'qcd-b', accountId: 'spouse-ira', ownerPersonId: 'spouse' })],
+      njIraOwnerPools: pools,
+    })
+    expect(result.status).toBe('incomplete')
+    expect(result.warnings.map((warning) => warning.code)).toContain('nj-qcd-basis-unknown')
+    expect(result.taxableIncome).toBe(annual('NJ').taxableIncome)
   })
-  it('counts a Roth conversion once, in the distribution total and not also in the December 31 balance', () => {
-    // A conversion probe still holds the pre-debit balance. Netting the $50,000
-    // gross out of that balance leaves December 31 at $240,000. Distributions
-    // are the $10,000 QCD plus the $50,000 conversion. Total value stays $300,000.
+  it('nets a Roth conversion out of the probe balance and still does not price the QCD', () => {
+    // The probe still holds the pre-debit balance. Netting the $50,000 gross
+    // leaves $240,000. Whether that conversion belongs in Worksheet C's
+    // distribution total is pending a cited rule, so the QCD stays unpriced.
     const plan = createEmptyPlan({ newId: () => 'x', now: () => new Date('2026-01-01T00:00:00.000Z') })
     const balances = njIraLedgerBalancesNetOfGross(
       [{ account: { id: 'ira' }, balance: 290_000 }],
       [{ accountId: 'ira', grossDistribution: 50_000 }],
     )
-    const pools = njIraOwnerPoolsForYear(plan, 2027, {
+    expect(balances[0]?.balance).toBe(240_000)
+    expect(njIraOwnerPoolsForYear(plan, 2027, {
       residenceState: 'NJ',
       traditionalIraBalances: [{ ownerPersonId: 'owner', accountId: 'ira', balance: balances[0]!.balance }],
       qcdEvents: [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
@@ -422,9 +423,7 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
         { eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 10_000 },
         { eventId: 'conversion', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 50_000 },
       ],
-    })
-    expect(pools?.[0]).toMatchObject({ december31IraValue: 240_000, allAnnualDistributions: 60_000 })
-    expect((pools?.[0]?.december31IraValue ?? 0) + (pools?.[0]?.allAnnualDistributions ?? 0)).toBe(300_000)
+    })).toBeUndefined()
   })
 })
 describe('QCD classification controls shared by both original findings', () => {
