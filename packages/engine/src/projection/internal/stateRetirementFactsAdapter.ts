@@ -427,70 +427,6 @@ export function buildNjIraOwnerPoolFacts(input: {
   }
 }
 
-/** Traditional IRA balances and distributions already on the year's ledger. */
-export interface NjIraProjectedYear {
-  readonly residenceState?: string
-  readonly traditionalIraBalances: readonly {
-    readonly ownerPersonId: string
-    readonly accountId: string
-    readonly balance: number
-  }[]
-  readonly qcdEvents: readonly {
-    readonly eventId: string
-    readonly accountId: string
-    readonly ownerPersonId: string
-    readonly grossIraDistribution: number
-  }[]
-  readonly iraDistributions: readonly {
-    readonly eventId?: string
-    readonly accountId?: string
-    readonly ownerPersonId: string
-    readonly sourceKind: string
-    readonly accountTaxTreatment?: string
-    readonly grossDistribution?: number
-  }[]
-}
-
-/**
- * NJ projection snapshot for one residence year. Other states return undefined
- * so a non-NJ year keeps the evidence-only pool lookup.
- */
-export function njIraYearProjection(input: {
-  readonly residenceState: string | undefined
-  readonly primaryPersonId: string
-  readonly balances: readonly { readonly account: Account; readonly balance: number }[]
-  readonly qcdEvents?: readonly StateQcdEventFactsInput[]
-  readonly retirementDistributions?: readonly StateRetirementDistributionFactInput[]
-}): NjIraProjectedYear | undefined {
-  if (!isNjState(input.residenceState)) return undefined
-  return {
-    residenceState: input.residenceState,
-    traditionalIraBalances: input.balances.flatMap((state) => {
-      const account = state.account
-      if (account.type !== 'traditional' || account.kind !== 'ira') return []
-      return [{
-        ownerPersonId: account.ownerPersonId ?? input.primaryPersonId,
-        accountId: account.id,
-        balance: state.balance,
-      }]
-    }),
-    qcdEvents: (input.qcdEvents ?? []).map((event) => ({
-      eventId: event.eventId,
-      accountId: event.accountId,
-      ownerPersonId: event.ownerPersonId,
-      grossIraDistribution: event.grossIraDistribution,
-    })),
-    iraDistributions: (input.retirementDistributions ?? []).map((row) => ({
-      eventId: row.eventId,
-      accountId: row.accountId,
-      ownerPersonId: row.ownerPersonId,
-      sourceKind: row.sourceKind,
-      ...(row.accountTaxTreatment === undefined ? {} : { accountTaxTreatment: row.accountTaxTreatment }),
-      ...(row.grossDistribution === undefined ? {} : { grossDistribution: row.grossDistribution }),
-    })),
-  }
-}
-
 /**
  * Derive NJ owner pools for a tax year.
  *
@@ -500,14 +436,13 @@ export function njIraYearProjection(input: {
  * does not drop an amount another IRA of the same owner asserted. A negative
  * adjustment is passed through so Worksheet C rejects the pool.
  *
- * A projected New Jersey QCD with no basis evidence is detected from the
- * year's ledger. Unknown basis stays incomplete: no pool is synthesized, so
- * Worksheet C reports nj-qcd-basis-unknown and the transfer is not priced.
+ * A year with no New Jersey basis evidence does not get a pool. QCD events
+ * on the tax input stay, so Worksheet C reports nj-qcd-basis-unknown and
+ * the transfer is not priced.
  */
 export function njIraOwnerPoolsForYear(
   plan: Readonly<Plan>,
   year: number,
-  projected?: NjIraProjectedYear,
 ): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
   const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter(
     (row) => row.taxYear === year && isNjState(row.state),
@@ -515,10 +450,6 @@ export function njIraOwnerPoolsForYear(
   const basisList = evidenceMark(plan, year, 'NJ', 'iraBasis')
   if (rows.length === 0) {
     if (basisList === 'complete') return []
-    // The call recognizes a projected QCD, including Roth-conversion dollars
-    // in the distribution total. That total is not priced until a Worksheet C
-    // citation says a conversion belongs in the denominator.
-    projectedNjQcdDetected(projected)
     return undefined
   }
   const byOwner = new Map<string, typeof rows>()
@@ -567,21 +498,22 @@ export function njIraOwnerPoolsForYear(
 }
 
 /**
- * Owner gross the state calculator reconciles against `allAnnualDistributions`:
- * traditional IRA rows that are not the QCD event, plus each QCD gross once.
+ * Traditional IRA gross a future Worksheet C pool would reconcile: rows that
+ * are not the QCD event, plus each QCD gross once. A Roth conversion is a
+ * traditional IRA row, so it is included. This total is not applied to a
+ * priced pool until a cited Worksheet C rule says a conversion belongs there.
  */
-function projectedOwnerDistributionTotal(projected: NjIraProjectedYear, ownerPersonId: string): number {
-  const qcd = projected.qcdEvents.filter((event) => event.ownerPersonId === ownerPersonId)
-  const unmatched = projected.iraDistributions.filter((row) =>
+export function njIraProjectedDistributionTotal(
+  ownerPersonId: string,
+  qcdEvents: readonly { readonly eventId: string; readonly accountId: string; readonly ownerPersonId: string; readonly grossIraDistribution: number }[],
+  iraDistributions: readonly { readonly eventId?: string; readonly accountId?: string; readonly ownerPersonId: string; readonly sourceKind: string; readonly accountTaxTreatment?: string; readonly grossDistribution?: number }[],
+): number {
+  const qcd = qcdEvents.filter((event) => event.ownerPersonId === ownerPersonId)
+  const unmatched = iraDistributions.filter((row) =>
     row.ownerPersonId === ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth' &&
     !qcd.some((event) => event.eventId === row.eventId && event.accountId === row.accountId))
   return unmatched.reduce((sum, row) => sum + Math.max(0, row.grossDistribution ?? 0), 0) +
     qcd.reduce((sum, event) => sum + Math.max(0, event.grossIraDistribution), 0)
-}
-
-function projectedNjQcdDetected(projected: NjIraProjectedYear | undefined): boolean {
-  if (projected === undefined || !isNjState(projected.residenceState)) return false
-  return projected.qcdEvents.some((event) => projectedOwnerDistributionTotal(projected, event.ownerPersonId) > 0)
 }
 
 function isNjState(state: string | undefined): boolean {

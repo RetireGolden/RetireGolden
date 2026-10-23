@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/projection/internal/annualFundingApplicationAnd
 index b25cb0335..a55ee7102 100644
 --- a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
 +++ b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-@@ -1954,7 +1954,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1947,7 +1947,7 @@ export function annualFundingApplicationAndClosePhase(
      }
      deposit(surplus)
  

@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd
 ## Mutation applied to `packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts`
 
 ```diff
-@@ -389,10 +389,8 @@
+@@ -388,10 +388,8 @@
    // Cash and balances always follow generated only.
    const yearTaxExemptInterest =
      acaActive && acaContract?.taxExemptInterest.state === 'known'

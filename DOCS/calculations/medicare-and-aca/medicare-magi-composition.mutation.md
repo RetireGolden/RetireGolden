@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -1343,8 +1343,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1336,8 +1336,7 @@ export function annualFundingApplicationAndClosePhase(
          ordinaryRealized +
            gainsRealized +
            incomes.qualifiedDividends +

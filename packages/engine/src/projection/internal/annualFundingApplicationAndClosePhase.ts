@@ -39,7 +39,6 @@ import {
   householdFactsForYear,
   hsaAccountYearFactsForYear,
   njIraOwnerPoolsForYear,
-  njIraYearProjection,
 } from './stateRetirementFactsAdapter.js'
 import type { AnnualCashFlowPenaltySnapshot } from '../annualCashFlowCapture.js'
 import type { AnnualCashFlowYearSites } from '../annualCashFlowYearSites.js'
@@ -1004,13 +1003,7 @@ export function annualFundingApplicationAndClosePhase(
             return hsa === undefined ? {} : { stateHsaAccountYearFacts: hsa }
           })(),
           ...(() => {
-            const pools = njIraOwnerPoolsForYear(plan, year, njIraYearProjection({
-              residenceState,
-              primaryPersonId: primary.id,
-              balances: annualIdKeyedBalances,
-              qcdEvents: facts.stateQcdEventFacts,
-              retirementDistributions: facts.stateRetirementDistributions,
-            }))
+            const pools = njIraOwnerPoolsForYear(plan, year)
             return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
           })(),
           ...(facts.stateQcdEventFacts === undefined

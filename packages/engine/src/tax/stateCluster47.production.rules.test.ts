@@ -9,7 +9,7 @@ import { describeRule } from '../rules/describeRule.js'
 import { createEmptyPlan } from '../model/plan.js'
 import { stateIraBasisYearEvidenceSchema } from '../model/stateTaxPlanFacts.js'
 import type { TaxYearInput } from '../projection/types.js'
-import { njIraLedgerBalancesNetOfGross, njIraOwnerPoolsForYear } from '../projection/internal/stateRetirementFactsAdapter.js'
+import { njIraLedgerBalancesNetOfGross, njIraOwnerPoolsForYear, njIraProjectedDistributionTotal } from '../projection/internal/stateRetirementFactsAdapter.js'
 import { computeStateTaxYearResult, createStateTaxCalculator, type StateTaxYearOptions } from './stateTax.js'
 import { knownMoney, unknownMoney, type StateRetirementDistributionFact, type StateHouseholdTaxFacts, type StateHsaAccountYearFacts, type StateQcdEventFacts } from './stateRetirementFacts.js'
 
@@ -356,16 +356,7 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     // does not become a known-zero pool, so the $10,000 transfer is not
     // added to New Jersey income.
     const plan = createEmptyPlan({ newId: () => 'x', now: () => new Date('2026-01-01T00:00:00.000Z') })
-    const projection = {
-      residenceState: 'NJ',
-      traditionalIraBalances: [{ ownerPersonId: 'owner', accountId: 'ira', balance: 190_000 }],
-      qcdEvents: [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
-      iraDistributions: [{
-        eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira',
-        accountTaxTreatment: 'traditional', grossDistribution: 10_000,
-      }],
-    }
-    expect(njIraOwnerPoolsForYear(plan, 2027, projection)).toBeUndefined()
+    expect(njIraOwnerPoolsForYear(plan, 2027)).toBeUndefined()
     const year = { year: 2027, ordinaryIncome: 200_000, agesAlive: [71] }
     const result = annual('NJ', { qcdEvents: [qcd()] }, year)
     expect(result.status).toBe('incomplete')
@@ -374,27 +365,11 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
   })
   it('leaves an explicit unknown basis list incomplete instead of assuming zero', () => {
     const plan = njBasisPlan([], [{ taxYear: 2027, state: 'NJ', iraBasis: 'unknown' }])
-    expect(njIraOwnerPoolsForYear(plan, 2027, {
-      residenceState: 'NJ',
-      traditionalIraBalances: [{ ownerPersonId: 'owner', accountId: 'ira', balance: 190_000 }],
-      qcdEvents: [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
-      iraDistributions: [],
-    })).toBeUndefined()
+    expect(njIraOwnerPoolsForYear(plan, 2027)).toBeUndefined()
   })
   it('does not invent a zero-basis pool for an owner with no basis row', () => {
     const plan = njBasisPlan([njBasisRow({ ownerPersonId: 'owner' })])
-    const pools = njIraOwnerPoolsForYear(plan, 2026, {
-      residenceState: 'NJ',
-      traditionalIraBalances: [
-        { ownerPersonId: 'owner', accountId: 'ira', balance: 180_000 },
-        { ownerPersonId: 'spouse', accountId: 'spouse-ira', balance: 190_000 },
-      ],
-      qcdEvents: [{ eventId: 'qcd-b', accountId: 'spouse-ira', ownerPersonId: 'spouse', grossIraDistribution: 10_000 }],
-      iraDistributions: [{
-        eventId: 'qcd-b', accountId: 'spouse-ira', ownerPersonId: 'spouse', sourceKind: 'ira',
-        accountTaxTreatment: 'traditional', grossDistribution: 10_000,
-      }],
-    })
+    const pools = njIraOwnerPoolsForYear(plan, 2026)
     expect(pools?.some((pool) => pool.ownerPersonId === 'owner')).toBe(true)
     expect(pools?.some((pool) => pool.ownerPersonId === 'spouse')).toBe(false)
     const result = annual('NJ', {
@@ -415,15 +390,14 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
       [{ accountId: 'ira', grossDistribution: 50_000 }],
     )
     expect(balances[0]?.balance).toBe(240_000)
-    expect(njIraOwnerPoolsForYear(plan, 2027, {
-      residenceState: 'NJ',
-      traditionalIraBalances: [{ ownerPersonId: 'owner', accountId: 'ira', balance: balances[0]!.balance }],
-      qcdEvents: [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
-      iraDistributions: [
+    expect(njIraProjectedDistributionTotal('owner',
+      [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
+      [
         { eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 10_000 },
         { eventId: 'conversion', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 50_000 },
       ],
-    })).toBeUndefined()
+    )).toBe(60_000)
+    expect(njIraOwnerPoolsForYear(plan, 2027)).toBeUndefined()
   })
 })
 describe('QCD classification controls shared by both original findings', () => {

@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -1215,7 +1215,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1208,7 +1208,7 @@ export function annualFundingApplicationAndClosePhase(
      // The caller retains observable live line/map mutation, coordinated-then-
      // backstop accumulation, capture gating, and downstream residual use.
      // Those effects make this application loop orchestration, not HECM policy.

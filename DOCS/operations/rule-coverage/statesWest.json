@@ -1310,12 +1310,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 478,
+          "line": 452,
           "note": null,
           "tests": [
             {
               "title": "starts the addback at $300,000 and retains $1,000 single or $2,000 joint",
-              "line": 479
+              "line": 453
             }
           ]
         }
@@ -1492,12 +1492,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1062,
+          "line": 1036,
           "note": null,
           "tests": [
             {
               "title": "selects the statutory age65 pension limit",
-              "line": 1063
+              "line": 1037
             }
           ]
         }
@@ -1655,12 +1655,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1065,
+          "line": 1039,
           "note": null,
           "tests": [
             {
               "title": "raises subtraction room for fully excludable Social Security",
-              "line": 1066
+              "line": 1040
             }
           ]
         }
@@ -1943,16 +1943,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 533,
+          "line": 507,
           "note": null,
           "tests": [
             {
               "title": "prices the $21,600 second HOH band edge at $432",
-              "line": 534
+              "line": 508
             },
             {
               "title": "prices $14,400 taxable income using HOH schedule rather than single",
-              "line": 540
+              "line": 514
             }
           ]
         }
@@ -2441,16 +2441,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 546,
+          "line": 520,
           "note": null,
           "tests": [
             {
               "title": "applies the published $49,824 cap less $10,000 gross SS to CSRS",
-              "line": 547
+              "line": 521
             },
             {
               "title": "keeps the MFS refusal and age/disability boundary",
-              "line": 553
+              "line": 527
             }
           ]
         }
@@ -2753,16 +2753,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 759,
+          "line": 733,
           "note": null,
           "tests": [
             {
               "title": "uses distinct HOH and MFS ordinary thresholds and stacks gains across their edges",
-              "line": 760
+              "line": 734
             },
             {
               "title": "stacks $1,000 gain after $47,000 ordinary taxable income",
-              "line": 772
+              "line": 746
             }
           ]
         }
@@ -3606,24 +3606,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 781,
+          "line": 755,
           "note": null,
           "tests": [
             {
               "title": "includes IRA federal public and Armed Forces pension sources under section 316.157",
-              "line": 782
+              "line": 756
             },
             {
               "title": "offsets Tier I but not Tier II and cannot borrow an older nonpension recipient age",
-              "line": 789
+              "line": 763
             },
             {
               "title": "credits 9% of the $7,500 ceiling for a qualifying age62 taxpayer",
-              "line": 799
+              "line": 773
             },
             {
               "title": "offsets SS and excess household income, and never refunds unused credit",
-              "line": 804
+              "line": 778
             }
           ]
         }
@@ -4125,12 +4125,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 855,
+          "line": 829,
           "note": null,
           "tests": [
             {
               "title": "uses the return-level $900 maximum less $200 phaseout",
-              "line": 856
+              "line": 830
             }
           ]
         }
@@ -4291,16 +4291,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 820,
+          "line": 794,
           "note": null,
           "tests": [
             {
               "title": "limits the $890 military credit to $500 of precredit Utah liability",
-              "line": 821
+              "line": 795
             },
             {
               "title": "credits the current 4.45% of $20,000 qualifying military income",
-              "line": 832
+              "line": 806
             }
           ]
         },
@@ -4489,12 +4489,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 863,
+          "line": 837,
           "note": null,
           "tests": [
             {
               "title": "subtracts only federally included Railroad Retirement and requires SS overlap facts",
-              "line": 864
+              "line": 838
             }
           ]
         }
@@ -4568,12 +4568,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 871,
+          "line": 845,
           "note": null,
           "tests": [
             {
               "title": "recovers documented other-state §401(a) basis once and excludes 403b/IRA substitutes",
-              "line": 872
+              "line": 846
             }
           ]
         }
@@ -4633,16 +4633,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 839,
+          "line": 813,
           "note": null,
           "tests": [
             {
               "title": "uses $5,350 federally taxable SS, not the $10,000 gross benefit",
-              "line": 840
+              "line": 814
             },
             {
               "title": "includes otherwise-excluded interest in statutory MAGI phaseout",
-              "line": 848
+              "line": 822
             }
           ]
         },
