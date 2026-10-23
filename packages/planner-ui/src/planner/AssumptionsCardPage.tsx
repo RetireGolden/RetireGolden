@@ -13,6 +13,7 @@ import { Link } from 'react-router'
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import { loadLongevity, loadLongevityPartner, questionnairePlanningAge } from '../longevity/storage'
 import { CopyButton } from './CopyButton'
+import { ParameterFigures } from './ParameterFigures'
 import { usePlan } from './planContextCore'
 import { projectionStartYear } from './useProjection'
 import {
@@ -112,7 +113,9 @@ export function AssumptionsCardPage() {
                   <tr key={row.id}>
                     <th scope="row">
                       <span className="provenance-label">{row.label}</span>
-                      <span className="provenance-figures muted small">{row.value}</span>
+                      <div className="provenance-figures muted small">
+                        {group.id === 'tax-parameters' ? <ParameterFigures id={row.id} figures={row.value} /> : row.value}
+                      </div>
                     </th>
                     <td>
                       <span className="muted small" title={chip.title}>
@@ -122,7 +125,7 @@ export function AssumptionsCardPage() {
                         <>
                           {' · '}
                           <a href={source.url} target="_blank" rel="noopener noreferrer">
-                            {source.publisher} ↗
+                            {source.id === 'state-income-tax' ? 'State source index' : source.publisher} ↗
                           </a>
                         </>
                       ) : null}

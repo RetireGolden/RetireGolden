@@ -363,7 +363,9 @@ Two dedicated what-if views on the Explore rail run the user's **actual plan** t
   Medicare premium difference with and without SSA-44 over the whole projection (its relief years' part named),
   the years with survivor required spending not covered, and the convert-early lever: Roth conversions that fill
   the 12% bracket **added to** the plan's own through the year of the first death (owner decision R16), in dollars
-  of the timing's last year, with a sentence saying why when it adds nothing. Educational framing throughout:
+  of the timing's last year. Each row keeps its estate change visible; expandable **Conversion details**
+  hold the lifetime tax change, dollar year, per-year explanation, and ledger notes so repeated prose
+  does not stretch the table's rows on phones. Educational framing throughout:
   timings are chosen scenarios, never predictions. The `widows-penalty-roth` detector quantifies the survivor
   bracket jump and points at SSA-44 when relief is unmodeled.
 
@@ -411,7 +413,10 @@ tax/legal/investment advice; rules change.
 
 The **trust & transparency layer** ("show your work", 2026-07-08) sits on top: a per-plan **assumptions
 card** at `/plan/:id/assumptions-card` tags every live assumption user-set / app default / published source
-with copy-as-text/JSON exports ([planner/assumptionsExport.ts](../../packages/planner-ui/src/planner/assumptionsExport.ts));
+with copy-as-text/JSON exports ([planner/assumptionsExport.ts](../../packages/planner-ui/src/planner/assumptionsExport.ts)).
+The card and Disclaimer render source URLs as named links and omit internal audit IDs from the prose;
+state details and limitations expand on demand. Tables wrap within their cards at phone widths.
+The text/JSON exports retain the complete catalog text and source URLs.
 **"Why this number?"** explainer panels unpack the Monte Carlo success % (model/seed/precision,
 depletion-year trace, sequence sensitivity), the optimizer recommendation (objective, winner, dollar margins
 over every beaten alternative from the exact-ledger tournament), and the spending-solver answer; field ⓘ
