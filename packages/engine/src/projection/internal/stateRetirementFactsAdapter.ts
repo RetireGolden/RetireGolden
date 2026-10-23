@@ -622,14 +622,23 @@ function qcdFactKey(row: { eventId: string; accountId: string; ownerPersonId: st
   return JSON.stringify([row.eventId, row.accountId, row.ownerPersonId])
 }
 
-function identityRepeated(rows: readonly { eventId: string; accountId: string; ownerPersonId: string }[]): boolean {
+/** One representative of each identity that appears more than once. */
+export function repeatedQcdIdentities<T extends { eventId: string; accountId: string; ownerPersonId: string }>(
+  rows: readonly T[],
+): readonly T[] {
   const seen = new Set<string>()
+  const repeated = new Map<string, T>()
   for (const row of rows) {
     const key = qcdFactKey(row)
-    if (seen.has(key)) return true
-    seen.add(key)
+    if (repeated.has(key)) continue
+    if (seen.has(key)) repeated.set(key, row)
+    else seen.add(key)
   }
-  return false
+  return [...repeated.values()]
+}
+
+function identityRepeated(rows: readonly { eventId: string; accountId: string; ownerPersonId: string }[]): boolean {
+  return repeatedQcdIdentities(rows).length > 0
 }
 
 /** Year-end state plus any state left during the year. A move year prices both. */

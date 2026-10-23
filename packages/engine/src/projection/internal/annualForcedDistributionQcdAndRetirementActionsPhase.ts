@@ -1,5 +1,5 @@
 import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
-import { ageOnDate, qcdEmptyRuntimeIsUnobserved, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
+import { ageOnDate, qcdEmptyRuntimeIsUnobserved, qcdEventFactsForYear, repeatedQcdIdentities, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
 import { stateForYear, type Account, type Person, type Plan } from '../../model/plan.js'
@@ -2519,8 +2519,21 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   for (const accountId of stateForcedGrossByAccount.keys()) if (!stateForcedTaxableByAccount.has(accountId)) {
     stateForcedTaxableByAccount.set(accountId, 0)
   }
-  for (const row of plan.stateTaxFacts.qcdEventEvidence ?? []) {
-    if (row.taxYear !== year) continue
+  const yearQcdEvidence = (plan.stateTaxFacts.qcdEventEvidence ?? []).filter((row) => row.taxYear === year)
+  const repeatedEvidence = repeatedQcdIdentities(yearQcdEvidence)
+  for (const row of repeatedEvidence) {
+    warnings.add(
+      `Custodian QCD evidence ${row.eventId} on account ${row.accountId} for ${year} is repeated, so this year's state QCD collection is incomplete.`,
+    )
+  }
+  for (const event of repeatedQcdIdentities(stateQcdEvents)) {
+    warnings.add(
+      `Executed QCD ${event.eventId} on account ${event.accountId} for ${year} is repeated, so this year's state QCD collection is incomplete.`,
+    )
+  }
+  for (const row of yearQcdEvidence) {
+    if (repeatedEvidence.some((duplicate) =>
+      duplicate.eventId === row.eventId && duplicate.accountId === row.accountId && duplicate.ownerPersonId === row.ownerPersonId)) continue
     const executed = stateQcdEvents.some((event) =>
       event.eventId === row.eventId && event.accountId === row.accountId && event.ownerPersonId === row.ownerPersonId)
     if (executed) continue

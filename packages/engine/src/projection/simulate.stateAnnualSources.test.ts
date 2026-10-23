@@ -93,6 +93,27 @@ it('withholds an evidence-only QCD and names the custodian row', () => {
   )
 })
 
+it('names a repeated custodian QCD identity when the collection is withheld', () => {
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  const row = {
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd' as const, grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident' as const, directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }
+  plan.stateTaxFacts.qcdEventEvidence = [row, { ...row, grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(result.warnings).toContain(
+    'Custodian QCD evidence custodian-2026-qcd on account ira for 2026 is repeated, so this year\'s state QCD collection is incomplete.',
+  )
+})
+
 it('reaches the QCD completeness branch when the plan marks the year unknown', () => {
   const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
