@@ -617,7 +617,13 @@ describe('QCD event evidence merge (D48, D49)', () => {
   it('refuses an unsupported NJ QCD before asking for the missing Worksheet C pool', () => {
     // IRC 408(d)(8)(F). The refusal does not wait on N.J.S.A. 54A basis.
     const split = stateDirectQcdCollectionAdjustment({
-      events: [{ ...runtimeQcd(), transactionKind: 'splitInterest', splitInterest: true, residency: 'fullYearResident' }],
+      events: [{
+        ...runtimeQcd(),
+        transactionKind: 'splitInterest',
+        splitInterest: true,
+        residency: 'fullYearResident',
+        directTransfer: true,
+      }],
       packPolicy: njPolicy,
     })
     expect(split.taxableIncomeDelta).toBe(0)
