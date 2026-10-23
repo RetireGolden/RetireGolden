@@ -240,12 +240,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1030,
+          "line": 1036,
           "note": null,
           "tests": [
             {
               "title": "uses fractional59½ distribution age",
-              "line": 1031
+              "line": 1037
             }
           ]
         }
@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1033,
+          "line": 1039,
           "note": null,
           "tests": [
             {
               "title": "keeps the full military source outside ordinary cap",
-              "line": 1034
+              "line": 1040
             }
           ]
         }
@@ -1615,12 +1615,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 636,
+          "line": 642,
           "note": null,
           "tests": [
             {
               "title": "deducts $3,360 once from $10,000 on a joint return",
-              "line": 637
+              "line": 643
             }
           ]
         },

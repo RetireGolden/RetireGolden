@@ -1992,7 +1992,7 @@ export const northeastStateRecords = {
 
   "nj-direct-qcd-ira-basis-treatment": {
   "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
-  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. A1290 is proposed legislation, not a current charitable carve-out.",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. A Roth conversion is counted once on Worksheet C line 2, which flows to line 3, and not also in the line 1 December 31 value. OWL infers that placement from NJ GIT-1 & 2 (January 2026), under which only earnings are taxable on a conversion and the excludable portion goes on line 20b, and from the 2025 NJ-1040 instructions, where line 20b is Worksheet C line 8 and line 8 is line 2 minus line 7. That placement is OWL's inference from those two sources, not literal text of either publication. A1290 is proposed legislation, not a current charitable carve-out.",
   "classification": "settled",
   "contraryReading": null,
   "errorDirection": null,
@@ -2004,6 +2004,24 @@ export const northeastStateRecords = {
       "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Reporting Taxable and Excludable Retirement Income and Worksheet C",
       "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
       "quotedText": "The excludable portion of a distribution is the amount that represents your previously taxed contributions to the plan."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
+      "quotedText": "If you convert a traditional IRA to a Roth IRA, any amount from the existing IRA that would be taxable if withdrawn must be included in your income on line 20a, Form NJ-1040 or line 22, column A, Form NJ-1040NR. Residents must also report the excludable portion of the converted IRA on line 20b, Form NJ-1040."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quotedText": "Excludable portion of this year\u2019s withdrawal. Subtract line 7 from line 2. Enter here and on line 20b, Form NJ-1040."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quotedText": "IRA withdrawal. Include the amount from Worksheet C, line 8. If you converted an existing IRA to a rollover Roth IRA, report the excludable portion on this line."
     }
   ],
   "volatility": "staticStatute",
@@ -2021,7 +2039,9 @@ export const northeastStateRecords = {
     "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
     "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
     "packages/engine/src/params/state/data/year2026.ts#NJ",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraProjectedDistributionTotal",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraLedgerBalancesNetOfGross"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

@@ -381,9 +381,15 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     expect(result.taxableIncome).toBe(annual('NJ').taxableIncome)
   })
   it('nets a Roth conversion out of the probe balance and still does not price the QCD', () => {
-    // The probe still holds the pre-debit balance. Netting the $50,000 gross
-    // leaves $240,000. Whether that conversion belongs in Worksheet C's
-    // distribution total is pending a cited rule, so the QCD stays unpriced.
+    // A Roth conversion is counted once on Worksheet C line 2, which flows to
+    // line 3, and not also in the line 1 December 31 value. OWL infers that
+    // placement from NJ GIT-1 & 2 (January 2026), under which only earnings are
+    // taxable on a conversion and the excludable portion goes on line 20b, and
+    // from the 2025 NJ-1040 instructions, where line 20b is Worksheet C line 8
+    // and line 8 is line 2 minus line 7. That placement is the inference, not
+    // literal text. Netting $50,000 from the $290,000 pre-debit balance leaves
+    // $240,000, and line 2 is the $10,000 QCD plus the $50,000 conversion. The
+    // year has no basis evidence, so the QCD stays unpriced.
     const plan = createEmptyPlan({ newId: () => 'x', now: () => new Date('2026-01-01T00:00:00.000Z') })
     const balances = njIraLedgerBalancesNetOfGross(
       [{ account: { id: 'ira' }, balance: 290_000 }],

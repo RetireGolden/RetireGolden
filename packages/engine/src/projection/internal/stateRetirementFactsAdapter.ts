@@ -498,10 +498,10 @@ export function njIraOwnerPoolsForYear(
 }
 
 /**
- * Traditional IRA gross a future Worksheet C pool would reconcile: rows that
- * are not the QCD event, plus each QCD gross once. A Roth conversion is a
- * traditional IRA row, so it is included. This total is not applied to a
- * priced pool until a cited Worksheet C rule says a conversion belongs there.
+ * Worksheet C line 2 for one owner: traditional IRA rows other than the QCD,
+ * plus each QCD gross once. A Roth conversion is one of those rows, so it is
+ * counted once here and flows into line 3. OWL infers that placement from
+ * GIT-1 & 2 (January 2026) and the 2025 NJ-1040 line 20b instructions.
  */
 export function njIraProjectedDistributionTotal(
   ownerPersonId: string,
@@ -521,10 +521,10 @@ function isNjState(state: string | undefined): boolean {
 }
 
 /**
- * Traditional IRA gross still sitting in the ledger balance. A Roth-conversion
- * probe prices the conversion before the account is debited, so Worksheet C
- * would otherwise count those dollars in both the December 31 value and the
- * distribution total.
+ * December 31 IRA balances with a Roth conversion's gross removed, so those
+ * dollars sit on Worksheet C line 2 and not also on line 1. The probe still
+ * holds the pre-debit balance. This is the line 1 side of the same inference
+ * as njIraProjectedDistributionTotal.
  */
 export function njIraLedgerBalancesNetOfGross<T extends { readonly account: { readonly id: string }; readonly balance: number }>(
   balances: readonly T[],

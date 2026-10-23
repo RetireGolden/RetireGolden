@@ -334,12 +334,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 481,
+          "line": 487,
           "note": null,
           "tests": [
             {
               "title": "does not extend the survivor limb to age61, other issuers or ordinary pensions",
-              "line": 483
+              "line": 489
             }
           ]
         },
@@ -602,12 +602,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1042,
+          "line": 1048,
           "note": null,
           "tests": [
             {
               "title": "keeps the legacy approximation distinguishable from the characterized result",
-              "line": 1045
+              "line": 1051
             }
           ]
         }
@@ -780,12 +780,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 478,
+          "line": 484,
           "note": null,
           "tests": [
             {
               "title": "applies the latest-final Box7/penalty gate to age60-plus pension income",
-              "line": 479
+              "line": 485
             }
           ]
         },
@@ -1447,12 +1447,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1056,
+          "line": 1062,
           "note": null,
           "tests": [
             {
               "title": "Maryland qualifies employer-plan income and offsets gross SS rather than taxable SS",
-              "line": 1057
+              "line": 1063
             }
           ]
         }
@@ -2534,16 +2534,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 700,
+          "line": 706,
           "note": null,
           "tests": [
             {
               "title": "grants $10,000 pension plus $5,000 residual age65 allowance",
-              "line": 701
+              "line": 707
             },
             {
               "title": "tracks two eligible owners separately",
-              "line": 705
+              "line": 711
             }
           ]
         }
@@ -2624,12 +2624,12 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1067,
+          "line": 1073,
           "note": null,
           "tests": [
             {
               "title": "grants ordinary private and public retirement only the under65 statutory cap",
-              "line": 1068
+              "line": 1074
             }
           ]
         }
@@ -2797,16 +2797,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1076,
+          "line": 1082,
           "note": null,
           "tests": [
             {
               "title": "excludes qualifying military fully while ordinary public retirement remains capped",
-              "line": 1077
+              "line": 1083
             },
             {
               "title": "SC survivor military deduction does not consume the survivor’s own age65 room",
-              "line": 1081
+              "line": 1087
             }
           ]
         },
@@ -3011,12 +3011,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 710,
+          "line": 716,
           "note": null,
           "tests": [
             {
               "title": "reduces $15,000 by floor(($10k/$55k)*$15k / $10)*$10",
-              "line": 711
+              "line": 717
             }
           ]
         }
@@ -3098,16 +3098,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 874,
+          "line": 880,
           "note": null,
           "tests": [
             {
               "title": "recovers only documented prior-state contributions once across annual events",
-              "line": 875
+              "line": 881
             },
             {
               "title": "recovers it from a 401 or 457 plan, not from a 403(b), which 58.1-322.02(11) does not enumerate",
-              "line": 882
+              "line": 888
             }
           ]
         }
@@ -3180,12 +3180,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 855,
+          "line": 861,
           "note": null,
           "tests": [
             {
               "title": "uses $40,000 per recipient at any age from2025, including qualified survivors",
-              "line": 856
+              "line": 862
             }
           ]
         }
@@ -3258,12 +3258,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 863,
+          "line": 869,
           "note": null,
           "tests": [
             {
               "title": "selects Tier I and does not claim ordinary annuity or Tier II under paragraph3",
-              "line": 864
+              "line": 870
             }
           ]
         }
@@ -3926,12 +3926,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1011,
+          "line": 1017,
           "note": null,
           "tests": [
             {
               "title": "removes included Tier I while a private pension remains taxable",
-              "line": 1012
+              "line": 1018
             }
           ]
         }
@@ -4004,16 +4004,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 988,
+          "line": 994,
           "note": null,
           "tests": [
             {
               "title": "grants the $2,000 PERS or Teachers cap without a federal pension masking it",
-              "line": 989
+              "line": 995
             },
             {
               "title": "shares the public/federal limit and separates full police/fire benefits",
-              "line": 996
+              "line": 1002
             }
           ]
         }
@@ -4086,16 +4086,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1003,
+          "line": 1009,
           "note": null,
           "tests": [
             {
               "title": "excludes military retirement without the historical $20,000 cap",
-              "line": 1004
+              "line": 1010
             },
             {
               "title": "excludes military survivor income without the historical $20,000 cap",
-              "line": 1007
+              "line": 1013
             }
           ]
         }
@@ -4168,12 +4168,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1017,
+          "line": 1023,
           "note": null,
           "tests": [
             {
               "title": "selects 35 percent 65 percent and full Social Security relief in 2024 2025 and 2026",
-              "line": 1018
+              "line": 1024
             }
           ]
         }
@@ -4246,12 +4246,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 980,
+          "line": 986,
           "note": null,
           "tests": [
             {
               "title": "subtracts prior named modifications from each eligible owner’s $8,000 room",
-              "line": 981
+              "line": 987
             }
           ]
         }
@@ -4488,12 +4488,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 971,
+          "line": 977,
           "note": null,
           "tests": [
             {
               "title": "distinguishes §151(d)(2) and the surviving-spouse two-year addition",
-              "line": 972
+              "line": 978
             }
           ]
         }

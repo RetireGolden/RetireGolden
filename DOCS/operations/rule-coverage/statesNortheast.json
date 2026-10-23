@@ -264,16 +264,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 490,
+          "line": 496,
           "note": null,
           "tests": [
             {
               "title": "uses Connecticut AGI, and a dollar into the next thousand removes $1,000",
-              "line": 491
+              "line": 497
             },
             {
               "title": "does not use known federal AGI as a substitute for unknown Connecticut AGI",
-              "line": 504
+              "line": 510
             }
           ]
         }
@@ -361,12 +361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1052,
+          "line": 1058,
           "note": null,
           "tests": [
             {
               "title": "selects proved contributory Massachusetts income",
-              "line": 1053
+              "line": 1059
             }
           ]
         }
@@ -517,12 +517,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 650,
+          "line": 656,
           "note": null,
           "tests": [
             {
               "title": "adds 4% only to $1.2m minus the $1,107,750 threshold",
-              "line": 651
+              "line": 657
             }
           ]
         }
@@ -600,12 +600,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 659,
+          "line": 665,
           "note": null,
           "tests": [
             {
               "title": "recovers known Massachusetts basis once across two distributions",
-              "line": 660
+              "line": 666
             }
           ]
         }
@@ -678,12 +678,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 667,
+          "line": 673,
           "note": null,
           "tests": [
             {
               "title": "requires contributory in-state or reciprocal public-system proof",
-              "line": 668
+              "line": 674
             }
           ]
         }
@@ -1396,8 +1396,16 @@
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [
             {
+              "name": "njIraLedgerBalancesNetOfGross",
+              "line": 529
+            },
+            {
               "name": "njIraOwnerPoolsForYear",
               "line": 443
+            },
+            {
+              "name": "njIraProjectedDistributionTotal",
+              "line": 506
             }
           ]
         },
@@ -1479,6 +1487,21 @@
           "kind": "formInstruction",
           "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Reporting Taxable and Excludable Retirement Income and Worksheet C",
           "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
         }
       ]
     },
@@ -1930,12 +1953,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 677,
+          "line": 683,
           "note": null,
           "tests": [
             {
               "title": "excludes military at age50 while OPM remains taxable",
-              "line": 678
+              "line": 684
             }
           ]
         }
@@ -3807,12 +3830,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 902,
+          "line": 908,
           "note": null,
           "tests": [
             {
               "title": "uses the exact marginal arithmetic at the joint top threshold",
-              "line": 903
+              "line": 909
             }
           ]
         }
@@ -3895,12 +3918,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 910,
+          "line": 916,
           "note": null,
           "tests": [
             {
               "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
-              "line": 911
+              "line": 917
             }
           ]
         }
@@ -3973,12 +3996,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 937,
+          "line": 943,
           "note": null,
           "tests": [
             {
               "title": "subtracts both included tiers without requiring a Social Security election",
-              "line": 938
+              "line": 944
             }
           ]
         }
@@ -4056,12 +4079,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 929,
+          "line": 935,
           "note": null,
           "tests": [
             {
               "title": "phases military at$150k and preserves the independent election",
-              "line": 930
+              "line": 936
             }
           ]
         }
@@ -4134,12 +4157,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 920,
+          "line": 926,
           "note": null,
           "tests": [
             {
               "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
-              "line": 921
+              "line": 927
             }
           ]
         }
