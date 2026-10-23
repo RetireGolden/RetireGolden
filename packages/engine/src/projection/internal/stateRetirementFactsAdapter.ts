@@ -513,13 +513,14 @@ export function njIraOwnerPoolsForYear(
   const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter(
     (row) => row.taxYear === year && isNjState(row.state),
   )
+  const basisList = evidenceMark(plan, year, 'NJ', 'iraBasis')
   if (rows.length === 0) {
-    if (evidenceComplete(plan, year, 'NJ', 'iraBasis')) return []
+    if (basisList === 'complete' || basisList === 'unknown') return basisList === 'complete' ? [] : undefined
     return projectedNjIraOwnerPools(projected)
   }
   const byOwner = new Map<string, typeof rows>()
   for (const row of rows) byOwner.set(row.ownerPersonId, [...(byOwner.get(row.ownerPersonId) ?? []), row])
-  return [...byOwner.entries()].map(([ownerPersonId, ownerRows]) => {
+  const evidencePools = [...byOwner.entries()].map(([ownerPersonId, ownerRows]) => {
     const fieldsComplete = ownerRows.every((row) => row.yearEndAccountValue !== undefined &&
       row.distributionsDuringYear !== undefined && row.postYearContributionsThroughFilingDeadline !== undefined &&
       row.unrecoveredStateBasis !== undefined && row.annualDistributionsComplete === true) &&
@@ -537,7 +538,7 @@ export function njIraOwnerPoolsForYear(
     const december31IraValue = ownerRows.reduce((sum, row) => sum + (row.yearEndAccountValue ?? 0) +
       (row.postYearContributionsThroughFilingDeadline ?? 0), 0)
     const allAnnualDistributions = ownerRows.reduce((sum, row) => sum + (row.distributionsDuringYear ?? 0), 0)
-    const complete = fieldsComplete && !adjustmentInvalid && !liquidationConflict
+    const complete = fieldsComplete && !liquidationConflict
     const fullLiquidation = liquidationConflict
       ? false
       : assertedLiquidation.length > 0
@@ -559,6 +560,10 @@ export function njIraOwnerPoolsForYear(
       annualInputsComplete: complete,
     }
   })
+  if (basisList === 'complete' || basisList === 'unknown' || projected === undefined) return evidencePools
+  const covered = new Set(evidencePools.map((pool) => pool.ownerPersonId))
+  const projectedPools = projectedNjIraOwnerPools(projected)?.filter((pool) => !covered.has(pool.ownerPersonId)) ?? []
+  return projectedPools.length === 0 ? evidencePools : [...evidencePools, ...projectedPools]
 }
 
 /**
@@ -594,6 +599,7 @@ function projectedNjIraOwnerPools(
       // GIT-1 & 2: the excludable portion is previously taxed contributions.
       // None were asserted for this projected year.
       unrecoveredNjTaxedContributions: knownAmount(0),
+      assumedUnrecoveredBasis: true,
       fullLiquidation: december31IraValue === 0 && allAnnualDistributions > 0,
       annualInputsComplete: true,
     })
@@ -603,6 +609,59 @@ function projectedNjIraOwnerPools(
 
 function isNjState(state: string | undefined): boolean {
   return state?.toUpperCase() === 'NJ'
+}
+
+/**
+ * Traditional IRA gross still sitting in the ledger balance. A Roth-conversion
+ * probe prices the conversion before the account is debited, so Worksheet C
+ * would otherwise count those dollars in both the December 31 value and the
+ * distribution total.
+ */
+export function njIraLedgerBalancesNetOfGross<T extends { readonly account: { readonly id: string }; readonly balance: number }>(
+  balances: readonly T[],
+  distributions: readonly { readonly accountId?: string; readonly grossDistribution?: number }[],
+): T[] {
+  return balances.map((state) => {
+    const gross = distributions.reduce((sum, row) =>
+      row.accountId === state.account.id ? sum + Math.max(0, row.grossDistribution ?? 0) : sum, 0)
+    return gross === 0 ? state : { ...state, balance: state.balance - gross }
+  })
+}
+
+/**
+ * A funding candidate appends need-based IRA withdrawals after the projected
+ * pool was snapshotted. Move that gross from the December 31 value into the
+ * distribution total so Worksheet C's total value is unchanged and the
+ * calculator's reconciliation still matches. Evidence pools are left alone.
+ */
+export function shiftAssumedNjIraOwnerPools(
+  pools: readonly StateNjIraOwnerPoolFactsInput[] | undefined,
+  added: readonly { readonly ownerPersonId: string; readonly sourceKind: string; readonly accountTaxTreatment?: string; readonly grossDistribution?: number }[],
+): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
+  if (pools === undefined || added.length === 0) return pools
+  const byOwner = new Map<string, number>()
+  for (const row of added) {
+    if (row.sourceKind !== 'ira' || row.accountTaxTreatment === 'roth') continue
+    byOwner.set(row.ownerPersonId, (byOwner.get(row.ownerPersonId) ?? 0) + Math.max(0, row.grossDistribution ?? 0))
+  }
+  if (byOwner.size === 0) return pools
+  return pools.map((pool) => {
+    if (pool.assumedUnrecoveredBasis !== true) return pool
+    const gross = byOwner.get(pool.ownerPersonId) ?? 0
+    if (!(gross > 0)) return pool
+    const december31IraValue = pool.december31IraValue - gross
+    if (!Number.isFinite(december31IraValue) || december31IraValue < -0.005) {
+      return { ...pool, annualInputsComplete: false }
+    }
+    const december31 = Math.max(0, december31IraValue)
+    const allAnnualDistributions = pool.allAnnualDistributions + gross
+    return {
+      ...pool,
+      december31IraValue: december31,
+      allAnnualDistributions,
+      fullLiquidation: december31 === 0 && allAnnualDistributions > 0,
+    }
+  })
 }
 
 /** @deprecated Prefer buildStateQcdEventFacts + pack-authoritative policy. */
@@ -635,10 +694,18 @@ export function buildStateQcdYearFacts(input: {
 }
 
 
+function evidenceMark(plan: Readonly<Plan>, year: number, state: string | undefined,
+  category: 'hsa' | 'qcd' | 'iraBasis'): 'complete' | 'unknown' | undefined {
+  if (state === undefined) return undefined
+  const row = plan.stateTaxFacts.annualEvidenceCompleteness?.find((candidate) =>
+    candidate.taxYear === year && candidate.state.toUpperCase() === state.toUpperCase())
+  const mark = row?.[category]
+  return mark === 'complete' || mark === 'unknown' ? mark : undefined
+}
+
 function evidenceComplete(plan: Readonly<Plan>, year: number, state: string | undefined,
   category: 'hsa' | 'qcd' | 'iraBasis'): boolean {
-  return state !== undefined && plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
-    row.taxYear === year && row.state.toUpperCase() === state.toUpperCase() && row[category] === 'complete') === true
+  return evidenceMark(plan, year, state, category) === 'complete'
 }
 
 function mapEligibility(eligibility: PensionStateEligibility | undefined) {

@@ -2465,7 +2465,8 @@ function njIraBasisPools(state: string, rows: readonly StateNjIraOwnerPoolFacts[
     }
     const opening = Math.max(0, row.unrecoveredNjTaxedContributions.amount)
     const consumed = Math.min(opening, worksheet.basisRecovered)
-    return { state: 'NJ', ownerPersonId: row.ownerPersonId, status: 'complete', openingBasis: opening, basisConsumed: consumed, closingBasis: opening - consumed }
+    return { state: 'NJ', ownerPersonId: row.ownerPersonId, status: 'complete', openingBasis: opening, basisConsumed: consumed, closingBasis: opening - consumed,
+      ...(row.assumedUnrecoveredBasis === true ? { assumedUnrecoveredBasis: true } : {}) }
   })
 }
 

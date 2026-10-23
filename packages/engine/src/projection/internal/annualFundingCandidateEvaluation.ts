@@ -22,6 +22,7 @@ import {
   type YearWithdrawals,
 } from '../types.js'
 import type { AnnualFundingFixedPointEvaluationRequest } from './annualFundingFixedPoint.js'
+import { shiftAssumedNjIraOwnerPools } from './stateRetirementFactsAdapter.js'
 import {
   annualFundingWithdrawalEffects,
   recharacterizeAnnualFundingWithdrawalHsaCap,
@@ -342,10 +343,12 @@ export function annualFundingCandidateEvaluation<
           iraCharacter.taxableBySourceAccountId.get(account.sourceAccountId) ?? taken)
       }
       for (const row of withdrawalEffectsProbe.roth.inheritedRows) taxableByAccount.set(row.sourceAccountId, row.ordinaryIncome)
+      const addedStateWithdrawals = input.characterizeStateWithdrawals(taxableByAccount, withdrawalPlan.byAccountId)
       taxInput.stateRetirementDistributions = [
         ...(taxInput.stateRetirementDistributions ?? []),
-        ...input.characterizeStateWithdrawals(taxableByAccount, withdrawalPlan.byAccountId),
+        ...addedStateWithdrawals,
       ]
+      taxInput.stateNjIraOwnerPools = shiftAssumedNjIraOwnerPools(taxInput.stateNjIraOwnerPools, addedStateWithdrawals)
     }
     taxInput = input.taxCalculator.prepareInput?.(taxInput) ?? taxInput
     taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)

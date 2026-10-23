@@ -8546,8 +8546,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                 "minimum": 0
               },
               "exemptObligationAdjustment": {
-                "type": "number",
-                "minimum": 0
+                "type": "number"
               },
               "provenance": {
                 "type": "object",

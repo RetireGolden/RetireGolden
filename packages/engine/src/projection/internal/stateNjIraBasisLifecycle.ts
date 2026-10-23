@@ -18,6 +18,11 @@ export function applyAcceptedNjIraBasisToYearFacts(
     const previous = snapshots.filter((row) => row.ownerPersonId === fact.ownerPersonId && row.state === 'NJ' && row.taxYear < year)
       .sort((a, b) => b.taxYear - a.taxYear)[0]
     if (previous === undefined) return fact
+    // A projected zero is not a measured recovery. It must not replace a later
+    // evidenced basis, and a following projected year keeps its own assumption
+    // instead of becoming unknown for lack of an evidence-row addition.
+    if (previous.assumedUnrecoveredBasis === true && fact.assumedUnrecoveredBasis !== true) return fact
+    if (fact.assumedUnrecoveredBasis === true && previous.assumedUnrecoveredBasis === true) return fact
     const ownerAdditions = additions?.filter((row) => row.ownerPersonId === fact.ownerPersonId)
     const added = ownerAdditions?.length === 1 ? ownerAdditions[0]!.amount : undefined
     const known = fact.annualInputsComplete !== false && Number.isFinite(fact.december31IraValue) &&
@@ -25,7 +30,9 @@ export function applyAcceptedNjIraBasisToYearFacts(
       previous.closingBasis !== undefined && Number.isFinite(previous.closingBasis) && previous.closingBasis >= 0
     // Current-year newly taxed contributions are distinct from carried basis.
     // An unknown addition is not zero; require explicit characterized amounts.
-    return { ...fact, unrecoveredNjTaxedContributions: known
+    const measured = { ...fact }
+    delete measured.assumedUnrecoveredBasis
+    return { ...measured, unrecoveredNjTaxedContributions: known
       ? { known: true as const, amount: previous.closingBasis! + (added?.known === true ? added.amount : 0) }
       : { known: false as const } }
   })

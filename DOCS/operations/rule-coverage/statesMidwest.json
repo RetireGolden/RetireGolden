@@ -815,20 +815,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 509,
+          "line": 561,
           "note": null,
           "tests": [
             {
               "title": "removes qualifying IRA income already in federal AGI",
-              "line": 510
+              "line": 562
             },
             {
               "title": "removes qualifying employer-plan income already in federal AGI",
-              "line": 513
+              "line": 565
             },
             {
               "title": "removes qualifying private-pension income already in federal AGI",
-              "line": 516
+              "line": 568
             }
           ]
         },
@@ -981,12 +981,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 520,
+          "line": 572,
           "note": null,
           "tests": [
             {
               "title": "uses $2,925 plus $1,000 age65 and removes it above the income cutoff",
-              "line": 521
+              "line": 573
             }
           ]
         }
@@ -1412,28 +1412,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 526,
+          "line": 578,
           "note": null,
           "tests": [
             {
               "title": "subtracts each enumerated Kansas and federal retirement-system family",
-              "line": 527
+              "line": 579
             },
             {
               "title": "requires a named system such as KPERS",
-              "line": 536
+              "line": 588
             },
             {
               "title": "does not flag a missing code on a source no named system pays",
-              "line": 541
+              "line": 593
             },
             {
               "title": "flags an employer plan that may be Washburn University's 403(b), and subtracts it under KS-WASHBURN",
-              "line": 560
+              "line": 612
             },
             {
               "title": "flags a missing code on a public source, where the code decides it",
-              "line": 588
+              "line": 640
             }
           ]
         },
@@ -2484,16 +2484,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 695,
+          "line": 747,
           "note": null,
           "tests": [
             {
               "title": "phases private pension dollar-for-dollar above $25,000 single",
-              "line": 696
+              "line": 748
             },
             {
               "title": "uses a different public limit and independent military/RRB exclusions",
-              "line": 700
+              "line": 752
             }
           ]
         }
@@ -3806,7 +3806,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2502
+              "line": 2503
             }
           ]
         }
@@ -4152,20 +4152,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 916,
+          "line": 968,
           "note": null,
           "tests": [
             {
               "title": "matches Form 1-ES cumulative taxes at all Schedule A B and C band edges",
-              "line": 917
+              "line": 969
             },
             {
               "title": "adds the age65 exemption to the $700 personal allowance",
-              "line": 932
+              "line": 984
             },
             {
               "title": "uses the published2026 rates and floors the standard deduction at zero",
-              "line": 939
+              "line": 991
             }
           ]
         },

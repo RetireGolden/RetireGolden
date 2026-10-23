@@ -264,16 +264,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 465,
+          "line": 517,
           "note": null,
           "tests": [
             {
               "title": "uses Connecticut AGI, and a dollar into the next thousand removes $1,000",
-              "line": 466
+              "line": 518
             },
             {
               "title": "does not use known federal AGI as a substitute for unknown Connecticut AGI",
-              "line": 479
+              "line": 531
             }
           ]
         }
@@ -361,12 +361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1027,
+          "line": 1079,
           "note": null,
           "tests": [
             {
               "title": "selects proved contributory Massachusetts income",
-              "line": 1028
+              "line": 1080
             }
           ]
         }
@@ -517,12 +517,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 625,
+          "line": 677,
           "note": null,
           "tests": [
             {
               "title": "adds 4% only to $1.2m minus the $1,107,750 threshold",
-              "line": 626
+              "line": 678
             }
           ]
         }
@@ -600,12 +600,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 634,
+          "line": 686,
           "note": null,
           "tests": [
             {
               "title": "recovers known Massachusetts basis once across two distributions",
-              "line": 635
+              "line": 687
             }
           ]
         }
@@ -678,12 +678,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 642,
+          "line": 694,
           "note": null,
           "tests": [
             {
               "title": "requires contributory in-state or reciprocal public-system proof",
-              "line": 643
+              "line": 695
             }
           ]
         }
@@ -1419,7 +1419,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2502
+              "line": 2503
             }
           ]
         }
@@ -1451,11 +1451,23 @@
             },
             {
               "title": "reads a lowercase nj basis row and honors an asserted full liquidation",
-              "line": 319
+              "line": 320
             },
             {
               "title": "taxes a projected New Jersey QCD with no basis evidence at the full transfer",
-              "line": 353
+              "line": 354
+            },
+            {
+              "title": "leaves an explicit unknown basis list incomplete instead of assuming zero",
+              "line": 378
+            },
+            {
+              "title": "projects the owner with no basis row when another owner has one",
+              "line": 387
+            },
+            {
+              "title": "counts a Roth conversion once, in the distribution total and not also in the December 31 balance",
+              "line": 408
             }
           ]
         }
@@ -1918,12 +1930,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 652,
+          "line": 704,
           "note": null,
           "tests": [
             {
               "title": "excludes military at age50 while OPM remains taxable",
-              "line": 653
+              "line": 705
             }
           ]
         }
@@ -3795,12 +3807,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 877,
+          "line": 929,
           "note": null,
           "tests": [
             {
               "title": "uses the exact marginal arithmetic at the joint top threshold",
-              "line": 878
+              "line": 930
             }
           ]
         }
@@ -3883,12 +3895,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 885,
+          "line": 937,
           "note": null,
           "tests": [
             {
               "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
-              "line": 886
+              "line": 938
             }
           ]
         }
@@ -3961,12 +3973,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 912,
+          "line": 964,
           "note": null,
           "tests": [
             {
               "title": "subtracts both included tiers without requiring a Social Security election",
-              "line": 913
+              "line": 965
             }
           ]
         }
@@ -4044,12 +4056,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 904,
+          "line": 956,
           "note": null,
           "tests": [
             {
               "title": "phases military at$150k and preserves the independent election",
-              "line": 905
+              "line": 957
             }
           ]
         }
@@ -4122,12 +4134,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 895,
+          "line": 947,
           "note": null,
           "tests": [
             {
               "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
-              "line": 896
+              "line": 948
             }
           ]
         }

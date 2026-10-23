@@ -388,6 +388,11 @@ export interface StateNjIraOwnerPoolFactsInput {
   unrecoveredNjTaxedContributions: KnownMoneyInput
   exemptObligationIncome?: number
   fullLiquidation: boolean
+  /**
+   * True when no New Jersey basis row was asserted and the excludable portion
+   * is zero for this pricing. It is not a measured Worksheet C recovery.
+   */
+  assumedUnrecoveredBasis?: boolean
 }
 
 /** @deprecated Prefer StateQcdEventFactsInput + StateNjIraOwnerPoolFactsInput. */
@@ -455,6 +460,8 @@ export interface StateNjIraBasisPoolComputationResult {
   openingBasis?: number
   basisConsumed?: number
   closingBasis?: number
+  /** The opening basis was the unasserted-contribution assumption, not a measured recovery. */
+  assumedUnrecoveredBasis?: boolean
 }
 
 export interface StatePensionBasisPoolComputationResult {

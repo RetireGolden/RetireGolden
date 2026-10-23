@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts`
 
 ```diff
-@@ -455,7 +455,6 @@
+@@ -458,7 +458,6 @@
        aca.healthcareExcludingEnrollment + aca.grossEnrollmentPremium
    }
    const penalties =

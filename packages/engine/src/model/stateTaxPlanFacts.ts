@@ -219,7 +219,7 @@ export const stateIraBasisYearEvidenceSchema = z
     yearEndAccountValue: nonNegative.optional(),
     distributionsDuringYear: nonNegative.optional(),
     postYearContributionsThroughFilingDeadline: nonNegative.optional(),
-    exemptObligationAdjustment: nonNegative.optional(),
+    exemptObligationAdjustment: z.number().finite().optional(),
     provenance: assertedFactProvenanceSchema,
   })
   .strict()
