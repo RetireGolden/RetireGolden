@@ -26,6 +26,10 @@ type Solved = {
   objective: number
   names: string[]
   values: number[]
+  /** The model's column count, when it differs from the solution's. */
+  numCols?: number
+  /** What `run` returns, when it is not a clean run. */
+  ran?: unknown
 }
 
 /** An optimal solve with two solved columns, at more digits than a printed solution carries. */
@@ -37,7 +41,27 @@ const OPTIMAL: Solved = {
   values: [107_028.8775, 1_756_817.79],
 }
 
-const MODEL_STATUS = { optimal: 7, infeasible: 8, unboundedOrInfeasible: 9, timeLimit: 13, iterationLimit: 14, solutionLimit: 16 }
+/** The package's model status constants, as highs 1.15.4 publishes them. */
+const MODEL_STATUS = {
+  notSet: 0,
+  loadError: 1,
+  modelError: 2,
+  presolveError: 3,
+  solveError: 4,
+  postsolveError: 5,
+  empty: 6,
+  optimal: 7,
+  infeasible: 8,
+  unboundedOrInfeasible: 9,
+  unbounded: 10,
+  objectiveBound: 11,
+  objectiveTarget: 12,
+  timeLimit: 13,
+  iterationLimit: 14,
+  unknown: 15,
+  solutionLimit: 16,
+  interrupted: 17,
+}
 const SOLUTION_STATUS = { none: 0, infeasible: 1, feasible: 2 }
 
 const loads = vi.hoisted(() => ({
@@ -58,7 +82,7 @@ vi.mock('highs', () => ({
   // so the memo's behavior across the two is observable. The module it
   // resolves to has what the engine's reader uses: `withModel` over an LP
   // source, the status constants, and per model `options.set`, `run`,
-  // `getModelStatus`, `info.get('primal_solution_status')`,
+  // `getModelStatus`, `getDimensions`, `info.get('primal_solution_status')`,
   // `getObjectiveValue`, `getSolution` and `getColName`.
   default: async () => {
     loads.attempts++
@@ -73,8 +97,9 @@ vi.mock('highs', () => ({
               const model = {
                 options: { set: (values: Record<string, unknown>) => loads.optionsSet.push(values) },
                 info: { get: (name: string) => (name === 'primal_solution_status' ? solved.primalStatus : 0) },
-                run: () => ({}),
+                run: () => ('ran' in solved ? solved.ran : { status: 0, warnings: [], modelStatus: solved.modelStatus }),
                 getModelStatus: () => solved.modelStatus,
+                getDimensions: () => ({ numCols: solved.numCols ?? solved.values.length }),
                 getObjectiveValue: () => solved.objective,
                 getSolution: () => ({ colValue: Float64Array.from(solved.values) }),
                 getColName: (index: number) => solved.names[index]!,
@@ -186,10 +211,23 @@ describe('HiGHS solution reader', () => {
       { ...OPTIMAL, values: [Number.NaN, 1] },
       { ...OPTIMAL, names: ['conv0', 'conv0'] },
       { ...OPTIMAL, names: ['conv0', ''] },
+      // A solution short of the model's columns would read the rest as 0.
+      { ...OPTIMAL, numCols: 3 },
+      // A run that reports neither success nor a warning, or another status.
+      { ...OPTIMAL, ran: undefined },
+      { ...OPTIMAL, ran: { status: 2, modelStatus: 7 } },
+      { ...OPTIMAL, ran: { status: 0, modelStatus: 8 } },
     ]
     for (const solved of unreadable) {
       loads.solved = solved
       await expect(optimizeSchedule(input()), JSON.stringify(solved)).rejects.toThrow(changed)
+    }
+
+    // A status that means HiGHS never solved the model is an error, not "no
+    // solution": it would otherwise read as a plan no schedule funds.
+    for (const modelStatus of [0, 1, 2, 3, 4, 5, 6]) {
+      loads.solved = { ...OPTIMAL, modelStatus }
+      await expect(optimizeSchedule(input()), String(modelStatus)).rejects.toThrow("HiGHS did not solve the optimizer's model")
     }
 
     // An infinite objective on a feasible point is the solve's answer, not a
@@ -204,11 +242,13 @@ describe('HiGHS solution reader', () => {
 })
 
 describe('HiGHS module check at load', () => {
-  it('refuses a module without the persistent model API or with renumbered status codes, and does not cache the refusal', async () => {
+  it('refuses a module without the persistent model API or with renumbered or unnamed status codes, and does not cache the refusal', async () => {
     const changed = "The highs package's solver interface changed"
     const refusals: { hasWithModel: boolean; constants: unknown }[] = [
       { hasWithModel: false, constants: { modelStatus: MODEL_STATUS, solutionStatus: SOLUTION_STATUS } },
       { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, solutionLimit: 15 }, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, presolveError: 6 }, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, newLimit: 18 }, solutionStatus: SOLUTION_STATUS } },
       { hasWithModel: true, constants: { modelStatus: MODEL_STATUS, solutionStatus: { ...SOLUTION_STATUS, feasible: 1 } } },
       { hasWithModel: true, constants: undefined },
     ]

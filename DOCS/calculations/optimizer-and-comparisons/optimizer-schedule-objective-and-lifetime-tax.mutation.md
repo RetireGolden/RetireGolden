@@ -1,12 +1,12 @@
 # Mutation receipt: optimizer-schedule-objective-and-lifetime-tax
 
-First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`. Re-executed once more 2026-10-10 against the code of RetireGolden `440d37f4` (RetireGolden#793), after its first review moved the lines below; the mutation is unchanged.
+First executed 2026-10-10 on the uncommitted work of branch `claude/census-optimizer-schedule` on RetireGolden `429bbca7` (RetireGolden#791's head `claude/census-completion`), before the slice was rebased onto main and squashed into RetireGolden#792. Re-executed 2026-10-10 on RetireGolden#792's branch after its first review pinned the library example's measured dollars in the evidence file, which moved the line numbers below; and re-executed again 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`. Re-executed once more 2026-10-10 against the code of RetireGolden `440d37f4` (RetireGolden#793), after its first review moved the lines below; the mutation is unchanged. Re-executed 2026-10-24 against RetireGolden#822 (highs 1.15.4's persistent model API), whose reader rewrite moved the lines below; the mutation is unchanged.
 
 ## Mutation applied to `packages/engine/src/strategies/optimizer.ts`
 
 ```diff
 diff --git a/packages/engine/src/strategies/optimizer.ts b/packages/engine/src/strategies/optimizer.ts
-index 9f8f2923f..a1e558356 100644
+index ade8d57f3..3c084c44d 100644
 --- a/packages/engine/src/strategies/optimizer.ts
 +++ b/packages/engine/src/strategies/optimizer.ts
 @@ -1119,7 +1119,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
@@ -30,20 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/strategies/
 
 ## Captured failing output
 
-Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, which restated this record (the engine reads HiGHS's raw solution in cents, deflates on the engine's basis, and publishes no figures or rows without a solution) and moved the lines this receipt quotes; the mutation is unchanged, and the diff's line numbers and blob hashes and the capture are refreshed against this head. The evidence file now registers eight tests (the year-solution record gained one, for cases 3 and 4). The baseline is green (optimizer.schedule.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-10-24 on branch `claude/project-thread-rlmoju` (RetireGolden#822), which moves the engine to highs 1.15.4's persistent model API: the reader now takes HiGHS's status codes and solution doubles from the model itself rather than a printed solution, which moved the lines this receipt quotes. The mutation is unchanged, and the diff's line numbers and blob hashes and the capture are refreshed against that code. The baseline is green (optimizer.schedule.evidence.test.ts passes on unmodified production, exit 0), and the mutant fails the same tests with the same figures as before. Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
- RUN  v5.0.0 packages/engine
+ RUN  v5.0.5 packages/engine
 
- ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 1 failed) 1164ms
+ ❯ src/strategies/optimizer.schedule.evidence.test.ts (8 tests | 1 failed) 2744ms
    ❯ optimizer-schedule-objective-and-lifetime-tax — Optimizer's own ending after-tax wealth and lifetime tax (5)
-     × case 2 deflates over one year, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1871227.85, tax 47663.94 20ms
+     × case 2 deflates over one year, haircuts the inherited bucket, and taxes the published income, tiers and gain: 1871227.85, tax 47663.94 46ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 7 passed (8)
 
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 

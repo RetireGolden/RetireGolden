@@ -1195,44 +1195,44 @@ function solverUnreadable(detail: string): Error {
 
 /**
  * HiGHS's model status codes (`HighsModelStatus`, the C API's
- * `kHighsModelStatus*`), each by the name HiGHS's own `modelStatusToString`
+ * `kHighsModelStatus*`): for each, the package's name for it in
+ * `constants.modelStatus` and the name HiGHS's own `modelStatusToString`
  * gives it, which is what `scheduleStatus` reads. Code 16 is the node limit:
- * the only solution limit the engine sets.
- */
-const MODEL_STATUS_NAMES: Readonly<Record<number, string>> = {
-  0: 'Not Set',
-  1: 'Load error',
-  2: 'Model error',
-  3: 'Presolve error',
-  4: 'Solve error',
-  5: 'Postsolve error',
-  6: 'Empty',
-  7: 'Optimal',
-  8: 'Infeasible',
-  9: 'Primal infeasible or unbounded',
-  10: 'Unbounded',
-  11: 'Bound on objective reached',
-  12: 'Target for objective reached',
-  13: 'Time limit reached',
-  14: 'Iteration limit reached',
-  15: 'Unknown',
-  16: 'Solution limit reached',
-  17: 'Interrupted by user',
-}
-
-/**
- * The package's own names for the codes the engine reads, checked against
- * `MODEL_STATUS_NAMES` when the module loads, so a renumbering fails every
+ * the only solution limit the engine sets. Every code is checked against the
+ * loaded module's constants, so a renumbering of any of them fails every
  * solve rather than misreading one.
  */
-const EXPECTED_MODEL_STATUS: Readonly<Record<string, number>> = {
-  optimal: 7,
-  infeasible: 8,
-  unboundedOrInfeasible: 9,
-  timeLimit: 13,
-  iterationLimit: 14,
-  solutionLimit: 16,
-}
+const MODEL_STATUSES: readonly { code: number; constant: string; name: string }[] = [
+  { code: 0, constant: 'notSet', name: 'Not Set' },
+  { code: 1, constant: 'loadError', name: 'Load error' },
+  { code: 2, constant: 'modelError', name: 'Model error' },
+  { code: 3, constant: 'presolveError', name: 'Presolve error' },
+  { code: 4, constant: 'solveError', name: 'Solve error' },
+  { code: 5, constant: 'postsolveError', name: 'Postsolve error' },
+  { code: 6, constant: 'empty', name: 'Empty' },
+  { code: 7, constant: 'optimal', name: 'Optimal' },
+  { code: 8, constant: 'infeasible', name: 'Infeasible' },
+  { code: 9, constant: 'unboundedOrInfeasible', name: 'Primal infeasible or unbounded' },
+  { code: 10, constant: 'unbounded', name: 'Unbounded' },
+  { code: 11, constant: 'objectiveBound', name: 'Bound on objective reached' },
+  { code: 12, constant: 'objectiveTarget', name: 'Target for objective reached' },
+  { code: 13, constant: 'timeLimit', name: 'Time limit reached' },
+  { code: 14, constant: 'iterationLimit', name: 'Iteration limit reached' },
+  { code: 15, constant: 'unknown', name: 'Unknown' },
+  { code: 16, constant: 'solutionLimit', name: 'Solution limit reached' },
+  { code: 17, constant: 'interrupted', name: 'Interrupted by user' },
+]
+
+const MODEL_STATUS_NAMES: ReadonlyMap<number, string> = new Map(MODEL_STATUSES.map((s) => [s.code, s.name]))
+
+/**
+ * The status codes that mean HiGHS did not solve the model at all (not set, a
+ * load, model, presolve, solve or postsolve error, or an empty model: the
+ * engine's LP always has columns, and the package reads an LP it cannot parse
+ * as an empty model without throwing). A solve that ends in one throws rather
+ * than publishing "no solution", which would read as a plan no schedule funds.
+ */
+const SOLVE_FAILED_CODES: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6])
 
 /** HiGHS's primal solution status codes (`kHighsSolutionStatus*`). */
 const PRIMAL_STATUS: Readonly<Record<number, OptimizerSolveResult['primalStatus']>> = {
@@ -1245,8 +1245,9 @@ const PRIMAL_STATUS: Readonly<Record<number, OptimizerSolveResult['primalStatus'
 type HighsModel = {
   options: { set: (values: Record<string, unknown>) => unknown }
   info: { get: (name: string) => number | bigint }
-  run: () => unknown
+  run: () => { status?: unknown; modelStatus?: unknown } | undefined
   getModelStatus: () => number
+  getDimensions: () => { numCols: number }
   getObjectiveValue: () => number
   getSolution: () => { colValue: ArrayLike<number> }
   getColName: (index: number) => string
@@ -1269,8 +1270,9 @@ type HighsLoader = (options: { locateFile?: (file: string) => string }) => Promi
  */
 function readSolvedModel(model: HighsModel): OptimizerSolveResult {
   const code = model.getModelStatus()
-  const modelStatus = MODEL_STATUS_NAMES[code]
+  const modelStatus = MODEL_STATUS_NAMES.get(code)
   if (modelStatus === undefined) throw solverUnreadable(`its model status code is ${String(code)}`)
+  if (SOLVE_FAILED_CODES.has(code)) throw new Error(`HiGHS did not solve the optimizer's model: ${modelStatus}`)
   const primalCode = Number(model.info.get('primal_solution_status'))
   const primalStatus = PRIMAL_STATUS[primalCode]
   if (primalStatus === undefined) {
@@ -1287,6 +1289,12 @@ function readSolvedModel(model: HighsModel): OptimizerSolveResult {
     throw solverUnreadable(`its objective reads ${String(objective)}, not a number`)
   }
   const values = model.getSolution().colValue
+  // Every column of the model, or none is published: `optimizeSchedule` reads
+  // a column the solution does not carry as 0.
+  const numCols = model.getDimensions().numCols
+  if (values.length !== numCols) {
+    throw solverUnreadable(`its solution carries ${values.length} of the model's ${String(numCols)} columns`)
+  }
   const columns = Object.create(null) as Record<string, number>
   for (let k = 0; k < values.length; k++) {
     const name = model.getColName(k)
@@ -1308,17 +1316,24 @@ function readSolvedModel(model: HighsModel): OptimizerSolveResult {
  * primal solution status, so the engine solves each LP in its own scoped model
  * (`withModel` disposes the native instance however the operation ends) and
  * reads HiGHS's status codes, primal solution status and column values
- * (doubles, not a printed solution) directly.
+ * (doubles, not a printed solution) directly. The package's wrappers throw on
+ * a native error (an option HiGHS rejects, an LP it cannot read, a run that
+ * fails); `run`'s own result is checked as well, so a run that reports
+ * neither success nor a warning, or a status other than the model's, fails
+ * the solve too.
  */
 function persistentModelSolver(runtime: HighsRuntime): { solve: OptimizerSolver } {
   if (typeof runtime.withModel !== 'function') throw solverUnreadable('the loaded module has no withModel')
   const statusCodes = runtime.constants?.modelStatus
   const solutionCodes = runtime.constants?.solutionStatus
-  for (const [name, code] of Object.entries(EXPECTED_MODEL_STATUS)) {
-    if (statusCodes?.[name] !== code) {
-      throw solverUnreadable(`its model status ${name} is ${String(statusCodes?.[name])}, not ${code}`)
+  for (const { code, constant } of MODEL_STATUSES) {
+    if (statusCodes?.[constant] !== code) {
+      throw solverUnreadable(`its model status ${constant} is ${String(statusCodes?.[constant])}, not ${code}`)
     }
   }
+  const named = new Set(MODEL_STATUSES.map((s) => s.constant))
+  const unnamed = Object.keys(statusCodes ?? {}).filter((constant) => !named.has(constant))
+  if (unnamed.length > 0) throw solverUnreadable(`it has model statuses the engine does not name: ${unnamed.join(', ')}`)
   if (solutionCodes?.none !== 0 || solutionCodes.infeasible !== 1 || solutionCodes.feasible !== 2) {
     throw solverUnreadable('its solution status codes are not none 0, infeasible 1, feasible 2')
   }
@@ -1326,7 +1341,12 @@ function persistentModelSolver(runtime: HighsRuntime): { solve: OptimizerSolver 
     solve: (lp, options) =>
       runtime.withModel({ format: 'lp', data: lp }, (model) => {
         model.options.set(options)
-        model.run()
+        const ran = model.run()
+        // HighsStatus: 0 ok, 1 warning (a limit reached, for one).
+        if (ran?.status !== 0 && ran?.status !== 1) throw solverUnreadable(`its run returned status ${String(ran?.status)}`)
+        if (ran.modelStatus !== model.getModelStatus()) {
+          throw solverUnreadable(`its run reported model status ${String(ran.modelStatus)}, not the model's`)
+        }
         return readSolvedModel(model)
       }),
   }

@@ -1215,6 +1215,23 @@ describe('hand-computed economic optima', () => {
     expect(sol.schedule).toEqual([])
   })
 
+  it('reads a real time limit from the solver itself, through its status code', async () => {
+    // A limit too short for HiGHS to start ends every solve at "Time limit
+    // reached" (code 13), with no incumbent, on any machine.
+    const sol = await optimizeSchedule({
+      years: [year()],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 100_000,
+      liquidationRate: 0.24,
+      options: { timeLimitSec: 1e-9 },
+    })
+
+    expect(sol.status).toBe('timeout')
+    expect(sol.endingAfterTax).toBeNull()
+    expect(sol.schedule).toEqual([])
+  })
+
   it('publishes an infeasible model as no solution: null figures and an empty schedule', async () => {
     // Spending nothing can fund, over three years, so the model carries IRMAA
     // binaries (HiGHS reports an infinite objective for it) and is a
