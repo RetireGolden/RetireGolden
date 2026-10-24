@@ -1,3 +1,4 @@
+import { californiaHsaAccountAdjustment } from '../tax/stateQcdHsa.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
@@ -68,6 +69,57 @@ it('publishes known-empty runtime HSA and QCD facts for a feature-off CA plan', 
   })
   expect(inputs.at(-1)?.stateHsaAccountYearFacts).toEqual([])
   expect(inputs.at(-1)?.stateQcdEventFacts).toEqual([])
+})
+
+it('keeps an asserted CA HSA deduction when candidate scoring supplies only zero defaults', () => {
+  // Same Schedule CA worksheet as the adapter fixture: asserted federal HSA
+  // deduction $4,300, every other category an explicit known zero, addition
+  // $4,300. annualContribution is 0, so the candidate row's federal deduction
+  // is the `?? 0` default (issue #803), not a modeled contribution.
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [{
+    type: 'hsa',
+    id: 'hsa1',
+    name: 'HSA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    balance: 1_000,
+    annualContribution: 0,
+  }]
+  plan.stateTaxFacts.hsaYearEvidence = [{
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 4_300,
+    employerContributionExcludedFederally: 0,
+    employerContributionAlreadyInStateWages: 0,
+    interest: 0,
+    dividends: 0,
+    realizedGains: 0,
+    unrealizedAppreciation: 0,
+    qualifiedCashWithdrawals: 0,
+    nonqualifiedDistributionFederalAmount: 0,
+    stateBasisBeforeYear: 0,
+    annualActivityComplete: true,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), {
+    startYear: 2026,
+    horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(structuredClone(input)); return 0 } },
+  })
+  const scored = inputs.filter((input) => input.stateHsaAccountYearFacts !== undefined)
+  expect(scored.length).toBeGreaterThan(0)
+  for (const input of scored) {
+    const fact = input.stateHsaAccountYearFacts?.[0]
+    expect(fact?.federalHsaDeduction).toEqual({ known: true, amount: 4_300 })
+    expect(fact?.annualActivityComplete).toBe(true)
+    const addition = californiaHsaAccountAdjustment(fact!)
+    expect(addition.warnings).toEqual([])
+    expect(addition.taxableIncomeDelta).toBe(4_300)
+  }
 })
 
 
