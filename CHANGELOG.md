@@ -4,6 +4,33 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the optimizer reads HiGHS through the highs package's persistent model API, and the
+  engine and planner-ui pin `highs` at exactly 1.15.4** (was 1.15.2; 2026-10-24). No figure changes.
+  - highs 1.15.3 rewrote the package's JavaScript layer, and the `Highs_writeSolutionPretty` hook
+    the engine wrapped to capture HiGHS's raw solution is gone, so on the new package every solve
+    failed closed. `strategies/optimizer.ts` now solves each model in its own scoped model
+    (`withModel`, disposed however the solve ends) and reads HiGHS's model status code, its primal
+    solution status, the objective and each column's value as the doubles HiGHS holds
+    (`getObjectiveValue`, `getSolution`, `getColName`), not a printed solution. The package's
+    one-shot `solve` is not used because it reports the node limit as `Unknown`.
+  - It still fails closed: a module without `withModel`, any renumbered or unknown status code, a
+    run that reports neither success nor a warning (or a status other than the model's), a solution
+    short of the model's columns, or a column it cannot read throws an error that names the change,
+    and that refusal is not memoised. A solve that ends in a load, model, presolve, solve or
+    postsolve error, or in an empty model (how the package reads an LP it cannot parse), throws
+    instead of publishing "no solution". A real-solver test now checks the
+    time limit through HiGHS's own status code.
+  - Both records' mutation receipts were re-executed against the new reader: each mutant still
+    fails the same evidence tests with the same figures.
+  - Re-measured on the new package, unchanged to the cent: rmd-irmaa stops at its node limit at an
+    objective of $744,755.92, and bracket-fill-roth's figures stay $282,266.26 and $181,976.47.
+    Every optimizer evidence case passes as stated.
+  - The `optimizer-schedule-objective-and-lifetime-tax` and `optimizer-schedule-year-solution`
+    records and worksheets now say how the engine reads the solution; their `implementedBy` pin
+    moves from `#parseRawSolution` to `#readSolvedModel`.
+  - The app's all-JS and precache budgets move 5100 → 5300 and 5250 → 5400 KiB: the lazy highs glue
+    chunk grew from 42.7 to 97.8 KiB (DOCS/operations/bundle-budget.md).
+
 - **Fixed: the texts the methodology site snapshots say what the engine does, and the output
   census follows RetireGolden-MCP 0.13.0** (2026-10-11, after engine 0.5.0; the findings of the
   retiregolden.org#151 review, which snapshots engine 8728d7b4). No figure changes.
