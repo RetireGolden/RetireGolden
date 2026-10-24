@@ -21,8 +21,8 @@ import { optimizeSchedule, type OptimizedSchedule, type OptimizerInput, type Opt
  * a one-year solve, and varied to two years for the branches one year does not
  * reach; and two inputs no schedule funds.
  *
- * Every figure is read from HiGHS's raw solution through the highs package the
- * engine pins, and every one the worksheets state is compared here with the
+ * Every figure is read from HiGHS's solution doubles through the highs package
+ * the engine pins, and every one the worksheets state is compared here with the
  * stated value: a figure more than half a cent from the stated value fails
  * these cases, whatever moved it (another optimal solution after a solver
  * upgrade, or a change to the model or the readout).

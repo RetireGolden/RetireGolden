@@ -146,7 +146,8 @@ trustPolicyExclude:
 #   concrete test or measured figure that a version move broke named here.
 #   The two measured figures a future in-range bump still has to re-measure
 #   by hand are the HiGHS wasm bytes in DOCS/features/optimizer.md
-#   (3,431,156 bytes at highs 1.15.2) and the chart vendor budget line in
+#   (3,431,156 bytes at highs 1.15.2; 3,531,401 at 1.15.4, re-measured
+#   2026-10-24) and the chart vendor budget line in
 #   DOCS/operations/bundle-budget.md (380 KiB); neither is a reason to hold
 #   a floor, because neither is checked by the pin.
 #   Known consequence, measured by running this file's resolve gate from

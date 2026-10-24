@@ -46,10 +46,10 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
 | app entry (the script `index.html` loads) | 420 KiB | 384.4 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 129.2 KiB (`annualProjectionKernels`) | Route and page chunks staying route-sized |
-| all JS together | 5100 KiB | 4824.2 KiB | "Many new chunks", not just one fat one |
+| all JS together | 5200 KiB | 5147.2 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 800 KiB | 716.8 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
-| PWA precache | 5250 KiB | 4971.8 KiB | Install cost, and the offline guarantee's price |
+| PWA precache | 5350 KiB | 5267.8 KiB | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
@@ -60,7 +60,9 @@ uneven — read the table, not an average:
   PWA precache were equally tight (4356 → 4400, 4504 → 4550) until that
   ~30–46 KiB of slack started failing every unrelated PR; they moved to 4431.7 →
   4800 and 4579.6 → 4900 (PR 707, measured), then to 4824.2 → 5100 and
-  4971.8 → 5250 for the authorized calculation audit (see below). Landing still expects growth to be
+  4971.8 → 5250 for the authorized calculation audit (see below), then to 5147.2 → 5200 and
+  5267.8 → 5350 for the highs 1.15.4 upgrade, whose lazy glue chunk grew from 42.7 to 97.8 KiB
+  with the package's persistent model API (main measured 5092.8 and 5213.4 just before). Landing still expects growth to be
   justified. The two sum rows are meant to stop absorbing ordinary feature work
   without a note, not to fail CI on noise. "Raising the precache row" below is
   the 4550 worked example; the 4800 / 4900 raise and the calc-audit raise follow it.

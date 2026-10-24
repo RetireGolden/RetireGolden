@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/strategies/optimizer.ts b/packages/engine/src/s
 index 9f8f2923f..b207d09aa 100644
 --- a/packages/engine/src/strategies/optimizer.ts
 +++ b/packages/engine/src/strategies/optimizer.ts
-@@ -1471,7 +1471,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
+@@ -1475,7 +1475,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
        endTrad: round(col(`trad${t + 1}`)),
        endInheritedTrad: round(col(`inh${t + 1}`)),
        endOther: round(col(`other${t + 1}`)),

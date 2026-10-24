@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  39 packages, sha256 c5e18e826f4becc568c0c44c11e325d0c3306dbf2c0576edf272b643e1aefa66
+Attributed:  39 packages, sha256 4d2d4fb5e9a2c4f5190698adeb54f8e4341f4dc325516a1cc077b09baa1721e4
 
 ================================================================================
 
@@ -537,7 +537,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-highs (1.15.2)
+highs (1.15.4)
 License: MIT
 Author: Ophir LOJKINE
 Homepage: https://lovasoa.github.io/highs-js/

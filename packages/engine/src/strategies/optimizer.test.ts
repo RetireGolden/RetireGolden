@@ -1315,12 +1315,12 @@ describe('hand-computed economic optima', () => {
     ).rejects.toThrow('finite objective')
   })
 
-  it('reads HiGHS\'s raw solution past the six significant digits of the pretty print (the pinned highs package)', async () => {
+  it('reads HiGHS\'s solution past the six significant digits of a printed solution (the pinned highs package)', async () => {
     // A 50% haircut makes every converted dollar worth more than any bracket
     // charges, so the solve converts up to the per-year ceiling, which the
-    // model text writes as 123456.789. The highs package's own parse reads
-    // that column to six significant digits (123,457); the engine reads
-    // HiGHS's raw solution and publishes it in cents.
+    // model text writes as 123456.789. A printed solution's six significant
+    // digits read that column as 123,457; the engine reads the double HiGHS
+    // holds and publishes it in cents.
     const sol = await optimizeSchedule({
       years: [year()],
       openingTrad: 1_000_000,

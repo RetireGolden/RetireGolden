@@ -89,8 +89,8 @@ importers:
   packages/engine:
     dependencies:
       highs:
-        specifier: 1.15.2
-        version: 1.15.2
+        specifier: 1.15.4
+        version: 1.15.4
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -126,8 +126,8 @@ importers:
         specifier: ^0.5.0
         version: link:../engine
       highs:
-        specifier: 1.15.2
-        version: 1.15.2
+        specifier: 1.15.4
+        version: 1.15.4
       idb:
         specifier: ^8.0.4
         version: 8.0.4
@@ -2175,8 +2175,9 @@ packages:
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
 
-  highs@1.15.2:
-    resolution: {integrity: sha512-IugrQ7Z8nSMHgVneTFwzV8fIfaR85l/kGhN+jvEDbm5k5MlGXtq1Zp2hy1fkmHA71nCmIg9F7ayWfEPxLpfUyA==}
+  highs@1.15.4:
+    resolution: {integrity: sha512-vsC03XHDqWAVrEFUt22h8e4CDDMb+LAFa0bycjPUq2kadRigK5pNLVIlwspKvMxxVtrr4NAucZHP/CAgigxiDQ==}
+    engines: {node: '>=18'}
 
   hookified@1.15.1:
     resolution: {integrity: sha512-MvG/clsADq1GPM2KGo2nyfaWVyn9naPiXrqIe4jYjXNZQt238kWyOGrsyc/DmRAQ+Re6yeo6yX/yoNCG5KAEVg==}
@@ -5289,7 +5290,7 @@ snapshots:
     dependencies:
       hermes-estree: 0.25.1
 
-  highs@1.15.2: {}
+  highs@1.15.4: {}
 
   hookified@1.15.1: {}
 

@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/strategies/optimizer.ts b/packages/engine/src/s
 index 9f8f2923f..a1e558356 100644
 --- a/packages/engine/src/strategies/optimizer.ts
 +++ b/packages/engine/src/strategies/optimizer.ts
-@@ -1118,7 +1118,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
+@@ -1119,7 +1119,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
    const objTerms: Terms = {
      [`other${n}`]: deflate,
      [`trad${n}`]: deflate * (1 - liquidationRate),
