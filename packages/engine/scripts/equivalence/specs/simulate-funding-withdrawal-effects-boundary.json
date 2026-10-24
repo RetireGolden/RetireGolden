@@ -270,20 +270,20 @@
       "label": "complete candidate penalty and warning-gate handoff",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        457,
-        483
+        458,
+        484
       ],
       "anchors": [
         {
-          "line": 457,
+          "line": 458,
           "text": "const penalties ="
         },
         {
-          "line": 458,
+          "line": 459,
           "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +"
         },
         {
-          "line": 482,
+          "line": 483,
           "text": "traditionalEarlyWithdrawalPenaltyCharged:"
         }
       ]

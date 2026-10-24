@@ -116,20 +116,20 @@
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
         329,
-        369
+        370
       ],
       "note": "Continues AF.helper.tax past its excluded line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`); see that entry's note.",
       "anchors": [
         {
-          "line": 351,
+          "line": 352,
           "text": "taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)"
         },
         {
-          "line": 368,
+          "line": 369,
           "text": "candidateHealthcare ="
         },
         {
-          "line": 369,
+          "line": 370,
           "text": "aca.healthcareExcludingEnrollment + aca.grossEnrollmentPremium"
         }
       ]
@@ -139,20 +139,20 @@
       "label": "federal ACA probe and known-character branch selection",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        371,
-        374
+        372,
+        375
       ],
       "anchors": [
         {
-          "line": 371,
+          "line": 372,
           "text": "if (aca.active && aca.contract !== null) {"
         },
         {
-          "line": 372,
+          "line": 373,
           "text": "const federalProbe = computeFederalTax(taxInput)"
         },
         {
-          "line": 374,
+          "line": 375,
           "text": "if (aca.contract.taxExemptInterest.state === 'known') {"
         }
       ]
@@ -162,20 +162,20 @@
       "label": "plan-derived unknown-attestation tax-exempt-interest provenance",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        383,
-        388
+        384,
+        389
       ],
       "anchors": [
         {
-          "line": 383,
+          "line": 384,
           "text": "if (aca.contract.taxExemptInterest.state === 'unknown') {"
         },
         {
-          "line": 384,
+          "line": 385,
           "text": "acaMagiTaxExemptInterest = {"
         },
         {
-          "line": 388,
+          "line": 389,
           "text": "acaSupportCodes.push('tax-exempt-interest-plan-derived')"
         }
       ]
@@ -185,16 +185,16 @@
       "label": "household ACA MAGI construction and blocker publication",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        397,
-        405
+        398,
+        406
       ],
       "anchors": [
         {
-          "line": 397,
+          "line": 398,
           "text": "acaMagiProbe = buildAcaHouseholdMagi({"
         },
         {
-          "line": 405,
+          "line": 406,
           "text": "acaSupportCodes.push(...acaMagiProbe.blockers)"
         }
       ]
@@ -204,24 +204,24 @@
       "label": "informational-code filtering and monthly ACA premium pricing",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        406,
-        430
+        407,
+        431
       ],
       "anchors": [
         {
-          "line": 406,
+          "line": 407,
           "text": "const blockingAcaCodes = acaSupportCodes.filter(isBlockingAcaSupportCode)"
         },
         {
-          "line": 412,
+          "line": 413,
           "text": "const priced = acaEconomicPremiumByMonth("
         },
         {
-          "line": 421,
+          "line": 422,
           "text": "if (priced.belowEligibilityFloor) {"
         },
         {
-          "line": 426,
+          "line": 427,
           "text": "candidateHealthcare ="
         }
       ]
@@ -231,20 +231,20 @@
       "label": "stable HSA-cap acceptance predicate",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        432,
-        439
+        433,
+        440
       ],
       "anchors": [
         {
-          "line": 432,
+          "line": 433,
           "text": "const nextHsaCap = input.hsa.qualifiedExpenseCap"
         },
         {
-          "line": 437,
+          "line": 438,
           "text": "hsaCapConverged = true"
         },
         {
-          "line": 438,
+          "line": 439,
           "text": "break"
         }
       ]
@@ -254,24 +254,24 @@
       "label": "complete tax, penalty, required-need, ACA, HSA, and warning-gate result",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        457,
-        484
+        458,
+        485
       ],
       "anchors": [
         {
-          "line": 457,
+          "line": 458,
           "text": "const penalties ="
         },
         {
-          "line": 461,
+          "line": 462,
           "text": "return {"
         },
         {
-          "line": 469,
+          "line": 470,
           "text": "requiredNeed: Math.max("
         },
         {
-          "line": 482,
+          "line": 483,
           "text": "traditionalEarlyWithdrawalPenaltyCharged:"
         }
       ]
