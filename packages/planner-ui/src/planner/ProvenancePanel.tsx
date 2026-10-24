@@ -11,6 +11,7 @@ import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_PROVENANCE,
 } from '@retiregolden/engine/params'
+import { ParameterFigures } from './ParameterFigures'
 
 /**
  * Which years of each publisher's figures RetireGolden has loaded, and when
@@ -76,11 +77,11 @@ export function ProvenancePanel() {
             <tr key={s.id}>
               <th scope="row">
                 <span className="provenance-label">{s.label}</span>
-                <span className="provenance-figures muted small">{s.figures}</span>
+                <div className="provenance-figures muted small"><ParameterFigures id={s.id} figures={s.figures} /></div>
               </th>
               <td>
                 <a href={s.url} target="_blank" rel="noopener noreferrer">
-                  {s.publisher} ↗
+                  {s.id === 'state-income-tax' ? 'State source index' : s.publisher} ↗
                 </a>
               </td>
             </tr>

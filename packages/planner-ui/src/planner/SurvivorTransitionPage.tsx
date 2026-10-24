@@ -17,6 +17,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
 import { ScrollRegion } from './ScrollRegion'
+import { PrintableDetails } from './PrintableDetails'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { formatYearRuns } from './acaVetoCopy'
 import { projectionStartYear, taxCalculatorFor, useProjection } from './useProjection'
@@ -220,7 +221,7 @@ function ScenarioTable({
                 )}
                 <div className="small">low point {fmtMoneyCompact(row.minSurvivorInvestable)}</div>
               </td>
-              <td>
+              <td className="survivor-lever-cell">
                 {row.conversionLever ? (
                   <>
                     <span
@@ -235,12 +236,16 @@ function ScenarioTable({
                       {row.conversionLever.estateDelta > 0 ? '+' : ''}
                       {fmtMoneyCompact(row.conversionLever.estateDelta)}
                     </span>
-                    <div className="small">
-                      after-tax estate ({row.conversionLever.lifetimeTaxDelta > 0 ? '+' : ''}
-                      {fmtMoneyCompact(row.conversionLever.lifetimeTaxDelta)} lifetime tax), adding a 12% bracket fill
-                      through {row.deathYear}, in {row.endYear} dollars
-                    </div>
-                    <LeverWindow lever={row.conversionLever} />
+                    <div className="small">after-tax estate</div>
+                    <PrintableDetails className="survivor-lever-details small">
+                      <summary>Conversion details<span className="sr-only"> if {personName} dies at {row.deathAge}</span></summary>
+                      <div>
+                        after-tax estate ({row.conversionLever.lifetimeTaxDelta > 0 ? '+' : ''}
+                        {fmtMoneyCompact(row.conversionLever.lifetimeTaxDelta)} lifetime tax), adding a 12% bracket fill
+                        through {row.deathYear}, in {row.endYear} dollars
+                      </div>
+                      <LeverWindow lever={row.conversionLever} />
+                    </PrintableDetails>
                   </>
                 ) : (
                   '—'
