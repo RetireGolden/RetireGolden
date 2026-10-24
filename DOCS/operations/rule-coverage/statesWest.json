@@ -1046,11 +1046,11 @@
           "functions": [
             {
               "name": "californiaHsaAccountAdjustment",
-              "line": 406
+              "line": 414
             },
             {
               "name": "californiaHsaCollectionAdjustment",
-              "line": 572
+              "line": 580
             }
           ]
         },
@@ -1849,7 +1849,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -3847,7 +3847,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 53
+              "line": 54
             }
           ]
         },
@@ -4022,7 +4022,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -4983,7 +4983,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -5066,7 +5066,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2502
+              "line": 2521
             }
           ]
         }

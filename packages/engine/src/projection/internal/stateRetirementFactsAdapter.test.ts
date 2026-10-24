@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Account } from '../../model/plan.js'
+import { stateParamsFor } from '../../params/state/index.js'
+import {
+  newJerseyWorksheetCTaxableAmount,
+  stateDirectQcdCollectionAdjustment,
+} from '../../tax/stateQcdHsa.js'
 import {
   ageOnDate,
   characterizePensionDistribution,
@@ -15,6 +20,46 @@ import {
   resolveStateDirectQcdPolicy,
 } from './stateRetirementFactsAdapter.js'
 import { isRailroadSource } from '../../tax/stateRetirementFacts.js'
+import type { StateQcdEventFactsInput } from '../types.js'
+
+const qcdProvenance = { source: 'IRA custodian 1099-R', asOf: '2026-12-31' } as const
+
+function qcdEvidence(overrides: Partial<NonNullable<ReturnType<typeof createEmptyPlan>['stateTaxFacts']['qcdEventEvidence']>[number]> = {}) {
+  return {
+    eventId: 'qcd-routed:x',
+    taxYear: 2026,
+    accountId: 'ira',
+    ownerPersonId: 'p1',
+    transactionKind: 'directQcd' as const,
+    grossIraDistribution: 10_000,
+    directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000,
+    federalTaxableAmount: 0,
+    federalBasisAllocated: 0,
+    residency: 'fullYearResident' as const,
+    directTransfer: true,
+    provenance: qcdProvenance,
+    ...overrides,
+  }
+}
+
+/** The literal defaults the forced-distribution phase stamps on every runtime QCD. */
+function runtimeQcd(overrides: Partial<StateQcdEventFactsInput> = {}): StateQcdEventFactsInput {
+  return {
+    eventId: 'qcd-routed:x',
+    accountId: 'ira',
+    ownerPersonId: 'p1',
+    grossIraDistribution: 10_000,
+    directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000,
+    federalTaxableAmount: 0,
+    federalBasisAllocated: 0,
+    residency: 'unknown',
+    splitInterest: false,
+    directTransfer: true,
+    ...overrides,
+  }
+}
 
 describe('stateRetirementFactsAdapter', () => {
   it('rejects impossible schema-shaped civil dates without rolling them forward', () => {
@@ -391,4 +436,208 @@ it('preserves an explicitly supplied age-65 count despite an invalid claimant DO
   plan.household.people[0]!.dob = '1960-02-30'
   plan.stateTaxFacts.householdYearFacts = [{ year: 2026, age65EligibleCount: 1 }]
   expect(householdFactsForYear(plan, 2026, { claimantPersonIds: ['p'] })?.age65EligibleCount).toBe(1)
+})
+
+describe('QCD event evidence merge (D48, D49)', () => {
+  const njPolicy = stateParamsFor('NJ', 2026)?.directQcdPolicy
+  // GIT-1 & 2 Worksheet C: taxable = distribution × (Dec 31 value + distributions
+  // − unrecovered NJ contributions) / (Dec 31 value + distributions). A $0
+  // unrecovered basis on a $10,000 QCD against a $90,000 year-end IRA is
+  // 10,000 × 100,000 / 100,000 = 10,000. N.J.S.A. 54A does not follow the
+  // IRC 408(d)(8) exclusion, so the federal exclusion is not a NJ subtraction.
+  const njPool = {
+    ownerPersonId: 'p1',
+    december31IraValue: 90_000,
+    allAnnualDistributions: 10_000,
+    unrecoveredNjTaxedContributions: { known: true as const, amount: 0 },
+    fullLiquidation: false,
+  }
+
+  function planWithEvidence(...rows: ReturnType<typeof qcdEvidence>[]) {
+    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    plan.household.state = 'NJ'
+    plan.stateTaxFacts.qcdEventEvidence = rows
+    return plan
+  }
+
+  it('keeps evidence residency when the runtime QCD stamps unknown, so NJ Worksheet C taxes the full $10,000', () => {
+    // Two 2026 residency segments, both NJ, so the single 12-month household
+    // patch cannot promote an unknown QCD to full-year resident.
+    const segments = [{ state: 'NJ', months: 6 }, { state: 'NJ', months: 6 }]
+    // Evidence dollars that disagree with the executed gift do not replace it.
+    // Characterization (residency, kind, direct transfer) is what the custodian
+    // row supplies; the projected amount stays the distribution.
+    const plan = planWithEvidence(qcdEvidence({
+      grossIraDistribution: 1, directCharityTransfer: 1, federalExcludedAmount: 1,
+    }))
+    const [fact] = qcdEventFactsForYear(plan, 2026, [runtimeQcd()])!
+    expect(fact!.grossIraDistribution).toBe(10_000)
+    expect(fact!.directCharityTransfer).toBe(10_000)
+    const residency = fact!.residency === 'unknown' && segments.length === 1 && segments[0]!.months === 12
+      ? 'fullYearResident' as const
+      : fact!.residency
+    expect(residency).toBe('fullYearResident')
+    expect(fact!.directTransfer).toBe(true)
+    const worksheet = newJerseyWorksheetCTaxableAmount({
+      pool: njPool,
+      correspondingGrossDistributions: fact!.directCharityTransfer,
+    })
+    expect(worksheet.stateTaxableIraAmount).toBe(10_000)
+    expect(worksheet.basisRecovered).toBe(0)
+    const adjustment = stateDirectQcdCollectionAdjustment({
+      events: [{ ...fact!, residency, directTransfer: fact!.directTransfer === true }],
+      packPolicy: njPolicy,
+      njPools: [njPool],
+    })
+    expect(adjustment.warnings).toEqual([])
+    expect(adjustment.taxableIncomeDelta).toBe(10_000)
+  })
+
+  it('honors evidence transactionKind splitInterest instead of the runtime splitInterest false default', () => {
+    // IRC 408(d)(8)(F): a split-interest transfer does not inherit the direct
+    // QCD exclusion. The state leaf refuses it.
+    const plan = planWithEvidence(qcdEvidence({ transactionKind: 'splitInterest' }))
+    const [fact] = qcdEventFactsForYear(plan, 2026, [runtimeQcd()])!
+    expect(fact!.transactionKind).toBe('splitInterest')
+    expect(fact!.splitInterest).toBe(true)
+    const adjustment = stateDirectQcdCollectionAdjustment({
+      events: [{ ...fact!, directTransfer: fact!.directTransfer === true }],
+      packPolicy: njPolicy,
+      njPools: [njPool],
+    })
+    expect(adjustment.warnings.map((warning) => warning.code)).toContain('state-qcd-split-interest-refused')
+    expect(adjustment.taxableIncomeDelta).toBe(0)
+  })
+
+  it('does not let the runtime directTransfer true default erase evidence that the transfer was not direct', () => {
+    const plan = planWithEvidence(qcdEvidence({ directTransfer: false, transactionKind: 'other' }))
+    const [fact] = qcdEventFactsForYear(plan, 2026, [runtimeQcd()])!
+    expect(fact!.directTransfer).toBe(false)
+    expect(fact!.transactionKind).toBe('other')
+    const adjustment = stateDirectQcdCollectionAdjustment({
+      events: [{ ...fact!, directTransfer: fact!.directTransfer === true }],
+      packPolicy: njPolicy,
+      njPools: [njPool],
+    })
+    expect(adjustment.warnings.map((warning) => warning.code)).toContain('state-qcd-direct-transfer-required')
+    expect(adjustment.taxableIncomeDelta).toBe(0)
+  })
+
+  it('withholds an evidence-only QCD instead of pricing dollars the projection did not execute', () => {
+    // IRC 408(d)(8)(A) excludes an executed direct transfer. A custodian row
+    // with no matching runtime event is not that execution. NJ Worksheet C
+    // subtracts federalTaxableAmount from the state taxable amount, which
+    // assumes the federal base already includes it. The year stays incomplete.
+    const plan = planWithEvidence(qcdEvidence({
+      eventId: 'custodian-2026-qcd',
+      grossIraDistribution: 10_000,
+      directCharityTransfer: 10_000,
+      federalExcludedAmount: 10_000,
+      federalTaxableAmount: 0,
+    }))
+    expect(qcdEventFactsForYear(plan, 2026, [], 'NJ')).toBeUndefined()
+  })
+
+  it('keeps two QCD facts when two accounts share an eventId', () => {
+    const plan = planWithEvidence(
+      qcdEvidence({ eventId: 'shared', accountId: 'ira' }),
+      qcdEvidence({ eventId: 'shared', accountId: 'ira-2', grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }),
+    )
+    const matchedRuntime = qcdEventFactsForYear(plan, 2026, [
+      runtimeQcd({ eventId: 'shared', accountId: 'ira' }),
+      runtimeQcd({ eventId: 'shared', accountId: 'ira-2', grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }),
+    ], 'NJ')
+    expect(matchedRuntime?.map((fact) => fact.accountId).sort()).toEqual(['ira', 'ira-2'])
+  })
+
+  it('leaves a year marked qcd-unknown incomplete when the runtime list is empty', () => {
+    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    plan.household.state = 'NJ'
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'NJ', qcd: 'unknown', provenance: qcdProvenance,
+    }]
+    expect(qcdEventFactsForYear(plan, 2026, [], 'NJ')).toBeUndefined()
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'NJ', qcd: 'complete', provenance: qcdProvenance,
+    }]
+    expect(qcdEventFactsForYear(plan, 2026, undefined, 'NJ')).toEqual([])
+  })
+
+  it('does not treat one observed QCD as a complete collection when the year is marked unknown', () => {
+    const plan = planWithEvidence(qcdEvidence())
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'NJ', qcd: 'unknown', provenance: qcdProvenance,
+    }]
+    expect(qcdEventFactsForYear(plan, 2026, [runtimeQcd()], 'NJ')).toBeUndefined()
+  })
+
+  it('keeps a prior state QCD-unknown mark in a move year', () => {
+    // The household leaves NJ on July 1. NJ marked its QCD activity unknown.
+    // Year-end CA is not a known-empty collection for the NJ slice.
+    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    plan.household.state = 'NJ'
+    plan.household.stateMoves = [{ fromYear: 2026, fromMonth: 7, state: 'CA' }]
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'NJ', qcd: 'unknown', provenance: qcdProvenance,
+    }]
+    expect(qcdEventFactsForYear(plan, 2026, [], 'CA')).toBeUndefined()
+  })
+
+  it('withholds the collection when two custodian rows share one identity', () => {
+    const plan = planWithEvidence(
+      qcdEvidence({ grossIraDistribution: 10_000 }),
+      qcdEvidence({ grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }),
+    )
+    expect(qcdEventFactsForYear(plan, 2026, [runtimeQcd()], 'NJ')).toBeUndefined()
+    expect(qcdEventFactsForYear(plan, 2026, [], 'NJ')).toBeUndefined()
+  })
+
+  it('keeps custodian rows distinct when their ids contain a NUL', () => {
+    const plan = planWithEvidence(
+      qcdEvidence({ eventId: 'a', accountId: 'b\u0000c' }),
+      qcdEvidence({
+        eventId: 'a\u0000b', accountId: 'c',
+        grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000,
+      }),
+    )
+    const facts = qcdEventFactsForYear(plan, 2026, [
+      runtimeQcd({ eventId: 'a', accountId: 'b\u0000c' }),
+      runtimeQcd({
+        eventId: 'a\u0000b', accountId: 'c',
+        grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000,
+      }),
+    ], 'NJ')
+    expect(facts).toHaveLength(2)
+    expect(facts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventId: 'a', accountId: 'b\u0000c', grossIraDistribution: 10_000 }),
+      expect.objectContaining({ eventId: 'a\u0000b', accountId: 'c', grossIraDistribution: 4_000 }),
+    ]))
+  })
+
+  it('refuses an unsupported NJ QCD before asking for the missing Worksheet C pool', () => {
+    // IRC 408(d)(8)(F). The refusal does not wait on N.J.S.A. 54A basis.
+    const split = stateDirectQcdCollectionAdjustment({
+      events: [{
+        ...runtimeQcd(),
+        transactionKind: 'splitInterest',
+        splitInterest: true,
+        residency: 'fullYearResident',
+        directTransfer: true,
+      }],
+      packPolicy: njPolicy,
+    })
+    expect(split.taxableIncomeDelta).toBe(0)
+    expect(split.warnings.map((warning) => warning.code)).toEqual([
+      'state-qcd-split-interest-refused',
+      'nj-qcd-basis-unknown',
+    ])
+    const other = stateDirectQcdCollectionAdjustment({
+      events: [{ ...runtimeQcd(), transactionKind: 'other', directTransfer: false, residency: 'fullYearResident' }],
+      packPolicy: njPolicy,
+    })
+    expect(other.warnings.map((warning) => warning.code)).toEqual([
+      'state-qcd-direct-transfer-required',
+      'nj-qcd-basis-unknown',
+    ])
+  })
 })

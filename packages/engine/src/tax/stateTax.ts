@@ -2400,6 +2400,25 @@ export function createStateTaxCalculator(opts: StateTaxYearOptions = {}): TaxCal
   }
 }
 
+/**
+ * An own `stateQcdEventFacts` property is the year's collection. An explicit
+ * undefined withholds it, so a calculator-level `qcdEvents` list cannot fill
+ * a year the projection marked unknown. Callers that omit the property keep
+ * the legacy options fallback.
+ */
+function annualQcdEventsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): StateTaxYearOptions['qcdEvents'] {
+  if (Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts')) {
+    return input.stateQcdEventFacts?.map((event) => ({ ...event, directTransfer: event.directTransfer === true }))
+  }
+  if (input.stateQcdYearFacts === undefined) return opts.qcdEvents
+  return input.stateQcdYearFacts.map((event, index) => ({
+    ...event,
+    eventId: `legacy-qcd-${index}`,
+    accountId: `legacy-qcd-${index}`,
+    directTransfer: false,
+  }))
+}
+
 function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): StateTaxYearOptions {
   return {
     ...opts,
@@ -2407,7 +2426,7 @@ function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): 
     householdFacts: input.stateHouseholdFacts ?? opts.householdFacts,
     hsaAccounts: input.stateHsaAccountYearFacts ?? opts.hsaAccounts,
     hsaFacts: input.stateHsaYearFacts ?? opts.hsaFacts,
-    qcdEvents: input.stateQcdEventFacts?.map((event) => ({ ...event, directTransfer: event.directTransfer === true })) ?? (input.stateQcdYearFacts === undefined ? opts.qcdEvents : input.stateQcdYearFacts.map((event, index) => ({ ...event, eventId: `legacy-qcd-${index}`, accountId: `legacy-qcd-${index}`, directTransfer: false }))),
+    qcdEvents: annualQcdEventsFromInput(input, opts),
     qcdFacts: opts.qcdFacts,
     njIraOwnerPools: input.stateNjIraOwnerPools?.map((pool) => {
       const ira = input.stateRetirementDistributions?.filter((row) => row.ownerPersonId === pool.ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth')

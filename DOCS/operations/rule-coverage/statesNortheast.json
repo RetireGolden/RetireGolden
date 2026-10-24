@@ -1400,7 +1400,7 @@
             },
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -1409,7 +1409,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2502
+              "line": 2521
             }
           ]
         }
@@ -1478,7 +1478,7 @@
           "functions": [
             {
               "name": "newJerseyHsaAccountAdjustment",
-              "line": 477
+              "line": 485
             }
           ]
         },
@@ -2208,7 +2208,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 53
+              "line": 54
             }
           ]
         },
@@ -2507,7 +2507,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 354
+              "line": 370
             }
           ]
         },
@@ -3115,7 +3115,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 53
+              "line": 54
             }
           ]
         },
@@ -3644,7 +3644,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 53
+              "line": 54
             }
           ]
         },

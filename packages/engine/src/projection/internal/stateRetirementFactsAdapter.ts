@@ -4,13 +4,14 @@
  * Preserves source evidence and unknown facts while preparing annual state
  * calculator inputs. Policy and tax arithmetic remain in the state leaves.
  */
-import type {
-  Account,
-  PensionSourceKind,
-  Plan,
-  StateTaxYearHouseholdFacts,
-  PensionStateEligibility,
-  StateHsaYearEvidence,
+import {
+  stateResidencySegmentsForYear,
+  type Account,
+  type PensionSourceKind,
+  type Plan,
+  type StateTaxYearHouseholdFacts,
+  type PensionStateEligibility,
+  type StateHsaYearEvidence,
 } from '../../model/plan.js'
 import type {
   KnownMoneyInput,
@@ -611,14 +612,138 @@ function parseCivilDate(value: string): Date | undefined {
   return parsed
 }
 
+type QcdEventEvidenceRow = NonNullable<Plan['stateTaxFacts']['qcdEventEvidence']>[number]
+type QcdTransactionKind = NonNullable<StateQcdEventFactsInput['transactionKind']>
+
+/** Identity is the custodian row, not the event id alone. Two accounts can share an id. */
+function qcdFactKey(row: { eventId: string; accountId: string; ownerPersonId: string }): string {
+  // JSON encoding keeps schema-valid ids that contain NUL distinct. A raw
+  // separator would collapse `a` + `b\0c` with `a\0b` + `c`.
+  return JSON.stringify([row.eventId, row.accountId, row.ownerPersonId])
+}
+
+/** One representative of each identity that appears more than once. */
+export function repeatedQcdIdentities<T extends { eventId: string; accountId: string; ownerPersonId: string }>(
+  rows: readonly T[],
+): readonly T[] {
+  const seen = new Set<string>()
+  const repeated = new Map<string, T>()
+  for (const row of rows) {
+    const key = qcdFactKey(row)
+    if (repeated.has(key)) continue
+    if (seen.has(key)) repeated.set(key, row)
+    else seen.add(key)
+  }
+  return [...repeated.values()]
+}
+
+function identityRepeated(rows: readonly { eventId: string; accountId: string; ownerPersonId: string }[]): boolean {
+  return repeatedQcdIdentities(rows).length > 0
+}
+
+/** Year-end state plus any state left during the year. A move year prices both. */
+function qcdActivityStates(plan: Readonly<Plan>, year: number, state: string | undefined): readonly string[] {
+  const states = stateResidencySegmentsForYear(plan.household, year).map((segment) => segment.state)
+  if (state !== undefined && !states.some((code) => code.toUpperCase() === state.toUpperCase())) {
+    return [...states, state]
+  }
+  return states
+}
+
+/**
+ * IRC 408(d)(8)(F) split-interest does not inherit direct-QCD treatment.
+ * `other` and `unknown` are not a direct QCD either. A missing kind leaves
+ * the runtime boolean, which is the projection's own direct-QCD execution.
+ */
+function qcdSplitInterest(kind: QcdTransactionKind | undefined, runtime: boolean): boolean {
+  if (kind === 'splitInterest') return true
+  if (kind === 'directQcd' || kind === 'other' || kind === 'unknown') return false
+  return runtime
+}
+
+/**
+ * The projection stamps `directTransfer: true` on every runtime QCD. That
+ * default must not erase an attested false. `other` and `unknown` do not
+ * become direct transfers by that default.
+ */
+function qcdDirectTransfer(
+  kind: QcdTransactionKind | undefined,
+  runtime: boolean | undefined,
+  evidence: boolean | undefined,
+): boolean | undefined {
+  if (kind === 'other' || kind === 'unknown') return false
+  if (runtime === true && evidence !== undefined) return evidence
+  return runtime ?? evidence
+}
+
+function mergeQcdRuntimeWithEvidence(
+  event: StateQcdEventFactsInput,
+  evidence: QcdEventEvidenceRow | undefined,
+): StateQcdEventFactsInput {
+  const kind = evidence?.transactionKind ?? event.transactionKind
+  const transferDate = event.transferDate ?? evidence?.transferDate
+  const kansas = event.kansasCoveredCharitableCreditClaimed ?? evidence?.kansasCoveredCharitableCreditClaimed
+  const stateAllocation = event.stateAllocation ?? evidence?.stateAllocation
+  const directTransfer = qcdDirectTransfer(kind, event.directTransfer, evidence?.directTransfer)
+  return {
+    ...event,
+    // Runtime residency 'unknown' is the unobserved default, not a finding.
+    residency: event.residency === 'unknown' && evidence !== undefined ? evidence.residency : event.residency,
+    splitInterest: qcdSplitInterest(kind, event.splitInterest),
+    ...(directTransfer !== undefined ? { directTransfer } : {}),
+    ...(kind !== undefined ? { transactionKind: kind } : {}),
+    ...(transferDate !== undefined ? { transferDate } : {}),
+    ...(kansas !== undefined ? { kansasCoveredCharitableCreditClaimed: kansas } : {}),
+    ...(stateAllocation !== undefined ? { stateAllocation } : {}),
+  }
+}
+
+function qcdMarkedUnknown(plan: Readonly<Plan>, year: number, state: string | undefined): boolean {
+  const states = qcdActivityStates(plan, year, state)
+  return plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
+    row.taxYear === year && row.qcd === 'unknown' &&
+    states.some((code) => code.toUpperCase() === row.state.toUpperCase())) === true
+}
+
+/**
+ * An empty runtime list is a known-empty QCD year only when no custodian row
+ * exists and no state being priced marks QCD activity unknown. Evidence rows
+ * have no state column, so they are year-scoped.
+ */
+export function qcdEmptyRuntimeIsUnobserved(plan: Readonly<Plan>, year: number, state?: string): boolean {
+  const yearEvidence = plan.stateTaxFacts.qcdEventEvidence?.some((row) => row.taxYear === year) === true
+  return yearEvidence || qcdMarkedUnknown(plan, year, state)
+}
+
 export function qcdEventFactsForYear(plan: Readonly<Plan>, year: number,
   events: readonly StateQcdEventFactsInput[] | undefined, state?: string): readonly StateQcdEventFactsInput[] | undefined {
   const asserted = plan.stateTaxFacts.qcdEventEvidence?.filter((row) => row.taxYear === year) ?? []
-  const byId = new Map<string, StateQcdEventFactsInput>()
-  for (const event of events ?? []) {
+  const runtime = events ?? []
+  // Two custodian or runtime rows with one identity do not elect a dollar
+  // amount by array order, and a later unmatched row must not replace the
+  // executed distribution.
+  if (identityRepeated(asserted) || identityRepeated(runtime)) return undefined
+  const byKey = new Map<string, StateQcdEventFactsInput>()
+  const matched = new Set<QcdEventEvidenceRow>()
+  for (const event of runtime) {
     const evidence = asserted.find((row) => row.eventId === event.eventId && row.accountId === event.accountId && row.ownerPersonId === event.ownerPersonId)
-    byId.set(event.eventId, { ...evidence, ...event })
+    if (evidence !== undefined) matched.add(evidence)
+    byKey.set(qcdFactKey(event), mergeQcdRuntimeWithEvidence(event, evidence))
   }
-  if (events === undefined && byId.size === 0 && !evidenceComplete(plan, year, state, 'qcd')) return undefined
-  return [...byId.values()]
+  // An unmatched custodian row was not debited and its federal taxable
+  // amount is not in the projected base. Pricing it as a QCD would make the
+  // NJ Worksheet C delta (state taxable minus federalTaxableAmount) land on
+  // a federal base that omits that distribution. IRC 408(d)(8)(A) applies to
+  // the executed transfer. The year stays incomplete instead.
+  if (asserted.some((row) => !matched.has(row))) return undefined
+  if (byKey.size === 0 && !evidenceComplete(plan, year, state, 'qcd')) {
+    // An unobserved list, or a year the plan marks unknown, is not a
+    // known-empty collection. The forced-distribution caller reaches this
+    // by passing undefined when it executed no QCD and the year is unknown.
+    // Unmatched custodian evidence returns above, also incomplete.
+    if (events === undefined || qcdMarkedUnknown(plan, year, state)) return undefined
+  }
+  // One observed event does not make an explicitly unknown year complete.
+  if (qcdMarkedUnknown(plan, year, state)) return undefined
+  return [...byKey.values()]
 }
