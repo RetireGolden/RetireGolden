@@ -4,13 +4,13 @@
   "urlCount": 434,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1884,
+  "entryCount": 1887,
   "counts": {
     "ELISION-EXACT": 151,
     "ELISION-PUNCTUATION": 1,
     "EXACT": 1250,
     "PDF-NOT-VERIFIABLE": 1,
-    "PDF-WORD-LEVEL": 467,
+    "PDF-WORD-LEVEL": 470,
     "PUNCTUATION": 4,
     "UNFETCHABLE": 10
   },
@@ -12237,6 +12237,36 @@
       "diagnosis": null
     },
     {
+      "id": "nj-direct-qcd-ira-basis-treatment",
+      "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
+      "quoteSha256": "4cf4a5d304d9ece3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-direct-qcd-ira-basis-treatment",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quoteSha256": "e8a7861e8c0c6242",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-direct-qcd-ira-basis-treatment",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quoteSha256": "edc98231f53cfba3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "ndcc-57-38-30-3-federal-taxable-income-base",
       "citation": "N.D.C.C. 57-38-30.3(2)",
       "host": "ndlegis.gov",
@@ -21451,6 +21481,24 @@
         {
           "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
           "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents"
+        }
+      ]
+    },
+    {
+      "on": "2026-10-23",
+      "note": "Added for the New Jersey Roth-conversion placement on Worksheet C: the GIT-1 & 2 (January 2026) conversion sentence and the 2025 NJ-1040 Worksheet C line 8 and line 20b sentences. Each was checked with verify-quotes on 2026-10-23, filtered to nj-direct-qcd-ira-basis-treatment. The existing Worksheet C excludable-portion quote was rechecked in that same run and kept its prior verdict and hash. No other ledger entry was re-run.",
+      "entries": [
+        {
+          "id": "nj-direct-qcd-ira-basis-treatment",
+          "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion"
+        },
+        {
+          "id": "nj-direct-qcd-ira-basis-treatment",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8"
+        },
+        {
+          "id": "nj-direct-qcd-ira-basis-treatment",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal"
         }
       ]
     }

@@ -1826,7 +1826,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return { ...input, stateHouseholdFacts: { ...input.stateHouseholdFacts, ...household.householdFacts },
         stateNjIraOwnerPools: applyAcceptedNjIraBasisToYearFacts(input.stateNjIraOwnerPools, year, acceptedStateNjIraBasis,
           people.map((person) => {
-            const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter((row) => row.taxYear === year && row.state === 'NJ' && row.ownerPersonId === person.id)
+            const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter((row) => row.taxYear === year && row.state.toUpperCase() === 'NJ' && row.ownerPersonId === person.id)
             const complete = rows.length > 0 && rows.every((row) => row.postYearContributionsThroughFilingDeadline !== undefined)
             return { ownerPersonId: person.id, amount: complete
               ? { known: true as const, amount: (stateNjTaxedContributions.get(person.id) ?? 0) + rows.reduce((sum,row) => sum + row.postYearContributionsThroughFilingDeadline!, 0) }
