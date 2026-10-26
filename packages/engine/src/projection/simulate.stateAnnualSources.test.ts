@@ -188,6 +188,31 @@ it('does not let a calculator-level QCD list fill a year the plan marked unknown
   expect(codes).not.toContain('state-qcd-split-interest-refused')
 })
 
+it('does not let calculator-level legacy QCD facts fill a year the plan marked unknown', () => {
+  // The configured fact is a split-interest transfer, as above, through the
+  // legacy singular qcdFacts route. A withheld year reports the collection
+  // unavailable and never prices or refuses that fact. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdFacts: {
+        ownerPersonId: 'p1', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        stateBasisFactsKnown: true, stateBasisRecovery: 0, residency: 'fullYearResident',
+        policy: { kind: 'conforms', citation: 'caller-should-be-ignored' }, splitInterest: true,
+      },
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
+})
+
 
 it('publishes conversion source gross and taxable dollars to final state computation', () => {
   // IRC408A(d)(3): a100 zero-basis conversion is100 ordinary income and

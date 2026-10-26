@@ -2427,7 +2427,9 @@ function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): 
     hsaAccounts: input.stateHsaAccountYearFacts ?? opts.hsaAccounts,
     hsaFacts: input.stateHsaYearFacts ?? opts.hsaFacts,
     qcdEvents: annualQcdEventsFromInput(input, opts),
-    qcdFacts: opts.qcdFacts,
+    // An input that owns stateQcdEventFacts settles the year's QCD collection,
+    // an undefined value included, so the legacy singular facts never fill it.
+    qcdFacts: Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts') ? undefined : opts.qcdFacts,
     njIraOwnerPools: input.stateNjIraOwnerPools?.map((pool) => {
       const ira = input.stateRetirementDistributions?.filter((row) => row.ownerPersonId === pool.ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth')
       const qcd = input.stateQcdEventFacts?.filter((row) => row.ownerPersonId === pool.ownerPersonId)
