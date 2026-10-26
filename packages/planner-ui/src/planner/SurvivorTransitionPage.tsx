@@ -170,7 +170,7 @@ function ScenarioTable({
   }
   return (
     <>
-    <ScrollRegion label={`Death-timing scenarios for ${personName}`} grow style={{ border: 'none' }}>
+    <ScrollRegion label={`Death-timing scenarios for ${personName}`} grow className="survivor-table-wrap" style={{ border: 'none' }}>
       {/* survivor-table: a column floor so headers wrap on word boundaries at
           most once, and the wrap scrolls instead of stacking them (#431). */}
       <table className="compare-table survivor-table">

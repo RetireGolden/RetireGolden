@@ -1932,6 +1932,32 @@ html:has(.kpi-bar) {
   white-space: nowrap;
 }
 
+/* On paper the survivor wrap cannot scroll, so its columns drop the screen
+   floor and fit the page; the expanded conversion details in the last column
+   would otherwise print outside the clipped region. */
+@media print {
+  .survivor-table-wrap {
+    overflow: visible;
+    background: none;
+  }
+  .compare-table.survivor-table {
+    min-width: 0;
+    font-size: 0.78rem;
+  }
+  .compare-table.survivor-table th,
+  .compare-table.survivor-table td {
+    padding: 0.35rem 0.4rem;
+  }
+  .compare-table.survivor-table .survivor-lever-cell,
+  .compare-table.survivor-table .survivor-filing-cell {
+    width: auto;
+    min-width: 0;
+  }
+  .compare-table.survivor-table .nowrap {
+    white-space: normal;
+  }
+}
+
 /* "Learn about this screen" cluster on planner screens (#446). The aside is a
    .card, so its h2 takes the card heading style and joins the outline; these
    rules only space the list. Lives here, not learn.css, because learn.css is

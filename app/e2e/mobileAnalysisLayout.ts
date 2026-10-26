@@ -23,6 +23,33 @@ async function printsCompleteDetails(page: Page, details: Locator, testInfo: Tes
   expect(await details.evaluateAll((elements) => elements.map((e) => e.hasAttribute('open')))).toEqual(original)
 }
 
+// Letter portrait at 96 dpi. With every disclosure open, each survivor table
+// must fit its wrap and the page, since paper cannot scroll the wrap.
+async function survivorFitsOnPaper(page: Page) {
+  const viewport = page.viewportSize()
+  await page.setViewportSize({ width: 816, height: 1056 })
+  await page.emulateMedia({ media: 'print' })
+  const fits = await page.evaluate(`(() => {
+    const details = [...document.querySelectorAll('.survivor-lever-details')]
+    const original = details.map(d => d.open)
+    details.forEach(d => { d.open = true })
+    const result = [...document.querySelectorAll('.survivor-table-wrap')].map(wrap => ({
+      overflow: wrap.scrollWidth - wrap.clientWidth,
+      right: Math.ceil(wrap.querySelector('.survivor-table').getBoundingClientRect().right),
+      page: document.documentElement.clientWidth,
+    }))
+    details.forEach((d, i) => { d.open = original[i] })
+    return result
+  })()`) as { overflow: number; right: number; page: number }[]
+  await page.emulateMedia({ media: null })
+  if (viewport) await page.setViewportSize(viewport)
+  expect(fits).toHaveLength(2)
+  for (const fit of fits) {
+    expect(fit.overflow).toBeLessThanOrEqual(1)
+    expect(fit.right).toBeLessThanOrEqual(fit.page)
+  }
+}
+
 export function registerMobileAnalysisLayoutTests() {
   for (const width of [375, 1280]) {
     test.describe(`${width}px analysis layout`, () => {
@@ -70,6 +97,7 @@ export function registerMobileAnalysisLayoutTests() {
           await noPageOverflow(page)
           await tables.first().locator('tbody td').first().scrollIntoViewIfNeeded()
           if (width === 375 && theme === 'dark') await printsCompleteDetails(page, tables.locator('details'), testInfo, 'survivor-print')
+          if (width === 375 && theme === 'dark') await survivorFitsOnPaper(page)
           await page.screenshot({ path: testInfo.outputPath(`survivor-${width}-${theme}.png`) })
 
           // Pause timers before mounting Scenarios so its 200ms risk callback
