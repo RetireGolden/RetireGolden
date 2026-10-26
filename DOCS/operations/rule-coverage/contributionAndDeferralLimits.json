@@ -447,7 +447,8 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix"
+        "kind": "needs-fact",
+        "missingInput": "whether each person was an active participant in a workplace retirement plan, including a pension, during the year"
       },
       "conventionRationale": "Known defect, registered without changing the calculation. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. The projection (projection/simulate.ts) nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The test supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 (the deposit is deducted despite the phaseout), pinned until a separately authorized implementation fix changes it.",
       "contraryReading": null,
@@ -497,12 +498,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 253,
+          "line": 269,
           "note": "active-participant deduction phase-out",
           "tests": [
             {
               "title": "deducts a traditional-IRA contribution after the active-participant phase-out ends",
-              "line": 266
+              "line": 282
             }
           ]
         }
@@ -530,12 +531,10 @@
     {
       "id": "irc-401-a-17-plan-compensation-cap",
       "title": "Qualified-plan compensation taken into account is capped",
-      "classification": "approximated",
-      "errorDirection": "understatesTax",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "Known defect, registered without changing the calculation. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The test pins employerMatch at the uncapped 24,500 against the statute's 21,600 until a separately authorized implementation fix changes it. The plan-model tests (model/plan.test.ts) still check that the plan has no plan-defined compensation field.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Scope: the Plan has no plan-defined compensation amount, so the owner's wages stand in for the compensation the plan takes into account, and the limit applies to them. The match's percent-of-pay cap reads the limited figure; the section 415(c) room is unchanged by it, because wherever wages exceed the 401(a)(17) limit, the limited compensation still exceeds the 415(c) dollar limit. The engine treats every employer account the same way whatever its employerPlanType label, as it does for the section 415(c) room (irc-415-c-1-annual-additions-lesser-of); the authority quoted here speaks to a qualified trust. Until 2026-10-26 the match was measured on uncapped wages, and the example above received 24,500 dollars.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -545,6 +544,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -555,6 +555,15 @@
             {
               "name": "employerMatchSchema",
               "line": 439
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 19
             }
           ]
         },
@@ -583,12 +592,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 130,
-          "note": "uncapped wages inflate the 6%-of-pay match",
+          "line": 135,
+          "note": "the 6%-of-pay match is measured on compensation held to the cap",
           "tests": [
             {
-              "title": "computes employer match from uncapped wages above the 401(a)(17) cap",
-              "line": 139
+              "title": "caps the pay a 6%-of-pay match is measured on at the 401(a)(17) limit",
+              "line": 155
+            },
+            {
+              "title": "leaves the match on wages under the limit unchanged",
+              "line": 168
             }
           ]
         }
@@ -665,16 +678,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 309,
+          "line": 325,
           "note": null,
           "tests": [
             {
               "title": "denies IRA contribution room to a household whose only earnings are self-employment",
-              "line": 320
+              "line": 336
             },
             {
               "title": "allows the identical amount when the same dollars arrive as wages",
-              "line": 331
+              "line": 347
             }
           ]
         }
@@ -2700,12 +2713,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 216,
+          "line": 232,
           "note": "Roth excess-contribution excise",
           "tests": [
             {
               "title": "does not price the excise on a Roth contribution above a zero phase-out limit",
-              "line": 228
+              "line": 244
             }
           ]
         }
@@ -3126,12 +3139,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 282,
+          "line": 298,
           "note": "age 80 still has compensation",
           "tests": [
             {
               "title": "allows an otherwise eligible traditional-IRA contribution after age 70.5",
-              "line": 293
+              "line": 309
             }
           ]
         }

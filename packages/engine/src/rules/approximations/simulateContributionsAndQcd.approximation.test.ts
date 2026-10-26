@@ -117,43 +117,59 @@ function year2026(plan: Plan, taxCalculator = noTax) {
   return result.years.find((y) => y.year === 2026)!
 }
 
-// IRC 401(a)(17) / Notice 2025-67: 2026 compensation taken into account is
-// capped at 360,000. A 100%-of-deferral match capped at 6% of pay on 500,000
-// of wages with a 24,500 elective yields match of 24,500 on uncapped wages
-// (min(24,500, 0.06 × 500,000)), but only 21,600 once wages are capped at
-// 360,000 (0.06 × 360,000). Section 415(c) does not repair it: 24,500 + 24,500
-// stays under the 72,000 annual-additions limit.
-// Observed produced pin (fixture run 2026-08-26): employerMatch stays at the
-// uncapped 24,500 figure.
-const producedUncapped401a17Match = 24_500
-
+// IRC 401(a)(17)(A) / Notice 2025-67 (annual compensation limitation): for
+// 2026 a qualified plan takes at most 360,000 dollars of annual compensation
+// into account. Hand worksheet, one person, 2026, no growth or inflation:
+//   wages 500,000; elective deferral 24,500 (the 2026 402(g)(1) amount, owner
+//   35, so no catch-up); match 100 percent of deferrals up to 6 percent of pay.
+//   compensation taken into account = min(500,000, 360,000)  = 360,000
+//   pay cap                         = 0.06 x 360,000         =  21,600
+//   matched base                    = min(24,500, 21,600)    =  21,600
+//   match                           = 21,600 x 100 percent   =  21,600
+//   415(c) check: 24,500 + 21,600 = 46,100, under min(72,000, 500,000), so the
+//   annual-additions room does not bind.
+// The rejected reading measures the 6 percent on uncapped wages:
+//   min(24,500, 0.06 x 500,000 = 30,000) x 100 percent = 24,500, which
+//   415(c) does not repair (24,500 + 24,500 = 49,000 is under 72,000). The
+//   engine produced that figure until 2026-10-26.
 describeRule('irc-401-a-17-plan-compensation-cap', {
   readings: {
     matchOnCappedCompensation: 21_600,
-    matchOnUncappedWages: producedUncapped401a17Match,
+    matchOnUncappedWages: 24_500,
   },
   accepted: 'matchOnCappedCompensation',
-  produced: 'matchOnUncappedWages',
-  note: 'uncapped wages inflate the 6%-of-pay match',
-}, ({ accepted, produced }) => {
-  it('computes employer match from uncapped wages above the 401(a)(17) cap', () => {
+  note: 'the 6%-of-pay match is measured on compensation held to the cap',
+}, ({ accepted, readings }) => {
+  const matchedPlan = (annualWages: number): Plan => {
     const plan = soloPlan('1990-06-15', 70)
-    plan.incomes = [wages(500_000)]
+    plan.incomes = [wages(annualWages)]
     const employer = employerTraditional(0, 24_500)
     if (employer.type !== 'traditional') throw new Error('expected traditional')
     plan.accounts = [
       cash(0),
       { ...employer, employerMatch: { matchPct: 100, capPctOfPay: 6 } },
     ]
+    return plan
+  }
 
-    const year = year2026(plan)
-    expect(year.employerMatch).toBeCloseTo(produced, 6)
-    expect(year.employerMatch).not.toBeCloseTo(accepted, 6)
-    // 415(c) does not repair the overstatement: combined additions stay under
-    // the pack's 72,000 dollar annual-additions limit.
-    expect(year.contributions + year.employerMatch).toBeLessThan(
+  it('caps the pay a 6%-of-pay match is measured on at the 401(a)(17) limit', () => {
+    const year = year2026(matchedPlan(500_000))
+    expect(pack2026.contributionLimits.section401a17CompensationLimit).toBe(360_000)
+    expect(year.contributions).toBeCloseTo(24_500, 6)
+    expect(year.employerMatch).toBeCloseTo(accepted, 6)
+    expect(year.employerMatch).not.toBeCloseTo(readings.matchOnUncappedWages, 6)
+    // 415(c) is not what lowers the match: combined additions stay under the
+    // pack's 72,000 dollar annual-additions limit on either reading.
+    expect(year.contributions + readings.matchOnUncappedWages).toBeLessThan(
       pack2026.contributionLimits.section415cLimit,
     )
+  })
+
+  it('leaves the match on wages under the limit unchanged', () => {
+    // The control: 300,000 of wages is under 360,000, so both readings give
+    // min(24,500, 0.06 x 300,000 = 18,000) x 100 percent = 18,000. Without it
+    // the fixture above could be read as pinning some other cut to the match.
+    expect(year2026(matchedPlan(300_000)).employerMatch).toBeCloseTo(18_000, 6)
   })
 })
 

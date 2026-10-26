@@ -559,9 +559,10 @@ describe('parsePlan', () => {
 
 describe('unmodelled employer-plan and HSA legal facts', () => {
   it('does not add plan-term or Medicare-entitlement fields merely by accepting an account', () => {
-    // Refusal coverage for the out-of-scope SIMPLE 401(k), 401(a)(17),
-    // catch-up-permission, 411 vesting, 402(g)(7), and 457(b)(3)
-    // records. The schema
+    // Refusal coverage for the out-of-scope SIMPLE 401(k),
+    // catch-up-permission, 411 vesting, 402(g)(7), and 457(b)(3) records,
+    // and the absent plan-defined compensation the settled 401(a)(17)
+    // record replaces with wages held to the limit. The schema
     // deliberately has an employer-plan CLASS but none of these legal facts.
     const planTermFacts = [
       'simple401k',

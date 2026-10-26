@@ -4024,9 +4024,9 @@
         "cash-flow-line-plan-dollars"
       ],
       "purpose": "What the employer actually adds once the pay cap and the IRC 415(c) ceiling are applied.",
-      "statement": "projection/internal/types/result.ts#YearResult.employerMatch, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, is min(elective deferral landed, capPctOfPay/100 x wages) x matchPct/100, capped by the owner's remaining IRC 415(c) room for that plan after the elective deferrals. The 2026 tax parameters fix the 415(c) limit at 72,000. The match is computed only after every elective deferral has landed. Units: nominal USD per year. Rounding: none.",
+      "statement": "projection/internal/types/result.ts#YearResult.employerMatch, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, is min(elective deferral landed, capPctOfPay/100 x min(wages, K)) x matchPct/100, where K is the IRC 401(a)(17) annual compensation limit, capped by the owner's remaining IRC 415(c) room for that plan after the elective deferrals. The 2026 tax parameters fix K at 360,000 and the 415(c) limit at 72,000. The match is computed only after every elective deferral has landed. Units: nominal USD per year. Rounding: none.",
       "formula": {
-        "expression": "employerMatch = min(min(E, c W) m, L - E - other additions)",
+        "expression": "employerMatch = min(min(E, c min(W, K)) m, L - E - other additions)",
         "variables": [
           {
             "symbol": "E",
@@ -4039,6 +4039,12 @@
             "meaning": "Owner wages from the sponsoring employer",
             "unit": "usd/year",
             "domain": "nonnegative"
+          },
+          {
+            "symbol": "K",
+            "meaning": "IRC 401(a)(17) annual compensation limit",
+            "unit": "usd/year",
+            "domain": "360,000 for 2026"
           },
           {
             "symbol": "c",
@@ -4064,7 +4070,8 @@
       },
       "limits": [
         "Asserted as the published field of a real simulatePlan 2026 row built from the worksheet's inputs: wages 75,000, one employer traditional plan whose desired deferral of 24,500 lands in full, a 50-percent-of-pay match cap, a 200-percent match rate, and no other annual additions. Plan assumptions beyond the worksheet's inputs: the owner is 45 and filing single in KY at a zero state rate, so no age-50 catch-up can widen either the deferral or the room; the plan opens at a zero balance with zero returns and no spending; and the 2026 415(c) limit and elective-deferral limit are read from the published parameters rather than written into the test",
-        "The worksheet's third wrong reading (applying the pay cap after the match rate) produces 37,500, which is discriminated numerically here only because the 415(c) cap lands at 47,500 rather than 37,500"
+        "The worksheet's third wrong reading (applying the pay cap after the match rate) produces 37,500, which is discriminated numerically here only because the 415(c) cap lands at 47,500 rather than 37,500",
+        "The worksheet's 75,000 of wages is under K, so this case does not reach the 401(a)(17) limit; the test of the rule irc-401-a-17-plan-compensation-cap (rules/approximations/simulateContributionsAndQcd.approximation.test.ts) pins it with 500,000 of wages: a 21,600 match, against the 24,500 that uncapped wages give"
       ],
       "worksheet": "DOCS/calculations/cash-flow-and-summary/year-result-employer-match.md",
       "mutation": "DOCS/calculations/cash-flow-and-summary/year-result-employer-match.mutation.md",

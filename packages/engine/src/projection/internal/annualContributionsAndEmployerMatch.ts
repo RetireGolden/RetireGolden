@@ -756,8 +756,8 @@ export function annualContributionsAndEmployerMatch(
           redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
           catchUpRothAccountId: allocation.catchUpRothAccountId,
         })
-    const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages
-    const baseMatch = Math.min(electiveForMatch, matchCap)
+    const planCompensation = Math.min(ownerWages, input.pack.contributionLimits.section401a17CompensationLimit * input.limitGrowth) // IRC 401(a)(17): pay the match cap is measured on.
+    const baseMatch = Math.min(electiveForMatch, (matchInfo.capPctOfPay / 100) * planCompensation)
     let matchVal = baseMatch * (matchInfo.matchPct / 100)
     const limit415c = Math.min(
       input.pack.contributionLimits.section415cLimit * input.limitGrowth,

@@ -180,6 +180,7 @@ export const PARAMETER_COMPONENTS: Readonly<Record<ParameterComponentKey, Parame
       'contributionLimits.ira',
       'contributionLimits.iraCatchUp50',
       'contributionLimits.section415cLimit',
+      'contributionLimits.section401a17CompensationLimit',
       'rmd.qcdAnnualLimit',
       'annuities.qlacPremiumCap',
     ],

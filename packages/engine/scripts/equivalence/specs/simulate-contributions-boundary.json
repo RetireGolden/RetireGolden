@@ -411,7 +411,7 @@
       "anchors": [
         {
           "line": 759,
-          "text": "const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages"
+          "text": "const planCompensation = Math.min(ownerWages, input.pack.contributionLimits.section401a17CompensationLimit * input.limitGrowth) // IRC 401(a)(17): pay the match cap is measured on."
         },
         {
           "line": 813,

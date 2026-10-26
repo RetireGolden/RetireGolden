@@ -825,16 +825,16 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 986,
+          "line": 1002,
           "note": "a gain year",
           "tests": [
             {
               "title": "withholds the growth the premium would have earned in the account",
-              "line": 1007
+              "line": 1023
             },
             {
               "title": "errs the other way in a loss year, and not at all in a flat one",
-              "line": 1028
+              "line": 1044
             }
           ]
         }
@@ -956,20 +956,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 857,
+          "line": 873,
           "note": "the exact-cent overflow that still reaches the fallback",
           "tests": [
             {
               "title": "prices a gain year off a denominator that never saw the gain",
-              "line": 877
+              "line": 893
             },
             {
               "title": "returns the same income at a 0 percent and a negative return",
-              "line": 895
+              "line": 911
             },
             {
               "title": "settles one order of magnitude below the exact-cent ceiling",
-              "line": 910
+              "line": 926
             }
           ]
         }

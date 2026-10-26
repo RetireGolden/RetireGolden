@@ -4,15 +4,15 @@
   "registry": {
     "total": 604,
     "byClassification": {
-      "approximated": 122,
+      "approximated": 121,
       "outOfScope": 78,
-      "settled": 396,
+      "settled": 397,
       "unsettled": 8
     },
     "approximatedByKind": {
       "convention": 23,
-      "fix": 71,
-      "needs-fact": 28
+      "fix": 69,
+      "needs-fact": 29
     },
     "byVolatility": {
       "annuallyIndexed": 92,

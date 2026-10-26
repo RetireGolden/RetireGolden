@@ -4,6 +4,21 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
+  compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
+  retirement-plan field (`contributionLimits.section401a17CompensationLimit`) that grows with the
+  other plan limits in later years. On $500,000 of wages, a 100% match of deferrals up to 6% of pay is
+  $21,600, where the projection gave $24,500 from uncapped wages; wages under the limit are unchanged,
+  and no example plan reaches it. `irc-401-a-17-plan-compensation-cap` is settled and leaves the
+  approximation list; the `year-result-employer-match` record and worksheet state the limit.
+  - `irc-219-g-traditional-ira-deduction-phaseout` is reclassified from a fix to a needs-fact
+    approximation: the phase-out turns on whether a person is an active participant in a workplace
+    plan, a pension included, which the plan does not record. The Roth contribution phase-out
+    (`irc-408A-c-3-roth-contribution-agi-phase-out`) and the section 4973 excise on excess IRA and
+    Roth contributions (`irc-4973-a-b-f-ira-and-roth-excess-contribution-excise`) stay approximated
+    fixes: both turn on the year's modified AGI, which the projection knows only after it funds the
+    year's withdrawals, while contributions are placed before them.
+
 - **Changed: the optimizer reads HiGHS through the highs package's persistent model API, and the
   engine and planner-ui pin `highs` at exactly 1.15.4** (was 1.15.2; 2026-10-24). No figure changes.
   - highs 1.15.3 rewrote the package's JavaScript layer, and the `Highs_writeSolutionPretty` hook

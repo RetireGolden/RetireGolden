@@ -7,6 +7,7 @@
 | **Super catch-up, ages 60-63** (SECURE 2.0) | $11,250 when the employer plan permits it (replaces the 50+ amount). The planner has no plan-term input and applies it to every eligible employer account, so it can admit a contribution that an actual plan does not offer ([IRC 414(v)(1)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim); `irc-414-v-1-plan-permitted-catch-up`, approximated / understates tax). |
 | **Roth catch-up mandate** | Prior-year FICA wages (IRC 3121(a) / W-2 Box 3 from the **sponsoring employer**) **exceed** $150,000 (Notice 2025-67) ⇒ employer-plan catch-ups must be designated Roth. Exactly $150,000 is out. Zero / omitted Box 3 (new hire, SE-only) is not subject. No Roth employer account **for that owner** ⇒ high earner’s catch-up is **$0**, not pre-tax. Super catch-up ages 60–63 ($11,250) is the same §414(v) slice. Redirected catch-up remains elective deferral of the source plan for employer match. IRC §414(v)(2)(A)(ii) limits catch-up to compensation minus other elective deferrals; §414(v)(3)(A) then keeps that slice out of §415(c) annual additions, including as a charge against match. **Prior designated Roth elective deferrals in the same contribution year** offset the remaining Roth catch-up requirement (T.D. 10033 §1.414(v)-2(b)(1)/(d)(6) Example 6: prior Roth $3,750 leaves $1,250 unmet of a $5,000 catch-up). Desired incremental requests are not historical evidence; unknown YTD history differs from known zero (`irc-414-v-2-d-6-prior-designated-roth-offset`). SEP / SIMPLE IRA and IRA catch-up are excepted. **2026** is statute + reasonable good-faith (Notice 2023-62 transition expired 2025-12-31); T.D. 10033’s regulatory applicability date of years after 2026-12-31 does **not** delay the mandate to 2027. Engine input: user-entered `priorCalendarYearFicaWages` on the employer account (`irc-414-v-7-A-high-earner-roth-catch-up-mandate`, `irc-414-v-7-A-prior-year-fica-wage-proxy`, `irc-414-v-2-A-catch-up-limited-to-compensation-excess`, `irc-414-v-3-A-catch-up-excluded-from-415c`). |
 | IRA | $7,500; catch-up 50+ $1,100. An IRA does not receive the $11,250 employer-plan super catch-up at ages 60-63 ([IRC 219](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim); `irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up`). |
+| Annual compensation limit (§401(a)(17)) | $360,000 of pay taken into account by a qualified plan; an employer match is measured on wages up to it (`irc-401-a-17-plan-compensation-cap`) |
 | HSA (self/family) | published limits by year (`params/hsaLimitYears.ts`: $4,400/$8,750 for 2026, $4,500/$9,000 for 2027, Rev. Proc. 2026-24) + $1,000 55+ catch-up |
 
 - **MFJ IRA compensation.** For a living married-filing-jointly pair, section 219(c) lets the
@@ -47,9 +48,12 @@
   `irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election`,
   `irc-411-a-2-vesting-schedule-maximums`, `irc-402-g-7-403b-15-year-catch-up`,
   `irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion`, and
-  `irc-457-b-3-final-three-year-catch-up`). The compensation-cap gap is approximated: the projection can return
-  an employer-match figure computed from uncapped wages
-  (`irc-401-a-17-plan-compensation-cap`). Catch-up permission, including the ages-60-through-63 amount, is
+  `irc-457-b-3-final-three-year-catch-up`). The section 401(a)(17) compensation limit itself is applied:
+  with no plan-defined compensation, the owner's wages stand in for it, and an employer match's percent-of-pay
+  cap is measured on those wages held to the limit ($360,000 for 2026, Notice 2025-67; grown with the other
+  plan limits in later years). On $500,000 of wages, a 100% match of deferrals up to 6% of pay is $21,600,
+  not the $24,500 that 6% of uncapped wages would allow (`irc-401-a-17-plan-compensation-cap`, settled
+  2026-10-26). Catch-up permission, including the ages-60-through-63 amount, is
   likewise approximated — the engine returns a ceiling even though the plan term is absent
   (`irc-414-v-1-plan-permitted-catch-up`). The plan also cannot execute an actual excess-elective-
   deferral correction and its March/April notices, distribution date, or allocable income
