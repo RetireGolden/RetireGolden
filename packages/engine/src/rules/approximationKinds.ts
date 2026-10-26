@@ -170,13 +170,15 @@
  *   income test, where the pack had carried the $12,000 as a retirement-income
  *   exclusion and, from #710, the projection applied none of it.
  *
- * Fixed, settled and removed from this list (2026-10-26):
- * - irc-401-a-17-plan-compensation-cap, a fix until then: the employer
- *   match's percent-of-pay cap is measured on the owner's wages held to the
- *   pack's section401a17CompensationLimit (Notice 2025-67: 360,000 for 2026),
- *   where it had been measured on uncapped wages.
- *
- * Reclassified in the same review (2026-10-26):
+ * Reclassified in the review of 2026-10-26:
+ * - irc-401-a-17-plan-compensation-cap, fix to needs-fact: the employer
+ *   match's percent-of-pay cap is now measured on the owner's wages held to
+ *   the pack's section401a17CompensationLimit (Notice 2025-67: 360,000 for
+ *   2026), except for an account labelled 457b, where it had been measured on
+ *   uncapped wages. What stays approximated needs a fact: wages are pooled by
+ *   person across employers (annualIncomeSetup.ts wagesByPerson) and a wage
+ *   stream names no sponsoring plan, so the match is measured on all of a
+ *   person's pay rather than the sponsoring employer's.
  * - irc-219-g-traditional-ira-deduction-phaseout, fix to needs-fact: the
  *   phase-out applies only when the person or the spouse is an active
  *   participant (219(g)(1)), and the plan does not record that. A modeled
@@ -258,6 +260,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-223-b-2-7-projection-coverage-proration-and-medicare': { kind: 'needs-fact', missingInput: 'monthly HSA eligibility, HDHP tier, and Medicare-entitlement month per owner' },
   'irc-223-f-4-C-hsa-age-65-annual-proxy': { kind: 'convention', reason: 'annual HSA withdrawals have no date, so the day-after-65 boundary cannot be located honestly' },
   'irc-223-f-8-B-estate-predeath-expense-reduction': { kind: 'needs-fact', missingInput: 'death-date HSA value, legal beneficiary class, and qualifying expenses timely paid' },
+  'irc-401-a-17-plan-compensation-cap': { kind: 'needs-fact', missingInput: 'which employer pays each wage, so a workplace plan\'s match is measured on that employer\'s pay alone' },
   'irc-401-a-9-C-i-II-still-working-exception': { kind: 'needs-fact', missingInput: 'still-employed-by-sponsor and five-percent-owner status per employer plan and year' },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': { kind: 'fix' },
   'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'fix' },

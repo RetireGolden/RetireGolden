@@ -411,7 +411,7 @@
       "anchors": [
         {
           "line": 759,
-          "text": "const planCompensation = Math.min(ownerWages, input.pack.contributionLimits.section401a17CompensationLimit * input.limitGrowth) // IRC 401(a)(17): pay the match cap is measured on."
+          "text": "const planCompensation = account.type === 'traditional' && account.employerPlanType === '457b' ? ownerWages : Math.min(ownerWages, input.pack.contributionLimits.section401a17CompensationLimit * input.limitGrowth) // IRC 401(a)(17) reaches a 401(k)/403(b)-style plan, not a 457(b)."
         },
         {
           "line": 813,

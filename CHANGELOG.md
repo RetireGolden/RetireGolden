@@ -7,10 +7,15 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 - **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
   compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
   retirement-plan field (`contributionLimits.section401a17CompensationLimit`) that grows with the
-  other plan limits in later years. On $500,000 of wages, a 100% match of deferrals up to 6% of pay is
-  $21,600, where the projection gave $24,500 from uncapped wages; wages under the limit are unchanged,
-  and no example plan reaches it. `irc-401-a-17-plan-compensation-cap` is settled and leaves the
-  approximation list; the `year-result-employer-match` record and worksheet state the limit.
+  other plan limits in later years and is listed with the contribution limits on the sources panel.
+  On $500,000 of wages, a 100% match of deferrals up to 6% of pay is $21,600, where the projection
+  gave $24,500 from uncapped wages; wages under the limit are unchanged, an account labelled `457b`
+  (not a qualified trust) keeps its match on uncapped wages, and no example plan reaches the limit.
+  The `year-result-employer-match` record and worksheet state the limit.
+  - `irc-401-a-17-plan-compensation-cap` stays approximated, now as a needs-fact: wages are pooled by
+    person across employers and a wage stream names no plan, so the match is measured on all of a
+    person's pay. $250,000 from each of two employers gives a $21,600 match where the sponsoring
+    employer's pay gives $15,000.
   - `irc-219-g-traditional-ira-deduction-phaseout` is reclassified from a fix to a needs-fact
     approximation: the phase-out turns on whether a person is an active participant in a workplace
     plan, a pension included, which the plan does not record. The Roth contribution phase-out

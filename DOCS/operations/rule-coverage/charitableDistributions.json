@@ -369,34 +369,34 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 386,
+          "line": 428,
           "note": "a couple giving more than one limit and less than two",
           "tests": [
             {
               "title": "excludes a couple’s gift above one limit against their two limits",
-              "line": 401
+              "line": 443
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 419,
+          "line": 461,
           "note": "a single donor asking for more than their own limit",
           "tests": [
             {
               "title": "still clamps one donor at one limit",
-              "line": 431
+              "line": 473
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 453,
+          "line": 495,
           "note": "an eligible donor beside an ineligible spouse",
           "tests": [
             {
               "title": "funds a household gift only from the eligible donor",
-              "line": 469
+              "line": 511
             }
           ]
         }
@@ -2029,12 +2029,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 648,
+          "line": 690,
           "note": "a scheduled gift cannot displace cash already distributed",
           "tests": [
             {
               "title": "taxes the whole required distribution beside an excluded gift",
-              "line": 662
+              "line": 704
             }
           ]
         }

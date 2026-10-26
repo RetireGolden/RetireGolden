@@ -52,8 +52,11 @@
   with no plan-defined compensation, the owner's wages stand in for it, and an employer match's percent-of-pay
   cap is measured on those wages held to the limit ($360,000 for 2026, Notice 2025-67; grown with the other
   plan limits in later years). On $500,000 of wages, a 100% match of deferrals up to 6% of pay is $21,600,
-  not the $24,500 that 6% of uncapped wages would allow (`irc-401-a-17-plan-compensation-cap`, settled
-  2026-10-26). Catch-up permission, including the ages-60-through-63 amount, is
+  not the $24,500 that 6% of uncapped wages would allow. A `457b` account is not a qualified trust and keeps
+  its match on uncapped wages. The rule stays approximated because a wage stream names no employer: the match
+  is measured on the owner's pay from every employer, so $250,000 from each of two employers gives a $21,600
+  match where the sponsoring employer's pay gives $15,000 (`irc-401-a-17-plan-compensation-cap`,
+  approximated / understates tax). Catch-up permission, including the ages-60-through-63 amount, is
   likewise approximated — the engine returns a ceiling even though the plan term is absent
   (`irc-414-v-1-plan-permitted-catch-up`). The plan also cannot execute an actual excess-elective-
   deferral correction and its March/April notices, distribution date, or allocable income
@@ -84,6 +87,7 @@
   [SECURE 2.0 section 103](https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf).
 
 Sources: [Notice 2025-67](https://www.irs.gov/pub/irs-drop/n-25-67.pdf),
+[IRC §401](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim),
 [IRC §402](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim),
 [IRC §219](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim),
 [IRC §223](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim), and

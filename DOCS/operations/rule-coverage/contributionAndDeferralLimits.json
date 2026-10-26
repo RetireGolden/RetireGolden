@@ -498,12 +498,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 269,
+          "line": 311,
           "note": "active-participant deduction phase-out",
           "tests": [
             {
               "title": "deducts a traditional-IRA contribution after the active-participant phase-out ends",
-              "line": 282
+              "line": 324
             }
           ]
         }
@@ -531,10 +531,13 @@
     {
       "id": "irc-401-a-17-plan-compensation-cap",
       "title": "Qualified-plan compensation taken into account is capped",
-      "classification": "settled",
-      "errorDirection": null,
-      "approximation": null,
-      "conventionRationale": "Scope: the Plan has no plan-defined compensation amount, so the owner's wages stand in for the compensation the plan takes into account, and the limit applies to them. The match's percent-of-pay cap reads the limited figure; the section 415(c) room is unchanged by it, because wherever wages exceed the 401(a)(17) limit, the limited compensation still exceeds the 415(c) dollar limit. The engine treats every employer account the same way whatever its employerPlanType label, as it does for the section 415(c) room (irc-415-c-1-annual-additions-lesser-of); the authority quoted here speaks to a qualified trust. Until 2026-10-26 the match was measured on uncapped wages, and the example above received 24,500 dollars.",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "which employer pays each wage, so a workplace plan's match is measured on that employer's pay alone"
+      },
+      "conventionRationale": "The Plan has no plan-defined compensation amount and does not say which employer pays each wage stream, so the owner's whole wages for the year stand in for the compensation the plan takes into account, and the limit applies to them. Pooled pay can only raise the match, which inflates tax-deferred balances and so overstates resources and defers and understates future tax; hence understatesTax. Which accounts take the limit: an employer account labelled 401k or 403b, and one with no label, takes it, because the plan schema describes an employer account as 401(k)/403(b)-style (model/plan.ts traditionalAccountSchema kind); a Roth employer account has no employerPlanType field and is read the same way; an account labelled 457b does not. The section 415(c) room is unchanged by the limit, because wherever wages exceed the 401(a)(17) limit, the limited compensation still exceeds the 415(c) dollar limit. Until 2026-10-26 every match was measured on uncapped wages, and the single-employer example above received 24,500 dollars.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -592,16 +595,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 135,
-          "note": "the 6%-of-pay match is measured on compensation held to the cap",
+          "line": 202,
+          "note": "pay from a second employer raises the match",
           "tests": [
             {
-              "title": "caps the pay a 6%-of-pay match is measured on at the 401(a)(17) limit",
-              "line": 155
-            },
-            {
-              "title": "leaves the match on wages under the limit unchanged",
-              "line": 168
+              "title": "measures the match on wages from both employers",
+              "line": 211
             }
           ]
         }
@@ -678,16 +677,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 325,
+          "line": 367,
           "note": null,
           "tests": [
             {
               "title": "denies IRA contribution room to a household whose only earnings are self-employment",
-              "line": 336
+              "line": 378
             },
             {
               "title": "allows the identical amount when the same dollars arrive as wages",
-              "line": 347
+              "line": 389
             }
           ]
         }
@@ -2713,12 +2712,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 232,
+          "line": 274,
           "note": "Roth excess-contribution excise",
           "tests": [
             {
               "title": "does not price the excise on a Roth contribution above a zero phase-out limit",
-              "line": 244
+              "line": 286
             }
           ]
         }
@@ -3139,12 +3138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 298,
+          "line": 340,
           "note": "age 80 still has compensation",
           "tests": [
             {
               "title": "allows an otherwise eligible traditional-IRA contribution after age 70.5",
-              "line": 309
+              "line": 351
             }
           ]
         }
