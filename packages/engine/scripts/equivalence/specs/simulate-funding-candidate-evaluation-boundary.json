@@ -270,7 +270,7 @@
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
         937,
-        992
+        1000
       ],
       "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 990 (`? {}`), the `? {}` arm for an undefined `facts.stateRetirementDistributions`, which simulatePlan always passes as an array literal. No direct test pins it. The undefined-`facts.stateQcdEventFacts` arm below this range (`? { stateQcdEventFacts: undefined }`) is not excluded: since PR #813 it runs for every year the plan marks QCD unknown, the corpus member af1-qcdWithheldYear takes it, and the measured range covers it (see AF.helper.tax). Also line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`), the defined arm for `facts.stateQcdYearFacts`, which simulatePlan never sets. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
@@ -283,11 +283,11 @@
           "text": "const fundingCandidateEvaluationContext:"
         },
         {
-          "line": 974,
+          "line": 982,
           "text": "taxInputBase: Object.freeze({"
         },
         {
-          "line": 992,
+          "line": 1000,
           "text": "...(facts.stateRetirementDistributions === undefined"
         }
       ]
@@ -297,25 +297,25 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        994,
-        1018
+        1002,
+        1026
       ],
       "note": "Continues AF.callsite.context past its excluded line 990 (`? {}`); see that entry's note.",
       "anchors": [
         {
-          "line": 999,
+          "line": 1007,
           "text": "return household === undefined ? {} : { stateHouseholdFacts: household }"
         },
         {
-          "line": 1009,
+          "line": 1017,
           "text": "...(facts.stateQcdEventFacts === undefined"
         },
         {
-          "line": 1011,
+          "line": 1019,
           "text": ": { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({"
         },
         {
-          "line": 1018,
+          "line": 1026,
           "text": "? {}"
         }
       ]
@@ -325,21 +325,21 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1020,
-        1050
+        1028,
+        1058
       ],
       "note": "Continues AF.callsite.context past its excluded line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`); see that entry's note.",
       "anchors": [
         {
-          "line": 1027,
+          "line": 1035,
           "text": "aca: Object.freeze({"
         },
         {
-          "line": 1039,
+          "line": 1047,
           "text": "hsa: Object.freeze({"
         },
         {
-          "line": 1050,
+          "line": 1058,
           "text": "})"
         }
       ]
@@ -349,28 +349,28 @@
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1051,
-        1075
+        1059,
+        1083
       ],
       "anchors": [
         {
-          "line": 1054,
+          "line": 1062,
           "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
         },
         {
-          "line": 1061,
+          "line": 1069,
           "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
         },
         {
-          "line": 1064,
+          "line": 1072,
           "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
         },
         {
-          "line": 1070,
+          "line": 1078,
           "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {"
         },
         {
-          "line": 1075,
+          "line": 1083,
           "text": "return evaluation"
         }
       ]

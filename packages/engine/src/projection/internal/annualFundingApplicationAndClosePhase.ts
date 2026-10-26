@@ -958,11 +958,19 @@ export function annualFundingApplicationAndClosePhase(
             if (account.type !== 'hsa') return []
             const withdrawal = rows.find((row) => row.sourceAccountId === account.id)
             return [{ accountId: account.id, ownerPersonId: account.ownerPersonId ?? primary.id,
+              // 0 here means this candidate did not model a contribution. The
+              // adapter keeps an asserted federal deduction. A positive modeled
+              // contribution replaces it.
               federalHsaDeduction: facts.stateHsaContributions?.get(account.id) ?? 0,
-              grossDistributions: withdrawal?.taken ?? 0,
-              qualifiedCashWithdrawals: withdrawal?.qualified ?? 0,
-              nonqualifiedDistributionFederalAmount: withdrawal?.taxableOrdinary ?? 0,
-              nonqualifiedCashWithdrawals: withdrawal?.nonQualified ?? 0,
+              // No withdrawal row is not a measured zero. A characterized
+              // withdrawal passes its amounts, including a genuine zero in a
+              // category that withdrawal did not use.
+              ...(withdrawal === undefined ? {} : {
+                grossDistributions: withdrawal.taken,
+                qualifiedCashWithdrawals: withdrawal.qualified,
+                nonqualifiedDistributionFederalAmount: withdrawal.taxableOrdinary,
+                nonqualifiedCashWithdrawals: withdrawal.nonQualified,
+              }),
             }]
           })),
         characterizeStateWithdrawals: (amounts: ReadonlyMap<string, number>, grossAmounts: ReadonlyMap<string, number>) => stateRetirementEventsFromAccountAmounts(plan, year, amounts, 'voluntary', grossAmounts),

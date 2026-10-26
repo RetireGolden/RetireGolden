@@ -256,28 +256,28 @@
       "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1054,
-        1070
+        1062,
+        1078
       ],
       "anchors": [
         {
-          "line": 1054,
+          "line": 1062,
           "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
         },
         {
-          "line": 1056,
+          "line": 1064,
           "text": "states: Object.freeze([...rmdBalances]),"
         },
         {
-          "line": 1061,
+          "line": 1069,
           "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
         },
         {
-          "line": 1064,
+          "line": 1072,
           "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
         },
         {
-          "line": 1068,
+          "line": 1076,
           "text": "iraCharacter: iraCharacterProbe,"
         }
       ]
