@@ -1215,6 +1215,23 @@ describe('hand-computed economic optima', () => {
     expect(sol.schedule).toEqual([])
   })
 
+  it('reads a real time limit from the solver itself, through its status code', async () => {
+    // A limit too short for HiGHS to start ends every solve at "Time limit
+    // reached" (code 13), with no incumbent, on any machine.
+    const sol = await optimizeSchedule({
+      years: [year()],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 100_000,
+      liquidationRate: 0.24,
+      options: { timeLimitSec: 1e-9 },
+    })
+
+    expect(sol.status).toBe('timeout')
+    expect(sol.endingAfterTax).toBeNull()
+    expect(sol.schedule).toEqual([])
+  })
+
   it('publishes an infeasible model as no solution: null figures and an empty schedule', async () => {
     // Spending nothing can fund, over three years, so the model carries IRMAA
     // binaries (HiGHS reports an infinite objective for it) and is a
@@ -1315,12 +1332,12 @@ describe('hand-computed economic optima', () => {
     ).rejects.toThrow('finite objective')
   })
 
-  it('reads HiGHS\'s raw solution past the six significant digits of the pretty print (the pinned highs package)', async () => {
+  it('reads HiGHS\'s solution past the six significant digits of a printed solution (the pinned highs package)', async () => {
     // A 50% haircut makes every converted dollar worth more than any bracket
     // charges, so the solve converts up to the per-year ceiling, which the
-    // model text writes as 123456.789. The highs package's own parse reads
-    // that column to six significant digits (123,457); the engine reads
-    // HiGHS's raw solution and publishes it in cents.
+    // model text writes as 123456.789. A printed solution's six significant
+    // digits read that column as 123,457; the engine reads the double HiGHS
+    // holds and publishes it in cents.
     const sol = await optimizeSchedule({
       years: [year()],
       openingTrad: 1_000_000,

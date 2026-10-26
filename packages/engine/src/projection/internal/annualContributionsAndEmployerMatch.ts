@@ -756,8 +756,8 @@ export function annualContributionsAndEmployerMatch(
           redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
           catchUpRothAccountId: allocation.catchUpRothAccountId,
         })
-    const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages
-    const baseMatch = Math.min(electiveForMatch, matchCap)
+    const planCompensation = account.type === 'traditional' && account.employerPlanType === '457b' ? ownerWages : Math.min(ownerWages, input.pack.contributionLimits.section401a17CompensationLimit * input.limitGrowth) // IRC 401(a)(17) reaches a 401(k)/403(b)-style plan, not a 457(b).
+    const baseMatch = Math.min(electiveForMatch, (matchInfo.capPctOfPay / 100) * planCompensation)
     let matchVal = baseMatch * (matchInfo.matchPct / 100)
     const limit415c = Math.min(
       input.pack.contributionLimits.section415cLimit * input.limitGrowth,

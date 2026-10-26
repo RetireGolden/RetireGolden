@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  38 packages, sha256 c98ad02f9b351aace3d1c01de39d94edaafc6717af004158b4aee0ffbf311fe4
+Attributed:  39 packages, sha256 4d2d4fb5e9a2c4f5190698adeb54f8e4341f4dc325516a1cc077b09baa1721e4
 
 ================================================================================
 
@@ -18,6 +18,34 @@ Homepage: https://redux-toolkit.js.org
 MIT License
 
 Copyright (c) 2018 Mark Erikson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+@remix-run/route-pattern (0.22.1)
+License: MIT
+Homepage: https://github.com/remix-run/remix/tree/main/packages/route-pattern#readme
+----------
+MIT License
+
+Copyright (c) 2025 Shopify Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -509,7 +537,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-highs (1.15.2)
+highs (1.15.4)
 License: MIT
 Author: Ophir LOJKINE
 Homepage: https://lovasoa.github.io/highs-js/
@@ -517,6 +545,7 @@ Homepage: https://lovasoa.github.io/highs-js/
 MIT License
 
 Copyright (c) 2023 highs-js
+Copyright (c) 2026 HiGHS
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -538,7 +567,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-idb (8.0.3)
+idb (8.0.4)
 License: ISC
 Author: Jake Archibald
 Homepage: git://github.com/jakearchibald/idb.git
@@ -602,7 +631,7 @@ THIS SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react (19.3.0)
+react (19.3.1)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -630,7 +659,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-dom (19.3.0)
+react-dom (19.3.1)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -715,7 +744,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (8.3.1)
+react-router (8.4.0)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
@@ -954,7 +983,7 @@ Homepage: https://commerce.nearform.com/open-source/victory
 
 --------------------------------------------------------------------------------
 
-zod (4.6.2)
+zod (4.6.7)
 License: MIT
 Author: Colin McDonnell <zod@colinhacks.com>
 Homepage: https://zod.dev
@@ -985,7 +1014,7 @@ SOFTWARE.
 
 Summary
 -------
-Packages attributed: 38
+Packages attributed: 39
 Excluded (type-only @types/*, first-party @retiregolden/*): 13
 Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).
 
