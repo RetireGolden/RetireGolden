@@ -466,7 +466,9 @@ measurements that justified the MILP path are recorded here so the decision stay
 Both are negligible against UX budget — the solve itself is not the cost. Behaviour was correct: the solver
 converted in the low bracket, spread conversions across years, and never tripped the IRMAA threshold.
 
-**Bundle cost:** `highs.wasm` is **3.3 MB** (3,431,156 bytes, `highs` 1.15.2) plus 68 KB of `highs.js` glue. The wasm dominates
+**Bundle cost:** `highs.wasm` is **3.3 MB** (3,431,156 bytes, `highs` 1.15.2) plus 68 KB of `highs.js` glue. Re-measured
+for the 1.15.4 upgrade (2026-10-24, the app build): 3,531,401 bytes of wasm and a 97.8 KiB minified glue chunk, the
+package's ESM build with its persistent model API, which the engine reads its solution through. The wasm dominates
 and is fetched only when Optimize is invoked: the worker entry imports it via `highs/runtime?url` (the package's
 exported alias for `build/highs.wasm`), which yields a URL string and makes Vite emit the wasm as a separate
 asset that never enters the main/app chunk — and `runOptimizeRequest` imports the `highs.js` glue dynamically,

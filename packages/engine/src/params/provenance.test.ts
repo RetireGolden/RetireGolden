@@ -285,6 +285,10 @@ function contributionLimitsClauses(): FigureClause[] {
       label: 'HSA self/family and catch-up amounts',
       clause: `HSA ${usd(pack.contributionLimits.hsaSelfOnly)} self / ${usd(pack.contributionLimits.hsaFamily)} family (+${usd(pack.contributionLimits.hsaCatchUp55)} at 55+)`,
     },
+    {
+      label: 'section 401(a)(17) compensation limit and its notice',
+      clause: `compensation limit ${usd(pack.contributionLimits.section401a17CompensationLimit)} (Notice 2025-67, section 401(a)(17))`,
+    },
   ]
 }
 

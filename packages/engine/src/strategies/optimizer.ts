@@ -411,18 +411,19 @@ export interface OptimizerYear {
 }
 
 /**
- * One solve's result, read from HiGHS's raw solution (`Highs_writeSolution`),
- * not from the pretty print the highs package parses. `optimizeSchedule`
- * publishes from this and nothing else, and `options.solve` injects it.
+ * One solve's result, read from HiGHS's status codes and its solution's
+ * doubles through the highs package's persistent model API, not from a printed
+ * solution. `optimizeSchedule` publishes from this and nothing else, and
+ * `options.solve` injects it.
  */
 export interface OptimizerSolveResult {
   /**
-   * HiGHS's model status as its raw solution writes it, for example
+   * HiGHS's model status by the name HiGHS gives it, for example
    * `Optimal`, `Infeasible`, `Solution limit reached` (a node limit) or
    * `Time limit reached`.
    */
   modelStatus: string
-  /** Whether the raw solution carries a primal point, and whether it is feasible. */
+  /** Whether the solve has a primal point, and whether it is feasible (HiGHS's primal solution status). */
   primalStatus: 'Feasible' | 'Infeasible' | 'None'
   /** The objective at that primal point; null when there is none. */
   objective: number | null
@@ -1178,146 +1179,176 @@ function pack65Deduction(y: OptimizerYear): number {
 }
 
 /**
- * The error every failure to read HiGHS's raw solution throws. Nothing is
- * published from the highs package's own parse of the pretty print (six
- * significant digits), so a raw solution that is missing or does not parse
- * has no fallback: it means the installed highs package no longer writes it
- * the way `parseRawSolution` reads it, and the solve fails closed.
+ * The error every failure to read a solve back from the highs package throws.
+ * Nothing is published from a result the engine cannot read in full, so a
+ * module without the API below, a status code it does not name or a column it
+ * cannot read has no fallback: it means the installed highs package no longer
+ * behaves the way `persistentModelSolver` reads it, and the solve fails closed.
  */
-function rawSolutionUnreadable(detail: string): Error {
+function solverUnreadable(detail: string): Error {
   return new Error(
-    `The highs package's solution writer changed: the engine reads HiGHS's raw solution through it ` +
-      `(strategies/optimizer.ts), and ${detail}. The engine pins highs 1.15.2; re-check this reader ` +
+    `The highs package's solver interface changed: the engine reads HiGHS's solution through it ` +
+      `(strategies/optimizer.ts), and ${detail}. The engine pins highs 1.15.4; re-check this reader ` +
       `against any other version before installing it.`,
   )
 }
 
-const RAW_NUMBER = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/
+/**
+ * HiGHS's model status codes (`HighsModelStatus`, the C API's
+ * `kHighsModelStatus*`): for each, the package's name for it in
+ * `constants.modelStatus` and the name HiGHS's own `modelStatusToString`
+ * gives it, which is what `scheduleStatus` reads. Code 16 is the node limit:
+ * the only solution limit the engine sets. Every code is checked against the
+ * loaded module's constants, so a renumbering of any of them fails every
+ * solve rather than misreading one.
+ */
+const MODEL_STATUSES: readonly { code: number; constant: string; name: string }[] = [
+  { code: 0, constant: 'notSet', name: 'Not Set' },
+  { code: 1, constant: 'loadError', name: 'Load error' },
+  { code: 2, constant: 'modelError', name: 'Model error' },
+  { code: 3, constant: 'presolveError', name: 'Presolve error' },
+  { code: 4, constant: 'solveError', name: 'Solve error' },
+  { code: 5, constant: 'postsolveError', name: 'Postsolve error' },
+  { code: 6, constant: 'empty', name: 'Empty' },
+  { code: 7, constant: 'optimal', name: 'Optimal' },
+  { code: 8, constant: 'infeasible', name: 'Infeasible' },
+  { code: 9, constant: 'unboundedOrInfeasible', name: 'Primal infeasible or unbounded' },
+  { code: 10, constant: 'unbounded', name: 'Unbounded' },
+  { code: 11, constant: 'objectiveBound', name: 'Bound on objective reached' },
+  { code: 12, constant: 'objectiveTarget', name: 'Target for objective reached' },
+  { code: 13, constant: 'timeLimit', name: 'Time limit reached' },
+  { code: 14, constant: 'iterationLimit', name: 'Iteration limit reached' },
+  { code: 15, constant: 'unknown', name: 'Unknown' },
+  { code: 16, constant: 'solutionLimit', name: 'Solution limit reached' },
+  { code: 17, constant: 'interrupted', name: 'Interrupted by user' },
+]
 
-function rawNumber(text: string, what: string): number {
-  const value = Number(text)
-  if (!RAW_NUMBER.test(text) || !Number.isFinite(value)) {
-    throw rawSolutionUnreadable(`${what} reads "${text}", not a finite number`)
-  }
-  return value
-}
+const MODEL_STATUS_NAMES: ReadonlyMap<number, string> = new Map(MODEL_STATUSES.map((s) => [s.code, s.name]))
 
 /**
- * Parse the lines `Highs_writeSolution` prints, HiGHS's raw solution format:
- *
- *     Model status
- *     <model status>
- *
- *     # Primal solution values
- *     <Feasible | Infeasible | None>
- *     Objective <value>        (with a primal point only)
- *     # Columns <n>            (with a primal point only)
- *     <name> <value>           (n lines)
- *     ...                      (rows, duals and basis, not read)
- *
- * HiGHS prints each value to 16 significant digits, or to the thirteenth
- * decimal place below 1,000 (measured on highs 1.15.2: 17636684.14285714 and
- * 0.3333333333333), where the pretty print the highs package parses carries
- * six significant digits. Every line is matched exactly; anything else throws.
+ * The status codes that mean HiGHS did not solve the model at all (not set, a
+ * load, model, presolve, solve or postsolve error, or an empty model: the
+ * engine's LP always has columns, and the package reads an LP it cannot parse
+ * as an empty model without throwing). A solve that ends in one throws rather
+ * than publishing "no solution", which would read as a plan no schedule funds.
  */
-function parseRawSolution(lines: readonly string[]): OptimizerSolveResult {
-  const statusAt = lines.indexOf('Model status')
-  const modelStatus = statusAt < 0 ? '' : (lines[statusAt + 1] ?? '')
-  if (modelStatus === '') throw rawSolutionUnreadable('its raw solution carries no model status')
-  const primalAt = lines.indexOf('# Primal solution values', statusAt + 2)
-  if (primalAt < 0) throw rawSolutionUnreadable('its raw solution has no primal solution section')
-  const primalStatus = lines[primalAt + 1]
-  if (primalStatus !== 'Feasible' && primalStatus !== 'Infeasible' && primalStatus !== 'None') {
-    throw rawSolutionUnreadable(`its primal solution status reads "${String(primalStatus)}"`)
-  }
-  if (primalStatus === 'None') return { modelStatus, primalStatus, objective: null, columns: {} }
+const SOLVE_FAILED_CODES: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6])
 
-  const objectiveLine = /^Objective (\S+)$/.exec(lines[primalAt + 2] ?? '')
-  if (objectiveLine === null) throw rawSolutionUnreadable('its primal solution has no objective line')
-  // HiGHS prints an infinite objective as inf; that is a solve's answer, not a
-  // format change, so it reaches optimizeSchedule's own finite-objective check.
-  const objectiveText = objectiveLine[1]!
-  const objective =
-    objectiveText === 'inf' ? Infinity : objectiveText === '-inf' ? -Infinity : rawNumber(objectiveText, 'the objective')
-  const countLine = /^# Columns (\d+)$/.exec(lines[primalAt + 3] ?? '')
-  if (countLine === null) throw rawSolutionUnreadable('its primal solution has no column count')
-  const count = Number(countLine[1])
+/** HiGHS's primal solution status codes (`kHighsSolutionStatus*`). */
+const PRIMAL_STATUS: Readonly<Record<number, OptimizerSolveResult['primalStatus']>> = {
+  0: 'None',
+  1: 'Infeasible',
+  2: 'Feasible',
+}
+
+/** The part of one persistent highs model the engine uses. */
+type HighsModel = {
+  options: { set: (values: Record<string, unknown>) => unknown }
+  info: { get: (name: string) => number | bigint }
+  run: () => { status?: unknown; modelStatus?: unknown } | undefined
+  getModelStatus: () => number
+  getDimensions: () => { numCols: number }
+  getObjectiveValue: () => number
+  getSolution: () => { colValue: ArrayLike<number> }
+  getColName: (index: number) => string
+}
+
+/** The part of the loaded highs module the engine uses. */
+type HighsRuntime = {
+  withModel: <Result>(source: { format: 'lp'; data: string }, operation: (model: HighsModel) => Result) => Result
+  constants?: {
+    modelStatus?: Readonly<Record<string, number>>
+    solutionStatus?: Readonly<Record<string, number>>
+  }
+}
+
+type HighsLoader = (options: { locateFile?: (file: string) => string }) => Promise<HighsRuntime>
+
+/**
+ * Read one solved model: its status, whether it has a primal point, and that
+ * point's objective and columns at full double precision.
+ */
+function readSolvedModel(model: HighsModel): OptimizerSolveResult {
+  const code = model.getModelStatus()
+  const modelStatus = MODEL_STATUS_NAMES.get(code)
+  if (modelStatus === undefined) throw solverUnreadable(`its model status code is ${String(code)}`)
+  if (SOLVE_FAILED_CODES.has(code)) throw new Error(`HiGHS did not solve the optimizer's model: ${modelStatus}`)
+  const primalCode = Number(model.info.get('primal_solution_status'))
+  const primalStatus = PRIMAL_STATUS[primalCode]
+  if (primalStatus === undefined) {
+    throw solverUnreadable(`its primal solution status code is ${String(primalCode)}`)
+  }
+  // Only a feasible point is published (`optimizeSchedule`), so only a
+  // feasible point is read.
+  if (primalStatus !== 'Feasible') return { modelStatus, primalStatus, objective: null, columns: {} }
+
+  // An infinite objective is a solve's answer, not an interface change, so it
+  // reaches optimizeSchedule's own finite-objective check.
+  const objective = model.getObjectiveValue()
+  if (typeof objective !== 'number' || Number.isNaN(objective)) {
+    throw solverUnreadable(`its objective reads ${String(objective)}, not a number`)
+  }
+  const values = model.getSolution().colValue
+  // Every column of the model, or none is published: `optimizeSchedule` reads
+  // a column the solution does not carry as 0.
+  const numCols = model.getDimensions().numCols
+  if (values.length !== numCols) {
+    throw solverUnreadable(`its solution carries ${values.length} of the model's ${String(numCols)} columns`)
+  }
   const columns = Object.create(null) as Record<string, number>
-  for (let k = 0; k < count; k++) {
-    const columnLine = /^(\S+) (\S+)$/.exec(lines[primalAt + 4 + k] ?? '')
-    if (columnLine === null) throw rawSolutionUnreadable(`column ${k + 1} of ${count} is not a name and a value`)
-    const name = columnLine[1]!
-    if (name in columns) throw rawSolutionUnreadable(`column ${name} appears twice`)
-    columns[name] = rawNumber(columnLine[2]!, `column ${name}`)
+  for (let k = 0; k < values.length; k++) {
+    const name = model.getColName(k)
+    if (typeof name !== 'string' || name === '') throw solverUnreadable(`column ${k + 1} of ${values.length} has no name`)
+    if (name in columns) throw solverUnreadable(`column ${name} appears twice`)
+    const value = values[k]
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      throw solverUnreadable(`column ${name} reads ${String(value)}, not a finite number`)
+    }
+    columns[name] = value
   }
   return { modelStatus, primalStatus, objective, columns }
 }
 
-/** The part of the loaded highs module the engine uses. */
-type HighsWasmModule = {
-  solve: (lp: string, options: Record<string, unknown>) => unknown
-  cwrap: (name: string, returnType: string, argumentTypes: string[]) => (...args: unknown[]) => unknown
-  Highs_writeSolutionPretty: unknown
-}
-
-type HighsLoader = (options: {
-  locateFile?: (file: string) => string
-  print: (line: string) => void
-}) => Promise<HighsWasmModule>
-
-/** Where the module's `print` sends a line: into `lines` while a raw solution is being written. */
-type HighsOutput = { lines: string[] | null }
-
 /**
- * Make a loaded highs module solve to HiGHS's raw solution.
+ * Solve through the highs package's persistent model API.
  *
- * The highs package (pinned at 1.15.2) reads its result back from HiGHS's
- * pretty print, six significant digits. Its `solve` looks up
- * `Module.Highs_writeSolutionPretty` when it calls it, after HiGHS has run and
- * while the solved model is still in hand, so this replaces that property with
- * a wrapper: turn HiGHS's `output_flag` on, have `Highs_writeSolution` print
- * the raw solution to standard output (an empty file name), which the
- * module's `print` routes into `output`, turn the flag off again and call the
- * package's own writer, so the package's solve runs to its end unchanged. Its
- * parsed result is then discarded and the raw lines are parsed instead.
- *
- * Outside that window the module's `print` discards whatever it is handed,
- * and HiGHS hands it nothing, because `output_flag` is off.
+ * The package's one-shot `solve` reports a node limit as `Unknown` and has no
+ * primal solution status, so the engine solves each LP in its own scoped model
+ * (`withModel` disposes the native instance however the operation ends) and
+ * reads HiGHS's status codes, primal solution status and column values
+ * (doubles, not a printed solution) directly. The package's wrappers throw on
+ * a native error (an option HiGHS rejects, an LP it cannot read, a run that
+ * fails); `run`'s own result is checked as well, so a run that reports
+ * neither success nor a warning, or a status other than the model's, fails
+ * the solve too.
  */
-function rawSolutionSolver(module: HighsWasmModule, output: HighsOutput): { solve: OptimizerSolver } {
-  const prettyWriter = module.Highs_writeSolutionPretty
-  if (typeof prettyWriter !== 'function' || typeof module.cwrap !== 'function' || typeof module.solve !== 'function') {
-    throw rawSolutionUnreadable('the loaded module has no Highs_writeSolutionPretty, cwrap or solve to wrap')
-  }
-  const writeRaw = module.cwrap('Highs_writeSolution', 'number', ['number', 'string'])
-  const setBoolOption = module.cwrap('Highs_setBoolOptionValue', 'number', ['number', 'string', 'number'])
-  let captured: { lines: string[]; status: unknown } | null = null
-  module.Highs_writeSolutionPretty = (highs: number, file: string): unknown => {
-    output.lines = []
-    let status: unknown = null
-    try {
-      setBoolOption(highs, 'output_flag', 1)
-      status = writeRaw(highs, '')
-      setBoolOption(highs, 'output_flag', 0)
-    } finally {
-      captured = { lines: output.lines, status }
-      output.lines = null
+function persistentModelSolver(runtime: HighsRuntime): { solve: OptimizerSolver } {
+  if (typeof runtime.withModel !== 'function') throw solverUnreadable('the loaded module has no withModel')
+  const statusCodes = runtime.constants?.modelStatus
+  const solutionCodes = runtime.constants?.solutionStatus
+  for (const { code, constant } of MODEL_STATUSES) {
+    if (statusCodes?.[constant] !== code) {
+      throw solverUnreadable(`its model status ${constant} is ${String(statusCodes?.[constant])}, not ${code}`)
     }
-    return (prettyWriter as (highs: number, file: string) => unknown)(highs, file)
+  }
+  const named = new Set(MODEL_STATUSES.map((s) => s.constant))
+  const unnamed = Object.keys(statusCodes ?? {}).filter((constant) => !named.has(constant))
+  if (unnamed.length > 0) throw solverUnreadable(`it has model statuses the engine does not name: ${unnamed.join(', ')}`)
+  if (solutionCodes?.none !== 0 || solutionCodes.infeasible !== 1 || solutionCodes.feasible !== 2) {
+    throw solverUnreadable('its solution status codes are not none 0, infeasible 1, feasible 2')
   }
   return {
-    solve: (lp, options) => {
-      captured = null
-      module.solve(lp, options)
-      const raw = captured as { lines: string[]; status: unknown } | null
-      captured = null
-      if (raw === null) throw rawSolutionUnreadable('its solve never called the writer the engine wraps')
-      // HighsStatus: 0 ok, 1 warning, -1 error.
-      if (raw.status !== 0 && raw.status !== 1) {
-        throw rawSolutionUnreadable(`Highs_writeSolution returned ${String(raw.status)}`)
-      }
-      return parseRawSolution(raw.lines)
-    },
+    solve: (lp, options) =>
+      runtime.withModel({ format: 'lp', data: lp }, (model) => {
+        model.options.set(options)
+        const ran = model.run()
+        // HighsStatus: 0 ok, 1 warning (a limit reached, for one).
+        if (ran?.status !== 0 && ran?.status !== 1) throw solverUnreadable(`its run returned status ${String(ran?.status)}`)
+        if (ran.modelStatus !== model.getModelStatus()) {
+          throw solverUnreadable(`its run reported model status ${String(ran.modelStatus)}, not the model's`)
+        }
+        return readSolvedModel(model)
+      }),
   }
 }
 
@@ -1325,23 +1356,16 @@ function rawSolutionSolver(module: HighsWasmModule, output: HighsOutput): { solv
 let highsPromise: Promise<{ solve: OptimizerSolver }> | null = null
 async function getHighs(locateFile?: (f: string) => string): Promise<{ solve: OptimizerSolver }> {
   if (!highsPromise) {
-    // highs ships CJS with an `export default` in its types; under Node16
-    // resolution the namespace type isn't callable, but at runtime `.default`
-    // is the loader function in both Node ESM and bundler interop.
+    // The package's types declare the loader as its default export; the engine
+    // reads it through its own structural types above, which name only what it uses.
     const loader = (await import('highs')).default as unknown as HighsLoader
-    const output: HighsOutput = { lines: null }
     // A REJECTED load must not stay in the memo. Storing the pending promise
     // and never clearing it turns one transient wasm load failure into a
     // permanently dead optimizer for the rest of the worker's life, with a
     // page reload the only recovery; clearing lets the next call try again.
-    // A module the raw reader cannot wrap is rejected the same way.
-    const loading: Promise<{ solve: OptimizerSolver }> = loader({
-      ...(locateFile ? { locateFile } : {}),
-      print: (line: string) => {
-        output.lines?.push(line)
-      },
-    })
-      .then((module) => rawSolutionSolver(module, output))
+    // A module the reader cannot use is rejected the same way.
+    const loading: Promise<{ solve: OptimizerSolver }> = loader(locateFile ? { locateFile } : {})
+      .then((runtime) => persistentModelSolver(runtime))
       .catch((reason: unknown) => {
         if (highsPromise === loading) highsPromise = null
         throw reason
@@ -1386,7 +1410,7 @@ function scheduleStatus(solved: OptimizerSolveResult): OptimizedSchedule['status
 /**
  * Solve the multi-year conversion/withdrawal MILP. Returns a per-year schedule
  * plus a conversions array ready to feed the `optimized` Roth strategy, read
- * from HiGHS's raw solution; see `OptimizedSchedule` for what a solve with no
+ * from HiGHS's solution; see `OptimizedSchedule` for what a solve with no
  * solution publishes.
  */
 export async function optimizeSchedule(input: OptimizerInput): Promise<OptimizedSchedule> {

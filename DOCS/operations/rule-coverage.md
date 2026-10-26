@@ -17,8 +17,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Classification: settled | 396 |
 | Classification: unsettled | 8 |
 | Approximated kind: convention | 23 |
-| Approximated kind: fix | 71 |
-| Approximated kind: needs-fact | 28 |
+| Approximated kind: fix | 69 |
+| Approximated kind: needs-fact | 30 |
 | Volatility: annuallyIndexed | 92 |
 | Volatility: awaitingGuidance | 14 |
 | Volatility: staticStatute | 488 |

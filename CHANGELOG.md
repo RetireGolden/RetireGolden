@@ -4,6 +4,53 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
+  compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
+  retirement-plan field (`contributionLimits.section401a17CompensationLimit`) that grows with the
+  other plan limits in later years and is listed with the contribution limits on the sources panel.
+  On $500,000 of wages, a 100% match of deferrals up to 6% of pay is $21,600, where the projection
+  gave $24,500 from uncapped wages; wages under the limit are unchanged, an account labelled `457b`
+  (not a qualified trust) keeps its match on uncapped wages, and no example plan reaches the limit.
+  The `year-result-employer-match` record and worksheet state the limit.
+  - `irc-401-a-17-plan-compensation-cap` stays approximated, now as a needs-fact: wages are pooled by
+    person across employers and a wage stream names no plan, so the match is measured on all of a
+    person's pay. $250,000 from each of two employers gives a $21,600 match where the sponsoring
+    employer's pay gives $15,000.
+  - `irc-219-g-traditional-ira-deduction-phaseout` is reclassified from a fix to a needs-fact
+    approximation: the phase-out turns on whether a person is an active participant in a workplace
+    plan, a pension included, which the plan does not record. The Roth contribution phase-out
+    (`irc-408A-c-3-roth-contribution-agi-phase-out`) and the section 4973 excise on excess IRA and
+    Roth contributions (`irc-4973-a-b-f-ira-and-roth-excess-contribution-excise`) stay approximated
+    fixes: both turn on the year's modified AGI, which the projection knows only after it funds the
+    year's withdrawals, while contributions are placed before them.
+
+- **Changed: the optimizer reads HiGHS through the highs package's persistent model API, and the
+  engine and planner-ui pin `highs` at exactly 1.15.4** (was 1.15.2; 2026-10-24). No figure changes.
+  - highs 1.15.3 rewrote the package's JavaScript layer, and the `Highs_writeSolutionPretty` hook
+    the engine wrapped to capture HiGHS's raw solution is gone, so on the new package every solve
+    failed closed. `strategies/optimizer.ts` now solves each model in its own scoped model
+    (`withModel`, disposed however the solve ends) and reads HiGHS's model status code, its primal
+    solution status, the objective and each column's value as the doubles HiGHS holds
+    (`getObjectiveValue`, `getSolution`, `getColName`), not a printed solution. The package's
+    one-shot `solve` is not used because it reports the node limit as `Unknown`.
+  - It still fails closed: a module without `withModel`, any renumbered or unknown status code, a
+    run that reports neither success nor a warning (or a status other than the model's), a solution
+    short of the model's columns, or a column it cannot read throws an error that names the change,
+    and that refusal is not memoised. A solve that ends in a load, model, presolve, solve or
+    postsolve error, or in an empty model (how the package reads an LP it cannot parse), throws
+    instead of publishing "no solution". A real-solver test now checks the
+    time limit through HiGHS's own status code.
+  - Both records' mutation receipts were re-executed against the new reader: each mutant still
+    fails the same evidence tests with the same figures.
+  - Re-measured on the new package, unchanged to the cent: rmd-irmaa stops at its node limit at an
+    objective of $744,755.92, and bracket-fill-roth's figures stay $282,266.26 and $181,976.47.
+    Every optimizer evidence case passes as stated.
+  - The `optimizer-schedule-objective-and-lifetime-tax` and `optimizer-schedule-year-solution`
+    records and worksheets now say how the engine reads the solution; their `implementedBy` pin
+    moves from `#parseRawSolution` to `#readSolvedModel`.
+  - The app's all-JS and precache budgets move 5100 → 5300 and 5250 → 5400 KiB: the lazy highs glue
+    chunk grew from 42.7 to 97.8 KiB (DOCS/operations/bundle-budget.md).
+
 - **Fixed: the texts the methodology site snapshots say what the engine does, and the output
   census follows RetireGolden-MCP 0.13.0** (2026-10-11, after engine 0.5.0; the findings of the
   retiregolden.org#151 review, which snapshots engine 8728d7b4). No figure changes.

@@ -466,16 +466,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
-          "line": 169,
+          "line": 227,
           "note": null,
           "tests": [
             {
               "title": "funds a Roth IRA for a single filer far above the phase-out range",
-              "line": 182
+              "line": 240
             },
             {
               "title": "charges the same contribution at an income the phase-out does not reach",
-              "line": 193
+              "line": 251
             }
           ]
         }
