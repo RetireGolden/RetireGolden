@@ -117,43 +117,101 @@ function year2026(plan: Plan, taxCalculator = noTax) {
   return result.years.find((y) => y.year === 2026)!
 }
 
-// IRC 401(a)(17) / Notice 2025-67: 2026 compensation taken into account is
-// capped at 360,000. A 100%-of-deferral match capped at 6% of pay on 500,000
-// of wages with a 24,500 elective yields match of 24,500 on uncapped wages
-// (min(24,500, 0.06 × 500,000)), but only 21,600 once wages are capped at
-// 360,000 (0.06 × 360,000). Section 415(c) does not repair it: 24,500 + 24,500
-// stays under the 72,000 annual-additions limit.
-// Observed produced pin (fixture run 2026-08-26): employerMatch stays at the
-// uncapped 24,500 figure.
-const producedUncapped401a17Match = 24_500
+// IRC 401(a)(17)(A) / Notice 2025-67 (annual compensation limitation): for
+// 2026 a qualified plan takes at most 360,000 dollars of annual compensation
+// into account. One person, 2026, no growth or inflation, elective deferral
+// 24,500 (the 2026 402(g)(1) amount; owner 35, so no catch-up).
+function matchedPlan(
+  annualWages: readonly number[],
+  match: { matchPct: number, capPctOfPay: number },
+  employerPlanType?: '401k' | '403b' | '457b',
+): Plan {
+  const plan = soloPlan('1990-06-15', 70)
+  plan.incomes = annualWages.map((amount) => wages(amount))
+  const employer = employerTraditional(0, 24_500)
+  if (employer.type !== 'traditional') throw new Error('expected traditional')
+  plan.accounts = [
+    cash(0),
+    {
+      ...employer,
+      ...(employerPlanType === undefined ? {} : { employerPlanType }),
+      employerMatch: match,
+    },
+  ]
+  return plan
+}
 
-describeRule('irc-401-a-17-plan-compensation-cap', {
-  readings: {
-    matchOnCappedCompensation: 21_600,
-    matchOnUncappedWages: producedUncapped401a17Match,
-  },
-  accepted: 'matchOnCappedCompensation',
-  produced: 'matchOnUncappedWages',
-  note: 'uncapped wages inflate the 6%-of-pay match',
-}, ({ accepted, produced }) => {
-  it('computes employer match from uncapped wages above the 401(a)(17) cap', () => {
-    const plan = soloPlan('1990-06-15', 70)
-    plan.incomes = [wages(500_000)]
-    const employer = employerTraditional(0, 24_500)
-    if (employer.type !== 'traditional') throw new Error('expected traditional')
-    plan.accounts = [
-      cash(0),
-      { ...employer, employerMatch: { matchPct: 100, capPctOfPay: 6 } },
-    ]
-
-    const year = year2026(plan)
-    expect(year.employerMatch).toBeCloseTo(produced, 6)
-    expect(year.employerMatch).not.toBeCloseTo(accepted, 6)
-    // 415(c) does not repair the overstatement: combined additions stay under
-    // the pack's 72,000 dollar annual-additions limit.
-    expect(year.contributions + year.employerMatch).toBeLessThan(
+describe('irc-401-a-17-plan-compensation-cap: the limit the projection applies', () => {
+  it('caps the pay a 6%-of-pay match is measured on at the 401(a)(17) limit', () => {
+    // Hand worksheet: wages 500,000 from one employer; match 100 percent of
+    // deferrals up to 6 percent of pay.
+    //   compensation taken into account = min(500,000, 360,000) = 360,000
+    //   pay cap = 0.06 x 360,000 = 21,600; matched base min(24,500, 21,600)
+    //   = 21,600; match 21,600. 415(c): 24,500 + 21,600 = 46,100 < 72,000.
+    // Rejected reading, uncapped wages: min(24,500, 30,000) = 24,500, which
+    // 415(c) does not repair (49,000 < 72,000). The engine produced that
+    // figure until 2026-10-26.
+    const year = year2026(matchedPlan([500_000], { matchPct: 100, capPctOfPay: 6 }))
+    expect(pack2026.contributionLimits.section401a17CompensationLimit).toBe(360_000)
+    expect(year.contributions).toBeCloseTo(24_500, 6)
+    expect(year.employerMatch).toBeCloseTo(21_600, 6)
+    expect(year.employerMatch).not.toBeCloseTo(24_500, 6)
+    expect(year.contributions + 24_500).toBeLessThan(
       pack2026.contributionLimits.section415cLimit,
     )
+  })
+
+  it('treats a 401(k) or 403(b) label the same as an unlabelled employer account', () => {
+    for (const planType of ['401k', '403b'] as const) {
+      expect(
+        year2026(matchedPlan([500_000], { matchPct: 100, capPctOfPay: 6 }, planType)).employerMatch,
+        planType,
+      ).toBeCloseTo(21_600, 6)
+    }
+  })
+
+  it('leaves a 457(b) match on uncapped wages', () => {
+    // 401(a)(17) is a qualified-trust requirement (and reaches a 403(b) through
+    // 403(b)(12)(A)(i)); a 457(b) plan is neither. Hand worksheet: wages
+    // 500,000, deferral 24,500, match 100 percent up to 5 percent of pay.
+    //   pay cap = 0.05 x 500,000 = 25,000; matched base min(24,500, 25,000)
+    //   = 24,500; match 24,500. 415(c) does not bind: 49,000 < 72,000.
+    // Contrary reading, the cap applied: 0.05 x 360,000 = 18,000.
+    const year = year2026(matchedPlan([500_000], { matchPct: 100, capPctOfPay: 5 }, '457b'))
+    expect(year.employerMatch).toBeCloseTo(24_500, 6)
+    expect(year.employerMatch).not.toBeCloseTo(18_000, 6)
+  })
+
+  it('leaves the match on wages under the limit unchanged', () => {
+    // Control: 300,000 is under 360,000, so both readings give
+    // min(24,500, 0.06 x 300,000 = 18,000) = 18,000.
+    expect(year2026(matchedPlan([300_000], { matchPct: 100, capPctOfPay: 6 })).employerMatch)
+      .toBeCloseTo(18_000, 6)
+  })
+})
+
+// The gap that remains: wages are pooled by person (annualIncomeSetup.ts
+// wagesByPerson) and a wage stream names no plan, so the match is measured on
+// the person's pay from every employer. Hand worksheet: 250,000 from each of
+// two employers; the plan is with one of them and matches 100 percent of
+// deferrals up to 6 percent of pay.
+//   statute: that employer's 250,000 is under 360,000; pay cap 0.06 x 250,000
+//   = 15,000; matched base min(24,500, 15,000) = 15,000; match 15,000.
+//   engine: pooled 500,000 held to 360,000; 0.06 x 360,000 = 21,600;
+//   min(24,500, 21,600) = 21,600. 415(c) binds on neither (46,100 < 72,000).
+describeRule('irc-401-a-17-plan-compensation-cap', {
+  readings: {
+    matchOnSponsoringEmployerPay: 15_000,
+    matchOnPooledPayHeldToTheLimit: 21_600,
+  },
+  accepted: 'matchOnSponsoringEmployerPay',
+  produced: 'matchOnPooledPayHeldToTheLimit',
+  note: 'pay from a second employer raises the match',
+}, ({ accepted, produced }) => {
+  it('measures the match on wages from both employers', () => {
+    const year = year2026(matchedPlan([250_000, 250_000], { matchPct: 100, capPctOfPay: 6 }))
+    expect(year.employerMatch).toBeCloseTo(produced, 6)
+    expect(year.employerMatch).not.toBeCloseTo(accepted, 6)
   })
 })
 

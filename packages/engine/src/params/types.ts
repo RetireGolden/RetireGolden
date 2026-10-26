@@ -150,6 +150,13 @@ export interface ParameterPack {
     hsaCatchUp55: number
     /** IRS Section 415(c)(1)(A) defined contribution total additions limit. */
     section415cLimit: number
+    /**
+     * IRC 401(a)(17) annual compensation limit: the most of an employee's
+     * annual compensation a qualified plan may take into account. The
+     * employer match's percent-of-pay cap is measured against wages held to
+     * this amount. See `irc-401-a-17-plan-compensation-cap`.
+     */
+    section401a17CompensationLimit: number
   }
 
   rmd: {

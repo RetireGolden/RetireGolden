@@ -116,8 +116,16 @@ export const DEFAULT_CHUNK_KIB = 260
  * measured 4824.2 KiB (4431.7 KiB baseline). The delta tracks the worker and
  * useProjection engine growth plus the entry params surface, not new chunks
  * or duplicate worker entries.
+ *
+ * Raised again 5100 -> 5300 for the highs 1.15.2 -> 1.15.4 upgrade: measured
+ * 5147.2 KiB (5092.8 KiB on main before it). The lazy highs glue chunk grew
+ * from 42.7 to 97.8 KiB (the package's new persistent model API, which the
+ * optimizer now reads its solution through), plus a 0.1 KiB
+ * `__vite-browser-external` stub for the glue's Node-only `node:module`
+ * import; no other chunk moved. The new ceiling leaves about 150 KiB of
+ * headroom, as the earlier raises did, so ordinary PRs do not trip it.
  */
-export const TOTAL_JS_KIB = 5100
+export const TOTAL_JS_KIB = 5300
 /** One stylesheet, and all of them. */
 export const MAX_CSS_KIB = 64
 export const TOTAL_CSS_KIB = 80
@@ -157,8 +165,14 @@ export const LANDING_PATH_KIB = 800
  * Raised again 4900 -> 5250 for the authorized 60-item calculation audit:
  * measured 4971.8 KiB (4579.6 KiB baseline). Precache entry count stayed at
  * 200; the overshoot is the same engine bytes the per-chunk rows above count.
+ *
+ * Raised again 5250 -> 5400 for the highs 1.15.4 upgrade: measured 5267.8 KiB
+ * (5213.4 KiB on main before it), 198 entries (197 before): the same larger
+ * highs glue chunk and its stub, which stay precached like every other chunk
+ * so Optimize keeps working offline once its wasm is cached. About 130 KiB of
+ * headroom remains.
  */
-export const PRECACHE_KIB = 5250
+export const PRECACHE_KIB = 5400
 
 export const kib = (bytes) => bytes / 1024
 export const fmt = (n) => `${n.toFixed(1)} KiB`

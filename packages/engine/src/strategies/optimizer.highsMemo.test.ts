@@ -5,11 +5,11 @@
  * the memo is module state and `vi.mock('highs', ...)` has to replace the
  * real solver for the whole module graph, which those golden tests need.
  *
- * The same stand-in module carries the engine's raw-solution reader's failure
- * policy: the engine publishes only what HiGHS's raw solution says, so a
- * module whose writer it cannot wrap, or whose raw solution does not parse,
- * fails the solve with an error rather than falling back to the highs
- * package's six-digit parse.
+ * The same stand-in module carries the engine's solution reader's failure
+ * policy: the engine publishes only what HiGHS's status codes and solution
+ * doubles say, so a module without the persistent model API, a status code
+ * the engine does not name, or a column it cannot read fails the solve with an
+ * error rather than publishing a guess.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -19,57 +19,100 @@ import { packForYear } from '../params/index.js'
 import type { FilingStatus } from '../params/types.js'
 import { optimizeSchedule, type OptimizerInput } from './optimizer.js'
 
-/** A raw solution as `Highs_writeSolution` prints it, with two solved columns. */
-const OPTIMAL_RAW = [
-  'Model status',
-  'Optimal',
-  '',
-  '# Primal solution values',
-  'Feasible',
-  'Objective 1769100.802718',
-  '# Columns 2',
-  'conv0 107028.8775',
-  'trad1 1756817.79',
-  '# Rows 0',
-  '',
-  '# Dual solution values',
-  'None',
-]
+/** What one solved stand-in model reports. */
+type Solved = {
+  modelStatus: number
+  primalStatus: number
+  objective: number
+  names: string[]
+  values: number[]
+  /** The model's column count, when it differs from the solution's. */
+  numCols?: number
+  /** What `run` returns, when it is not a clean run. */
+  ran?: unknown
+}
+
+/** An optimal solve with two solved columns, at more digits than a printed solution carries. */
+const OPTIMAL: Solved = {
+  modelStatus: 7,
+  primalStatus: 2,
+  objective: 1_769_100.802718,
+  names: ['conv0', 'trad1'],
+  values: [107_028.8775, 1_756_817.79],
+}
+
+/** The package's model status constants, as highs 1.15.4 publishes them. */
+const MODEL_STATUS = {
+  notSet: 0,
+  loadError: 1,
+  modelError: 2,
+  presolveError: 3,
+  solveError: 4,
+  postsolveError: 5,
+  empty: 6,
+  optimal: 7,
+  infeasible: 8,
+  unboundedOrInfeasible: 9,
+  unbounded: 10,
+  objectiveBound: 11,
+  objectiveTarget: 12,
+  timeLimit: 13,
+  iterationLimit: 14,
+  unknown: 15,
+  solutionLimit: 16,
+  interrupted: 17,
+}
+const SOLUTION_STATUS = { none: 0, infeasible: 1, feasible: 2 }
 
 const loads = vi.hoisted(() => ({
   attempts: 0,
-  /** What the stand-in's raw writer prints, and returns. */
-  raw: [] as string[],
-  rawStatus: 0,
-  /** Whether the stand-in's solve calls the pretty writer the engine wraps. */
-  callsWriter: true,
+  /** What the stand-in's next solve reports. */
+  solved: null as unknown,
+  /** The status constants the stand-in module publishes. */
+  constants: null as unknown,
+  /** Whether the stand-in module has the persistent model API. */
+  hasWithModel: true,
+  /** Options each solve set, and whether its model was disposed. */
+  optionsSet: [] as Record<string, unknown>[],
+  disposed: 0,
 }))
 
 vi.mock('highs', () => ({
-  // The real package ships CJS with an `export default` loader that resolves
-  // to the wasm module. Fail the first load the way a fetch/instantiate error
-  // does, then succeed, so the memo's behavior across the two is observable.
-  // The module it resolves to has what the engine's reader uses: `cwrap`, a
-  // `Highs_writeSolutionPretty` property its `solve` looks up when it calls
-  // it, and a `print` channel the raw writer prints through.
-  default: async (options: { print: (line: string) => void }) => {
+  // Fail the first load the way a fetch/instantiate error does, then succeed,
+  // so the memo's behavior across the two is observable. The module it
+  // resolves to has what the engine's reader uses: `withModel` over an LP
+  // source, the status constants, and per model `options.set`, `run`,
+  // `getModelStatus`, `getDimensions`, `info.get('primal_solution_status')`,
+  // `getObjectiveValue`, `getSolution` and `getColName`.
+  default: async () => {
     loads.attempts++
     if (loads.attempts === 1) throw new Error('transient wasm load failure')
-    const module = {
-      cwrap: (name: string) =>
-        name === 'Highs_writeSolution'
-          ? () => {
-              for (const line of loads.raw) options.print(line)
-              return loads.rawStatus
-            }
-          : () => 0,
-      Highs_writeSolutionPretty: (() => 0) as unknown,
-      solve: () => {
-        if (loads.callsWriter) (module.Highs_writeSolutionPretty as (highs: number, file: string) => number)(1, '/solution')
-        return { Status: 'Optimal', ObjectiveValue: 1_769_100.8, Columns: {} }
-      },
+    return {
+      constants: loads.constants,
+      ...(loads.hasWithModel
+        ? {
+            withModel: (source: { format: string; data: string }, operation: (model: unknown) => unknown) => {
+              if (source.format !== 'lp' || typeof source.data !== 'string') throw new Error('not an LP source')
+              const solved = loads.solved as Solved
+              const model = {
+                options: { set: (values: Record<string, unknown>) => loads.optionsSet.push(values) },
+                info: { get: (name: string) => (name === 'primal_solution_status' ? solved.primalStatus : 0) },
+                run: () => ('ran' in solved ? solved.ran : { status: 0, warnings: [], modelStatus: solved.modelStatus }),
+                getModelStatus: () => solved.modelStatus,
+                getDimensions: () => ({ numCols: solved.numCols ?? solved.values.length }),
+                getObjectiveValue: () => solved.objective,
+                getSolution: () => ({ colValue: Float64Array.from(solved.values) }),
+                getColName: (index: number) => solved.names[index]!,
+              }
+              try {
+                return operation(model)
+              } finally {
+                loads.disposed++
+              }
+            },
+          }
+        : {}),
     }
-    return module
   },
 }))
 
@@ -112,7 +155,8 @@ function input(): OptimizerInput {
 
 describe('HiGHS loader memo', () => {
   it('does not cache a failed load, so a later solve can still run', async () => {
-    loads.raw = OPTIMAL_RAW
+    loads.constants = { modelStatus: MODEL_STATUS, solutionStatus: SOLUTION_STATUS }
+    loads.solved = OPTIMAL
     await expect(optimizeSchedule(input())).rejects.toThrow('transient wasm load failure')
 
     // Without clearing the memo this second call returns the same rejected
@@ -127,20 +171,30 @@ describe('HiGHS loader memo', () => {
   })
 })
 
-describe('HiGHS raw solution reader', () => {
-  it('publishes the raw solution, not the package\'s parse of the pretty print', async () => {
-    loads.raw = OPTIMAL_RAW
+describe('HiGHS solution reader', () => {
+  it('publishes the solution doubles in cents, in a model disposed after each solve', async () => {
+    loads.solved = OPTIMAL
+    loads.optionsSet = []
+    const disposedBefore = loads.disposed
     const solved = await optimizeSchedule(input())
     expect(solved.status).toBe('optimal')
-    // 1769100.802718 rounds to cents; the stand-in package's own parse says 1769100.8.
     expect(solved.endingAfterTax).toBe(1_769_100.8)
     expect(solved.schedule[0]!.conversion).toBe(107_028.88)
     expect(solved.schedule[0]!.endTrad).toBe(1_756_817.79)
     expect(solved.conversions).toEqual([{ year: PACK_YEAR, amount: 107_028.88 }])
+    expect(loads.optionsSet).toEqual([{ output_flag: false, time_limit: 60, mip_max_nodes: 5000 }])
+    expect(loads.disposed).toBe(disposedBefore + 1)
+  })
+
+  it('reads the node limit by its status code, with the incumbent it found', async () => {
+    loads.solved = { ...OPTIMAL, modelStatus: 16 }
+    const solved = await optimizeSchedule(input())
+    expect(solved.status).toBe('node-limit')
+    expect(solved.schedule[0]!.conversion).toBe(107_028.88)
   })
 
   it('reads a solve with no primal point as no solution', async () => {
-    loads.raw = ['Model status', 'Infeasible', '', '# Primal solution values', 'None', '', '# Dual solution values', 'None']
+    loads.solved = { modelStatus: 8, primalStatus: 0, objective: Infinity, names: [], values: [] }
     const solved = await optimizeSchedule(input())
     expect(solved.status).toBe('infeasible')
     expect(solved.endingAfterTax).toBeNull()
@@ -148,36 +202,69 @@ describe('HiGHS raw solution reader', () => {
     expect(solved.schedule).toEqual([])
   })
 
-  it('fails closed when the raw solution is missing or does not parse', async () => {
-    const changed = "The highs package's solution writer changed"
-    const unreadable: string[][] = [
-      [],
-      ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective 12', '# Columns 1', 'conv0 1.0e3x'],
-      ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', '# Columns 0'],
-      ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective 1', '# Columns 2', 'conv0 1'],
-      ['Model status', 'Optimal', '', '# Primal solution values', 'Unknown'],
+  it('fails closed when a solve cannot be read in full', async () => {
+    const changed = "The highs package's solver interface changed"
+    const unreadable: Solved[] = [
+      { ...OPTIMAL, modelStatus: 99 },
+      { ...OPTIMAL, primalStatus: 3 },
+      { ...OPTIMAL, objective: Number.NaN },
+      { ...OPTIMAL, values: [Number.NaN, 1] },
+      { ...OPTIMAL, names: ['conv0', 'conv0'] },
+      { ...OPTIMAL, names: ['conv0', ''] },
+      // A solution short of the model's columns would read the rest as 0.
+      { ...OPTIMAL, numCols: 3 },
+      // A run that reports neither success nor a warning, or another status.
+      { ...OPTIMAL, ran: undefined },
+      { ...OPTIMAL, ran: { status: 2, modelStatus: 7 } },
+      { ...OPTIMAL, ran: { status: 0, modelStatus: 8 } },
     ]
-    for (const raw of unreadable) {
-      loads.raw = raw
-      await expect(optimizeSchedule(input()), raw.join(' | ')).rejects.toThrow(changed)
+    for (const solved of unreadable) {
+      loads.solved = solved
+      await expect(optimizeSchedule(input()), JSON.stringify(solved)).rejects.toThrow(changed)
     }
 
-    loads.raw = OPTIMAL_RAW
-    loads.rawStatus = -1
-    await expect(optimizeSchedule(input())).rejects.toThrow(changed)
-    loads.rawStatus = 0
-
-    loads.callsWriter = false
-    await expect(optimizeSchedule(input())).rejects.toThrow(changed)
-    loads.callsWriter = true
+    // A status that means HiGHS never solved the model is an error, not "no
+    // solution": it would otherwise read as a plan no schedule funds.
+    for (const modelStatus of [0, 1, 2, 3, 4, 5, 6]) {
+      loads.solved = { ...OPTIMAL, modelStatus }
+      await expect(optimizeSchedule(input()), String(modelStatus)).rejects.toThrow("HiGHS did not solve the optimizer's model")
+    }
 
     // An infinite objective on a feasible point is the solve's answer, not a
-    // changed writer, and is refused as such.
-    loads.raw = ['Model status', 'Optimal', '', '# Primal solution values', 'Feasible', 'Objective inf', '# Columns 0']
+    // changed interface, and is refused as such.
+    loads.solved = { ...OPTIMAL, objective: Infinity }
     await expect(optimizeSchedule(input())).rejects.toThrow('A feasible solution must carry a finite objective')
-    loads.raw = OPTIMAL_RAW
 
     // The reader is unharmed: the next readable solve publishes.
+    loads.solved = OPTIMAL
     expect((await optimizeSchedule(input())).status).toBe('optimal')
+  })
+})
+
+describe('HiGHS module check at load', () => {
+  it('refuses a module without the persistent model API or with renumbered or unnamed status codes, and does not cache the refusal', async () => {
+    const changed = "The highs package's solver interface changed"
+    const refusals: { hasWithModel: boolean; constants: unknown }[] = [
+      { hasWithModel: false, constants: { modelStatus: MODEL_STATUS, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, solutionLimit: 15 }, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, presolveError: 6 }, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: { ...MODEL_STATUS, newLimit: 18 }, solutionStatus: SOLUTION_STATUS } },
+      { hasWithModel: true, constants: { modelStatus: MODEL_STATUS, solutionStatus: { ...SOLUTION_STATUS, feasible: 1 } } },
+      { hasWithModel: true, constants: undefined },
+    ]
+    for (const refusal of refusals) {
+      // A fresh engine module graph, so its memo starts empty and the next
+      // solve loads the stand-in again.
+      vi.resetModules()
+      const fresh = await import('./optimizer.js')
+      loads.hasWithModel = refusal.hasWithModel
+      loads.constants = refusal.constants
+      loads.solved = OPTIMAL
+      await expect(fresh.optimizeSchedule(input()), JSON.stringify(refusal)).rejects.toThrow(changed)
+      // The refusal is not memoised: a module the reader can use loads next time.
+      loads.hasWithModel = true
+      loads.constants = { modelStatus: MODEL_STATUS, solutionStatus: SOLUTION_STATUS }
+      expect((await fresh.optimizeSchedule(input())).status).toBe('optimal')
+    }
   })
 })

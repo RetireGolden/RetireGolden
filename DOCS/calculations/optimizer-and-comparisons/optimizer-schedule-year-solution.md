@@ -8,7 +8,7 @@ Kind: model. `strategies/optimizer.ts#optimizeSchedule` solves the multi-year co
 - `taxableGainRealized` is the published `withdrawTaxable` times the gain fraction `gf = min(1, max(0, 1 − taxableBasisRatio))`.
 - `irmaaTier` is the highest tier whose binary is above one half, 0 for none.
 
-The engine reads each column from HiGHS's raw solution, which HiGHS writes to 16 significant digits (to the thirteenth decimal place below 1,000), through a wrapper around the highs package's solution writer; every amount is then rounded to cents (`Math.round(100x) / 100`), and a column the solution does not carry reads 0. A solve has a solution when HiGHS's primal solution status is feasible: an optimum, or the incumbent a node or time limit stopped at, published the same way. A solve with no solution (an infeasible model, or a limit reached before any incumbent) publishes no rows at all. `OptimizedSchedule.conversions` lists each year whose `conversion` is above $0.50, with the same amount, and is empty with no solution. Units: each year's nominal dollars; the balances at the end of the year.
+The engine reads each column as the double HiGHS holds, through the highs package's persistent model API (`getSolution`, names by `getColName`), not from a printed solution; every amount is then rounded to cents (`Math.round(100x) / 100`), and a column the solution does not carry reads 0. A solve has a solution when HiGHS's primal solution status is feasible: an optimum, or the incumbent a node or time limit stopped at, published the same way. A solve with no solution (an infeasible model, or a limit reached before any incumbent) publishes no rows at all. `OptimizedSchedule.conversions` lists each year whose `conversion` is above $0.50, with the same amount, and is empty with no solution. Units: each year's nominal dollars; the balances at the end of the year.
 
 ## Justification
 
@@ -78,7 +78,7 @@ Case 2. With `L = 0.10` nothing is converted and both floors bind. A traditional
 
 Published in cents: case 1's `conv` 107,028.8775 becomes 107,028.88, `wt` 69,811.3225 becomes 69,811.32 and `wo` 34,724.6775 becomes 34,724.68; case 2's 50,000.00125 becomes 50,000.00, 59,245.18435 becomes 59,245.18, 114,934.80125 becomes 114,934.80, 357,792.55644 becomes 357,792.56, 1,338,749.99869 becomes 1,338,750.00, 52,500.00494 becomes 52,500.00, 117,434.80494 becomes 117,434.80, 1,350,562.49344 becomes 1,350,562.49, 7,410.11434 becomes 7,410.11 and 375,682.18426 becomes 375,682.18. The 2026 gain is read from the published sale: `59,245.18 × 0.3 = 17,773.554`, so 17,773.55.
 
-Cases 3 and 4: no column funds the spending, so HiGHS finds the model infeasible and its raw solution carries no primal point (`None`); the solve has no solution and publishes no rows and no conversions.
+Cases 3 and 4: no column funds the spending, so HiGHS finds the model infeasible and its primal solution status is `None`, so there is no primal point; the solve has no solution and publishes no rows and no conversions.
 
 ## Expected
 

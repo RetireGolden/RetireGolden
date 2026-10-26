@@ -1105,12 +1105,12 @@ export const contributionAndDeferralLimitRecords = {
   'irc-401-a-17-plan-compensation-cap': {
     title: 'Qualified-plan compensation taken into account is capped',
     statement:
-      'For a qualified trust, section 401(a)(17) limits the annual compensation of an employee taken into account under the plan; Notice 2025-67 sets that indexed limit at 360,000 dollars for 2026. The projection instead applies a simple employer-match percentage to uncapped household wages, so a 500,000-dollar wage year with a 100-percent-of-deferral match capped at 6 percent of pay and a 24,500-dollar elective receives a 24,500-dollar match rather than the 21,600-dollar match that 6 percent of the 360,000-dollar compensation cap would allow. Section 415(c) does not repair the overstatement when the combined annual additions remain under the 415(c) dollar limit. The Plan has no plan-defined compensation amount or qualified-plan terms from which to determine what the employer actually takes into account under 401(a)(17).',
+      'For a qualified trust, section 401(a)(17) limits the annual compensation of an employee taken into account under the plan; Notice 2025-67 sets that indexed limit at 360,000 dollars for 2026. The projection measures an employer match\'s percent-of-pay cap against the owner\'s wages held to that limit, so a 500,000-dollar wage year with a 100-percent-of-deferral match capped at 6 percent of pay and a 24,500-dollar elective receives a 21,600-dollar match (6 percent of 360,000), not the 24,500 dollars that 6 percent of the uncapped 500,000 would allow. The limit grows in later years with the other retirement-plan limits. A 457(b) plan is not a qualified trust, so an account labelled 457b keeps its match measured on uncapped wages. The remaining gap: the wages the match is measured on are all of the owner\'s wages for the year, from every employer, because a wage stream names no plan; the statute and the plan measure only the sponsoring employer\'s pay. With 250,000 dollars from each of two employers and a plan with one of them matching 100 percent of deferrals up to 6 percent of pay, the match is 15,000 dollars (6 percent of 250,000), where the projection gives 21,600 dollars (6 percent of 500,000 held to 360,000).',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'Known defect, registered without changing the calculation. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The test pins employerMatch at the uncapped 24,500 against the statute\'s 21,600 until a separately authorized implementation fix changes it. The plan-model tests (model/plan.test.ts) still check that the plan has no plan-defined compensation field.',
+      'The Plan has no plan-defined compensation amount and does not say which employer pays each wage stream, so the owner\'s whole wages for the year stand in for the compensation the plan takes into account, and the limit applies to them. Pooled pay can only raise the match, which inflates tax-deferred balances and so overstates resources and defers and understates future tax; hence understatesTax. Which accounts take the limit: an employer account labelled 401k or 403b, and one with no label, takes it, because the plan schema describes an employer account as 401(k)/403(b)-style (model/plan.ts traditionalAccountSchema kind); a Roth employer account has no employerPlanType field and is read the same way; an account labelled 457b does not. The section 415(c) room is unchanged by the limit, because wherever wages exceed the 401(a)(17) limit, the limited compensation still exceeds the 415(c) dollar limit. Until 2026-10-26 every match was measured on uncapped wages, and the single-employer example above received 24,500 dollars.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1130,11 +1130,13 @@ export const contributionAndDeferralLimitRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/model/plan.ts#employerMatchSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',

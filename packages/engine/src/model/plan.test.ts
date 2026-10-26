@@ -559,9 +559,10 @@ describe('parsePlan', () => {
 
 describe('unmodelled employer-plan and HSA legal facts', () => {
   it('does not add plan-term or Medicare-entitlement fields merely by accepting an account', () => {
-    // Refusal coverage for the out-of-scope SIMPLE 401(k), 401(a)(17),
-    // catch-up-permission, 411 vesting, 402(g)(7), and 457(b)(3)
-    // records. The schema
+    // Refusal coverage for the out-of-scope SIMPLE 401(k),
+    // catch-up-permission, 411 vesting, 402(g)(7), and 457(b)(3) records,
+    // and the absent plan-defined compensation the settled 401(a)(17)
+    // record replaces with wages held to the limit. The schema
     // deliberately has an employer-plan CLASS but none of these legal facts.
     const planTermFacts = [
       'simple401k',
@@ -1948,17 +1949,22 @@ describe('Plan retirement-action persistence', () => {
   })
 
   it('rejects duplicate person IDs before action references can depend on array order', () => {
+    // The duplicate takes the second person's slot rather than adding a third
+    // person: `household.people` allows at most two, and since zod 4.6.7 an
+    // oversized array fails its size check before the cross-field checks run,
+    // so a three-person fixture would never reach the duplicate-id rule.
     const first = actionPlanRaw()
     const firstPeople = (
       first['household'] as Record<string, unknown>
     )['people'] as Array<Record<string, unknown>>
-    firstPeople.push({ ...firstPeople[0], name: 'Ambiguous duplicate' })
+    firstPeople[1] = { ...firstPeople[0], name: 'Ambiguous duplicate' }
 
     const second = actionPlanRaw()
     const secondPeople = (
       second['household'] as Record<string, unknown>
     )['people'] as Array<Record<string, unknown>>
-    secondPeople.unshift({ ...secondPeople[0], name: 'Ambiguous duplicate' })
+    secondPeople[1] = secondPeople[0]!
+    secondPeople[0] = { ...secondPeople[1], name: 'Ambiguous duplicate' }
 
     for (const raw of [first, second]) {
       const result = parsePlan(raw)
