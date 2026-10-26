@@ -89,7 +89,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'contribution-limits',
     label: 'Contribution limits',
     figures:
-      '401(k) $24,500 (+$8,000 at 50+, $11,250 ages 60–63); IRA $7,500 (+$1,100); HSA $4,400 self / $8,750 family (+$1,000 at 55+).',
+      '401(k) $24,500 (+$8,000 at 50+, $11,250 ages 60–63); IRA $7,500 (+$1,100); HSA $4,400 self / $8,750 family (+$1,000 at 55+); compensation limit $360,000 (Notice 2025-67, section 401(a)(17)).',
     publisher: 'IRS',
     url: 'https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500',
   },
