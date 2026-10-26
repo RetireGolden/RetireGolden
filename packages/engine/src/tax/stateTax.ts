@@ -2255,16 +2255,24 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
       // out, and the slice takes it after the ratio on its own rows.
       const oregonCreditAfterRatio = method.method === 'incomePercentage' && params.code === 'OR' && params.oregonRetirementIncomeCredit !== undefined
       let asResident: ReturnType<typeof priceState> | undefined
-      const fullYear = () => (asResident ??= priceState(params, fullInput, { ...opts, localRatePct }, { oregonRetirementCredit: oregonCreditAfterRatio }))
+      // A part-year resident's QCD has no state adjustment here: the leaf
+      // marks it incomplete and applies none (stateQcdHsa.ts). The full-year
+      // proxy takes the same mark, so an attested full-year residency cannot
+      // move the tax or the ratio denominator the slice is priced against.
+      const partYearQcdFacts = opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }
+      const fullYear = () => (asResident ??= priceState(params, fullInput, {
+        ...opts,
+        localRatePct,
+        qcdEvents: opts.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
+        ...partYearQcdFacts,
+      }, { oregonRetirementCredit: oregonCreditAfterRatio }))
       const sliceOpts = (deduction: number, exemption: number, sliceCapShare = capShare): ComputeStateTaxOptions => ({
         ...opts,
         localRatePct,
         retirementDistributions: slice.rows,
         stateIncomeComponents: undefined,
-        // A part-year resident's QCD has no state adjustment here: the leaf
-        // marks it incomplete and applies none (stateQcdHsa.ts).
         qcdEvents: slice.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
-        ...(opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }),
+        ...partYearQcdFacts,
         taxableSocialSecurityOverride: slice.taxableSocialSecurity,
         federalOverride: federal(),
         partYearSlice: {

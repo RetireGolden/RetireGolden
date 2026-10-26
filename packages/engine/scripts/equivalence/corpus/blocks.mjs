@@ -4906,6 +4906,37 @@ function blockAF() {
     ))
   }
 
+  {
+    // A plan that marks its start year's QCD collection unknown withholds the
+    // year's state QCD events, so the annual context snapshot and every
+    // candidate tax input take the `{ stateQcdEventFacts: undefined }` arm.
+    // The annual QCD is executed anyway, and a need-based traditional IRA
+    // draw gives every candidate probe income.
+    const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 80, state: 'NJ' })
+    plan.id = 'af1-qcd-withheld-year'
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      qualified('traditional', 'af1-qcd-ira', 200_000, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 20_000
+    plan.strategies.qcdAnnual = 5_000
+    plan.stateTaxFacts = {
+      ...plan.stateTaxFacts,
+      annualEvidenceCompleteness: [{
+        taxYear: START_YEAR,
+        state: 'NJ',
+        qcd: 'unknown',
+        provenance: { source: 'equivalence corpus', asOf: '2026-10-26' },
+      }],
+    }
+    out.push(member(
+      'af1-qcdWithheldYear',
+      'AF: a year whose QCD collection the plan marks unknown carries an explicitly undefined state QCD event list into the annual context and every candidate tax input',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
   return out
 }
 
