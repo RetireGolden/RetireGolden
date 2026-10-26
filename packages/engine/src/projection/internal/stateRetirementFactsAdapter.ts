@@ -255,12 +255,8 @@ export function householdFactsForYear(
 
 /**
  * Per-account HSA facts for a tax year and residence state. Missing Plan
- * evidence for that state, with no runtime rows supplied, is undefined
- * (unavailable) unless the plan certifies that HSA year complete, in which
- * case the result is an empty list. An empty runtime list is not a complete
- * year until persisted evidence for that state and year is read; when that
- * evidence is also empty, the empty list remains an explicit empty year.
- * The funding caller passes `federalHsaDeduction: 0` when it did not model a
+ * evidence for that state -> undefined (unavailable). An empty runtime list is
+ * an explicit empty year. The funding caller passes `federalHsaDeduction: 0` when it did not model a
  * contribution. That default does not replace an asserted deduction. A
  * present non-zero deduction does. Every other present runtime amount,
  * including a measured zero from a characterized withdrawal, replaces
@@ -283,20 +279,13 @@ export function hsaAccountYearFactsForYear(
   residenceState?: string,
   projected?: readonly ProjectedStateHsaAccountYearFacts[],
 ): readonly StateHsaAccountYearFactsInput[] | undefined {
+  if (projected !== undefined && projected.length === 0) return []
   const stateCode = residenceState?.toUpperCase()
   const persisted = plan.stateTaxFacts.hsaYearEvidence.filter((row) => {
     if (row.taxYear !== year) return false
     if (stateCode === undefined) return true
     return row.state.toUpperCase() === stateCode
   })
-  // Read persisted evidence before an empty runtime list can count as a
-  // complete year. With no evidence, a passed empty list is still the
-  // explicit empty year. A missing runtime argument stays unavailable unless
-  // the plan certifies this HSA year complete, which returns [].
-  if ((projected === undefined || projected.length === 0) && persisted.length === 0) {
-    if (projected !== undefined) return []
-    return evidenceComplete(plan, year, stateCode, 'hsa') ? [] : undefined
-  }
   const rows: Array<Partial<StateHsaYearEvidence> & Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'>> = [...persisted]
   for (const actual of projected ?? []) {
     const index = rows.findIndex((row) => row.accountId === actual.accountId && row.ownerPersonId === actual.ownerPersonId)
@@ -316,6 +305,7 @@ export function hsaAccountYearFactsForYear(
     if (index < 0) rows.push(merged)
     else rows[index] = merged
   }
+  if (rows.length === 0) return evidenceComplete(plan, year, stateCode, 'hsa') ? [] : undefined
   return rows.map((row) => {
     const fact = {
       ...row,

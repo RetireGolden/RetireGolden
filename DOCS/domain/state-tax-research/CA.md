@@ -85,7 +85,7 @@ California reverses the federal HSA deduction and excluded employer contribution
 
 Registered as `ca-hsa-state-basis-nonconformity`. Authority: [FTB 2025 Schedule CA, HSA earnings](https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html), [California R&TC 17201(d)](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=17201.&lawCode=RTC).
 
-The addition uses asserted `hsaYearEvidence` for that account, owner, year, and state. The funding caller passes a federal HSA deduction of zero when it did not model a contribution; that default does not replace an asserted deduction. A positive modeled contribution does. A characterized withdrawal's amounts, including a genuine zero in a category the withdrawal did not use, replace evidence for those categories. An empty runtime account list does not discard asserted rows for that year and state.
+The addition uses asserted `hsaYearEvidence` for that account, owner, year, and state. The funding caller passes a federal HSA deduction of zero when it did not model a contribution; that default does not replace an asserted deduction. A positive modeled contribution does. A characterized withdrawal's amounts, including a genuine zero in a category the withdrawal did not use, replace evidence for those categories.
 
 ## Part-year residents (2026-10-08)
 
