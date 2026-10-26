@@ -9,7 +9,7 @@ import { describeRule } from '../rules/describeRule.js'
 import { createEmptyPlan } from '../model/plan.js'
 import { stateIraBasisYearEvidenceSchema } from '../model/stateTaxPlanFacts.js'
 import type { TaxYearInput } from '../projection/types.js'
-import { njIraLedgerBalancesNetOfGross, njIraOwnerPoolsForYear, njIraProjectedDistributionTotal } from '../projection/internal/stateRetirementFactsAdapter.js'
+import { njIraOwnerPoolsForYear } from '../projection/internal/stateRetirementFactsAdapter.js'
 import { computeStateTaxYearResult, createStateTaxCalculator, type StateTaxYearOptions } from './stateTax.js'
 import { knownMoney, unknownMoney, type StateRetirementDistributionFact, type StateHouseholdTaxFacts, type StateHsaAccountYearFacts, type StateQcdEventFacts } from './stateRetirementFacts.js'
 
@@ -379,32 +379,6 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     expect(result.status).toBe('incomplete')
     expect(result.warnings.map((warning) => warning.code)).toContain('nj-qcd-basis-unknown')
     expect(result.taxableIncome).toBe(annual('NJ').taxableIncome)
-  })
-  it('nets a Roth conversion out of the probe balance and still does not price the QCD', () => {
-    // A Roth conversion is counted once on Worksheet C line 2, which flows to
-    // line 3, and not also in the line 1 December 31 value. OWL infers that
-    // placement from NJ GIT-1 & 2 (January 2026), under which only earnings are
-    // taxable on a conversion and the excludable portion goes on line 20b, and
-    // from the 2025 NJ-1040 instructions, where line 20b is Worksheet C line 8
-    // and line 8 is line 2 minus line 7. That placement is the inference, not
-    // literal text. These helpers pin it; the projection does not call them.
-    // Netting $50,000 from the $290,000 pre-debit balance leaves $240,000, and
-    // line 2 is the $10,000 QCD plus the $50,000 conversion. No basis evidence
-    // means no pool, so the QCD stays unpriced.
-    const plan = createEmptyPlan({ newId: () => 'x', now: () => new Date('2026-01-01T00:00:00.000Z') })
-    const balances = njIraLedgerBalancesNetOfGross(
-      [{ account: { id: 'ira' }, balance: 290_000 }],
-      [{ accountId: 'ira', grossDistribution: 50_000 }],
-    )
-    expect(balances[0]?.balance).toBe(240_000)
-    expect(njIraProjectedDistributionTotal('owner',
-      [{ eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', grossIraDistribution: 10_000 }],
-      [
-        { eventId: 'qcd', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 10_000 },
-        { eventId: 'conversion', accountId: 'ira', ownerPersonId: 'owner', sourceKind: 'ira', accountTaxTreatment: 'traditional', grossDistribution: 50_000 },
-      ],
-    )).toBe(60_000)
-    expect(njIraOwnerPoolsForYear(plan, 2027)).toBeUndefined()
   })
 })
 describe('QCD classification controls shared by both original findings', () => {

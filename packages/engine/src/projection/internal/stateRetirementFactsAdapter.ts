@@ -497,44 +497,8 @@ export function njIraOwnerPoolsForYear(
   return evidencePools
 }
 
-/**
- * Line 2 arithmetic for one owner: traditional IRA rows other than the QCD,
- * plus each QCD gross once, a Roth conversion included. OWL's inference puts
- * that amount on Worksheet C line 2, flowing to line 3. The projection does
- * not call this helper.
- */
-export function njIraProjectedDistributionTotal(
-  ownerPersonId: string,
-  qcdEvents: readonly { readonly eventId: string; readonly accountId: string; readonly ownerPersonId: string; readonly grossIraDistribution: number }[],
-  iraDistributions: readonly { readonly eventId?: string; readonly accountId?: string; readonly ownerPersonId: string; readonly sourceKind: string; readonly accountTaxTreatment?: string; readonly grossDistribution?: number }[],
-): number {
-  const qcd = qcdEvents.filter((event) => event.ownerPersonId === ownerPersonId)
-  const unmatched = iraDistributions.filter((row) =>
-    row.ownerPersonId === ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth' &&
-    !qcd.some((event) => event.eventId === row.eventId && event.accountId === row.accountId))
-  return unmatched.reduce((sum, row) => sum + Math.max(0, row.grossDistribution ?? 0), 0) +
-    qcd.reduce((sum, event) => sum + Math.max(0, event.grossIraDistribution), 0)
-}
-
 function isNjState(state: string | undefined): boolean {
   return state?.toUpperCase() === 'NJ'
-}
-
-/**
- * Line 1 arithmetic: December 31 balances with a Roth conversion's gross
- * removed, so those dollars are not also on line 1. The projection does not
- * call this helper. A year with no basis evidence still has no priced pool.
- * The probe balance this helper receives is unchanged.
- */
-export function njIraLedgerBalancesNetOfGross<T extends { readonly account: { readonly id: string }; readonly balance: number }>(
-  balances: readonly T[],
-  distributions: readonly { readonly accountId?: string; readonly grossDistribution?: number }[],
-): T[] {
-  return balances.map((state) => {
-    const gross = distributions.reduce((sum, row) =>
-      row.accountId === state.account.id ? sum + Math.max(0, row.grossDistribution ?? 0) : sum, 0)
-    return gross === 0 ? state : { ...state, balance: state.balance - gross }
-  })
 }
 
 /** @deprecated Prefer buildStateQcdEventFacts + pack-authoritative policy. */
