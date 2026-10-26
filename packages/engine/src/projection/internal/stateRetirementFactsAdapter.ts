@@ -255,10 +255,14 @@ export function householdFactsForYear(
 
 /**
  * Per-account HSA facts for a tax year and residence state. Missing Plan
- * evidence for that state -> undefined (unavailable). Present rows keep omitted
- * numeric members as `{ known: false }` rather than inventing known zero. Basis
- * asserted for another state is never reused. No New Jersey cash-withdrawal
- * income category.
+ * evidence for that state -> undefined (unavailable). An empty runtime list is
+ * an explicit empty year. The funding caller passes `federalHsaDeduction: 0` when it did not model a
+ * contribution. That default does not replace an asserted deduction. A
+ * present non-zero deduction does. Every other present runtime amount,
+ * including a measured zero from a characterized withdrawal, replaces
+ * evidence. Omitted runtime members stay evidence-backed or `{ known: false }`.
+ * Basis asserted for another state is never reused. No New Jersey
+ * cash-withdrawal income category.
  */
 export type ProjectedStateHsaAccountYearFacts = Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'> &
   Partial<Pick<StateHsaYearEvidence,
@@ -285,10 +289,18 @@ export function hsaAccountYearFactsForYear(
   const rows: Array<Partial<StateHsaYearEvidence> & Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'>> = [...persisted]
   for (const actual of projected ?? []) {
     const index = rows.findIndex((row) => row.accountId === actual.accountId && row.ownerPersonId === actual.ownerPersonId)
-    // Only present runtime fields replace evidence. An omitted runtime category
-    // remains evidence-backed or unknown, never fabricated as zero.
-    const present = Object.fromEntries(Object.entries(actual).filter(([, value]) => value !== undefined))
-    const merged = { ...(index < 0 ? {} : rows[index]), ...present,
+    const evidence = index < 0 ? undefined : rows[index]
+    // Present runtime fields replace evidence, including a measured zero.
+    // federalHsaDeduction is the exception: the funding caller passes 0 for
+    // every account whose contribution was not modeled, and that default is
+    // not a finding that an asserted federal deduction is zero. An omitted
+    // runtime category stays evidence-backed or unknown, never fabricated.
+    const present = Object.fromEntries(Object.entries(actual).filter(([key, value]) => {
+      if (value === undefined) return false
+      if (key !== 'federalHsaDeduction' || value !== 0 || evidence === undefined) return true
+      return typeof evidence.federalHsaDeduction !== 'number'
+    }))
+    const merged = { ...(evidence ?? {}), ...present,
       accountId: actual.accountId, ownerPersonId: actual.ownerPersonId }
     if (index < 0) rows.push(merged)
     else rows[index] = merged
