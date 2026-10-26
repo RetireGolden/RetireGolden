@@ -101,6 +101,10 @@ export const year2026: ParameterPack = {
     hsaFamily: hsaLimitYear2026.family,
     hsaCatchUp55: 1_000,
     section415cLimit: 72_000,
+    // Notice 2025-67: the annual compensation limitation under sections
+    // 401(a)(17), 404(l), 408(k)(3)(C), and 408(k)(6)(D)(ii) is increased from
+    // 350,000 to 360,000.
+    section401a17CompensationLimit: 360_000,
   },
 
   rmd: {
