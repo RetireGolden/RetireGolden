@@ -2255,16 +2255,24 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
       // out, and the slice takes it after the ratio on its own rows.
       const oregonCreditAfterRatio = method.method === 'incomePercentage' && params.code === 'OR' && params.oregonRetirementIncomeCredit !== undefined
       let asResident: ReturnType<typeof priceState> | undefined
-      const fullYear = () => (asResident ??= priceState(params, fullInput, { ...opts, localRatePct }, { oregonRetirementCredit: oregonCreditAfterRatio }))
+      // A part-year resident's QCD has no state adjustment here: the leaf
+      // marks it incomplete and applies none (stateQcdHsa.ts). The full-year
+      // proxy takes the same mark, so an attested full-year residency cannot
+      // move the tax or the ratio denominator the slice is priced against.
+      const partYearQcdFacts = opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }
+      const fullYear = () => (asResident ??= priceState(params, fullInput, {
+        ...opts,
+        localRatePct,
+        qcdEvents: opts.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
+        ...partYearQcdFacts,
+      }, { oregonRetirementCredit: oregonCreditAfterRatio }))
       const sliceOpts = (deduction: number, exemption: number, sliceCapShare = capShare): ComputeStateTaxOptions => ({
         ...opts,
         localRatePct,
         retirementDistributions: slice.rows,
         stateIncomeComponents: undefined,
-        // A part-year resident's QCD has no state adjustment here: the leaf
-        // marks it incomplete and applies none (stateQcdHsa.ts).
         qcdEvents: slice.qcdEvents?.map((event) => ({ ...event, residency: 'partYear' as const })),
-        ...(opts.qcdFacts === undefined ? {} : { qcdFacts: { ...opts.qcdFacts, residency: 'partYear' as const } }),
+        ...partYearQcdFacts,
         taxableSocialSecurityOverride: slice.taxableSocialSecurity,
         federalOverride: federal(),
         partYearSlice: {
@@ -2400,6 +2408,25 @@ export function createStateTaxCalculator(opts: StateTaxYearOptions = {}): TaxCal
   }
 }
 
+/**
+ * An own `stateQcdEventFacts` property is the year's collection. An explicit
+ * undefined withholds it, so a calculator-level `qcdEvents` list cannot fill
+ * a year the projection marked unknown. Callers that omit the property keep
+ * the legacy options fallback.
+ */
+function annualQcdEventsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): StateTaxYearOptions['qcdEvents'] {
+  if (Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts')) {
+    return input.stateQcdEventFacts?.map((event) => ({ ...event, directTransfer: event.directTransfer === true }))
+  }
+  if (input.stateQcdYearFacts === undefined) return opts.qcdEvents
+  return input.stateQcdYearFacts.map((event, index) => ({
+    ...event,
+    eventId: `legacy-qcd-${index}`,
+    accountId: `legacy-qcd-${index}`,
+    directTransfer: false,
+  }))
+}
+
 function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): StateTaxYearOptions {
   return {
     ...opts,
@@ -2407,8 +2434,10 @@ function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): 
     householdFacts: input.stateHouseholdFacts ?? opts.householdFacts,
     hsaAccounts: input.stateHsaAccountYearFacts ?? opts.hsaAccounts,
     hsaFacts: input.stateHsaYearFacts ?? opts.hsaFacts,
-    qcdEvents: input.stateQcdEventFacts?.map((event) => ({ ...event, directTransfer: event.directTransfer === true })) ?? (input.stateQcdYearFacts === undefined ? opts.qcdEvents : input.stateQcdYearFacts.map((event, index) => ({ ...event, eventId: `legacy-qcd-${index}`, accountId: `legacy-qcd-${index}`, directTransfer: false }))),
-    qcdFacts: opts.qcdFacts,
+    qcdEvents: annualQcdEventsFromInput(input, opts),
+    // An input that owns stateQcdEventFacts settles the year's QCD collection,
+    // an undefined value included, so the legacy singular facts never fill it.
+    qcdFacts: Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts') ? undefined : opts.qcdFacts,
     njIraOwnerPools: input.stateNjIraOwnerPools?.map((pool) => {
       const ira = input.stateRetirementDistributions?.filter((row) => row.ownerPersonId === pool.ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth')
       const qcd = input.stateQcdEventFacts?.filter((row) => row.ownerPersonId === pool.ownerPersonId)

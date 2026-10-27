@@ -1307,7 +1307,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -3806,7 +3806,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2502
+              "line": 2531
             }
           ]
         }
@@ -4231,7 +4231,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 53
+              "line": 54
             }
           ]
         },
