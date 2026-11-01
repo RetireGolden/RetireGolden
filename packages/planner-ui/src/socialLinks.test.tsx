@@ -17,7 +17,7 @@ describe('SOCIAL_LINKS', () => {
       { label: 'YouTube', href: 'https://www.youtube.com/@RetireGolden' },
       { label: 'X', href: 'https://x.com/RetireGoldenLLC' },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/company/retiregolden/' },
-      { label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61591546122081' },
+      { label: 'Facebook', href: 'https://www.facebook.com/retiregolden' },
       { label: 'Reddit', href: 'https://www.reddit.com/r/retiregolden' },
     ])
   })
