@@ -2141,6 +2141,17 @@ html:has(.kpi-bar) {
   list-style: none;
 }
 
+/* Same ~44px coarse-pointer floor the header links use. Desktop stays a text row. */
+@media (pointer: coarse) {
+  .app-footer-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
 /* --- help tooltips --------------------------------------------------------- */
 
 /* Inline formatting, not flex: the ⓘ follows the label's last word, so a

@@ -3,7 +3,7 @@ import { SOCIAL_LINKS } from './socialLinks.ts'
 /** Quiet footer row of the free app's outbound profiles. */
 export function SocialLinks() {
   return (
-    <nav className="app-footer-social small" aria-label="Social">
+    <nav className="app-footer-social small" aria-label="Social media">
       <ul>
         {SOCIAL_LINKS.map((link) => (
           <li key={link.href}>

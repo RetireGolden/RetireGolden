@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
 
+// @ts-expect-error -- node builtins in a jsdom test; the app tsconfig omits node types
+import { readFileSync } from 'node:fs'
+// @ts-expect-error -- node builtins in a jsdom test; the app tsconfig omits node types
+import { join } from 'node:path'
+
 import { App } from './App.tsx'
 import { SOCIAL_LINKS } from './socialLinks.ts'
 
@@ -25,8 +30,9 @@ describe('SOCIAL_LINKS', () => {
     )
     const host = document.createElement('div')
     host.innerHTML = html
-    const nav = host.querySelector('footer.app-footer nav.app-footer-social')
-    expect(nav?.getAttribute('aria-label')).toBe('Social')
+    const footer = host.querySelector('footer.app-footer')
+    const nav = footer?.querySelector('nav.app-footer-social')
+    expect(nav?.getAttribute('aria-label')).toBe('Social media')
     const links = [...(nav?.querySelectorAll('a') ?? [])]
     expect(
       links.map((link) => ({
@@ -44,6 +50,20 @@ describe('SOCIAL_LINKS', () => {
         rel: 'noopener noreferrer',
         label: `${link.label} (opens in a new tab)`,
       })),
+    )
+    const outbound = [...(footer?.querySelectorAll('a') ?? [])]
+      .map((link) => link.getAttribute('href'))
+      .filter((href) => href?.startsWith('https://') || href?.startsWith('http://'))
+    expect(outbound).toEqual(SOCIAL_LINKS.map((link) => link.href))
+  })
+
+  it('gives coarse pointers a 44px social-link target', () => {
+    // jsdom's import.meta.url is not a file: URL. The package cwd is the sheet's home.
+    const cwd = (globalThis as unknown as { process: { cwd: () => string } }).process.cwd()
+    const css = readFileSync(join(cwd, 'src/planner/planner.css'), 'utf8')
+    const coarse = css.slice(css.indexOf('.app-footer-social ul'))
+    expect(coarse).toMatch(
+      /@media \(pointer: coarse\) \{\s*\.app-footer-social a \{\s*display:\s*inline-flex;[\s\S]*?min-width:\s*2\.75rem;\s*min-height:\s*2\.75rem;/,
     )
   })
 })
