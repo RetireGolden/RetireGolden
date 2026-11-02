@@ -70,7 +70,7 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2150
+              "line": 2158
             }
           ]
         }
@@ -239,7 +239,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -318,11 +318,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -497,7 +497,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -587,11 +587,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -665,7 +665,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -764,11 +764,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -866,7 +866,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -940,7 +940,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -1053,7 +1053,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 600
+              "line": 606
             }
           ]
         }
@@ -1167,7 +1167,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -1255,7 +1255,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -1333,7 +1333,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -1408,11 +1408,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -1517,7 +1517,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             }
           ]
         }
@@ -1649,7 +1649,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -1746,7 +1746,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 600
+              "line": 606
             }
           ]
         }
@@ -1827,11 +1827,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2150
+              "line": 2158
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -2124,7 +2124,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -2192,7 +2192,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -2313,7 +2313,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 600
+              "line": 606
             }
           ]
         }
@@ -2401,7 +2401,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -2519,11 +2519,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -2593,11 +2593,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -2780,11 +2780,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -2914,7 +2914,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 600
+              "line": 606
             }
           ]
         }
@@ -2992,15 +2992,15 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2150
+              "line": 2158
             },
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -3070,15 +3070,15 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             },
             {
               "name": "virginiaEnumeratedEmployerPlan",
-              "line": 2459
+              "line": 2470
             }
           ]
         },
@@ -3156,11 +3156,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         },
@@ -3234,11 +3234,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         },
@@ -3335,11 +3335,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2150
+              "line": 2158
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             },
             {
               "name": "virginiaAgedTaxpayerCount",
@@ -3460,7 +3460,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             },
             {
               "name": "virginiaAdjustedFederalAgi",
@@ -3740,7 +3740,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -3833,7 +3833,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 600
+              "line": 606
             }
           ]
         }
@@ -3911,11 +3911,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -3989,11 +3989,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -4071,11 +4071,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -4153,11 +4153,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -4231,11 +4231,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
@@ -4299,7 +4299,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1651
+              "line": 1659
             }
           ]
         }
@@ -4473,11 +4473,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1673
+              "line": 1681
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1227
+              "line": 1233
             }
           ]
         }
