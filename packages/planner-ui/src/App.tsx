@@ -11,6 +11,7 @@ import type { ReportBranding } from './report/reportHtml'
 import { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider'
 import { routeTitleOf } from './routeTitles'
 import { usePlannerWorksheetNavigation } from './planner/usePlannerWorksheetNavigation'
+import { SocialLinks } from './SocialLinks.tsx'
 import './planner/planner.css'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -311,6 +312,7 @@ export function App({
                 Educational only. Not tax, legal, financial, or medical advice. All data stays on this device.{' '}
                 <NavLink to="/disclaimer">Full disclaimer</NavLink>
               </span>
+              <SocialLinks />
             </footer>
           </div>
         </ReportBrandingContext.Provider>

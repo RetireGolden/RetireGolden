@@ -150,7 +150,10 @@ function qcdEventAdjustment(args: {
 }): { adjustment: StateLeafAdjustment; ownerCapConsumed: number } {
   const { event, policy } = args
 
-  if (event.splitInterest) {
+  // IRC 408(d)(8)(F) split-interest, and any kind other than a direct QCD,
+  // does not inherit direct-QCD conformity. The kind is read here; a runtime
+  // splitInterest: false default must not hide an attested split-interest row.
+  if (event.transactionKind === 'splitInterest' || event.splitInterest) {
     return {
       adjustment: incomplete(
         'state-qcd-split-interest-refused',
@@ -162,7 +165,7 @@ function qcdEventAdjustment(args: {
     }
   }
 
-  if (!event.directTransfer || event.directCharityTransfer <= 0) {
+  if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) {
     return {
       adjustment: incomplete(
         'state-qcd-direct-transfer-required',
@@ -282,16 +285,21 @@ export function stateDirectQcdCollectionAdjustment(args: {
     const pools = new Map((args.njPools ?? []).map((pool) => [pool.ownerPersonId, pool]))
     for (const [owner, events] of byOwner) {
       const pool = pools.get(owner)
+      // IRC 408(d)(8)(F) and the direct-transfer gate do not depend on
+      // Worksheet C basis. A missing pool must not hide those refusals.
+      for (const event of events) {
+        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
+        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
+        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
+      }
       if (!pool) {
         parts.push(incomplete('nj-qcd-basis-unknown', 'state-direct-qcd-conformity', 'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.', ['njIraOwnerPool', 'unrecoveredNjTaxedContributions']))
         continue
       }
-      const eligible = events.filter((event) => event.directTransfer && event.directCharityTransfer > 0 && !event.splitInterest && event.residency === 'fullYearResident')
-      for (const event of events) {
-        if (event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
-        else if (!event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
-        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
-      }
+      const directQcd = (event: StateQcdEventFacts) =>
+        event.transactionKind !== 'splitInterest' && event.transactionKind !== 'other' && event.transactionKind !== 'unknown' &&
+        event.directTransfer && event.directCharityTransfer > 0 && !event.splitInterest
+      const eligible = events.filter((event) => directQcd(event) && event.residency === 'fullYearResident')
       const totalCorresponding = eligible.reduce((sum, event) => sum + Math.max(0, event.directCharityTransfer), 0)
       const worksheet = newJerseyWorksheetCTaxableAmount({ pool, correspondingGrossDistributions: totalCorresponding })
       if (worksheet.warnings.length > 0 || worksheet.stateTaxableIraAmount === undefined || totalCorresponding === 0) {
