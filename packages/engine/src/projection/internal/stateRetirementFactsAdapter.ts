@@ -441,42 +441,77 @@ export function buildNjIraOwnerPoolFacts(input: {
 }
 
 /**
- * Derive NJ owner pools from Plan state IRA basis evidence for a tax year.
- * Unknown unrecovered basis stays `{ known: false }` — never zero-filled.
+ * Derive NJ owner pools for a tax year.
+ *
+ * Evidence rows win when any New Jersey row exists for the year. A missing
+ * unrecovered-basis field stays `{ known: false }` and is never zero-filled.
+ * An omitted exempt-obligation adjustment contributes none of that income; it
+ * does not drop an amount another IRA of the same owner asserted. A negative
+ * adjustment is passed through so Worksheet C rejects the pool.
+ *
+ * A year with no New Jersey basis evidence does not get a pool. QCD events
+ * on the tax input stay, so Worksheet C reports nj-qcd-basis-unknown and
+ * the transfer is not priced.
  */
 export function njIraOwnerPoolsForYear(
   plan: Readonly<Plan>,
   year: number,
 ): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
   const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter(
-    (row) => row.taxYear === year && row.state === 'NJ',
+    (row) => row.taxYear === year && isNjState(row.state),
   )
-  if (rows.length === 0) return evidenceComplete(plan, year, 'NJ', 'iraBasis') ? [] : undefined
+  const basisList = evidenceMark(plan, year, 'NJ', 'iraBasis')
+  if (rows.length === 0) {
+    if (basisList === 'complete') return []
+    return undefined
+  }
   const byOwner = new Map<string, typeof rows>()
   for (const row of rows) byOwner.set(row.ownerPersonId, [...(byOwner.get(row.ownerPersonId) ?? []), row])
-  return [...byOwner.entries()].map(([ownerPersonId, ownerRows]) => {
-    const complete = ownerRows.every((row) => row.yearEndAccountValue !== undefined &&
+  const evidencePools = [...byOwner.entries()].map(([ownerPersonId, ownerRows]) => {
+    const fieldsComplete = ownerRows.every((row) => row.yearEndAccountValue !== undefined &&
       row.distributionsDuringYear !== undefined && row.postYearContributionsThroughFilingDeadline !== undefined &&
       row.unrecoveredStateBasis !== undefined && row.annualDistributionsComplete === true) &&
       new Set(ownerRows.map((row) => row.accountId ?? '__ownerPool')).size === ownerRows.length &&
       !(ownerRows.length > 1 && ownerRows.some((row) => row.accountId === undefined))
+    const adjustments = ownerRows.flatMap((row) =>
+      row.exemptObligationAdjustment === undefined ? [] : [row.exemptObligationAdjustment])
+    const invalidAdjustment = adjustments.find((value) => !Number.isFinite(value) || value < 0)
+    const adjustmentInvalid = invalidAdjustment !== undefined
+    const assertedLiquidation = ownerRows.flatMap((row) =>
+      row.fullLiquidation === undefined ? [] : [row.fullLiquidation])
+    const liquidationConflict = assertedLiquidation.includes(true) && assertedLiquidation.includes(false)
     // The leaf's denominator is numeric. A missing component poisons the basis
     // evidence, so placeholders cannot be interpreted as a valid zero ratio.
     const december31IraValue = ownerRows.reduce((sum, row) => sum + (row.yearEndAccountValue ?? 0) +
       (row.postYearContributionsThroughFilingDeadline ?? 0), 0)
     const allAnnualDistributions = ownerRows.reduce((sum, row) => sum + (row.distributionsDuringYear ?? 0), 0)
+    const complete = fieldsComplete && !liquidationConflict
+    const fullLiquidation = liquidationConflict
+      ? false
+      : assertedLiquidation.length > 0
+        ? assertedLiquidation.every((value) => value)
+        : fieldsComplete && december31IraValue === 0 && allAnnualDistributions > 0
     return {
       ownerPersonId, december31IraValue, allAnnualDistributions,
-      unrecoveredNjTaxedContributions: complete
+      unrecoveredNjTaxedContributions: fieldsComplete
         ? knownAmount(ownerRows.reduce((sum, row) => sum + (row.unrecoveredStateBasis ?? 0), 0))
         : unknownAmount(),
-      ...(ownerRows.every((row) => row.exemptObligationAdjustment !== undefined)
-        ? { exemptObligationIncome: ownerRows.reduce((sum, row) => sum + (row.exemptObligationAdjustment ?? 0), 0) } : {}),
-      fullLiquidation: complete && december31IraValue === 0 && allAnnualDistributions > 0,
+      ...(adjustments.length === 0 || invalidAdjustment === undefined ? {} : {
+        exemptObligationIncome: invalidAdjustment,
+      }),
+      ...(adjustments.length === 0 || adjustmentInvalid ? {} : {
+        exemptObligationIncome: adjustments.reduce((sum, value) => sum + value, 0),
+      }),
+      fullLiquidation,
       accounts: ownerRows,
       annualInputsComplete: complete,
     }
   })
+  return evidencePools
+}
+
+function isNjState(state: string | undefined): boolean {
+  return state?.toUpperCase() === 'NJ'
 }
 
 /** @deprecated Prefer buildStateQcdEventFacts + pack-authoritative policy. */
@@ -509,10 +544,18 @@ export function buildStateQcdYearFacts(input: {
 }
 
 
+function evidenceMark(plan: Readonly<Plan>, year: number, state: string | undefined,
+  category: 'hsa' | 'qcd' | 'iraBasis'): 'complete' | 'unknown' | undefined {
+  if (state === undefined) return undefined
+  const row = plan.stateTaxFacts.annualEvidenceCompleteness?.find((candidate) =>
+    candidate.taxYear === year && candidate.state.toUpperCase() === state.toUpperCase())
+  const mark = row?.[category]
+  return mark === 'complete' || mark === 'unknown' ? mark : undefined
+}
+
 function evidenceComplete(plan: Readonly<Plan>, year: number, state: string | undefined,
   category: 'hsa' | 'qcd' | 'iraBasis'): boolean {
-  return state !== undefined && plan.stateTaxFacts.annualEvidenceCompleteness?.some((row) =>
-    row.taxYear === year && row.state.toUpperCase() === state.toUpperCase() && row[category] === 'complete') === true
+  return evidenceMark(plan, year, state, category) === 'complete'
 }
 
 function mapEligibility(eligibility: PensionStateEligibility | undefined) {

@@ -71,7 +71,19 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   if (pool.annualInputsComplete === false) return incomplete('nj-ira-annual-inputs-incomplete', 'state-direct-qcd-conformity', 'New Jersey annual IRA pool does not reconcile with actual annual distributions.', ['allAnnualDistributions', 'annualInputsComplete'])
   const dec31 = pool.december31IraValue
   const allDist = pool.allAnnualDistributions
-  const exempt = Math.max(0, pool.exemptObligationIncome ?? 0)
+  // GIT-1 & 2 Worksheet C removes exempt-obligation earnings from the taxable
+  // pool. A missing amount is no such earnings. A negative amount is not a
+  // worksheet input and must not be clamped to zero.
+  if (pool.exemptObligationIncome !== undefined &&
+    (!Number.isFinite(pool.exemptObligationIncome) || pool.exemptObligationIncome < 0)) {
+    return incomplete(
+      'nj-qcd-pool-invalid',
+      'state-direct-qcd-conformity',
+      'New Jersey IRA Worksheet C pool rejected: exempt-obligation income must be finite and nonnegative.',
+      ['exemptObligationIncome'],
+    )
+  }
+  const exempt = pool.exemptObligationIncome ?? 0
 
   if (!Number.isFinite(dec31) || !Number.isFinite(allDist) || dec31 < 0 || allDist < 0) {
     return incomplete(
