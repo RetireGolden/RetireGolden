@@ -223,8 +223,12 @@
  *   1.401(a)(9)-3(d) commencement year cannot be settled (no ownerBirthYear,
  *   or a born-1959 owner's ambiguous applicable-age attain year). Those
  *   years then fall onto the legacy path with the needs-review refusal on
- *   their evidence, and owner rules apply from treatAsOwnElectionYear
- *   (simulate.inheritedRegimeExecution.test.ts, E10). That fallback is
+ *   their evidence, and owner rules apply from the year the election takes
+ *   effect. The legacy year-ten sweep reaches such an account only if it is
+ *   still on the legacy path in the deadline year; in
+ *   simulate.inheritedRegimeExecution.test.ts E10 the election takes effect
+ *   in that year (2030), so it carries no inherited distribution and an
+ *   owner RMD instead (review of PR #834, r5-1). That fallback is
  *   always a before-RBD death, so the greater-of owner arm, which governs
  *   only on or after the RBD, has no role in it. Applying either rule on the
  *   legacy path would mean inventing a beneficiary category or a
@@ -307,7 +311,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-401-a-17-plan-compensation-cap': { kind: 'needs-fact', missingInput: 'which employer pays each wage, so a workplace plan\'s match is measured on that employer\'s pay alone' },
   'irc-401-a-9-C-i-II-still-working-exception': { kind: 'needs-fact', missingInput: 'still-employed-by-sponsor and five-percent-owner status per employer plan and year' },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': { kind: 'fix' },
-  'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'convention', reason: "an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that are missing or conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; a surviving spouse who later treats the account as their own also keeps it for the years before that choice when the owner died before the required beginning date (always so for a Roth IRA) and the year the spouse's yearly amounts would start cannot be set from the owner's birth year, because it is missing or, for an owner born in 1959, the age at which the owner's own distributions would have begun is unsettled, rather than guess that year; once complete details for a case the planner schedules are entered, an eligible heir takes yearly amounts over their life expectancy by default, while a minor child's account is emptied within ten years of turning 21, an elected ten-year schedule keeps its deadline, and a surviving spouse who treats the account as their own follows the owner rules" },
+  'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'convention', reason: "an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that are missing or conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; a surviving spouse who later treats the account as their own also keeps it for the years before that choice when the owner died before the required beginning date (always so for a Roth IRA) and the year the spouse's yearly amounts would start cannot be set from the owner's birth year, because it is missing or, for an owner born in 1959, the age at which the owner's own distributions would have begun is unsettled, rather than guess that year, though an account that has become the spouse's own by the tenth year is not emptied as an inherited account but follows the owner rules; once complete details for a case the planner schedules are entered, an eligible heir takes yearly amounts over their life expectancy by default, while a minor child's account is emptied within ten years of turning 21, an elected ten-year schedule keeps its deadline, and a surviving spouse who treats the account as their own follows the owner rules" },
   'irc-401-c-2-earned-income-not-modeled': { kind: 'needs-fact', missingInput: 'annual net self-employment earnings eligible as section 219 compensation' },
   'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': { kind: 'needs-fact', missingInput: 'eligible-rollover-distribution and plan-permission facts for the pension offer' },
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': { kind: 'fix' },

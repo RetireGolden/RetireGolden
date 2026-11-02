@@ -167,8 +167,10 @@
   after a before-RBD death (always so for a Roth): its pre-election years are scheduled from a synthetic S0,
   and when the Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or a
   born-1959 owner's ambiguous applicable-age year) those years take the legacy schedule with a needs-review
-  refusal on their evidence, and owner rules apply from the election year. The engine does not guess that
-  start year, and the owner arm has no role in a before-RBD death. **Fail closed:** death before 2020; an initial successor beneficiary at
+  refusal on their evidence, and owner rules apply from the year the election takes effect. The legacy
+  year-ten sweep reaches such an account only if it is still on the legacy path in the deadline year; an
+  election effective by then leaves that year with an owner RMD and no inherited distribution (simulate
+  test E10). The engine does not guess that start year, and the owner arm has no role in a before-RBD death. **Fail closed:** death before 2020; an initial successor beneficiary at
   classification (matrix X2); an eligible designated beneficiary's in-horizon death
   (`irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock`); pre-RBD
   non-designated beneficiaries under the five-year rule

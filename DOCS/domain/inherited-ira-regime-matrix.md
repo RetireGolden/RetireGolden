@@ -226,8 +226,10 @@ same-decedent aggregation election's allocation mechanics beyond the explicit id
   a Roth). When that S0 refuses because the §1.401(a)(9)-3(d) commencement year cannot be settled
   (no `ownerBirthYear`, or a born-1959 owner's ambiguous applicable-age attain year), the
   pre-election years run through `inheritedForcedAmount` with the X5 needs-review refusal on their
-  evidence, and owner rules apply from `treatAsOwnElectionYear` (`simulate.inheritedRegimeExecution`
-  test E10). The status is accepted there; only the schedule's start year is unsettled, and the
+  evidence, and owner rules apply from the year the election takes effect (`simulate.inheritedRegimeExecution`
+  test E10). The year-ten sweep below reaches such an account only if it is still on the legacy path
+  in the deadline year; in E10 the election takes effect in that year, which carries an owner RMD and
+  no inherited distribution. The status is accepted there; only the schedule's start year is unsettled, and the
   engine does not guess it. The record stays `approximated` for that path only, approximation
   kind `convention` since the 2026-11-02 validation round, with `errorDirection` `bothDirections`:
   the year-ten sweep overstates that year's income, but for a before-RBD death the legacy path

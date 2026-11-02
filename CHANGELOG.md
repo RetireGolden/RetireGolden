@@ -19,8 +19,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   a death before the required beginning date: the spouse category is accepted, but when the
   Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or an
   owner born in 1959) the years before the election keep the ten-year schedule with a needs-review
-  refusal on their evidence, and owner rules apply from the election year, rather than guess that
-  start year. Each rule now carries a public convention rationale, and its fixture pins both the
+  refusal on their evidence, and owner rules apply from the year the election takes effect, rather
+  than guess that start year. Such an account is swept in the tenth year only if it is still
+  inherited then; an election effective by that year leaves an owner RMD and no inherited
+  distribution in it. Each rule now carries a public convention rationale, and its fixture pins both the
   legacy reading and the classified reading on the same hand worksheet.
   - `irc-401-a-9-E-ii-eligible-designated-beneficiary`'s error direction is corrected from
     overstates to both directions: for a death before the required beginning date the legacy path
@@ -33,6 +35,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     and shows the asserted category alone switches between the stretch and the year-ten sweep.
   - The fixture's decedent is now born in 1961 (died at 65, before the required beginning date);
     its prose had described a 75-year-old decedent, who would have been past it.
+  - Each record now carries the authority its prose relies on, reusing quotes already in the
+    registry: the greater-of record gains the IRC 401(a)(9)(E)(ii) quote (an heir older than the
+    owner is an eligible designated beneficiary), and the eligible-designated-beneficiary record
+    gains the Treas. Reg. 1.408-8(c)(3) quote (a spouse who elects is treated as the owner). Its
+    references to the spouse commencement deferral and the employer-plan ten-year terms now
+    describe the engine's behaviour and the matrix's scope instead of citing regulations the
+    record does not quote.
 
 - **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
   compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
