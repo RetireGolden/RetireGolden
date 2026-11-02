@@ -1015,7 +1015,7 @@ export function annualFundingApplicationAndClosePhase(
             return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
           })(),
           ...(facts.stateQcdEventFacts === undefined
-            ? {}
+            ? { stateQcdEventFacts: undefined }
             : { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({
                 ...event,
                 residency: event.residency === 'unknown' &&

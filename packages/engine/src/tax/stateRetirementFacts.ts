@@ -361,6 +361,12 @@ export interface StateQcdEventFacts {
   federalTaxableAmount: number
   federalBasisAllocated: number
   residency: 'fullYearResident' | 'fullYearNonresident' | 'partYear' | 'unknown'
+  /**
+   * Attested custodian shape. `splitInterest` is refused. `other` and
+   * `unknown` do not inherit direct-QCD treatment. Absent means the
+   * boolean flags alone decide.
+   */
+  transactionKind?: 'directQcd' | 'splitInterest' | 'other' | 'unknown'
   splitInterest: boolean
   /**
    * QCD amount already applied against this owner's adopted annual cap earlier

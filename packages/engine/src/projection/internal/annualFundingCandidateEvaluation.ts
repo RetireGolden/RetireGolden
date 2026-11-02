@@ -321,7 +321,7 @@ export function annualFundingCandidateEvaluation<
         ? {}
         : { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),
       ...(taxInputBase.stateQcdEventFacts === undefined
-        ? {}
+        ? { stateQcdEventFacts: undefined }
         : { stateQcdEventFacts: taxInputBase.stateQcdEventFacts }),
       ...(taxInputBase.stateQcdYearFacts === undefined
         ? {}
