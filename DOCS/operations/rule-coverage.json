@@ -846,13 +846,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1889,
+    "entryCount": 1892,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 152,
+      "ELISION-EXACT": 153,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1251,
+      "EXACT": 1253,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 470,
       "PUNCTUATION": 4,
@@ -3280,6 +3280,24 @@
           {
             "id": "irc-401-a-9-E-ii-eligible-designated-beneficiary",
             "citation": "Treas. Reg. 1.408-8(c)(3)"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-02",
+        "note": "Added by the review of RetireGolden #834, round 6 (authority sufficiency of the greater-of record). Three existing registry quotes were reused unchanged on treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, with the same citation, URL and quoted text: the Treas. Reg. 1.401(a)(9)-5(d)(1)(i) quote of irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window, and the Treas. Reg. 1.401(a)(9)-5(d)(3)(i) and (d)(3)(iii) quotes of treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator. Each was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of an entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach the sources from the session that made the change; a later networked run filtered to this record re-checks them like any other entry. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)"
+          },
+          {
+            "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(i)"
+          },
+          {
+            "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)"
           }
         ]
       }

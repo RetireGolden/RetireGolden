@@ -164,13 +164,13 @@
   legacy path. An inherited account without a beneficiary block, a pre-2020 death, or a classifier refusal
   carries no status the classifier accepts, so the engine neither infers EDB status nor applies an owner arm
   there. The one accepted status that reaches that path is a surviving spouse's treat-as-own transition (S2)
-  after a before-RBD death (always so for a Roth): its pre-election years are scheduled from a synthetic S0,
+  after a before-RBD death (the classifier treats every Roth as one): its pre-election years are scheduled from a synthetic S0,
   and when the Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or a
   born-1959 owner's ambiguous applicable-age year) those years take the legacy schedule with a needs-review
   refusal on their evidence, and owner rules apply from the year the election takes effect. The legacy
   year-ten sweep reaches such an account only if it is still on the legacy path in the deadline year; an
-  election effective by then leaves that year with an owner RMD and no inherited distribution (simulate
-  test E10). The engine does not guess that start year, and the owner arm has no role in a before-RBD death. **Fail closed:** death before 2020; an initial successor beneficiary at
+  election effective by then leaves that year with no inherited distribution (simulate test E10), and owner
+  rules require an RMD only when one is due (none for a Roth, and none before the spouse's applicable age). The engine does not guess that start year, and the owner arm has no role in a before-RBD death. **Fail closed:** death before 2020; an initial successor beneficiary at
   classification (matrix X2); an eligible designated beneficiary's in-horizon death
   (`irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock`); pre-RBD
   non-designated beneficiaries under the five-year rule
