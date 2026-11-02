@@ -321,7 +321,7 @@ export function annualFundingCandidateEvaluation<
         ? {}
         : { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),
       ...(taxInputBase.stateQcdEventFacts === undefined
-        ? {}
+        ? { stateQcdEventFacts: undefined }
         : { stateQcdEventFacts: taxInputBase.stateQcdEventFacts }),
       ...(taxInputBase.stateQcdYearFacts === undefined
         ? {}
@@ -342,9 +342,10 @@ export function annualFundingCandidateEvaluation<
           iraCharacter.taxableBySourceAccountId.get(account.sourceAccountId) ?? taken)
       }
       for (const row of withdrawalEffectsProbe.roth.inheritedRows) taxableByAccount.set(row.sourceAccountId, row.ordinaryIncome)
+      const addedStateWithdrawals = input.characterizeStateWithdrawals(taxableByAccount, withdrawalPlan.byAccountId)
       taxInput.stateRetirementDistributions = [
         ...(taxInput.stateRetirementDistributions ?? []),
-        ...input.characterizeStateWithdrawals(taxableByAccount, withdrawalPlan.byAccountId),
+        ...addedStateWithdrawals,
       ]
     }
     taxInput = input.taxCalculator.prepareInput?.(taxInput) ?? taxInput

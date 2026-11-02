@@ -1,8 +1,8 @@
 import { canonicalPeopleOrder } from '../../model/peopleOrder.js'
-import { ageOnDate, qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
+import { ageOnDate, qcdEmptyRuntimeIsUnobserved, qcdEventFactsForYear, repeatedQcdIdentities, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
 import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
-import type { Account, Person, Plan } from '../../model/plan.js'
+import { stateForYear, type Account, type Person, type Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
@@ -1762,6 +1762,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       ownerPersonId: entry.ownerId, grossIraDistribution: gross, directCharityTransfer: gross,
       federalExcludedAmount: excluded, federalBasisAllocated: basis,
       federalTaxableAmount: Math.max(0, gross - excluded - basis),
+      transactionKind: 'directQcd',
       residency: 'unknown', splitInterest: false, directTransfer: true,
     })
   }
@@ -1876,6 +1877,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         directCharityTransfer: entry.amount, federalExcludedAmount: exclusionTake,
         federalTaxableAmount: leftoverTake + taxableFromExcess,
         federalBasisAllocated: nonQualified - taxableFromExcess,
+        transactionKind: 'directQcd',
         residency: 'unknown', splitInterest: false, directTransfer: true,
       })
       qcdBeyondRmdCharacterByOccurrence?.push({
@@ -2501,8 +2503,31 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   for (const accountId of stateForcedGrossByAccount.keys()) if (!stateForcedTaxableByAccount.has(accountId)) {
     stateForcedTaxableByAccount.set(accountId, 0)
   }
+  const yearQcdEvidence = (plan.stateTaxFacts.qcdEventEvidence ?? []).filter((row) => row.taxYear === year)
+  const repeatedEvidence = repeatedQcdIdentities(yearQcdEvidence)
+  for (const row of repeatedEvidence) {
+    warnings.add(
+      `Custodian QCD evidence ${row.eventId} on account ${row.accountId} for ${year} is repeated, so this year's state QCD collection is incomplete.`,
+    )
+  }
+  for (const event of repeatedQcdIdentities(stateQcdEvents)) {
+    warnings.add(
+      `Executed QCD ${event.eventId} on account ${event.accountId} for ${year} is repeated, so this year's state QCD collection is incomplete.`,
+    )
+  }
+  for (const row of yearQcdEvidence) {
+    if (repeatedEvidence.some((duplicate) =>
+      duplicate.eventId === row.eventId && duplicate.accountId === row.accountId && duplicate.ownerPersonId === row.ownerPersonId)) continue
+    const executed = stateQcdEvents.some((event) =>
+      event.eventId === row.eventId && event.accountId === row.accountId && event.ownerPersonId === row.ownerPersonId)
+    if (executed) continue
+    warnings.add(
+      `Custodian QCD evidence ${row.eventId} on account ${row.accountId} for ${year} has no executed distribution, so this year's state QCD collection is incomplete.`,
+    )
+  }
+  const residenceState = stateForYear(plan.household, year)
   return {
-    stateQcdEventFacts: qcdEventFactsForYear(plan, year, stateQcdEvents),
+    stateQcdEventFacts: qcdEventFactsForYear(plan, year, qcdRuntimeEventsForFacts(plan, year, stateQcdEvents, residenceState), residenceState),
     stateRetirementDistributionFacts: [
       ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount, {
         taxableByAccount: stateNamedConversionTaxableByAccount,
@@ -2574,4 +2599,20 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     ownedRothAssumedBasisConsequentialByOwner,
     employerRothAssumedBasisConsequentialByAccount,
   }
+}
+
+/**
+ * An empty runtime list is a known-empty QCD year only when nobody attested
+ * a custodian row and no state being priced marks the year unknown. Otherwise
+ * the adapter's completeness branch must see `undefined`, or evidence-only
+ * QCDs are dropped and the year is reported complete.
+ */
+function qcdRuntimeEventsForFacts(
+  plan: Readonly<Plan>,
+  year: number,
+  runtime: readonly StateQcdEventFactsInput[],
+  state: string,
+): readonly StateQcdEventFactsInput[] | undefined {
+  if (runtime.length > 0) return runtime
+  return qcdEmptyRuntimeIsUnobserved(plan, year, state) ? undefined : runtime
 }

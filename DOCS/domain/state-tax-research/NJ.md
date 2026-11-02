@@ -52,7 +52,7 @@ Source records above require discriminating positive and negative fixtures throu
 
 Record: `nj-direct-qcd-ira-basis-treatment`. New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. A1290 is proposed legislation, not a current charitable carve-out.
 
-Authority: [January 2026 GIT-1 & 2, Worksheet C](https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf).
+Authority: [January 2026 GIT-1 & 2, Worksheet C](https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf) and [2025 Form NJ-1040 instructions](https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf).
 
 The preserved Summer 2010 HSA answer is historical agency evidence. Its original `summer10.pdf` URL returned HTTP 404 in the September 12, 2026 research check and again on September 23, 2026, when the whole State Tax News PDF folder was gone from nj.gov with no official copy elsewhere; the official archive authenticates the publication but does not itself supply an operative HSA rule.
 
