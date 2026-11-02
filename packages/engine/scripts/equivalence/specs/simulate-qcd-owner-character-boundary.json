@@ -595,7 +595,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "444f40c4e705675bc09323f136a006c086cfdfe1",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -671,6 +671,13 @@
         "measuredWithBlob": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
         "pinnedBlob": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
         "reason": "The covers text and comments of o2 and o5 now say what they reach under the dated-election gate; no plan or option of any member changed. covers is part of each stored member, so the member hash moves. Re-measured by the procedure the entries above used: run with the blob the last entry pinned and measured with (f4aedd1be06bc6f125013ed042c96eb3a33ee3fa) it reproduces this record's figures exactly, and with this blob only the corpus identity moved: members stay 138 and entries 552; the member hash d7239010b2fd to 3cd74da2890d and the dump hashes, which carry that hash; every entry hash and the overall hash are unchanged. The engine fix of the same date (one section 4974 obligation in a spousal-election year) is in the current tree, not in this proof's trees, so it moves nothing here. The comparison is still IDENTICAL with 0 entries moved and the reach counts are unchanged; the calibration mutant still moves 12 entries in the same 3 members."
+      },
+      {
+        "date": "2026-10-26",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "0a0d01ca7b35597ef88ba2b834a28ec512791055",
+        "pinnedBlob": "444f40c4e705675bc09323f136a006c086cfdfe1",
+        "reason": "PR #813 adds one blocks member, af1-qcdWithheldYear: an NJ plan that marks the 2026 QCD collection unknown, so the funding reach spec measures the withheld-collection arms. No existing member changed, and it is not a block-O, block-Q or block-Y member this proof measures. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
       }
     ],
     "historicalRecord": {

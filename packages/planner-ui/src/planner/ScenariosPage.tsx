@@ -650,7 +650,7 @@ function CapacitySection({
     : []
   return (
     <div className="card mt-md">
-      <div className="item-row-head">
+      <div className="item-row-head spending-capacity-head">
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
           <p className="card-hint">

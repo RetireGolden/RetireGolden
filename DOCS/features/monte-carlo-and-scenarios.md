@@ -70,6 +70,8 @@ A plan holds named **scenarios**: a base plus clones with partial overrides — 
 vs not, a 17% SS trust-fund cut, an LTC shock, a bad-decade start. The compare view shows success %,
 lifetime taxes, ending estate, and a key-year table, plus a diff of exactly which assumptions changed.
 Scenarios are stored as overrides applied at run time, not as duplicated plans.
+The sustainable-spending capacity card keeps its calculation button beside the description on desktop;
+at phone widths the button stacks below it so the heading and explanation use the full card width.
 
 The engine supports two patch representations. Existing plans keep their historical loose deep-override
 objects unchanged. New workflow surfaces can instead create a versioned

@@ -1,3 +1,4 @@
+import { californiaHsaAccountAdjustment } from '../tax/stateQcdHsa.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
@@ -54,6 +55,7 @@ describe('actual annual state source facts', () => {
     expect(input.stateQcdEventFacts).toEqual([expect.objectContaining({
       accountId: 'ira', ownerPersonId: 'p1', directCharityTransfer: 10000,
       federalExcludedAmount: 10000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+      transactionKind: 'directQcd',
     })])
   })
 })
@@ -68,6 +70,220 @@ it('publishes known-empty runtime HSA and QCD facts for a feature-off CA plan', 
   })
   expect(inputs.at(-1)?.stateHsaAccountYearFacts).toEqual([])
   expect(inputs.at(-1)?.stateQcdEventFacts).toEqual([])
+})
+
+it('withholds an evidence-only QCD and names the custodian row', () => {
+  // IRC 408(d)(8)(A). The projection executed no QCD. The custodian row is
+  // not priced as one, and the year is not a complete empty collection.
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.qcdEventEvidence = [{
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident', directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(result.warnings).toContain(
+    'Custodian QCD evidence custodian-2026-qcd on account ira for 2026 has no executed distribution, so this year\'s state QCD collection is incomplete.',
+  )
+})
+
+it('names a repeated custodian QCD identity when the collection is withheld', () => {
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  const row = {
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd' as const, grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident' as const, directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }
+  plan.stateTaxFacts.qcdEventEvidence = [row, { ...row, grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(result.warnings).toContain(
+    'Custodian QCD evidence custodian-2026-qcd on account ira for 2026 is repeated, so this year\'s state QCD collection is incomplete.',
+  )
+})
+
+it('reaches the QCD completeness branch when the plan marks the year unknown', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('withholds the state QCD collection when a QCD was executed but the year is unknown', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(structuredClone(input)); return 0 } },
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('keeps a NJ QCD-unknown mark after a mid-year move to CA', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.household.stateMoves = [{ fromYear: 2026, fromMonth: 7, state: 'CA' }]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(Object.prototype.hasOwnProperty.call(inputs.at(-1), 'stateQcdEventFacts')).toBe(true)
+})
+
+it('does not let a calculator-level QCD list fill a year the plan marked unknown', () => {
+  // The configured event is a split-interest transfer. If the unknown year
+  // fell back to it, the leaf would refuse that transfer instead of reporting
+  // the collection unavailable. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdEvents: [{
+        eventId: 'configured', accountId: 'ira', ownerPersonId: 'p1',
+        grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        residency: 'fullYearResident', splitInterest: true, directTransfer: true,
+        transactionKind: 'splitInterest',
+      }],
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
+})
+
+it('does not let calculator-level legacy QCD facts fill a year the plan marked unknown', () => {
+  // The configured fact is a split-interest transfer, as above, through the
+  // legacy singular qcdFacts route. A withheld year reports the collection
+  // unavailable and never prices or refuses that fact. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdFacts: {
+        ownerPersonId: 'p1', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        stateBasisFactsKnown: true, stateBasisRecovery: 0, residency: 'fullYearResident',
+        policy: { kind: 'conforms', citation: 'caller-should-be-ignored' }, splitInterest: true,
+      },
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
+})
+
+it('keeps a withheld QCD year incomplete in a state pack without a QCD policy', () => {
+  // NC's pack states no direct-QCD policy. The QCD was executed but the year's
+  // QCD evidence is explicitly unknown, so the collection is withheld and the
+  // state result cannot be complete.
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NC' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NC', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator(),
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+})
+
+it('keeps an asserted CA HSA deduction when candidate scoring supplies only zero defaults', () => {
+  // Same Schedule CA worksheet as the adapter fixture: asserted federal HSA
+  // deduction $4,300, every other category an explicit known zero, addition
+  // $4,300. annualContribution is 0, so the candidate row's federal deduction
+  // is the `?? 0` default (issue #803), not a modeled contribution.
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [{
+    type: 'hsa',
+    id: 'hsa1',
+    name: 'HSA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    balance: 1_000,
+    annualContribution: 0,
+  }]
+  plan.stateTaxFacts.hsaYearEvidence = [{
+    taxYear: 2026,
+    state: 'CA',
+    accountId: 'hsa1',
+    ownerPersonId: 'p1',
+    federalHsaDeduction: 4_300,
+    employerContributionExcludedFederally: 0,
+    employerContributionAlreadyInStateWages: 0,
+    interest: 0,
+    dividends: 0,
+    realizedGains: 0,
+    unrealizedAppreciation: 0,
+    qualifiedCashWithdrawals: 0,
+    nonqualifiedDistributionFederalAmount: 0,
+    stateBasisBeforeYear: 0,
+    annualActivityComplete: true,
+    provenance: { source: 'plan-evidence', asOf: '2026-01-15' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), {
+    startYear: 2026,
+    horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(structuredClone(input)); return 0 } },
+  })
+  const scored = inputs.filter((input) => input.stateHsaAccountYearFacts !== undefined)
+  expect(scored.length).toBeGreaterThan(0)
+  for (const input of scored) {
+    const fact = input.stateHsaAccountYearFacts?.[0]
+    expect(fact?.federalHsaDeduction).toEqual({ known: true, amount: 4_300 })
+    expect(fact?.annualActivityComplete).toBe(true)
+    const addition = californiaHsaAccountAdjustment(fact!)
+    expect(addition.warnings).toEqual([])
+    expect(addition.taxableIncomeDelta).toBe(4_300)
+  }
 })
 
 

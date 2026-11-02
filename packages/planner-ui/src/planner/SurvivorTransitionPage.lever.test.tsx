@@ -75,6 +75,16 @@ describe('the convert-early lever', () => {
     expect(new Set(notes)).toEqual(
       new Set(['The ledger: Sam has no Roth account, so Sam’s share of the Roth conversion was skipped — a conversion has to land in the same person’s own Roth. Opening a Roth IRA for Sam would let that share convert.']),
     )
+    // Every long explanation is opt-in, so the notes cannot set the height
+    // of every row while the reader scans the first columns at 375px (#779).
+    const details = [...container.querySelectorAll<HTMLDetailsElement>('.survivor-lever-details')]
+    expect(details).toHaveLength(windows.length)
+    expect(details.every((detail) => !detail.open)).toBe(true)
+    for (const note of container.querySelectorAll('[data-lever-notes], [data-lever-window]')) {
+      expect(note.closest('details')).not.toBeNull()
+    }
+    expect(details[0]!.querySelector('summary')!.textContent).toMatch(/Conversion details if Alex dies at \d+/u)
+    expect(new Set(details.map((d) => d.querySelector('summary')!.textContent)).size).toBe(details.length)
     expect(page).not.toContain('already converts past the 12% bracket in these years')
     expect(page).toMatch(/adding a 12% bracket fill through \d{4}, in \d{4} dollars/u)
     expect(page).toContain('on top of any your plan already makes')

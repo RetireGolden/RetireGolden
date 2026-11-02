@@ -275,6 +275,31 @@ describe('what still marks a split year incomplete', () => {
     }
   })
 
+  it('a QCD in a split year moves no full-year proxy either: Kansas covered-credit addback', () => {
+    // A $10,000 direct QCD attested full-year resident, with the Kansas covered
+    // charitable credit claimed, in a Kansas-to-Texas year. Kansas prices its
+    // slice as the full-year tax times the Kansas share of income, so the
+    // addback would move both the tax and the denominator if the full-year
+    // proxy priced it. A part-year resident's QCD has no state adjustment
+    // (DOCS/domain/domain-rules-reference/09-state-and-local-income-tax.md),
+    // so the year's tax equals the no-QCD year's.
+    const qcd: StateQcdEventFacts = {
+      eventId: 'qcd', accountId: 'ira', ownerPersonId: 'p1', grossIraDistribution: 10_000,
+      directCharityTransfer: 10_000, federalExcludedAmount: 10_000, federalTaxableAmount: 0,
+      federalBasisAllocated: 0, residency: 'fullYearResident', splitInterest: false, directTransfer: true,
+      kansasCoveredCharitableCreditClaimed: true,
+    }
+    const year = (qcdEvents: StateQcdEventFacts[]) => computeStateTaxYearResult(
+      sixMonths('KS', { ordinaryIncome: 100_000, agesAlive: [75], peopleAged65Plus: 1 }),
+      { retirementDistributions: [], qcdEvents },
+    )
+    const none = year([])
+    const withQcd = year([qcd])
+    expect(withQcd.status).toBe('incomplete')
+    expect(withQcd.warnings.some((w) => w.code === 'state-qcd-residency-incomplete')).toBe(true)
+    expect(withQcd.totalTax).toBeCloseTo(none.totalTax, 6)
+  })
+
   it('a state whose parameters carry no part-year method: the months share, marked incomplete', () => {
     // New York's parameters with the method taken away: every amount and
     // bracket edge times 6/12 on half the income, the months share of the
