@@ -353,12 +353,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 271,
+          "line": 275,
           "note": null,
           "tests": [
             {
               "title": "forces an employer-plan distribution from a participant still seven years from retiring",
-              "line": 281
+              "line": 285
             }
           ]
         }
@@ -424,12 +424,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 197,
+          "line": 201,
           "note": "elected deferral with attainment-year IRA income",
           "tests": [
             {
               "title": "defers the full first-year amount even after an attainment-year IRA draw",
-              "line": 219
+              "line": 223
             }
           ]
         }
@@ -508,27 +508,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 73,
+          "line": 77,
           "note": "default books attainment-year without election",
           "tests": [
             {
               "title": "books the first-year amount in the attainment year when no deferral is elected",
-              "line": 87
+              "line": 91
             },
             {
               "title": "leaves the following year carrying one distribution rather than two under the default",
-              "line": 95
+              "line": 99
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 115,
+          "line": 119,
           "note": "clean elected owned-IRA April 1 deferral",
           "tests": [
             {
               "title": "holds the owned-IRA first-year amount until the following receipt year when elected",
-              "line": 133
+              "line": 137
             }
           ]
         }
@@ -682,11 +682,12 @@
       "id": "irc-401-a-9-E-ii-eligible-designated-beneficiary",
       "title": "Eligible designated beneficiary escapes the 10-year rule",
       "classification": "approximated",
-      "errorDirection": "overstatesTax",
+      "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix"
+        "kind": "convention",
+        "reason": "an inherited IRA entered without beneficiary details, or with details the planner cannot use (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; once usable beneficiary details are entered, an eligible heir gets the life expectancy schedule"
       },
-      "conventionRationale": null,
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and usable, an heir who is the surviving spouse, a minor child of the owner, disabled, chronically ill, or not more than ten years younger than the owner takes yearly amounts over their life expectancy instead of emptying the account within ten years (a minor child until age 21, and then within ten more years), as IRC 401(a)(9)(E)(ii) and (H)(ii) allow. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details the planner cannot use, the planner does not know whether the heir qualifies and will not guess, so the account follows the ten-year schedule and is shown as a planning estimate. That moves taxable income into the tenth year from the years after it, and when the owner died before the required beginning date it also asks for less than the life expectancy schedule would in the years before the tenth. Entering the beneficiary details removes the estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -738,16 +739,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 364,
+          "line": 430,
           "note": null,
           "tests": [
             {
-              "title": "empties an eligible designated beneficiary's account in the tenth year",
-              "line": 380
+              "title": "empties an eligible designated beneficiary's account in the tenth year on the legacy path",
+              "line": 475
             },
             {
-              "title": "requires nothing inside the window that the life-expectancy rule would require",
-              "line": 391
+              "title": "requires nothing inside the window on the legacy path that the life-expectancy rule would require",
+              "line": 486
+            },
+            {
+              "title": "stretches over the beneficiary life expectancy once beneficiary details are entered",
+              "line": 500
+            },
+            {
+              "title": "still sweeps in the tenth year when the same heir is stated not to be eligible",
+              "line": 510
             }
           ]
         }
@@ -1389,12 +1398,12 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 420,
+          "line": 549,
           "note": null,
           "tests": [
             {
               "title": "charges 25 percent when the whole required amount goes undistributed",
-              "line": 427
+              "line": 556
             }
           ]
         }
@@ -2028,9 +2037,10 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix"
+        "kind": "convention",
+        "reason": "an inherited IRA entered without beneficiary details, or with details the planner cannot use, holds no owner birth date the planner can rely on, so after a death past the required beginning date each yearly amount is divided by the heir's life expectancy alone; once usable beneficiary details are entered, which include the owner's birth year, the longer of the heir's and the owner's life expectancy is used"
       },
-      "conventionRationale": null,
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and usable, including the original owner's birth year, the planner divides each yearly amount after a death on or after the required beginning date by the longer of the heir's and the owner's remaining life expectancy, as Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) requires. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details the planner cannot use, the owner's age is not known, so the yearly amount is divided by the heir's life expectancy alone and shown as a planning estimate. That can only make the yearly amount larger than required, and only when the heir is older than the owner was; the ten-year deadline empties the account either way. Entering the beneficiary details removes the estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2098,12 +2108,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 319,
+          "line": 338,
           "note": null,
           "tests": [
             {
-              "title": "divides by the beneficiary expectancy where the employee expectancy is the greater",
-              "line": 327
+              "title": "divides by the beneficiary expectancy on the legacy path, where no owner birth date is held",
+              "line": 346
+            },
+            {
+              "title": "applies the greater employee expectancy once beneficiary details with the owner birth year are entered",
+              "line": 364
             }
           ]
         }
@@ -4034,16 +4048,16 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 485,
+          "line": 614,
           "note": null,
           "tests": [
             {
               "title": "distributes nothing where the required amount rounds to zero cents",
-              "line": 506
+              "line": 635
             },
             {
               "title": "leaves the residue inert rather than working it down year by year",
-              "line": 525
+              "line": 654
             }
           ]
         }

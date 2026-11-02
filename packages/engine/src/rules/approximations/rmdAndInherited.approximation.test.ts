@@ -28,9 +28,13 @@ import { describeRule } from '../describeRule.js'
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
-import { inheritedForcedAmount } from '../../strategies/inheritedIra.js'
+import {
+  classifyInheritedRegime,
+  inheritedForcedAmount,
+  inheritedRequirementForYear,
+} from '../../strategies/inheritedIra.js'
 import { requiredMinimumDistribution } from '../../rmd/rmd.js'
-import type { Account, Plan } from '../../model/plan.js'
+import type { Account, InheritedAccount, Plan } from '../../model/plan.js'
 import {
   cashAccount,
   runPlan,
@@ -297,24 +301,39 @@ describeRule('irc-401-a-9-C-i-II-still-working-exception', {
 
 /**
  * The Single Life Table divisor itself is settled and correct now; what is
- * still absent on this vector is the greater-of arm of Treas. Reg.
- * 1.401(a)(9)-5(d)(1)(ii). Classified WS3 schedules carry beneficiary
+ * still absent on the legacy vector is the greater-of arm of Treas. Reg.
+ * 1.401(a)(9)-5(d)(1)(ii). Classified schedules carry the beneficiary block's
  * ownerBirthYear and compute the employee arm in inheritedRequirementForYear;
- * only the legacy inheritedForcedAmount helper this fixture calls still
- * omits that owner fact and divides by beneficiaryRemainingLifeExpectancy
- * alone.
+ * only the legacy inheritedForcedAmount helper omits that owner fact and
+ * divides by beneficiaryRemainingLifeExpectancy alone. The gap is kept on
+ * purpose (approximation kind `convention`): nothing that reaches the legacy
+ * helper holds an owner birth date the classifier accepts.
  *
- * The gap bites when the beneficiary is OLDER than the decedent, because then
- * the beneficiary's short expectancy is the one displacing the longer employee
- * expectancy. Decedent died in 2026 at age 75, on or after the required
- * beginning date; Single Life Table at 75 is 14.8, read at the age on the
- * birthday in the year of death and reduced by one for 2027 → 13.8. The
- * beneficiary reaches 85 in 2027, the first distribution calendar year, so
- * their fixed expectancy is the entry at 85 → 8.1.
+ * Hand worksheet. The decedent was born in 1951 and died in 2026 at age 75.
+ * Born 1951, the applicable age is 73 (IRC 401(a)(9)(C)(v)(I)), attained in
+ * 2024, so the required beginning date was April 1, 2025 and the death is on
+ * or after it: (d)(1)(ii) governs. The beneficiary was born in 1942.
+ *
+ *   Employee arm, (d)(3)(ii): Single Life Table (Treas. Reg.
+ *   1.401(a)(9)-9(b)) at the age on the birthday in the year of death, 75,
+ *   is 14.8; reduced by one for 2027                            = 13.8
+ *   Beneficiary arm, (d)(3)(iii): table entry at the age reached in 2027,
+ *   the first distribution calendar year, 85                    =  8.1
+ *   Greater of the two, (d)(1)(ii)                              = 13.8
+ *   2027 required amount on a $300,000 prior December 31 balance
+ *   = 300,000 / 13.8                                            = 21,739.13
+ *   Beneficiary-only reading = 300,000 / 8.1                    = 37,037.04
+ *
+ * The beneficiary is older than the decedent, so they are an eligible
+ * designated beneficiary under IRC 401(a)(9)(E)(ii)(V) and the classified row
+ * is R3 (life expectancy, no ten-year sweep). The employee arm can only win
+ * when the beneficiary is older than the decedent, so the classified row on
+ * which it binds is always an eligible designated beneficiary row.
  */
 const INHERITED_BALANCE = 300_000
 const EMPLOYEE_EXPECTANCY_IN_2027 = 14.8 - 1
 const BENEFICIARY_EXPECTANCY_IN_2027 = 8.1
+const PROVENANCE = { source: 'approximation fixture', asOf: '2026-01-01' }
 
 describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy', {
   readings: {
@@ -324,7 +343,7 @@ describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy',
   accepted: 'statuteDividesByTheGreaterEmployeeExpectancy',
   produced: 'engineDividesByTheBeneficiaryExpectancyAlone',
 }, ({ accepted, produced }) => {
-  it('divides by the beneficiary expectancy where the employee expectancy is the greater', () => {
+  it('divides by the beneficiary expectancy on the legacy path, where no owner birth date is held', () => {
     const forced = inheritedForcedAmount({
       pack,
       year: 2027,
@@ -341,25 +360,72 @@ describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy',
     // denominator, so omitting it can only make the distribution too large.
     expect(forced).toBeGreaterThan(accepted)
   })
+
+  it('applies the greater employee expectancy once beneficiary details with the owner birth year are entered', () => {
+    const inherited: InheritedAccount = {
+      ownerDeathYear: 2026,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'not-more-than-10-years-younger',
+        beneficiaryBirthYear: 1942,
+        soleBeneficiary: true,
+        election: 'none',
+        ownerBirthYear: 1951,
+        ownerYearOfDeathRmdSatisfied: true,
+        provenance: PROVENANCE,
+      },
+    }
+    const classification = classifyInheritedRegime({
+      accountType: 'traditional',
+      accountKind: 'ira',
+      inherited,
+    })
+    expect(classification).toMatchObject({ kind: 'regime', row: 'R3', rbdComparison: 'on-or-after-rbd' })
+    if (classification.kind !== 'regime') return
+    const in2027 = inheritedRequirementForYear({
+      pack,
+      classification,
+      inherited,
+      year: 2027,
+      priorYearEndBalance: INHERITED_BALANCE,
+    })
+
+    expect(in2027.divisor).toBeCloseTo(EMPLOYEE_EXPECTANCY_IN_2027, 10)
+    expect(in2027.divisorArm).toBe('owner-fixed')
+    expect(in2027.requiredAmount).toBeCloseTo(accepted, 6)
+    expect(in2027.requiredAmount).not.toBeCloseTo(produced, 6)
+  })
 })
 
 // --- 4. Eligible designated beneficiary --------------------------------------
 
 /**
- * The owner died in 2026 BEFORE their required beginning date and the
- * beneficiary is five years younger than the decedent, so they are an eligible
- * designated beneficiary under IRC 401(a)(9)(E)(ii)(V) and the life-expectancy
- * rule of 401(a)(9)(B)(iii) applies instead of the ten-year rule. Choosing the
- * before-RBD case keeps the greater-of question of record 3 out of the
- * accepted value entirely: the denominator is the beneficiary's own expectancy.
+ * The owner was born in 1961 and died in 2026 at 65, before the required
+ * beginning date (born 1961, the applicable age is 75 under IRC
+ * 401(a)(9)(C)(v)(II), attained in 2036). The beneficiary was born in 1956,
+ * five years OLDER than the owner, so they are not more than ten years
+ * younger and are an eligible designated beneficiary under IRC
+ * 401(a)(9)(E)(ii)(V); the life-expectancy rule of 401(a)(9)(B)(iii) applies
+ * instead of the ten-year rule (401(a)(9)(H)(ii)). Death before the RBD keeps
+ * the greater-of question of record 3 out of the accepted value: the
+ * denominator is the beneficiary's own expectancy (Treas. Reg.
+ * 1.401(a)(9)-5(d)(2)).
  *
- * The beneficiary reaches 71 in 2027, the first distribution calendar year, so
- * the fixed Single Life Table entry is 18.0; by 2036 nine calendar years have
- * elapsed, leaving 9.0. 2036 is also `ownerDeathYear + 10`, where the engine
- * sweeps the entire remaining balance because it holds no beneficiary-status
- * fact that could exempt the account.
+ * Hand worksheet. The beneficiary reaches 71 in 2027, the first distribution
+ * calendar year, so the fixed Single Life Table entry (Treas. Reg.
+ * 1.401(a)(9)-9(b)) is 18.0 (Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)); by 2036
+ * nine calendar years have elapsed, leaving 18.0 minus 9 = 9.0, and the 2036
+ * amount on a $300,000 prior December 31 balance is 300,000 / 9.0 =
+ * 33,333.33. In 2030 the divisor is 18.0 minus 3 = 15.0 and the amount
+ * 20,000. 2036 is also `ownerDeathYear + 10`, where the legacy path sweeps the
+ * entire remaining balance because it holds no beneficiary-status fact that
+ * could exempt the account; the gap is kept on purpose (approximation kind
+ * `convention`), since that path never carries a status the classifier
+ * accepts.
  */
 const EDB_EXPECTANCY_IN_2036 = 18.0 - 9
+const EDB_EXPECTANCY_IN_2030 = 18.0 - 3
 
 describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
   readings: {
@@ -376,8 +442,37 @@ describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
     balance: INHERITED_BALANCE,
     startBalance: INHERITED_BALANCE,
   }
+  const classifiedEdb: InheritedAccount = {
+    ownerDeathYear: 2026,
+    decedentHadStartedRmds: false,
+    beneficiary: {
+      beneficiaryClass: 'designated-individual',
+      edbCategory: 'not-more-than-10-years-younger',
+      beneficiaryBirthYear: 1956,
+      soleBeneficiary: true,
+      election: 'none',
+      ownerBirthYear: 1961,
+      provenance: PROVENANCE,
+    },
+  }
+  const classifiedRequirement = (year: number) => {
+    const classification = classifyInheritedRegime({
+      accountType: 'traditional',
+      accountKind: 'ira',
+      inherited: classifiedEdb,
+    })
+    expect(classification).toMatchObject({ kind: 'regime', row: 'R3', rbdComparison: 'before-rbd' })
+    if (classification.kind !== 'regime') throw new Error('expected a classified R3 regime')
+    return inheritedRequirementForYear({
+      pack,
+      classification,
+      inherited: classifiedEdb,
+      year,
+      priorYearEndBalance: INHERITED_BALANCE,
+    })
+  }
 
-  it('empties an eligible designated beneficiary\'s account in the tenth year', () => {
+  it('empties an eligible designated beneficiary\'s account in the tenth year on the legacy path', () => {
     const forced = inheritedForcedAmount({
       ...edbAccount,
       year: 2036, // ownerDeathYear + 10
@@ -388,10 +483,10 @@ describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
     expect(forced).not.toBeCloseTo(accepted, 6)
   })
 
-  it('requires nothing inside the window that the life-expectancy rule would require', () => {
+  it('requires nothing inside the window on the legacy path that the life-expectancy rule would require', () => {
     // The same misreading in the other half of the window: an eligible
     // designated beneficiary owes an annual life-expectancy amount every year,
-    // and the engine forces nothing until the sweep.
+    // and the legacy path forces nothing until the sweep.
     const forced = inheritedForcedAmount({
       ...edbAccount,
       year: 2030,
@@ -399,6 +494,40 @@ describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
     })
 
     expect(forced).toBe(0)
+    expect(classifiedRequirement(2030).requiredAmount).toBeCloseTo(INHERITED_BALANCE / EDB_EXPECTANCY_IN_2030, 6)
+  })
+
+  it('stretches over the beneficiary life expectancy once beneficiary details are entered', () => {
+    const in2036 = classifiedRequirement(2036)
+
+    expect(in2036.kind).toBe('annual-rmd')
+    expect(in2036.divisor).toBeCloseTo(EDB_EXPECTANCY_IN_2036, 10)
+    expect(in2036.divisorArm).toBe('beneficiary-fixed')
+    expect(in2036.requiredAmount).toBeCloseTo(accepted, 6)
+    expect(in2036.requiredAmount).not.toBeCloseTo(produced, 6)
+  })
+
+  it('still sweeps in the tenth year when the same heir is stated not to be eligible', () => {
+    // Contrary guard: the stretch comes from the asserted category, not from
+    // the ages. A beneficiary more than ten years younger with edbCategory
+    // 'none' (owner born 1961, beneficiary 1975) is held to the ten-year rule
+    // (IRC 401(a)(9)(H)(i)), so the 2036 requirement is the whole balance.
+    const nonEdb: InheritedAccount = {
+      ...classifiedEdb,
+      beneficiary: { ...classifiedEdb.beneficiary!, edbCategory: 'none', beneficiaryBirthYear: 1975 },
+    }
+    const classification = classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira', inherited: nonEdb })
+    expect(classification).toMatchObject({ kind: 'regime', row: 'R2', finalDeadlineYear: 2036 })
+    if (classification.kind !== 'regime') return
+    const in2036 = inheritedRequirementForYear({
+      pack,
+      classification,
+      inherited: nonEdb,
+      year: 2036,
+      priorYearEndBalance: INHERITED_BALANCE,
+    })
+    expect(in2036.kind).toBe('final-sweep')
+    expect(in2036.requiredAmount).toBe(produced)
   })
 })
 

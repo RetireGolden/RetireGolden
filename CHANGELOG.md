@@ -4,6 +4,23 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the inherited-IRA eligible-designated-beneficiary and greater-of life expectancy
+  approximations are reclassified from fixes to conventions** (2026-11-02). No figure changes.
+  Both rules are already computed when an inherited IRA carries usable beneficiary details: an
+  eligible designated beneficiary (IRC 401(a)(9)(E)(ii)) takes life-expectancy amounts with no
+  ten-year sweep, and after a death on or after the required beginning date the divisor is the
+  longer of the beneficiary's and the owner's expectancy (Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)).
+  What stays approximated is only the labeled legacy path, and nothing that reaches it holds a fact
+  the classifier accepts (no beneficiary block, a pre-2020 death, or a classifier refusal), so the
+  engine keeps the ten-year schedule and the beneficiary arm there rather than invent a status or
+  an owner age. Each rule now carries a public convention rationale, and its fixture pins both the
+  legacy reading and the classified reading on the same hand worksheet.
+  - `irc-401-a-9-E-ii-eligible-designated-beneficiary`'s error direction is corrected from
+    overstates to both directions: for a death before the required beginning date the legacy path
+    forces nothing in years one to nine where the life-expectancy rule requires an annual amount.
+  - The fixture's decedent is now born in 1961 (died at 65, before the required beginning date);
+    its prose had described a 75-year-old decedent, who would have been past it.
+
 - **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
   compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
   retirement-plan field (`contributionLimits.section401a17CompensationLimit`) that grows with the

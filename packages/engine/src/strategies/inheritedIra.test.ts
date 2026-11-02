@@ -248,13 +248,15 @@ describeRule('treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator', {
   })
 })
 
-describe('unmodelled: the greater-of test of Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)', () => {
-  // Registered as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy
-  // and out of scope: the plan model records the year the owner died but never
-  // their age, so the employee's remaining life expectancy cannot be looked up.
-  // This pins the gap instead of leaving it silent — the divisor is the
-  // beneficiary's alone, so an older beneficiary is forced to distribute faster
-  // than the regulation requires.
+describe('legacy path: the greater-of test of Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) is not applied', () => {
+  // Registered as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy,
+  // approximated on the legacy path only (kind convention). The two-field
+  // inherited block this helper reads records the year the owner died but never
+  // their age; classified schedules read ownerBirthYear from the beneficiary
+  // block and apply the owner arm in inheritedRequirementForYear. This pins the
+  // legacy gap instead of leaving it silent: the divisor is the beneficiary's
+  // alone, so an older beneficiary is forced to distribute faster than the
+  // regulation requires.
   it('takes the beneficiary expectancy whether or not it is the greater one', () => {
     // A beneficiary of 81 in the first distribution year carries 10.5 years
     // against the 35.3 of a beneficiary of 51, and nothing about the decedent

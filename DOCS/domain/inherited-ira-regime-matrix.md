@@ -206,14 +206,20 @@ same-decedent aggregation election's allocation mechanics beyond the explicit id
 - `treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator` — retained. The shipped fixed
   subtract-one Single Life divisor is exactly R1's beneficiary-side arm; the matrix adds the
   greater-of-owner arm and the regimes around it.
-- `treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy` (approximated: greater-of not
-  applied, schema lacks decedent age) — superseded by WS2/WS3: the fact model requires the owner's
-  birth date, and R1/R3 apply the greater-of test. The approximation record retires only when the
-  new arm's discriminating fixture lands.
-- `irc-401-a-9-E-ii-eligible-designated-beneficiary` (approximated: every inherited account
-  compressed onto the 10-year rule) — superseded by R3/S1/K2 for plans that state EDB facts.
-  Legacy two-field accounts stay on the labeled approximation (X1 handling applies to their
-  missing facts) until reviewed; migration never fabricates an EDB category.
+- `treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy` — superseded by WS2/WS3 for
+  classified facts: the fact model requires the owner's birth date for an on/after-RBD death
+  (`deriveRbdComparison` refuses one without it), and R1/R3/S0/S1 apply the greater-of test. The
+  record stays `approximated` only for the labeled legacy path (`inheritedForcedAmount`), with
+  approximation kind `convention` since the 2026-11-02 validation round: nothing reaching that
+  path holds an owner birth date the classifier accepts (no beneficiary block, a pre-2020 death,
+  or a classifier refusal), so the beneficiary arm alone is the documented fallback.
+- `irc-401-a-9-E-ii-eligible-designated-beneficiary` — superseded by R3/S0/S1/K2 for plans that
+  state EDB facts. Legacy two-field accounts, pre-2020 deaths, and classifier-refusal fallbacks
+  stay on the labeled ten-year approximation; migration never fabricates an EDB category and the
+  engine never infers one (§2). The record stays `approximated` for that path only, approximation
+  kind `convention` since the 2026-11-02 validation round, with `errorDirection` `bothDirections`:
+  the year-ten sweep overstates that year's income, but for a before-RBD death the legacy path
+  forces nothing in years 1–9 where the life-expectancy rule requires an annual amount.
 - The shipped year-10 sweep (`ownerDeathYear + 10`) matches the final-reg deadline formulation —
   the end of the calendar year that includes the tenth anniversary falls in death-year + 10 for
   any death date — so R1/R2/K1 keep it.

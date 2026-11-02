@@ -158,9 +158,12 @@
   the Single Life Table (Treas. Reg. 1.401(a)(9)-5(d)(3)(iii);
   `treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator`, settled for classified facts); post-RBD deaths
   apply the greater-of-owner test when facts support it
-  (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
-  life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
-  for classified facts). **Fail closed:** death before 2020; an initial successor beneficiary at
+  (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, computed for classified facts); EDB
+  life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, computed
+  for classified facts). Both records stay `approximated`, as a kept-on-purpose convention, only for the labeled
+  legacy path: an inherited account without a beneficiary block, a pre-2020 death, or a classifier refusal
+  never carries a fact the classifier accepts, so the engine neither infers EDB status nor applies an owner
+  arm there. **Fail closed:** death before 2020; an initial successor beneficiary at
   classification (matrix X2); an eligible designated beneficiary's in-horizon death
   (`irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock`); pre-RBD
   non-designated beneficiaries under the five-year rule
