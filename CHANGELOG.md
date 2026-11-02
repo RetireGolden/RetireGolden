@@ -6,10 +6,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 - **Changed: the inherited-IRA eligible-designated-beneficiary and greater-of life expectancy
   approximations are reclassified from fixes to conventions** (2026-11-02). No figure changes.
-  Both rules are already computed when an inherited IRA carries usable beneficiary details: an
-  eligible designated beneficiary (IRC 401(a)(9)(E)(ii)) takes life-expectancy amounts with no
-  ten-year sweep, and after a death on or after the required beginning date the divisor is the
-  longer of the beneficiary's and the owner's expectancy (Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)).
+  Both rules are already computed when an inherited IRA carries beneficiary details the
+  classifier accepts: an eligible designated beneficiary (IRC 401(a)(9)(E)(ii)) takes
+  life-expectancy amounts by default (subject to a before-RBD ten-year election, the minor
+  child's majority-plus-ten deadline, and a spouse's treat-as-own transition), and after a death
+  on or after the required beginning date the divisor is the longer of the beneficiary's and the
+  owner's expectancy (Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)).
   What stays approximated is only the labeled legacy path, and nothing that reaches it holds a fact
   the classifier accepts (no beneficiary block, a pre-2020 death, or a classifier refusal), so the
   engine keeps the ten-year schedule and the beneficiary arm there rather than invent a status or
@@ -17,7 +19,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   legacy reading and the classified reading on the same hand worksheet.
   - `irc-401-a-9-E-ii-eligible-designated-beneficiary`'s error direction is corrected from
     overstates to both directions: for a death before the required beginning date the legacy path
-    forces nothing in years one to nine where the life-expectancy rule requires an annual amount.
+    forces nothing in years one to nine where the life-expectancy rule requires an annual amount
+    (from the year after death for a non-spouse heir; for a surviving spouse only from the year
+    the owner would have reached the applicable age, if later).
+  - Each fixture now also runs the full projection: the older heir's 2027 amount is
+    300,000 / 13.8, and the before-RBD eligible heir's 2036 amount is 150,000 / 9.0, not the
+    whole 150,000. The contrary guard holds every fact fixed at an ambiguous ten-birth-year gap
+    and shows the asserted category alone switches between the stretch and the year-ten sweep.
   - The fixture's decedent is now born in 1961 (died at 65, before the required beginning date);
     its prose had described a 75-year-old decedent, who would have been past it.
 

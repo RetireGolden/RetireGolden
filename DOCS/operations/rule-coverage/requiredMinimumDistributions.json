@@ -685,9 +685,9 @@
       "errorDirection": "bothDirections",
       "approximation": {
         "kind": "convention",
-        "reason": "an inherited IRA entered without beneficiary details, or with details the planner cannot use (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; once usable beneficiary details are entered, an eligible heir gets the life expectancy schedule"
+        "reason": "an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that are missing or conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; once complete details for a case the planner schedules are entered, an eligible heir takes yearly amounts over their life expectancy by default, while a minor child's account is emptied within ten years of turning 21, an elected ten-year schedule keeps its deadline, and a surviving spouse who treats the account as their own follows the owner rules"
       },
-      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and usable, an heir who is the surviving spouse, a minor child of the owner, disabled, chronically ill, or not more than ten years younger than the owner takes yearly amounts over their life expectancy instead of emptying the account within ten years (a minor child until age 21, and then within ten more years), as IRC 401(a)(9)(E)(ii) and (H)(ii) allow. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details the planner cannot use, the planner does not know whether the heir qualifies and will not guess, so the account follows the ten-year schedule and is shown as a planning estimate. That moves taxable income into the tenth year from the years after it, and when the owner died before the required beginning date it also asks for less than the life expectancy schedule would in the years before the tenth. Entering the beneficiary details removes the estimate.",
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and describe a case the planner schedules, an heir who is the surviving spouse, a minor child of the owner, disabled, chronically ill, or not more than ten years younger than the owner may take yearly amounts over their life expectancy instead of emptying the account within ten years, as IRC 401(a)(9)(E)(ii) and (H)(ii) allow. That is the default the planner uses. The details can change it: a minor child's account must be emptied within ten years of turning 21, an heir who elects the ten-year schedule when the owner died before the required beginning date keeps that deadline, and a surviving spouse who treats the account as their own follows the owner rules once that choice takes effect. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details that describe a case the planner does not schedule (a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict), the planner will not guess whether the heir qualifies, so the account follows the ten-year schedule and is shown as a planning estimate. That moves taxable income into the tenth year from the years after it. When the owner died before the required beginning date it can also ask for less than the life expectancy schedule would in the years before the tenth, from the year that schedule would start; for a surviving spouse that start can be later. Entering complete details for a case the planner schedules removes the estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -739,24 +739,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 430,
+          "line": 483,
           "note": null,
           "tests": [
             {
               "title": "empties an eligible designated beneficiary's account in the tenth year on the legacy path",
-              "line": 475
+              "line": 528
             },
             {
               "title": "requires nothing inside the window on the legacy path that the life-expectancy rule would require",
-              "line": 486
+              "line": 539
             },
             {
               "title": "stretches over the beneficiary life expectancy once beneficiary details are entered",
-              "line": 500
+              "line": 553
             },
             {
-              "title": "still sweeps in the tenth year when the same heir is stated not to be eligible",
-              "line": 510
+              "title": "takes a life-expectancy amount, not the whole balance, in the tenth year of the full projection",
+              "line": 563
+            },
+            {
+              "title": "turns on the asserted category alone, with every other fact the same",
+              "line": 587
             }
           ]
         }
@@ -1398,12 +1402,12 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 549,
+          "line": 641,
           "note": null,
           "tests": [
             {
               "title": "charges 25 percent when the whole required amount goes undistributed",
-              "line": 556
+              "line": 648
             }
           ]
         }
@@ -2038,9 +2042,9 @@
       "errorDirection": "overstatesTax",
       "approximation": {
         "kind": "convention",
-        "reason": "an inherited IRA entered without beneficiary details, or with details the planner cannot use, holds no owner birth date the planner can rely on, so after a death past the required beginning date each yearly amount is divided by the heir's life expectancy alone; once usable beneficiary details are entered, which include the owner's birth year, the longer of the heir's and the owner's life expectancy is used"
+        "reason": "after a death past the required beginning date, an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict), has each yearly amount divided by the heir's life expectancy alone, even when the owner's birth year was entered, because the rest of the schedule cannot be set from those details; once complete details for a case the planner schedules are entered, including the owner's birth year, the longer of the heir's and the owner's life expectancy is used"
       },
-      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and usable, including the original owner's birth year, the planner divides each yearly amount after a death on or after the required beginning date by the longer of the heir's and the owner's remaining life expectancy, as Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) requires. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details the planner cannot use, the owner's age is not known, so the yearly amount is divided by the heir's life expectancy alone and shown as a planning estimate. That can only make the yearly amount larger than required, and only when the heir is older than the owner was; the ten-year deadline empties the account either way. Entering the beneficiary details removes the estimate.",
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and describe a case the planner schedules, including the original owner's birth year, the planner divides each yearly amount after a death on or after the required beginning date by the longer of the heir's and the owner's remaining life expectancy, as Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) requires. Two kinds of inherited IRA are instead shown as a planning estimate, with each yearly amount divided by the heir's life expectancy alone. One is entered with only the year of death and whether the owner had started required distributions, so the owner's age is not known. The other has details that describe a case the planner does not schedule: a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict. There the owner's birth year is not used even when it was entered, because the rest of the schedule cannot be set from those details. Either way the estimate can only make the yearly amount larger than required, and only when the heir is older than the owner was. Such an heir also qualifies for payments over their life expectancy, so whether the account must be emptied within ten years is a separate estimate with its own entry. Entering complete details for a case the planner schedules removes this estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2108,16 +2112,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 338,
+          "line": 377,
           "note": null,
           "tests": [
             {
               "title": "divides by the beneficiary expectancy on the legacy path, where no owner birth date is held",
-              "line": 346
+              "line": 385
             },
             {
               "title": "applies the greater employee expectancy once beneficiary details with the owner birth year are entered",
-              "line": 364
+              "line": 418
+            },
+            {
+              "title": "takes the greater-of amount in the full projection",
+              "line": 439
             }
           ]
         }
@@ -4048,16 +4056,16 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 614,
+          "line": 706,
           "note": null,
           "tests": [
             {
               "title": "distributes nothing where the required amount rounds to zero cents",
-              "line": 635
+              "line": 727
             },
             {
               "title": "leaves the residue inert rather than working it down year by year",
-              "line": 654
+              "line": 746
             }
           ]
         }

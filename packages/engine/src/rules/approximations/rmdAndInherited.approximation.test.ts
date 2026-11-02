@@ -34,7 +34,7 @@ import {
   inheritedRequirementForYear,
 } from '../../strategies/inheritedIra.js'
 import { requiredMinimumDistribution } from '../../rmd/rmd.js'
-import type { Account, InheritedAccount, Plan } from '../../model/plan.js'
+import { createEmptyPlan, parsePlan, type Account, type InheritedAccount, type Plan } from '../../model/plan.js'
 import {
   cashAccount,
   runPlan,
@@ -335,6 +335,45 @@ const EMPLOYEE_EXPECTANCY_IN_2027 = 14.8 - 1
 const BENEFICIARY_EXPECTANCY_IN_2027 = 8.1
 const PROVENANCE = { source: 'approximation fixture', asOf: '2026-01-01' }
 
+/**
+ * A one-person plan that holds only this inherited IRA and enough cash to fund
+ * nothing: no spending, no inflation, no investment return, so each prior
+ * December 31 balance is the opening balance less the required amounts
+ * already taken, and the hand worksheets below can be carried year by year.
+ */
+function projectInherited(beneficiaryBirthYear: number, inherited: InheritedAccount) {
+  let sequence = 0
+  const plan = createEmptyPlan({
+    newId: () => `approx-inherited-${++sequence}`,
+    now: () => new Date('2026-01-01T00:00:00.000Z'),
+  })
+  plan.household.people[0] = {
+    id: 'beneficiary', name: 'Beneficiary', dob: `${beneficiaryBirthYear}-06-15`,
+    sex: 'average', retirementAge: null, longevity: { planningAge: 110, source: 'manual' },
+  }
+  plan.assumptions.inflationPct = 0
+  plan.assumptions.defaultReturnPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+  plan.accounts = [
+    { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 1_000_000, annualContribution: 0 } as Account,
+    {
+      type: 'traditional', id: 'inherited', name: 'Inherited IRA', ownerPersonId: 'beneficiary', annualReturnPct: null,
+      kind: 'ira', balance: INHERITED_BALANCE, annualContribution: 0, inherited,
+    } as Account,
+  ]
+  const parsed = parsePlan(plan)
+  expect(parsed.ok, parsed.ok ? '' : parsed.issues.join('\n')).toBe(true)
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  const result = simulatePlan(parsed.plan, { startYear: 2026, horizonEndYear: 2037, taxCalculator: noTax })
+  return (year: number) => {
+    const row = result.years.find((candidate) => candidate.year === year)
+      ?.inheritedAccounts?.find((candidate) => candidate.accountId === 'inherited')
+    if (row === undefined) throw new Error(`missing inherited evidence for ${year}`)
+    return row
+  }
+}
+
 describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy', {
   readings: {
     statuteDividesByTheGreaterEmployeeExpectancy: INHERITED_BALANCE / EMPLOYEE_EXPECTANCY_IN_2027,
@@ -361,21 +400,22 @@ describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy',
     expect(forced).toBeGreaterThan(accepted)
   })
 
+  const inherited: InheritedAccount = {
+    ownerDeathYear: 2026,
+    decedentHadStartedRmds: true,
+    beneficiary: {
+      beneficiaryClass: 'designated-individual',
+      edbCategory: 'not-more-than-10-years-younger',
+      beneficiaryBirthYear: 1942,
+      soleBeneficiary: true,
+      election: 'none',
+      ownerBirthYear: 1951,
+      ownerYearOfDeathRmdSatisfied: true,
+      provenance: PROVENANCE,
+    },
+  }
+
   it('applies the greater employee expectancy once beneficiary details with the owner birth year are entered', () => {
-    const inherited: InheritedAccount = {
-      ownerDeathYear: 2026,
-      decedentHadStartedRmds: true,
-      beneficiary: {
-        beneficiaryClass: 'designated-individual',
-        edbCategory: 'not-more-than-10-years-younger',
-        beneficiaryBirthYear: 1942,
-        soleBeneficiary: true,
-        election: 'none',
-        ownerBirthYear: 1951,
-        ownerYearOfDeathRmdSatisfied: true,
-        provenance: PROVENANCE,
-      },
-    }
     const classification = classifyInheritedRegime({
       accountType: 'traditional',
       accountKind: 'ira',
@@ -395,6 +435,19 @@ describeRule('treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy',
     expect(in2027.divisorArm).toBe('owner-fixed')
     expect(in2027.requiredAmount).toBeCloseTo(accepted, 6)
     expect(in2027.requiredAmount).not.toBeCloseTo(produced, 6)
+  })
+  it('takes the greater-of amount in the full projection', () => {
+    // The worksheet above, end to end: the 2026 death-year RMD is stated as
+    // satisfied, nothing grows, so the December 31, 2026 balance is the opening
+    // $300,000 and the 2027 distribution is 300,000 / 13.8.
+    const evidence = projectInherited(1942, inherited)
+    const in2027 = evidence(2027)
+
+    expect(in2027.regime).toBe('edb-life-expectancy')
+    expect(in2027.divisorArm).toBe('owner-fixed')
+    expect(in2027.requiredAmount).toBeCloseTo(accepted, 6)
+    expect(in2027.executedRequiredAmount).toBeCloseTo(accepted, 6)
+    expect(in2027.executedRequiredAmount).not.toBeCloseTo(produced, 6)
   })
 })
 
@@ -507,27 +560,66 @@ describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
     expect(in2036.requiredAmount).not.toBeCloseTo(produced, 6)
   })
 
-  it('still sweeps in the tenth year when the same heir is stated not to be eligible', () => {
-    // Contrary guard: the stretch comes from the asserted category, not from
-    // the ages. A beneficiary more than ten years younger with edbCategory
-    // 'none' (owner born 1961, beneficiary 1975) is held to the ten-year rule
-    // (IRC 401(a)(9)(H)(i)), so the 2036 requirement is the whole balance.
-    const nonEdb: InheritedAccount = {
+  it('takes a life-expectancy amount, not the whole balance, in the tenth year of the full projection', () => {
+    // Hand worksheet, carried year by year with no growth. Nothing is due in
+    // 2026, the year of death. From 2027 the divisor is 18.0, 17.0, ... 10.0
+    // through 2035, and each year keeps (d minus 1) / d of the balance, so
+    // the December 31, 2035 balance is 300,000 x (17/18 x 16/17 x ... x 9/10)
+    // = 300,000 x 9/18 = 150,000. The 2036 amount is 150,000 / 9.0 =
+    // 16,666.67, leaving 133,333.33; the ten-year reading would take the whole
+    // 150,000.
+    const evidence = projectInherited(1956, classifiedEdb)
+    const balanceEndOf2035 = INHERITED_BALANCE * 9 / 18
+    const in2036 = evidence(2036)
+
+    expect(evidence(2026).requiredAmount).toBe(0)
+    expect(evidence(2027).requiredAmount).toBeCloseTo(INHERITED_BALANCE / 18.0, 6)
+    expect(in2036.requirementKind).toBe('annual-rmd')
+    expect(in2036.divisor).toBeCloseTo(EDB_EXPECTANCY_IN_2036, 10)
+    expect(in2036.executedRequiredAmount).toBeCloseTo(balanceEndOf2035 / EDB_EXPECTANCY_IN_2036, 6)
+    expect(in2036.executedRequiredAmount).not.toBeCloseTo(balanceEndOf2035, 6)
+    // The account outlives the ten-year deadline: 2037 still takes a
+    // life-expectancy amount, 133,333.33 / 8.0.
+    expect(evidence(2037).executedRequiredAmount)
+      .toBeCloseTo((balanceEndOf2035 - balanceEndOf2035 / 9.0) / 8.0, 6)
+  })
+
+  it('turns on the asserted category alone, with every other fact the same', () => {
+    // Contrary guard. Owner born 1961, beneficiary born 1971: ten birth years
+    // apart, which year precision cannot place on either side of the
+    // ten-years-younger line (Treas. Reg. 1.401(a)(9)-4(e)(6) measures birth
+    // date to birth date), so the classifier accepts both assertions with a
+    // year-precision disclosure. Only edbCategory differs between the two.
+    //   Eligible (IRC 401(a)(9)(E)(ii)(V)): the beneficiary reaches 56 in
+    //   2027, Single Life Table entry 30.6; in 2036 30.6 minus 9 = 21.6, and
+    //   the amount on $300,000 is 13,888.89.
+    //   Not eligible (IRC 401(a)(9)(H)(i)): the ten-year rule, so the whole
+    //   $300,000 is due in 2036.
+    const atTenYearGap = (edbCategory: 'not-more-than-10-years-younger' | 'none'): InheritedAccount => ({
       ...classifiedEdb,
-      beneficiary: { ...classifiedEdb.beneficiary!, edbCategory: 'none', beneficiaryBirthYear: 1975 },
-    }
-    const classification = classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira', inherited: nonEdb })
-    expect(classification).toMatchObject({ kind: 'regime', row: 'R2', finalDeadlineYear: 2036 })
-    if (classification.kind !== 'regime') return
-    const in2036 = inheritedRequirementForYear({
-      pack,
-      classification,
-      inherited: nonEdb,
-      year: 2036,
-      priorYearEndBalance: INHERITED_BALANCE,
+      beneficiary: { ...classifiedEdb.beneficiary!, beneficiaryBirthYear: 1971, edbCategory },
     })
-    expect(in2036.kind).toBe('final-sweep')
-    expect(in2036.requiredAmount).toBe(produced)
+    const requirementIn2036 = (facts: InheritedAccount) => {
+      const classification = classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira', inherited: facts })
+      if (classification.kind !== 'regime') throw new Error('expected a classified regime')
+      expect(classification.disclosures).toContain('edb-category-year-precision-unverified')
+      return {
+        row: classification.row,
+        evidence: inheritedRequirementForYear({
+          pack, classification, inherited: facts, year: 2036, priorYearEndBalance: INHERITED_BALANCE,
+        }),
+      }
+    }
+
+    const eligible = requirementIn2036(atTenYearGap('not-more-than-10-years-younger'))
+    expect(eligible.row).toBe('R3')
+    expect(eligible.evidence.kind).toBe('annual-rmd')
+    expect(eligible.evidence.requiredAmount).toBeCloseTo(INHERITED_BALANCE / (30.6 - 9), 6)
+
+    const notEligible = requirementIn2036(atTenYearGap('none'))
+    expect(notEligible.row).toBe('R2')
+    expect(notEligible.evidence.kind).toBe('final-sweep')
+    expect(notEligible.evidence.requiredAmount).toBe(produced)
   })
 })
 

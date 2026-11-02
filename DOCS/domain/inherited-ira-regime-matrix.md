@@ -212,14 +212,21 @@ same-decedent aggregation election's allocation mechanics beyond the explicit id
   record stays `approximated` only for the labeled legacy path (`inheritedForcedAmount`), with
   approximation kind `convention` since the 2026-11-02 validation round: nothing reaching that
   path holds an owner birth date the classifier accepts (no beneficiary block, a pre-2020 death,
-  or a classifier refusal), so the beneficiary arm alone is the documented fallback.
+  or a classifier refusal; an X1 or X4 account may carry `ownerBirthYear`, but the refusal stands
+  and the legacy helper does not read it), so the beneficiary arm alone is the documented
+  fallback. An older beneficiary, the only case where the owner arm wins, is always an EDB, so
+  the year-ten deadline the legacy path also applies belongs to the EDB record, not this one.
 - `irc-401-a-9-E-ii-eligible-designated-beneficiary` — superseded by R3/S0/S1/K2 for plans that
   state EDB facts. Legacy two-field accounts, pre-2020 deaths, and classifier-refusal fallbacks
   stay on the labeled ten-year approximation; migration never fabricates an EDB category and the
   engine never infers one (§2). The record stays `approximated` for that path only, approximation
   kind `convention` since the 2026-11-02 validation round, with `errorDirection` `bothDirections`:
   the year-ten sweep overstates that year's income, but for a before-RBD death the legacy path
-  forces nothing in years 1–9 where the life-expectancy rule requires an annual amount.
+  forces nothing in years 1–9 where the life-expectancy rule requires an annual amount (from the
+  year after death for a non-spouse EDB; for a spouse sole beneficiary only from the §1.401(a)(9)-3(d)
+  commencement year). The life-expectancy schedule is the EDB default, not the only outcome: a
+  before-RBD ten-year election (R3a, S3), the minor child's majority-plus-ten deadline (R3), and
+  the spouse treat-as-own transition (S2) each change it.
 - The shipped year-10 sweep (`ownerDeathYear + 10`) matches the final-reg deadline formulation —
   the end of the calendar year that includes the tenth anniversary falls in death-year + 10 for
   any death date — so R1/R2/K1 keep it.
