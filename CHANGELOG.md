@@ -12,10 +12,15 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   child's majority-plus-ten deadline, and a spouse's treat-as-own transition), and after a death
   on or after the required beginning date the divisor is the longer of the beneficiary's and the
   owner's expectancy (Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)).
-  What stays approximated is only the labeled legacy path, and nothing that reaches it holds a fact
-  the classifier accepts (no beneficiary block, a pre-2020 death, or a classifier refusal), so the
-  engine keeps the ten-year schedule and the beneficiary arm there rather than invent a status or
-  an owner age. Each rule now carries a public convention rationale, and its fixture pins both the
+  What stays approximated is only the labeled legacy path. Most accounts that reach it hold no
+  status the classifier accepts (no beneficiary block, a pre-2020 death, or a classifier refusal),
+  so the engine keeps the ten-year schedule and the beneficiary arm there rather than invent a
+  status or an owner age. The one exception is a surviving spouse's treat-as-own transition after
+  a death before the required beginning date: the spouse category is accepted, but when the
+  Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or an
+  owner born in 1959) the years before the election keep the ten-year schedule with a needs-review
+  refusal on their evidence, and owner rules apply from the election year, rather than guess that
+  start year. Each rule now carries a public convention rationale, and its fixture pins both the
   legacy reading and the classified reading on the same hand worksheet.
   - `irc-401-a-9-E-ii-eligible-designated-beneficiary`'s error direction is corrected from
     overstates to both directions: for a death before the required beginning date the legacy path

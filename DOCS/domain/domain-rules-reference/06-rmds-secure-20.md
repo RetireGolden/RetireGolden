@@ -161,9 +161,14 @@
   (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, computed for classified facts); EDB
   life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, computed
   for classified facts). Both records stay `approximated`, as a kept-on-purpose convention, only for the labeled
-  legacy path: an inherited account without a beneficiary block, a pre-2020 death, or a classifier refusal
-  never carries a fact the classifier accepts, so the engine neither infers EDB status nor applies an owner
-  arm there. **Fail closed:** death before 2020; an initial successor beneficiary at
+  legacy path. An inherited account without a beneficiary block, a pre-2020 death, or a classifier refusal
+  carries no status the classifier accepts, so the engine neither infers EDB status nor applies an owner arm
+  there. The one accepted status that reaches that path is a surviving spouse's treat-as-own transition (S2)
+  after a before-RBD death (always so for a Roth): its pre-election years are scheduled from a synthetic S0,
+  and when the Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or a
+  born-1959 owner's ambiguous applicable-age year) those years take the legacy schedule with a needs-review
+  refusal on their evidence, and owner rules apply from the election year. The engine does not guess that
+  start year, and the owner arm has no role in a before-RBD death. **Fail closed:** death before 2020; an initial successor beneficiary at
   classification (matrix X2); an eligible designated beneficiary's in-horizon death
   (`irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock`); pre-RBD
   non-designated beneficiaries under the five-year rule

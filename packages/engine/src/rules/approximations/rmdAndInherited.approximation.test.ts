@@ -307,7 +307,11 @@ describeRule('irc-401-a-9-C-i-II-still-working-exception', {
  * only the legacy inheritedForcedAmount helper omits that owner fact and
  * divides by beneficiaryRemainingLifeExpectancy alone. The gap is kept on
  * purpose (approximation kind `convention`): nothing that reaches the legacy
- * helper holds an owner birth date the classifier accepts.
+ * helper after an on-or-after-RBD death holds an owner birth date the
+ * classifier accepts. The one accepted classification that reaches it, an S2
+ * spouse's pre-election years whose commencement year cannot be settled
+ * (simulate.inheritedRegimeExecution.test.ts, E10), is a before-RBD death,
+ * where the owner arm has no role.
  *
  * Hand worksheet. The decedent was born in 1951 and died in 2026 at age 75.
  * Born 1951, the applicable age is 73 (IRC 401(a)(9)(C)(v)(I)), attained in

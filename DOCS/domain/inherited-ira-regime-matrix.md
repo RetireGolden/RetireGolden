@@ -211,15 +211,24 @@ same-decedent aggregation election's allocation mechanics beyond the explicit id
   (`deriveRbdComparison` refuses one without it), and R1/R3/S0/S1 apply the greater-of test. The
   record stays `approximated` only for the labeled legacy path (`inheritedForcedAmount`), with
   approximation kind `convention` since the 2026-11-02 validation round: nothing reaching that
-  path holds an owner birth date the classifier accepts (no beneficiary block, a pre-2020 death,
-  or a classifier refusal; an X1 or X4 account may carry `ownerBirthYear`, but the refusal stands
-  and the legacy helper does not read it), so the beneficiary arm alone is the documented
-  fallback. An older beneficiary, the only case where the owner arm wins, is always an EDB, so
+  path after an on/after-RBD death holds an owner birth date the classifier accepts (no
+  beneficiary block, a pre-2020 death, or a classifier refusal; an X1 or X4 account may carry
+  `ownerBirthYear`, but the refusal stands and the legacy helper does not read it), so the
+  beneficiary arm alone is the documented fallback. The one accepted classification that reaches
+  the legacy path, the S2 pre-election fallback described under the EDB record below, arises only
+  for a before-RBD death, where the owner arm has no role. An older beneficiary, the only case where the owner arm wins, is always an EDB, so
   the year-ten deadline the legacy path also applies belongs to the EDB record, not this one.
 - `irc-401-a-9-E-ii-eligible-designated-beneficiary` — superseded by R3/S0/S1/K2 for plans that
   state EDB facts. Legacy two-field accounts, pre-2020 deaths, and classifier-refusal fallbacks
   stay on the labeled ten-year approximation; migration never fabricates an EDB category and the
-  engine never infers one (§2). The record stays `approximated` for that path only, approximation
+  engine never infers one (§2). One accepted EDB status also reaches that path: an S2 spouse whose
+  pre-election years are scheduled from a synthetic S0 (§7) after a before-RBD death (always so for
+  a Roth). When that S0 refuses because the §1.401(a)(9)-3(d) commencement year cannot be settled
+  (no `ownerBirthYear`, or a born-1959 owner's ambiguous applicable-age attain year), the
+  pre-election years run through `inheritedForcedAmount` with the X5 needs-review refusal on their
+  evidence, and owner rules apply from `treatAsOwnElectionYear` (`simulate.inheritedRegimeExecution`
+  test E10). The status is accepted there; only the schedule's start year is unsettled, and the
+  engine does not guess it. The record stays `approximated` for that path only, approximation
   kind `convention` since the 2026-11-02 validation round, with `errorDirection` `bothDirections`:
   the year-ten sweep overstates that year's income, but for a before-RBD death the legacy path
   forces nothing in years 1–9 where the life-expectancy rule requires an annual amount (from the
