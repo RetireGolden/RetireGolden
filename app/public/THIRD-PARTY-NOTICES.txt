@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  39 packages, sha256 4d2d4fb5e9a2c4f5190698adeb54f8e4341f4dc325516a1cc077b09baa1721e4
+Attributed:  39 packages, sha256 5bd8c92cebd9b98b488256c9d70e83e94af65fb4ff8b38023758913c76e9b1a1
 
 ================================================================================
 
@@ -744,7 +744,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (8.4.0)
+react-router (8.5.0)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
@@ -1015,7 +1015,7 @@ SOFTWARE.
 Summary
 -------
 Packages attributed: 39
-Excluded (type-only @types/*, first-party @retiregolden/*): 13
+Excluded (type-only @types/*, first-party @retiregolden/*): 14
 Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).
 
 Packages with no LICENSE file found (metadata only above):
@@ -1023,9 +1023,10 @@ Packages with no LICENSE file found (metadata only above):
 
 Excluded @types/* packages (TypeScript-only; not in the runtime bundle):
   - @retiregolden/engine@link:../packages/engine
+  - @types/react@19.3.0
+  - @types/react-dom@19.3.0
   - @retiregolden/planner-ui@link:../packages/planner-ui
   - @types/use-sync-external-store@0.0.6
-  - @types/react@19.3.0
   - @types/d3-array@3.2.2
   - @types/d3-ease@3.0.2
   - @types/d3-time@3.0.4
