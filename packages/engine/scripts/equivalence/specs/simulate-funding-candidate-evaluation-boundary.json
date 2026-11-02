@@ -34,7 +34,7 @@
         269,
         308
       ],
-      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 309 (`? {}`), the `? {}` arm for an undefined `stateRetirementDistributions`: simulatePlan always hands the funding phase an array literal. The direct contract test's minimal tax input takes it. Also line 322 (`: { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),`), the defined arm for `stateHsaYearFacts`: the only context builder (annualFundingApplicationAndClosePhase) never sets it. No direct test pins it. Also line 324 (`? {}`), the `? {}` arm for an undefined `stateQcdEventFacts`: the forced-distribution phase always returns `qcdEventFactsForYear(plan, year, stateQcdEvents)` over an array, which is never undefined for a defined event list. The direct contract test's minimal tax input takes it. Also line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`), the defined arm for `stateQcdYearFacts`: the annual facts simulatePlan hands the funding phase never carry it. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 309 (`? {}`), the `? {}` arm for an undefined `stateRetirementDistributions`: simulatePlan always hands the funding phase an array literal. The direct contract test's minimal tax input takes it. Also line 322 (`: { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),`), the defined arm for `stateHsaYearFacts`: the only context builder (annualFundingApplicationAndClosePhase) never sets it. No direct test pins it. The undefined-`stateQcdEventFacts` arm below this range (`? { stateQcdEventFacts: undefined }`) is not excluded: since PR #813 it runs for every year the plan marks QCD unknown, the corpus member af1-qcdWithheldYear takes it, the measured range covers it, and the withheld-year tests in simulate.stateAnnualSources.test.ts pin it. Also line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`), the defined arm for `stateQcdYearFacts`: the annual facts simulatePlan hands the funding phase never carry it. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 269,
@@ -80,26 +80,14 @@
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
         323,
-        323
+        327
       ],
       "note": "Continues AF.helper.tax past its excluded line 322 (`: { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),`); see that entry's note.",
       "anchors": [
         {
           "line": 323,
           "text": "...(taxInputBase.stateQcdEventFacts === undefined"
-        }
-      ]
-    },
-    {
-      "id": "AF.helper.tax.4",
-      "label": "capital-loss netting, complete tax input, and gross healthcare default (continued)",
-      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
-      "lines": [
-        325,
-        327
-      ],
-      "note": "Continues AF.helper.tax past its excluded line 324 (`? {}`); see that entry's note.",
-      "anchors": [
+        },
         {
           "line": 325,
           "text": ": { stateQcdEventFacts: taxInputBase.stateQcdEventFacts }),"
@@ -116,20 +104,20 @@
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
         329,
-        369
+        370
       ],
       "note": "Continues AF.helper.tax past its excluded line 328 (`: { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),`); see that entry's note.",
       "anchors": [
         {
-          "line": 351,
+          "line": 352,
           "text": "taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)"
         },
         {
-          "line": 368,
+          "line": 369,
           "text": "candidateHealthcare ="
         },
         {
-          "line": 369,
+          "line": 370,
           "text": "aca.healthcareExcludingEnrollment + aca.grossEnrollmentPremium"
         }
       ]
@@ -139,20 +127,20 @@
       "label": "federal ACA probe and known-character branch selection",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        371,
-        374
+        372,
+        375
       ],
       "anchors": [
         {
-          "line": 371,
+          "line": 372,
           "text": "if (aca.active && aca.contract !== null) {"
         },
         {
-          "line": 372,
+          "line": 373,
           "text": "const federalProbe = computeFederalTax(taxInput)"
         },
         {
-          "line": 374,
+          "line": 375,
           "text": "if (aca.contract.taxExemptInterest.state === 'known') {"
         }
       ]
@@ -162,20 +150,20 @@
       "label": "plan-derived unknown-attestation tax-exempt-interest provenance",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        383,
-        388
+        384,
+        389
       ],
       "anchors": [
         {
-          "line": 383,
+          "line": 384,
           "text": "if (aca.contract.taxExemptInterest.state === 'unknown') {"
         },
         {
-          "line": 384,
+          "line": 385,
           "text": "acaMagiTaxExemptInterest = {"
         },
         {
-          "line": 388,
+          "line": 389,
           "text": "acaSupportCodes.push('tax-exempt-interest-plan-derived')"
         }
       ]
@@ -185,16 +173,16 @@
       "label": "household ACA MAGI construction and blocker publication",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        397,
-        405
+        398,
+        406
       ],
       "anchors": [
         {
-          "line": 397,
+          "line": 398,
           "text": "acaMagiProbe = buildAcaHouseholdMagi({"
         },
         {
-          "line": 405,
+          "line": 406,
           "text": "acaSupportCodes.push(...acaMagiProbe.blockers)"
         }
       ]
@@ -204,24 +192,24 @@
       "label": "informational-code filtering and monthly ACA premium pricing",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        406,
-        430
+        407,
+        431
       ],
       "anchors": [
         {
-          "line": 406,
+          "line": 407,
           "text": "const blockingAcaCodes = acaSupportCodes.filter(isBlockingAcaSupportCode)"
         },
         {
-          "line": 412,
+          "line": 413,
           "text": "const priced = acaEconomicPremiumByMonth("
         },
         {
-          "line": 421,
+          "line": 422,
           "text": "if (priced.belowEligibilityFloor) {"
         },
         {
-          "line": 426,
+          "line": 427,
           "text": "candidateHealthcare ="
         }
       ]
@@ -231,20 +219,20 @@
       "label": "stable HSA-cap acceptance predicate",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        432,
-        439
+        433,
+        440
       ],
       "anchors": [
         {
-          "line": 432,
+          "line": 433,
           "text": "const nextHsaCap = input.hsa.qualifiedExpenseCap"
         },
         {
-          "line": 437,
+          "line": 438,
           "text": "hsaCapConverged = true"
         },
         {
-          "line": 438,
+          "line": 439,
           "text": "break"
         }
       ]
@@ -254,24 +242,24 @@
       "label": "complete tax, penalty, required-need, ACA, HSA, and warning-gate result",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
       "lines": [
-        457,
-        484
+        458,
+        485
       ],
       "anchors": [
         {
-          "line": 457,
+          "line": 458,
           "text": "const penalties ="
         },
         {
-          "line": 461,
+          "line": 462,
           "text": "return {"
         },
         {
-          "line": 469,
+          "line": 470,
           "text": "requiredNeed: Math.max("
         },
         {
-          "line": 482,
+          "line": 483,
           "text": "traditionalEarlyWithdrawalPenaltyCharged:"
         }
       ]
@@ -284,7 +272,7 @@
         937,
         1000
       ],
-      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 990 (`? {}`), the `? {}` arm for an undefined `facts.stateRetirementDistributions`, which simulatePlan always passes as an array literal. No direct test pins it. Also line 1007 (`? {}`), the `? {}` arm for an undefined `facts.stateQcdEventFacts`, which the forced-distribution phase always defines (see AF.helper.tax). No direct test pins it. Also line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`), the defined arm for `facts.stateQcdYearFacts`, which simulatePlan never sets. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
+      "note": "EXCLUDED on 2026-09-30, as unreachable from any plan that parses: line 990 (`? {}`), the `? {}` arm for an undefined `facts.stateRetirementDistributions`, which simulatePlan always passes as an array literal. No direct test pins it. The undefined-`facts.stateQcdEventFacts` arm below this range (`? { stateQcdEventFacts: undefined }`) is not excluded: since PR #813 it runs for every year the plan marks QCD unknown, the corpus member af1-qcdWithheldYear takes it, and the measured range covers it (see AF.helper.tax). Also line 1016 (`: { stateQcdYearFacts: facts.stateQcdYearFacts }),`), the defined arm for `facts.stateQcdYearFacts`, which simulatePlan never sets. No direct test pins it. Line numbers are this file's on 2026-09-30; the ranges are content-located by their anchors.",
       "anchors": [
         {
           "line": 937,
@@ -310,7 +298,7 @@
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
         1002,
-        1017
+        1026
       ],
       "note": "Continues AF.callsite.context past its excluded line 990 (`? {}`); see that entry's note.",
       "anchors": [
@@ -321,19 +309,7 @@
         {
           "line": 1017,
           "text": "...(facts.stateQcdEventFacts === undefined"
-        }
-      ]
-    },
-    {
-      "id": "AF.callsite.context.3",
-      "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot (continued)",
-      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [
-        1019,
-        1026
-      ],
-      "note": "Continues AF.callsite.context past its excluded line 1007 (`? {}`); see that entry's note.",
-      "anchors": [
+        },
         {
           "line": 1019,
           "text": ": { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({"

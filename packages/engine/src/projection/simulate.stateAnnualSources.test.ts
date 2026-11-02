@@ -2,7 +2,7 @@ import { californiaHsaAccountAdjustment } from '../tax/stateQcdHsa.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
-import { couplePlan, singlePersonPlan, traditionalAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
+import { couplePlan, singlePersonPlan, traditionalAccount, cashAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxYearInput } from './types.js'
 
@@ -55,6 +55,7 @@ describe('actual annual state source facts', () => {
     expect(input.stateQcdEventFacts).toEqual([expect.objectContaining({
       accountId: 'ira', ownerPersonId: 'p1', directCharityTransfer: 10000,
       federalExcludedAmount: 10000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+      transactionKind: 'directQcd',
     })])
   })
 })
@@ -69,6 +70,169 @@ it('publishes known-empty runtime HSA and QCD facts for a feature-off CA plan', 
   })
   expect(inputs.at(-1)?.stateHsaAccountYearFacts).toEqual([])
   expect(inputs.at(-1)?.stateQcdEventFacts).toEqual([])
+})
+
+it('withholds an evidence-only QCD and names the custodian row', () => {
+  // IRC 408(d)(8)(A). The projection executed no QCD. The custodian row is
+  // not priced as one, and the year is not a complete empty collection.
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.qcdEventEvidence = [{
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident', directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(result.warnings).toContain(
+    'Custodian QCD evidence custodian-2026-qcd on account ira for 2026 has no executed distribution, so this year\'s state QCD collection is incomplete.',
+  )
+})
+
+it('names a repeated custodian QCD identity when the collection is withheld', () => {
+  const plan = singlePersonPlan({ dob: '1952-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  const row = {
+    eventId: 'custodian-2026-qcd', taxYear: 2026, accountId: 'ira', ownerPersonId: 'p1',
+    transactionKind: 'directQcd' as const, grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+    federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+    residency: 'fullYearResident' as const, directTransfer: true,
+    provenance: { source: 'IRA custodian 1099-R', asOf: '2026-12-31' },
+  }
+  plan.stateTaxFacts.qcdEventEvidence = [row, { ...row, grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(result.warnings).toContain(
+    'Custodian QCD evidence custodian-2026-qcd on account ira for 2026 is repeated, so this year\'s state QCD collection is incomplete.',
+  )
+})
+
+it('reaches the QCD completeness branch when the plan marks the year unknown', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('withholds the state QCD collection when a QCD was executed but the year is unknown', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(structuredClone(input)); return 0 } },
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+})
+
+it('keeps a NJ QCD-unknown mark after a mid-year move to CA', () => {
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.household.stateMoves = [{ fromYear: 2026, fromMonth: 7, state: 'CA' }]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NJ', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const inputs: TaxYearInput[] = []
+  simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: { compute(input) { inputs.push(input); return 0 } },
+  })
+  expect(inputs.at(-1)?.stateQcdEventFacts).toBeUndefined()
+  expect(Object.prototype.hasOwnProperty.call(inputs.at(-1), 'stateQcdEventFacts')).toBe(true)
+})
+
+it('does not let a calculator-level QCD list fill a year the plan marked unknown', () => {
+  // The configured event is a split-interest transfer. If the unknown year
+  // fell back to it, the leaf would refuse that transfer instead of reporting
+  // the collection unavailable. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdEvents: [{
+        eventId: 'configured', accountId: 'ira', ownerPersonId: 'p1',
+        grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        residency: 'fullYearResident', splitInterest: true, directTransfer: true,
+        transactionKind: 'splitInterest',
+      }],
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
+})
+
+it('does not let calculator-level legacy QCD facts fill a year the plan marked unknown', () => {
+  // The configured fact is a split-interest transfer, as above, through the
+  // legacy singular qcdFacts route. A withheld year reports the collection
+  // unavailable and never prices or refuses that fact. IRC 408(d)(8)(F).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 80, state: 'CA' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'CA', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator({
+      qcdFacts: {
+        ownerPersonId: 'p1', grossIraDistribution: 10_000, directCharityTransfer: 10_000,
+        federalExcludedAmount: 10_000, federalTaxableAmount: 0, federalBasisAllocated: 0,
+        stateBasisFactsKnown: true, stateBasisRecovery: 0, residency: 'fullYearResident',
+        policy: { kind: 'conforms', citation: 'caller-should-be-ignored' }, splitInterest: true,
+      },
+    }),
+  })
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+  expect(codes).not.toContain('state-qcd-split-interest-refused')
+})
+
+it('keeps a withheld QCD year incomplete in a state pack without a QCD policy', () => {
+  // NC's pack states no direct-QCD policy. The QCD was executed but the year's
+  // QCD evidence is explicitly unknown, so the collection is withheld and the
+  // state result cannot be complete.
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NC' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NC', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator(),
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
 })
 
 it('keeps an asserted CA HSA deduction when candidate scoring supplies only zero defaults', () => {
@@ -142,6 +306,107 @@ it('publishes conversion source gross and taxable dollars to final state computa
   }))
 })
 
+
+it('detects a projected 2027 New Jersey QCD and leaves unknown basis unpriced', () => {
+  // Opening IRA 200,000, QCD 10,000, no basis evidence. The transfer is seen
+  // and is not added to New Jersey income.
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
+  plan.incomes = [{ type: 'wages', id: 'wages', personId: 'p1', annualGross: 200_000, endAge: null, realGrowthPct: 0 }]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.strategies.qcdAnnual = 10_000
+  const priced = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2027,
+    taxCalculator: createStateTaxCalculator({}),
+  }).years[0]!
+  expect(priced.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+  expect(priced.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+  expect(priced.balances.ira).toBeCloseTo(190_000, 6)
+  const tax = priced.taxComputation as unknown as { taxableIncome: number; status: string; issues: { code: string }[] }
+  expect(tax.status).toBe('incomplete')
+  expect(tax.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
+  plan.strategies.qcdAnnual = 0
+  const baseline = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2027,
+    taxCalculator: createStateTaxCalculator({}),
+  }).years[0]!.taxComputation as unknown as { taxableIncome: number }
+  expect(tax.taxableIncome).toBe(baseline.taxableIncome)
+})
+
+it('keeps a second projected New Jersey QCD year incomplete instead of assuming basis', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.strategies.qcdAnnual = 10_000
+  const years = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2028,
+    taxCalculator: createStateTaxCalculator({}),
+  }).years
+  for (const year of years) {
+    expect(year.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+    expect(year.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+    expect(year.taxComputation?.status).toBe('incomplete')
+    expect(year.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
+  }
+})
+
+it('does not let a projected year replace later evidenced New Jersey basis', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.strategies.qcdAnnual = 10_000
+  plan.stateTaxFacts.iraBasisYearEvidence = [{
+    taxYear: 2028, ownerPersonId: 'p1', state: 'NJ', accountId: 'ira', unrecoveredStateBasis: 50_000,
+    annualDistributionsComplete: true, yearEndAccountValue: 180_000, distributionsDuringYear: 10_000,
+    postYearContributionsThroughFilingDeadline: 0,
+    provenance: { source: '2025 NJ-1040 Worksheet C', asOf: '2028-12-31' },
+  }]
+  const second = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2028,
+    taxCalculator: createStateTaxCalculator({}),
+  }).years[1]!
+  expect(second.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 50_000 })
+})
+
+it('carries lowercase nj basis evidence into the next year', () => {
+  const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 80, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 1000, 'p1', 'ira')]
+  plan.expenses.baseAnnual = 100
+  plan.stateTaxFacts.iraBasisYearEvidence = [2026, 2027].map((taxYear) => ({
+    taxYear, ownerPersonId: 'p1', state: 'nj', accountId: 'ira', unrecoveredStateBasis: 100,
+    annualDistributionsComplete: true, yearEndAccountValue: taxYear === 2026 ? 900 : 800,
+    distributionsDuringYear: 100, postYearContributionsThroughFilingDeadline: 0,
+    provenance: { source: 'NJ Worksheet C annual account statement', asOf: `${taxYear}-12-31` },
+  }))
+  const result = simulatePlan(validatePlan(plan), {
+    startYear: 2026, horizonEndYear: 2027, taxCalculator: createStateTaxCalculator({}),
+  })
+  expect(result.years[0]!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 100, basisConsumed: 10, closingBasis: 90 })
+  expect(result.years[1]!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 90, basisConsumed: 10, closingBasis: 80 })
+})
+
+it('leaves a projected New Jersey QCD incomplete when spending also draws the IRA', () => {
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
+  plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.expenses.baseAnnual = 20_000
+  plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+  plan.strategies.qcdAnnual = 10_000
+  const year = simulatePlan(validatePlan(plan), {
+    startYear: 2027, horizonEndYear: 2027, taxCalculator: createStateTaxCalculator({}),
+  }).years[0]!
+  expect(year.acceptedTaxInput?.stateQcdEventFacts?.some((event) => event.grossIraDistribution === 10_000)).toBe(true)
+  expect(year.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+  expect(year.taxComputation?.status).toBe('incomplete')
+  expect(year.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
+})
 
 it('commits NJ Worksheet C basis once and carries closing basis to the next actual year', () => {
   // NJ GIT-2 Worksheet C:100 basis/(900 December31 +100 distributed)=10%.

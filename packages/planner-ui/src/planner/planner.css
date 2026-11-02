@@ -2125,6 +2125,33 @@ html:has(.kpi-bar) {
   color: var(--accent);
 }
 
+/* Same accent links as the disclaimer line, one quiet row under it. */
+.app-footer-social {
+  margin-top: var(--space-sm);
+}
+
+.app-footer-social ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: var(--space-md);
+  row-gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Same ~44px coarse-pointer floor the header links use. Desktop stays a text row. */
+@media (pointer: coarse) {
+  .app-footer-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
 /* --- help tooltips --------------------------------------------------------- */
 
 /* Inline formatting, not flex: the ⓘ follows the label's last word, so a
