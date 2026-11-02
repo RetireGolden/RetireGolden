@@ -443,6 +443,12 @@ export interface ComputeStateTaxOptions {
    * Legacy `qcdFacts` is accepted when this collection is omitted.
    */
   qcdEvents?: readonly StateQcdEventFacts[]
+  /**
+   * True when the year's input withheld its QCD collection (an own
+   * `stateQcdEventFacts: undefined`): the year's QCD activity is unknown, so
+   * the result is incomplete whether or not the pack states a QCD policy.
+   */
+  qcdEventsWithheld?: boolean
   /** @deprecated Prefer `qcdEvents`. */
   qcdFacts?: StateQcdYearFacts
   /** New Jersey Worksheet C owner pools keyed for QCD reconstruction. */
@@ -1354,7 +1360,9 @@ export function computeStateTaxableIncomeResult(
     )
   } else if (opts.qcdFacts) {
     accumulateLeaf(acc, stateDirectQcdAdjustment(opts.qcdFacts, params.directQcdPolicy))
-  } else if (params.directQcdPolicy !== undefined) {
+  } else if (params.directQcdPolicy !== undefined || opts.qcdEventsWithheld === true) {
+    // A withheld year's activity is unknown, so a pack without a QCD policy
+    // cannot treat it as known-empty either.
     acc.warnings.push({
       code: 'state-qcd-annual-activity-unavailable',
       ruleId: 'state-direct-qcd-conformity',
@@ -2435,6 +2443,9 @@ function stateOptionsFromInput(input: TaxYearInput, opts: StateTaxYearOptions): 
     hsaAccounts: input.stateHsaAccountYearFacts ?? opts.hsaAccounts,
     hsaFacts: input.stateHsaYearFacts ?? opts.hsaFacts,
     qcdEvents: annualQcdEventsFromInput(input, opts),
+    qcdEventsWithheld: Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts')
+      ? input.stateQcdEventFacts === undefined
+      : opts.qcdEventsWithheld,
     // An input that owns stateQcdEventFacts settles the year's QCD collection,
     // an undefined value included, so the legacy singular facts never fill it.
     qcdFacts: Object.prototype.hasOwnProperty.call(input, 'stateQcdEventFacts') ? undefined : opts.qcdFacts,

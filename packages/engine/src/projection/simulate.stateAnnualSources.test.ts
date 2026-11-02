@@ -214,6 +214,27 @@ it('does not let calculator-level legacy QCD facts fill a year the plan marked u
   expect(codes).not.toContain('state-qcd-split-interest-refused')
 })
 
+it('keeps a withheld QCD year incomplete in a state pack without a QCD policy', () => {
+  // NC's pack states no direct-QCD policy. The QCD was executed but the year's
+  // QCD evidence is explicitly unknown, so the collection is withheld and the
+  // state result cannot be complete.
+  const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NC' })
+  plan.accounts = [traditionalAccount('ira', 500000, 'p1', 'ira')]
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.strategies.qcdAnnual = 10000
+  plan.stateTaxFacts.annualEvidenceCompleteness = [{
+    taxYear: 2026, state: 'NC', qcd: 'unknown',
+    provenance: { source: 'taxpayer', asOf: '2026-12-31' },
+  }]
+  const result = simulatePlan(validatePlan(plan), { startYear: 2026, horizonEndYear: 2026,
+    taxCalculator: createStateTaxCalculator(),
+  })
+  expect(result.years[0]!.qcd).toBe(10000)
+  const codes = result.years[0]!.taxComputation?.issues.map((issue) => issue.code) ?? []
+  expect(codes).toContain('state-qcd-annual-activity-unavailable')
+})
+
 it('keeps an asserted CA HSA deduction when candidate scoring supplies only zero defaults', () => {
   // Same Schedule CA worksheet as the adapter fixture: asserted federal HSA
   // deduction $4,300, every other category an explicit known zero, addition
