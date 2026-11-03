@@ -70,7 +70,7 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2179
+              "line": 2211
             }
           ]
         }
@@ -239,7 +239,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -318,11 +318,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -497,7 +497,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -587,11 +587,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -665,7 +665,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -764,11 +764,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -819,7 +819,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, and since 2026-11-03 each state declares the row a surviving spouse files under (`qualifyingSurvivingSpouseFilesAs`, read by params/state/index.ts#stateFilingRowFor); the Delaware figures declare `marriedFilingJointly`, the federal mapping, so computeStateTaxableIncome selects the joint Delaware deduction row. Declaring `single` is the whole fix once it is taken. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and test-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on the fallback to the latest per-state tax data and must be rechecked when new per-state tax data, a new form, or an amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.",
+      "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, and since 2026-11-03 each state’s figures can declare the row a surviving spouse files under (`qualifyingSurvivingSpouseFilesAs`, read by params/state/index.ts#stateFilingRowFor; Delaware, Georgia, Kansas and Virginia do, and a state whose figures declare none falls back to the federal joint mapping); the Delaware figures declare `marriedFilingJointly`, the federal mapping, so computeStateTaxableIncome selects the joint Delaware deduction row. Declaring `single` is the whole fix once it is taken. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and test-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on the fallback to the latest per-state tax data and must be rechecked when new per-state tax data, a new form, or an amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.",
       "contraryReading": null,
       "jurisdiction": "state:DE",
       "volatility": "staticStatute",
@@ -867,7 +867,7 @@
           "functions": [
             {
               "name": "taxParameterFilingStatus",
-              "line": 31
+              "line": 40
             }
           ]
         },
@@ -876,7 +876,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -950,7 +950,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -1177,7 +1177,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -1265,7 +1265,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -1353,11 +1353,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1678
+              "line": 1709
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -1426,7 +1426,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -1501,11 +1501,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -1610,7 +1610,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             }
           ]
         }
@@ -1742,7 +1742,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -1920,11 +1920,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2179
+              "line": 2211
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -2217,7 +2217,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -2285,7 +2285,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -2494,7 +2494,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -2612,11 +2612,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -2686,11 +2686,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -2873,11 +2873,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -3085,15 +3085,15 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2179
+              "line": 2211
             },
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -3172,11 +3172,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -3197,6 +3197,10 @@
             {
               "title": "holds for the enacted 2027 deduction ($9,200 single)",
               "line": 105
+            },
+            {
+              "title": "adds the dependents to the taxpayers when the plan gives both counts",
+              "line": 111
             }
           ]
         }
@@ -3223,6 +3227,16 @@
           "kind": "statute",
           "citation": "Va. Code §58.1-322.03(2)(a)",
           "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2(a)(1)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/2"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/151"
         }
       ]
     },
@@ -3260,15 +3274,15 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             },
             {
               "name": "virginiaEnumeratedEmployerPlan",
-              "line": 2491
+              "line": 2523
             }
           ]
         },
@@ -3346,11 +3360,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         },
@@ -3424,11 +3438,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         },
@@ -3525,11 +3539,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2179
+              "line": 2211
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             },
             {
               "name": "virginiaAgedTaxpayerCount",
@@ -3650,7 +3664,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             },
             {
               "name": "virginiaAdjustedFederalAgi",
@@ -3930,7 +3944,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -4101,11 +4115,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -4179,11 +4193,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -4261,11 +4275,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -4343,11 +4357,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -4421,11 +4435,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }
@@ -4489,7 +4503,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1670
+              "line": 1701
             }
           ]
         }
@@ -4663,11 +4677,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1692
+              "line": 1723
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1234
+              "line": 1255
             }
           ]
         }

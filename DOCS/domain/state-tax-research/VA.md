@@ -101,3 +101,8 @@ A survivor under 65 with $60,000: 60,000 − 8,750 − 1,860 = 49,390 taxable, t
 ## Dependent exemptions with explicit counts (2026-11-03)
 
 58.1-322.03(2)(a) allows $930 for each exemption allowable federally, the dependents' as well as the taxpayers'. The planner collects them as two counts, `exemptionTaxpayerCount` and `exemptionDependentCount`. Until 2026-11-03 the engine priced a year that gave the taxpayer count on that count alone and dropped the dependents, $53.48 of tax per dependent in the 5.75% band. It now adds the two. A qualifying surviving spouse with one taxpayer and one dependent and $60,000 of income has $49,390 of Virginia taxable income (60,000 − 8,750 − 2 × 930), and a single filer with one dependent the same; a joint couple with two dependents has $38,780 (60,000 − 17,500 − 4 × 930) (packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts).
+
+The qualifying surviving spouse's second exemption rests on IRC 2(a)(1)(B), which requires a son, stepson, daughter or stepdaughter "with respect to whom the taxpayer is entitled to a deduction for the taxable year under section 151", and on 151(d)(5)(B), which keeps that deduction allowable "for purposes of any other provision of this title" although (d)(5)(A) sets its amount at zero. That clause speaks of Title 26; that Virginia counts the zero-amount exemptions at $930 is the reading every Virginia filer gets in `va-code-58-1-322-03-2-personal-exemptions`.
+
+- https://www.law.cornell.edu/uscode/text/26/2 — IRC 2(a)(1)(B).
+- https://www.law.cornell.edu/uscode/text/26/151 — IRC 151(d)(5)(B).

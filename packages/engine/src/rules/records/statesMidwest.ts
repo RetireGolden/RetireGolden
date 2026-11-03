@@ -1248,7 +1248,7 @@ export const midwestStateRecords = {
   'ks-k40-2026-qss-head-of-household': {
     title: 'Kansas files a qualifying surviving spouse as head of household: the $6,180 deduction and the single schedule',
     statement:
-      'The K-40 instructions send a filer whose federal status is Qualifying Widow(er) with Dependent Child to the Head of Household box. K.S.A. 79-32,119(c)(2) sets the head-of-household standard deduction at $6,180 (single $3,605, married $8,240) for tax year 2024 and every year after, fixed dollars with no indexing clause, so the 2025 K-40 amounts are 2026’s; and 79-32,110(a)(2) taxes "all other individuals", head of household among them, at 5.2% to $23,000 and $1,196 plus 5.58% above, where the joint schedule of (a)(1) runs to $46,000. The Kansas figures carry the head-of-household row (`standardDeductionHeadOfHousehold: 6180` and `bracketsHeadOfHousehold`, the (a)(2) schedule) and declare `qualifyingSurvivingSpouseFilesAs: \'headOfHousehold\'` (params/state/data/year2026.ts); `stateFilingRowFor` selects both for the Kansas taxable-income and tax computations, the year total and a part-year slice alike. A survivor with $66,180 of Kansas AGI has $60,000 of taxable income and $3,260.60 of tax. Until 2026-11-03 the engine sent every state’s qualifying surviving spouse to the joint row through the federal mapper (taxParameterFilingStatus), which gave this survivor $8,240 and the joint schedule, $57,940 of taxable income and $3,058.25 of tax, $202.35 too little. Settled for the filing row, deduction and schedule; the Kansas personal exemption and the 79-32,119(a)-(b) additional deduction at 65 or blind ($850 head of household) are not modeled for any Kansas filer, and whole-return accuracy is outside this record.',
+      'The K-40 instructions send a filer whose federal status is Qualifying Widow(er) with Dependent Child to the Head of Household box. K.S.A. 79-32,119(c)(2) sets the head-of-household standard deduction at $6,180 (single $3,605, married $8,240) for tax year 2024 and every year after, fixed dollars with no indexing clause, so the 2025 K-40 amounts are 2026’s; and 79-32,110(a)(2), headed "All other individuals", head of household among them, taxes them under its (B) table for tax year 2024 and after at 5.2% to $23,000 and $1,196 plus 5.58% above ((A) is the 2018 to 2023 table), where the joint schedule of (a)(1) runs to $46,000. The Kansas figures carry the head-of-household row (`standardDeductionHeadOfHousehold: 6180` and `bracketsHeadOfHousehold`, the (a)(2) schedule) and declare `qualifyingSurvivingSpouseFilesAs: \'headOfHousehold\'` (params/state/data/year2026.ts); `stateFilingRowFor` selects both for the Kansas taxable-income and tax computations, the year total and a part-year slice alike. A survivor with $66,180 of Kansas AGI has $60,000 of taxable income and $3,260.60 of tax. Until 2026-11-03 the engine sent every state’s qualifying surviving spouse to the joint row through the federal mapper (taxParameterFilingStatus), which gave this survivor $8,240 and the joint schedule, $57,940 of taxable income and $3,058.25 of tax, $202.35 too little. Settled for the filing row, deduction and schedule; the Kansas personal exemption and the 79-32,119(a)-(b) additional deduction at 65 or blind ($850 head of household) are not modeled for any Kansas filer, and whole-return accuracy is outside this record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1268,10 +1268,10 @@ export const midwestStateRecords = {
         '(2) For tax year 2024, and all tax years thereafter, the standard deduction amount of an individual, … Single individual filing status, $3,605; married filing status, $8,240; and head of household filing status, $6,180.',
     }, {
       kind: 'statute',
-      citation: 'K.S.A. 79-32,110(a)(2)(B)',
+      citation: 'K.S.A. 79-32,110(a)(2)',
       url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html',
       quotedText:
-        '$1,196 plus 5.58% of excess over $23,000',
+        '(2) All other individuals. … (B) For tax year 2024, and all tax years thereafter: … Not over $23,000 … 5.2% of Kansas taxable income … Over $23,000 … $1,196 plus 5.58% of excess over $23,000',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

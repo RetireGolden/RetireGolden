@@ -76,4 +76,4 @@ Still not modeled for any Kansas filer: the personal exemption and the 79-32,119
 
 - https://www.ksrevenue.gov/pdf/ip25.pdf — filing status and standard deduction chart (Head of Household $6,180).
 - https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0119.html — K.S.A. 79-32,119(c)(2).
-- https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html — K.S.A. 79-32,110(a)(2)(B).
+- https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html — K.S.A. 79-32,110(a)(2), "All other individuals": (A) is the 2018 to 2023 table, (B) the table for 2024 and after (5.2% to $23,000, then $1,196 plus 5.58%).
