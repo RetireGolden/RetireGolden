@@ -4,6 +4,35 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.6.0** (2026-11-03) — a **minor**, breaking before 1.0: the
+  public param-pack type `ParameterPack` (`@retiregolden/engine/params/types`) gains the required
+  field `contributionLimits.section401a17CompensationLimit` (RetireGolden#824, the employer-match
+  entry below), so a host or tool that builds a parameter pack directly, rather than taking the
+  engine's own year data, must now set it (the breaking-API entry). It carries every engine change
+  in this file since 0.5.0, which npm has served since 2026-10-11 (tag `engine-v0.5.0`): the
+  employer match measured on wages held to the 401(a)(17) limit ($360,000 for 2026), the optimizer
+  reading HiGHS through the persistent model API with `highs` pinned at exactly 1.15.4 (was
+  1.15.2; no figure changes), the inherited-IRA conventions, and the methodology-text and census
+  corrections; and, from commits without an entry of their own, asserted HSA evidence kept ahead
+  of runtime zero defaults (RetireGolden#812), custodian QCD evidence kept ahead of runtime
+  literal defaults, with an incomplete, unmatched or colliding QCD collection withheld rather than
+  priced (RetireGolden#813), and New Jersey IRA owner pools priced from partial exempt earnings,
+  projected QCDs and an asserted full liquidation (RetireGolden#814). Plans stay schema 7, and no
+  export is removed. planner-ui's range moves to `^0.6.0` with its own version, 0.13.0 (the entry
+  below). **Not yet published**; the owner tags `engine-v0.6.0` and approves the `npm-publish`
+  environment.
+- Prepared **`@retiregolden/planner-ui` 0.13.0** (2026-11-03) — a **minor** bump, because its
+  engine dependency is now `^0.6.0`: its report's parameter source appendix lists the 401(a)(17)
+  compensation limit from engine 0.6.0's pack (its report goldens pin it), and both packages pin
+  `highs` at exactly 1.15.4, whose rewritten JavaScript layer engine 0.5.x's optimizer cannot
+  read (the highs entry below). It carries every planner-ui change since 0.12.0, which npm has
+  served since 2026-10-11 (tag `planner-ui-v0.12.0`): the mobile assumptions, survivor-table and
+  spending-capacity layout fixes, with the survivor transition tables fitting a printed page
+  (RetireGolden#817), and the approved social links in the free-app footer (RetireGolden#830).
+  Its peer ranges are unchanged. **Not yet published**; once npm serves engine 0.6.0, the owner
+  tags `planner-ui-v0.13.0` and approves the `npm-publish` environment, and the publish job's
+  pack smoke resolves the engine floor 0.6.0 from npm. A host moves to engine 0.6.0 together with
+  planner-ui 0.13.0.
 - **Changed: the inherited-IRA eligible-designated-beneficiary and greater-of life expectancy
   approximations are reclassified from fixes to conventions** (2026-11-02). No figure changes.
   Both rules are already computed when an inherited IRA carries beneficiary details the
@@ -3842,6 +3871,12 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Plan compensation limit (IRC 401(a)(17), engine 0.6.0):** `ParameterPack`
+  (`@retiregolden/engine/params/types`) gains the required field
+  `contributionLimits.section401a17CompensationLimit` (a number: the most of an employee's annual
+  compensation a qualified plan may take into account; $360,000 for 2026, Notice 2025-67). The
+  employer match's percent-of-pay cap is measured on wages held to it. A host that builds a
+  parameter pack directly must set it; packs the engine builds from its own year data carry it.
 - **Optimizer solver output (decision D-OPTIMIZER-SOLVER-OUTPUT, engine 0.5.0):**
   `OptimizedSchedule.endingAfterTax` and `OptimizedSchedule.lifetimeTax`
   (`@retiregolden/engine/strategies/optimizer`) are `number | null`: null, with an empty
