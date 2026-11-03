@@ -71,7 +71,7 @@ describe('NJ annual owner basis lifecycle', () => {
       { ownerPersonId: 'q', amount: { known: true, amount: 1_000 } },
       { ownerPersonId: 'r', amount: { known: true, amount: 0 } },
     ])
-    const { postYearContributionsThroughFilingDeadline: _omitted, ...missing } = row
+    const missing = { taxYear: 2027, state: 'nj', ownerPersonId: 'p' }
     expect(njIraYearContributionAdditions([missing], 2027, ['p'], modeled)).toEqual([{ ownerPersonId: 'p', amount: { known: false } }])
   })
 })
