@@ -4,6 +4,50 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the inherited-IRA eligible-designated-beneficiary and greater-of life expectancy
+  approximations are reclassified from fixes to conventions** (2026-11-02). No figure changes.
+  Both rules are already computed when an inherited IRA carries beneficiary details the
+  classifier accepts: an eligible designated beneficiary (IRC 401(a)(9)(E)(ii)) takes
+  life-expectancy amounts by default (subject to a before-RBD ten-year election, the minor
+  child's majority-plus-ten deadline, and a spouse's treat-as-own transition), and after a death
+  on or after the required beginning date the divisor is the longer of the beneficiary's and the
+  owner's expectancy (Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)).
+  What stays approximated is only the labeled legacy path. Most accounts that reach it hold no
+  status the classifier accepts (no beneficiary block, a pre-2020 death, or a classifier refusal),
+  so the engine keeps the ten-year schedule and the beneficiary arm there rather than invent a
+  status or an owner age. The one exception is a surviving spouse's treat-as-own transition after
+  a death before the required beginning date: the spouse category is accepted, but when the
+  Treas. Reg. 1.401(a)(9)-3(d) commencement year cannot be settled (no owner birth year, or an
+  owner born in 1959) the years before the election keep the ten-year schedule with a needs-review
+  refusal on their evidence, and owner rules apply from the year the election takes effect, rather
+  than guess that start year. Such an account is swept in the tenth year only if it is still
+  inherited then; an election effective by that year leaves no inherited distribution in it, and
+  the owner rules require an RMD only when one is due (none for a Roth, and none before the
+  spouse's applicable age). Each rule now carries a public convention rationale, and its fixture pins both the
+  legacy reading and the classified reading on the same hand worksheet.
+  - `irc-401-a-9-E-ii-eligible-designated-beneficiary`'s error direction is corrected from
+    overstates to both directions: for a death before the required beginning date the legacy path
+    forces nothing in years one to nine where the life-expectancy rule requires an annual amount
+    (from the year after death for a non-spouse heir; for a surviving spouse only from the year
+    the owner would have reached the applicable age, if later).
+  - Each fixture now also runs the full projection: the older heir's 2027 amount is
+    300,000 / 13.8, and the before-RBD eligible heir's 2036 amount is 150,000 / 9.0, not the
+    whole 150,000. The contrary guard holds every fact fixed at an ambiguous ten-birth-year gap
+    and shows the asserted category alone switches between the stretch and the year-ten sweep.
+  - The fixture's decedent is now born in 1961 (died at 65, before the required beginning date);
+    its prose had described a 75-year-old decedent, who would have been past it.
+  - Each record now carries the authority its prose relies on, reusing quotes already in the
+    registry: the greater-of record gains the IRC 401(a)(9)(E)(ii) quote (an heir older than the
+    owner is an eligible designated beneficiary) and the Treas. Reg. 1.401(a)(9)-5(d)(1)(i),
+    (d)(3)(i) and (d)(3)(iii) quotes (the on-or-after-RBD scope, the Single Life Table, and a
+    non-spouse beneficiary's first-year reading), and the eligible-designated-beneficiary record
+    gains the Treas. Reg. 1.408-8(c)(3) quote (a spouse who elects is treated as the owner). Its
+    references to the spouse commencement deferral and the employer-plan ten-year terms now
+    describe the engine's behaviour and the matrix's scope instead of citing regulations the
+    record does not quote. Their tenth-year and early-year effects are stated as forced
+    distributions, with ordinary income moving only by the taxable part (none for a qualified
+    inherited Roth distribution).
+
 - **Fixed: an employer match's percent-of-pay cap is measured on wages held to the IRC 401(a)(17)
   compensation limit** (2026-10-26). The limit is $360,000 for 2026 (Notice 2025-67), a new
   retirement-plan field (`contributionLimits.section401a17CompensationLimit`) that grows with the

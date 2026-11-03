@@ -353,12 +353,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 271,
+          "line": 275,
           "note": null,
           "tests": [
             {
               "title": "forces an employer-plan distribution from a participant still seven years from retiring",
-              "line": 281
+              "line": 285
             }
           ]
         }
@@ -424,12 +424,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 197,
+          "line": 201,
           "note": "elected deferral with attainment-year IRA income",
           "tests": [
             {
               "title": "defers the full first-year amount even after an attainment-year IRA draw",
-              "line": 219
+              "line": 223
             }
           ]
         }
@@ -508,27 +508,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 73,
+          "line": 77,
           "note": "default books attainment-year without election",
           "tests": [
             {
               "title": "books the first-year amount in the attainment year when no deferral is elected",
-              "line": 87
+              "line": 91
             },
             {
               "title": "leaves the following year carrying one distribution rather than two under the default",
-              "line": 95
+              "line": 99
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 115,
+          "line": 119,
           "note": "clean elected owned-IRA April 1 deferral",
           "tests": [
             {
               "title": "holds the owned-IRA first-year amount until the following receipt year when elected",
-              "line": 133
+              "line": 137
             }
           ]
         }
@@ -682,11 +682,12 @@
       "id": "irc-401-a-9-E-ii-eligible-designated-beneficiary",
       "title": "Eligible designated beneficiary escapes the 10-year rule",
       "classification": "approximated",
-      "errorDirection": "overstatesTax",
+      "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix"
+        "kind": "convention",
+        "reason": "an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that are missing or conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; a surviving spouse who later treats the account as their own also keeps it for the years before that choice when the owner died before the required beginning date (the planner treats every Roth IRA that way) and the year the spouse's yearly amounts would start cannot be set from the owner's birth year, because it is missing or, for an owner born in 1959, the age at which the owner's own distributions would have begun is unsettled, rather than guess that year, though an account that has become the spouse's own by the tenth year is not emptied as an inherited account but follows the owner rules; once complete details for a case the planner schedules are entered, an eligible heir takes yearly amounts over their life expectancy by default, while a minor child's account is emptied within ten years of turning 21, an elected ten-year schedule keeps its deadline, and a surviving spouse who treats the account as their own follows the owner rules"
       },
-      "conventionRationale": null,
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and describe a case the planner schedules, an heir who is the surviving spouse, a minor child of the owner, disabled, chronically ill, or not more than ten years younger than the owner may take yearly amounts over their life expectancy instead of emptying the account within ten years, as IRC 401(a)(9)(E)(ii) and (H)(ii) allow. That is the default the planner uses. The details can change it: a minor child's account must be emptied within ten years of reaching majority, which the planner takes as age 21, an heir whose entered election of the ten-year schedule after an owner's death before the required beginning date is kept to that deadline, and a surviving spouse who treats the account as their own follows the owner rules once that choice takes effect. When an inherited IRA is entered with only the year of death and whether the owner had started required distributions, or with details that describe a case the planner does not schedule (a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict), the planner will not guess whether the heir qualifies, so the account follows the ten-year schedule and is shown as a planning estimate. That moves forced withdrawals into the tenth year from the years after it, and with them whatever part the planner counts as taxable: all of a traditional withdrawal, and none of an inherited Roth withdrawal it treats as qualified. When the owner died before the required beginning date it can also ask for less than the life expectancy schedule would in the years before the tenth, from the year that schedule would start; for a surviving spouse that start can be later. A surviving spouse who later treats the account as their own does qualify, but when the owner died before the required beginning date (the planner treats every Roth IRA that way) the planner also needs the year the spouse's yearly amounts would start, which turns on the owner's birth year. When that year is missing, or the owner was born in 1959 and the age at which the owner's own distributions would have begun is unsettled, the planner will not guess the start year, so the years before that choice takes effect follow the ten-year schedule as a planning estimate, and the owner rules apply from the year it takes effect. The account is emptied in the tenth year only if it is still inherited then. If the choice takes effect by the tenth year, the planner applies the owner rules in that year instead and moves nothing into it; they require a yearly amount only when one is due, so none for a Roth IRA and none before the spouse reaches the age at which the planner starts owner distributions. Entering complete details for a case the planner schedules removes the estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -738,16 +739,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 364,
+          "line": 487,
           "note": null,
           "tests": [
             {
-              "title": "empties an eligible designated beneficiary's account in the tenth year",
-              "line": 380
+              "title": "empties an eligible designated beneficiary's account in the tenth year on the legacy path",
+              "line": 532
             },
             {
-              "title": "requires nothing inside the window that the life-expectancy rule would require",
-              "line": 391
+              "title": "requires nothing inside the window on the legacy path that the life-expectancy rule would require",
+              "line": 543
+            },
+            {
+              "title": "stretches over the beneficiary life expectancy once beneficiary details are entered",
+              "line": 557
+            },
+            {
+              "title": "takes a life-expectancy amount, not the whole balance, in the tenth year of the full projection",
+              "line": 567
+            },
+            {
+              "title": "turns on the asserted category alone, with every other fact the same",
+              "line": 591
             }
           ]
         }
@@ -769,6 +782,11 @@
           "kind": "statute",
           "citation": "IRC 401(a)(9)(E)(iii)",
           "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
         }
       ]
     },
@@ -1389,12 +1407,12 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 420,
+          "line": 645,
           "note": null,
           "tests": [
             {
               "title": "charges 25 percent when the whole required amount goes undistributed",
-              "line": 427
+              "line": 652
             }
           ]
         }
@@ -2028,9 +2046,10 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix"
+        "kind": "convention",
+        "reason": "after a death past the required beginning date, an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict), has each yearly amount divided by the heir's life expectancy alone, even when the owner's birth year was entered, because the rest of the schedule cannot be set from those details; once complete details for a case the planner schedules are entered, including the owner's birth year, the longer of the heir's and the owner's life expectancy is used"
       },
-      "conventionRationale": null,
+      "conventionRationale": "Kept on purpose for inherited IRAs the planner cannot classify. When the beneficiary details are entered and describe a case the planner schedules, including the original owner's birth year, the planner divides each yearly amount after a death on or after the required beginning date by the longer of the heir's and the owner's remaining life expectancy, as Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) requires. Two kinds of inherited IRA are instead shown as a planning estimate, with each yearly amount divided by the heir's life expectancy alone. One is entered with only the year of death and whether the owner had started required distributions, so the owner's age is not known. The other has details that describe a case the planner does not schedule: a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict. There the owner's birth year is not used even when it was entered, because the rest of the schedule cannot be set from those details. Either way the estimate can only make the yearly amount larger than required, and only in a year when the owner's remaining life expectancy is the longer one, as it can be for an heir older than the owner was. Such an heir also qualifies for payments over their life expectancy, so whether the account must be emptied within ten years is a separate estimate with its own entry. Entering complete details for a case the planner schedules removes this estimate.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2098,12 +2117,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 319,
+          "line": 381,
           "note": null,
           "tests": [
             {
-              "title": "divides by the beneficiary expectancy where the employee expectancy is the greater",
-              "line": 327
+              "title": "divides by the beneficiary expectancy on the legacy path, where no owner birth date is held",
+              "line": 389
+            },
+            {
+              "title": "applies the greater employee expectancy once beneficiary details with the owner birth year are entered",
+              "line": 422
+            },
+            {
+              "title": "takes the greater-of amount in the full projection",
+              "line": 443
             }
           ]
         }
@@ -2120,6 +2147,26 @@
           "kind": "regulation",
           "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(ii)",
           "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(E)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
         }
       ]
     },
@@ -2129,7 +2176,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Three notes on how far this reaches. First, on the labeled legacy path (accounts with only the two-field inherited block and classifier-refusal fallbacks), the fixed subtract-one branch is what inheritedForcedAmount can reach; that path holds no beneficiary-category fact and cannot select the (d)(3)(iv) spouse redetermination arm. Classified schedules execute the spouse-redetermined path in the full year-by-year projection via classifyInheritedRegime and inheritedRequirementForYear in strategies/inheritedIra.ts (S0/S1 spouse remain-beneficiary and K2 spouse rows). Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the test asserting that behaviour called the same SSA function the module called and could not have failed.",
+      "conventionRationale": "Three notes on how far this reaches. First, on the labeled legacy path (accounts with only the two-field inherited block and classifier-refusal fallbacks), the fixed subtract-one branch is what inheritedForcedAmount can reach; that helper reads no beneficiary-category fact and cannot select the (d)(3)(iv) spouse redetermination arm. Classified schedules execute the spouse-redetermined path in the full year-by-year projection via classifyInheritedRegime and inheritedRequirementForYear in strategies/inheritedIra.ts (S0/S1 spouse remain-beneficiary and K2 spouse rows). Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy. Classified schedules compute it in inheritedRequirementForYear; only the labeled legacy path omits it, which that record keeps on purpose as a convention. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the test asserting that behaviour called the same SSA function the module called and could not have failed.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -4034,16 +4081,16 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 485,
+          "line": 710,
           "note": null,
           "tests": [
             {
               "title": "distributes nothing where the required amount rounds to zero cents",
-              "line": 506
+              "line": 731
             },
             {
               "title": "leaves the residue inert rather than working it down year by year",
-              "line": 525
+              "line": 750
             }
           ]
         }

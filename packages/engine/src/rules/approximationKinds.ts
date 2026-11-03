@@ -191,6 +191,58 @@
  *   after the year's withdrawals are funded, while the contribution is placed
  *   before them.
  *
+ * Reclassified in the calculation validation round of 2026-11-02, both fix to
+ * convention, on the precedent of
+ * irc-1411-d-modified-agi-foreign-exclusion-addback above (the plan collects
+ * the fact, the engine uses it exactly when given, and its absence falls back
+ * to a documented compatibility approximation):
+ * - irc-401-a-9-E-ii-eligible-designated-beneficiary and
+ *   treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy. Both
+ *   authorities are computed on the classified path: classifyInheritedRegime
+ *   reads the beneficiary block's edbCategory, birth years and sole-beneficiary
+ *   fact, and inheritedRequirementForYear runs the eligible designated
+ *   beneficiary life-expectancy rows and the greater-of owner arm (an
+ *   on-or-after-RBD death without ownerBirthYear is refused by
+ *   deriveRbdComparison, so no classified row divides by the beneficiary arm
+ *   alone for want of it). What stays approximated is only the labeled legacy
+ *   path, inheritedForcedAmount. Two kinds of account reach it. Most hold no
+ *   status the classifier accepts (a refused account may still carry an
+ *   owner birth year, which is not used once the classifier has refused the
+ *   account): a traditional account with no beneficiary block has no
+ *   relationship or decedent birth date; a pre-2020 death falls under the
+ *   pre-SECURE regime the inherited regime matrix leaves out of scope (X1);
+ *   the remaining classifier refusals that land there (successor
+ *   beneficiary, several beneficiaries without separate accounts, employer
+ *   plans whose terms may impose the ten-year rule, missing or contradictory
+ *   facts) turn on facts the plan has no field for or facts the classifier
+ *   has already found unreliable. The other holds an accepted status whose
+ *   schedule cannot be started: a surviving spouse's treat-as-own transition
+ *   (S2) classifies, but simulatePlan sizes its pre-election years from a
+ *   synthetic S0 (election 'none'), and when the death was before the RBD
+ *   (the classifier treats every Roth as one) that S0 refuses if the Treas. Reg.
+ *   1.401(a)(9)-3(d) commencement year cannot be settled (no ownerBirthYear,
+ *   or a born-1959 owner's ambiguous applicable-age attain year). Those
+ *   years then fall onto the legacy path with the needs-review refusal on
+ *   their evidence, and owner rules apply from the year the election takes
+ *   effect. The legacy year-ten sweep reaches such an account only if it is
+ *   still on the legacy path in the deadline year; in
+ *   simulate.inheritedRegimeExecution.test.ts E10 the election takes effect
+ *   in that year (2030), so it carries no inherited distribution (review of
+ *   PR #834, r5-1). Owner rules then require an RMD only when one is due:
+ *   followsOwnerRmds admits no Roth, and a traditional account's owner
+ *   requirement is zero before the spouse's applicable age
+ *   (simulate.spousalElectionYearOwnerRmd.test.ts); E10's traditional account
+ *   and older spouse happen to owe one (r6-1). That fallback is
+ *   always a before-RBD death, so the greater-of owner arm, which governs
+ *   only on or after the RBD, has no role in it. Applying either rule on the
+ *   legacy path would mean inventing a beneficiary category or a
+ *   commencement year, or trusting refused facts. The estate, trust and
+ *   entity refusal (X3) does not reach this path at all. The published
+ *   reasons say the life-expectancy schedule is the default for an eligible
+ *   heir, not the only outcome: a pre-RBD ten-year election (R3a, S3), a
+ *   minor child's majority-plus-ten deadline (R3) and a spouse's treat-as-own
+ *   transition (S2) each change it (review of PR #834, r1-1).
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -263,7 +315,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-401-a-17-plan-compensation-cap': { kind: 'needs-fact', missingInput: 'which employer pays each wage, so a workplace plan\'s match is measured on that employer\'s pay alone' },
   'irc-401-a-9-C-i-II-still-working-exception': { kind: 'needs-fact', missingInput: 'still-employed-by-sponsor and five-percent-owner status per employer plan and year' },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': { kind: 'fix' },
-  'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'fix' },
+  'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'convention', reason: "an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (an heir of an heir, several heirs sharing one account, a workplace plan, a death before 2020, or details that are missing or conflict), keeps the ten-year schedule rather than guess whether the heir may stretch payments over their own life; a surviving spouse who later treats the account as their own also keeps it for the years before that choice when the owner died before the required beginning date (the planner treats every Roth IRA that way) and the year the spouse's yearly amounts would start cannot be set from the owner's birth year, because it is missing or, for an owner born in 1959, the age at which the owner's own distributions would have begun is unsettled, rather than guess that year, though an account that has become the spouse's own by the tenth year is not emptied as an inherited account but follows the owner rules; once complete details for a case the planner schedules are entered, an eligible heir takes yearly amounts over their life expectancy by default, while a minor child's account is emptied within ten years of turning 21, an elected ten-year schedule keeps its deadline, and a surviving spouse who treats the account as their own follows the owner rules" },
   'irc-401-c-2-earned-income-not-modeled': { kind: 'needs-fact', missingInput: 'annual net self-employment earnings eligible as section 219 compensation' },
   'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': { kind: 'needs-fact', missingInput: 'eligible-rollover-distribution and plan-permission facts for the pension offer' },
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': { kind: 'fix' },
@@ -320,7 +372,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'sc-code-12-6-1170-retirement-income-deduction': { kind: 'fix' },
   'treas-reg-1-1012-1-c-lot-basis-and-holding-period': { kind: 'convention', reason: 'specific-lot selection decades ahead is unknowable where the plan stores aggregate basis' },
   'treas-reg-1-1275-7-f-1-deflation-adjustment-income': { kind: 'fix' },
-  'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': { kind: 'fix' },
+  'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': { kind: 'convention', reason: "after a death past the required beginning date, an inherited IRA entered without beneficiary details, or with details that describe a case the planner does not schedule (a death before 2020, several heirs sharing one account, an heir of an heir, a workplace plan, or details that are missing or conflict), has each yearly amount divided by the heir's life expectancy alone, even when the owner's birth year was entered, because the rest of the schedule cannot be set from those details; once complete details for a case the planner schedules are entered, including the owner's birth year, the longer of the heir's and the owner's life expectancy is used" },
   'treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract': { kind: 'fix' },
   'treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd': { kind: 'fix' },
   'treas-reg-1-408-8-projection-sub-cent-distribution-discharge': { kind: 'convention', reason: 'a sub-cent amount cannot be transferred or represented in the exact-cent journal' },

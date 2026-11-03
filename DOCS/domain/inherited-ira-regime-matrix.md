@@ -206,14 +206,42 @@ same-decedent aggregation election's allocation mechanics beyond the explicit id
 - `treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator` — retained. The shipped fixed
   subtract-one Single Life divisor is exactly R1's beneficiary-side arm; the matrix adds the
   greater-of-owner arm and the regimes around it.
-- `treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy` (approximated: greater-of not
-  applied, schema lacks decedent age) — superseded by WS2/WS3: the fact model requires the owner's
-  birth date, and R1/R3 apply the greater-of test. The approximation record retires only when the
-  new arm's discriminating fixture lands.
-- `irc-401-a-9-E-ii-eligible-designated-beneficiary` (approximated: every inherited account
-  compressed onto the 10-year rule) — superseded by R3/S1/K2 for plans that state EDB facts.
-  Legacy two-field accounts stay on the labeled approximation (X1 handling applies to their
-  missing facts) until reviewed; migration never fabricates an EDB category.
+- `treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy` — superseded by WS2/WS3 for
+  classified facts: the fact model requires the owner's birth date for an on/after-RBD death
+  (`deriveRbdComparison` refuses one without it), and R1/R3/S0/S1 apply the greater-of test. The
+  record stays `approximated` only for the labeled legacy path (`inheritedForcedAmount`), with
+  approximation kind `convention` since the 2026-11-02 validation round: nothing reaching that
+  path after an on/after-RBD death holds an owner birth date the classifier accepts (no
+  beneficiary block, a pre-2020 death, or a classifier refusal; an X1 or X4 account may carry
+  `ownerBirthYear`, but the refusal stands and the legacy helper does not read it), so the
+  beneficiary arm alone is the documented fallback. The one accepted classification that reaches
+  the legacy path, the S2 pre-election fallback described under the EDB record below, arises only
+  for a before-RBD death, where the owner arm has no role. An older beneficiary, the case where the owner arm can win, is always an EDB
+  under §401(a)(9)(E)(ii) (subclause (I) for a spouse, (V) otherwise), so the year-ten deadline the legacy path also applies belongs to the EDB record, not this one.
+- `irc-401-a-9-E-ii-eligible-designated-beneficiary` — superseded by R3/S0/S1/K2 for plans that
+  state EDB facts. Legacy two-field accounts, pre-2020 deaths, and classifier-refusal fallbacks
+  stay on the labeled ten-year approximation; migration never fabricates an EDB category and the
+  engine never infers one (§2). One accepted EDB status also reaches that path: an S2 spouse whose
+  pre-election years are scheduled from a synthetic S0 (§7) after a before-RBD death (the classifier
+  treats every Roth as one). When that S0 refuses because the §1.401(a)(9)-3(d) commencement year cannot be settled
+  (no `ownerBirthYear`, or a born-1959 owner's ambiguous applicable-age attain year), the
+  pre-election years run through `inheritedForcedAmount` with the X5 needs-review refusal on their
+  evidence, and owner rules apply from the year the election takes effect (`simulate.inheritedRegimeExecution`
+  test E10). The year-ten sweep below reaches such an account only if it is still on the legacy path
+  in the deadline year; in E10 the election takes effect in that year, which carries no inherited
+  distribution. Owner rules then require an RMD only when one is due: none for a Roth (`followsOwnerRmds`)
+  and none before the spouse's applicable age (`simulate.spousalElectionYearOwnerRmd` tests); E10's
+  traditional account and older spouse owe one. The status is accepted there; only the schedule's start year is unsettled, and the
+  engine does not guess it. The record stays `approximated` for that path only, approximation
+  kind `convention` since the 2026-11-02 validation round, with `errorDirection` `bothDirections`:
+  the year-ten sweep overstates that year's forced distribution (and ordinary income only by its taxable
+  part: all of a traditional draw, and only what the Roth tax-character step assigns for an inherited Roth,
+  none for a qualified distribution), but for a before-RBD death the legacy path
+  forces nothing in years 1–9 where the life-expectancy rule requires an annual amount (from the
+  year after death for a non-spouse EDB; for a spouse sole beneficiary only from the §1.401(a)(9)-3(d)
+  commencement year). The life-expectancy schedule is the EDB default, not the only outcome: a
+  before-RBD ten-year election (R3a, S3), the minor child's majority-plus-ten deadline (R3), and
+  the spouse treat-as-own transition (S2) each change it.
 - The shipped year-10 sweep (`ownerDeathYear + 10`) matches the final-reg deadline formulation —
   the end of the calendar year that includes the tenth anniversary falls in death-year + 10 for
   any death date — so R1/R2/K1 keep it.
