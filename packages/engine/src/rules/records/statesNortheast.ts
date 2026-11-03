@@ -2033,8 +2033,7 @@ export const northeastStateRecords = {
     "packages/engine/src/tax/stateTax.ts",
     "packages/engine/src/params/state/data/year2026.ts",
     "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
-    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts",
-    "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts"
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts"
   ],
   "implementedByFunctions": [
     "packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment",
@@ -2046,8 +2045,7 @@ export const northeastStateRecords = {
     "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#applyAcceptedNjIraBasisToYearFacts",
     "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#seedAcceptedNjIraBasisFromEvidence",
     "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#reconcileProjectedNjIraYearEnd",
-    "packages/engine/src/tax/stateTax.ts#njIraBasisPools",
-    "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts#annualPostSolveGrowthFactors"
+    "packages/engine/src/tax/stateTax.ts#njIraBasisPools"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

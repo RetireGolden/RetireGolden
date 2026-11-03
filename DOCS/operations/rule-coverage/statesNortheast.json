@@ -1378,7 +1378,6 @@
       "dueOn": "2027-09-12",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
-        "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts",
         "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts",
         "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
         "packages/engine/src/tax/stateQcdHsa.ts",
@@ -1391,15 +1390,6 @@
             {
               "name": "NJ",
               "line": 962
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts",
-          "functions": [
-            {
-              "name": "annualPostSolveGrowthFactors",
-              "line": 158
             }
           ]
         },
