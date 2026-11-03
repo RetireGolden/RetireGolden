@@ -22,8 +22,17 @@ export type ProjectedFilingStatus = FilingStatus | 'qualifyingSurvivingSpouse'
  * `va-760-2026-qss-files-single`; Kansas head of household,
  * `ks-k40-2026-qss-head-of-household`; Delaware joint, the disclosed
  * `de-pit-est-2026-qss-standard-deduction-joint-mapper`) and falls back to this
- * joint mapping for a state that declares none. The state calculator still
- * uses this helper for the federal IRC 86 inclusion it borrows. IRMAA is the named
+ * joint mapping for a state that declares none.
+ *
+ * Known limitation, IRC 86: the federal and state calculators both take the
+ * Social Security inclusion's thresholds through this helper, so a QSS year
+ * gets the joint base amounts. 86(c)(1)(B) and (2)(B) give $32,000 and
+ * $44,000 only "in the case of a joint return"; a surviving spouse files no
+ * joint return, so 86(c)(1)(A) and (2)(A), $25,000 and $34,000, are the
+ * statute's figures. The engine therefore understates taxable Social Security
+ * for a qualifying surviving spouse whose provisional income falls above
+ * $25,000. Disclosed as a residual (rules/attestations/projection.ts), not yet
+ * corrected. IRMAA is the named
  * federal exception: SSA's threshold tables group qualifying surviving spouses with
  * single/HOH filers (POMS HI 01101.020), so the Medicare premium calculation maps
  * QSS to `single` instead of using this helper.
