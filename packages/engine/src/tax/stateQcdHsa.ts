@@ -27,11 +27,17 @@ import {
   type StateTaxExactnessWarning,
 } from './stateRetirementFacts.js'
 
-function incomplete(code: string, ruleId: string, message: string, missingFacts: string[]): StateLeafAdjustment {
+/**
+ * A refusal leaf. `ruleId` names the registered record whose law the gate
+ * enforces; `null` marks an engine-wide gate no single sovereign's law
+ * creates (an unresearched state policy, residency the projection cannot
+ * allocate), which carries no rule id, as state-pack-unavailable does.
+ */
+function incomplete(code: string, ruleId: string | null, message: string, missingFacts: string[]): StateLeafAdjustment {
   return {
     taxableIncomeDelta: 0,
     taxCredit: 0,
-    warnings: [{ code, ruleId, message, missingFacts }],
+    warnings: [ruleId === null ? { code, message, missingFacts } : { code, ruleId, message, missingFacts }],
   }
 }
 
@@ -170,7 +176,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-split-interest-refused',
-        'state-direct-qcd-conformity-policies',
+        'irc-408-d-8-F-i-split-interest-direct-payment',
         'Split-interest QCD remains a typed refusal; state policy is not applied.',
         ['supportedDirectQcdTransactionType'],
       ),
@@ -182,7 +188,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-direct-transfer-required',
-        'state-direct-qcd-conformity-policies',
+        'irc-408-d-8-B-i-qualified-recipient',
         'State QCD adjustment requires a direct charity transfer; unsupported transaction kinds do not inherit direct-QCD policy.',
         ['directTransfer'],
       ),
@@ -194,7 +200,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-policy-unknown',
-        'state-direct-qcd-conformity-policies',
+        null,
         'Exact state QCD result unavailable: direct-QCD conformity policy is unknown; federal exclusion is not silently carried as an exact state answer.',
         ['stateDirectQcdPolicy'],
       ),
@@ -210,7 +216,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-residency-incomplete',
-        'state-direct-qcd-conformity-policies',
+        null,
         'State QCD allocation incomplete without full residency/date facts.',
         ['residency', 'transferDate'],
       ),
@@ -301,9 +307,9 @@ export function stateDirectQcdCollectionAdjustment(args: {
       // IRC 408(d)(8)(F) and the direct-transfer gate do not depend on
       // Worksheet C basis. A missing pool must not hide those refusals.
       for (const event of events) {
-        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity-policies', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
-        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity-policies', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
-        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity-policies', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
+        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'irc-408-d-8-F-i-split-interest-direct-payment', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
+        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'irc-408-d-8-B-i-qualified-recipient', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
+        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', null, 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
       }
       if (!pool) {
         parts.push(incomplete('nj-qcd-basis-unknown', 'nj-direct-qcd-ira-basis-treatment', 'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.', ['njIraOwnerPool', 'unrecoveredNjTaxedContributions']))
@@ -402,7 +408,7 @@ export function stateDirectQcdAdjustment(
       if (facts.splitInterest) {
         return incomplete(
           'state-qcd-split-interest-refused',
-          'state-direct-qcd-conformity-policies',
+          'irc-408-d-8-F-i-split-interest-direct-payment',
           'Split-interest QCD remains a typed refusal; state policy is not applied.',
           ['supportedDirectQcdTransactionType'],
         )
@@ -411,7 +417,7 @@ export function stateDirectQcdAdjustment(
       if (facts.residency === 'unknown' || facts.residency === 'partYear') {
         return incomplete(
           'state-qcd-residency-incomplete',
-          'state-direct-qcd-conformity-policies',
+          null,
           'State QCD allocation incomplete without full residency/date facts.',
           ['residency', 'transferDate'],
         )

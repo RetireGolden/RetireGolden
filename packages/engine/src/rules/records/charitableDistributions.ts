@@ -452,7 +452,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-B-i-qualified-recipient': {
     title: 'A QCD recipient must be a qualified direct charity recipient',
     statement:
-      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A)(vii) includes a private foundation described in subparagraph (F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope. Not modelled: the engine\'s charity designations have no private-foundation kind and evaluateQcd accepts only an attested \'eligiblePublicCharity\', so an accurately described §170(b)(1)(F) private foundation — legally an eligible recipient — is unsupported and the QCD is refused (fails closed; conservative direction).',
+      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A)(vii) includes a private foundation described in subparagraph (F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope. The same requirement gates the direct-QCD adjustment of every state: a state event that is not a direct trustee-to-charity transfer, or whose kind is other or unknown, inherits the direct-QCD treatment of no state and leaves the state result incomplete (state-qcd-direct-transfer-required, tax/stateQcdHsa.ts). Not modelled: the engine\'s charity designations have no private-foundation kind and evaluateQcd accepts only an attested \'eligiblePublicCharity\', so an accurately described §170(b)(1)(F) private foundation — legally an eligible recipient — is unsupported and the QCD is refused (fails closed; conservative direction).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -478,17 +478,19 @@ export const charitableDistributionRecords = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/tax/stateQcdHsa.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
     ],
   },
 
   'irc-408-d-8-F-i-split-interest-direct-payment': {
     title: 'A split-interest QCD must be paid directly to the entity and carry a nonassignable income interest',
     statement:
-      'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity, and requires the income interest in that entity to be nonassignable; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer or from an assignable income interest.',
+      'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity, and requires the income interest in that entity to be nonassignable; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer or from an assignable income interest. A state QCD event marked split-interest is refused the same way: the direct-QCD treatment of no state is applied and the state result is incomplete (state-qcd-split-interest-refused, tax/stateQcdHsa.ts).',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
@@ -534,11 +536,13 @@ export const charitableDistributionRecords = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualRetirementActionPublication.ts',
+      'packages/engine/src/tax/stateQcdHsa.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/actions/annualRetirementActionPublication.ts#publishAnnualRetirementActions',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
     ],
   },
 

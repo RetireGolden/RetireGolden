@@ -533,13 +533,13 @@
     },
     {
       "path": "tax/stateQcdHsa.ts",
-      "sweptOn": "2026-10-23",
-      "note": "Direct QCD collection, NJ Worksheet C and CA/NJ account calculations now have records. transactionKind is read with the split-interest and direct-transfer gates (state-direct-qcd-conformity-policies, nj-direct-qcd-ira-basis-treatment). The NJ collection emits those refusals before the missing Worksheet C pool continuation. Legacy single-event and HSA aggregate bridges, policy resolution and NJ collection entry point still lack direct function trails."
+      "sweptOn": "2026-11-03",
+      "note": "Direct QCD collection, NJ Worksheet C and CA/NJ account calculations now have records. transactionKind is read with the split-interest and direct-transfer gates, which every state shares and which cite the federal IRC 408(d)(8) records they enforce (irc-408-d-8-F-i-split-interest-direct-payment, irc-408-d-8-B-i-qualified-recipient). The unresearched-policy and residency gates are engine-wide and carry no rule id, since the registry has no multi-state jurisdiction. The NJ collection emits those refusals before the missing Worksheet C pool continuation. Legacy single-event and HSA aggregate bridges, policy resolution and NJ collection entry point still lack direct function trails."
     },
     {
       "path": "tax/stateRetirementFacts.ts",
-      "sweptOn": "2026-10-23",
-      "note": "Source-kind grouping, income-component mapping and legacy HSA completeness bridge carry tax-character claims beyond the type-only definitions. StateQcdEventFacts.transactionKind records that splitInterest is refused and that other and unknown do not inherit direct-QCD treatment (state-direct-qcd-conformity-policies). No direct rule trail for the type module."
+      "sweptOn": "2026-11-03",
+      "note": "Source-kind grouping, income-component mapping and legacy HSA completeness bridge carry tax-character claims beyond the type-only definitions. StateQcdEventFacts.transactionKind records that splitInterest is refused and that other and unknown do not inherit direct-QCD treatment (irc-408-d-8-F-i-split-interest-direct-payment, irc-408-d-8-B-i-qualified-recipient). No direct rule trail for the type module."
     },
     {
       "path": "tax/stateSouthCarolinaRetirement.ts",
