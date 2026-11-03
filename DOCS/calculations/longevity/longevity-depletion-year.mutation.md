@@ -1,15 +1,15 @@
 # Mutation receipt: longevity-depletion-year
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-index b25cb0335..a55ee7102 100644
+index 478e3141d..544416af7 100644
 --- a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
 +++ b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-@@ -1955,7 +1955,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1965,7 +1965,7 @@ export function annualFundingApplicationAndClosePhase(
      }
      deposit(surplus)
  
@@ -30,22 +30,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, whose changes moved lines of its production file; the mutation is unchanged, and the diff's line numbers and blob hashes and the capture are refreshed against this head. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed for #810 Case B and #818 (the projected New Jersey Worksheet C pool) on `fix/nj-qcd-projected-pool`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
- RUN  v5.0.0 packages/engine
+RUN  v5.0.5 packages/engine
 
- ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 40ms
+ ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 279ms
    ❯ longevity-depletion-year — Depletion year: the first projection year whose shortfall clears the funding tolerance (3)
-     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 33ms
-     × reports null when every year is funded 4ms
-     × does not call a year that closes at exactly zero depletion 3ms
+     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 222ms
+     × reports null when every year is funded 35ms
+     × does not call a year that closes at exactly zero depletion 19ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
 
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 

@@ -1,15 +1,15 @@
 # Mutation receipt: spending-phase-person
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7bcf555a` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7bcf555a` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/simulate.ts b/packages/engine/src/projection/simulate.ts
-index 367355f3..ff940c7f 100644
+index bdff07be..f0b45175 100644
 --- a/packages/engine/src/projection/simulate.ts
 +++ b/packages/engine/src/projection/simulate.ts
-@@ -1944,3 +1944,3 @@
+@@ -1943,3 +1943,3 @@
        // then its only person is the one.
 -      phasesPersonId: plan.expenses.phasesAgeOf ?? primary.id,
 +      phasesPersonId: primary.id,
@@ -26,21 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The merge of claude/ss-review-fixes into the catalog-evidence branch moved the lines these receipts quote; the mutations are unchanged. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed for #810 Case B and #818 (the projected New Jersey Worksheet C pool) on `fix/nj-qcd-projected-pool`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.0.5 packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 153ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 1024ms
    ❯ spending-phase-person — Whose age the spending phases follow (4)
-     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 38ms
-     × gives the same spending with the people listed the other way round 20ms
+     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 218ms
+     × gives the same spending with the people listed the other way round 136ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 8 passed (10)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
