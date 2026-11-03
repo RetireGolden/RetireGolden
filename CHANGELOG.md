@@ -19,8 +19,19 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `ks-k40-2026-qss-head-of-household`): $66,180 is taxed $3,260.60, was $3,058.25. Delaware keeps
   the joint row, declared explicitly, as the disclosed approximation
   `de-pit-est-2026-qss-standard-deduction-joint-mapper`; a state that declares nothing keeps the
-  federal joint mapping. The new records' nine quotes are in the quote-fidelity ledger as
-  UNFETCHABLE until a networked `verify:quotes` run.
+  federal joint mapping. A state filing status the plan does not store, which defaults to the
+  household's (still joint in a QSS year), now yields to a declared row; a stored one still wins.
+  The new records' quotes matched their sources word for word in WebFetch renderings on
+  2026-11-03 and await a networked `verify:quotes` run. Still open: the federal and state IRC 86
+  Social Security inclusions give a qualifying surviving spouse the joint base amounts, which
+  86(c)(1)(B) gives only on a joint return (disclosed, not corrected).
+
+- **Fixed: Virginia and Vermont count dependents' exemptions when the plan gives the counts**
+  (2026-11-03). A year that gave `exemptionTaxpayerCount` dropped `exemptionDependentCount`:
+  Virginia 58.1-322.03(2)(a) allows $930 for each federal exemption, $53.48 of tax per dependent
+  in the 5.75% band, and Vermont's IN-111 line 5d totals the taxpayers and dependents before the
+  $5,400 multiplier. Both now add the counts, and Vermont asks for the dependent count rather than
+  assuming none (`vt-deduction-exemption-incomplete`). Illinois and Wisconsin already used both.
 
 - Prepared **`@retiregolden/engine` 0.6.0** (2026-11-03) — a **minor**, breaking before 1.0: the
   public param-pack type `ParameterPack` (`@retiregolden/engine/params/types`) gains the required

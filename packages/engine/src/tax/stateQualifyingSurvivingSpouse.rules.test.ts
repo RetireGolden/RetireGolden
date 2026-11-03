@@ -251,6 +251,32 @@ describe('state qualifying-surviving-spouse row declarations', () => {
   })
 })
 
+describe('qualifying-surviving-spouse state rows in a year split between states', () => {
+  /** $80,000 spread evenly, Georgia January to June, Virginia July to December. */
+  const moveYear: TaxYearInput = {
+    ...qss('VA', 80_000),
+    stateResidency: [{ state: 'GA', months: 6 }, { state: 'VA', months: 6 }],
+  }
+
+  it('prices each slice on its own state’s survivor row', () => {
+    // Georgia (IT-511 Schedule 3): $40,000 of Georgia income, the $15,000
+    // single deduction times the 50% income ratio: 40,000 − 7,500 = 32,500 at
+    // 4.99% = $1,621.75. Virginia (760PY): $40,000 received while resident,
+    // the $8,750 Status 1 deduction times the 50% AGI share = 4,375, two $930
+    // exemptions times 6/12 = 930: 34,695; 720 + 5.75% × 17,695 = $1,737.4625.
+    // Total $3,359.2125.
+    expect(computeStateTaxYearTotal(moveYear)).toBeCloseTo(3_359.2125, 6)
+  })
+
+  it('differs from the joint reading in both slices', () => {
+    // Joint rows: Georgia 40,000 − 15,000 = 25,000 at 4.99% = 1,247.50;
+    // Virginia 40,000 − 8,750 − 930 = 30,320; 720 + 5.75% × 13,320 = 1,485.90.
+    // Total $2,733.40.
+    const joint = computeStateTaxYearTotal(moveYear, { mapParams: jointMapped })
+    expect(joint).toBeCloseTo(2_733.4, 6)
+  })
+})
+
 describe('qualifying-surviving-spouse state row through the projection ledger', () => {
   /** Joint couple; Sam dies in 2026, so 2027 and 2028 file as QSS and 2029 as single. */
   function survivorPlan(state: string): Plan {
@@ -268,6 +294,27 @@ describe('qualifying-surviving-spouse state row through the projection ledger', 
     plan.accounts = [cash(1_000_000)]
     return plan
   }
+
+  it('prices a Kansas QSS year on the head-of-household row', () => {
+    // 80,000 − 6,180 = 73,820; 1,196 + 5.58% × 50,820 = $4,031.756. The single
+    // year after: 80,000 − 3,605 = 76,395; 1,196 + 5.58% × 53,395 = $4,175.441.
+    const result = simulatePlan(validate(survivorPlan('KS')), { startYear: 2026, taxCalculator: createStateTaxCalculator() })
+    const qssYear = result.years.find((y) => y.year === 2027)!
+    const singleYear = result.years.find((y) => y.year === 2029)!
+    expect(qssYear.filingStatus).toBe('qualifyingSurvivingSpouse')
+    expect(qssYear.tax).toBeCloseTo(4_031.756, 6)
+    expect(singleYear.tax).toBeCloseTo(4_175.441, 6)
+  })
+
+  it('prices a Virginia QSS year on Filing Status 1 with two exemptions', () => {
+    // 2027, 58.1-322.03(1)(b)(vi) $9,200 single: 80,000 − 9,200 − 2 × 930 =
+    // 68,940; 720 + 5.75% × 51,940 = $3,706.55. The joint row ($18,400) would
+    // give 59,740 and $3,177.55.
+    const result = simulatePlan(validate(survivorPlan('VA')), { startYear: 2026, taxCalculator: createStateTaxCalculator() })
+    const qssYear = result.years.find((y) => y.year === 2027)!
+    expect(qssYear.filingStatus).toBe('qualifyingSurvivingSpouse')
+    expect(qssYear.tax).toBeCloseTo(3_706.55, 6)
+  })
 
   it('prices a Georgia QSS year on the single row, as the single year after it', () => {
     const result = simulatePlan(validate(survivorPlan('GA')), { startYear: 2026, taxCalculator: createStateTaxCalculator() })
