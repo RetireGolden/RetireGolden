@@ -870,9 +870,8 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   note: 'an empty runtime list still reads the state evidence',
 }, ({ accepted }) => {
   it('returns the asserted closed-account row when the runtime HSA list is empty', () => {
-    // The issue's evidence row, on a plan that carries the (now empty) account.
+    // The issue's evidence row, on a plan that carries the account it names.
     const plan = planWithHsaAccounts('closed')
-    plan.accounts[0]!.balance = 0
     plan.stateTaxFacts.hsaYearEvidence = [{
       taxYear: 2026, state: 'CA', accountId: 'closed', ownerPersonId: 'p1', interest: 1_200,
       provenance: hsaProvenance,

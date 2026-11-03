@@ -4124,55 +4124,55 @@
             },
             {
               "title": "carries the asserted interest into the California addition",
-              "line": 887
+              "line": 886
             },
             {
               "title": "keeps an empty runtime year known-empty only when the state has no evidence and is not marked unknown",
-              "line": 894
+              "line": 893
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 919,
+          "line": 918,
           "note": "an unknown mark withholds the collection even with rows",
           "tests": [
             {
               "title": "withholds an unknown-marked year and prices a complete or unmarked one",
-              "line": 924
+              "line": 923
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 958,
+          "line": 957,
           "note": "no residence state fails closed",
           "tests": [
             {
               "title": "returns undefined rather than a CA row and an NJ row for one account",
-              "line": 963
+              "line": 962
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 985,
+          "line": 984,
           "note": "a residence state reads only its own rows",
           "tests": [
             {
               "title": "gives the CA year one row, with the CA basis",
-              "line": 990
+              "line": 989
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 1010,
+          "line": 1009,
           "note": "a runtime zero deduction default keeps the asserted deduction",
           "tests": [
             {
               "title": "adds back the asserted deduction under a runtime zero default",
-              "line": 1015
+              "line": 1014
             }
           ]
         }
