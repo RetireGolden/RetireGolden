@@ -2615,13 +2615,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // A row's growth rate does not depend on its balance, so the factors are
     // read once per year; balances are read at each call.
     // With no owner carrying a complete prior-year Part II basis, every
-    // projected pool would be dropped (applyAcceptedNjIraBasisToYearFacts),
-    // so none is built and no growth factor is computed.
+    // projected pool is dropped (applyAcceptedNjIraBasisToYearFacts), so no
+    // growth factor is computed; the factorless pools are dropped the same.
     let njIraGrowthFactors: readonly number[] | undefined
     const njIraCarryOpen = acceptedStateNjIraBasis.some((row) => row.taxYear === year - 1 && row.status === 'complete')
-    const njIraLedgerAccountsNow = () => njIraCarryOpen && njIraResidentInYear(plan, year) ? njIraLedgerAccounts({
+    const njIraLedgerAccountsNow = () => njIraResidentInYear(plan, year) ? njIraLedgerAccounts({
       balances,
-      growthFactors: njIraGrowthFactors ??= annualPostSolveGrowthFactors({
+      growthFactors: !njIraCarryOpen ? [] : njIraGrowthFactors ??= annualPostSolveGrowthFactors({
         states: balances, allocationTrack, distributedYieldByBalanceIndex, classParams,
         defaultReturnPct: plan.assumptions.defaultReturnPct, shockPct: returnShockAt(year), year, classShockAt,
       }),
