@@ -2235,12 +2235,12 @@ export const westStateRecords = {
     ],
   },
   'state-hsa-evidence-runtime-merge-and-completeness': {
-    title: 'HSA year facts read the residence state’s own evidence, even when no runtime HSA row exists',
-    statement: 'California taxes HSA interest and other earnings in the year earned, from facts kept for California alone. The annual HSA facts for a tax year are built for one residence state: the plan’s asserted HSA year evidence for that state and year, overlaid by the projection’s runtime rows. An empty runtime list means the projection observed no HSA activity, not that the asserted evidence is void, so the state’s evidence rows are still returned. A runtime federal HSA deduction of zero that only means no contribution was modeled does not replace an asserted deduction; any other present runtime amount, a measured zero included, does. Only with no such evidence is the year a known-empty collection, and not even then when the plan marks that state’s HSA year unknown. Evidence asserted for another state never reaches the state’s computation. With no residence state no evidence row or completeness mark can be chosen, so the facts are unavailable (undefined) rather than every state’s rows for one account mixed together.',
+    title: 'The year’s HSA facts are the residence state’s own evidence, merged with the projection and withheld when incomplete',
+    statement: 'California taxes HSA interest and earnings in the year earned and does not conform to the federal treatment (FTB 2025 Schedule CA instructions). So an asserted California year fact cannot be dropped, and another state’s fact cannot stand in for it. The engine selects the year’s HSA facts once, for the projection’s residence state (the year-end state): that state’s asserted HSA year evidence, overlaid by the projection’s runtime rows. An empty runtime list is merged the same way as any other, so the state’s evidence rows are still returned. A runtime federal HSA deduction of zero that only means no contribution was modeled does not replace an asserted deduction; any other present runtime amount, a measured zero included, does. With no rows the year is a known-empty collection when a runtime list was supplied or the plan marks that state’s HSA year complete, and is otherwise unavailable. A year the plan marks unknown for that state is unavailable even when rows exist. With no residence state the facts are unavailable, never every state’s rows for one account together. This is year-level selection, not slice-level pricing: in a move year every slice receives the one year-end-state collection, a California or New Jersey slice that is not the year-end state is marked incomplete (state-rich-split-year-adapter-required, stateHsaAccountYearFacts) while still priced on that collection, and only the year-end state’s completeness mark is read. No simulatePlan path is known to have reached the old empty-list result: plan validation requires HSA evidence to name a plan HSA account, and the funding caller projects a row for every HSA account.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: 'Scope note: this record is the adapter contract that selects and merges the year facts. How California prices them is ca-hsa-state-basis-nonconformity, and New Jersey’s, which keeps its own state basis the same way, is nj-hsa-state-basis-nonconformity.',
+    conventionRationale: 'CONVENTIONS THE AUTHORITY DOES NOT SUPPLY. The FTB instruction settles only that California HSA earnings are taxable in the year earned. Which plan inputs make up the year, and what is withheld, are engine input conventions chosen to fail closed or keep asserted facts, never to produce a knowingly different figure: the merge of evidence with runtime rows, the zero-deduction default, the known-empty and unknown marks, and the no-state result. The pricing itself is ca-hsa-state-basis-nonconformity, and New Jersey’s, which keeps its own state basis the same way, is nj-hsa-state-basis-nonconformity; the conformity selector in StateTaxParams (hsaConformity) decides which state prices these facts at all. Pricing a move year’s non-year-end slice on its own state’s facts is not built and is a follow-up.',
     jurisdiction: 'state:CA',
     authority: [
       {
@@ -2253,13 +2253,13 @@ export const westStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-12',
+    verifiedOn: '2026-11-03',
     implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
       'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#states.CA',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#hsaAccountYearFactsForYear',
     ],
   },

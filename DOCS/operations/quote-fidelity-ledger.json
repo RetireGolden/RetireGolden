@@ -6,13 +6,13 @@
   "cached": 433,
   "entryCount": 1893,
   "counts": {
-    "ELISION-EXACT": 154,
+    "ELISION-EXACT": 153,
     "ELISION-PUNCTUATION": 1,
     "EXACT": 1253,
     "PDF-NOT-VERIFIABLE": 1,
     "PDF-WORD-LEVEL": 470,
     "PUNCTUATION": 4,
-    "UNFETCHABLE": 10
+    "UNFETCHABLE": 11
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -16971,8 +16971,8 @@
       "host": "www.ftb.ca.gov",
       "url": "https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html",
       "quoteSha256": "e0ba0179efbdd7a5",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 elision segments, every one a literal substring",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403) on 2026-11-03; quote reused unchanged from ca-hsa-state-basis-nonconformity, pending a networked verify-quotes run",
       "diagnosis": null
     },
     {
@@ -21596,7 +21596,7 @@
     },
     {
       "on": "2026-11-03",
-      "note": "Added for RetireGolden #804 and #805: the new record state-hsa-evidence-runtime-merge-and-completeness reuses the FTB 2025 Schedule CA HSA quote of ca-hsa-state-basis-nonconformity unchanged, with the same citation, URL and quoted text. It was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of the entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach www.ftb.ca.gov from the session that made the change (the proxy refused the tunnel); a later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.",
+      "note": "Added for RetireGolden #804 and #805: the new record state-hsa-evidence-runtime-merge-and-completeness reuses the FTB 2025 Schedule CA HSA quote of ca-hsa-state-basis-nonconformity unchanged, with the same citation, URL and quoted text. verify-quotes could not reach www.ftb.ca.gov from the session that made the change (the sandbox proxy refused CONNECT, HTTP 403, on 2026-11-03), so the entry is recorded UNFETCHABLE rather than carrying the earlier entry's verdict, and the rules:due re-verification queue holds it until a networked run filtered to this record re-checks it. No other ledger entry was re-run.",
       "entries": [
         {
           "id": "state-hsa-evidence-runtime-merge-and-completeness",

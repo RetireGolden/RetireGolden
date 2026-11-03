@@ -168,7 +168,7 @@ export const charitableDeductionRecords = {
   'irc-170-p-standard-deduction-carryover': {
     title: 'Carryover generated in a standard-deduction year',
     statement:
-      'A year in which the taxpayer claims the 170(p) nonitemizer deduction still generates a five-year carryover, but only for contributions exceeding the percentage-of-contribution-base ceiling. The 170(p) dollar cap is not a carryover-generating limitation, so the slice between the cap and the ceiling is permanently lost.',
+      'A year in which the taxpayer claims the 170(p) nonitemizer deduction still generates a five-year carryover, but only for contributions exceeding the percentage-of-contribution-base ceiling. The 170(p) dollar cap is not a carryover-generating limitation, so the slice between the cap and the ceiling is permanently lost. Re-verified 2026-11-03: 170(d)(1)(A), 170(d)(1)(C)(ii) and Treas. Reg. 1.170A-10(a)(2) read as quoted, and no IRS notice, regulation or publication found addresses a carryover generated in a 170(p) year. Publication 6196 (10-2026) and the IRS one-big-beautiful-bill provisions page state only the other direction, that prior-year carryovers do not qualify for the 170(p) deduction, which the cash-contributions-made-during-the-year text already gives and the engine already follows.',
     classification: 'unsettled',
     contraryReading:
       'Practitioner literature states without qualification that unused 170(p) amounts do not carry forward, which read literally would deny a carryover even above the ceiling. That shorthand describes the 170(p) allowance itself rather than 170(d)(1), and no published source addresses the question either way. The supporting regulation still cites section 144, repealed in 1976, and no post-OBBBA authority applies it.',
@@ -197,7 +197,7 @@ export const charitableDeductionRecords = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-11-03',
     implementedBy: ['packages/engine/src/actions/annualQcdStandardSection170pLedger.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdStandardSection170pLedger.ts#stageAnnualQcdStandardSection170pLedger',

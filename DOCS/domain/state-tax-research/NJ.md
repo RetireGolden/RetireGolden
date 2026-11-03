@@ -34,7 +34,7 @@ Authority: [NJ Division of Taxation, OBBBA and the New Jersey Gross Income Tax](
 
 > the New Jersey Gross Income Tax (GIT) has defined categories of income and deductions and is not computed based on federal adjusted gross income.
 
-The year's HSA facts are New Jersey's own: only evidence rows asserted for NJ are read, an empty runtime list still reads them, and with no residence state the facts are unavailable rather than mixing NJ rows with another state's (`state-hsa-evidence-runtime-merge-and-completeness`, described in CA.md, "Which evidence reaches the year").
+When New Jersey is the projection's residence (year-end) state, the year's HSA facts are selected from New Jersey's own evidence: only rows asserted for NJ are read, an empty runtime list still reads them, an NJ `unknown` HSA mark withholds the collection, and with no residence state the facts are unavailable rather than mixing NJ rows with another state's. That is year-level selection: in a move year a New Jersey slice that is not the year-end state receives the year-end state's collection and is marked incomplete (`state-rich-split-year-adapter-required`). The record is `state-hsa-evidence-runtime-merge-and-completeness`, described in CA.md, "Which evidence reaches the year"; it is an engine input convention, not a New Jersey rule.
 
 Archival authentication only (not operative tax authority): [NJ Division of Taxation, August 19, 2010 archive publication entry](https://www.nj.gov/treasury/taxation/enewsarc/august2010.shtml) (the index moved from the `whatsnewarc` path, which returns 404 as of 2026-09-23).
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, type Account } from '../../model/plan.js'
+import { createEmptyPlan, parsePlan, type Account } from '../../model/plan.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import {
   newJerseyWorksheetCTaxableAmount,
@@ -830,13 +830,37 @@ function caHsaEvidence(overrides: Partial<ReturnType<typeof createEmptyPlan>['st
   }
 }
 
+/**
+ * A plan checkStateTaxPlanFacts accepts: p1 owns an on-plan HSA for every
+ * account id the evidence names.
+ */
+function planWithHsaAccounts(...accountIds: string[]) {
+  const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+  for (const id of accountIds) {
+    plan.accounts.push({ type: 'hsa', id, name: 'HSA', ownerPersonId: 'p1',
+      annualReturnPct: null, balance: 1_000, annualContribution: 0 })
+  }
+  return plan
+}
+
+function expectValidPlan(plan: ReturnType<typeof createEmptyPlan>): void {
+  const parsed = parsePlan(plan)
+  expect(parsed.ok, parsed.ok ? '' : parsed.issues.join('; ')).toBe(true)
+}
+
 function californiaHsaAddition(facts: ReturnType<typeof hsaAccountYearFactsForYear>): number | undefined {
   return facts?.reduce((sum, fact) => sum + californiaHsaAccountAdjustment(fact).taxableIncomeDelta, 0)
 }
 
+// These are adapter-contract fixtures: they call hsaAccountYearFactsForYear
+// directly with the runtime list a caller could pass. simulatePlan's funding
+// caller projects a row for every HSA account, so it never passes an empty
+// list for a plan whose evidence is valid; no reachable simulatePlan
+// under-tax from the old empty-list result is known.
+
 // D47 (#805). California taxes HSA interest in the year earned (FTB 2025
 // Schedule CA instructions; ca-hsa-state-basis-nonconformity). An empty
-// runtime list says the projection saw no HSA activity; it does not void the
+// runtime list says the caller saw no HSA activity; it does not void the
 // plan's asserted California evidence.
 // Worksheet: addition = deduction 0 + employer 0 + interest 1,200 +
 // dividends 0 + gains 0 - nonqualified 0 = 1,200. Returning [] first drops it: 0.
@@ -846,14 +870,14 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   note: 'an empty runtime list still reads the state evidence',
 }, ({ accepted }) => {
   it('returns the asserted closed-account row when the runtime HSA list is empty', () => {
-    // The issue's input as written: no HSA account on the plan, one CA row.
-    // checkStateTaxPlanFacts rejects evidence for an off-plan account; the
-    // adapter still must not report the year complete while dropping it.
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    // The issue's evidence row, on a plan that carries the (now empty) account.
+    const plan = planWithHsaAccounts('closed')
+    plan.accounts[0]!.balance = 0
     plan.stateTaxFacts.hsaYearEvidence = [{
       taxYear: 2026, state: 'CA', accountId: 'closed', ownerPersonId: 'p1', interest: 1_200,
       provenance: hsaProvenance,
     }]
+    expectValidPlan(plan)
     const facts = hsaAccountYearFactsForYear(plan, 2026, 'CA', [])
     expect(facts).toHaveLength(1)
     expect(facts![0]).toMatchObject({ accountId: 'closed', ownerPersonId: 'p1',
@@ -861,15 +885,17 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   })
 
   it('carries the asserted interest into the California addition', () => {
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    const plan = planWithHsaAccounts('closed')
     plan.stateTaxFacts.hsaYearEvidence = [caHsaEvidence({ accountId: 'closed', interest: 1_200 })]
+    expectValidPlan(plan)
     expect(californiaHsaAddition(hsaAccountYearFactsForYear(plan, 2026, 'CA', []))).toBe(accepted)
   })
 
   it('keeps an empty runtime year known-empty only when the state has no evidence and is not marked unknown', () => {
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    const plan = planWithHsaAccounts('hsa1')
     // NJ evidence is not California's: the CA year stays known-empty.
     plan.stateTaxFacts.hsaYearEvidence = [caHsaEvidence({ state: 'NJ', interest: 1_200 })]
+    expectValidPlan(plan)
     expect(hsaAccountYearFactsForYear(plan, 2026, 'CA', [])).toEqual([])
     plan.stateTaxFacts.annualEvidenceCompleteness = [{
       taxYear: 2026, state: 'CA', hsa: 'unknown', provenance: hsaProvenance,
@@ -881,6 +907,45 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
     }]
     expect(hsaAccountYearFactsForYear(plan, 2026, 'CA', [])).toEqual([])
     expect(hsaAccountYearFactsForYear(plan, 2026, 'CA')).toEqual([])
+  })
+})
+
+// r1-1 of #836. A year the plan marks unknown for the state is not the whole
+// year even when an asserted row is complete: pricing that row would report
+// the year's California addition as $1,200 when the plan says activity is
+// not known. The collection is withheld (the leaf then reports
+// ca-hsa-activity-unavailable). With no mark, or a complete mark, the row is
+// the year: 1,200.
+describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
+  readings: { withheld: 'undefined', pricedAsComplete: 1_200 },
+  accepted: 'withheld',
+  note: 'an unknown mark withholds the collection even with rows',
+}, ({ accepted, readings }) => {
+  it('withholds an unknown-marked year and prices a complete or unmarked one', () => {
+    const plan = planWithHsaAccounts('hsa1')
+    plan.stateTaxFacts.hsaYearEvidence = [caHsaEvidence({ interest: 1_200 })]
+    const addition = (projected?: Parameters<typeof hsaAccountYearFactsForYear>[3]) =>
+      californiaHsaAddition(hsaAccountYearFactsForYear(plan, 2026, 'CA', projected)) ?? 'undefined'
+    const runtime = [{ accountId: 'hsa1', ownerPersonId: 'p1', federalHsaDeduction: 0 }]
+    expectValidPlan(plan)
+    expect(addition()).toBe(readings.pricedAsComplete)
+    expect(addition(runtime)).toBe(readings.pricedAsComplete)
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'CA', hsa: 'complete', provenance: hsaProvenance,
+    }]
+    expect(addition(runtime)).toBe(readings.pricedAsComplete)
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'CA', hsa: 'unknown', provenance: hsaProvenance,
+    }]
+    expectValidPlan(plan)
+    expect(addition()).toBe(accepted)
+    expect(addition([])).toBe(accepted)
+    expect(addition(runtime)).toBe(accepted)
+    // Another state's unknown mark does not withhold California's year.
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{
+      taxYear: 2026, state: 'NJ', hsa: 'unknown', provenance: hsaProvenance,
+    }]
+    expect(addition(runtime)).toBe(readings.pricedAsComplete)
   })
 })
 
@@ -896,9 +961,7 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   note: 'no residence state fails closed',
 }, ({ accepted }) => {
   it('returns undefined rather than a CA row and an NJ row for one account', () => {
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
-    plan.accounts.push({ type: 'hsa', id: 'hsa1', name: 'HSA', ownerPersonId: 'p1',
-      annualReturnPct: null, balance: 1_000, annualContribution: 0 })
+    const plan = planWithHsaAccounts('hsa1')
     plan.stateTaxFacts.hsaYearEvidence = [
       caHsaEvidence({ interest: 1_200 }),
       caHsaEvidence({ state: 'NJ', interest: 900 }),
@@ -906,6 +969,7 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
     plan.stateTaxFacts.annualEvidenceCompleteness = [
       { taxYear: 2026, state: 'CA', hsa: 'complete', provenance: hsaProvenance },
     ]
+    expectValidPlan(plan)
     const shape = (facts: ReturnType<typeof hsaAccountYearFactsForYear>) => facts?.length ?? 'undefined'
     expect(shape(hsaAccountYearFactsForYear(plan, 2026, undefined))).toBe(accepted)
     expect(shape(hsaAccountYearFactsForYear(plan, 2026, ''))).toBe(accepted)
@@ -924,11 +988,12 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   note: 'a residence state reads only its own rows',
 }, ({ accepted }) => {
   it('gives the CA year one row, with the CA basis', () => {
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    const plan = planWithHsaAccounts('hsa1')
     plan.stateTaxFacts.hsaYearEvidence = [
       caHsaEvidence({ stateBasisBeforeYear: 500 }),
       caHsaEvidence({ state: 'NJ', stateBasisBeforeYear: 9_000 }),
     ]
+    expectValidPlan(plan)
     for (const projected of [undefined, [], [{ accountId: 'hsa1', ownerPersonId: 'p1', federalHsaDeduction: 0 }]]) {
       const facts = hsaAccountYearFactsForYear(plan, 2026, 'ca', projected)
       expect(facts).toHaveLength(1)
@@ -948,8 +1013,9 @@ describeRule('state-hsa-evidence-runtime-merge-and-completeness', {
   note: 'a runtime zero deduction default keeps the asserted deduction',
 }, ({ accepted }) => {
   it('adds back the asserted deduction under a runtime zero default', () => {
-    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    const plan = planWithHsaAccounts('hsa1')
     plan.stateTaxFacts.hsaYearEvidence = [caHsaEvidence({ federalHsaDeduction: 4_300 })]
+    expectValidPlan(plan)
     expect(californiaHsaAddition(hsaAccountYearFactsForYear(plan, 2026, 'CA',
       [{ accountId: 'hsa1', ownerPersonId: 'p1', federalHsaDeduction: 0 }]))).toBe(accepted)
   })

@@ -255,16 +255,20 @@ export function householdFactsForYear(
 }
 
 /**
- * Per-account HSA facts for a tax year and residence state. Missing Plan
- * evidence for that state -> undefined (unavailable), unless the plan marks
- * that state's year complete. An empty runtime list is an explicit empty year
- * of runtime activity: it is still merged with persisted evidence for the
- * state, so an asserted row is returned rather than dropped, and with no such
- * evidence the result is the known-empty `[]`, unless the plan marks that
- * state's HSA year unknown (then undefined). No residence state ->
- * undefined: evidence rows and completeness marks are keyed by state, so none
- * can be chosen, and rows from several states are never mixed into one
- * collection (state-hsa-evidence-runtime-merge-and-completeness).
+ * Per-account HSA facts for a tax year and residence state, the year-level
+ * selection the state calculator prices
+ * (state-hsa-evidence-runtime-merge-and-completeness):
+ * - No residence state -> undefined. Evidence rows and completeness marks are
+ *   keyed by state, so none can be chosen, and rows from several states are
+ *   never mixed into one collection.
+ * - The plan marks that state's HSA year unknown -> undefined, even when
+ *   evidence or runtime rows exist: a partial collection is not priced as the
+ *   whole year.
+ * - Otherwise the state's persisted evidence for the year is merged with the
+ *   runtime rows. An empty runtime list is merged the same way, so an
+ *   asserted row is returned rather than dropped.
+ * - No rows at all -> `[]` (known empty) when a runtime list was passed or
+ *   the plan marks the year complete; else undefined (unavailable).
  * The funding caller passes `federalHsaDeduction: 0` when it did not model a
  * contribution. That default does not replace an asserted deduction. A
  * present non-zero deduction does. Every other present runtime amount,
@@ -295,6 +299,10 @@ export function hsaAccountYearFactsForYear(
   // into a single computation. Fail closed instead.
   const stateCode = residenceState?.trim().toUpperCase()
   if (stateCode === undefined || stateCode === '') return undefined
+  // A year the plan marks unknown for this state stays unavailable even with
+  // rows, as a QCD-unknown year does: the rows observed are not the year.
+  const mark = evidenceMark(plan, year, stateCode, 'hsa')
+  if (mark === 'unknown') return undefined
   const persisted = plan.stateTaxFacts.hsaYearEvidence.filter((row) =>
     row.taxYear === year && row.state.toUpperCase() === stateCode)
   const rows: Array<Partial<StateHsaYearEvidence> & Pick<StateHsaYearEvidence, 'accountId' | 'ownerPersonId'>> = [...persisted]
@@ -317,13 +325,8 @@ export function hsaAccountYearFactsForYear(
     else rows[index] = merged
   }
   // An empty runtime list is a known-empty year only after the state's
-  // persisted evidence has been read (an asserted row is kept above), and
-  // never for a year the plan itself marks unknown for that state.
-  if (rows.length === 0) {
-    const mark = evidenceMark(plan, year, stateCode, 'hsa')
-    if (mark === 'complete') return []
-    return projected !== undefined && mark !== 'unknown' ? [] : undefined
-  }
+  // persisted evidence has been read (an asserted row is kept above).
+  if (rows.length === 0) return projected !== undefined || mark === 'complete' ? [] : undefined
   return rows.map((row) => {
     const fact = {
       ...row,

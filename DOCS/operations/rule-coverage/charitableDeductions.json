@@ -669,8 +669,8 @@
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-11-02",
+      "verifiedOn": "2026-11-03",
+      "dueOn": "2027-02-01",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdStandardSection170pLedger.ts"
       ],
