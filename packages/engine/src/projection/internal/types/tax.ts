@@ -272,6 +272,12 @@ export interface StateHouseholdTaxFactsInput {
     | 'marriedFilingSeparately'
     | 'headOfHousehold'
     | 'qualifyingSurvivingSpouse'
+  /**
+   * True when `stateFilingStatus` was defaulted from the plan's household
+   * filing status rather than stored for the year; a state that declares a
+   * qualifying surviving spouse's row then uses that row in a QSS year.
+   */
+  stateFilingStatusDefaulted?: boolean
   federalAgi?: number
   connecticutAgi?: number
   federalDeductionUsed?: number
