@@ -1020,6 +1020,10 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // Verified 2026-10-06: the 2025 Form 760PY instructions, quoted for the
     // prorated personal exemptions of a part-year resident.
     'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760py-instructions.pdf',
+    // Verified 2026-11-03: the Department's Filing Status page, quoted for a
+    // federal Qualifying Widow(er) using Filing Status 1
+    // (va-760-2026-qss-files-single); admit only this page.
+    'https://www.tax.virginia.gov/filing-status',
   ],
   MO: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
@@ -1064,6 +1068,10 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // Verified 2026-10-06: Department of Revenue Notice 08-06, quoted for
     // Washburn University's 403(b) retirement plan; admit only this notice.
     'https://www.ksrevenue.gov/taxnotices/notice08-06.pdf',
+    // Verified 2026-11-03: the 2025 K-40 instructions (IP25), quoted for a
+    // federal Qualifying Widow(er) checking Head of Household
+    // (ks-k40-2026-qss-head-of-household); admit only this publication.
+    'https://www.ksrevenue.gov/pdf/ip25.pdf',
   ],
   MA: [
     // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
