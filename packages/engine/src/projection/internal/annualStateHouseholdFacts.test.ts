@@ -62,6 +62,18 @@ describe('annual state household source facts', () => {
       exemptionTaxpayerCount: 1, exemptionDependentCount: 2, age65EligibleCount: 1,
       utahCreditElection: 'retirement', iowaTestNetIncome: 62000 })
   })
+  it('marks a state filing status defaulted from the plan, and only then', () => {
+    const defaulted = buildAnnualStateHouseholdFacts({ plan: plan(), taxYear: 2026,
+      socialSecurityStreams: [], federal, railroadBenefits: [] })
+    expect(defaulted.householdFacts.stateFilingStatus).toBe(plan().household.filingStatus)
+    expect(defaulted.householdFacts.stateFilingStatusDefaulted).toBe(true)
+    const inputPlan = plan()
+    inputPlan.stateTaxFacts.householdYearFacts = [{ year: 2026, stateFilingStatus: 'marriedFilingJointly' }]
+    const stored = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026,
+      socialSecurityStreams: [], federal, railroadBenefits: [] })
+    expect(stored.householdFacts.stateFilingStatus).toBe('marriedFilingJointly')
+    expect(stored.householdFacts.stateFilingStatusDefaulted).toBeUndefined()
+  })
   it('keeps RRA gross benefits distinct from federally included amounts', () => {
     // 45USC231m protects RRA benefits; state subtraction uses the included
     // amount, not the gross $30k already partly excluded federally.

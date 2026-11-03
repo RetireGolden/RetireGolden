@@ -183,6 +183,13 @@ export interface StateHouseholdTaxFacts {
    */
   recipientSocialSecurity?: readonly { ownerPersonId: string; ageYears?: number; grossSocialSecurity: number; federallyIncludedSocialSecurity?: number; grossRailroadTier1: number; federallyIncludedRailroadTier1?: number; paidMonths?: number }[]
   stateFilingStatus?: StateFilingStatusExtended
+  /**
+   * True when `stateFilingStatus` was not stored for the year but defaulted
+   * from the plan's household filing status. A pack that declares a qualifying
+   * surviving spouse's row (`qualifyingSurvivingSpouseFilesAs`) then puts a
+   * QSS year on that row instead (stateTax.ts#withDeclaredSurvivorRow).
+   */
+  stateFilingStatusDefaulted?: boolean
   federalAgi?: number
   /** Connecticut AGI is a separate state worksheet line, never federal AGI by proxy. */
   connecticutAgi?: number

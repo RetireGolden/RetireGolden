@@ -1231,11 +1231,33 @@ function accumulateLeaf(
  * Rich taxable-income computation: accumulates every selected leaf warning and
  * credit. Numeric `computeStateTaxableIncome` is a view over this result.
  */
+/**
+ * The options with the household's state filing status on the row the pack
+ * declares for a qualifying surviving spouse, when that status was not stored
+ * for the year but defaulted from the plan's household filing status (which in
+ * a QSS year is still the couple's joint status). A stored status is the
+ * plan's own statement of the state return and wins.
+ */
+function withDeclaredSurvivorRow(
+  params: StateTaxParams,
+  input: TaxYearInput,
+  opts: ComputeStateTaxOptions,
+): ComputeStateTaxOptions {
+  const facts = opts.householdFacts
+  if (
+    facts?.stateFilingStatusDefaulted !== true ||
+    input.filingStatus !== 'qualifyingSurvivingSpouse' ||
+    params.qualifyingSurvivingSpouseFilesAs === undefined
+  ) return opts
+  return { ...opts, householdFacts: { ...facts, stateFilingStatus: stateFilingRowFor(params, input.filingStatus).status } }
+}
+
 export function computeStateTaxableIncomeResult(
   params: StateTaxParams,
   input: TaxYearInput,
-  opts: ComputeStateTaxOptions = {},
+  givenOpts: ComputeStateTaxOptions = {},
 ): TaxableIncomeComputation {
+  const opts = withDeclaredSurvivorRow(params, input, givenOpts)
   if (!params.hasIncomeTax) {
     return { taxableIncome: 0, taxCredit: 0, warnings: [] }
   }
@@ -1755,9 +1777,10 @@ function oregonRetirementCredit(
 function priceState(
   params: StateTaxParams,
   input: TaxYearInput,
-  opts: ComputeStateTaxOptions,
+  givenOpts: ComputeStateTaxOptions,
   deferred?: { oregonRetirementCredit?: boolean },
 ): { result: StateTaxComputationResult; income: TaxableIncomeComputation } {
+  const opts = withDeclaredSurvivorRow(params, input, givenOpts)
   const income = computeStateTaxableIncomeResult(params, input, opts)
   const warnings: StateTaxExactnessWarning[] = [...income.warnings]
   let taxCredit = income.taxCredit

@@ -223,6 +223,28 @@ describe('state qualifying-surviving-spouse row declarations', () => {
     }
   })
 
+  it('puts a defaulted household status on the declared row, and leaves a stored one alone', () => {
+    // A fixture, not Wisconsin's law: the 2026 Wisconsin figures with a declared
+    // head-of-household row for a survivor ($18,030, Form 1-ES maximum). With
+    // $20,000 of Wisconsin income (inside every status's full-deduction band)
+    // and two $700 exemptions: 20,000 − 18,030 − 1,400 = 570, tax 3.5% × 570 =
+    // $19.95. The joint status the plan default carries (the couple's) gives
+    // 20,000 − 25,840 − 1,400 < 0, so 0.
+    const fixture: StateTaxParams = { ...pack('WI'), qualifyingSurvivingSpouseFilesAs: 'headOfHousehold', standardDeductionHeadOfHousehold: 18_030 }
+    const input = qss('WI', 20_000)
+    const base = { wisconsinIncomeForStandardDeduction: 20_000, exemptionTaxpayerCount: 1, exemptionDependentCount: 1, age65EligibleCount: 0 }
+    const defaulted = computeStateTaxDetail(fixture, input, { householdFacts: { ...base, stateFilingStatus: 'marriedFilingJointly', stateFilingStatusDefaulted: true } })
+    expect(defaulted.taxableIncome).toBe(570)
+    expect(defaulted.stateTax).toBeCloseTo(19.95, 6)
+    // The plan stored a joint state status for the year: it wins.
+    const stored = computeStateTaxDetail(fixture, input, { householdFacts: { ...base, stateFilingStatus: 'marriedFilingJointly' } })
+    expect(stored.taxableIncome).toBe(0)
+    expect(stored.stateTax).toBe(0)
+    // Wisconsin's own figures declare no row, so the default stands there.
+    const real = computeStateTaxDetail(pack('WI'), input, { householdFacts: { ...base, stateFilingStatus: 'marriedFilingJointly', stateFilingStatusDefaulted: true } })
+    expect(real.taxableIncome).toBe(0)
+  })
+
   it('fails closed on a head-of-household declaration without the row', () => {
     const broken: StateTaxParams = { ...pack('GA'), qualifyingSurvivingSpouseFilesAs: 'headOfHousehold' }
     expect(() => stateFilingRowFor(broken, 'qualifyingSurvivingSpouse')).toThrow(/head of household/)
