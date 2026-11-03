@@ -2,11 +2,11 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 605,
+    "total": 608,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 78,
-      "settled": 397,
+      "settled": 400,
       "unsettled": 8
     },
     "approximatedByKind": {
@@ -17,7 +17,7 @@
     "byVolatility": {
       "annuallyIndexed": 92,
       "awaitingGuidance": 14,
-      "staticStatute": 489,
+      "staticStatute": 492,
       "sunsetting": 10
     },
     "byJurisdiction": {
@@ -33,13 +33,13 @@
         "DC": 3,
         "DE": 6,
         "FL": 1,
-        "GA": 3,
+        "GA": 4,
         "HI": 7,
         "IA": 3,
         "ID": 4,
         "IL": 4,
         "IN": 7,
-        "KS": 3,
+        "KS": 4,
         "KY": 2,
         "LA": 4,
         "MA": 5,
@@ -68,14 +68,14 @@
         "TN": 2,
         "TX": 2,
         "UT": 8,
-        "VA": 8,
+        "VA": 9,
         "VT": 6,
         "WA": 5,
         "WI": 5,
         "WV": 8,
         "WY": 1
       },
-      "stateTotal": 244
+      "stateTotal": 247
     }
   },
   "attestations": {
@@ -239,7 +239,7 @@
     {
       "path": "params/state/index.ts",
       "sweptOn": "2026-09-28",
-      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; stateParamsFor applies every enacted year at or before a year past the pack in order, each replacing the fields it names or, named as null, ending them (./data/enacted2027.ts to enacted2033.ts), named by the enacted-figure records and the state-enacted-tax-year-figures calculation; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata"
+      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; stateParamsFor applies every enacted year at or before a year past the pack in order, each replacing the fields it names or, named as null, ending them (./data/enacted2027.ts to enacted2033.ts), named by the enacted-figure records and the state-enacted-tax-year-figures calculation; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata; stateFilingRowFor selects the state filing row (standard deduction, schedule, single/joint key) and routes a qualifying surviving spouse by the pack's qualifyingSurvivingSpouseFilesAs, named by ga-it511-2026-qss-standard-deduction-single, va-760-2026-qss-files-single, ks-k40-2026-qss-head-of-household and de-pit-est-2026-qss-standard-deduction-joint-mapper; an undeclared state keeps the federal joint mapping as a residual"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -424,7 +424,7 @@
     {
       "path": "projection/internal/types/tax.ts",
       "sweptOn": "2026-09-06",
-      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual."
+      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; `taxParameterFilingStatus` is the federal QSS-to-MFJ mapping; state rows come from params/state/index.ts#stateFilingRowFor, which reads each pack's qualifyingSurvivingSpouseFilesAs (GA and VA single, KS head of household, DE joint as the disclosed `de-pit-est-2026-qss-standard-deduction-joint-mapper`); residual: a state that declares no row still falls back to this joint mapping without a jurisdiction-specific determination; residual (2026-11-03): the federal and state IRC 86 Social Security inclusions take their thresholds through this helper, so a qualifying surviving spouse gets the joint base amounts ($32,000 and $44,000), which 86(c)(1)(B) and (2)(B) give only \"in the case of a joint return\"; a surviving spouse files no joint return, so 86(c)(1)(A) and (2)(A) ($25,000 and $34,000) apply and the engine understates taxable Social Security above $25,000 of provisional income. Disclosed, not corrected."
     },
     {
       "path": "projection/optimizePlan.ts",
@@ -816,7 +816,7 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 51
+      "ruleCount": 52
     },
     {
       "module": "statesNortheast",
@@ -826,7 +826,7 @@
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 48
+      "ruleCount": 50
     },
     {
       "module": "statesSouthCentral",
@@ -846,15 +846,15 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1893,
+    "entryCount": 1904,
     "fetched": 0,
     "cached": 433,
     "counts": {
-      "ELISION-EXACT": 153,
+      "ELISION-EXACT": 155,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1253,
+      "EXACT": 1259,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 470,
+      "PDF-WORD-LEVEL": 473,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 11
     },
@@ -3308,6 +3308,56 @@
           {
             "id": "state-hsa-evidence-runtime-merge-and-completeness",
             "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added for RetireGolden #831, #832 and #833 (the qualifying-surviving-spouse state rows), separately from the September run this ledger was generated by: the three new records’ authorities were appended on 2026-11-03, first as UNFETCHABLE because the authoring sandbox proxy refused CONNECT to every host (HTTP 403), then the same day re-checked one by one against WebFetch renderings of each source, which matched word for word (EXACT for the HTML pages, ELISION-EXACT for the two Kansas statutes quoted with elisions, PDF-WORD-LEVEL for the three PDFs; the Virginia 58.1-322.03(2)(a) quote is also the September run’s EXACT entry for va-code-58-1-322-03-2-personal-exemptions). A WebFetch rendering is not a verify-quotes literal-substring check, so a networked verify-quotes run filtered to these records should confirm them. The Kansas 79-32,110 entry now quotes (a)(2) (heading and the (B) table) in place of the earlier (a)(2)(B) row, and IRC 2(a)(1)(B) and 151(d)(5)(B) were added to the Virginia record. recordCount and urlCount were recomputed from the registry as verify-quotes derives them (records, and distinct authority URLs); fetched and cached still describe the September run. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "ga-it511-2026-qss-standard-deduction-single",
+            "citation": "Georgia Department of Revenue, 2025 IT-511 Individual Income Tax Booklet, Form 500 Schedule 3, Line 10"
+          },
+          {
+            "id": "ga-it511-2026-qss-standard-deduction-single",
+            "citation": "Georgia Department of Revenue, Important Tax Updates, 2026 Income Tax Changes"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "Virginia Department of Taxation, Filing Status"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Filing Status"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "Va. Code §58.1-322.03(1)(b)(v)"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "Va. Code §58.1-322.03(2)(a)"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "IRC 2(a)(1)(B)"
+          },
+          {
+            "id": "va-760-2026-qss-files-single",
+            "citation": "IRC 151(d)(5)(B)"
+          },
+          {
+            "id": "ks-k40-2026-qss-head-of-household",
+            "citation": "Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status"
+          },
+          {
+            "id": "ks-k40-2026-qss-head-of-household",
+            "citation": "K.S.A. 79-32,119(c)(2)"
+          },
+          {
+            "id": "ks-k40-2026-qss-head-of-household",
+            "citation": "K.S.A. 79-32,110(a)(2)"
           }
         ]
       }

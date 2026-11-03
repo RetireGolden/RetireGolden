@@ -25,6 +25,19 @@
   *method*, and the tag was additionally attaching an IRC 63(c)(3) age-65 addition Arizona does not grant
   (`ars-43-1041-standard-deduction-published-amount`; Arizona's own age-65 relief is the unmodelled $2,100
   exemption of `ars-43-1023-e-age-65-exemption`).
+- A federal qualifying surviving spouse (IRC 2(a)) files under the row each state's own return gives it,
+  not the federal joint row. A pack declares it in `qualifyingSurvivingSpouseFilesAs`, and
+  `stateFilingRowFor` (params/state/index.ts) selects the standard deduction, rate schedule, the
+  single/MFJ key of the age addition and phase-out, and the joint test of state leaves from it; the federal
+  mapper `taxParameterFilingStatus` stays federal (and still selects the federal IRC 86 thresholds the state
+  Social Security base borrows). Georgia and Virginia file a surviving spouse as single
+  (`ga-it511-2026-qss-standard-deduction-single`, $15,000 for 2026; `va-760-2026-qss-files-single`, Filing
+  Status 1, $8,750, keeping the two $930 exemptions of the survivor and the required dependent child);
+  Kansas as head of household (`ks-k40-2026-qss-head-of-household`, the $6,180 K.S.A. 79-32,119(c)(2)
+  deduction and the 79-32,110(a)(2) single schedule, carried as `standardDeductionHeadOfHousehold` and
+  `bracketsHeadOfHousehold`); Delaware keeps the joint row as the disclosed approximation
+  `de-pit-est-2026-qss-standard-deduction-joint-mapper`. A state that declares no row falls back to the
+  federal joint mapping, which is not a determination of its law.
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw

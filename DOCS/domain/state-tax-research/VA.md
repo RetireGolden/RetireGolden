@@ -86,3 +86,23 @@ Method (a), Form 760PY: the resident-period income on the ordinary rate schedule
 A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Virginia and six in Texas, owes $2,339.20 for the Virginia months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,567.33 when the conversion falls in the months resident and $2,411.08 when it falls in Texas's, where the months share of the year gave $3,489.20 either way.
 
 The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
+
+## Qualifying surviving spouse files Single (2026-11-03)
+
+Virginia has three filing statuses (1 Single, 2 Joint, 3 Married filing separately). The Department's filing-status page: "If your filing status on your federal return was Single, Head of Household, or Qualifying Widow(er), you must use Filing Status 1 on your Virginia income tax return." The 2026 figures declare `qualifyingSurvivingSpouseFilesAs: 'single'`, carried into the enacted 2027 to 2030 deductions, and `stateFilingRowFor` selects the single deduction ($8,750 for 2026 under 58.1-322.03(1)(b)(v)).
+
+Filing Status 1 does not cut the personal exemptions: 58.1-322.03(2)(a) allows $930 for each exemption allowable federally, and a qualifying surviving spouse has the survivor's and that of the dependent child IRC 2(a)(1)(B) requires, so the engine counts two when the plan gives no count. The age deduction already used the $50,000 single threshold.
+
+A survivor under 65 with $60,000: 60,000 − 8,750 − 1,860 = 49,390 taxable, tax $2,582.43. The federal joint row gave $17,500, $40,640 and $2,079.30, $503.13 too little. Registered as `va-760-2026-qss-files-single`; the fixture is packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts.
+
+- https://www.tax.virginia.gov/filing-status — Filing Status 1 for a federal Single, Head of Household or Qualifying Widow(er).
+- https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf — Filing Status; line 11 Filing Status 1 $8,750.
+
+## Dependent exemptions with explicit counts (2026-11-03)
+
+58.1-322.03(2)(a) allows $930 for each exemption allowable federally, the dependents' as well as the taxpayers'. The planner collects them as two counts, `exemptionTaxpayerCount` and `exemptionDependentCount`. Until 2026-11-03 the engine priced a year that gave the taxpayer count on that count alone and dropped the dependents, $53.48 of tax per dependent in the 5.75% band. It now adds the two. A qualifying surviving spouse with one taxpayer and one dependent and $60,000 of income has $49,390 of Virginia taxable income (60,000 − 8,750 − 2 × 930), and a single filer with one dependent the same; a joint couple with two dependents has $38,780 (60,000 − 17,500 − 4 × 930) (packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts).
+
+The qualifying surviving spouse's second exemption rests on IRC 2(a)(1)(B), which requires a son, stepson, daughter or stepdaughter "with respect to whom the taxpayer is entitled to a deduction for the taxable year under section 151", and on 151(d)(5)(B), which keeps that deduction allowable "for purposes of any other provision of this title" although (d)(5)(A) sets its amount at zero. That clause speaks of Title 26; that Virginia counts the zero-amount exemptions at $930 is the reading every Virginia filer gets in `va-code-58-1-322-03-2-personal-exemptions`.
+
+- https://www.law.cornell.edu/uscode/text/26/2 — IRC 2(a)(1)(B).
+- https://www.law.cornell.edu/uscode/text/26/151 — IRC 151(d)(5)(B).

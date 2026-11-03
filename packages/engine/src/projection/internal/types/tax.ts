@@ -15,10 +15,24 @@ export type ProjectedFilingStatus = FilingStatus | 'qualifyingSurvivingSpouse'
 
 /**
  * For federal law, QSS uses the joint tax tables, standard deduction, and AMT
- * exemption. State parameter selection reuses this mapping wholesale. Delaware's
- * `de-pit-est-2026-qss-standard-deduction-joint-mapper` discloses the QSS-to-joint
- * standard-deduction approximation; other states require jurisdiction-specific
- * authority before assuming a different mapping. IRMAA is the named
+ * exemption. State row selection does not use this mapping: each state's row
+ * comes from `stateFilingRowFor` (params/state/index.ts), which reads the
+ * pack's `qualifyingSurvivingSpouseFilesAs` (Georgia and Virginia single,
+ * `ga-it511-2026-qss-standard-deduction-single` and
+ * `va-760-2026-qss-files-single`; Kansas head of household,
+ * `ks-k40-2026-qss-head-of-household`; Delaware joint, the disclosed
+ * `de-pit-est-2026-qss-standard-deduction-joint-mapper`) and falls back to this
+ * joint mapping for a state that declares none.
+ *
+ * Known limitation, IRC 86: the federal and state calculators both take the
+ * Social Security inclusion's thresholds through this helper, so a QSS year
+ * gets the joint base amounts. 86(c)(1)(B) and (2)(B) give $32,000 and
+ * $44,000 only "in the case of a joint return"; a surviving spouse files no
+ * joint return, so 86(c)(1)(A) and (2)(A), $25,000 and $34,000, are the
+ * statute's figures. The engine therefore understates taxable Social Security
+ * for a qualifying surviving spouse whose provisional income falls above
+ * $25,000. Disclosed as a residual (rules/attestations/projection.ts), not yet
+ * corrected. IRMAA is the named
  * federal exception: SSA's threshold tables group qualifying surviving spouses with
  * single/HOH filers (POMS HI 01101.020), so the Medicare premium calculation maps
  * QSS to `single` instead of using this helper.
@@ -258,6 +272,12 @@ export interface StateHouseholdTaxFactsInput {
     | 'marriedFilingSeparately'
     | 'headOfHousehold'
     | 'qualifyingSurvivingSpouse'
+  /**
+   * True when `stateFilingStatus` was defaulted from the plan's household
+   * filing status rather than stored for the year; a state that declares a
+   * qualifying surviving spouse's row then uses that row in a QSS year.
+   */
+  stateFilingStatusDefaulted?: boolean
   federalAgi?: number
   connecticutAgi?: number
   federalDeductionUsed?: number

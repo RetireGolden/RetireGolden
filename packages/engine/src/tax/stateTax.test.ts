@@ -665,6 +665,7 @@ describe('state tax materiality regressions', () => {
         stateFilingStatus: 'single',
         federallyIncludedSocialSecurity: 0,
         exemptionTaxpayerCount: 1,
+        exemptionDependentCount: 0,
         section63fQualificationCount: 0,
         // §5822(a)(6) minimum-tax comparison is separate from §5830e election materiality.
         vermontUsObligationAdjustment: 0,
@@ -686,6 +687,7 @@ describe('state tax materiality regressions', () => {
         stateFilingStatus: 'single',
         federallyIncludedSocialSecurity: 0,
         exemptionTaxpayerCount: 1,
+        exemptionDependentCount: 0,
         section63fQualificationCount: 0,
         vermontUsObligationAdjustment: 0,
       },

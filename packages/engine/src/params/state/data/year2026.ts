@@ -392,6 +392,10 @@ const rawStateYear2026 = {
       // https://delcode.delaware.gov/title30/c011/sc01/index.html
       code: 'DE', name: 'Delaware', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
+      // Disclosed approximation, kept as the federal joint mapping: § 1108 and
+      // PIT-EST put a widow(er) on the $3,250 individual row
+      // (de-pit-est-2026-qss-standard-deduction-joint-mapper).
+      qualifyingSurvivingSpouseFilesAs: 'marriedFilingJointly',
       standardDeductionAge65Addition: { single: 2500, marriedFilingJointly: 2500 },
       brackets: {
         single: [
@@ -458,6 +462,10 @@ const rawStateYear2026 = {
       // December 1" delays it, so 2027 prices at 4.99% until that determination.
       code: 'GA', name: 'Georgia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      // IT-511 Schedule 3 line 10 gives a qualifying surviving spouse the single
+      // amount; only married filing jointly takes the joint one
+      // (ga-it511-2026-qss-standard-deduction-single).
+      qualifyingSurvivingSpouseFilesAs: 'single',
       brackets: { single: [{ lowerBound: 0, ratePct: 4.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.99 }] },
       retirement: { kind: 'capped', capPerPerson: 65000, minAge: 65 },
       // 48-7-27(a)(5.1): under 62, $17,500 of military retired pay, $35,000 with
@@ -607,11 +615,21 @@ const rawStateYear2026 = {
     },
     KS: {
       code: 'KS', name: 'Kansas', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      // K.S.A. 79-32,119(c)(2): $3,605 single, $8,240 married, $6,180 head of
+      // household "for tax year 2024, and all tax years thereafter", fixed
+      // dollars with no indexing clause, so the 2025 K-40 figures are 2026's.
       standardDeduction: { single: 3605, marriedFilingJointly: 8240 },
+      // K-40 instructions: a federal Qualifying Widow(er) checks the Head of
+      // Household box; head of household is one of 79-32,110(a)(2)'s "all
+      // other individuals", taxed on the single schedule
+      // (ks-k40-2026-qss-head-of-household).
+      qualifyingSurvivingSpouseFilesAs: 'headOfHousehold',
+      standardDeductionHeadOfHousehold: 6180,
       brackets: {
         single: [{ lowerBound: 0, ratePct: 5.2 }, { lowerBound: 23000, ratePct: 5.58 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 5.2 }, { lowerBound: 46000, ratePct: 5.58 }],
       },
+      bracketsHeadOfHousehold: [{ lowerBound: 0, ratePct: 5.2 }, { lowerBound: 23000, ratePct: 5.58 }],
       retirement: { kind: 'none' },
       directQcdPolicy: {
         kind: 'conforms',
@@ -1336,6 +1354,9 @@ const rawStateYear2026 = {
     VA: {
       code: 'VA', name: 'Virginia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 8750, marriedFilingJointly: 17500 },
+      // Virginia has no surviving-spouse status: a federal Qualifying Widow(er)
+      // must use Filing Status 1, Single (va-760-2026-qss-files-single).
+      qualifyingSurvivingSpouseFilesAs: 'single',
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 2 }, { lowerBound: 3000, ratePct: 3 }, { lowerBound: 5000, ratePct: 5 },

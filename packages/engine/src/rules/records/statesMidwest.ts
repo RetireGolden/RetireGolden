@@ -1245,6 +1245,51 @@ export const midwestStateRecords = {
     ],
   },
 
+  'ks-k40-2026-qss-head-of-household': {
+    title: 'Kansas files a qualifying surviving spouse as head of household: the $6,180 deduction and the single schedule',
+    statement:
+      'The K-40 instructions send a filer whose federal status is Qualifying Widow(er) with Dependent Child to the Head of Household box. K.S.A. 79-32,119(c)(2) sets the head-of-household standard deduction at $6,180 (single $3,605, married $8,240) for tax year 2024 and every year after, fixed dollars with no indexing clause, so the 2025 K-40 amounts are 2026’s; and 79-32,110(a)(2), headed "All other individuals", head of household among them, taxes them under its (B) table for tax year 2024 and after at 5.2% to $23,000 and $1,196 plus 5.58% above ((A) is the 2018 to 2023 table), where the joint schedule of (a)(1) runs to $46,000. The Kansas figures carry the head-of-household row (`standardDeductionHeadOfHousehold: 6180` and `bracketsHeadOfHousehold`, the (a)(2) schedule) and declare `qualifyingSurvivingSpouseFilesAs: \'headOfHousehold\'` (params/state/data/year2026.ts); `stateFilingRowFor` selects both for the Kansas taxable-income and tax computations, the year total and a part-year slice alike. A survivor with $66,180 of Kansas AGI has $60,000 of taxable income and $3,260.60 of tax. Until 2026-11-03 the engine sent every state’s qualifying surviving spouse to the joint row through the federal mapper (taxParameterFilingStatus), which gave this survivor $8,240 and the joint schedule, $57,940 of taxable income and $3,058.25 of tax, $202.35 too little. Settled for the filing row, deduction and schedule; the Kansas personal exemption and the 79-32,119(a)-(b) additional deduction at 65 or blind ($850 head of household) are not modeled for any Kansas filer, and whole-return accuracy is outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:KS',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status',
+      url: 'https://www.ksrevenue.gov/pdf/ip25.pdf',
+      quotedText:
+        'If your federal filing status is Qualifying Widow(er) with Dependent Child, check the Head of Household box.',
+    }, {
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,119(c)(2)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0119.html',
+      quotedText:
+        '(2) For tax year 2024, and all tax years thereafter, the standard deduction amount of an individual, … Single individual filing status, $3,605; married filing status, $8,240; and head of household filing status, $6,180.',
+    }, {
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,110(a)(2)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html',
+      quotedText:
+        '(2) All other individuals. … (B) For tax year 2024, and all tax years thereafter: … Not over $23,000 … 5.2% of Kansas taxable income … Over $23,000 … $1,196 plus 5.58% of excess over $23,000',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-11-03',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.KS',
+      'packages/engine/src/params/state/index.ts#stateFilingRowFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
+  },
+
   'ks-stat-79-32-117-public-pension-exclusion': {
     title: 'Kansas exempts named retirement systems',
     statement: 'Kansas subtracts the named statutory systems, including federal civil service and armed forces, KPERS, qualifying city and public-utility plans, Washburn University, and the Overland Park police and fire plans. The characterized selector requires an eligible named plan code on a public, federal civil service, military survivor or government survivor pension; private and unlisted public plans receive no named-plan subtraction. A pension tagged Military retirement needs no code: the source already names the system (c)(vii) names, service in the armed forces of the United States, so it is read as US-MILITARY. Before 2026-10-07 it needed the code too, and a Kansas military retiree without one was charged on the whole pension ($5,291.44 on $100,000, single) with the year marked incomplete. A pension tagged Military survivor benefit still needs the code: (c)(vii) reaches retirement benefits "in whatever form" earned for service in the armed forces, but no primary text read here says that a Survivor Benefit Plan annuity is one, so the code is the plan\u2019s assertion that it is. Unknown public identity, or a public pension without a code, remains incomplete. Generic public income does not establish eligibility. Washburn University’s retirement plan, which (c)(xix) names, is an employer plan: the Department of Revenue’s Notice 08-06 describes its basic plan as a 403(b) and allows the subtraction for it and for the university’s supplemental retirement annuity. An employer-plan row coded KS-WASHBURN therefore has its federally included amount subtracted (no other code subtracts an employer plan; the engine applies the other named systems to pensions, so whether a federal Thrift Savings Plan or a KPERS 457 account entered as an employer plan is subtracted is not determined here, and the engine subtracts neither), and one with a taxable amount and no code is incomplete unless its plan type is 401(k), 401(a) or 457(b), which no named system is. A projected employer account takes its declared 401(k), 403(b) or 457(b) class as that plan type when the state evidence gives none, so an undeclared employer account is incomplete in a Kansas year it pays out (stateMidwestExtras.ts#kansasNamedPlanExclusion, projection/internal/annualStateRetirementEvents.ts#stateRetirementEventsFromAccountAmounts). An IRA and a private pension receive no named-plan subtraction whatever code they carry, and neither does a 401(k), 401(a) or 457(b), so a missing code on them is not flagged; before 2026-10-06 it was, and every Kansas year with an IRA or 401(k) withdrawal was marked incomplete for a fact that could not change its tax.',

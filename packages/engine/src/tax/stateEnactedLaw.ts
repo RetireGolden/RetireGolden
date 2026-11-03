@@ -242,5 +242,8 @@ export function statutorilyIndexedStandardDeduction(
       single: indexed(params.standardDeduction.single),
       marriedFilingJointly: indexed(params.standardDeduction.marriedFilingJointly),
     },
+    ...(params.standardDeductionHeadOfHousehold === undefined
+      ? {}
+      : { standardDeductionHeadOfHousehold: indexed(params.standardDeductionHeadOfHousehold) }),
   }
 }

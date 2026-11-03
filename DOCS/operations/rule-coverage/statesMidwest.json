@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -216,7 +216,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -234,7 +234,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1667
+              "line": 1709
             }
           ]
         }
@@ -341,7 +341,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -359,7 +359,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -434,7 +434,7 @@
           "functions": [
             {
               "name": "IN.militaryRetirementExclusion",
-              "line": 591
+              "line": 599
             }
           ]
         },
@@ -452,7 +452,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -512,7 +512,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -521,11 +521,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -619,7 +619,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 554
+              "line": 562
             }
           ]
         },
@@ -637,7 +637,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1667
+              "line": 1709
             }
           ]
         }
@@ -730,7 +730,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1233
+              "line": 1255
             }
           ]
         }
@@ -790,7 +790,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 537
+              "line": 545
             }
           ]
         },
@@ -799,11 +799,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -887,7 +887,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 537
+              "line": 545
             }
           ]
         },
@@ -896,7 +896,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -952,7 +952,7 @@
           "functions": [
             {
               "name": "states.IL",
-              "line": 537
+              "line": 545
             }
           ]
         },
@@ -970,7 +970,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -1031,7 +1031,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 597
+              "line": 605
             }
           ]
         },
@@ -1049,7 +1049,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -1136,7 +1136,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 597
+              "line": 605
             }
           ]
         },
@@ -1158,7 +1158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -1233,7 +1233,7 @@
           "functions": [
             {
               "name": "states.IA",
-              "line": 597
+              "line": 605
             }
           ]
         },
@@ -1242,7 +1242,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -1298,7 +1298,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 608
+              "line": 616
             }
           ]
         },
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -1348,6 +1348,94 @@
       ]
     },
     {
+      "id": "ks-k40-2026-qss-head-of-household",
+      "title": "Kansas files a qualifying surviving spouse as head of household: the $6,180 deduction and the single schedule",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-11-03",
+      "dueOn": "2027-11-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.KS",
+              "line": 616
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "stateFilingRowFor",
+              "line": 218
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 1709
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 1701
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts",
+          "line": 164,
+          "note": null,
+          "tests": [
+            {
+              "title": "files as head of household: $6,180 and the all-other-individuals schedule",
+              "line": 175
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status",
+          "url": "https://www.ksrevenue.gov/pdf/ip25.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,119(c)(2)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0119.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,110(a)(2)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html"
+        }
+      ]
+    },
+    {
       "id": "ks-stat-79-32-117-public-pension-exclusion",
       "title": "Kansas exempts named retirement systems",
       "classification": "settled",
@@ -1373,7 +1461,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 608
+              "line": 616
             }
           ]
         },
@@ -1400,7 +1488,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -1508,7 +1596,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 608
+              "line": 616
             }
           ]
         },
@@ -1517,7 +1605,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -1573,7 +1661,7 @@
           "functions": [
             {
               "name": "MI.militaryRetirementExclusion",
-              "line": 764
+              "line": 782
             }
           ]
         },
@@ -1591,7 +1679,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -1695,7 +1783,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 756
+              "line": 774
             }
           ]
         },
@@ -1704,7 +1792,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -1775,7 +1863,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 756
+              "line": 774
             }
           ]
         },
@@ -1784,11 +1872,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -1879,7 +1967,7 @@
           "functions": [
             {
               "name": "states.MI",
-              "line": 756
+              "line": 774
             }
           ]
         },
@@ -1915,7 +2003,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -1974,7 +2062,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 772
+              "line": 790
             }
           ]
         },
@@ -1983,11 +2071,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 152
+              "line": 153
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -2057,7 +2145,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 772
+              "line": 790
             }
           ]
         },
@@ -2066,11 +2154,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -2135,7 +2223,7 @@
           "functions": [
             {
               "name": "MN.militaryRetirementExclusion",
-              "line": 791
+              "line": 809
             }
           ]
         },
@@ -2153,7 +2241,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -2214,7 +2302,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 772
+              "line": 790
             }
           ]
         },
@@ -2223,7 +2311,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -2310,7 +2398,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 844
+              "line": 862
             }
           ]
         },
@@ -2319,11 +2407,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 152
+              "line": 153
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -2447,7 +2535,7 @@
           "functions": [
             {
               "name": "states.MO",
-              "line": 844
+              "line": 862
             }
           ]
         },
@@ -2473,7 +2561,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -2538,7 +2626,7 @@
           "functions": [
             {
               "name": "MO.missouriRetirement",
-              "line": 867
+              "line": 885
             }
           ]
         },
@@ -2560,7 +2648,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -2625,7 +2713,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 844
+              "line": 862
             }
           ]
         },
@@ -2634,7 +2722,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -2698,7 +2786,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 1057
+              "line": 1075
             }
           ]
         },
@@ -2707,7 +2795,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1667
+              "line": 1709
             }
           ]
         }
@@ -2807,7 +2895,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -2918,11 +3006,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 1068
+              "line": 1086
             },
             {
               "name": "states.ND",
-              "line": 1057
+              "line": 1075
             }
           ]
         },
@@ -2940,7 +3028,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3004,7 +3092,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 1068
+              "line": 1086
             }
           ]
         },
@@ -3013,7 +3101,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3090,11 +3178,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -3162,7 +3250,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 1057
+              "line": 1075
             }
           ]
         },
@@ -3171,7 +3259,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3249,11 +3337,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -3323,7 +3411,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 1057
+              "line": 1075
             }
           ]
         },
@@ -3341,7 +3429,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3405,7 +3493,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 911
+              "line": 929
             }
           ]
         },
@@ -3414,11 +3502,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 152
+              "line": 153
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3548,11 +3636,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -3625,7 +3713,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 911
+              "line": 929
             }
           ]
         },
@@ -3634,7 +3722,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -3722,7 +3810,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 152
+              "line": 153
             }
           ]
         }
@@ -3806,7 +3894,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2542
+              "line": 2595
             }
           ]
         }
@@ -3877,11 +3965,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }
@@ -3957,7 +4045,7 @@
           "functions": [
             {
               "name": "states.OH",
-              "line": 1085
+              "line": 1103
             }
           ]
         },
@@ -3966,7 +4054,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 152
+              "line": 153
             }
           ]
         }
@@ -4040,7 +4128,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 1238
+              "line": 1256
             }
           ]
         },
@@ -4049,7 +4137,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -4114,7 +4202,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1411
+              "line": 1432
             }
           ]
         },
@@ -4136,11 +4224,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2158
+              "line": 2211
             },
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1681
+              "line": 1723
             }
           ]
         }
@@ -4222,7 +4310,7 @@
           "functions": [
             {
               "name": "states.WI",
-              "line": 1411
+              "line": 1432
             }
           ]
         },
@@ -4253,7 +4341,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -4334,7 +4422,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1411
+              "line": 1432
             }
           ]
         },
@@ -4343,7 +4431,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }
@@ -4404,7 +4492,7 @@
           "functions": [
             {
               "name": "WI.militaryRetirementExclusion",
-              "line": 1450
+              "line": 1471
             }
           ]
         },
@@ -4422,7 +4510,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 606
+              "line": 607
             }
           ]
         }
@@ -4498,7 +4586,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 1411
+              "line": 1432
             }
           ]
         },
@@ -4507,11 +4595,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             },
             {
               "name": "retirementExclusion",
-              "line": 170
+              "line": 171
             }
           ]
         }

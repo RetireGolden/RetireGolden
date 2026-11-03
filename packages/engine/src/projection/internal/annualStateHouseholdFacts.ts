@@ -148,6 +148,7 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
     ...storedFacts,
     ownerStateTaxFacts: derivedOwners?.ownerStateTaxFacts,
     stateFilingStatus: stored?.stateFilingStatus ?? plan.household.filingStatus,
+    ...(stored?.stateFilingStatus === undefined ? { stateFilingStatusDefaulted: true } : {}),
     claimantDatesOfBirth: stored?.claimantDatesOfBirth ?? dates,
     ...(stored?.age65EligibleCount !== undefined
       ? { age65EligibleCount: stored.age65EligibleCount }

@@ -1335,31 +1335,31 @@
             },
             {
               "name": "DC",
-              "line": 416
+              "line": 420
             },
             {
               "name": "IA",
-              "line": 597
+              "line": 605
             },
             {
               "name": "ID",
-              "line": 517
+              "line": 525
             },
             {
               "name": "MO",
-              "line": 844
+              "line": 862
             },
             {
               "name": "MT",
-              "line": 880
+              "line": 898
             },
             {
               "name": "NM",
-              "line": 993
+              "line": 1011
             },
             {
               "name": "states.ND",
-              "line": 1057
+              "line": 1075
             }
           ]
         },
@@ -1377,7 +1377,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1659
+              "line": 1701
             }
           ]
         }

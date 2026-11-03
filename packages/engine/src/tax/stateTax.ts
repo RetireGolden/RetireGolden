@@ -31,6 +31,7 @@
 import {
   LATEST_STATE_PACK_YEAR,
   conformStateStandardDeduction,
+  stateFilingRowFor,
   stateParamsFor,
   type StatePartYearRatio,
   type StateRetirementExclusion,
@@ -1230,15 +1231,42 @@ function accumulateLeaf(
  * Rich taxable-income computation: accumulates every selected leaf warning and
  * credit. Numeric `computeStateTaxableIncome` is a view over this result.
  */
+/**
+ * The options with the household's state filing status on the row the pack
+ * declares for a qualifying surviving spouse, when that status was not stored
+ * for the year but defaulted from the plan's household filing status (which in
+ * a QSS year is still the couple's joint status). A stored status is the
+ * plan's own statement of the state return and wins.
+ */
+function withDeclaredSurvivorRow(
+  params: StateTaxParams,
+  input: TaxYearInput,
+  opts: ComputeStateTaxOptions,
+): ComputeStateTaxOptions {
+  const facts = opts.householdFacts
+  if (
+    facts?.stateFilingStatusDefaulted !== true ||
+    input.filingStatus !== 'qualifyingSurvivingSpouse' ||
+    params.qualifyingSurvivingSpouseFilesAs === undefined
+  ) return opts
+  return { ...opts, householdFacts: { ...facts, stateFilingStatus: stateFilingRowFor(params, input.filingStatus).status } }
+}
+
 export function computeStateTaxableIncomeResult(
   params: StateTaxParams,
   input: TaxYearInput,
-  opts: ComputeStateTaxOptions = {},
+  givenOpts: ComputeStateTaxOptions = {},
 ): TaxableIncomeComputation {
+  const opts = withDeclaredSurvivorRow(params, input, givenOpts)
   if (!params.hasIncomeTax) {
     return { taxableIncome: 0, taxCredit: 0, warnings: [] }
   }
+  // The federal row, kept only for the federal IRC 86 inclusion the state
+  // base borrows. Every state row below (deduction, age addition, phase-out,
+  // joint tests) comes from the state's own row, which for a qualifying
+  // surviving spouse is what the pack declares (`stateFilingRowFor`).
   const taxStatus = taxParameterFilingStatus(input.filingStatus)
+  const filingRow = stateFilingRowFor(params, input.filingStatus)
   const ordinary = Math.max(0, input.ordinaryIncome)
   const qualifiedDividends = Math.max(0, input.qualifiedDividends ?? 0)
   const netCapital =
@@ -1272,7 +1300,7 @@ export function computeStateTaxableIncomeResult(
   const acc = { taxableIncomeDelta: 0, taxCredit: 0, warnings: [] as StateTaxExactnessWarning[] }
   const federal = federalFactsFor(input, opts)
   const slice = opts.partYearSlice
-  const joint = taxStatus === 'marriedFilingJointly'
+  const joint = filingRow.status === 'marriedFilingJointly'
   if (params.rhodeIslandSocialSecurityModification && includedSocialSecurity > 0) {
     accumulateLeaf(acc, rhodeIslandSocialSecurityModification({
       config: params.rhodeIslandSocialSecurityModification,
@@ -1380,7 +1408,7 @@ export function computeStateTaxableIncomeResult(
           federalAgi: opts.householdFacts.federalAgi,
           federalDeductionUsed: deductionUsed,
           config: params.highAgiFederalDeductionAddback,
-          joint: taxStatus === 'marriedFilingJointly',
+          joint,
         }),
       )
     } else {
@@ -1434,7 +1462,6 @@ export function computeStateTaxableIncomeResult(
 
   if (params.code === 'IL' && opts.householdFacts?.federalAgi !== undefined) {
     const ilExemption = params.illinoisPersonalExemption
-    const joint = taxStatus === 'marriedFilingJointly'
     const belowAgiCutoff = ilExemption !== undefined &&
       opts.householdFacts.federalAgi <= (joint ? ilExemption.agiCutoffJoint : ilExemption.agiCutoffNonjoint)
     const ilExemptionCountsMissing =
@@ -1485,10 +1512,21 @@ export function computeStateTaxableIncomeResult(
     acc.warnings.push({ code: 'wi-exemption-facts-unknown', ruleId: 'wi-personal-exemptions', message: 'Wisconsin exemptions require household facts, including claimed-dependent status.', missingFacts: ['householdFacts', 'claimedAsDependent'] })
   }
 
+  // Virginia 58.1-322.03(2)(a) counts the federal personal exemptions, not the
+  // return's row. The count is the taxpayers' exemptions plus the dependents',
+  // from the year's facts when the plan gives them (`exemptionTaxpayerCount`
+  // and `exemptionDependentCount` are separate counts, as the planner's state
+  // facts editor collects them). Without them: one taxpayer, two on a joint
+  // return, and for a qualifying surviving spouse, who files Single (Filing
+  // Status 1), one taxpayer and the one dependent child IRC 2(a)(1)(B)
+  // requires; a single filer's or couple's unrecorded dependents count none.
   if (params.virginiaPersonalExemptions) {
+    const facts = opts.householdFacts
+    const taxpayerExemptions = facts?.exemptionTaxpayerCount ?? (input.filingStatus === 'marriedFilingJointly' ? 2 : 1)
+    const dependentExemptions = facts?.exemptionDependentCount ?? (input.filingStatus === 'qualifyingSurvivingSpouse' ? 1 : 0)
     accumulateLeaf(acc, virginiaPersonalExemptions({
       config: params.virginiaPersonalExemptions,
-      exemptionCount: opts.householdFacts?.exemptionTaxpayerCount ?? (joint ? 2 : 1),
+      exemptionCount: taxpayerExemptions + dependentExemptions,
       agedTaxpayerCount: virginiaAgedTaxpayerCount(input, opts.householdFacts),
     }), slice?.exemption)
   }
@@ -1541,7 +1579,7 @@ export function computeStateTaxableIncomeResult(
     }
   }
 
-  let rawTotal = params.standardDeduction[taxStatus]
+  let rawTotal = filingRow.standardDeduction
   // Massachusetts's and New Jersey's exemptions, which come off with the
   // deduction but prorate as exemptions in a split year.
   let exemptionTotal = 0
@@ -1554,20 +1592,24 @@ export function computeStateTaxableIncomeResult(
   if (params.code === 'VT') {
     const status = opts.householdFacts?.stateFilingStatus
     const exemptionTaxpayerCount = opts.householdFacts?.exemptionTaxpayerCount
+    // IN-111 line 5d: the exemptions for yourself, a joint spouse, and the
+    // dependents claimed federally (line 5c), each at the line 5e amount.
+    const exemptionDependentCount = opts.householdFacts?.exemptionDependentCount
     const section63fQualificationCount = opts.householdFacts?.section63fQualificationCount
     const vtDeductionCountsMissing =
       !status ||
       exemptionTaxpayerCount === undefined ||
+      exemptionDependentCount === undefined ||
       section63fQualificationCount === undefined
     if (
       vtDeductionCountsMissing &&
       !(preExemptionReliefBound <= 0 && standardDeductionOverrideAllowsZeroProof)
     ) {
-      acc.warnings.push({ code: 'vt-deduction-exemption-incomplete', ruleId: 'vt-2026-deduction-exemption', message: 'Vermont deductions require full filing status, personal-exemption count, and §63(f) qualification count.', missingFacts: ['stateFilingStatus', 'exemptionTaxpayerCount', 'section63fQualificationCount'] })
-    } else if (status && exemptionTaxpayerCount !== undefined && section63fQualificationCount !== undefined) {
+      acc.warnings.push({ code: 'vt-deduction-exemption-incomplete', ruleId: 'vt-2026-deduction-exemption', message: 'Vermont deductions require full filing status, personal- and dependent-exemption counts, and §63(f) qualification count.', missingFacts: ['stateFilingStatus', 'exemptionTaxpayerCount', 'exemptionDependentCount', 'section63fQualificationCount'] })
+    } else if (status && exemptionTaxpayerCount !== undefined && exemptionDependentCount !== undefined && section63fQualificationCount !== undefined) {
       const extras = params.vermontExtras
       const deduction = extras?.standardDeductionByStatus?.[status] ?? (status === 'headOfHousehold' ? 11800 : status === 'marriedFilingSeparately' || status === 'single' ? 7850 : 15700)
-      rawTotal = deduction + (extras?.personalExemption ?? 5400) * exemptionTaxpayerCount + (extras?.additional63f ?? 1300) * section63fQualificationCount
+      rawTotal = deduction + (extras?.personalExemption ?? 5400) * (exemptionTaxpayerCount + exemptionDependentCount) + (extras?.additional63f ?? 1300) * section63fQualificationCount
     }
   }
   if (params.code === 'SC') {
@@ -1584,7 +1626,7 @@ export function computeStateTaxableIncomeResult(
   if (params.code === 'WI' && params.wisconsinStandardDeduction) {
     const extended =
       opts.householdFacts?.stateFilingStatus ??
-      (taxStatus === 'marriedFilingJointly' ? 'marriedFilingJointly' : 'single')
+      filingRow.status
     // Form 1-ES phase-down uses Wisconsin income before the standard deduction.
     // When the integrator has not supplied the worksheet line, use the
     // pre-retirement ordinary/gain base rather than the post-exclusion taxable
@@ -1609,7 +1651,7 @@ export function computeStateTaxableIncomeResult(
   } else if (params.standardDeductionAge65Addition) {
     rawTotal += age65StandardDeductionAddition(
       params.standardDeductionAge65Addition,
-      taxStatus,
+      filingRow.key,
       Math.max(0, input.peopleAged65Plus),
     )
   }
@@ -1639,8 +1681,8 @@ export function computeStateTaxableIncomeResult(
         ? phaseOutStandardDeduction(
             rawTotal,
             opts.standardDeductionPhaseoutIncomeOverride ?? taxable,
-            phaseout.startsAt[taxStatus],
-            phaseout.range[taxStatus],
+            phaseout.startsAt[filingRow.key],
+            phaseout.range[filingRow.key],
           )
         : rawTotal) * (slice?.deduction ?? 1) +
     exemptionTotal * (slice?.exemption ?? 1)
@@ -1735,13 +1777,17 @@ function oregonRetirementCredit(
 function priceState(
   params: StateTaxParams,
   input: TaxYearInput,
-  opts: ComputeStateTaxOptions,
+  givenOpts: ComputeStateTaxOptions,
   deferred?: { oregonRetirementCredit?: boolean },
 ): { result: StateTaxComputationResult; income: TaxableIncomeComputation } {
+  const opts = withDeclaredSurvivorRow(params, input, givenOpts)
   const income = computeStateTaxableIncomeResult(params, input, opts)
   const warnings: StateTaxExactnessWarning[] = [...income.warnings]
   let taxCredit = income.taxCredit
+  // Federal row for the federal IRC 86 inclusion Utah reads; the state rate
+  // schedule is the state row (`stateFilingRowFor`).
   const taxStatus = taxParameterFilingStatus(input.filingStatus)
+  const filingRow = stateFilingRowFor(params, input.filingStatus)
   const extendedStatus = opts.householdFacts?.stateFilingStatus
   const taxableIncome = income.taxableIncome
   let stateTax = 0
@@ -1764,7 +1810,7 @@ function priceState(
       } else if (extendedStatus) {
         stateTax = bracketTax(extendedStatus === 'single' ? params.brackets.single : params.brackets.marriedFilingJointly, taxableIncome)
       } else {
-        stateTax = bracketTax(params.brackets[taxStatus], taxableIncome)
+        stateTax = bracketTax(filingRow.brackets, taxableIncome)
       }
       const federalAgi = opts.householdFacts?.federalAgi
       const minimumTaxThreshold = params.vermontExtras?.minimumTaxAgiThreshold
@@ -1793,7 +1839,7 @@ function priceState(
               : params.brackets.single
       stateTax = bracketTax(brackets, taxableIncome)
     } else {
-      stateTax = bracketTax(params.brackets[taxStatus], taxableIncome)
+      stateTax = bracketTax(filingRow.brackets, taxableIncome)
     }
 
     // Montana: ordinary tax on ordinary taxable income; LTCG stacked separately.
@@ -1830,7 +1876,7 @@ function priceState(
     }
 
     if (params.code === 'IA') {
-      const alt = iowaAlternateOrMinimumTax({ ordinaryTax: stateTax, filingStatus: extendedStatus ?? (taxStatus === 'marriedFilingJointly' ? 'marriedFilingJointly' : 'single'), testNetIncome: opts.householdFacts?.iowaTestNetIncome, seniorForThreshold: opts.householdFacts?.iowaSeniorForThreshold === true, config: params.iowaAlternateTax, householdFacts: opts.householdFacts, taxableIncome })
+      const alt = iowaAlternateOrMinimumTax({ ordinaryTax: stateTax, filingStatus: extendedStatus ?? filingRow.status, testNetIncome: opts.householdFacts?.iowaTestNetIncome, seniorForThreshold: opts.householdFacts?.iowaSeniorForThreshold === true, config: params.iowaAlternateTax, householdFacts: opts.householdFacts, taxableIncome })
       stateTax = alt.tax
       warnings.push(...alt.warnings)
     }
@@ -2008,6 +2054,13 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
       single: scaledBrackets(params.brackets.single),
       marriedFilingJointly: scaledBrackets(params.brackets.marriedFilingJointly),
     },
+    // A head-of-household row (`stateFilingRowFor`) prorates as the others do.
+    ...(params.standardDeductionHeadOfHousehold === undefined
+      ? {}
+      : { standardDeductionHeadOfHousehold: params.standardDeductionHeadOfHousehold * scale }),
+    ...(params.bracketsHeadOfHousehold === undefined
+      ? {}
+      : { bracketsHeadOfHousehold: scaledBrackets(params.bracketsHeadOfHousehold) }),
     retirementPrivate: scaleExclusion(params.retirementPrivate, scale),
     retirementPublic: scaleExclusion(params.retirementPublic, scale),
   }

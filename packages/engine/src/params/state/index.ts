@@ -29,8 +29,8 @@
  * independent adoption policies (whole-federal basic vs age-only addition).
  */
 
-import type { PerStatus } from '../types.js'
-import type { StateEnactedFigures, StateEnactedYear, StateTaxPack, StateTaxParams } from './types.js'
+import type { FilingStatus, PerStatus } from '../types.js'
+import type { StateEnactedFigures, StateEnactedYear, StateTaxBracket, StateTaxPack, StateTaxParams } from './types.js'
 import { stateYear2026 } from './data/year2026.js'
 import { stateEnacted2027 } from './data/enacted2027.js'
 import { stateEnacted2028 } from './data/enacted2028.js'
@@ -180,6 +180,57 @@ export function conformStateStandardDeduction(
         }
       : {}),
   }
+}
+
+/**
+ * The state return row a projected filing status selects: the state's own
+ * status, its standard deduction and rate schedule, and the single/joint key
+ * for the fields a pack carries only per single and MFJ (the age-65 addition,
+ * a deduction phase-out, and the joint-or-not tests of state leaves).
+ */
+export interface StateFilingRow {
+  /** The state's own filing status for the return. */
+  readonly status: 'single' | 'marriedFilingJointly' | 'headOfHousehold'
+  /**
+   * Key into the pack's single/MFJ-only fields. A head-of-household row keys
+   * `single`: it is not a joint return, and a pack that routes a surviving
+   * spouse to head of household carries no single/MFJ-only deduction field
+   * (state pack invariants test).
+   */
+  readonly key: FilingStatus
+  /** Basic standard deduction of the row, from the params as given (prorated or indexed upstream). */
+  readonly standardDeduction: number
+  readonly brackets: StateTaxBracket[]
+}
+
+/**
+ * Select the state's filing row. `single` and `marriedFilingJointly` take
+ * their own rows. A federal qualifying surviving spouse takes the row the
+ * pack declares in `qualifyingSurvivingSpouseFilesAs` (Georgia and Virginia
+ * single, Kansas head of household, Delaware joint), or the federal joint row
+ * when the pack declares none. This, not `taxParameterFilingStatus`, is how
+ * every state consumer chooses a row; the federal mapper stays federal (and
+ * keeps selecting the federal IRC 86 thresholds the state SS base borrows).
+ *
+ * Fails closed when a pack routes a surviving spouse to a head-of-household
+ * row it does not carry: that is a pack error, not a reading of law.
+ */
+export function stateFilingRowFor(
+  params: StateTaxParams,
+  filingStatus: FilingStatus | 'qualifyingSurvivingSpouse',
+): StateFilingRow {
+  const status = filingStatus === 'qualifyingSurvivingSpouse'
+    ? params.qualifyingSurvivingSpouseFilesAs ?? 'marriedFilingJointly'
+    : filingStatus
+  if (status === 'headOfHousehold') {
+    const standardDeduction = params.standardDeductionHeadOfHousehold
+    const brackets = params.bracketsHeadOfHousehold
+    if (standardDeduction === undefined || brackets === undefined) {
+      throw new Error(`State pack ${params.code} files a qualifying surviving spouse as head of household without a head-of-household deduction and schedule`)
+    }
+    return { status, key: 'single', standardDeduction, brackets }
+  }
+  return { status, key: status, standardDeduction: params.standardDeduction[status], brackets: params.brackets[status] }
 }
 
 /** Two-letter codes with a modeled pack in the latest year (for UI hints). */
