@@ -333,7 +333,7 @@ describe('projected New Jersey owner pool from the ledger (#810, #818)', () => {
     expect(other!.allAnnualDistributions).toBe(10_000)
   })
 
-  it('groups physical rows and refuses a factor the rows do not share', () => {
+  it('groups physical rows, grows each row by its own factor, and needs one factor only for a pending draw (#839 r1-4)', () => {
     const accounts = njIraLedgerAccounts({
       balances: [
         { account: ira('a'), balance: 100 }, { account: ira('a'), balance: 50 },
@@ -345,11 +345,21 @@ describe('projected New Jersey owner pool from the ledger (#810, #818)', () => {
       isOwnerIraThisYear: (account) => account.type === 'traditional' && account.kind === 'ira',
       primaryPersonId: 'p1',
     })
+    // a: 100 x 1.05 + 50 x 1.05 = 157.50; b: 10 x 1.05 + 20 x 1.02 = 10.50 + 20.40 = 30.90.
     expect(accounts).toEqual([
-      { accountId: 'a', ownerPersonId: 'p1', balance: 150, growthFactor: 1.05, treatedAsOwn: false },
-      { accountId: 'b', ownerPersonId: 'p1', balance: 30, treatedAsOwn: false },
-      { accountId: 'c', ownerPersonId: 'p1', balance: 5, growthFactor: 1, treatedAsOwn: true },
+      { accountId: 'a', ownerPersonId: 'p1', balance: 150, growthFactor: 1.05, grownBalance: expect.closeTo(157.5, 9), treatedAsOwn: false },
+      { accountId: 'b', ownerPersonId: 'p1', balance: 30, grownBalance: expect.closeTo(30.9, 9), treatedAsOwn: false },
+      { accountId: 'c', ownerPersonId: 'p1', balance: 5, growthFactor: 1, grownBalance: 5, treatedAsOwn: true },
     ])
+    // With nothing pending, b's rows that grow apart still price line 1: 30.90.
+    const b = accounts.filter((account) => account.accountId === 'b')
+    const [idle] = njIraLedgerOwnerPools({ accounts: b })
+    expect(idle).toMatchObject({ december31IraValue: expect.closeTo(30.9, 9), annualInputsComplete: true })
+    // A pending draw on b cannot be split across its rows: the pool is not complete.
+    const [pending] = refreshNjIraLedgerOwnerPools([idle!], {
+      distributions: [distribution('b', 5)], pendingGrossByAccount: new Map([['b', 5]]),
+    })!
+    expect(pending!.annualInputsComplete).toBe(false)
   })
 
   it('builds ledger pools only for NJ years whose owners have no basis rows and no basis mark', () => {

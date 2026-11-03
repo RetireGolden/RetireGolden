@@ -1415,7 +1415,7 @@
           "functions": [
             {
               "name": "njIraLedgerOwnerPools",
-              "line": 612
+              "line": 630
             },
             {
               "name": "njIraOwnerPoolsForYear",
@@ -1432,7 +1432,7 @@
             },
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 285
+              "line": 293
             }
           ]
         },
@@ -1509,6 +1509,11 @@
         },
         {
           "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf"
+        },
+        {
+          "kind": "formInstruction",
           "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
           "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
         },
@@ -1553,7 +1558,7 @@
           "functions": [
             {
               "name": "newJerseyHsaAccountAdjustment",
-              "line": 504
+              "line": 512
             }
           ]
         },

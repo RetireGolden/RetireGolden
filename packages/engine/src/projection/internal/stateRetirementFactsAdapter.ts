@@ -544,6 +544,11 @@ export function njIraOwnerPoolsForYear(
 /** One owned traditional IRA on the projected year's ledger, with its owner. */
 export interface NjIraLedgerAccount extends StateNjIraOwnerPoolLedgerAccountInput {
   readonly ownerPersonId: string
+  /**
+   * The owner's IRA aggregate holds an IRA-funded annuity contract this year.
+   * The ledger rows do not carry the contract, so line 1 would omit it.
+   */
+  readonly ownerHoldsIraAnnuityContract?: boolean
 }
 
 /** The ledger a projected New Jersey owner pool is built from. */
@@ -561,32 +566,40 @@ export interface NjIraLedgerYear {
  *
  * `growthFactors` is positional over `balances`: the factor the year's
  * post-solve growth phase multiplies each physical row by. A logical account
- * whose rows grow by different factors has no single factor.
+ * whose rows grow by different factors has no single factor, but still has
+ * a grown balance: each row's balance times its own factor, summed.
  */
 export function njIraLedgerAccounts(input: {
   readonly balances: readonly { readonly account: Account; readonly balance: number }[]
   readonly growthFactors: readonly number[]
   readonly isOwnerIraThisYear: (account: Account) => boolean
   readonly primaryPersonId: string
+  /** Owners whose IRA aggregate holds an IRA-funded annuity contract this year. */
+  readonly iraAnnuityContractOwners?: ReadonlySet<string>
 }): readonly NjIraLedgerAccount[] {
-  const byId = new Map<string, { account: Account; balance: number; factors: number[] }>()
+  const byId = new Map<string, { account: Account; balance: number; factors: number[]; grown: number }>()
   for (const [index, state] of input.balances.entries()) {
     if (!input.isOwnerIraThisYear(state.account)) continue
-    const row = byId.get(state.account.id) ?? { account: state.account, balance: 0, factors: [] }
+    const row = byId.get(state.account.id) ?? { account: state.account, balance: 0, factors: [], grown: 0 }
+    const factor = input.growthFactors[index] ?? Number.NaN
     row.balance += state.balance
-    row.factors.push(input.growthFactors[index] ?? Number.NaN)
+    row.factors.push(factor)
+    row.grown += state.balance * factor
     byId.set(state.account.id, row)
   }
-  return [...byId.values()].map(({ account, balance, factors }) => {
+  return [...byId.values()].map(({ account, balance, factors, grown }) => {
+    const known = factors.every((factor) => Number.isFinite(factor) && factor >= 0)
     const first = factors[0]!
-    const growthFactor = Number.isFinite(first) && first >= 0 && factors.every((factor) => factor === first)
-      ? first : undefined
+    const growthFactor = known && factors.every((factor) => factor === first) ? first : undefined
+    const ownerPersonId = account.ownerPersonId ?? input.primaryPersonId
     return {
       accountId: account.id,
-      ownerPersonId: account.ownerPersonId ?? input.primaryPersonId,
+      ownerPersonId,
       balance,
       ...(growthFactor === undefined ? {} : { growthFactor }),
+      ...(known && Number.isFinite(grown) ? { grownBalance: grown } : {}),
       treatedAsOwn: account.type === 'traditional' && account.inherited !== undefined,
+      ...(input.iraAnnuityContractOwners?.has(ownerPersonId) === true ? { ownerHoldsIraAnnuityContract: true } : {}),
     }
   })
 }
@@ -605,14 +618,23 @@ export function njIraLedgerAccounts(input: {
  * makes. Contributions are in the ledger balance already; the projection
  * makes none after December 31.
  *
- * A pool is not complete when an account's growth factor is unknown, a
- * pending gross exceeds its balance, or a spouse's inherited IRA treated as
- * the owner's own joins the pool (its New Jersey basis is not carried).
+ * An account with nothing pending contributes its grown balance, each
+ * physical row grown by its own factor. A pending draw is not split across
+ * physical rows, so an account with one needs a single growth factor.
+ *
+ * A pool is not complete when an account's growth is unknown, a pending
+ * draw falls on an account whose rows grow apart, a pending gross exceeds
+ * its balance, or a spouse's inherited IRA treated as the owner's own joins
+ * the pool (its New Jersey basis is not carried).
  */
 export function njIraLedgerOwnerPools(ledger: NjIraLedgerYear): readonly StateNjIraOwnerPoolFactsInput[] {
   const owners = [...new Set(ledger.accounts.map((account) => account.ownerPersonId))]
-  return owners.map((ownerPersonId) => njIraLedgerOwnerPool(ownerPersonId,
-    ledger.accounts.filter((account) => account.ownerPersonId === ownerPersonId), ledger))
+  return owners.map((ownerPersonId) => {
+    const pool = njIraLedgerOwnerPool(ownerPersonId,
+      ledger.accounts.filter((account) => account.ownerPersonId === ownerPersonId), ledger)
+    const annuity = ledger.accounts.some((account) => account.ownerPersonId === ownerPersonId && account.ownerHoldsIraAnnuityContract === true)
+    return annuity ? { ...pool, unvaluedIraAnnuityContract: true } : pool
+  })
 }
 
 /**
@@ -626,7 +648,10 @@ export function refreshNjIraLedgerOwnerPools(
   if (pools === undefined || !pools.some((pool) => pool.projectedLedger !== undefined)) return pools
   return pools.map((pool) => pool.projectedLedger === undefined
     ? pool
-    : njIraLedgerOwnerPool(pool.ownerPersonId, pool.projectedLedger.accounts, priced))
+    : {
+        ...njIraLedgerOwnerPool(pool.ownerPersonId, pool.projectedLedger.accounts, priced),
+        ...(pool.unvaluedIraAnnuityContract === true ? { unvaluedIraAnnuityContract: true } : {}),
+      })
 }
 
 function njIraLedgerOwnerPool(
@@ -649,9 +674,10 @@ function njIraLedgerOwnerPool(
     const remaining = account.balance - pending
     // A pending draw leaves line 1 only when the priced input carries it on line 2.
     const carried = other.reduce((sum, row) => row.accountId === account.accountId ? sum + Math.max(0, row.grossDistribution ?? 0) : sum, 0)
-    if (account.growthFactor === undefined || account.treatedAsOwn || !Number.isFinite(remaining) || remaining < -0.005 ||
+    const idle = pending <= 0.005 && account.grownBalance !== undefined
+    if ((!idle && account.growthFactor === undefined) || account.treatedAsOwn || !Number.isFinite(remaining) || remaining < -0.005 ||
       carried < pending - 0.005) complete = false
-    december31 += Math.max(0, remaining) * (account.growthFactor ?? 1)
+    december31 += idle ? Math.max(0, account.grownBalance!) : Math.max(0, remaining) * (account.growthFactor ?? 1)
   }
   // A drained ledger leaves cents of floating-point residue, not an IRA value.
   const december31IraValue = Math.abs(december31) < 0.005 ? 0 : december31
@@ -665,6 +691,7 @@ function njIraLedgerOwnerPool(
     projectedLedger: { accounts: accounts.map((account) => ({
       accountId: account.accountId, balance: account.balance,
       ...(account.growthFactor === undefined ? {} : { growthFactor: account.growthFactor }),
+      ...(account.grownBalance === undefined ? {} : { grownBalance: account.grownBalance }),
       treatedAsOwn: account.treatedAsOwn,
     })) },
   }

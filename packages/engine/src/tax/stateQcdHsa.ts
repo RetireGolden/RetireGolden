@@ -75,6 +75,14 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   correspondingGrossDistributions: number
 }): StateLeafAdjustment & { stateTaxableIraAmount?: number; basisRecovered?: number } {
   const { pool } = args
+  if (pool.unvaluedIraAnnuityContract === true) {
+    return incomplete(
+      'nj-ira-annuity-contract-unvalued',
+      'nj-direct-qcd-ira-basis-treatment',
+      'New Jersey Worksheet C line 1 for a projected year leaves out an IRA-funded annuity contract the owner holds; no New Jersey authority found values the contract, so the year is not priced.',
+      ['december31IraValue', 'iraAnnuityContractValue'],
+    )
+  }
   if (pool.annualInputsComplete === false) return incomplete('nj-ira-annual-inputs-incomplete', 'nj-direct-qcd-ira-basis-treatment', 'New Jersey annual IRA pool does not reconcile with actual annual distributions.', ['allAnnualDistributions', 'annualInputsComplete'])
   const dec31 = pool.december31IraValue
   const allDist = pool.allAnnualDistributions

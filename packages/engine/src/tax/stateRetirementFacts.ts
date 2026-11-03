@@ -407,6 +407,12 @@ export interface StateNjIraOwnerPoolFacts {
   unrecoveredNjTaxedContributions: KnownMoney
   exemptObligationIncome?: number
   fullLiquidation: boolean
+  /**
+   * The owner's IRA aggregate holds an IRA-funded annuity contract whose
+   * December 31 value line 1 does not carry. No New Jersey authority found
+   * says how Worksheet C values the contract, so the pool is not priced.
+   */
+  unvaluedIraAnnuityContract?: boolean
 }
 
 /** @deprecated Prefer StateQcdEventFacts[] + StateNjIraOwnerPoolFacts. */

@@ -5387,6 +5387,43 @@ function lateZ() {
     ))
   }
 
+  {
+    // A projected New Jersey Worksheet C pool (#810 Case B, #818). The year
+    // before the projection files a complete Worksheet C, so the Part II carry
+    // opens and the first projected year builds its owner pool from the
+    // ledger: line 1 from the post-QCD balance and the year's growth factor,
+    // line 2 from the QCD. Born 1955, the owner is past 70 1/2 for the QCD.
+    // No other member opens a carry, so the ledger-pool path is otherwise cold.
+    const plan = shell(80, { dob: '1955-01-01', state: 'NJ' })
+    plan.accounts = [
+      cash('z4-cash', 40_000, { annualReturnPct: 0 }),
+      qualified('traditional', 'z4-ira', 200_000, { annualReturnPct: 5 }),
+    ]
+    plan.incomes = [wages('z4-wages', 'p1', 60_000)]
+    plan.strategies.qcdAnnual = 10_000
+    plan.stateTaxFacts = {
+      ...plan.stateTaxFacts,
+      iraBasisYearEvidence: [{
+        taxYear: START_YEAR - 1,
+        ownerPersonId: 'p1',
+        state: 'NJ',
+        accountId: 'z4-ira',
+        unrecoveredStateBasis: 50_000,
+        annualDistributionsComplete: true,
+        yearEndAccountValue: 200_000,
+        distributionsDuringYear: 0,
+        postYearContributionsThroughFilingDeadline: 0,
+        provenance: { source: 'equivalence corpus', asOf: `${START_YEAR}-04-15` },
+      }],
+    }
+    out.push(member(
+      'z4-njProjectedIraLedgerPool',
+      'Z: New Jersey projected Worksheet C owner pool from the ledger, opened by the prior year’s Part II carry',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
   return out
 }
 

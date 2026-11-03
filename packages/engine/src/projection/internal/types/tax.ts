@@ -409,6 +409,12 @@ export interface StateNjIraOwnerPoolFactsInput {
   exemptObligationIncome?: number
   fullLiquidation: boolean
   /**
+   * The owner's IRA aggregate holds an IRA-funded annuity contract whose
+   * December 31 value line 1 does not carry. No New Jersey authority found
+   * says how Worksheet C values the contract, so the pool is not priced.
+   */
+  unvaluedIraAnnuityContract?: boolean
+  /**
    * Present only on a pool the projection built from its own ledger for an
    * owner with no basis evidence that year. Its unrecovered basis is the
    * Worksheet C Part II carry from the accepted prior year; without that
@@ -427,6 +433,12 @@ export interface StateNjIraOwnerPoolLedgerAccountInput {
    * post-distribution balance. Undefined when its physical rows grow apart.
    */
   growthFactor?: number
+  /**
+   * The account's balance after the year's growth with nothing debited: each
+   * physical row's balance times its own growth factor, summed. Line 1 with
+   * no pending draw on the account, whether or not its rows grow alike.
+   */
+  grownBalance?: number
   /** A spouse's inherited IRA treated as the owner's own; its NJ basis is not carried. */
   treatedAsOwn: boolean
 }

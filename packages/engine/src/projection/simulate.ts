@@ -2082,8 +2082,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         asOfDate: row.asOf,
       })
     }
+    // Keyed by the physical row, not the account id: compatible duplicate
+    // rows share an id, and the contribution phase updates each row in place.
     const iraBeforeContribution = new Map(balances.filter((row) => row.account.type === 'traditional' && row.account.kind === 'ira')
-      .map((row) => [row.account.id, row.balance]))
+      .map((row) => [row, row.balance]))
     const hsaBeforeContribution = new Map(balances.filter((row) => row.account.type === 'hsa')
       .map((row) => [row.account.id, row.balance]))
     const contributionReconciliation = annualContributionReconciliationPhase({
@@ -2120,7 +2122,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (row.account.type !== 'traditional' || row.account.kind !== 'ira') continue
       const owner = row.account.ownerPersonId ?? primary.id
       stateNjTaxedContributions.set(owner, (stateNjTaxedContributions.get(owner) ?? 0) +
-        row.balance - (iraBeforeContribution.get(row.account.id) ?? row.balance))
+        row.balance - (iraBeforeContribution.get(row) ?? row.balance))
     }
     const stateHsaContributions = new Map(balances.filter((row) => row.account.type === 'hsa')
       .map((row) => [row.account.id, row.balance - (hsaBeforeContribution.get(row.account.id) ?? row.balance)]))
@@ -2612,8 +2614,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // each, read when a pricing needs them (after the debits made so far).
     // A row's growth rate does not depend on its balance, so the factors are
     // read once per year; balances are read at each call.
+    // With no owner carrying a complete prior-year Part II basis, every
+    // projected pool would be dropped (applyAcceptedNjIraBasisToYearFacts),
+    // so none is built and no growth factor is computed.
     let njIraGrowthFactors: readonly number[] | undefined
-    const njIraLedgerAccountsNow = () => njIraResidentInYear(plan, year) ? njIraLedgerAccounts({
+    const njIraCarryOpen = acceptedStateNjIraBasis.some((row) => row.taxYear === year - 1 && row.status === 'complete')
+    const njIraLedgerAccountsNow = () => njIraCarryOpen && njIraResidentInYear(plan, year) ? njIraLedgerAccounts({
       balances,
       growthFactors: njIraGrowthFactors ??= annualPostSolveGrowthFactors({
         states: balances, allocationTrack, distributedYieldByBalanceIndex, classParams,
@@ -2621,6 +2627,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }),
       isOwnerIraThisYear: forcedDistributionPhase.isAggregatedIraThisYear,
       primaryPersonId: primary.id,
+      // A contract bought from an owner's IRA stays in that owner's IRA
+      // aggregate (irc-408-d-1-ira-annuity-premium-is-not-a-distribution).
+      iraAnnuityContractOwners: new Set(ownedIraFundedAnnuityContracts(plan)
+        .filter(({ contract }) => contract.purchase!.year <= year).map(({ ownerPersonId }) => ownerPersonId)),
     }) : undefined
     const aggregateRothPhase = annualAggregateRothConversionPhase(Object.freeze({
       facts: Object.freeze({
@@ -2989,8 +2999,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // year-end ledger before its basis transition carries forward.
       const yearEndByAccount = new Map<string, number>()
       for (const state of balances) yearEndByAccount.set(state.account.id, (yearEndByAccount.get(state.account.id) ?? 0) + state.balance)
-      settledAnnualPass.yearResult.taxComputation = reconcileProjectedNjIraYearEnd(year, settledAnnualPass.yearResult.taxComputation,
+      const priced = settledAnnualPass.yearResult.taxComputation
+      const reconciled = reconcileProjectedNjIraYearEnd(year, priced,
         settledAnnualPass.yearResult.acceptedTaxInput.stateNjIraOwnerPools, (accountId) => yearEndByAccount.get(accountId) ?? 0)
+      // The funding phase has already copied the year's issues into the
+      // projection warnings; a mismatch found after growth is added here.
+      for (const issue of reconciled.issues.slice(priced.issues.length)) warnings.add(issue.message)
+      settledAnnualPass.yearResult.taxComputation = reconciled
     }
     if (settledAnnualPass.yearResult.taxComputation !== undefined) {
       acceptedStateNjIraBasis = commitAcceptedNjIraBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateNjIraBasis)

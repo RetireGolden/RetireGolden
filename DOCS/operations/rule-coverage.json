@@ -846,7 +846,7 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1904,
+    "entryCount": 1905,
     "fetched": 0,
     "cached": 433,
     "counts": {
@@ -854,7 +854,7 @@
       "ELISION-PUNCTUATION": 1,
       "EXACT": 1259,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 473,
+      "PDF-WORD-LEVEL": 474,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 11
     },
@@ -3358,6 +3358,16 @@
           {
             "id": "ks-k40-2026-qss-head-of-household",
             "citation": "K.S.A. 79-32,110(a)(2)"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added for RetireGolden #839 (review r1-7 and r1-11): the GIT-1 & 2 Total Value sentence that defines Worksheet C line 1 for the projected New Jersey pool is now an authority on nj-direct-qcd-ira-basis-treatment. verify-quotes could not reach www.nj.gov from the session that made the change (the sandbox proxy refused CONNECT, HTTP 403, on 2026-11-03), so the quote was checked the same day against a WebFetch rendering of the January 2026 PDF, which matched word for word, and is recorded PDF-WORD-LEVEL as the PDF entries of this record are. A networked verify-quotes run filtered to this record should re-check it. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "nj-direct-qcd-ira-basis-treatment",
+            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value"
           }
         ]
       }
