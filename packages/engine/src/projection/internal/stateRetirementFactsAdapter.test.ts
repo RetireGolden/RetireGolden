@@ -616,6 +616,53 @@ describe('QCD event evidence merge (D48, D49)', () => {
     ]))
   })
 
+  it('fills only the characterization the runtime row leaves unset (D48)', () => {
+    // The runtime row's own findings win; the custodian row supplies a date,
+    // a Kansas credit fact and an allocation the runtime row does not carry.
+    // Dollars always come from the executed transfer.
+    const allocation = [{ state: 'NJ', fraction: 1 }]
+    const plan = planWithEvidence(qcdEvidence({
+      transferDate: '2026-11-15', kansasCoveredCharitableCreditClaimed: false, stateAllocation: allocation,
+      residency: 'fullYearResident', grossIraDistribution: 9_000, directCharityTransfer: 9_000, federalExcludedAmount: 9_000,
+    }))
+    const [filled] = qcdEventFactsForYear(plan, 2026, [runtimeQcd()], 'NJ')!
+    expect(filled).toMatchObject({
+      transferDate: '2026-11-15', kansasCoveredCharitableCreditClaimed: false, stateAllocation: allocation,
+      residency: 'fullYearResident', transactionKind: 'directQcd', splitInterest: false, directTransfer: true,
+      grossIraDistribution: 10_000, directCharityTransfer: 10_000, federalExcludedAmount: 10_000,
+    })
+    const [kept] = qcdEventFactsForYear(plan, 2026, [runtimeQcd({
+      transferDate: '2026-03-01', kansasCoveredCharitableCreditClaimed: true, residency: 'fullYearNonresident',
+    })], 'NJ')!
+    expect(kept).toMatchObject({
+      transferDate: '2026-03-01', kansasCoveredCharitableCreditClaimed: true, residency: 'fullYearNonresident',
+    })
+  })
+
+  it('withholds the collection when a custodian row matches no executed QCD (D49)', () => {
+    // A second custodian row beside a matched one, and a row that differs from
+    // the runtime transfer only by owner, are both unexecuted transfers.
+    const extra = planWithEvidence(qcdEvidence(), qcdEvidence({ eventId: 'custodian-second' }))
+    expect(qcdEventFactsForYear(extra, 2026, [runtimeQcd()], 'NJ')).toBeUndefined()
+    const otherOwner = planWithEvidence(qcdEvidence({ ownerPersonId: 'p2' }))
+    expect(qcdEventFactsForYear(otherOwner, 2026, [runtimeQcd()], 'NJ')).toBeUndefined()
+    // Control: the matched row alone keeps the executed transfer.
+    expect(qcdEventFactsForYear(planWithEvidence(qcdEvidence()), 2026, [runtimeQcd()], 'NJ')).toHaveLength(1)
+  })
+
+  it('does not match an eventId shared across accounts, and withholds a repeated runtime identity (D49)', () => {
+    // The custodian row names the runtime eventId on a different account. It
+    // is not that transfer, so it neither characterizes it nor stands alone.
+    const collision = planWithEvidence(qcdEvidence({ accountId: 'ira-2', transactionKind: 'splitInterest' }))
+    expect(qcdEventFactsForYear(collision, 2026, [runtimeQcd()], 'NJ')).toBeUndefined()
+    // Two runtime rows with one (eventId, accountId, owner) identity do not
+    // elect a dollar amount by array order.
+    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    plan.household.state = 'NJ'
+    expect(qcdEventFactsForYear(plan, 2026, [runtimeQcd(), runtimeQcd({ grossIraDistribution: 4_000 })], 'NJ')).toBeUndefined()
+    expect(qcdEventFactsForYear(plan, 2026, [runtimeQcd(), runtimeQcd({ accountId: 'ira-2' })], 'NJ')).toHaveLength(2)
+  })
+
   it('refuses an unsupported NJ QCD before asking for the missing Worksheet C pool', () => {
     // IRC 408(d)(8)(F). The refusal does not wait on N.J.S.A. 54A basis.
     const split = stateDirectQcdCollectionAdjustment({

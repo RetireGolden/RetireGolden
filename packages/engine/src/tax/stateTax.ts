@@ -1393,7 +1393,7 @@ export function computeStateTaxableIncomeResult(
     // cannot treat it as known-empty either.
     acc.warnings.push({
       code: 'state-qcd-annual-activity-unavailable',
-      ruleId: 'state-direct-qcd-conformity',
+      ruleId: 'state-direct-qcd-conformity-policies',
       message: 'State QCD result requires an explicit known-empty annual event collection when no QCD occurred.',
       missingFacts: ['qcdEvents'],
     })
@@ -2435,7 +2435,7 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
   const yearHasQcd = opts.qcdEvents !== undefined ? opts.qcdEvents.length > 0 : opts.qcdFacts !== undefined
   if (yearHasQcd && slices.some((slice) => slice.method !== 'noIncomeTax') &&
     !warnings.some((warning) => warning.code === 'state-qcd-residency-incomplete')) {
-    warnings.push({ code: 'state-qcd-residency-incomplete', ruleId: 'state-direct-qcd-conformity', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
+    warnings.push({ code: 'state-qcd-residency-incomplete', ruleId: 'state-direct-qcd-conformity-policies', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
   }
   if ([...(hsaPools ?? []), ...(njPools ?? []), ...pensionPools].some((pool) => pool.status === 'incomplete')) {
     warnings.push({ code: BASIS_INCOMPLETE, message: 'The annual state basis transition requires complete account, contribution and distribution facts.', missingFacts: ['stateBasisPoolFacts'] })
