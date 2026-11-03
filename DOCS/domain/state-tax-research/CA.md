@@ -87,6 +87,16 @@ Registered as `ca-hsa-state-basis-nonconformity`. Authority: [FTB 2025 Schedule 
 
 The addition uses asserted `hsaYearEvidence` for that account, owner, year, and state. The funding caller passes a federal HSA deduction of zero when it did not model a contribution; that default does not replace an asserted deduction. A positive modeled contribution does. A characterized withdrawal's amounts, including a genuine zero in a category the withdrawal did not use, replace evidence for those categories.
 
+### Which evidence reaches the year (2026-11-03)
+
+Registered as `state-hsa-evidence-runtime-merge-and-completeness` (settled, the adapter contract; the pricing stays `ca-hsa-state-basis-nonconformity`, and New Jersey's `nj-hsa-state-basis-nonconformity`). `projection/internal/stateRetirementFactsAdapter.ts#hsaAccountYearFactsForYear` builds the year's facts for one residence state:
+
+- Only evidence rows for that state and year are read. Another state's row, and its basis, never reaches the computation.
+- An empty runtime list (the projection saw no HSA activity) is merged with that state's evidence like any other runtime list. Until 2026-11-03 it returned a complete `[]` first, so a row asserting $1,200 of 2026 California HSA interest was dropped and the year reported complete: about $112 of California tax at 9.3%, understated (#805). With no evidence for the state the year is still the known-empty `[]`, except when the plan marks that state's HSA year `unknown`, which keeps it unavailable.
+- With no residence state the facts are unavailable (`undefined`). Until 2026-11-03 every state's rows were returned, so one account's California and New Jersey rows could reach a single state computation (#804). The adapter has no warning channel, so it does not pick one row and warn.
+
+Evidence for an account that is not a plan HSA account is already refused by plan validation (`checkStateTaxPlanFacts`); the empty-runtime case is reachable through the adapter directly. Fixtures: `projection/internal/stateRetirementFactsAdapter.test.ts`, the four `describeRule('state-hsa-evidence-runtime-merge-and-completeness', …)` suites, which also pin the runtime zero-deduction default of #803.
+
 ## Part-year residents (2026-10-08)
 
 Method (b), 2025 Form 540NR (the booklet returned 403; the method rests on its lines 36 and 37 as read in search snippets): the tax on all income times California AGI over total AGI; no capped retirement exclusion (ca-rtc-17132-9-10-military-retirement-exclusions). The 2026 figures carry it as `partYear: { method: 'incomePercentage', ratioBasis: 'stateIncome', exclusionCap: 'full' }` (params/state/data/year2026.ts), priced by tax/stateTax.ts#computeSplitYearResult on the income tax/statePartYear.ts#allocateSplitYear gives the months resident: a dated distribution or QCD transfer whole in the slice of its month, Social Security by the months paid, everything else by the months. Line 31 takes the tax on all income from the table at $100,000 of taxable income or less, and line 36 rounds the effective rate (that tax over total taxable income) to four decimals before line 37 multiplies it by California taxable income; the slice is priced on the pack's continuous schedule and the unrounded ratio of incomes, a few dollars from the form.

@@ -4072,6 +4072,101 @@
       ]
     },
     {
+      "id": "state-hsa-evidence-runtime-merge-and-completeness",
+      "title": "HSA year facts read the residence state’s own evidence, even when no runtime HSA row exists",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Scope note: this record is the adapter contract that selects and merges the year facts. How California prices them is ca-hsa-state-basis-nonconformity, and New Jersey’s, which keeps its own state basis the same way, is nj-hsa-state-basis-nonconformity.",
+      "contraryReading": null,
+      "jurisdiction": "state:CA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+          "functions": [
+            {
+              "name": "hsaAccountYearFactsForYear",
+              "line": 285
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
+          "line": 843,
+          "note": "an empty runtime list still reads the state evidence",
+          "tests": [
+            {
+              "title": "returns the asserted closed-account row when the runtime HSA list is empty",
+              "line": 848
+            },
+            {
+              "title": "carries the asserted interest into the California addition",
+              "line": 863
+            },
+            {
+              "title": "keeps an empty runtime year known-empty only when the state has no evidence and is not marked unknown",
+              "line": 869
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
+          "line": 893,
+          "note": "no residence state fails closed",
+          "tests": [
+            {
+              "title": "returns undefined rather than a CA row and an NJ row for one account",
+              "line": 898
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
+          "line": 921,
+          "note": "a residence state reads only its own rows",
+          "tests": [
+            {
+              "title": "gives the CA year one row, with the CA basis",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
+          "line": 945,
+          "note": "a runtime zero deduction default keeps the asserted deduction",
+          "tests": [
+            {
+              "title": "adds back the asserted deduction under a runtime zero default",
+              "line": 950
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13",
+          "url": "https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html"
+        }
+      ]
+    },
+    {
       "id": "ut-code-59-10-1019-retirement-credit",
       "title": "Utah provides a $450 nonrefundable retirement credit to each eligible claimant",
       "classification": "settled",

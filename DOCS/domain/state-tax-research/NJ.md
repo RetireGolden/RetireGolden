@@ -34,6 +34,8 @@ Authority: [NJ Division of Taxation, OBBBA and the New Jersey Gross Income Tax](
 
 > the New Jersey Gross Income Tax (GIT) has defined categories of income and deductions and is not computed based on federal adjusted gross income.
 
+The year's HSA facts are New Jersey's own: only evidence rows asserted for NJ are read, an empty runtime list still reads them, and with no residence state the facts are unavailable rather than mixing NJ rows with another state's (`state-hsa-evidence-runtime-merge-and-completeness`, described in CA.md, "Which evidence reaches the year").
+
 Archival authentication only (not operative tax authority): [NJ Division of Taxation, August 19, 2010 archive publication entry](https://www.nj.gov/treasury/taxation/enewsarc/august2010.shtml) (the index moved from the `whatsnewarc` path, which returns 404 as of 2026-09-23).
 
 > New Jersey State Tax News

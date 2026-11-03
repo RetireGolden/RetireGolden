@@ -2234,6 +2234,33 @@ export const westStateRecords = {
       'packages/engine/src/tax/stateQcdHsa.ts#californiaHsaCollectionAdjustment',
     ],
   },
+  'state-hsa-evidence-runtime-merge-and-completeness': {
+    title: 'HSA year facts read the residence state’s own evidence, even when no runtime HSA row exists',
+    statement: 'California taxes HSA interest and other earnings in the year earned, from facts kept for California alone. The annual HSA facts for a tax year are built for one residence state: the plan’s asserted HSA year evidence for that state and year, overlaid by the projection’s runtime rows. An empty runtime list means the projection observed no HSA activity, not that the asserted evidence is void, so the state’s evidence rows are still returned. A runtime federal HSA deduction of zero that only means no contribution was modeled does not replace an asserted deduction; any other present runtime amount, a measured zero included, does. Only with no such evidence is the year a known-empty collection, and not even then when the plan marks that state’s HSA year unknown. Evidence asserted for another state never reaches the state’s computation. With no residence state no evidence row or completeness mark can be chosen, so the facts are unavailable (undefined) rather than every state’s rows for one account mixed together.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: 'Scope note: this record is the adapter contract that selects and merges the year facts. How California prices them is ca-hsa-state-basis-nonconformity, and New Jersey’s, which keeps its own state basis the same way, is nj-hsa-state-basis-nonconformity.',
+    jurisdiction: 'state:CA',
+    authority: [
+      {
+        kind: 'formInstruction',
+        citation: 'FTB 2025 Schedule CA, lines 1h, 2, 8f and 13',
+        url: 'https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html',
+        quotedText: 'Interest or earnings in an HSA are taxable in the year earned. … California law does not conform.',
+      },
+    ],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#hsaAccountYearFactsForYear',
+    ],
+  },
   'hi-head-of-household-rate-schedule': {
     title: 'Hawaii uses the head-of-household schedule',
     statement: 'HRS 235-51 supplies a distinct head-of-household schedule. Its first band ends at $14,400 and is taxed at 1.4%, then 3.2% through $21,600, 5.5% through $28,800, with the remaining statutory bands in the versioned pack. HOH does not borrow single or joint bands. This record concerns the rate schedule on an established taxable-income base, not all Hawaii credits or filing eligibility. These bands are the table for taxable years beginning after December 31, 2024, through 2026; the tables from 2027 and from 2029, as Act 24, SLH 2026 set them, are the record hi-act-24-2026-rate-schedules. The plan models single and married filing jointly: head of household needs a dependent, which the plan does not collect, so the head-of-household figures here are used only on a state return whose filing status is set to head of household (in the planner, the state filing status under Assumptions, State tax worksheet facts).',

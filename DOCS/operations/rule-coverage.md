@@ -11,20 +11,20 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 604 |
+| Total rules | 605 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 78 |
-| Classification: settled | 396 |
+| Classification: settled | 397 |
 | Classification: unsettled | 8 |
 | Approximated kind: convention | 25 |
 | Approximated kind: fix | 67 |
 | Approximated kind: needs-fact | 30 |
 | Volatility: annuallyIndexed | 92 |
 | Volatility: awaitingGuidance | 14 |
-| Volatility: staticStatute | 488 |
+| Volatility: staticStatute | 489 |
 | Volatility: sunsetting | 10 |
 | Federal jurisdiction | 361 |
-| State jurisdiction total | 243 |
+| State jurisdiction total | 244 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -32,7 +32,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | AL | 9 |
 | AR | 10 |
 | AZ | 9 |
-| CA | 5 |
+| CA | 6 |
 | CO | 5 |
 | CT | 3 |
 | DC | 3 |
@@ -191,7 +191,7 @@ None.
 | projection/internal/stateHsaBasisLifecycle.ts | 2026-09-12 | Accepted HSA closing replaces next-year asserted opening; intervening unknown years and duplicate transition refusal remain unregistered lifecycle contracts. |
 | projection/internal/stateNjIraBasisLifecycle.ts | 2026-09-12 | NJ annual owner-pool closing-basis carryforward and characterized new contributions; intervening unknown years, duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts. |
 | projection/internal/statePensionBasisLifecycle.ts | 2026-09-12 | MA, VA and UT accepted pension/plan-basis carryforward keyed by state/account/owner/kind; unknown intervening years and duplicate-transition refusal remain unregistered lifecycle contracts. |
-| projection/internal/stateRetirementFactsAdapter.ts | 2026-10-26 | Maps source systems, HSA facts, QCD events and state basis to tax leaves. QCD runtime literal defaults no longer overwrite attested residency, split-interest, or direct-transfer; transactionKind is honored. Unmatched custodian rows are not priced as executed QCDs: the collection is withheld and the projection names the row. The qcd completeness branch is reached from the forced-distribution caller when the year is unknown or carries custodian evidence. A qcd unknown mark on any residency segment withholds the collection even when one event was observed. Duplicate event/account/owner identities withhold the collection instead of collapsing, and the projection names the repeated event. An unmodeled HSA contribution passes federalHsaDeduction 0 and does not replace an asserted deduction; a characterized withdrawal amount, including a measured zero, does replace evidence. HSA eligibility/completeness mappings and source attribution remain residual caller contracts. |
+| projection/internal/stateRetirementFactsAdapter.ts | 2026-11-03 | Maps source systems, HSA facts, QCD events and state basis to tax leaves. QCD runtime literal defaults no longer overwrite attested residency, split-interest, or direct-transfer; transactionKind is honored. Unmatched custodian rows are not priced as executed QCDs: the collection is withheld and the projection names the row. The qcd completeness branch is reached from the forced-distribution caller when the year is unknown or carries custodian evidence. A qcd unknown mark on any residency segment withholds the collection even when one event was observed. Duplicate event/account/owner identities withhold the collection instead of collapsing, and the projection names the repeated event. An unmodeled HSA contribution passes federalHsaDeduction 0 and does not replace an asserted deduction; a characterized withdrawal amount, including a measured zero, does replace evidence. An empty runtime HSA list is merged with the persisted evidence for the residence state before it is a known-empty year, and an hsa unknown mark for that state keeps it unavailable; with no residence state the HSA facts are unavailable rather than mixing states (state-hsa-evidence-runtime-merge-and-completeness). HSA eligibility mappings and source attribution remain residual caller contracts. |
 | projection/internal/types/tax.ts | 2026-09-06 | one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual. |
 | projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
@@ -246,12 +246,12 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/statesNortheast.json | 46 |
 | rule-coverage/statesSouthAtlantic.json | 48 |
 | rule-coverage/statesSouthCentral.json | 37 |
-| rule-coverage/statesWest.json | 61 |
+| rule-coverage/statesWest.json | 62 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 9 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (604 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (605 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -293,7 +293,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1892 authority entries.
+Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1893 authority entries.
 Amended on 2026-09-26: 2 entries verified individually after that run (cfr-20-404-313-delayed-retirement-credit, 20 CFR 404.313(a), (b)(2); usc-42-402-e-survivor-of-worker-who-died-before-claiming, 42 U.S.C. 402(w)(2)(A)). Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.
 Amended on 2026-09-26: 16 entries verified individually after that run (rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.01; rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.02; irc-36B-d-3-B-poverty-line-for-coverage-year, IRC 36B(d)(3)(B); irc-36B-d-3-B-poverty-line-for-coverage-year, 26 CFR 1.36B-1(h); irc-36B-d-3-B-poverty-line-for-coverage-year, 45 CFR 155.410(e)(5)(i); hhs-2026-poverty-guidelines-2027-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Alaska; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Hawaii; hhs-2025-poverty-guidelines-2026-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Alaska; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Hawaii; irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e); irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e); irc-36B-c-1-A-applicable-taxpayer-range, IRC 36B(c)(1)(E)). Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.
 Amended on 2026-09-26: 3 entries verified individually after that run (cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(1); cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(3), Example 1; cfr-26-1-36B-3-g-1-applicable-percentage-rounding, Instructions for Form 8962 (2025), Worksheet 2, line 4). Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.
@@ -357,13 +357,14 @@ Amended on 2026-10-08: 16 entries verified individually after that run (dc-code-
 Amended on 2026-10-23: 3 entries verified individually after that run (nj-direct-qcd-ira-basis-treatment, NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion; nj-direct-qcd-ira-basis-treatment, NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8; nj-direct-qcd-ira-basis-treatment, NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal). Added for the New Jersey Roth-conversion placement on Worksheet C: the GIT-1 & 2 (January 2026) conversion sentence and the 2025 NJ-1040 Worksheet C line 8 and line 20b sentences. Each was checked with verify-quotes on 2026-10-23, filtered to nj-direct-qcd-ira-basis-treatment. The existing Worksheet C excludable-portion quote was rechecked in that same run and kept its prior verdict and hash. No other ledger entry was re-run.
 Amended on 2026-11-02: 2 entries verified individually after that run (treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, IRC 401(a)(9)(E)(ii); irc-401-a-9-E-ii-eligible-designated-beneficiary, Treas. Reg. 1.408-8(c)(3)). Added by the review of RetireGolden #834 (authority sufficiency). Two existing registry quotes were reused unchanged, with the same citation, URL and quoted text: the IRC 401(a)(9)(E)(ii) quote of irc-401-a-9-E-ii-eligible-designated-beneficiary, now also on treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, and the Treas. Reg. 1.408-8(c)(3) quote of treas-reg-1-408-8-c-3-spouse-treated-as-owner, now also on irc-401-a-9-E-ii-eligible-designated-beneficiary. Each was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of an entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach the sources from the session that made the change; a later networked run filtered to these two records re-checks them like any other entry. No other ledger entry was re-run.
 Amended on 2026-11-02: 3 entries verified individually after that run (treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, Treas. Reg. 1.401(a)(9)-5(d)(1)(i); treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, Treas. Reg. 1.401(a)(9)-5(d)(3)(i); treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)). Added by the review of RetireGolden #834, round 6 (authority sufficiency of the greater-of record). Three existing registry quotes were reused unchanged on treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, with the same citation, URL and quoted text: the Treas. Reg. 1.401(a)(9)-5(d)(1)(i) quote of irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window, and the Treas. Reg. 1.401(a)(9)-5(d)(3)(i) and (d)(3)(iii) quotes of treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator. Each was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of an entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach the sources from the session that made the change; a later networked run filtered to this record re-checks them like any other entry. No other ledger entry was re-run.
+Amended on 2026-11-03: 1 entry verified individually after that run (state-hsa-evidence-runtime-merge-and-completeness, FTB 2025 Schedule CA, lines 1h, 2, 8f and 13). Added for RetireGolden #804 and #805: the new record state-hsa-evidence-runtime-merge-and-completeness reuses the FTB 2025 Schedule CA HSA quote of ca-hsa-state-basis-nonconformity unchanged, with the same citation, URL and quoted text. It was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of the entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach www.ftb.ca.gov from the session that made the change (the proxy refused the tunnel); a later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.
 
-10 serious, 6 advisory, 1876 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+10 serious, 6 advisory, 1877 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 153 |
+| ELISION-EXACT | ok | 154 |
 | ELISION-PUNCTUATION | advisory | 1 |
 | EXACT | ok | 1253 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |

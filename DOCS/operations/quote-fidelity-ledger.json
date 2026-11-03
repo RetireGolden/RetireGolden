@@ -4,9 +4,9 @@
   "urlCount": 434,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1892,
+  "entryCount": 1893,
   "counts": {
-    "ELISION-EXACT": 153,
+    "ELISION-EXACT": 154,
     "ELISION-PUNCTUATION": 1,
     "EXACT": 1253,
     "PDF-NOT-VERIFIABLE": 1,
@@ -16966,6 +16966,16 @@
       "diagnosis": null
     },
     {
+      "id": "state-hsa-evidence-runtime-merge-and-completeness",
+      "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13",
+      "host": "www.ftb.ca.gov",
+      "url": "https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html",
+      "quoteSha256": "e0ba0179efbdd7a5",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "hi-head-of-household-rate-schedule",
       "citation": "HRS 235-51(b), HOH table effective after December 31, 2024",
       "host": "files.hawaii.gov",
@@ -21581,6 +21591,16 @@
         {
           "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
           "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)"
+        }
+      ]
+    },
+    {
+      "on": "2026-11-03",
+      "note": "Added for RetireGolden #804 and #805: the new record state-hsa-evidence-runtime-merge-and-completeness reuses the FTB 2025 Schedule CA HSA quote of ca-hsa-state-basis-nonconformity unchanged, with the same citation, URL and quoted text. It was verified by identity rather than by a new fetch: its source URL, citation, quoted text and quote hash are the same as those of the entry the 2026-09-23 run checked against that source, so it carries that entry's verdict. verify-quotes could not reach www.ftb.ca.gov from the session that made the change (the proxy refused the tunnel); a later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.",
+      "entries": [
+        {
+          "id": "state-hsa-evidence-runtime-merge-and-completeness",
+          "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13"
         }
       ]
     }
