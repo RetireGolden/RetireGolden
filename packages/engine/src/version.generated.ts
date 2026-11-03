@@ -6,4 +6,4 @@
  * after every version bump; src/version.test.ts fails if you forget.
  */
 
-export const ENGINE_VERSION = '0.5.0'
+export const ENGINE_VERSION = '0.6.0'
