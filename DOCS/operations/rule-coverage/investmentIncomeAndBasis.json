@@ -2180,7 +2180,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -2262,7 +2262,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }

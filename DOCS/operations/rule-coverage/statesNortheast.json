@@ -48,7 +48,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -144,7 +144,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -249,11 +249,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -264,16 +264,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 471,
+          "line": 555,
           "note": null,
           "tests": [
             {
               "title": "uses Connecticut AGI, and a dollar into the next thousand removes $1,000",
-              "line": 472
+              "line": 556
             },
             {
               "title": "does not use known federal AGI as a substitute for unknown Connecticut AGI",
-              "line": 485
+              "line": 569
             }
           ]
         }
@@ -346,11 +346,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -361,12 +361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1033,
+          "line": 1117,
           "note": null,
           "tests": [
             {
               "title": "selects proved contributory Massachusetts income",
-              "line": 1034
+              "line": 1118
             }
           ]
         }
@@ -419,7 +419,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -502,11 +502,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -517,12 +517,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 631,
+          "line": 715,
           "note": null,
           "tests": [
             {
               "title": "adds 4% only to $1.2m minus the $1,107,750 threshold",
-              "line": 632
+              "line": 716
             }
           ]
         }
@@ -585,11 +585,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -600,12 +600,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 640,
+          "line": 724,
           "note": null,
           "tests": [
             {
               "title": "recovers known Massachusetts basis once across two distributions",
-              "line": 641
+              "line": 725
             }
           ]
         }
@@ -663,11 +663,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -678,12 +678,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 648,
+          "line": 732,
           "note": null,
           "tests": [
             {
               "title": "requires contributory in-state or reciprocal public-system proof",
-              "line": 649
+              "line": 733
             }
           ]
         }
@@ -761,7 +761,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -839,7 +839,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -915,7 +915,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -1038,7 +1038,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -1120,7 +1120,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -1322,7 +1322,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -1441,11 +1441,19 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2599
+              "line": 2680
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 1329
+            },
+            {
+              "name": "newJerseyOwnerIraLine20a",
+              "line": 289
             },
             {
               "name": "njIraBasisPools",
-              "line": 2556
+              "line": 2637
             }
           ]
         }
@@ -1461,35 +1469,35 @@
           "tests": [
             {
               "title": "taxes $32,000 of a $40,000 full liquidation after recovering $8,000 NJ basis",
-              "line": 270
+              "line": 276
             },
             {
               "title": "uses NJ basis for a full liquidation and conserves recovery across events",
-              "line": 280
+              "line": 286
             },
             {
               "title": "keeps one IRA exempt-obligation amount when the other IRA omits the field",
-              "line": 287
+              "line": 293
             },
             {
               "title": "rejects a negative exempt-obligation adjustment instead of taxing the transfer in full",
-              "line": 302
+              "line": 308
             },
             {
               "title": "reads a lowercase nj basis row and honors an asserted full liquidation",
-              "line": 320
+              "line": 326
             },
             {
               "title": "detects a projected New Jersey QCD with no basis evidence and leaves it unpriced",
-              "line": 354
+              "line": 360
             },
             {
               "title": "leaves an explicit unknown basis list incomplete instead of assuming zero",
-              "line": 366
+              "line": 372
             },
             {
               "title": "does not invent a zero-basis pool for an owner with no basis row",
-              "line": 370
+              "line": 376
             }
           ]
         }
@@ -1520,6 +1528,21 @@
         {
           "kind": "formInstruction",
           "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 7",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a, part-year residents",
           "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
         }
       ]
@@ -1567,11 +1590,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -1648,7 +1671,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -1716,11 +1739,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2210
+              "line": 2291
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -1847,15 +1870,19 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2210
+              "line": 2291
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
+            },
+            {
+              "name": "newJerseyOwnerIraLine20a",
+              "line": 289
             },
             {
               "name": "newJerseyPensionPayments",
-              "line": 216
+              "line": 223
             }
           ]
         }
@@ -1911,6 +1938,11 @@
           "kind": "statute",
           "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 ($125,000–$150,000 band)",
           "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf"
         }
       ]
     },
@@ -1957,11 +1989,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -1972,12 +2004,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 658,
+          "line": 742,
           "note": null,
           "tests": [
             {
               "title": "excludes military at age50 while OPM remains taxable",
-              "line": 659
+              "line": 743
             }
           ]
         }
@@ -2034,7 +2066,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -2116,7 +2148,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -2310,7 +2342,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2499,7 +2531,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -2614,7 +2646,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2702,7 +2734,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2785,7 +2817,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2854,7 +2886,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -2930,7 +2962,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -3011,7 +3043,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -3213,7 +3245,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -3315,7 +3347,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
@@ -3404,7 +3436,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             },
             {
               "name": "retirementExclusion",
@@ -3517,7 +3549,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -3639,7 +3671,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -3746,7 +3778,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -3834,11 +3866,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -3849,12 +3881,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 883,
+          "line": 967,
           "note": null,
           "tests": [
             {
               "title": "uses the exact marginal arithmetic at the joint top threshold",
-              "line": 884
+              "line": 968
             }
           ]
         }
@@ -3913,11 +3945,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         },
@@ -3937,12 +3969,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 891,
+          "line": 975,
           "note": null,
           "tests": [
             {
               "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
-              "line": 892
+              "line": 976
             }
           ]
         }
@@ -3991,11 +4023,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         },
@@ -4015,12 +4047,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 918,
+          "line": 1002,
           "note": null,
           "tests": [
             {
               "title": "subtracts both included tiers without requiring a Social Security election",
-              "line": 919
+              "line": 1003
             }
           ]
         }
@@ -4074,11 +4106,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         },
@@ -4098,12 +4130,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 910,
+          "line": 994,
           "note": null,
           "tests": [
             {
               "title": "phases military at$150k and preserves the independent election",
-              "line": 911
+              "line": 995
             }
           ]
         }
@@ -4152,11 +4184,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1722
+              "line": 1803
             },
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         },
@@ -4176,12 +4208,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 901,
+          "line": 985,
           "note": null,
           "tests": [
             {
               "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
-              "line": 902
+              "line": 986
             }
           ]
         }
@@ -4231,7 +4263,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1700
+              "line": 1781
             }
           ]
         }
