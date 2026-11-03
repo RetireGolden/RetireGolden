@@ -1,4 +1,4 @@
-import { ageOnDate, householdFactsForYear } from './stateRetirementFactsAdapter.js'
+import { age65EligibleCountsByConvention, householdFactsForYear } from './stateRetirementFactsAdapter.js'
 /** Annual source facts, not a second state-tax calculator.
  * State household bases and eligibility are characterized inputs. Household
  * §86 inclusion cannot be allocated between recipients by an invented ratio.
@@ -139,12 +139,15 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
   })
   const derivedOwners = householdFactsForYear(plan, taxYear, { claimantPersonIds: claimantIds,
     ...(input.wagesByPerson === undefined ? {} : { ownerStateTaxFacts: claimantIds.map((ownerPersonId) => ({ ownerPersonId, wages: input.wagesByPerson!.get(ownerPersonId) ?? 0 })) }) })
-  const claimantAges = dates.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
-  const validDerivedAge65Count = allClaimantsKnown && claimantAges.length === claimantIds.length && claimantAges.every((age) => age !== undefined)
-    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
+  // The same derivation householdFactsForYear makes, from the same claimants:
+  // a count per age-attainment convention, which a stored count overrides.
+  const derivedAge65ByConvention = allClaimantsKnown && dates.length === claimantIds.length
+    ? age65EligibleCountsByConvention(dates, taxYear)
     : undefined
+  const { age65EligibleCountByConvention: ignoredOwnerCounts, ...derivedOwnerFacts } = derivedOwners ?? {}
+  void ignoredOwnerCounts
   const householdFacts: AnnualStateHouseholdFacts = {
-    ...derivedOwners,
+    ...derivedOwnerFacts,
     ...storedFacts,
     ownerStateTaxFacts: derivedOwners?.ownerStateTaxFacts,
     stateFilingStatus: stored?.stateFilingStatus ?? plan.household.filingStatus,
@@ -152,7 +155,10 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
     claimantDatesOfBirth: stored?.claimantDatesOfBirth ?? dates,
     ...(stored?.age65EligibleCount !== undefined
       ? { age65EligibleCount: stored.age65EligibleCount }
-      : validDerivedAge65Count === undefined ? {} : { age65EligibleCount: validDerivedAge65Count }),
+      : derivedAge65ByConvention === undefined ? {} : {
+        age65EligibleCount: derivedAge65ByConvention.lastDayOfTaxYear,
+        age65EligibleCountByConvention: derivedAge65ByConvention,
+      }),
     federalAgi: federal.agi, federalTaxableIncome: federal.taxableIncome,
     federalDeductionUsed: federal.deductionUsed,
     ...(federal.seniorDeduction === undefined ? {} : { federalSeniorDeduction: federal.seniorDeduction }),

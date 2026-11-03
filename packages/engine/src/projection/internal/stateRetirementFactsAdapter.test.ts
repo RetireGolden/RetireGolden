@@ -178,6 +178,7 @@ describe('stateRetirementFactsAdapter', () => {
       exemptionTaxpayerCount: 1,
       // Default plan DOB 1970-01-01 is age 56 at TY2026 year-end; derived, not invented.
       age65EligibleCount: 0,
+      age65EligibleCountByConvention: { lastDayOfTaxYear: 0, dayBeforeBirthday: 0 },
     })
     expect(householdFactsForYear(plan, 2027)).toBeUndefined()
   })

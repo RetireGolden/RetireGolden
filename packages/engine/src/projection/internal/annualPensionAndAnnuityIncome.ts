@@ -448,7 +448,7 @@ export function annualPensionAndAnnuityIncome(
         recipientAgeKnown: recipient !== undefined,
         cause: ownerState.alive ? 'ordinary' : 'death',
         earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
-          minimumAgeAtDistributionYears,
+          minimumAgeAtDistributionYears, cause: ownerState.alive ? 'ordinary' : 'death',
         }),
         ...(minimumAgeAtDistributionYears === undefined
           ? {}

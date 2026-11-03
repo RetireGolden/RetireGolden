@@ -335,7 +335,7 @@ export const earlyDistributionAndSeppRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due. The exact-cent beneficiary path is stricter than the marker proxy: beneficiaryTraditionalIraDeathPenalty.ts requires recipient death-beneficiary evidence with a death date on or before evaluation and refuses once spousal owner treatment has begun, and beneficiaryTraditionalIraAnnualSimulatorDelta.ts propagates that zero only when the upstream module produced it.',
+      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due. The exact-cent beneficiary path is stricter than the marker proxy: beneficiaryTraditionalIraDeathPenalty.ts requires recipient death-beneficiary evidence with a death date on or before evaluation and refuses once spousal owner treatment has begun, and beneficiaryTraditionalIraAnnualSimulatorDelta.ts propagates that zero only when the upstream module produced it. The state retirement facts read the same marker: a distribution from an inherited account (its source owner the account\'s decedent), a survivor pension or an annuity paid after its owner\'s death carries the cause death, and projection/internal/stateRetirementFactsAdapter.ts#inferEarlyDistributionDisqualifier marks such a row not subject to the early-distribution tax at any age unless the plan asserts otherwise, for the state rules that test it (Delaware and South Carolina); until 2026-11-03 it left such a row unknown when the recipient was under 59 and a half.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -359,12 +359,14 @@ export const earlyDistributionAndSeppRecords = {
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts#prepareBeneficiaryTraditionalIraAnnualSimulatorDelta',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
       'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#inferEarlyDistributionDisqualifier',
     ],
   },
 

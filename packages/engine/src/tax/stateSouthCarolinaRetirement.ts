@@ -28,8 +28,14 @@ function prematureDisqualified(fact: StateRetirementDistributionFact): boolean {
   )
 }
 
+/**
+ * A death cause is not tested here: every producer of the fact resolves it
+ * through inferEarlyDistributionDisqualifier, which reads IRC 72(t)(2)(A)(ii)
+ * and gives a beneficiary's distribution `false` unless the plan asserts
+ * `true` (irc-72-t-2-A-ii-death-beneficiary-exception).
+ */
 function prematureUnknown(fact: StateRetirementDistributionFact): boolean {
-  return fact.earlyDistributionDisqualifier === 'unknown' && fact.cause !== 'death' && fact.cause !== 'disability'
+  return fact.earlyDistributionDisqualifier === 'unknown' && fact.cause !== 'disability'
 }
 
 /** §1171 military deduction for one owner. */

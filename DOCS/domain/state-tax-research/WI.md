@@ -24,6 +24,7 @@ Tax year: 2026. Updated 2026-09-12 from Form 1-ES instructions.
 - brackets.marriedFilingJointly: 0 / 20,150 / 69,260 / 443,630 at the same rates
 - brackets.marriedFilingSeparately: 0 / 10,080 / 34,630 / 221,820 at the same rates
 - personal exemptions: $700 per eligible taxpayer/spouse/dependent + $250 per age-65 taxpayer/spouse; claimed-as-dependent → $0 personal exemption
+- ageAttainmentConvention: "dayBeforeBirthday" (2025 Form 1 instructions, Age: a January 1 birthday counts as a year older as of the preceding December 31, so the line 10b age-65 test reads the age on the next January 1)
 - retirement: { kind: "capped", capPerPerson: 24000, minAge: 67 }
 
 ## Retirement-income detail
@@ -65,7 +66,9 @@ credit-forfeiture limbs that the coarse pack cap does not yet express.
 
 TY2026 Form 1-ES supplies the 3.5%, 4.4%, 5.3% and 7.65% schedules, with separate published MFS boundaries rather than rounded half-joint values. Standard deductions phase down with Wisconsin income: maximum $13,960 single, $18,030 HOH, $25,840 joint and $12,280 MFS. Eligible personal/dependent exemptions add $700 each and eligible age-65 additions add $250; dependency disallows the personal exemption. A part-year resident's Form 1NPR looks the deduction up in its Standard Deduction Table by the year's federal income (line 31) and prorates the tax by the ratio of Wisconsin income to federal income (line 32). From 2026-10-08 a year split between states takes that method: the tax on the whole year's income as a resident, the sliding deduction and the exemptions on the year's facts, times line 32, line 30 Wisconsin income over line 31 federal income, with the $24,000 subtraction at 67 in the Wisconsin column reduced by the same share. Until 2026-10-07 the slice phased the deduction on its own income, and until 2026-10-08 it took the months share and dropped the exemptions. The 2026 estimated-tax source is explicit; this record does not claim unpublished final 2026 Form 1 instructions.
 
-Registered as `wi-2026-rates-standard-deduction-exemptions`. Authority: [Wisconsin 2026 Form 1-ES, pages 2–3](https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf).
+The age-65 addition goes to a taxpayer or spouse 65 or older on December 31 (Form 1 line 10b), and the 2025 Form 1 instructions, carried forward for 2026, count a January 1 birthday as a year older as of the preceding December 31: "If your birthday falls on January 1, 2026, you are considered to be a year older as of December 31, 2025." The 2026 figures declare that convention for Wisconsin (`ageAttainmentConvention: 'dayBeforeBirthday'`), and the count comes from the claimants' dates of birth under it (tax/stateTax.ts#stateAge65EligibleCount); a count the plan stores for the year is read as given. Until 2026-11-03 the engine used the age on December 31, so a single filer born January 1, 1962 got $700 for 2026 instead of $950, $13.25 more tax in the 5.3% band (tax/stateAge65Convention.rules.test.ts). New Jersey ("65 or older on the last day of the tax year") and every state that declares no convention keep the December 31 age; Virginia's Form 760 tests keep their own path.
+
+Registered as `wi-2026-rates-standard-deduction-exemptions`. Authority: [Wisconsin 2026 Form 1-ES, pages 2–3](https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf); [2025 Wisconsin Form 1 instructions, Age and line 10b](https://www.revenue.wi.gov/TaxForms2025/2025-Form1-Inst.pdf).
 
 ## Part-year residents (2026-10-08)
 

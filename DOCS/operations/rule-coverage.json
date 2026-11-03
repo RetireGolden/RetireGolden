@@ -846,7 +846,7 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1909,
+    "entryCount": 1910,
     "fetched": 0,
     "cached": 433,
     "counts": {
@@ -856,7 +856,7 @@
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 478,
       "PUNCTUATION": 4,
-      "UNFETCHABLE": 11
+      "UNFETCHABLE": 12
     },
     "amendments": [
       {
@@ -3390,6 +3390,16 @@
           {
             "id": "nj-stat-54a-6-10-retirement-income-exclusion",
             "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added by the fix for RetireGolden #823 (the Wisconsin age-65 exemption for a January 1 birthday): one new quote on wi-2026-rates-standard-deduction-exemptions, from the 2025 Wisconsin Form 1 instructions (the Age paragraph on page 3 and line 10b on page 15). verify-quotes could not reach revenue.wi.gov from the session that made the change (the session's proxy refused the tunnel with HTTP 403), so the row is UNFETCHABLE here; the same day the two quoted sentences were read from the PDF's text through a fetch tool and found as quoted. A later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "wi-2026-rates-standard-deduction-exemptions",
+            "citation": "2025 Wisconsin Form 1 instructions, Age (page 3) and line 10b (page 15)"
           }
         ]
       }

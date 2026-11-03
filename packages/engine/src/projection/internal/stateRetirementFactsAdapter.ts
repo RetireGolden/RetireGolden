@@ -24,6 +24,7 @@ import type {
   StateQcdYearFactsInput,
   StateRetirementDistributionFactInput,
 } from '../types.js'
+import type { StateAgeAttainmentConvention } from '../../params/state/types.js'
 
 export type StateRetirementSourceKind = StateRetirementDistributionFactInput['sourceKind']
 
@@ -154,6 +155,7 @@ export function characterizePensionDistribution(input: {
       explicit: eligibility?.earlyDistributionDisqualifier,
       minimumAgeAtDistributionYears,
       military,
+      cause,
     }),
     ...(minimumAgeAtDistributionYears === undefined
       ? {}
@@ -231,15 +233,19 @@ export function householdFactsForYear(
       ...(age === undefined ? {} : { recipientAgeYears: age }),
     }
   })
-  const claimantAges = ownerPeople.map((person) => ageOnDate(person.dob, `${year}-12-31`))
-  const derivedAge65 = storedAge65 ?? (allClaimantsKnown && claimantAges.every((age) => age !== undefined)
-    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
-    : undefined)
+  // A stored count is the plan's assertion for every state. Otherwise the
+  // count comes from the claimants' dates of birth under each convention, and
+  // the state reads the one its instructions use.
+  const derivedAge65ByConvention = storedAge65 === undefined && allClaimantsKnown
+    ? age65EligibleCountsByConvention(ownerPeople.map((person) => person.dob), year)
+    : undefined
+  const derivedAge65 = storedAge65 ?? derivedAge65ByConvention?.lastDayOfTaxYear
   return {
     ...household,
     ...projected,
     ...(projected === undefined ? {} : { ownerStateTaxFacts: mergedOwners }),
     ...(derivedAge65 === undefined ? {} : { age65EligibleCount: derivedAge65 }),
+    ...(derivedAge65ByConvention === undefined ? {} : { age65EligibleCountByConvention: derivedAge65ByConvention }),
     ...(row?.stateFilingStatus === undefined ? {} : { stateFilingStatus: row.stateFilingStatus }),
     ...(projected === undefined ? {} : { claimantDatesOfBirth: projected.claimantDatesOfBirth ?? household.claimantDatesOfBirth ?? plan.household.people.map((person) => person.dob) }),
     ...(election === undefined
@@ -797,6 +803,10 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
     const minimumAgeAtDistributionYears = recipient === undefined || distributionAge !== undefined
       ? undefined
       : ageOnDate(recipient.dob, `${year}-01-01`)
+    // A recipient other than the source owner holds an inherited account
+    // (account.inherited.decedentId names the source owner).
+    const cause = event.eligibility?.distributionReason ??
+      (event.recipientPersonId !== event.sourceOwnerPersonId ? 'death' as const : 'unknown' as const)
     return {
       ...event, ...mapEligibility(event.eligibility),
       ownerPersonId: event.recipientPersonId,
@@ -805,34 +815,40 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
       ...(distributionAge === undefined
         ? { minimumAgeAtDistributionYears }
         : { ageAtDistributionYears: distributionAge }),
-      cause: event.eligibility?.distributionReason ??
-        (event.recipientPersonId !== event.sourceOwnerPersonId ? 'death' as const : 'unknown' as const),
+      cause,
       earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
         explicit: event.eligibility?.earlyDistributionDisqualifier,
         ageAtDistributionYears: distributionAge,
         minimumAgeAtDistributionYears,
         military: event.source === 'militaryRetirement' || event.source === 'militarySurvivor',
+        cause,
       }),
     }
   })
 }
 
 /**
- * Infer Box 7 / premature-penalty disqualification from explicit facts or a
- * proved distribution-age lower bound. Year-end recipient age never establishes
- * eligibility; crossing-year undated withdrawals stay unknown. Military retired
- * pay and a Survivor Benefit Plan annuity are paid under title 10 of the U.S.
- * Code, not from a qualified plan, so IRC 72(t) never reaches them: `false`
- * at any age unless the plan asserts otherwise.
+ * Infer Box 7 / premature-penalty disqualification from explicit facts, the
+ * distribution's cause, or a proved distribution-age lower bound. Year-end
+ * recipient age never establishes eligibility; crossing-year undated
+ * withdrawals stay unknown. Military retired pay and a Survivor Benefit Plan
+ * annuity are paid under title 10 of the U.S. Code, not from a qualified plan,
+ * so IRC 72(t) never reaches them: `false` at any age unless the plan asserts
+ * otherwise. A distribution "made to a beneficiary (or to the estate of the
+ * employee) on or after the death of the employee" is excepted by IRC
+ * 72(t)(2)(A)(ii) at any age (Form 1099-R code 4), so a `death` cause is
+ * `false` too (irc-72-t-2-A-ii-death-beneficiary-exception). An explicit
+ * `true` still wins over both.
  */
 export function inferEarlyDistributionDisqualifier(input: {
   readonly explicit?: 'true' | 'false' | 'unknown'
   readonly ageAtDistributionYears?: number
   readonly minimumAgeAtDistributionYears?: number
   readonly military?: boolean
+  readonly cause?: StateRetirementDistributionFactInput['cause']
 }): 'true' | 'false' | 'unknown' {
   if (input.explicit === 'true') return 'true'
-  if (input.explicit === 'false' || input.military) return 'false'
+  if (input.explicit === 'false' || input.military || input.cause === 'death') return 'false'
   if (input.ageAtDistributionYears !== undefined) {
     return input.ageAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
   }
@@ -840,6 +856,33 @@ export function inferEarlyDistributionDisqualifier(input: {
     return input.minimumAgeAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
   }
   return 'unknown'
+}
+
+/**
+ * The date a state's "65 or older on December 31" test reads the age at.
+ * Under `dayBeforeBirthday` an age is attained the day before the birthday,
+ * which is the age on the following January 1.
+ */
+export function stateAgeTestDate(taxYear: number, convention: StateAgeAttainmentConvention): string {
+  return convention === 'dayBeforeBirthday' ? `${taxYear + 1}-01-01` : `${taxYear}-12-31`
+}
+
+/**
+ * The number of claimants 65 or older at the end of the tax year under each
+ * age-attainment convention. Undefined when any date of birth does not parse
+ * or falls after the test date.
+ */
+export function age65EligibleCountsByConvention(
+  datesOfBirth: readonly string[],
+  taxYear: number,
+): Readonly<Record<StateAgeAttainmentConvention, number>> | undefined {
+  const count = (convention: StateAgeAttainmentConvention): number | undefined => {
+    const ages = datesOfBirth.map((dob) => ageOnDate(dob, stateAgeTestDate(taxYear, convention)))
+    return ages.every((age) => age !== undefined) ? ages.filter((age) => age !== undefined && age >= 65).length : undefined
+  }
+  const lastDayOfTaxYear = count('lastDayOfTaxYear')
+  const dayBeforeBirthday = count('dayBeforeBirthday')
+  return lastDayOfTaxYear === undefined || dayBeforeBirthday === undefined ? undefined : { lastDayOfTaxYear, dayBeforeBirthday }
 }
 
 /** Calendar-month age preserves the 59.5 boundary without a 365.25-day proxy. */

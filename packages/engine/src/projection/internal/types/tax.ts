@@ -10,6 +10,7 @@
  * now point across a module boundary.
  */
 import type { FilingStatus } from '../../../params/types.js'
+import type { StateAgeAttainmentConvention } from '../../../params/state/types.js'
 
 export type ProjectedFilingStatus = FilingStatus | 'qualifyingSurvivingSpouse'
 
@@ -287,6 +288,13 @@ export interface StateHouseholdTaxFactsInput {
   exemptionTaxpayerCount?: number
   exemptionDependentCount?: number
   age65EligibleCount?: number
+  /**
+   * Set only when `age65EligibleCount` was derived from the claimants' dates
+   * of birth rather than stored for the year: the count under each age
+   * attainment convention, so a state reads the one its instructions date
+   * the test by (tax/stateTax.ts#stateAge65EligibleCount).
+   */
+  age65EligibleCountByConvention?: Readonly<Record<StateAgeAttainmentConvention, number>>
   section63fQualificationCount?: number
   federalExemptionCount?: { known: true; value: number } | { known: false }
   zeroFederalExemptionReason?: 'irc151d2' | 'other' | 'unknown'

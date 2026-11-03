@@ -11,6 +11,9 @@
  * current recipient for age and per-person limits).
  */
 
+import type { StateAgeAttainmentConvention } from '../params/state/types.js'
+import { inferEarlyDistributionDisqualifier } from '../projection/internal/stateRetirementFactsAdapter.js'
+
 /** Shared-contract proposal income kinds (integrator Plan emission). */
 export type StateIncomeKind =
   | 'privatePension'
@@ -200,6 +203,13 @@ export interface StateHouseholdTaxFacts {
   exemptionTaxpayerCount?: number
   exemptionDependentCount?: number
   age65EligibleCount?: number
+  /**
+   * Set only when `age65EligibleCount` was derived from the claimants' dates
+   * of birth rather than stored for the year: the count under each age
+   * attainment convention, so a state reads the one its instructions date
+   * the test by (tax/stateTax.ts#stateAge65EligibleCount).
+   */
+  age65EligibleCountByConvention?: Readonly<Record<StateAgeAttainmentConvention, number>>
   section63fQualificationCount?: number
   federalExemptionCount?: { known: true; value: number } | { known: false }
   zeroFederalExemptionReason?: 'irc151d2' | 'other' | 'unknown'
@@ -540,6 +550,7 @@ function mapCause(
  */
 export function mapStateIncomeComponent(component: StateIncomeComponent): StateRetirementDistributionFact {
   const earlyCode = component.jurisdictionalFacts?.earlyDistributionCode
+  const cause = mapCause(component.distributionReason, earlyCode)
   return {
     ownerPersonId: component.ownerId,
     sourceKind: mapIncomeKind(component.kind),
@@ -547,13 +558,18 @@ export function mapStateIncomeComponent(component: StateIncomeComponent): StateR
     recipientAgeYears: component.ageAtYearEnd ?? component.recipientAgeAtDistribution ?? 0,
     recipientAgeKnown: component.ageAtYearEnd !== undefined || component.recipientAgeAtDistribution !== undefined,
     ageAtDistributionYears: component.recipientAgeAtDistribution,
-    cause: mapCause(component.distributionReason, earlyCode),
-    earlyDistributionDisqualifier:
-      earlyCode === '1' || component.distributionReason === 'early'
+    cause,
+    // Box 7 code 1 or an early reason is the disqualifier; code 7, a normal
+    // reason, or a death or survivor payment (IRC 72(t)(2)(A)(ii), the
+    // shared inference) is not.
+    earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
+      explicit: earlyCode === '1' || component.distributionReason === 'early'
         ? 'true'
         : earlyCode === '7' || component.distributionReason === 'normal'
           ? 'false'
           : 'unknown',
+      cause,
+    }),
     planSystemCode: component.planSystemCode,
     survivorIssuer: component.survivorIssuer,
     decedentWouldQualify: component.decedentWouldQualify,

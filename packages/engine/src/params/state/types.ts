@@ -54,6 +54,19 @@ export type StatePartYearRatioBasis = 'federalAgi' | 'stateIncome' | 'stateOverF
 /** How a capped retirement exclusion applies to the resident period (`StateTaxParams.partYear`). */
 export type StatePartYearExclusionCap = 'full' | 'months' | 'retirementShare' | 'incomeRatio' | 'viaTaxRatio'
 
+/**
+ * How a state's own instructions date an age test such as "65 or older on
+ * December 31" (`StateTaxParams.ageAttainmentConvention`).
+ *
+ * - `lastDayOfTaxYear`: the age on December 31 of the tax year, a birthday
+ *   counting from the day itself. New Jersey's NJ-1040 instructions ("65 or
+ *   older on the last day of the tax year") read this way.
+ * - `dayBeforeBirthday`: an age is attained on the day before the birthday, so
+ *   a claimant born on January 1 is a year older as of the preceding December
+ *   31. Wisconsin's Form 1 instructions say so in terms.
+ */
+export type StateAgeAttainmentConvention = 'lastDayOfTaxYear' | 'dayBeforeBirthday'
+
 export interface StateTaxParams {
   /** Two-letter code, e.g. 'KY'. */
   code: string
@@ -79,6 +92,15 @@ export interface StateTaxParams {
   capitalGainsNotes?: string
   capitalGainsSources?: string[]
   standardDeduction: PerStatus<number>
+  /**
+   * The convention the state's age-65 count (`age65EligibleCount` and its
+   * exemption or allowance) is dated by. Left out, `lastDayOfTaxYear`. A count
+   * the plan stores for the year is the plan's assertion and is read as given;
+   * the convention dates only a count derived from dates of birth
+   * (tax/stateTax.ts#stateAge65EligibleCount). Virginia's Form 760 tests keep
+   * their own path (tax/stateTax.ts#virginiaAgedTaxpayerCount).
+   */
+  ageAttainmentConvention?: StateAgeAttainmentConvention
   /**
    * Set to `'federal'` when the amount above is not an independent state figure
    * but the FEDERAL basic standard deduction for the pack year, carried here
