@@ -1491,15 +1491,20 @@ export function computeStateTaxableIncomeResult(
   }
 
   // Virginia 58.1-322.03(2)(a) counts the federal personal exemptions, not the
-  // return's row: a qualifying surviving spouse files Single (Filing Status 1)
-  // but has two, the survivor and the dependent child IRC 2(a)(1)(B) requires
-  // (a dependent "with respect to whom the taxpayer is entitled to a deduction
-  // for the taxable year under section 151"). Further dependents are not
-  // collected.
+  // return's row. The count is the taxpayers' exemptions plus the dependents',
+  // from the year's facts when the plan gives them (`exemptionTaxpayerCount`
+  // and `exemptionDependentCount` are separate counts, as the planner's state
+  // facts editor collects them). Without them: one taxpayer, two on a joint
+  // return, and for a qualifying surviving spouse, who files Single (Filing
+  // Status 1), one taxpayer and the one dependent child IRC 2(a)(1)(B)
+  // requires; a single filer's or couple's unrecorded dependents count none.
   if (params.virginiaPersonalExemptions) {
+    const facts = opts.householdFacts
+    const taxpayerExemptions = facts?.exemptionTaxpayerCount ?? (input.filingStatus === 'marriedFilingJointly' ? 2 : 1)
+    const dependentExemptions = facts?.exemptionDependentCount ?? (input.filingStatus === 'qualifyingSurvivingSpouse' ? 1 : 0)
     accumulateLeaf(acc, virginiaPersonalExemptions({
       config: params.virginiaPersonalExemptions,
-      exemptionCount: opts.householdFacts?.exemptionTaxpayerCount ?? (input.filingStatus === 'single' ? 1 : 2),
+      exemptionCount: taxpayerExemptions + dependentExemptions,
       agedTaxpayerCount: virginiaAgedTaxpayerCount(input, opts.householdFacts),
     }), slice?.exemption)
   }
@@ -1565,20 +1570,24 @@ export function computeStateTaxableIncomeResult(
   if (params.code === 'VT') {
     const status = opts.householdFacts?.stateFilingStatus
     const exemptionTaxpayerCount = opts.householdFacts?.exemptionTaxpayerCount
+    // IN-111 line 5d: the exemptions for yourself, a joint spouse, and the
+    // dependents claimed federally (line 5c), each at the line 5e amount.
+    const exemptionDependentCount = opts.householdFacts?.exemptionDependentCount
     const section63fQualificationCount = opts.householdFacts?.section63fQualificationCount
     const vtDeductionCountsMissing =
       !status ||
       exemptionTaxpayerCount === undefined ||
+      exemptionDependentCount === undefined ||
       section63fQualificationCount === undefined
     if (
       vtDeductionCountsMissing &&
       !(preExemptionReliefBound <= 0 && standardDeductionOverrideAllowsZeroProof)
     ) {
-      acc.warnings.push({ code: 'vt-deduction-exemption-incomplete', ruleId: 'vt-2026-deduction-exemption', message: 'Vermont deductions require full filing status, personal-exemption count, and §63(f) qualification count.', missingFacts: ['stateFilingStatus', 'exemptionTaxpayerCount', 'section63fQualificationCount'] })
-    } else if (status && exemptionTaxpayerCount !== undefined && section63fQualificationCount !== undefined) {
+      acc.warnings.push({ code: 'vt-deduction-exemption-incomplete', ruleId: 'vt-2026-deduction-exemption', message: 'Vermont deductions require full filing status, personal- and dependent-exemption counts, and §63(f) qualification count.', missingFacts: ['stateFilingStatus', 'exemptionTaxpayerCount', 'exemptionDependentCount', 'section63fQualificationCount'] })
+    } else if (status && exemptionTaxpayerCount !== undefined && exemptionDependentCount !== undefined && section63fQualificationCount !== undefined) {
       const extras = params.vermontExtras
       const deduction = extras?.standardDeductionByStatus?.[status] ?? (status === 'headOfHousehold' ? 11800 : status === 'marriedFilingSeparately' || status === 'single' ? 7850 : 15700)
-      rawTotal = deduction + (extras?.personalExemption ?? 5400) * exemptionTaxpayerCount + (extras?.additional63f ?? 1300) * section63fQualificationCount
+      rawTotal = deduction + (extras?.personalExemption ?? 5400) * (exemptionTaxpayerCount + exemptionDependentCount) + (extras?.additional63f ?? 1300) * section63fQualificationCount
     }
   }
   if (params.code === 'SC') {

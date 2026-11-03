@@ -30,7 +30,7 @@ import { stateYear2026 } from '../params/state/data/year2026.js'
 import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { describeRule } from '../rules/describeRule.js'
-import { computeStateTaxDetail, computeStateTaxYearTotal, computeStateTaxableIncome, createStateTaxCalculator } from './stateTax.js'
+import { computeStateTaxDetail, computeStateTaxDetailResult, computeStateTaxYearTotal, computeStateTaxableIncome, createStateTaxCalculator } from './stateTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { basePlan, cash, testIds, validate } from '../projection/simulate.test-support.js'
 import type { Plan } from '../model/plan.js'
@@ -106,6 +106,58 @@ describeRule('va-760-2026-qss-files-single', {
     // 60,000 − 9,200 − 1,860 = 48,940.
     const params = stateParamsFor('VA', 2027)!
     expect(computeStateTaxableIncome(params, { ...qss('VA', 60_000), year: 2027 })).toBe(48_940)
+  })
+
+  it('adds the dependents to the taxpayers when the plan gives both counts', () => {
+    // 58.1-322.03(2)(a): $930 for each federal exemption. One taxpayer and one
+    // dependent are two: 60,000 − 8,750 − 2 × 930 = 49,390, the default.
+    // Reading the taxpayer count alone gives one: 60,000 − 8,750 − 930 = 50,320.
+    const facts = { exemptionTaxpayerCount: 1, exemptionDependentCount: 1 }
+    const input = qss('VA', 60_000)
+    expect(computeStateTaxableIncome(pack('VA'), input, { householdFacts: facts })).toBe(accepted.taxableIncome)
+    expect(computeStateTaxableIncome(pack('VA'), input, { householdFacts: facts })).not.toBe(readings.filingStatusOneOneExemption.taxableIncome)
+    // A survivor with two dependents: 60,000 − 8,750 − 3 × 930 = 48,460.
+    expect(computeStateTaxableIncome(pack('VA'), input, { householdFacts: { exemptionTaxpayerCount: 1, exemptionDependentCount: 2 } })).toBe(48_460)
+  })
+})
+
+describe('Virginia dependent exemptions on every filing row (58.1-322.03(2)(a))', () => {
+  it('counts a single filer’s and a joint couple’s dependents', () => {
+    const single: TaxYearInput = { ...qss('VA', 60_000), filingStatus: 'single' }
+    // 60,000 − 8,750 − 930 = 50,320 with no dependent; one dependent takes 930 more.
+    expect(computeStateTaxableIncome(pack('VA'), single, { householdFacts: { exemptionTaxpayerCount: 1, exemptionDependentCount: 0 } })).toBe(50_320)
+    expect(computeStateTaxableIncome(pack('VA'), single, { householdFacts: { exemptionTaxpayerCount: 1, exemptionDependentCount: 1 } })).toBe(49_390)
+    // Joint, two taxpayers and two dependents: 60,000 − 17,500 − 4 × 930 = 38,780.
+    const joint: TaxYearInput = { ...qss('VA', 60_000), filingStatus: 'marriedFilingJointly', agesAlive: [50, 50] }
+    expect(computeStateTaxableIncome(pack('VA'), joint, { householdFacts: { exemptionTaxpayerCount: 2, exemptionDependentCount: 2 } })).toBe(38_780)
+  })
+})
+
+describe('Vermont dependent exemptions (IN-111 lines 5a to 5e)', () => {
+  const vtFacts = {
+    federalAgi: 100_000,
+    stateFilingStatus: 'single' as const,
+    federallyIncludedSocialSecurity: 0,
+    exemptionTaxpayerCount: 1,
+    section63fQualificationCount: 0,
+    vermontUsObligationAdjustment: 0,
+  }
+  const input: TaxYearInput = { ...qss('VT', 100_000), filingStatus: 'single' }
+
+  it('multiplies the $5,400 exemption by the taxpayers and the dependents together', () => {
+    // 100,000 − 7,850 − 5,400 × (1 + 2) = 75,950; the taxpayer alone gives 86,750.
+    const withTwo = computeStateTaxDetailResult(pack('VT'), input, { householdFacts: { ...vtFacts, exemptionDependentCount: 2 } })
+    expect(withTwo.taxableIncome).toBe(75_950)
+    expect(withTwo.warnings.some((w) => w.code === 'vt-deduction-exemption-incomplete')).toBe(false)
+    const withNone = computeStateTaxDetailResult(pack('VT'), input, { householdFacts: { ...vtFacts, exemptionDependentCount: 0 } })
+    expect(withNone.taxableIncome).toBe(86_750)
+  })
+
+  it('asks for the dependent count rather than assuming none', () => {
+    const missing = computeStateTaxDetailResult(pack('VT'), input, { householdFacts: vtFacts })
+    const warning = missing.warnings.find((w) => w.code === 'vt-deduction-exemption-incomplete')
+    expect(warning?.missingFacts).toContain('exemptionDependentCount')
+    expect(missing.status).toBe('incomplete')
   })
 })
 

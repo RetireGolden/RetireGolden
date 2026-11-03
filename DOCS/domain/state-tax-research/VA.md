@@ -97,3 +97,7 @@ A survivor under 65 with $60,000: 60,000 − 8,750 − 1,860 = 49,390 taxable, t
 
 - https://www.tax.virginia.gov/filing-status — Filing Status 1 for a federal Single, Head of Household or Qualifying Widow(er).
 - https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf — Filing Status; line 11 Filing Status 1 $8,750.
+
+## Dependent exemptions with explicit counts (2026-11-03)
+
+58.1-322.03(2)(a) allows $930 for each exemption allowable federally, the dependents' as well as the taxpayers'. The planner collects them as two counts, `exemptionTaxpayerCount` and `exemptionDependentCount`. Until 2026-11-03 the engine priced a year that gave the taxpayer count on that count alone and dropped the dependents, $53.48 of tax per dependent in the 5.75% band. It now adds the two. A qualifying surviving spouse with one taxpayer and one dependent and $60,000 of income has $49,390 of Virginia taxable income (60,000 − 8,750 − 2 × 930), and a single filer with one dependent the same; a joint couple with two dependents has $38,780 (60,000 − 17,500 − 4 × 930) (packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts).
