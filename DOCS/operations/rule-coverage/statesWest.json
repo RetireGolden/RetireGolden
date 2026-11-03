@@ -4086,9 +4086,19 @@
       "verifiedOn": "2026-09-12",
       "dueOn": "2027-09-12",
       "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.CA",
+              "line": 275
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
           "functions": [

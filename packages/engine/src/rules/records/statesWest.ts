@@ -2255,9 +2255,11 @@ export const westStateRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-09-12',
     implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.CA',
       'packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#hsaAccountYearFactsForYear',
     ],
   },
