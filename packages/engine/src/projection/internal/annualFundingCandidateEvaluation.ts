@@ -22,6 +22,7 @@ import {
   type YearWithdrawals,
 } from '../types.js'
 import type { AnnualFundingFixedPointEvaluationRequest } from './annualFundingFixedPoint.js'
+import { refreshNjIraLedgerOwnerPools } from './stateRetirementFactsAdapter.js'
 import {
   annualFundingWithdrawalEffects,
   recharacterizeAnnualFundingWithdrawalHsaCap,
@@ -348,6 +349,14 @@ export function annualFundingCandidateEvaluation<
         ...addedStateWithdrawals,
       ]
     }
+    // A projected New Jersey owner pool is rebuilt for this candidate: its
+    // need-based draws leave the December 31 value and join line 2.
+    const njPools = refreshNjIraLedgerOwnerPools(taxInput.stateNjIraOwnerPools, {
+      pendingGrossByAccount: withdrawalPlan.byAccountId,
+      ...(taxInput.stateRetirementDistributions === undefined ? {} : { distributions: taxInput.stateRetirementDistributions }),
+      ...(taxInput.stateQcdEventFacts === undefined ? {} : { qcdEvents: taxInput.stateQcdEventFacts }),
+    })
+    if (njPools !== undefined) taxInput.stateNjIraOwnerPools = njPools
     taxInput = input.taxCalculator.prepareInput?.(taxInput) ?? taxInput
     taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)
     if (withdrawalEffectsProbe.roth.taxCharacterIncomplete) {

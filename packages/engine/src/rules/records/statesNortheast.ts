@@ -1992,7 +1992,7 @@ export const northeastStateRecords = {
 
   "nj-direct-qcd-ira-basis-treatment": {
   "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
-  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. A1290 is proposed legislation, not a current charitable carve-out.",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected year with no IRA-basis evidence for an owner fills Worksheet C from the projection ledger: line 1 is the December 31 value after the year's investment return (the balance left after the year's distributions, grown as the ledger grows it), line 2 counts every IRA distribution of the year once (QCDs, other distributions and Roth conversions), and line 4b is the immediately preceding year's Part II carry (its line 4b less its line 8) plus the year's modeled contributions. The carry opens from the basis evidence of the year before the projection or from an accepted earlier projected year. With no basis evidence in any year, or a year without a Worksheet C in between, a projected QCD is detected and left incomplete and is not priced at a zero basis. A line 1 the year-end ledger does not confirm makes the year incomplete. A1290 is proposed legislation, not a current charitable carve-out.",
   "classification": "settled",
   "contraryReading": null,
   "errorDirection": null,
@@ -2032,14 +2032,22 @@ export const northeastStateRecords = {
     "packages/engine/src/tax/stateQcdHsa.ts",
     "packages/engine/src/tax/stateTax.ts",
     "packages/engine/src/params/state/data/year2026.ts",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts",
+    "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts"
   ],
   "implementedByFunctions": [
     "packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment",
     "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
     "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
     "packages/engine/src/params/state/data/year2026.ts#NJ",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraLedgerOwnerPools",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#applyAcceptedNjIraBasisToYearFacts",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#seedAcceptedNjIraBasisFromEvidence",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#reconcileProjectedNjIraYearEnd",
+    "packages/engine/src/tax/stateTax.ts#njIraBasisPools",
+    "packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts#annualPostSolveGrowthFactors"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

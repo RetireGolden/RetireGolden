@@ -10,8 +10,11 @@ import {
   ageOnDate,
   characterizePensionDistribution,
   inferEarlyDistributionDisqualifier,
+  njIraLedgerAccounts,
+  njIraLedgerOwnerPools,
   njIraOwnerPoolsForYear,
   qcdEventFactsForYear,
+  refreshNjIraLedgerOwnerPools,
   retirementDistributionFactsForYear,
   householdFactsForYear,
   hsaAccountYearFactsForYear,
@@ -273,6 +276,107 @@ describe('state event integration boundaries', () => {
       december31IraValue: 900, allAnnualDistributions: 100,
       unrecoveredNjTaxedContributions: { known: true, amount: 200 }, fullLiquidation: false,
     })
+  })
+})
+
+describe('projected New Jersey owner pool from the ledger (#810, #818)', () => {
+  const ira = (id: string, extra: Partial<Extract<Account, { type: 'traditional' }>> = {}): Account => ({
+    type: 'traditional', id, name: id, ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0,
+    annualContribution: 0, ...extra,
+  } as Account)
+  const distribution = (accountId: string, gross: number, eventId = `voluntary:2027:${accountId}`) => ({
+    eventId, accountId, ownerPersonId: 'p1', sourceKind: 'ira' as const, federallyIncludedAmount: gross,
+    grossDistribution: gross, accountTaxTreatment: 'traditional' as const, recipientAgeYears: 71,
+    cause: 'ordinary' as const, earlyDistributionDisqualifier: 'false' as const,
+  })
+  const qcd = runtimeQcdFor('ira', 10_000)
+  function runtimeQcdFor(accountId: string, gross: number): StateQcdEventFactsInput {
+    return { eventId: `qcd:2027:${accountId}`, accountId, ownerPersonId: 'p1', grossIraDistribution: gross,
+      directCharityTransfer: gross, federalExcludedAmount: gross, federalTaxableAmount: 0, federalBasisAllocated: 0,
+      residency: 'fullYearResident', splitInterest: false, directTransfer: true }
+  }
+
+  it('reads line 1 after the year return and line 2 from the year distributions', () => {
+    // GIT-1 & 2: line 1 is the December 31 value. 190,000 left after the QCD
+    // grows by 12,000 (factor 1 + 12,000/190,000): line 1 = 202,000, line 2 = 10,000.
+    const [pool] = njIraLedgerOwnerPools({
+      accounts: [{ accountId: 'ira', ownerPersonId: 'p1', balance: 190_000, growthFactor: 1 + 12_000 / 190_000, treatedAsOwn: false }],
+      qcdEvents: [qcd], distributions: [{ ...distribution('ira', 10_000, qcd.eventId), federallyIncludedAmount: 0 }],
+    })
+    expect(pool!.december31IraValue).toBeCloseTo(202_000, 6)
+    expect(pool).toMatchObject({ allAnnualDistributions: 10_000, unrecoveredNjTaxedContributions: { known: false },
+      annualInputsComplete: true, fullLiquidation: false })
+    // A pending need-based draw on the input leaves line 1 and joins line 2.
+    const [drawn] = refreshNjIraLedgerOwnerPools([pool!], {
+      qcdEvents: [qcd], distributions: [distribution('ira', 5_000)], pendingGrossByAccount: new Map([['ira', 5_000]]),
+    })!
+    expect(drawn!.december31IraValue).toBeCloseTo(185_000 * (1 + 12_000 / 190_000), 6)
+    expect(drawn).toMatchObject({ allAnnualDistributions: 15_000, annualInputsComplete: true })
+    // A pending draw the input does not carry on line 2 is not a complete pool.
+    const [missing] = refreshNjIraLedgerOwnerPools([pool!], { qcdEvents: [qcd], pendingGrossByAccount: new Map([['ira', 5_000]]) })!
+    expect(missing!.annualInputsComplete).toBe(false)
+    // Draining the IRA is a full liquidation with a zero December 31 value.
+    const [drained] = refreshNjIraLedgerOwnerPools([pool!], {
+      qcdEvents: [qcd], distributions: [distribution('ira', 190_000)], pendingGrossByAccount: new Map([['ira', 190_000]]),
+    })!
+    expect(drained).toMatchObject({ december31IraValue: 0, allAnnualDistributions: 200_000, fullLiquidation: true, annualInputsComplete: true })
+  })
+
+  it('marks the pool incomplete when a component of line 1 is unknown', () => {
+    const base = { accountId: 'ira', ownerPersonId: 'p1', balance: 190_000, treatedAsOwn: false }
+    expect(njIraLedgerOwnerPools({ accounts: [base], qcdEvents: [qcd] })[0]!.annualInputsComplete).toBe(false)
+    expect(njIraLedgerOwnerPools({ accounts: [{ ...base, growthFactor: 1, treatedAsOwn: true }], qcdEvents: [qcd] })[0]!.annualInputsComplete).toBe(false)
+    // Line 2 counts only the owner's pooled IRAs; another IRA's distribution
+    // stays out, so the state calculator's reconciliation refuses the pool.
+    const [other] = njIraLedgerOwnerPools({ accounts: [{ ...base, growthFactor: 1 }], qcdEvents: [qcd],
+      distributions: [distribution('inherited-ira', 4_000)] })
+    expect(other!.allAnnualDistributions).toBe(10_000)
+  })
+
+  it('groups physical rows and refuses a factor the rows do not share', () => {
+    const accounts = njIraLedgerAccounts({
+      balances: [
+        { account: ira('a'), balance: 100 }, { account: ira('a'), balance: 50 },
+        { account: ira('b'), balance: 10 }, { account: ira('b'), balance: 20 },
+        { account: ira('c', { inherited: { decedentId: 'd', ownerDeathYear: 2020 } } as never), balance: 5 },
+        { account: { ...ira('k'), kind: 'employer' } as Account, balance: 7 },
+      ],
+      growthFactors: [1.05, 1.05, 1.05, 1.02, 1, 1],
+      isOwnerIraThisYear: (account) => account.type === 'traditional' && account.kind === 'ira',
+      primaryPersonId: 'p1',
+    })
+    expect(accounts).toEqual([
+      { accountId: 'a', ownerPersonId: 'p1', balance: 150, growthFactor: 1.05, treatedAsOwn: false },
+      { accountId: 'b', ownerPersonId: 'p1', balance: 30, treatedAsOwn: false },
+      { accountId: 'c', ownerPersonId: 'p1', balance: 5, growthFactor: 1, treatedAsOwn: true },
+    ])
+  })
+
+  it('builds ledger pools only for NJ years whose owners have no basis rows and no basis mark', () => {
+    const plan = createEmptyPlan({ newId: () => 'p1', now: () => new Date('2026-01-01') })
+    plan.household.state = 'NJ'
+    const ledger = {
+      accounts: [
+        { accountId: 'ira', ownerPersonId: 'p1', balance: 190_000, growthFactor: 1, treatedAsOwn: false },
+        { accountId: 'ira-2', ownerPersonId: 'p2', balance: 50_000, growthFactor: 1, treatedAsOwn: false },
+      ],
+      qcdEvents: [qcd],
+    }
+    expect(njIraOwnerPoolsForYear(plan, 2027, ledger)?.map((pool) => [pool.ownerPersonId, pool.projectedLedger !== undefined]))
+      .toEqual([['p1', true], ['p2', true]])
+    plan.stateTaxFacts.iraBasisYearEvidence = [{ taxYear: 2027, state: 'NJ', ownerPersonId: 'p1', accountId: 'ira',
+      unrecoveredStateBasis: 1, yearEndAccountValue: 190_000, distributionsDuringYear: 10_000,
+      postYearContributionsThroughFilingDeadline: 0, annualDistributionsComplete: true,
+      provenance: { source: 'NJ-1040 Worksheet C', asOf: '2027-12-31' } }]
+    expect(njIraOwnerPoolsForYear(plan, 2027, ledger)?.map((pool) => [pool.ownerPersonId, pool.projectedLedger !== undefined]))
+      .toEqual([['p1', false], ['p2', true]])
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{ taxYear: 2027, state: 'NJ', iraBasis: 'unknown',
+      provenance: { source: 'NJ-1040 Worksheet C', asOf: '2027-12-31' } }]
+    expect(njIraOwnerPoolsForYear(plan, 2027, ledger)?.map((pool) => pool.ownerPersonId)).toEqual(['p1'])
+    plan.stateTaxFacts.iraBasisYearEvidence = []
+    plan.stateTaxFacts.annualEvidenceCompleteness = []
+    plan.household.state = 'CA'
+    expect(njIraOwnerPoolsForYear(plan, 2027, ledger)).toBeUndefined()
   })
 })
 

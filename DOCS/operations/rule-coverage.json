@@ -408,8 +408,8 @@
     },
     {
       "path": "projection/internal/stateNjIraBasisLifecycle.ts",
-      "sweptOn": "2026-09-12",
-      "note": "NJ annual owner-pool closing-basis carryforward and characterized new contributions; intervening unknown years, duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts."
+      "sweptOn": "2026-11-03",
+      "note": "NJ annual owner-pool closing-basis carryforward and characterized new contributions, opened from the year before the projection and applied to projected ledger pools, which are dropped without a carry and held to the year-end ledger (nj-direct-qcd-ira-basis-treatment); duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts."
     },
     {
       "path": "projection/internal/statePensionBasisLifecycle.ts",

@@ -408,6 +408,31 @@ export interface StateNjIraOwnerPoolFactsInput {
   unrecoveredNjTaxedContributions: KnownMoneyInput
   exemptObligationIncome?: number
   fullLiquidation: boolean
+  /**
+   * Present only on a pool the projection built from its own ledger for an
+   * owner with no basis evidence that year. Its unrecovered basis is the
+   * Worksheet C Part II carry from the accepted prior year; without that
+   * carry the pool is dropped, never priced at a zero basis.
+   */
+  projectedLedger?: StateNjIraOwnerPoolLedgerInput
+}
+
+/** One owned traditional IRA on the projected year's ledger. */
+export interface StateNjIraOwnerPoolLedgerAccountInput {
+  accountId: string
+  /** Ledger balance before the distributions the priced input has not yet debited. */
+  balance: number
+  /**
+   * The year's market growth factor the ledger applies to this account's
+   * post-distribution balance. Undefined when its physical rows grow apart.
+   */
+  growthFactor?: number
+  /** A spouse's inherited IRA treated as the owner's own; its NJ basis is not carried. */
+  treatedAsOwn: boolean
+}
+
+export interface StateNjIraOwnerPoolLedgerInput {
+  accounts: readonly StateNjIraOwnerPoolLedgerAccountInput[]
 }
 
 /** @deprecated Prefer StateQcdEventFactsInput + StateNjIraOwnerPoolFactsInput. */

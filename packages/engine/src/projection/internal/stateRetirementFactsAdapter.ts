@@ -19,6 +19,7 @@ import type {
   StateHouseholdTaxFactsInput,
   StateHsaAccountYearFactsInput,
   StateNjIraOwnerPoolFactsInput,
+  StateNjIraOwnerPoolLedgerAccountInput,
   StateQcdEventFactsInput,
   StateQcdYearFactsInput,
   StateRetirementDistributionFactInput,
@@ -469,21 +470,31 @@ export function buildNjIraOwnerPoolFacts(input: {
  * does not drop an amount another IRA of the same owner asserted. A negative
  * adjustment is passed through so Worksheet C rejects the pool.
  *
- * A year with no New Jersey basis evidence does not get a pool. QCD events
- * on the tax input stay, so Worksheet C reports nj-qcd-basis-unknown and
- * the transfer is not priced.
+ * An owner with no New Jersey basis evidence in a New Jersey year gets a
+ * ledger pool when `ledger` is supplied: line 1 is the modeled December 31
+ * value after the year's investment return and line 2 the year's IRA
+ * distributions (njIraLedgerOwnerPools). Its basis is unknown here. The
+ * annual state enrichment fills it from the accepted prior-year Worksheet C
+ * Part II carry, or drops the pool, so a year with no basis evidence in any
+ * year keeps no pool and Worksheet C reports nj-qcd-basis-unknown. A year
+ * the plan marks `iraBasis: 'unknown'`, or certifies complete, gets no
+ * ledger pool.
  */
 export function njIraOwnerPoolsForYear(
   plan: Readonly<Plan>,
   year: number,
+  ledger?: NjIraLedgerYear,
 ): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
   const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter(
     (row) => row.taxYear === year && isNjState(row.state),
   )
   const basisList = evidenceMark(plan, year, 'NJ', 'iraBasis')
+  const ledgerPools = basisList === undefined && ledger !== undefined && njIraResidentInYear(plan, year)
+    ? njIraLedgerOwnerPools(ledger).filter((pool) => !rows.some((row) => row.ownerPersonId === pool.ownerPersonId))
+    : []
   if (rows.length === 0) {
     if (basisList === 'complete') return []
-    return undefined
+    return ledgerPools.length === 0 ? undefined : ledgerPools
   }
   const byOwner = new Map<string, typeof rows>()
   for (const row of rows) byOwner.set(row.ownerPersonId, [...(byOwner.get(row.ownerPersonId) ?? []), row])
@@ -527,7 +538,141 @@ export function njIraOwnerPoolsForYear(
       annualInputsComplete: complete,
     }
   })
-  return evidencePools
+  return ledgerPools.length === 0 ? evidencePools : [...evidencePools, ...ledgerPools]
+}
+
+/** One owned traditional IRA on the projected year's ledger, with its owner. */
+export interface NjIraLedgerAccount extends StateNjIraOwnerPoolLedgerAccountInput {
+  readonly ownerPersonId: string
+}
+
+/** The ledger a projected New Jersey owner pool is built from. */
+export interface NjIraLedgerYear {
+  readonly accounts: readonly NjIraLedgerAccount[]
+  /** The priced input's retirement distribution rows, including pending ones. */
+  readonly distributions?: readonly StateRetirementDistributionFactInput[]
+  readonly qcdEvents?: readonly StateQcdEventFactsInput[]
+  /** Gross on the priced input that the ledger has not debited yet, by account. */
+  readonly pendingGrossByAccount?: ReadonlyMap<string, number>
+}
+
+/**
+ * The owner's IRAs on the year's ledger, one row per logical account.
+ *
+ * `growthFactors` is positional over `balances`: the factor the year's
+ * post-solve growth phase multiplies each physical row by. A logical account
+ * whose rows grow by different factors has no single factor.
+ */
+export function njIraLedgerAccounts(input: {
+  readonly balances: readonly { readonly account: Account; readonly balance: number }[]
+  readonly growthFactors: readonly number[]
+  readonly isOwnerIraThisYear: (account: Account) => boolean
+  readonly primaryPersonId: string
+}): readonly NjIraLedgerAccount[] {
+  const byId = new Map<string, { account: Account; balance: number; factors: number[] }>()
+  for (const [index, state] of input.balances.entries()) {
+    if (!input.isOwnerIraThisYear(state.account)) continue
+    const row = byId.get(state.account.id) ?? { account: state.account, balance: 0, factors: [] }
+    row.balance += state.balance
+    row.factors.push(input.growthFactors[index] ?? Number.NaN)
+    byId.set(state.account.id, row)
+  }
+  return [...byId.values()].map(({ account, balance, factors }) => {
+    const first = factors[0]!
+    const growthFactor = Number.isFinite(first) && first >= 0 && factors.every((factor) => factor === first)
+      ? first : undefined
+    return {
+      accountId: account.id,
+      ownerPersonId: account.ownerPersonId ?? input.primaryPersonId,
+      balance,
+      ...(growthFactor === undefined ? {} : { growthFactor }),
+      treatedAsOwn: account.type === 'traditional' && account.inherited !== undefined,
+    }
+  })
+}
+
+/**
+ * New Jersey Worksheet C lines 1 and 2 for each owner, from the ledger.
+ *
+ * GIT-1 & 2 (January 2026) and the 2025 NJ-1040 Worksheet C: line 1 is the
+ * value of the IRA on December 31, and line 2 is all IRA distributions
+ * during the year. The projection debits the year's distributions and then
+ * grows the remaining balance (annualPostSolveAccountGrowth), so the
+ * December 31 value is each account's balance less its pending gross, times
+ * that growth factor. Line 2 counts each QCD once and each other traditional
+ * IRA distribution row once (a Roth conversion is one such row), restricted
+ * to the owner's own IRAs, the same reconciliation the state calculator
+ * makes. Contributions are in the ledger balance already; the projection
+ * makes none after December 31.
+ *
+ * A pool is not complete when an account's growth factor is unknown, a
+ * pending gross exceeds its balance, or a spouse's inherited IRA treated as
+ * the owner's own joins the pool (its New Jersey basis is not carried).
+ */
+export function njIraLedgerOwnerPools(ledger: NjIraLedgerYear): readonly StateNjIraOwnerPoolFactsInput[] {
+  const owners = [...new Set(ledger.accounts.map((account) => account.ownerPersonId))]
+  return owners.map((ownerPersonId) => njIraLedgerOwnerPool(ownerPersonId,
+    ledger.accounts.filter((account) => account.ownerPersonId === ownerPersonId), ledger))
+}
+
+/**
+ * Rebuild ledger pools for a priced input that adds pending distributions
+ * (a funding candidate's need-based draws). Evidence pools are unchanged.
+ */
+export function refreshNjIraLedgerOwnerPools(
+  pools: readonly StateNjIraOwnerPoolFactsInput[] | undefined,
+  priced: Omit<NjIraLedgerYear, 'accounts'>,
+): readonly StateNjIraOwnerPoolFactsInput[] | undefined {
+  if (pools === undefined || !pools.some((pool) => pool.projectedLedger !== undefined)) return pools
+  return pools.map((pool) => pool.projectedLedger === undefined
+    ? pool
+    : njIraLedgerOwnerPool(pool.ownerPersonId, pool.projectedLedger.accounts, priced))
+}
+
+function njIraLedgerOwnerPool(
+  ownerPersonId: string,
+  accounts: readonly StateNjIraOwnerPoolLedgerAccountInput[],
+  priced: Omit<NjIraLedgerYear, 'accounts'>,
+): StateNjIraOwnerPoolFactsInput {
+  const ids = new Set(accounts.map((account) => account.accountId))
+  const qcd = (priced.qcdEvents ?? []).filter((event) => event.ownerPersonId === ownerPersonId && ids.has(event.accountId))
+  const other = (priced.distributions ?? []).filter((row) =>
+    row.ownerPersonId === ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth' &&
+    row.accountId !== undefined && ids.has(row.accountId) &&
+    !qcd.some((event) => event.eventId === row.eventId && event.accountId === row.accountId))
+  const allAnnualDistributions = other.reduce((sum, row) => sum + Math.max(0, row.grossDistribution ?? 0), 0) +
+    qcd.reduce((sum, event) => sum + Math.max(0, event.grossIraDistribution), 0)
+  let complete = Number.isFinite(allAnnualDistributions)
+  let december31 = 0
+  for (const account of accounts) {
+    const pending = Math.max(0, priced.pendingGrossByAccount?.get(account.accountId) ?? 0)
+    const remaining = account.balance - pending
+    // A pending draw leaves line 1 only when the priced input carries it on line 2.
+    const carried = other.reduce((sum, row) => row.accountId === account.accountId ? sum + Math.max(0, row.grossDistribution ?? 0) : sum, 0)
+    if (account.growthFactor === undefined || account.treatedAsOwn || !Number.isFinite(remaining) || remaining < -0.005 ||
+      carried < pending - 0.005) complete = false
+    december31 += Math.max(0, remaining) * (account.growthFactor ?? 1)
+  }
+  // A drained ledger leaves cents of floating-point residue, not an IRA value.
+  const december31IraValue = Math.abs(december31) < 0.005 ? 0 : december31
+  return {
+    ownerPersonId,
+    december31IraValue,
+    allAnnualDistributions,
+    unrecoveredNjTaxedContributions: unknownAmount(),
+    fullLiquidation: december31IraValue === 0 && allAnnualDistributions > 0,
+    annualInputsComplete: complete,
+    projectedLedger: { accounts: accounts.map((account) => ({
+      accountId: account.accountId, balance: account.balance,
+      ...(account.growthFactor === undefined ? {} : { growthFactor: account.growthFactor }),
+      treatedAsOwn: account.treatedAsOwn,
+    })) },
+  }
+}
+
+/** True when any part of the year is a New Jersey residency segment. */
+export function njIraResidentInYear(plan: Readonly<Plan>, year: number): boolean {
+  return stateResidencySegmentsForYear(plan.household, year).some((segment) => isNjState(segment.state))
 }
 
 function isNjState(state: string | undefined): boolean {

@@ -2549,7 +2549,12 @@ function pensionBasisPools(state: string, facts: readonly StateRetirementDistrib
   return [...pools.values()]
 }
 
-function njIraBasisPools(state: string, rows: readonly StateNjIraOwnerPoolFacts[] | undefined): readonly StateNjIraBasisPoolResult[] | undefined {
+/**
+ * Worksheet C Part II for each New Jersey owner pool: the opening unrecovered
+ * basis, the excludable portion of the year's distributions it recovers, and
+ * the closing basis carried to the next year.
+ */
+export function njIraBasisPools(state: string, rows: readonly StateNjIraOwnerPoolFacts[] | undefined): readonly StateNjIraBasisPoolResult[] | undefined {
   if (state !== 'NJ' || rows === undefined) return undefined
   return rows.map((row) => {
     const worksheet = newJerseyWorksheetCTaxableAmount({ pool: row, correspondingGrossDistributions: row.allAnnualDistributions })

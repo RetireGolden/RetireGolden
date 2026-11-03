@@ -1046,11 +1046,11 @@
           "functions": [
             {
               "name": "californiaHsaAccountAdjustment",
-              "line": 426
+              "line": 427
             },
             {
               "name": "californiaHsaCollectionAdjustment",
-              "line": 592
+              "line": 593
             }
           ]
         },
@@ -1849,7 +1849,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 278
+              "line": 279
             }
           ]
         },
@@ -3847,7 +3847,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 54
+              "line": 55
             }
           ]
         },
@@ -4022,7 +4022,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 278
+              "line": 279
             }
           ]
         },
@@ -4104,7 +4104,7 @@
           "functions": [
             {
               "name": "hsaAccountYearFactsForYear",
-              "line": 289
+              "line": 290
             }
           ]
         }
@@ -4115,64 +4115,64 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 867,
+          "line": 1018,
           "note": "an empty runtime list still reads the state evidence",
           "tests": [
             {
               "title": "returns the asserted closed-account row when the runtime HSA list is empty",
-              "line": 872
+              "line": 1023
             },
             {
               "title": "carries the asserted interest into the California addition",
-              "line": 886
+              "line": 1037
             },
             {
               "title": "keeps an empty runtime year known-empty only when the state has no evidence and is not marked unknown",
-              "line": 893
+              "line": 1044
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 918,
+          "line": 1069,
           "note": "an unknown mark withholds the collection even with rows",
           "tests": [
             {
               "title": "withholds an unknown-marked year and prices a complete or unmarked one",
-              "line": 923
+              "line": 1074
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 957,
+          "line": 1108,
           "note": "no residence state fails closed",
           "tests": [
             {
               "title": "returns undefined rather than a CA row and an NJ row for one account",
-              "line": 962
+              "line": 1113
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 984,
+          "line": 1135,
           "note": "a residence state reads only its own rows",
           "tests": [
             {
               "title": "gives the CA year one row, with the CA basis",
-              "line": 989
+              "line": 1140
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/internal/stateRetirementFactsAdapter.test.ts",
-          "line": 1009,
+          "line": 1160,
           "note": "a runtime zero deduction default keeps the asserted deduction",
           "tests": [
             {
               "title": "adds back the asserted deduction under a runtime zero default",
-              "line": 1014
+              "line": 1165
             }
           ]
         }
@@ -5099,7 +5099,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 278
+              "line": 279
             }
           ]
         },
@@ -5182,7 +5182,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2595
+              "line": 2600
             }
           ]
         }

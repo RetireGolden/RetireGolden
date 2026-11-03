@@ -39,6 +39,7 @@ import {
   householdFactsForYear,
   hsaAccountYearFactsForYear,
   njIraOwnerPoolsForYear,
+  type NjIraLedgerAccount,
 } from './stateRetirementFactsAdapter.js'
 import type { AnnualCashFlowPenaltySnapshot } from '../annualCashFlowCapture.js'
 import type { AnnualCashFlowYearSites } from '../annualCashFlowYearSites.js'
@@ -337,6 +338,8 @@ export interface AnnualFundingApplicationAndClosePhaseScalars {
 }
 
 interface AnnualFundingApplicationAndClosePhaseCallbacks {
+  /** The owners' IRAs on the live ledger with this year's growth factors (NJ Worksheet C line 1); undefined outside a New Jersey year. */
+  readonly njIraLedgerAccounts?: () => readonly NjIraLedgerAccount[] | undefined
   readonly evaluateSpousalElectionAtYearEnd?: (rows: readonly InheritedAccountYearEvidence[]) => YearResult['spousalElectionAtYearEnd']
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly isTreatAsOwnEffective: (
@@ -1011,7 +1014,14 @@ export function annualFundingApplicationAndClosePhase(
             return hsa === undefined ? {} : { stateHsaAccountYearFacts: hsa }
           })(),
           ...(() => {
-            const pools = njIraOwnerPoolsForYear(plan, year)
+            // RMDs, QCDs and conversions are already debited; a candidate's
+            // need-based draws are added per candidate.
+            const njIraLedger = callbacks.njIraLedgerAccounts?.()
+            const pools = njIraOwnerPoolsForYear(plan, year, njIraLedger === undefined ? undefined : {
+              accounts: njIraLedger,
+              ...(facts.stateRetirementDistributions === undefined ? {} : { distributions: facts.stateRetirementDistributions }),
+              ...(facts.stateQcdEventFacts === undefined ? {} : { qcdEvents: facts.stateQcdEventFacts }),
+            })
             return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
           })(),
           ...(facts.stateQcdEventFacts === undefined

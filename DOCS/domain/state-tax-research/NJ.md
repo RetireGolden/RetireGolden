@@ -56,6 +56,16 @@ Record: `nj-direct-qcd-ira-basis-treatment`. New Jersey independently computes t
 
 Authority: [January 2026 GIT-1 & 2, Worksheet C](https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf) and [2025 Form NJ-1040 instructions](https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf).
 
+Projected years (2026-11-03, #810 Case B and #818). An owner's basis evidence (`stateTaxFacts.iraBasisYearEvidence`) is a filed Worksheet C. In a projected New Jersey year with no such row for an owner, the engine fills Worksheet C from its own ledger:
+
+- Line 1 is the December 31 value after the year's investment return. GIT-1 & 2 defines total value as "the value of the IRA on December 31 of the tax year (including contributions made for the tax year from January 1 through April 15 of the following year), plus total IRA distributions during the tax year" (quoted as #818 gives it; nj.gov was not reachable to re-check the PDF on 2026-11-03, so the sentence is not in the quote-fidelity ledger). The ledger debits the year's distributions and then grows what is left, so line 1 is each IRA's balance after the year's distributions times that year's growth factor. This is read inside the funding solve for each candidate, because a growth rate does not depend on the balance. Contributions are already in the balance. The projection makes none after December 31.
+- Line 2 counts every IRA distribution of the year once: QCDs, other distributions, need-based draws and Roth conversions. A conversion leaves line 1 and appears once on line 2.
+- Line 4b is the immediately preceding year's Part II carry (its line 4b less its line 8, the excludable portion) plus the year's modeled traditional IRA contributions. The carry opens from the basis evidence of the year before the projection, or from an accepted earlier year.
+
+A year-end ledger that does not match line 1 makes the year incomplete and stops the carry. With no basis evidence in any year, a projected QCD is detected and left incomplete (`nj-qcd-basis-unknown`). The same happens when there is a gap year with no Worksheet C, or when a year is marked `iraBasis: 'unknown'`. A zero basis is never assumed. Example: $50,000 of basis carried in, a $10,000 QCD and a $190,000 December 31 value give line 3 = 200,000 and line 6 = 0.75, so $7,500 is taxable. With a $12,000 return on the $190,000 left after the QCD, line 1 is 202,000 and $7,641.51 is taxable.
+
+Not settled here: (a) A year with partial evidence for an owner (a basis row missing a field) stays incomplete. The ledger does not fill the missing field. (b) A spouse's inherited IRA treated as the owner's own has no carried New Jersey basis, so its owner pool is incomplete. (c) A carry from a projected year overrides a later year's evidence basis, as consecutive evidence years already do.
+
 The preserved Summer 2010 HSA answer is historical agency evidence. Its original `summer10.pdf` URL returned HTTP 404 in the September 12, 2026 research check and again on September 23, 2026, when the whole State Tax News PDF folder was gone from nj.gov with no official copy elsewhere; the official archive authenticates the publication but does not itself supply an operative HSA rule.
 
 ## The pension exclusion is income-tested and per return (2026-10-06)
