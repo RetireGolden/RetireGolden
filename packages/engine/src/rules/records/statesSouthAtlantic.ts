@@ -863,7 +863,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and test-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on the fallback to the latest per-state tax data and must be rechecked when new per-state tax data, a new form, or an amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.',
+      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, and since 2026-11-03 each state declares the row a surviving spouse files under (`qualifyingSurvivingSpouseFilesAs`, read by params/state/index.ts#stateFilingRowFor); the Delaware figures declare `marriedFilingJointly`, the federal mapping, so computeStateTaxableIncome selects the joint Delaware deduction row. Declaring `single` is the whole fix once it is taken. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and test-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on the fallback to the latest per-state tax data and must be rechecked when new per-state tax data, a new form, or an amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -892,13 +892,105 @@ export const southAtlanticStateRecords = {
       'packages/engine/src/projection/internal/types/tax.ts',
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
       'packages/engine/src/params/index.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/types/tax.ts#taxParameterFilingStatus',
+      'packages/engine/src/params/state/index.ts#stateFilingRowFor',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/params/state/data/year2026.ts#DE',
       'packages/engine/src/params/index.ts#age65StandardDeductionAddition',
+    ],
+  },
+
+  'ga-it511-2026-qss-standard-deduction-single': {
+    title: 'Georgia gives a qualifying surviving spouse the single standard deduction, not the joint one',
+    statement:
+      'Georgia’s IT-511 booklet gives the standard deduction by filing status, and puts a qualifying surviving spouse with single, married filing separately and head of household; only married filing jointly takes the joint amount ($12,000 against $24,000 for 2025). The Department’s 2026 update raises the amounts to $15,000 and $30,000, the joint figure again for married taxpayers filing jointly only, so a 2026 qualifying surviving spouse takes $15,000. The Georgia figures declare `qualifyingSurvivingSpouseFilesAs: \'single\'` (params/state/data/year2026.ts), and `stateFilingRowFor` selects the single deduction and rate schedule for the Georgia taxable-income and tax computations, the year total and a part-year slice alike. A survivor under 65 with $80,000 of Georgia income has $65,000 of taxable income and $3,243.50 of tax at 4.99%. Until 2026-11-03 the engine sent every state’s qualifying surviving spouse to the joint row through the federal mapper (taxParameterFilingStatus), which gave this survivor $30,000, $50,000 of taxable income and $2,495.00 of tax, $748.50 too little. The rate is flat, so the schedule is the same on either row. Settled for the deduction row; Georgia’s dependent exemption, itemization and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:GA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Georgia Department of Revenue, 2025 IT-511 Individual Income Tax Booklet, Form 500 Schedule 3, Line 10',
+      url: 'https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download',
+      quotedText:
+        'Married filing jointly $24,000 Single $12,000 Married filing separately $12,000 Head of household $12,000 Qualifying surviving spouse $12,000',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Georgia Department of Revenue, Important Tax Updates, 2026 Income Tax Changes',
+      url: 'https://dor.georgia.gov/taxes/important-tax-updates',
+      quotedText:
+        'The Georgia standard deduction has been increased to $15,000 for single taxpayers, heads of households, and married taxpayers filing separately, or $30,000 for married taxpayers filing jointly',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-11-03',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.GA',
+      'packages/engine/src/params/state/index.ts#stateFilingRowFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
+  },
+
+  'va-760-2026-qss-files-single': {
+    title: 'Virginia has no surviving-spouse status: a federal qualifying surviving spouse files Single',
+    statement:
+      'Virginia’s return has three filing statuses, Single, Joint and Married filing separately, and the Department directs a filer whose federal status was Single, Head of Household or Qualifying Widow(er) to Filing Status 1. Va. Code 58.1-322.03(1)(b)(v) gives single individuals $8,750 for 2025 and 2026 ($9,200 for 2027 and $9,300 for 2028 and 2029 under (vi) and (vii)). The Virginia figures declare `qualifyingSurvivingSpouseFilesAs: \'single\'` (params/state/data/year2026.ts, carried into the enacted years), and `stateFilingRowFor` selects the single deduction and schedule. Filing Status 1 does not change the personal exemptions: 58.1-322.03(2)(a) allows $930 for each exemption allowable federally, and a qualifying surviving spouse has at least two, the survivor and the dependent child IRC 2(a)(1)(B) requires, so the engine keeps two when the plan gives no count (further dependents are not collected). The age deduction already held a surviving spouse to the $50,000 single threshold (va-code-58-1-322-03-age-deduction-and-social-security). A survivor under 65 with $60,000 of income has $49,390 of Virginia taxable income and $2,582.43 of tax. Until 2026-11-03 the engine sent every state’s qualifying surviving spouse to the joint row through the federal mapper (taxParameterFilingStatus), which gave this survivor $17,500, $40,640 of taxable income and $2,079.30 of tax, $503.13 too little. The Virginia rate schedule is the same for every status. Settled for the filing row; dependents beyond the one QSS requires, blindness and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, Filing Status',
+      url: 'https://www.tax.virginia.gov/filing-status',
+      quotedText:
+        'If your filing status on your federal return was Single, Head of Household, or Qualifying Widow(er), you must use Filing Status 1 on your Virginia income tax return.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Filing Status',
+      url: 'https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf',
+      quotedText:
+        'In most cases, your filing status will be the same as the one you selected on your federal return.',
+    }, {
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(1)(b)(v)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '(v) for taxable years beginning on and after January 1, 2025, but before January 1, 2027, $ 8,750 for single individuals',
+    }, {
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(2)(a)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '2. a. A deduction in the amount of $ 930 for each personal exemption allowable to the taxpayer for federal income tax purposes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-11-03',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.VA',
+      'packages/engine/src/params/state/index.ts#stateFilingRowFor',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
     ],
   },
 

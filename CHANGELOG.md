@@ -4,6 +4,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a qualifying surviving spouse files under each state's own row, not the federal joint
+  row, in Georgia, Virginia and Kansas** (2026-11-03; issues #831, #832, #833). Each state pack
+  can declare `qualifyingSurvivingSpouseFilesAs`, and the new `stateFilingRowFor` selects the
+  state's standard deduction, rate schedule and single/joint key from it for every state
+  computation (taxable income, tax, the year total, a part-year slice); the federal mapper stays
+  federal. Georgia files a survivor as single (IT-511; $15,000 for 2026,
+  `ga-it511-2026-qss-standard-deduction-single`): $80,000 of income is taxed $3,243.50, was
+  $2,495.00. Virginia files Status 1 (`va-760-2026-qss-files-single`): $8,750, keeping the two
+  $930 exemptions of the survivor and the dependent child IRC 2(a)(1)(B) requires; $60,000 is
+  taxed $2,582.43, was $2,079.30. Kansas files head of household (K-40; K.S.A. 79-32,119(c)(2)
+  $6,180 and the 79-32,110(a)(2) single schedule, now in the pack as
+  `standardDeductionHeadOfHousehold` and `bracketsHeadOfHousehold`,
+  `ks-k40-2026-qss-head-of-household`): $66,180 is taxed $3,260.60, was $3,058.25. Delaware keeps
+  the joint row, declared explicitly, as the disclosed approximation
+  `de-pit-est-2026-qss-standard-deduction-joint-mapper`; a state that declares nothing keeps the
+  federal joint mapping. The new records' nine quotes are in the quote-fidelity ledger as
+  UNFETCHABLE until a networked `verify:quotes` run.
+
 - Prepared **`@retiregolden/engine` 0.6.0** (2026-11-03) — a **minor**, breaking before 1.0: the
   public param-pack type `ParameterPack` (`@retiregolden/engine/params/types`) gains the required
   field `contributionLimits.section401a17CompensationLimit` (RetireGolden#824, the employer-match

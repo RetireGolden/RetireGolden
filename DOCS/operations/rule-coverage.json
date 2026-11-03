@@ -2,11 +2,11 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 605,
+    "total": 608,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 78,
-      "settled": 397,
+      "settled": 400,
       "unsettled": 8
     },
     "approximatedByKind": {
@@ -17,7 +17,7 @@
     "byVolatility": {
       "annuallyIndexed": 92,
       "awaitingGuidance": 14,
-      "staticStatute": 489,
+      "staticStatute": 492,
       "sunsetting": 10
     },
     "byJurisdiction": {
@@ -33,13 +33,13 @@
         "DC": 3,
         "DE": 6,
         "FL": 1,
-        "GA": 3,
+        "GA": 4,
         "HI": 7,
         "IA": 3,
         "ID": 4,
         "IL": 4,
         "IN": 7,
-        "KS": 3,
+        "KS": 4,
         "KY": 2,
         "LA": 4,
         "MA": 5,
@@ -68,14 +68,14 @@
         "TN": 2,
         "TX": 2,
         "UT": 8,
-        "VA": 8,
+        "VA": 9,
         "VT": 6,
         "WA": 5,
         "WI": 5,
         "WV": 8,
         "WY": 1
       },
-      "stateTotal": 244
+      "stateTotal": 247
     }
   },
   "attestations": {
@@ -239,7 +239,7 @@
     {
       "path": "params/state/index.ts",
       "sweptOn": "2026-09-28",
-      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; stateParamsFor applies every enacted year at or before a year past the pack in order, each replacing the fields it names or, named as null, ending them (./data/enacted2027.ts to enacted2033.ts), named by the enacted-figure records and the state-enacted-tax-year-figures calculation; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata"
+      "note": "conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; stateParamsFor applies every enacted year at or before a year past the pack in order, each replacing the fields it names or, named as null, ending them (./data/enacted2027.ts to enacted2033.ts), named by the enacted-figure records and the state-enacted-tax-year-figures calculation; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata; stateFilingRowFor selects the state filing row (standard deduction, schedule, single/joint key) and routes a qualifying surviving spouse by the pack's qualifyingSurvivingSpouseFilesAs, named by ga-it511-2026-qss-standard-deduction-single, va-760-2026-qss-files-single, ks-k40-2026-qss-head-of-household and de-pit-est-2026-qss-standard-deduction-joint-mapper; an undeclared state keeps the federal joint mapping as a residual"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -424,7 +424,7 @@
     {
       "path": "projection/internal/types/tax.ts",
       "sweptOn": "2026-09-06",
-      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual."
+      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; `taxParameterFilingStatus` is the federal QSS-to-MFJ mapping; state rows come from params/state/index.ts#stateFilingRowFor, which reads each pack's qualifyingSurvivingSpouseFilesAs (GA and VA single, KS head of household, DE joint as the disclosed `de-pit-est-2026-qss-standard-deduction-joint-mapper`); residual: a state that declares no row still falls back to this joint mapping without a jurisdiction-specific determination."
     },
     {
       "path": "projection/optimizePlan.ts",
@@ -816,7 +816,7 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 51
+      "ruleCount": 52
     },
     {
       "module": "statesNortheast",
@@ -826,7 +826,7 @@
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 48
+      "ruleCount": 50
     },
     {
       "module": "statesSouthCentral",
@@ -846,7 +846,7 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1893,
+    "entryCount": 1902,
     "fetched": 0,
     "cached": 433,
     "counts": {
@@ -856,7 +856,7 @@
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 470,
       "PUNCTUATION": 4,
-      "UNFETCHABLE": 11
+      "UNFETCHABLE": 20
     },
     "amendments": [
       {

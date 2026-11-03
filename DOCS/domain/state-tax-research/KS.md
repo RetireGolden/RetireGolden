@@ -65,3 +65,15 @@ Method (b), 2025 K-40 booklet: line 10 is the tax times Schedule S line B23, Kan
 A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Kansas and six in Texas, owes $2,645.72 for the Kansas months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,836.50 when the conversion falls in the months resident and $2,686.94 when it falls in Texas's, where the months share of the year gave $3,761.72 either way.
 
 The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
+
+## Qualifying surviving spouse files as head of household (2026-11-03)
+
+The K-40 instructions (IP25): "If your federal filing status is Qualifying Widow(er) with Dependent Child, check the Head of Household box." K.S.A. 79-32,119(c)(2) sets the standard deduction "for tax year 2024, and all tax years thereafter" at $3,605 single, $8,240 married and $6,180 head of household, fixed dollars with no indexing clause, so the 2025 booklet's amounts are 2026's (the pack already took $3,605 and $8,240 the same way). K.S.A. 79-32,110(a)(2)(B) taxes "all other individuals", head of household among them, at 5.2% to $23,000 and $1,196 plus 5.58% above; (a)(1)(B) is the joint schedule to $46,000.
+
+The 2026 figures now carry the head-of-household row (`standardDeductionHeadOfHousehold: 6180`, `bracketsHeadOfHousehold` the (a)(2) schedule) and declare `qualifyingSurvivingSpouseFilesAs: 'headOfHousehold'`; `stateFilingRowFor` selects both. A survivor with $66,180 of Kansas AGI: 66,180 − 6,180 = 60,000 taxable; 1,196 + 5.58% × 37,000 = $3,260.60. The federal joint row gave $8,240 and the joint schedule, $57,940 and $3,058.25, $202.35 too little. Registered as `ks-k40-2026-qss-head-of-household`; the fixture is packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts.
+
+Still not modeled for any Kansas filer: the personal exemption and the 79-32,119(a)-(b) additional deduction at 65 or blind ($850 single and head of household, $700 married; the IP25 worksheet gives head of household $7,030 for one box).
+
+- https://www.ksrevenue.gov/pdf/ip25.pdf — filing status and standard deduction chart (Head of Household $6,180).
+- https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0119.html — K.S.A. 79-32,119(c)(2).
+- https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html — K.S.A. 79-32,110(a)(2)(B).

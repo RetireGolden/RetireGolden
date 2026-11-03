@@ -160,6 +160,37 @@ export interface StateTaxParams {
    */
   bracketsHeadOfHousehold?: StateTaxBracket[]
   /**
+   * The state's head-of-household standard deduction, when the state publishes
+   * one distinct from single/MFJ and a modeled return reaches it. Today that is
+   * only Kansas, where a federal qualifying surviving spouse files as head of
+   * household (`qualifyingSurvivingSpouseFilesAs`). Pack-year dollars, scaled
+   * with `standardDeduction` wherever the deduction is prorated or indexed.
+   */
+  standardDeductionHeadOfHousehold?: number
+  /**
+   * Which of the state's own filing rows a federal qualifying surviving spouse
+   * (IRC 2(a)) files under: its standard deduction, rate schedule, and every
+   * single-or-joint test the state leaves key off the return
+   * (`stateFilingRowFor` in ../state/index.ts resolves it, and every state
+   * consumer reads that resolver, not the federal mapper).
+   *
+   * - `'marriedFilingJointly'`: the federal QSS-to-joint mapping.
+   * - `'single'`: the state has no surviving-spouse status, or groups it with
+   *   single (Georgia, Virginia).
+   * - `'headOfHousehold'`: the state's return sends a QSS to its
+   *   head-of-household row (Kansas). The pack must then carry
+   *   `standardDeductionHeadOfHousehold` and `bracketsHeadOfHousehold`, and
+   *   carries no per-status age-65 addition or phase-out, which have no
+   *   head-of-household row here (state pack invariants test).
+   *
+   * Absent ⇒ the federal QSS-to-joint mapping, unchanged from before this field
+   * existed. That default is not a determination of the state's law: Delaware
+   * declares `'marriedFilingJointly'` explicitly as the disclosed approximation
+   * `de-pit-est-2026-qss-standard-deduction-joint-mapper`, and an undeclared
+   * state keeps the residual noted on `projection/internal/types/tax.ts`.
+   */
+  qualifyingSurvivingSpouseFilesAs?: 'marriedFilingJointly' | 'single' | 'headOfHousehold'
+  /**
    * Optional married-filing-separately bracket schedule when distinct from
    * single (Vermont and others). Absent ⇒ MFS uses single when the statute
    * so provides, otherwise leaf helpers require explicit status facts.

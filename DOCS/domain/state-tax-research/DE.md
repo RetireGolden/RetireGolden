@@ -43,3 +43,7 @@ Method (b), PIT-NON 2025: line 42 taxes all income; line 43 divides line 30a, mo
 A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Delaware and six in Texas, owes $2,684.50 for the Delaware months, the same as before. With a $40,000 Roth conversion on top, the slice is $5,148.64 when the conversion falls in the months resident and $2,860.36 when it falls in Texas's, where the months share of the year gave $4,004.50 either way.
 
 The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
+
+## Qualifying surviving spouse row (2026-11-03)
+
+Each state now declares the row a federal qualifying surviving spouse files under (`qualifyingSurvivingSpouseFilesAs`, read by `stateFilingRowFor`). Delaware declares `marriedFilingJointly`, the federal mapping, so the engine still gives a widow(er) the $6,500 joint deduction where § 1108 and PIT-EST give $3,250; that is the disclosed approximation `de-pit-est-2026-qss-standard-deduction-joint-mapper`, unchanged in figures. Declaring `single` is the whole fix when it is taken.

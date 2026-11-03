@@ -4,7 +4,7 @@
   "urlCount": 434,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1893,
+  "entryCount": 1902,
   "counts": {
     "ELISION-EXACT": 153,
     "ELISION-PUNCTUATION": 1,
@@ -12,7 +12,7 @@
     "PDF-NOT-VERIFIABLE": 1,
     "PDF-WORD-LEVEL": 470,
     "PUNCTUATION": 4,
-    "UNFETCHABLE": 11
+    "UNFETCHABLE": 20
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -19014,6 +19014,96 @@
       "quoteSha256": "c175f62eb0b74126",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "6 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ga-it511-2026-qss-standard-deduction-single",
+      "citation": "Georgia Department of Revenue, 2025 IT-511 Individual Income Tax Booklet, Form 500 Schedule 3, Line 10",
+      "host": "dor.georgia.gov",
+      "url": "https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download",
+      "quoteSha256": "93f410a43ae03bb9",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "ga-it511-2026-qss-standard-deduction-single",
+      "citation": "Georgia Department of Revenue, Important Tax Updates, 2026 Income Tax Changes",
+      "host": "dor.georgia.gov",
+      "url": "https://dor.georgia.gov/taxes/important-tax-updates",
+      "quoteSha256": "94be43cf11c5f18b",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "va-760-2026-qss-files-single",
+      "citation": "Virginia Department of Taxation, Filing Status",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/filing-status",
+      "quoteSha256": "204a25620e0dab95",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "va-760-2026-qss-files-single",
+      "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Filing Status",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/sites/default/files/vatax-pdf/2025-760-instructions.pdf",
+      "quoteSha256": "e3669ad0f6df7c80",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "va-760-2026-qss-files-single",
+      "citation": "Va. Code §58.1-322.03(1)(b)(v)",
+      "host": "law.lis.virginia.gov",
+      "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/",
+      "quoteSha256": "67d97bfe20349692",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "va-760-2026-qss-files-single",
+      "citation": "Va. Code §58.1-322.03(2)(a)",
+      "host": "law.lis.virginia.gov",
+      "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/",
+      "quoteSha256": "792ed70c2166b41b",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "ks-k40-2026-qss-head-of-household",
+      "citation": "Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status",
+      "host": "www.ksrevenue.gov",
+      "url": "https://www.ksrevenue.gov/pdf/ip25.pdf",
+      "quoteSha256": "4c383d4160e67dfa",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "ks-k40-2026-qss-head-of-household",
+      "citation": "K.S.A. 79-32,119(c)(2)",
+      "host": "www.ksrevisor.gov",
+      "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0119.html",
+      "quoteSha256": "77044546a264b121",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
+      "diagnosis": null
+    },
+    {
+      "id": "ks-k40-2026-qss-head-of-household",
+      "citation": "K.S.A. 79-32,110(a)(2)(B)",
+      "host": "www.ksrevisor.gov",
+      "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0110.html",
+      "quoteSha256": "57747f7fe46e2dba",
+      "verdict": "UNFETCHABLE",
+      "detail": "not fetched by this run: the authoring sandbox proxy refused CONNECT to the host (HTTP 403); quote transcribed 2026-11-03 from a rendering of the source, pending a networked verify-quotes run",
       "diagnosis": null
     }
   ],

@@ -65,3 +65,12 @@ Method (a), 2025 IT-511 Schedule 3: line 9 divides line 8 Column C by Column A, 
 A single filer of 50 with $100,000 of ordinary income spread over 2026, resident six months in Georgia and six in Texas, owes $2,120.75 for the Georgia months, the same as before. With a $40,000 Roth conversion on top, the slice is $4,009.82 when the conversion falls in the months resident and $2,227.68 when it falls in Texas's, where the months share of the year gave $3,118.75 either way.
 
 The limits every state shares (days priced as months, undated income spread by months, nonresident-period source income, the credit for tax paid to the other state, special accrual and the full-year elections not modeled) are in `va-code-58-1-322-03-2-personal-exemptions`; the worked figures are in packages/engine/src/tax/statePartYear*.rules.test.ts.
+
+## Qualifying surviving spouse files on the single row (2026-11-03)
+
+The 2025 IT-511 booklet's standard-deduction table (Form 500 Schedule 3 line 10, and the Filing Requirements and Form 500 line 11 tables) gives a qualifying surviving spouse the single amount, $12,000, with single, married filing separately and head of household; only married filing jointly takes $24,000. The DOR's 2026 update raises the amounts to $15,000 and $30,000, the joint amount again for married taxpayers filing jointly only. The 2026 figures declare `qualifyingSurvivingSpouseFilesAs: 'single'` (params/state/data/year2026.ts) and `stateFilingRowFor` selects the single row for every Georgia computation.
+
+A survivor under 65 with $80,000 of Georgia income: 80,000 − 15,000 = 65,000 taxable, $3,243.50 at 4.99%. Before this change every state's QSS took the federal joint row, $30,000, so $50,000 and $2,495.00, $748.50 too little. Registered as `ga-it511-2026-qss-standard-deduction-single`; the fixture is packages/engine/src/tax/stateQualifyingSurvivingSpouse.rules.test.ts.
+
+- https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download — "Married filing jointly $24,000 Single $12,000 Married filing separately $12,000 Head of household $12,000 Qualifying surviving spouse $12,000".
+- https://dor.georgia.gov/taxes/important-tax-updates — 2026: $15,000 single, head of household and married filing separately; $30,000 married filing jointly.
