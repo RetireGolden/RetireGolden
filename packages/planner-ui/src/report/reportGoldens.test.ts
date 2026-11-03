@@ -139,6 +139,10 @@
  * and the state income tax row no longer names a pending congressional
  * review. Wording only; no golden's plan is in the District, so no figure
  * changed.
+ * 2026-11-03 (#766): the Roth-conversion summary reads in plain language
+ * from the shared strategy-label formatter the printable page also uses:
+ * example-couple's "Fill to topOfBracket (22), 2028-2036" becomes "Fill to
+ * top of 22% bracket, 2028–2036". Wording only; no figure changed.
  */
 import { describe, expect, it } from 'vitest'
 

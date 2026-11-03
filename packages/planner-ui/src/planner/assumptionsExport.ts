@@ -31,6 +31,7 @@ import { conversionScheduleTotal } from '@retiregolden/engine/strategies/convers
 import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { fmtMoney } from './format'
 import { projectedParametersSentence, projectedParametersFrom } from './projectedParameters'
+import { rothConversionTargetPhrase, withdrawalOrderSummary } from './strategyLabels'
 
 /** Where a shown value comes from. */
 export type AssumptionProvenance = 'user-set' | 'app-default' | 'published-source'
@@ -310,7 +311,7 @@ function strategyGroup(plan: Plan): AssumptionGroup {
       ? 'none'
       : rc.mode === 'manual' || rc.mode === 'optimized'
         ? `${rc.mode} schedule (${rc.conversions.length} year${rc.conversions.length === 1 ? '' : 's'}, ${fmtMoney(conversionScheduleTotal(rc.conversions))} total)`
-        : `fill to ${rc.target} through ${rc.endYear}`
+        : `fill to ${rothConversionTargetPhrase(rc.target, rc.targetValue)}, ${rc.startYear}–${rc.endYear}`
   return {
     id: 'strategy',
     label: 'Strategy settings',
@@ -318,7 +319,7 @@ function strategyGroup(plan: Plan): AssumptionGroup {
       {
         id: 'withdrawal-order',
         label: 'Withdrawal order',
-        value: plan.strategies.withdrawalOrder.mode,
+        value: withdrawalOrderSummary(plan.strategies.withdrawalOrder),
         provenance: plan.strategies.withdrawalOrder.mode === 'sequential' ? 'app-default' : 'user-set',
       },
       { id: 'roth-conversion', label: 'Roth conversions', value: conversionValue, provenance: rc.mode === 'none' ? 'app-default' : 'user-set' },

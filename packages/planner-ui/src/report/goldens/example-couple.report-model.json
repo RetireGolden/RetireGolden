@@ -120,7 +120,7 @@
       "heirTaxRatePct": 25,
       "inflationPct": 2.5,
       "localIncomeTaxPct": 0,
-      "rothConversionSummary": "Fill to topOfBracket (22), 2028-2036",
+      "rothConversionSummary": "Fill to top of 22% bracket, 2028–2036",
       "safeWithdrawalRatePct": 4,
       "spendingPolicySummary": "Fixed target (no guardrails)",
       "stateEffectiveTaxPct": 0,

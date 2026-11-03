@@ -162,6 +162,16 @@ describe('buildAssumptionsSnapshot', () => {
       expect(manual.row.provenance).toBe('user-set')
     })
   })
+
+  it('strategy rows read in words, never as schema values (#766)', () => {
+    const plan = createEmptyPlan({ name: 'Strategy labels' })
+    plan.strategies.rothConversion = { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: 2028, endYear: 2036 }
+    plan.strategies.withdrawalOrder = { mode: 'bracketTargeted', bracketPct: 12 }
+    const rows = buildAssumptionsSnapshot(plan, 2026).groups.find((g) => g.id === 'strategy')!.rows
+    expect(rows.find((r) => r.id === 'roth-conversion')!.value).toBe('fill to top of 22% bracket, 2028–2036')
+    expect(rows.find((r) => r.id === 'withdrawal-order')!.value).toBe('Bracket-targeted to 12%')
+    for (const row of rows) expect(row.value).not.toMatch(/topOfBracket|bracketTargeted|fillToTarget/)
+  })
 })
 
 describe('assumptionsExportText', () => {

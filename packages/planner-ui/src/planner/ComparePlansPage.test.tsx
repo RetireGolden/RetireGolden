@@ -134,7 +134,11 @@ describe('ComparePlansPage chrome (#384)', () => {
     await waitFor(() => container.querySelectorAll('select').length === 2, { what: 'Plan A and Plan B selects' })
 
     expect(container.querySelector('h1')?.textContent).toBe('Compare plans')
-    expect(container.textContent).toContain('Back to plans')
+    // One name and one link style for going back to the plans list (#767).
+    const back = container.querySelector('a.page-back')!
+    expect(back.textContent).toBe('← Your plans')
+    expect(back.getAttribute('href')).toBe('/')
+    expect(container.textContent).not.toContain('Back to plans')
 
     for (const name of ['Plan A', 'Plan B'] as const) {
       const { label, select } = labeledSelect(name)

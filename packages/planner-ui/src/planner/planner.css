@@ -234,21 +234,6 @@
   border-top: none;
 }
 
-.examples-back {
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.examples-back a {
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.examples-back a:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
 .example-library h1,
 .example-library h2 {
   margin-bottom: 0.35rem;
@@ -505,6 +490,16 @@
 .rail-link--active {
   color: var(--accent);
   font-weight: 650;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* `.rail-link:hover` outranks the bare active class, so hovering the current
+   section turned it the neutral gray of any other item (#767). The active pill
+   keeps exactly its resting gold under the pointer: a deeper tint would cut
+   the gold text's contrast on the light page, and the current section has
+   nowhere new to go. */
+.rail-link--active:hover {
+  color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
@@ -1467,16 +1462,17 @@ html:has(.kpi-bar) {
   max-height: min(70vh, 56rem);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-1);
+  background: var(--scroll-cover, var(--surface-1));
   /* Scroll cue (#468, #480, #483): edge shadows that exist only while there
      is more to see in that direction. Two background layers per edge — a
      surface-colored cover that scrolls with the content (attachment: local)
      and an ink-tinted shadow that stays put (attachment: scroll). At rest the
      cover hides the shadow; scrolling moves the cover away and the shadow
-     shows. Token colors only, so both themes get it. */
+     shows. Token colors only, so both themes get it. A wrap that sits on a
+     different ground sets `--scroll-cover` to that ground's token. */
   background-image:
-    linear-gradient(to right, var(--surface-1) 40%, transparent),
-    linear-gradient(to left, var(--surface-1) 40%, transparent),
+    linear-gradient(to right, var(--scroll-cover, var(--surface-1)) 40%, transparent),
+    linear-gradient(to left, var(--scroll-cover, var(--surface-1)) 40%, transparent),
     linear-gradient(to right, color-mix(in srgb, var(--fg) 18%, transparent), transparent),
     linear-gradient(to left, color-mix(in srgb, var(--fg) 18%, transparent), transparent);
   background-position: left center, right center, left center, right center;
@@ -2101,7 +2097,9 @@ html:has(.kpi-bar) {
 }
 
 /* Chrome back link on a content page that is reached from another page
-   (How-tested → Disclaimer); mirrors the Learning Center's .learn-back. */
+   (How-tested → Disclaimer, Examples and Compare → Your plans, Report → the
+   plan); mirrors the Learning Center's .learn-back. One style for every back
+   action (#767): accent text, underline on hover. */
 .page-back {
   display: inline-block;
   margin-bottom: 0.75rem;
@@ -2592,6 +2590,9 @@ html:has(.kpi-bar) {
   flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
+  /* Without a cap the row's flex basis is its one-line width, so at 375 the
+     three buttons ran past the page instead of wrapping (#766). */
+  max-width: 100%;
 }
 
 .report-disclaimer {
@@ -2619,9 +2620,19 @@ html:has(.kpi-bar) {
 
 .report-kpis {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* minmax(0, …): a bare 1fr track floors at its content, which pushed the
+     fourth card off a phone screen (#766). */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+/* Four headline cards to a row do not fit a phone; two rows of two do, and
+   keep each row's four-card group together. Paper keeps four. */
+@media screen and (max-width: 640px) {
+  .report-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .report-kpi {
@@ -2635,6 +2646,7 @@ html:has(.kpi-bar) {
 
 .report-kpi .kpi-value {
   font-size: 1.25rem;
+  overflow-wrap: anywhere;
 }
 
 .report-table {
@@ -3277,6 +3289,44 @@ html:has(.kpi-bar) {
   color: var(--muted);
 }
 
+/* The text list scrolls inside its own region (#778). The table keeps a
+   floor so the five columns stay readable instead of squeezing to fit a
+   phone card. "Connected to", the long semicolon-joined column, gets a real
+   measure so it wraps into a few lines, not a tall one-word strip, and the
+   item and status columns keep enough room that a short name or "No estate
+   destination set" is not stacked a word per line. */
+.map-details-table-wrap {
+  margin-top: 0.5rem;
+}
+
+.map-details-table {
+  min-width: 52rem;
+}
+
+.map-details-table th,
+.map-details-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-details-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.map-details-table .map-details-item {
+  min-width: 8rem;
+}
+
+.map-details-table .map-details-relations {
+  min-width: 22rem;
+}
+
+.map-details-table .map-details-status {
+  min-width: 12rem;
+}
+
 .map-attention-list,
 .map-unsupported-list {
   margin: 0;
@@ -3539,6 +3589,15 @@ html:has(.kpi-bar) {
   color: var(--muted);
   font-weight: 400;
 }
+/* The report's section tables sit on the page, not in a card: their wraps
+   scroll sideways at phone width (#766) without drawing a box around tables
+   that fit, and the scroll-cue covers take the page color. */
+.report-table-wrap {
+  --scroll-cover: var(--bg);
+  border: 0;
+  border-radius: 0;
+}
+
 /* On paper the appendix regions are plain tables: no scroll, cap, or cue. */
 @media print {
   .report .year-table-wrap {

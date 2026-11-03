@@ -374,7 +374,7 @@ export function StrategySection() {
         <h2>Itemized deductions</h2>
         <p className="card-hint">
           Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction.
-          Turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
+          Turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter{' '}
           {startYearDollarsWord(plan)} dollars.
         </p>
         <div className="form-grid">

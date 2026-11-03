@@ -60,6 +60,7 @@ import {
   ROTH_FIVE_YEAR_INCOMPLETE_NOTE,
 } from '../planner/professionalConfirmation'
 import { projectedParametersSentence } from '../planner/projectedParameters'
+import { rothConversionSummary, withdrawalOrderSummary } from '../planner/strategyLabels'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
 export const REPORT_MODEL_VERSION = 3
@@ -619,21 +620,6 @@ export function incomeDetail(s: IncomeStream): string {
       // dollars and is the same silent-units defect the editor label closes.
       return `${fmtMoney(s.amount)} in ${s.year}${s.inflationAdjusted ? ', inflation-adjusted' : ''}`
   }
-}
-
-function conversionSummary(plan: Plan): string {
-  const rc = plan.strategies.rothConversion
-  if (rc.mode === 'none') return 'None'
-  if (rc.mode === 'manual') return `Manual, ${rc.conversions.length} year(s)`
-  if (rc.mode === 'optimized') return `Optimized, ${rc.conversions.length} year(s)`
-  return `Fill to ${rc.target}${rc.targetValue !== null ? ` (${rc.targetValue})` : ''}, ${rc.startYear}-${rc.endYear}`
-}
-
-function withdrawalSummary(plan: Plan): string {
-  const w = plan.strategies.withdrawalOrder
-  if (w.mode === 'sequential') return 'Sequential: cash, taxable, equity comp, traditional, Roth, HSA'
-  if (w.mode === 'proportional') return 'Proportional across accounts'
-  return `Bracket-targeted to ${w.bracketPct}%`
 }
 
 function spendingPolicySummary(plan: Plan): string {
@@ -1245,8 +1231,8 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         stateEffectiveTaxPct: plan.assumptions.stateEffectiveTaxPct,
         localIncomeTaxPct: plan.assumptions.localIncomeTaxPct,
         heirTaxRatePct: plan.assumptions.heirTaxRatePct,
-        rothConversionSummary: conversionSummary(plan),
-        withdrawalOrderSummary: withdrawalSummary(plan),
+        rothConversionSummary: rothConversionSummary(plan.strategies.rothConversion),
+        withdrawalOrderSummary: withdrawalOrderSummary(plan.strategies.withdrawalOrder),
         spendingPolicySummary: spendingPolicySummary(plan),
       },
       'aca-ledger': {
