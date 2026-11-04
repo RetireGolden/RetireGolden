@@ -487,19 +487,15 @@
   background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
-.rail-link--active {
-  color: var(--accent);
-  font-weight: 650;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
 /* `.rail-link:hover` outranks the bare active class, so hovering the current
    section turned it the neutral gray of any other item (#767). The active pill
    keeps exactly its resting gold under the pointer: a deeper tint would cut
    the gold text's contrast on the light page, and the current section has
-   nowhere new to go. */
+   nowhere new to go. One rule for both states, so they cannot drift. */
+.rail-link--active,
 .rail-link--active:hover {
   color: var(--accent);
+  font-weight: 650;
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
@@ -1462,17 +1458,19 @@ html:has(.kpi-bar) {
   max-height: min(70vh, 56rem);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--scroll-cover, var(--surface-1));
+  /* The scroll-cue covers' ground: the card surface, unless a wrap that
+     sits on a different ground sets its own (.report-table-wrap). */
+  --scroll-cover: var(--surface-1);
+  background: var(--scroll-cover);
   /* Scroll cue (#468, #480, #483): edge shadows that exist only while there
      is more to see in that direction. Two background layers per edge — a
      surface-colored cover that scrolls with the content (attachment: local)
      and an ink-tinted shadow that stays put (attachment: scroll). At rest the
      cover hides the shadow; scrolling moves the cover away and the shadow
-     shows. Token colors only, so both themes get it. A wrap that sits on a
-     different ground sets `--scroll-cover` to that ground's token. */
+     shows. Token colors only, so both themes get it. */
   background-image:
-    linear-gradient(to right, var(--scroll-cover, var(--surface-1)) 40%, transparent),
-    linear-gradient(to left, var(--scroll-cover, var(--surface-1)) 40%, transparent),
+    linear-gradient(to right, var(--scroll-cover) 40%, transparent),
+    linear-gradient(to left, var(--scroll-cover) 40%, transparent),
     linear-gradient(to right, color-mix(in srgb, var(--fg) 18%, transparent), transparent),
     linear-gradient(to left, color-mix(in srgb, var(--fg) 18%, transparent), transparent);
   background-position: left center, right center, left center, right center;
@@ -3305,10 +3303,6 @@ html:has(.kpi-bar) {
    measure so it wraps into a few lines, not a tall one-word strip, and the
    item and status columns keep enough room that a short name or "No estate
    destination set" is not stacked a word per line. */
-.map-details-table-wrap {
-  margin-top: 0.5rem;
-}
-
 .map-details-table {
   min-width: 52rem;
 }
@@ -3318,29 +3312,32 @@ html:has(.kpi-bar) {
   padding: 0.4rem 0.6rem;
   text-align: left;
   vertical-align: top;
-  border-bottom: 1px solid var(--border);
 }
 
-.map-details-table tbody tr:last-child > * {
-  border-bottom: 0;
+/* A rule between body rows; the header row keeps .report-table's own. */
+.map-details-table tr + tr > * {
+  border-top: 1px solid var(--border);
+}
+
+.map-details-item {
+  min-width: 8rem;
+}
+
+.map-details-relations {
+  min-width: 22rem;
+}
+
+.map-details-status {
+  min-width: 12rem;
 }
 
 /* Names are free text: an imported name of hundreds of unbroken characters
    would otherwise widen its column to the whole name and push Connected to
    and Status a long scroll away. The item and relation columns break inside
    a word only when it is wider than the column's measure. */
-.map-details-table .map-details-item {
-  min-width: 8rem;
+.map-details-item,
+.map-details-relations {
   overflow-wrap: anywhere;
-}
-
-.map-details-table .map-details-relations {
-  min-width: 22rem;
-  overflow-wrap: anywhere;
-}
-
-.map-details-table .map-details-status {
-  min-width: 12rem;
 }
 
 .map-attention-list,

@@ -287,7 +287,7 @@ export function HouseholdMapPage() {
           <summary>Text list of this map</summary>
           {/* Five columns do not fit a phone card: the table scrolls inside its
               own region like the year tables do, never the page (#778). */}
-          <ScrollRegion label="Text list of this map" grow className="map-details-table-wrap">
+          <ScrollRegion label="Text list of this map" grow className="mt-sm">
             <table className="report-table map-details-table">
               <thead>
                 <tr>

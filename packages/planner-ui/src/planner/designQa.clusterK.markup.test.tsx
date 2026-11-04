@@ -90,6 +90,7 @@ describe('Household map text list (#778)', () => {
     expect(region.getAttribute('aria-label')).toBe('Text list of this map')
     expect(region.className).toContain('year-table-wrap')
     expect(region.className).toContain('year-table-wrap--grow')
+    expect(region.className).toContain('mt-sm')
     const table = region.querySelector(':scope > table.map-details-table')!
     expect(table).not.toBeNull()
     const headers = [...table.querySelectorAll('thead th')]

@@ -74,9 +74,13 @@ describe('Printable report at phone width (#766)', () => {
     const wrap = rule('.report-table-wrap')
     expect(wrap).toMatch(/--scroll-cover:\s*var\(--bg\)/)
     expect(wrap).toMatch(/border:\s*0/)
-    // The shared wrap paints its cue covers from that variable, surface by default.
-    expect(rule('.year-table-wrap')).toMatch(/background:\s*var\(--scroll-cover, var\(--surface-1\)\)/)
-    expect(rule('.year-table-wrap').match(/var\(--scroll-cover, var\(--surface-1\)\) 40%/g)).toHaveLength(2)
+    // The shared wrap paints its cue covers from that variable, surface by
+    // default; the report wrap's override is declared later, so it wins.
+    const shared = rule('.year-table-wrap')
+    expect(shared).toMatch(/--scroll-cover:\s*var\(--surface-1\)/)
+    expect(shared).toMatch(/background:\s*var\(--scroll-cover\);/)
+    expect(shared.match(/var\(--scroll-cover\) 40%/g)).toHaveLength(2)
+    expect(css.indexOf('.report-table-wrap {')).toBeGreaterThan(css.indexOf('.year-table-wrap {'))
   })
 
   it('strategy labels come from the one formatter on both report surfaces', () => {
@@ -107,11 +111,10 @@ describe('Back links (#767)', () => {
   })
 
   it('the active rail pill keeps its resting gold under the pointer', () => {
-    const resting = rule('.rail-link--active')
-    const hovered = rule('.rail-link--active:hover')
-    expect(hovered).toMatch(/color:\s*var\(--accent\)/)
-    const tint = /background:\s*([^;]+);/
-    expect(hovered.match(tint)?.[1]).toBe(resting.match(tint)?.[1])
+    // One rule paints both states, so hover cannot drift from rest.
+    const both = rule('.rail-link--active,\n.rail-link--active:hover')
+    expect(both).toMatch(/color:\s*var\(--accent\)/)
+    expect(both).toMatch(/background:\s*color-mix\(in srgb, var\(--accent\) 12%, transparent\)/)
     // Declared after the generic hover it overrides.
     expect(css.indexOf('.rail-link--active:hover')).toBeGreaterThan(css.indexOf('.rail-link:hover'))
   })
@@ -136,11 +139,13 @@ describe('JSX text joins (#777)', () => {
 describe('Household map text list (#778)', () => {
   it('the table floors its width inside the region and measures the long columns', () => {
     expect(rule('.map-details-table')).toMatch(/min-width:\s*52rem/)
-    expect(rule('.map-details-table .map-details-relations')).toMatch(/min-width:\s*22rem/)
-    expect(rule('.map-details-table .map-details-status')).toMatch(/min-width:\s*12rem/)
-    expect(rule('.map-details-table .map-details-item')).toMatch(/min-width:\s*8rem/)
+    expect(rule('.map-details-relations')).toMatch(/min-width:\s*22rem/)
+    expect(rule('.map-details-status')).toMatch(/min-width:\s*12rem/)
+    expect(rule('.map-details-item')).toMatch(/min-width:\s*8rem/)
     // A long unbroken name breaks inside the column's measure, not past it (r1-5).
-    expect(rule('.map-details-table .map-details-item')).toMatch(/overflow-wrap:\s*anywhere/)
-    expect(rule('.map-details-table .map-details-relations')).toMatch(/overflow-wrap:\s*anywhere/)
+    expect(rule('.map-details-item,\n.map-details-relations')).toMatch(/overflow-wrap:\s*anywhere/)
+    // Body rows are ruled between, the header keeps .report-table's own rule.
+    expect(rule('.map-details-table tr + tr > *')).toMatch(/border-top:\s*1px solid var\(--border\)/)
+    expect(rule('.report-table thead th')).toMatch(/border-bottom:\s*1px solid var\(--border\)/)
   })
 })

@@ -47,7 +47,7 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | app entry (the script `index.html` loads) | 420 KiB | 384.4 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 129.2 KiB (`annualProjectionKernels`) | Route and page chunks staying route-sized |
 | all JS together | 5300 KiB | 5147.2 KiB | "Many new chunks", not just one fat one |
-| one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
+| one stylesheet / all CSS | 72 / 80 KiB | 64.3 / 52 KiB | The token layer |
 | landing critical path | 800 KiB | 716.8 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
 | PWA precache | 5400 KiB | 5267.8 KiB | Install cost, and the offline guarantee's price |
 
@@ -73,8 +73,9 @@ uneven — read the table, not an average:
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
   roughly 25 more articles.
 - The **loosest** rows are the ones with the most natural variation: the per-chunk default (260 KiB)
-  has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small enough
-  that percentages there mean little in absolute terms. The default now sits well above the largest
+  has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%; then
+  64.3 → 72, see "Raising the stylesheet row" below) is small enough that percentages there mean
+  little in absolute terms. The default now sits well above the largest
   chunk it actually governs (`annualProjectionKernels`, 129.2 KiB in the audit build; two
   unclassified kernel chunks at 129.2 and 129.1 KiB), because `PlanRoutes` — which used to set that
   mark at 206 KiB — has its own row. Read that as room for the next route chunk, not as slack to
@@ -171,6 +172,20 @@ the chunk keeps it measured on its own terms; raising `DEFAULT_CHUNK_KIB` instea
 loosened the gate for every unclassified chunk to absorb one bundler change. Its **exactly one**
 rule mirrors the worker’s: the route group is a single lazy boundary, so a second `PlanRoutes`
 chunk would mean it was split or duplicated.
+
+## Raising the stylesheet row: 64 → 72
+
+Azure `build` on the 375px Design QA PR (#766, #767, #777, #778) measured `index-*.css` at
+**64.5 / 64.0 KiB**. Main measured 63.8 KiB (65,311 bytes) before it: 0.2 KiB of headroom, so any
+stylesheet change would have tripped the row. The PR first merged its own duplicate rules, with no
+change in behaviour: the active rail pill's hover shares one rule with its resting state, the
+scroll-cover token gets a default instead of a fallback repeated three times, the household-map table
+rules use short selectors and one row rule, and its wrap uses the existing `mt-sm` utility. That brought
+it from 66,058 to 65,844 bytes (64.3 KiB). What remains, about 0.5 KiB, is the fixes themselves: report
+headline cards two-up and wrapping on a phone, the report's section tables in borderless scroll regions
+with page-coloured cue covers, and the household-map text list's measured columns. The one-stylesheet
+row moved to **72** (7.7 KiB, 12% headroom). The all-CSS row stays at **80** (71.3 KiB measured) and
+still bounds stylesheet growth overall.
 
 ## What is *not* precached
 
