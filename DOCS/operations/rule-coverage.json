@@ -846,7 +846,7 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1909,
+    "entryCount": 1912,
     "fetched": 0,
     "cached": 433,
     "counts": {
@@ -856,7 +856,7 @@
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 478,
       "PUNCTUATION": 4,
-      "UNFETCHABLE": 11
+      "UNFETCHABLE": 14
     },
     "amendments": [
       {
@@ -865,11 +865,13 @@
         "entries": [
           {
             "id": "cfr-20-404-313-delayed-retirement-credit",
-            "citation": "20 CFR 404.313(a), (b)(2)"
+            "citation": "20 CFR 404.313(a), (b)(2)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
-            "citation": "42 U.S.C. 402(w)(2)(A)"
+            "citation": "42 U.S.C. 402(w)(2)(A)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -879,67 +881,83 @@
         "entries": [
           {
             "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
-            "citation": "Rev. Proc. 2026-26, section 3.01"
+            "citation": "Rev. Proc. 2026-26, section 3.01",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
-            "citation": "Rev. Proc. 2026-26, section 3.02"
+            "citation": "Rev. Proc. 2026-26, section 3.02",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
-            "citation": "IRC 36B(d)(3)(B)"
+            "citation": "IRC 36B(d)(3)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
-            "citation": "26 CFR 1.36B-1(h)"
+            "citation": "26 CFR 1.36B-1(h)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
-            "citation": "45 CFR 155.410(e)(5)(i)"
+            "citation": "45 CFR 155.410(e)(5)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "hhs-2026-poverty-guidelines-2027-coverage",
-            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755"
+            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2026-poverty-guidelines-2027-coverage",
-            "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia"
+            "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2026-poverty-guidelines-2027-coverage",
-            "citation": "91 FR 1798, 2026 poverty guidelines for Alaska"
+            "citation": "91 FR 1798, 2026 poverty guidelines for Alaska",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2026-poverty-guidelines-2027-coverage",
-            "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii"
+            "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2025-poverty-guidelines-2026-coverage",
-            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377"
+            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2025-poverty-guidelines-2026-coverage",
-            "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia"
+            "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2025-poverty-guidelines-2026-coverage",
-            "citation": "90 FR 5917, 2025 poverty guidelines for Alaska"
+            "citation": "90 FR 5917, 2025 poverty guidelines for Alaska",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hhs-2025-poverty-guidelines-2026-coverage",
-            "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii"
+            "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
-            "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)"
+            "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
-            "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)"
+            "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-36B-c-1-A-applicable-taxpayer-range",
-            "citation": "IRC 36B(c)(1)(E)"
+            "citation": "IRC 36B(c)(1)(E)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -949,15 +967,18 @@
         "entries": [
           {
             "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
-            "citation": "26 CFR 1.36B-3(g)(1)"
+            "citation": "26 CFR 1.36B-3(g)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
-            "citation": "26 CFR 1.36B-3(g)(3), Example 1"
+            "citation": "26 CFR 1.36B-3(g)(3), Example 1",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
-            "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4"
+            "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -967,31 +988,38 @@
         "entries": [
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "42 U.S.C. 402(e)(2)(D)"
+            "citation": "42 U.S.C. 402(e)(2)(D)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "20 CFR 404.338(c)"
+            "citation": "20 CFR 404.338(c)",
+            "verdict": "PUNCTUATION"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "SSA POMS RS 00615.320, § A.1"
+            "citation": "SSA POMS RS 00615.320, § A.1",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "SSA POMS RS 00615.320, § A.2"
+            "citation": "SSA POMS RS 00615.320, § A.2",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "SSA POMS RS 00615.320, § A.2"
+            "citation": "SSA POMS RS 00615.320, § A.2",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "SSA POMS RS 00615.320, § A.2"
+            "citation": "SSA POMS RS 00615.320, § A.2",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
-            "citation": "SSA POMS RS 00615.320, § A.3"
+            "citation": "SSA POMS RS 00615.320, § A.3",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1001,23 +1029,28 @@
         "entries": [
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(3)(E)"
+            "citation": "42 U.S.C. 402(q)(3)(E)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(7)(A)"
+            "citation": "42 U.S.C. 402(q)(7)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.410(c)(1)"
+            "citation": "20 CFR 404.410(c)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.621(a)(4)(ii)"
+            "citation": "20 CFR 404.621(a)(4)(ii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1027,27 +1060,33 @@
         "entries": [
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+            "citation": "42 U.S.C. 402(q)(3)(A)-(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(k)(3)(A)"
+            "citation": "42 U.S.C. 402(k)(3)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+            "citation": "42 U.S.C. 402(q)(6)(A)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(5)(C)"
+            "citation": "42 U.S.C. 402(q)(5)(C)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "SSA POMS RS 00615.250, A. Policy"
+            "citation": "SSA POMS RS 00615.250, A. Policy",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "SSA POMS RS 00615.694, A. Policy"
+            "citation": "SSA POMS RS 00615.694, A. Policy",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1057,11 +1096,13 @@
         "entries": [
           {
             "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
-            "citation": "42 U.S.C. 415(e)(1)"
+            "citation": "42 U.S.C. 415(e)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
-            "citation": "42 U.S.C. 415(b)(2)(B)(ii)"
+            "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1071,15 +1112,18 @@
         "entries": [
           {
             "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
-            "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+            "citation": "42 U.S.C. 415(i)(2)(A)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
-            "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+            "citation": "42 U.S.C. 415(i)(2)(A)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
-            "citation": "42 U.S.C. 415(i)(2)(A)(iii)"
+            "citation": "42 U.S.C. 415(i)(2)(A)(iii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1089,31 +1133,38 @@
         "entries": [
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+            "citation": "42 U.S.C. 402(q)(3)(A)-(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(k)(3)(A)"
+            "citation": "42 U.S.C. 402(k)(3)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+            "citation": "42 U.S.C. 402(q)(6)(A)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "42 U.S.C. 402(q)(5)(C)"
+            "citation": "42 U.S.C. 402(q)(5)(C)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "SSA POMS RS 00202.005, B.2.a"
+            "citation": "SSA POMS RS 00202.005, B.2.a",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "SSA POMS RS 00615.250, A. Policy"
+            "citation": "SSA POMS RS 00615.250, A. Policy",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-            "citation": "SSA POMS RS 00615.694, A. Policy"
+            "citation": "SSA POMS RS 00615.694, A. Policy",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1123,31 +1174,38 @@
         "entries": [
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(3)(E)"
+            "citation": "42 U.S.C. 402(q)(3)(E)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(7)(A)"
+            "citation": "42 U.S.C. 402(q)(7)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.410(c)(1)"
+            "citation": "20 CFR 404.410(c)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.621(a)(4)(ii)"
+            "citation": "20 CFR 404.621(a)(4)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.412(a)(1)"
+            "citation": "20 CFR 404.412(a)(1)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1157,35 +1215,43 @@
         "entries": [
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "20 CFR 404.331"
+            "citation": "20 CFR 404.331",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "20 CFR 404.331(a)(2)"
+            "citation": "20 CFR 404.331(a)(2)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "20 CFR 404.331(c)"
+            "citation": "20 CFR 404.331(c)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "20 CFR 404.331(f)"
+            "citation": "20 CFR 404.331(f)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "42 U.S.C. 402(b)(1)"
+            "citation": "42 U.S.C. 402(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "42 U.S.C. 402(b)(4)(A)"
+            "citation": "42 U.S.C. 402(b)(4)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "42 U.S.C. 402(c)(4)(A)"
+            "citation": "42 U.S.C. 402(c)(4)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
-            "citation": "42 U.S.C. 416(d)(1)"
+            "citation": "42 U.S.C. 416(d)(1)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1195,43 +1261,53 @@
         "entries": [
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "42 U.S.C. 423(a)(1)"
+            "citation": "42 U.S.C. 423(a)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "42 U.S.C. 402(a)(3)"
+            "citation": "42 U.S.C. 402(a)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "42 U.S.C. 423(b)"
+            "citation": "42 U.S.C. 423(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "42 U.S.C. 423(c)(2)(B)"
+            "citation": "42 U.S.C. 423(c)(2)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "20 CFR 404.315(a)(4)"
+            "citation": "20 CFR 404.315(a)(4)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "20 CFR 404.315(a)(4)(i)-(ii)"
+            "citation": "20 CFR 404.315(a)(4)(i)-(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "20 CFR 404.316(a)"
+            "citation": "20 CFR 404.316(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "20 CFR 404.316(b)(2)"
+            "citation": "20 CFR 404.316(b)(2)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "SSA POMS DI 10105.070"
+            "citation": "SSA POMS DI 10105.070",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
-            "citation": "SSA POMS DI 10105.070"
+            "citation": "SSA POMS DI 10105.070",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1241,31 +1317,38 @@
         "entries": [
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.408A-6 A-2"
+            "citation": "Treas. Reg. 1.408A-6 A-2",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.408A-6 A-2"
+            "citation": "Treas. Reg. 1.408A-6 A-2",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.408A-6 A-4"
+            "citation": "Treas. Reg. 1.408A-6 A-4",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.408A-6 A-5(b)"
+            "citation": "Treas. Reg. 1.408A-6 A-5(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.408A-6 A-7(b)"
+            "citation": "Treas. Reg. 1.408A-6 A-7(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "IRC 402A(d)(2)(B)"
+            "citation": "IRC 402A(d)(2)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-408A-d-2-roth-qualified-distribution",
-            "citation": "Treas. Reg. 1.402A-1 A-4(b)"
+            "citation": "Treas. Reg. 1.402A-1 A-4(b)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1275,7 +1358,8 @@
         "entries": [
           {
             "id": "irc-408A-d-4-B-roth-distribution-ordering",
-            "citation": "Treas. Reg. 1.402A-1 A-3"
+            "citation": "Treas. Reg. 1.402A-1 A-3",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1285,19 +1369,23 @@
         "entries": [
           {
             "id": "irc-402A-d-2-designated-roth-five-year-period",
-            "citation": "IRC 402A(d)(1)"
+            "citation": "IRC 402A(d)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-402A-d-2-designated-roth-five-year-period",
-            "citation": "IRC 402A(d)(2)(A)"
+            "citation": "IRC 402A(d)(2)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-402A-d-2-designated-roth-five-year-period",
-            "citation": "IRC 402A(d)(2)(B)"
+            "citation": "IRC 402A(d)(2)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-402A-d-2-designated-roth-five-year-period",
-            "citation": "Treas. Reg. 1.402A-1 A-4(a)"
+            "citation": "Treas. Reg. 1.402A-1 A-4(a)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1307,19 +1395,23 @@
         "entries": [
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "20 CFR 404.404"
+            "citation": "20 CFR 404.404",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "20 CFR 404.403(a)(5), Example 1"
+            "citation": "20 CFR 404.403(a)(5), Example 1",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "SSA POMS RS 00615.756, B.1"
+            "citation": "SSA POMS RS 00615.756, B.1",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "SSA POMS RS 00615.730, 5"
+            "citation": "SSA POMS RS 00615.730, 5",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1329,15 +1421,18 @@
         "entries": [
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "20 CFR 404.410(b)"
+            "citation": "20 CFR 404.410(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement"
+            "citation": "20 CFR 404.403(a)(5), Example 1, dual entitlement",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-404-family-maximum-counts-the-worker-pia",
-            "citation": "SSA POMS RS 00615.010, Aged Spouse"
+            "citation": "SSA POMS RS 00615.010, Aged Spouse",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1347,11 +1442,13 @@
         "entries": [
           {
             "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
-            "citation": "42 U.S.C. 403(a)(2)(D)"
+            "citation": "42 U.S.C. 403(a)(2)(D)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
-            "citation": "20 CFR 404.403(a)(2)"
+            "citation": "20 CFR 404.403(a)(2)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1361,95 +1458,118 @@
         "entries": [
           {
             "id": "irc-223-b-2-hsa-base-limits-2027",
-            "citation": "Rev. Proc. 2026-24, section 3.01(1)"
+            "citation": "Rev. Proc. 2026-24, section 3.01(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "irc-223-b-2-hsa-base-limits-2027",
-            "citation": "Rev. Proc. 2026-24, section 4"
+            "citation": "Rev. Proc. 2026-24, section 4",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "irc-223-b-2-hsa-base-limits-2027",
-            "citation": "IRC 223(b)(2)(A)"
+            "citation": "IRC 223(b)(2)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-223-b-2-hsa-base-limits-2027",
-            "citation": "IRC 223(b)(2)(B)"
+            "citation": "IRC 223(b)(2)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "irc-223-b-2-hsa-base-limits-2027",
-            "citation": "IRC 223(g)(1)"
+            "citation": "IRC 223(g)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
-            "citation": "Neb. Rev. Stat. 77-2715.03(2)(b)(iii)"
+            "citation": "Neb. Rev. Stat. 77-2715.03(2)(b)(iii)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
-            "citation": "Neb. Rev. Stat. 77-2715.03(2)(c)(vi)"
+            "citation": "Neb. Rev. Stat. 77-2715.03(2)(c)(vi)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "neb-rev-stat-77-2715-03-2027-rates-three-and-four",
-            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)"
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-2027-flat-rate",
-            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a)"
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-2027-flat-rate",
-            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows"
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-2027-flat-rate",
-            "citation": "S.L. 2026-41, section 44.1(b)"
+            "citation": "S.L. 2026-41, section 44.1(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-2027-flat-rate",
-            "citation": "N.C. General Assembly, Senate Bill 257 / SL 2026-41, bill history"
+            "citation": "N.C. General Assembly, Senate Bill 257 / SL 2026-41, bill history",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103 (effective January 1, 2027), heading"
+            "citation": "MCA 15-30-2103 (effective January 1, 2027), heading",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(1)(a) (effective January 1, 2027), joint return and surviving spouse"
+            "citation": "MCA 15-30-2103(1)(a) (effective January 1, 2027), joint return and surviving spouse",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(1)(b) (effective January 1, 2027), head of household"
+            "citation": "MCA 15-30-2103(1)(b) (effective January 1, 2027), head of household",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(1)(c) (effective January 1, 2027), single"
+            "citation": "MCA 15-30-2103(1)(c) (effective January 1, 2027), single",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(1)(d) (effective January 1, 2027), married filing separately"
+            "citation": "MCA 15-30-2103(1)(d) (effective January 1, 2027), married filing separately",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(2)(a) (effective January 1, 2027), joint net long-term capital gains"
+            "citation": "MCA 15-30-2103(2)(a) (effective January 1, 2027), joint net long-term capital gains",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(2)(b) (effective January 1, 2027), head of household net long-term capital gains"
+            "citation": "MCA 15-30-2103(2)(b) (effective January 1, 2027), head of household net long-term capital gains",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(2)(c) (effective January 1, 2027), single net long-term capital gains"
+            "citation": "MCA 15-30-2103(2)(c) (effective January 1, 2027), single net long-term capital gains",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(3) (effective January 1, 2027), indexing"
+            "citation": "MCA 15-30-2103(3) (effective January 1, 2027), indexing",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2103(4)(a) (effective January 1, 2027), modified inflation factor"
+            "citation": "MCA 15-30-2103(4)(a) (effective January 1, 2027), modified inflation factor",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2103-2027-rate-schedule",
-            "citation": "MCA 15-30-2101(12), inflation factor"
+            "citation": "MCA 15-30-2101(12), inflation factor",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1459,27 +1579,33 @@
         "entries": [
           {
             "id": "nc-sl-2026-41-rate-steps-2030-and-after",
-            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a), rows for 2027 on"
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a), rows for 2027 on",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-rate-steps-2030-and-after",
-            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), the trigger"
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), the trigger",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nc-sl-2026-41-rate-steps-2030-and-after",
-            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows"
+            "citation": "S.L. 2026-41, section 44.1(a), rewriting N.C. Gen. Stat. §105-153.7(a1), first trigger rows",
+            "verdict": "EXACT"
           },
           {
             "id": "nc-sl-2026-41-rate-steps-2030-and-after",
-            "citation": "S.L. 2026-41, section 44.1(b)"
+            "citation": "S.L. 2026-41, section 44.1(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)"
+            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)",
+            "verdict": "EXACT"
           },
           {
             "id": "ic-6-3-2-1-flat-rate-ramp",
-            "citation": "IC 6-3-2-1(b)(16)"
+            "citation": "IC 6-3-2-1(b)(16)",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1489,75 +1615,93 @@
         "entries": [
           {
             "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
-            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G)"
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
-            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(H)"
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(H)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hi-hrs-235-2-4-a-2-g-to-i-standard-deduction-steps",
-            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(I)"
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(I)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
-            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table for taxable years after 2026 and before 2033"
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table for taxable years after 2026 and before 2033",
+            "verdict": "UNFETCHABLE"
           },
           {
             "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
-            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table, fourth band"
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(viii), joint table, fourth band",
+            "verdict": "UNFETCHABLE"
           },
           {
             "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
-            "citation": "N.Y. Tax Law §601(a)(1)(B)(ix), joint table for taxable years after 2032, top band"
+            "citation": "N.Y. Tax Law §601(a)(1)(B)(ix), joint table for taxable years after 2032, top band",
+            "verdict": "UNFETCHABLE"
           },
           {
             "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
-            "citation": "N.Y. Tax Law §601(c)(1)(B)(viii), single table for taxable years after 2026 and before 2033"
+            "citation": "N.Y. Tax Law §601(c)(1)(B)(viii), single table for taxable years after 2026 and before 2033",
+            "verdict": "UNFETCHABLE"
           },
           {
             "id": "ny-tax-601-2027-rate-cuts-and-2033-top-rate",
-            "citation": "N.Y. Tax Law §601(c)(1)(B)(ix), single table for taxable years after 2032, top band"
+            "citation": "N.Y. Tax Law §601(c)(1)(B)(ix), single table for taxable years after 2032, top band",
+            "verdict": "UNFETCHABLE"
           },
           {
             "id": "ri-44-30-2-6-high-income-surtax",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-2.6(c)(3)(A)(I)(2)(i)"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-2.6(c)(3)(A)(I)(2)(i)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-44-30-2-6-high-income-surtax",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(A)(I)(2)(ii) and (iii)"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(A)(I)(2)(ii) and (iii)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-44-30-2-6-high-income-surtax",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(E)(III)"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, §44-30-2.6(c)(3)(E)(III)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-44-30-2-6-high-income-surtax",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 6"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 6",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-44-30-2-6-high-income-surtax",
-            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, High-Income Surtax"
+            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, High-Income Surtax",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-hb-463-2027-retirement-exclusion",
-            "citation": "HB 463 (2026), section 2-3, adding O.C.G.A. §48-7-27(a)(5)(A)(xiv)"
+            "citation": "HB 463 (2026), section 2-3, adding O.C.G.A. §48-7-27(a)(5)(A)(xiv)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-hb-463-2027-retirement-exclusion",
-            "citation": "HB 463 (2026), section 2-3, revising O.C.G.A. §48-7-27(a)(5)(A)(xiii)"
+            "citation": "HB 463 (2026), section 2-3, revising O.C.G.A. §48-7-27(a)(5)(A)(xiii)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-hb-463-2027-retirement-exclusion",
-            "citation": "HB 463 (2026), section 5-1"
+            "citation": "HB 463 (2026), section 5-1",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-standard-deduction-steps",
-            "citation": "Va. Code §58.1-322.03(1)(b)(vi) and (vii)"
+            "citation": "Va. Code §58.1-322.03(1)(b)(vi) and (vii)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-code-58-1-322-03-standard-deduction-steps",
-            "citation": "Va. Code §58.1-322.03(1)(b)(i)"
+            "citation": "Va. Code §58.1-322.03(1)(b)(i)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1567,31 +1711,38 @@
         "entries": [
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands",
+            "verdict": "EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands",
+            "verdict": "EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 9(2)"
+            "citation": "Act 24, SLH 2026, section 9(2)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24"
+            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1601,35 +1752,43 @@
         "entries": [
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025"
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-h7127-2027-social-security-modification-without-age-test",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, R.I. Gen. Laws §44-30-12(c)(8)(i), as amended to end with tax year 2026"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, R.I. Gen. Laws §44-30-12(c)(8)(i), as amended to end with tax year 2026",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-h7127-2027-social-security-modification-without-age-test",
-            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-12(c)(8)(ii)"
+            "citation": "2026 H 7127 Sub A as amended, Article 6, section 5, adding R.I. Gen. Laws §44-30-12(c)(8)(ii)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-h7127-2027-social-security-modification-without-age-test",
-            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, Social Security Relief"
+            "citation": "Rhode Island Division of Taxation, Summary of Legislative Changes, July 22, 2026, Social Security Relief",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-h7127-2027-social-security-modification-without-age-test",
-            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1639,11 +1798,13 @@
         "entries": [
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Va. Code §58.1-322.03(2)(a)"
+            "citation": "Va. Code §58.1-322.03(2)(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Va. Code §58.1-322.03(2)(b)"
+            "citation": "Va. Code §58.1-322.03(2)(b)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1653,35 +1814,43 @@
         "entries": [
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule"
+            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule, \"IF YOUR NET TAXABLE INCOME IS\" column"
+            "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule, \"IF YOUR NET TAXABLE INCOME IS\" column",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2025 Indexed Tax Brackets, \"Less Than or Equal To\" and \"Percentage\" columns"
+            "citation": "2025 Indexed Tax Brackets, \"Less Than or Equal To\" and \"Percentage\" columns",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2025 Indexed Tax Brackets, \"From\" column"
+            "citation": "2025 Indexed Tax Brackets, \"From\" column",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, § 1, Ark. Code Ann. 26-51-201(a)(4)"
+            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, § 1, Ark. Code Ann. 26-51-201(a)(4)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, approval"
+            "citation": "2026 Ark. Acts (1st Ex. Sess.), Act 1, approval",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)"
+            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "aca-26-51-201-published-indexed-rate-schedule",
-            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)"
+            "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1691,43 +1860,53 @@
         "entries": [
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-105-a-3-capital-gain-surtax",
-            "citation": "Md. Tax-General §10-105(a)(3)(i)"
+            "citation": "Md. Tax-General §10-105(a)(3)(i)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-105-a-3-capital-gain-surtax",
-            "citation": "Md. Tax-General §10-105(a)(4)"
+            "citation": "Md. Tax-General §10-105(a)(4)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-105-a-3-capital-gain-surtax",
-            "citation": "Md. Tax-General §10-105(a)(3)(ii)"
+            "citation": "Md. Tax-General §10-105(a)(3)(ii)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
-            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(2)"
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(2)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
-            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(3)(II) to (VI)"
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), Tax-General §10-207(mm)(3)(II) to (VI)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
-            "citation": "2026 Md. Laws ch. 686 (S.B. 607), section 2 and approval"
+            "citation": "2026 Md. Laws ch. 686 (S.B. 607), section 2 and approval",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-207-mm-public-safety-retirement-subtraction",
-            "citation": "Md. Tax-General §10-209(d)(2)"
+            "citation": "Md. Tax-General §10-209(d)(2)",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1737,35 +1916,43 @@
         "entries": [
           {
             "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
-            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 15, adding A.R.S. 43-1022(35)"
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 15, adding A.R.S. 43-1022(35)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
-            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 12, A.R.S. 43-105(A)"
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 12, A.R.S. 43-105(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "ars-43-1022-35-federal-senior-deduction-subtraction",
-            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 35(A)"
+            "citation": "Laws 2026, ch. 140 (H.B. 4168), section 35(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-federal-taxable-income-senior-deduction",
-            "citation": "C.R.S. 39-22-104(1.7)(c)"
+            "citation": "C.R.S. 39-22-104(1.7)(c)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-federal-taxable-income-senior-deduction",
-            "citation": "IRC 151(d)(5)(C)(i)"
+            "citation": "IRC 151(d)(5)(C)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "id-h559-2026-conformity-senior-deduction",
-            "citation": "H.B. 559 (2026), section 4"
+            "citation": "H.B. 559 (2026), section 4",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "id-h559-2026-conformity-senior-deduction",
-            "citation": "Idaho State Tax Commission, press release of March 3, 2026, File now to get your conformity deductions"
+            "citation": "Idaho State Tax Commission, press release of March 3, 2026, File now to get your conformity deductions",
+            "verdict": "EXACT"
           },
           {
             "id": "id-h559-2026-conformity-senior-deduction",
-            "citation": "IRC 151(d)(5)(C)(i)"
+            "citation": "IRC 151(d)(5)(C)(i)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1775,31 +1962,38 @@
         "entries": [
           {
             "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
-            "citation": "30 Del. C. §1106(b)(3)c. (S.B. 219, 85 Del. Laws c. 426)"
+            "citation": "30 Del. C. §1106(b)(3)c. (S.B. 219, 85 Del. Laws c. 426)",
+            "verdict": "EXACT"
           },
           {
             "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
-            "citation": "30 Del. C. §1106(b)(3)d. and e."
+            "citation": "30 Del. C. §1106(b)(3)d. and e.",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "de-code-30-1106-b-3-military-pension-steps-2027-2029",
-            "citation": "30 Del. C. §1106(b)(3)f.3. and f.4."
+            "citation": "30 Del. C. §1106(b)(3)f.3. and f.4.",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "il-35-ilcs-5-204-b-basic-amount-1000-from-2029",
-            "citation": "35 ILCS 5/204(b)"
+            "citation": "35 ILCS 5/204(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "il-35-ilcs-5-204-b-basic-amount-1000-from-2029",
-            "citation": "35 ILCS 5/204(b)(7)"
+            "citation": "35 ILCS 5/204(b)(7)",
+            "verdict": "EXACT"
           },
           {
             "id": "me-pl-2025-c650-k-15-federal-standard-deduction-from-2027",
-            "citation": "P.L. 2025, c. 650, Pt. K, §K-15, enacting 36 M.R.S. §5124-C(1-D)"
+            "citation": "P.L. 2025, c. 650, Pt. K, §K-15, enacting 36 M.R.S. §5124-C(1-D)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "or-laws-2009-c913-s36-retirement-credit-ends-2032",
-            "citation": "Or. Laws 2009, ch. 913, §36, as amended by Or. Laws 2025, ch. 562, §5 (note to ORS 316.157)"
+            "citation": "Or. Laws 2009, ch. 913, §36, as amended by Or. Laws 2025, ch. 562, §5 (note to ORS 316.157)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1809,27 +2003,33 @@
         "entries": [
           {
             "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
-            "citation": "Cal. Rev. & Tax. Code §17132.9(a)"
+            "citation": "Cal. Rev. & Tax. Code §17132.9(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
-            "citation": "Cal. Rev. & Tax. Code §17132.9(b)(1)"
+            "citation": "Cal. Rev. & Tax. Code §17132.9(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "ca-rtc-17132-9-10-military-retirement-exclusions",
-            "citation": "Cal. Rev. & Tax. Code §17132.10(a)"
+            "citation": "Cal. Rev. & Tax. Code §17132.10(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
-            "citation": "Cal. Const. art. XIII, §36(f)(2)"
+            "citation": "Cal. Const. art. XIII, §36(f)(2)",
+            "verdict": "EXACT"
           },
           {
             "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
-            "citation": "Cal. Const. art. XIII, §36(f)(2)(D)"
+            "citation": "Cal. Const. art. XIII, §36(f)(2)(D)",
+            "verdict": "EXACT"
           },
           {
             "id": "ca-const-art-13-sec-36-f-2-top-bands-end-2031",
-            "citation": "California Secretary of State, Qualified Statewide Ballot Measures, November 3, 2026"
+            "citation": "California Secretary of State, Qualified Statewide Ballot Measures, November 3, 2026",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1839,23 +2039,28 @@
         "entries": [
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201",
+            "verdict": "PDF-NOT-VERIFIABLE"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -1865,11 +2070,13 @@
         "entries": [
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 9003"
+            "citation": "D.C. Act 26-416, sec. 9003",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1879,11 +2086,13 @@
         "entries": [
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1893,11 +2102,13 @@
         "entries": [
           {
             "id": "neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal",
-            "citation": "Neb. Rev. Stat. 77-2715.03(3)(a)"
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(a)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "neb-rev-stat-77-2715-03-3-indexed-brackets-held-nominal",
-            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)"
+            "citation": "Neb. Rev. Stat. 77-2715.03(3)(b)(ii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1907,51 +2118,63 @@
         "entries": [
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201",
+            "verdict": "PDF-NOT-VERIFIABLE"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2026, second and third bands",
+            "verdict": "EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table after December 31, 2026, top bands",
+            "verdict": "EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(a), joint table for any taxable year beginning after December 31, 2028",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(b), head-of-household tables after December 31, 2026 and after December 31, 2028, top bands",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028"
+            "citation": "Act 24, SLH 2026, section 2, HRS 235-51(c), single tables after December 31, 2026 and after December 31, 2028",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Act 24, SLH 2026, section 9(2)"
+            "citation": "Act 24, SLH 2026, section 9(2)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "hi-act-24-2026-rate-schedules",
-            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24"
+            "citation": "Governor’s Message No. 1124 (May 21, 2026), approving S.B. 3125 as Act 24",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1961,7 +2184,8 @@
         "entries": [
           {
             "id": "wa-essb-6346-s301-direct-qcd-conformity",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 301"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 301",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -1971,11 +2195,13 @@
         "entries": [
           {
             "id": "va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction",
-            "citation": "Va. Code §58.1-322.03(1)(b)(i)"
+            "citation": "Va. Code §58.1-322.03(1)(b)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-code-58-1-322-03-optimizer-state-base-uses-federal-deduction",
-            "citation": "Va. Code §58.1-322.03(2)(a)"
+            "citation": "Va. Code §58.1-322.03(2)(a)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -1985,19 +2211,23 @@
         "entries": [
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 316(1), no reduction and effective year",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 205(1), the act’s usage of taxes due"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 205(1), the act’s usage of taxes due",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-s316-standard-deduction-indexing",
-            "citation": "Washington Department of Revenue, Capital gains tax, deductions"
+            "citation": "Washington Department of Revenue, Capital gains tax, deductions",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2007,23 +2237,28 @@
         "entries": [
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(c)(2)"
+            "citation": "Md. Tax-General §10-217(c)(2)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction"
+            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2033,31 +2268,38 @@
         "entries": [
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-1(a)"
+            "citation": "R.I. Gen. Laws §44-30-1(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(ii)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(A)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
-            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 resident instructions, Schedule M line 1t"
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 resident instructions, Schedule M line 1t",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2067,19 +2309,23 @@
         "entries": [
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 9003"
+            "citation": "D.C. Act 26-416, sec. 9003",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2089,27 +2335,33 @@
         "entries": [
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 201",
+            "verdict": "PDF-NOT-VERIFIABLE"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 314",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(1)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(3)"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, section 302(3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval"
+            "citation": "ESSB 6346, ch. 238, Laws of 2026, approval",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wa-essb-6346-2028-income-tax",
-            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645"
+            "citation": "Washington Secretary of State, Submitted Signature Statistics, Initiative 645",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -2119,23 +2371,28 @@
         "entries": [
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i), the ceiling from tax year 2025",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year"
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, Social Security modification income limits by tax year",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025"
+            "citation": "Rhode Island Division of Taxation, ADV 2025-22, pension modification from tax year 2025",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-gen-laws-44-30-12-c-8-c-9-2026-modifications",
-            "citation": "Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2"
+            "citation": "Rhode Island Division of Taxation, 2025 Modification Worksheet, Taxable Social Security Income, Step 2",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2145,19 +2402,23 @@
         "entries": [
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 9003"
+            "citation": "D.C. Act 26-416, sec. 9003",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2167,127 +2428,158 @@
         "entries": [
           {
             "id": "usc-42-403-f-3-retirement-earnings-test",
-            "citation": "42 U.S.C. 403(f)(3)"
+            "citation": "42 U.S.C. 403(f)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-3-retirement-earnings-test",
-            "citation": "42 U.S.C. 403(f)(3)"
+            "citation": "42 U.S.C. 403(f)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-3-retirement-earnings-test",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "42 U.S.C. 402(q)(7)(A)"
+            "citation": "42 U.S.C. 402(q)(7)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "42 U.S.C. 403(f)(1)"
+            "citation": "42 U.S.C. 403(f)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "20 CFR 404.415(a)"
+            "citation": "20 CFR 404.415(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.1"
+            "citation": "SSA POMS RS 00615.482, § B.1",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.1 note"
+            "citation": "SSA POMS RS 00615.482, § B.1 note",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.2"
+            "citation": "SSA POMS RS 00615.482, § B.2",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-1-earnings-test-month-charging",
-            "citation": "42 U.S.C. 403(f)(1)"
+            "citation": "42 U.S.C. 403(f)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-1-earnings-test-month-charging",
-            "citation": "42 U.S.C. 403(f)(1)"
+            "citation": "42 U.S.C. 403(f)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-1-earnings-test-month-charging",
-            "citation": "SSA POMS RS 02501.095, § B"
+            "citation": "SSA POMS RS 02501.095, § B",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.434(b)(1)"
+            "citation": "20 CFR 404.434(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.434(b)(3)"
+            "citation": "20 CFR 404.434(b)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.439"
+            "citation": "20 CFR 404.439",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.440"
+            "citation": "20 CFR 404.440",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 02501.150, § A.1"
+            "citation": "SSA POMS RS 02501.150, § A.1",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 00615.482, § B.2"
+            "citation": "SSA POMS RS 00615.482, § B.2",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-3-fra-year-months-before-fra",
-            "citation": "42 U.S.C. 403(f)(3)"
+            "citation": "42 U.S.C. 403(f)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-3-fra-year-months-before-fra",
-            "citation": "42 U.S.C. 403(f)(1)"
+            "citation": "42 U.S.C. 403(f)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-3-fra-year-months-before-fra",
-            "citation": "20 CFR 404.434(c)"
+            "citation": "20 CFR 404.434(c)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-412-b-arf-effective-fra-month",
-            "citation": "20 CFR 404.412(b)"
+            "citation": "20 CFR 404.412(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-412-b-arf-effective-fra-month",
-            "citation": "42 U.S.C. 402(q)(7)"
+            "citation": "42 U.S.C. 402(q)(7)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
-            "citation": "SSA POMS RS 00615.320, § B.2.c"
+            "citation": "SSA POMS RS 00615.320, § B.2.c",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
-            "citation": "SSA POMS RS 00615.598, § A"
+            "citation": "SSA POMS RS 00615.598, § A",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-320-b-2-c-deceased-crediting-months",
-            "citation": "SSA POMS RS 00615.598, § B"
+            "citation": "SSA POMS RS 00615.598, § B",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-f-5-earnings-counted",
-            "citation": "42 U.S.C. 403(f)(5)(A)"
+            "citation": "42 U.S.C. 403(f)(5)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
-            "citation": "42 U.S.C. 402(b)(1)(C)"
+            "citation": "42 U.S.C. 402(b)(1)(C)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-b-1-C-divorced-spouse-after-widowhood",
-            "citation": "SSA POMS RS 00202.046"
+            "citation": "SSA POMS RS 00202.046",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2297,11 +2589,13 @@
         "entries": [
           {
             "id": "cfr-20-404-412-b-arf-effective-fra-month",
-            "citation": "20 CFR 404.412(b)"
+            "citation": "20 CFR 404.412(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "cfr-20-404-412-b-arf-effective-fra-month",
-            "citation": "42 U.S.C. 402(q)(7)"
+            "citation": "42 U.S.C. 402(q)(7)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2311,35 +2605,43 @@
         "entries": [
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(3)(E)"
+            "citation": "42 U.S.C. 402(q)(3)(E)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 402(q)(7)(A)"
+            "citation": "42 U.S.C. 402(q)(7)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.410(c)(1)"
+            "citation": "20 CFR 404.410(c)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.621(a)(4)(ii)"
+            "citation": "20 CFR 404.621(a)(4)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "20 CFR 404.412(a)(1)"
+            "citation": "20 CFR 404.412(a)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
-            "citation": "SSA POMS RS 00207.003 A"
+            "citation": "SSA POMS RS 00207.003 A",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2349,83 +2651,103 @@
         "entries": [
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "42 U.S.C. 403(b)(1)"
+            "citation": "42 U.S.C. 403(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.434(b)(1)"
+            "citation": "20 CFR 404.434(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.434(b)(3)"
+            "citation": "20 CFR 404.434(b)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.439"
+            "citation": "20 CFR 404.439",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.440"
+            "citation": "20 CFR 404.440",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 02501.145, § A"
+            "citation": "SSA POMS RS 02501.145, § A",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 02501.145, § B.2.a"
+            "citation": "SSA POMS RS 02501.145, § B.2.a",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 02501.150, § A.2"
+            "citation": "SSA POMS RS 02501.150, § A.2",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "20 CFR 404.439"
+            "citation": "20 CFR 404.439",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 02501.150, § A.1"
+            "citation": "SSA POMS RS 02501.150, § A.1",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-42-403-b-1-worker-excess-charged-to-family",
-            "citation": "SSA POMS RS 00615.482, § B.2"
+            "citation": "SSA POMS RS 00615.482, § B.2",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "42 U.S.C. 402(q)(7)(A)"
+            "citation": "42 U.S.C. 402(q)(7)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "42 U.S.C. 403(f)(1)"
+            "citation": "42 U.S.C. 403(f)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "20 CFR 404.415(a)"
+            "citation": "20 CFR 404.415(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.1"
+            "citation": "SSA POMS RS 00615.482, § B.1",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.1 note"
+            "citation": "SSA POMS RS 00615.482, § B.1 note",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.2"
+            "citation": "SSA POMS RS 00615.482, § B.2",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 00615.482, § B.3 note"
+            "citation": "SSA POMS RS 00615.482, § B.3 note",
+            "verdict": "EXACT"
           },
           {
             "id": "poms-rs-00615-482-arf-crediting-months",
-            "citation": "SSA POMS RS 02501.145, § B.2.a"
+            "citation": "SSA POMS RS 02501.145, § B.2.a",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2435,11 +2757,13 @@
         "entries": [
           {
             "id": "usc-42-1395r-i-irmaa-applicable-percentage",
-            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part B income-related monthly adjustment amounts"
+            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part B income-related monthly adjustment amounts",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "usc-42-1395r-i-irmaa-applicable-percentage",
-            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part D income-related monthly adjustment amounts"
+            "citation": "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (fact sheet), Part D income-related monthly adjustment amounts",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -2449,7 +2773,8 @@
         "entries": [
           {
             "id": "usc-42-1395r-i-irmaa-applicable-percentage",
-            "citation": "42 U.S.C. 1395r(i)(3)(A)"
+            "citation": "42 U.S.C. 1395r(i)(3)(A)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2459,171 +2784,213 @@
         "entries": [
           {
             "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
-            "citation": "2025 Wisconsin Schedule SB Instructions, title page"
+            "citation": "2025 Wisconsin Schedule SB Instructions, title page",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
-            "citation": "2025 Wisconsin Schedule SB Instructions, Line 15"
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 15",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
-            "citation": "2025 Wisconsin Schedule SB Instructions, Line 4"
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 4",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
-            "citation": "2025 Wisconsin Schedule SB Instructions, Line 16"
+            "citation": "2025 Wisconsin Schedule SB Instructions, Line 16",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122)"
+            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122)",
+            "verdict": "EXACT"
           },
           {
             "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits"
+            "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits",
+            "verdict": "EXACT"
           },
           {
             "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page"
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d"
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits"
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on Railroad Retirement benefits",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-            "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d"
+            "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)"
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025)"
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: no income or age requirements (Publication 2026-01, tax year 2025)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025)"
+            "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: surviving spouses and the pension modification (Publication 2026-01, tax year 2025)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension"
+            "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1t, note on a military service pension",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
-            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(iii)"
+            "citation": "R.I. Gen. Laws §44-30-12(c)(11)(iii)",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-            "citation": "45 U.S.C. 231m(b)(1)"
+            "citation": "45 U.S.C. 231m(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-            "citation": "45 U.S.C. 231b(a)(1), tier I"
+            "citation": "45 U.S.C. 231b(a)(1), tier I",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-            "citation": "45 U.S.C. 231b(b)(1), tier II"
+            "citation": "45 U.S.C. 231b(b)(1), tier II",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
-            "citation": "S.C. Code 12-6-1120(4)"
+            "citation": "S.C. Code 12-6-1120(4)",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
-            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o"
+            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
-            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify"
+            "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, lines p-1 through p-3, income that does not qualify",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-            "citation": "Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits"
+            "citation": "Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits",
+            "verdict": "EXACT"
           },
           {
             "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-            "citation": "Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits"
+            "citation": "Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
+            "verdict": "EXACT"
           },
           {
             "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "al-form40-railroad-retirement-not-modeled",
-            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report"
+            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "al-form40-railroad-retirement-not-modeled",
-            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable"
+            "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, retirement systems whose payments are not taxable",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "al-form40-railroad-retirement-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page"
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054)"
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), Railroad Retirement Board benefits (ORS 316.054)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065"
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions"
+            "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
-            "citation": "P.L. 118-273, § 2(a)"
+            "citation": "P.L. 118-273, § 2(a)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
-            "citation": "P.L. 118-273, § 3(a)"
+            "citation": "P.L. 118-273, § 3(a)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
-            "citation": "P.L. 118-273, § 4"
+            "citation": "P.L. 118-273, § 4",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2633,23 +3000,28 @@
         "entries": [
           {
             "id": "usc-45-231m-state-tax-bar",
-            "citation": "45 U.S.C. 231m(a)"
+            "citation": "45 U.S.C. 231m(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-45-231m-state-tax-bar",
-            "citation": "45 U.S.C. 231m(b)(1)"
+            "citation": "45 U.S.C. 231m(b)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-45-231m-state-tax-bar",
-            "citation": "45 U.S.C. 231b(a)(1), tier I"
+            "citation": "45 U.S.C. 231b(a)(1), tier I",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-45-231m-state-tax-bar",
-            "citation": "45 U.S.C. 231b(b)(1), tier II"
+            "citation": "45 U.S.C. 231b(b)(1), tier II",
+            "verdict": "EXACT"
           },
           {
             "id": "usc-45-231m-state-tax-bar",
-            "citation": "45 U.S.C. 231a(b), supplemental annuity"
+            "citation": "45 U.S.C. 231a(b), supplemental annuity",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -2659,19 +3031,23 @@
         "entries": [
           {
             "id": "va-code-58-1-322-03-age-deduction-and-social-security",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Line 4 Age Deduction",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-age-deduction-and-social-security",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, adjusted federal adjusted gross income",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-age-deduction-and-social-security",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, married taxpayers",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-age-deduction-and-social-security",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Taxpayers Age 65 and Older, All Married Taxpayers",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2681,11 +3057,13 @@
         "entries": [
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Exemptions, 65 or Older",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet"
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Part 2 Prorated Exemption Worksheet",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2695,47 +3073,58 @@
         "entries": [
           {
             "id": "me-1040me-roth-conversion-not-pension-income",
-            "citation": "Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction"
+            "citation": "Maine Revenue Services, 2025 Form 1040ME instructions, Schedule 1S, pension income deduction",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "pa-40-roth-ira-conversion-not-taxable",
-            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover"
+            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "pa-40-roth-ira-conversion-not-taxable",
-            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld"
+            "citation": "Pennsylvania Department of Revenue, 2025 PA-40 instructions, Roth IRA Rollover, federal tax withheld",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ny-tsb-m-98-7-i-roth-conversion-at-59-and-a-half",
-            "citation": "New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition"
+            "citation": "New York State Department of Taxation and Finance, TSB-M-98(7)I, Conversion Income, Immediate Recognition",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
-            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)"
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii)(III)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
-            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)"
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix)(III)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
-            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule"
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxviii), schedule",
+            "verdict": "EXACT"
           },
           {
             "id": "ct-cgs-12-701-20-b-xxviii-xxix-ira-distribution-schedule",
-            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule"
+            "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxix), schedule",
+            "verdict": "EXACT"
           },
           {
             "id": "mi-treasury-roth-conversion-at-59-and-a-half",
-            "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax"
+            "citation": "Michigan Department of Treasury, Individual Income Tax FAQ, Are conversions from a regular IRA to a Roth IRA subject to Michigan individual income tax",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-code-12-6-1170-roth-conversion-not-premature",
-            "citation": "S.C. Code §12-6-1170(A)(2)"
+            "citation": "S.C. Code §12-6-1170(A)(2)",
+            "verdict": "EXACT"
           },
           {
             "id": "sc-code-12-6-1170-roth-conversion-not-premature",
-            "citation": "IRC 408A(d)(3)(A)(i)-(ii)"
+            "citation": "IRC 408A(d)(3)(A)(i)-(ii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2745,15 +3134,18 @@
         "entries": [
           {
             "id": "ks-stat-79-32-117-public-pension-exclusion",
-            "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available"
+            "citation": "Kansas Department of Revenue, Notice 08-06, Kansas Income Tax Treatment of Certain Washburn University Retirement Benefits (December 19, 2008), Plans Available",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax"
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Line 17 Income Tax",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-code-58-1-322-03-2-personal-exemptions",
-            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule"
+            "citation": "Virginia Department of Taxation, 2025 Form 760PY Part-Year Resident Instructions, Tax Rate Schedule",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2763,139 +3155,173 @@
         "entries": [
           {
             "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
-            "citation": "2025 Wisconsin Schedule SB instructions, line 12 (Wis. Stat. 71.05(1)(am))"
+            "citation": "2025 Wisconsin Schedule SB instructions, line 12 (Wis. Stat. 71.05(1)(am))",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
-            "citation": "2025 Wisconsin Schedule SB instructions, line 12, limit"
+            "citation": "2025 Wisconsin Schedule SB instructions, line 12, limit",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-stat-71-05-1-am-military-retirement-subtraction",
-            "citation": "2025 Wisconsin Schedule SB instructions, line 16"
+            "citation": "2025 Wisconsin Schedule SB instructions, line 16",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "mn-stat-290-0132-subd-21-military-retirement-subtraction",
-            "citation": "Minn. Stat. 290.0132, subd. 21"
+            "citation": "Minn. Stat. 290.0132, subd. 21",
+            "verdict": "EXACT"
           },
           {
             "id": "mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction",
-            "citation": "MCL 206.30(1)(e)(i)"
+            "citation": "MCL 206.30(1)(e)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "mi-mcl-206-30-1-e-i-armed-forces-retirement-deduction",
-            "citation": "MCL 206.30(1)(f)(iv)"
+            "citation": "MCL 206.30(1)(f)(iv)",
+            "verdict": "EXACT"
           },
           {
             "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
-            "citation": "RSMo 143.121.3(12)"
+            "citation": "RSMo 143.121.3(12)",
+            "verdict": "EXACT"
           },
           {
             "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
-            "citation": "RSMo 143.124.5"
+            "citation": "RSMo 143.124.5",
+            "verdict": "EXACT"
           },
           {
             "id": "mo-rsmo-143-121-3-12-military-retirement-and-survivor-benefits",
-            "citation": "RSMo 143.124.5, from 2024"
+            "citation": "RSMo 143.124.5, from 2024",
+            "verdict": "EXACT"
           },
           {
             "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
-            "citation": "36 M.R.S. §5122(2)(M-2)(1)(b)"
+            "citation": "36 M.R.S. §5122(2)(M-2)(1)(b)",
+            "verdict": "EXACT"
           },
           {
             "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
-            "citation": "36 M.R.S. §5122(2)(M-2)(2)(c)"
+            "citation": "36 M.R.S. §5122(2)(M-2)(2)(c)",
+            "verdict": "EXACT"
           },
           {
             "id": "me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction",
-            "citation": "36 M.R.S. §5122(2)(M-2)(2)(e)"
+            "citation": "36 M.R.S. §5122(2)(M-2)(2)(e)",
+            "verdict": "EXACT"
           },
           {
             "id": "pa-code-61-101-6-c-3-uniformed-services-retired-pay",
-            "citation": "61 Pa. Code 101.6(c)(3)"
+            "citation": "61 Pa. Code 101.6(c)(3)",
+            "verdict": "EXACT"
           },
           {
             "id": "pa-code-61-101-6-c-3-uniformed-services-retired-pay",
-            "citation": "61 Pa. Code 101.6(c)"
+            "citation": "61 Pa. Code 101.6(c)",
+            "verdict": "EXACT"
           },
           {
             "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
-            "citation": "2025 Form IT-511 Individual Income Tax booklet, retirement income exclusion, item 2 (O.C.G.A. 48-7-27(a)(5.1))"
+            "citation": "2025 Form IT-511 Individual Income Tax booklet, retirement income exclusion, item 2 (O.C.G.A. 48-7-27(a)(5.1))",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
-            "citation": "2025 Form IT-511 Individual Income Tax booklet, adjustments to income, item 27"
+            "citation": "2025 Form IT-511 Individual Income Tax booklet, adjustments to income, item 27",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
-            "citation": "HB 266 (2025), section 1, amending O.C.G.A. 48-7-27(a)(5.1)(C) (new text underlined in the passed version); PDF line numbers retained"
+            "citation": "HB 266 (2025), section 1, amending O.C.G.A. 48-7-27(a)(5.1)(C) (new text underlined in the passed version); PDF line numbers retained",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-code-48-7-27-a-5-1-military-retirement-exclusion",
-            "citation": "HB 266 (2025), section 3(b); PDF line numbers retained"
+            "citation": "HB 266 (2025), section 3(b); PDF line numbers retained",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-207-q-military-retirement-subtraction",
-            "citation": "Md. Code, Tax-General 10-207(q)(1)(iii)"
+            "citation": "Md. Code, Tax-General 10-207(q)(1)(iii)",
+            "verdict": "EXACT"
           },
           {
             "id": "md-tg-10-207-q-military-retirement-subtraction",
-            "citation": "Md. Code, Tax-General 10-207(q)(2)"
+            "citation": "Md. Code, Tax-General 10-207(q)(2)",
+            "verdict": "EXACT"
           },
           {
             "id": "md-tg-10-207-q-military-retirement-subtraction",
-            "citation": "Md. Code, Tax-General 10-209(d)(1)"
+            "citation": "Md. Code, Tax-General 10-209(d)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "ok-stat-68-2358-e-17-armed-forces-retirement-exclusion",
-            "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 4"
+            "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 4",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "la-rs-47-44-2-social-security-federal-retirement",
-            "citation": "La. R.S. 47:44.2"
+            "citation": "La. R.S. 47:44.2",
+            "verdict": "EXACT"
           },
           {
             "id": "la-rs-47-44-2-social-security-federal-retirement",
-            "citation": "2025 Form IT-540 instructions, Schedule E code 04E"
+            "citation": "2025 Form IT-540 instructions, Schedule E code 04E",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
-            "citation": "C.R.S. 39-22-104(4)(y)(I)"
+            "citation": "C.R.S. 39-22-104(4)(y)(I)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
-            "citation": "C.R.S. 39-22-104(4)(y)(I)(D)"
+            "citation": "C.R.S. 39-22-104(4)(y)(I)(D)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
-            "citation": "C.R.S. 39-22-104(4)(y)(II)"
+            "citation": "C.R.S. 39-22-104(4)(y)(II)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
-            "citation": "C.R.S. 39-22-104(4)(f)(I)"
+            "citation": "C.R.S. 39-22-104(4)(f)(I)",
+            "verdict": "EXACT"
           },
           {
             "id": "co-crs-39-22-104-4-y-military-retirement-subtraction",
-            "citation": "C.R.S. 39-22-104(4)(f)(II)"
+            "citation": "C.R.S. 39-22-104(4)(f)(II)",
+            "verdict": "EXACT"
           },
           {
             "id": "nm-nmsa-7-2-5-13-armed-forces-retirement-exemption",
-            "citation": "NMSA 1978 7-2-5.13(A), as amended by 2024 N.M. Laws, HB 252, section 32; PDF line numbers retained"
+            "citation": "NMSA 1978 7-2-5.13(A), as amended by 2024 N.M. Laws, HB 252, section 32; PDF line numbers retained",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nm-nmsa-7-2-5-13-armed-forces-retirement-exemption",
-            "citation": "NMSA 1978 7-2-5.13(B); PDF line numbers retained"
+            "citation": "NMSA 1978 7-2-5.13(B); PDF line numbers retained",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
-            "citation": "MCA 15-30-2120(8)(a)"
+            "citation": "MCA 15-30-2120(8)(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
-            "citation": "MCA 15-30-2120(3)(n)(ii)"
+            "citation": "MCA 15-30-2120(3)(n)(ii)",
+            "verdict": "EXACT"
           },
           {
             "id": "mt-mca-15-30-2120-3-n-military-retirement-subtraction",
-            "citation": "MCA 15-30-2120(9)"
+            "citation": "MCA 15-30-2120(9)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -2905,39 +3331,48 @@
         "entries": [
           {
             "id": "ut-code-59-10-114-1-additions-in-utah-magi",
-            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026"
+            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-code-59-10-114-1-additions-in-utah-magi",
-            "citation": "Utah Code 59-10-114(1)(e)"
+            "citation": "Utah Code 59-10-114(1)(e)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-code-59-10-114-1-additions-in-utah-magi",
-            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, lines 2 to 6"
+            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, lines 2 to 6",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "2025 TC-40 instructions, Social Security Credit Worksheet, line 5"
+            "citation": "2025 TC-40 instructions, Social Security Credit Worksheet, line 5",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, line 2"
+            "citation": "2025 TC-40 instructions, Retirement Credit Worksheet, line 2",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "2025 TC-40 instructions, code 78 Railroad Retirement Income"
+            "citation": "2025 TC-40 instructions, code 78 Railroad Retirement Income",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026"
+            "citation": "Utah Code 59-10-1042(1)(d), effective Jan. 1, 2026",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "Utah Code 59-10-1019(1)(e)"
+            "citation": "Utah Code 59-10-1019(1)(e)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ut-tc-40-social-security-credit-railroad-magi",
-            "citation": "Utah Code 59-10-114(2)(d)"
+            "citation": "Utah Code 59-10-114(2)(d)",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -2947,23 +3382,28 @@
         "entries": [
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146"
+            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146",
+            "verdict": "EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4"
+            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)5 and 6"
+            "citation": "N.J.S.A. 54A:3-1(b)5 and 6",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)7"
+            "citation": "N.J.S.A. 54A:3-1(b)7",
+            "verdict": "EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)"
+            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -2973,211 +3413,263 @@
         "entries": [
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146"
+            "citation": "N.J.S.A. 54A:3-1(a), as amended by P.L.2019, c.146",
+            "verdict": "EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4"
+            "citation": "N.J.S.A. 54A:3-1(b)1, 3 and 4",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)5 and 6"
+            "citation": "N.J.S.A. 54A:3-1(b)5 and 6",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)7"
+            "citation": "N.J.S.A. 54A:3-1(b)7",
+            "verdict": "EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)"
+            "citation": "N.J.S.A. 54A:3-1(b)2 and (c)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "nj-stat-54a-3-1-personal-exemptions",
-            "citation": "2025 Form NJ-1040 instructions, Part-Year Residents, line 30 and line 43"
+            "citation": "2025 Form NJ-1040 instructions, Part-Year Residents, line 30 and line 43",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
-            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(F)"
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(F)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
-            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)"
+            "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
-            "citation": "Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44"
+            "citation": "Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ars-43-1041-standard-deduction-published-amount",
-            "citation": "A.R.S. 43-1041(A)(1)"
+            "citation": "A.R.S. 43-1041(A)(1)",
+            "verdict": "EXACT"
           },
           {
             "id": "ars-43-1041-standard-deduction-published-amount",
-            "citation": "A.R.S. 43-1041(H)"
+            "citation": "A.R.S. 43-1041(H)",
+            "verdict": "EXACT"
           },
           {
             "id": "ars-43-1041-standard-deduction-published-amount",
-            "citation": "A.R.S. 43-105(A)"
+            "citation": "A.R.S. 43-105(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "ars-43-1041-standard-deduction-published-amount",
-            "citation": "2025 Arizona Form 140A, line 18"
+            "citation": "2025 Arizona Form 140A, line 18",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ars-43-1041-standard-deduction-published-amount",
-            "citation": "2025 Form 140PY instructions, lines 51, 53 and 56"
+            "citation": "2025 Form 140PY instructions, lines 51, 53 and 56",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "sc-sciad-act-110-retirement-income-deduction",
-            "citation": "2026 Act 110, H.4216, SCIAD and effective date"
+            "citation": "2026 Act 110, H.4216, SCIAD and effective date",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "sc-sciad-act-110-retirement-income-deduction",
-            "citation": "2025 Schedule NR, lines 45 to 48"
+            "citation": "2025 Schedule NR, lines 45 to 48",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 9003"
+            "citation": "D.C. Act 26-416, sec. 9003",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents"
+            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(b)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(b)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(c)(1) and (3)"
+            "citation": "Md. Tax-General §10-217(c)(1) and (3)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)"
+            "citation": "Maryland Comptroller, 2026 Employer Withholding Guide, Reminders (single standard deduction)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Md. Tax-General §10-217(c)(2)"
+            "citation": "Md. Tax-General §10-217(c)(2)",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction"
+            "citation": "Maryland Comptroller, 2026 Form PV estimated-tax worksheet instructions, standard deduction",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "md-tg-10-217-2026-indexed-standard-deduction",
-            "citation": "Comptroller of Maryland, Personal Tax Tip #52, part-year residents"
+            "citation": "Comptroller of Maryland, Personal Tax Tip #52, part-year residents",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)4, as amended by 2025 Miss. H.B. 1, § 1"
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)4, as amended by 2025 Miss. H.B. 1, § 1",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)5, as amended by 2025 Miss. H.B. 1, § 1"
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)5, as amended by 2025 Miss. H.B. 1, § 1",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)6, as amended by 2025 Miss. H.B. 1, § 1"
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)6, as amended by 2025 Miss. H.B. 1, § 1",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)7, as amended by 2025 Miss. H.B. 1, § 1"
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)7, as amended by 2025 Miss. H.B. 1, § 1",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii), closing sentence"
+            "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii), closing sentence",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)"
+            "citation": "2025 Miss. H.B. 1, section 2(2) (revenue-triggered cuts from 2031)",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "MS DOR, Individual Income Tax: Tax Rates"
+            "citation": "MS DOR, Individual Income Tax: Tax Rates",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30"
+            "citation": "2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30",
+            "verdict": "EXACT"
           },
           {
             "id": "ms-27-7-5-rate-ramp",
-            "citation": "2025 Form 80-100 instructions, part-year residents and lines 14 and 15"
+            "citation": "2025 Form 80-100 instructions, part-year residents and lines 14 and 15",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "La. R.S. 47:294(A)"
+            "citation": "La. R.S. 47:294(A)",
+            "verdict": "EXACT"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "La. R.S. 47:294(A)(1), TY2025 single and separate base amount"
+            "citation": "La. R.S. 47:294(A)(1), TY2025 single and separate base amount",
+            "verdict": "EXACT"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "La. R.S. 47:294(A)(2), filing-status cell"
+            "citation": "La. R.S. 47:294(A)(2), filing-status cell",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "La. R.S. 47:294(A)(2), amount cell"
+            "citation": "La. R.S. 47:294(A)(2), amount cell",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "La. R.S. 47:294(B)"
+            "citation": "La. R.S. 47:294(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet"
+            "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "la-ldr-it540es-2026-standard-deduction",
-            "citation": "2025 Form IT-540B, lines 10, 11E, 12 and 13"
+            "citation": "2025 Form IT-540B, lines 10, 11E, 12 and 13",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ky-dor-2026-standard-deduction-once-per-return",
-            "citation": "Kentucky DOR, Kentucky DOR Announces 2026 Standard Deduction (2025-09-04)"
+            "citation": "Kentucky DOR, Kentucky DOR Announces 2026 Standard Deduction (2025-09-04)",
+            "verdict": "EXACT"
           },
           {
             "id": "ky-dor-2026-standard-deduction-once-per-return",
-            "citation": "Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern"
+            "citation": "Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ky-dor-2026-standard-deduction-once-per-return",
-            "citation": "2025 Form 740-NP Schedule A instructions"
+            "citation": "2025 Form 740-NP Schedule A instructions",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "al-dor-individual-income-tax-rate-schedule",
-            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate"
+            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "al-dor-individual-income-tax-rate-schedule",
-            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)"
+            "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "al-dor-individual-income-tax-rate-schedule",
-            "citation": "2025 Form 40 booklet, part-year residents"
+            "citation": "2025 Form 40 booklet, part-year residents",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-2026-rates-standard-deduction-exemptions",
-            "citation": "Wisconsin 2026 Form 1-ES, pages 2–3"
+            "citation": "Wisconsin 2026 Form 1-ES, pages 2–3",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "wi-2026-rates-standard-deduction-exemptions",
-            "citation": "2025 Form 1NPR instructions, lines 32, 33 and 34c, and the 2025 Standard Deduction Table for Form 1NPR filers"
+            "citation": "2025 Form 1NPR instructions, lines 32, 33 and 34c, and the 2025 Standard Deduction Table for Form 1NPR filers",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "id-form-43-part-year-resident-period",
-            "citation": "2025 Idaho Form 43 instructions, lines 38, 39 and 41, and the line 42 tax worksheet"
+            "citation": "2025 Idaho Form 43 instructions, lines 38, 39 and 41, and the line 42 tax worksheet",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -3187,67 +3679,83 @@
         "entries": [
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I), enrolled original"
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I), enrolled original",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year, enrolled original"
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year, enrolled original",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi), enrolled original"
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi), enrolled original",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7113, applicability of subtitle I, enrolled original"
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 7113, applicability of subtitle I, enrolled original",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 9003, effective date, enrolled original"
+            "citation": "D.C. Law 26-189 (D.C. Act 26-418), sec. 9003, effective date, enrolled original",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), adding D.C. Code 47-1801.04(3A)(A)(ii)(I)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(1), D.C. Code 47-1801.04(3A)(B), base year",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)"
+            "citation": "D.C. Act 26-416, sec. 7112(b)(3), D.C. Code 47-1801.04(44)(A)(v)(II) and (vi)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Act 26-416, sec. 9003"
+            "citation": "D.C. Act 26-416, sec. 9003",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "Council of the District of Columbia, Legislative Information Management System, the record of Bill 26-661"
+            "citation": "Council of the District of Columbia, Legislative Information Management System, the record of Bill 26-661",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "Pub. L. 119-78 (H.J. Res. 142), disapproving D.C. Act 26-217"
+            "citation": "Pub. L. 119-78 (H.J. Res. 142), disapproving D.C. Act 26-217",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04(44)(D), the part-year resident"
+            "citation": "D.C. Code 47-1801.04(44)(D), the part-year resident",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "D.C. Code 47-1801.04(44)(A)(iv) before D.C. Law 26-189, as the code site prints it on 2026-10-08"
+            "citation": "D.C. Code 47-1801.04(44)(A)(iv) before D.C. Law 26-189, as the code site prints it on 2026-10-08",
+            "verdict": "EXACT"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "2026 D-40ES (Rev. 03/2026), Worksheet to Estimate DC Tax Payments, line 2b"
+            "citation": "2026 D-40ES (Rev. 03/2026), Worksheet to Estimate DC Tax Payments, line 2b",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "2025 D-40 booklet, New for 2025 Income Tax Returns, DC Basic Standard Deduction"
+            "citation": "2025 D-40 booklet, New for 2025 Income Tax Returns, DC Basic Standard Deduction",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "dc-code-47-1801-04-3a-standard-deduction-2026-2029",
-            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents"
+            "citation": "2025 D-40 booklet, Part-Year Resident and the standard deduction for part-year DC residents",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -3257,15 +3765,18 @@
         "entries": [
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion"
+            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Roth IRA conversion",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -3275,11 +3786,13 @@
         "entries": [
           {
             "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
-            "citation": "IRC 401(a)(9)(E)(ii)"
+            "citation": "IRC 401(a)(9)(E)(ii)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "irc-401-a-9-E-ii-eligible-designated-beneficiary",
-            "citation": "Treas. Reg. 1.408-8(c)(3)"
+            "citation": "Treas. Reg. 1.408-8(c)(3)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -3289,15 +3802,18 @@
         "entries": [
           {
             "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
-            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)"
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
-            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(i)"
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(i)",
+            "verdict": "EXACT"
           },
           {
             "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
-            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)"
+            "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)",
+            "verdict": "EXACT"
           }
         ]
       },
@@ -3307,7 +3823,8 @@
         "entries": [
           {
             "id": "state-hsa-evidence-runtime-merge-and-completeness",
-            "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13"
+            "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13",
+            "verdict": "UNFETCHABLE"
           }
         ]
       },
@@ -3317,47 +3834,58 @@
         "entries": [
           {
             "id": "ga-it511-2026-qss-standard-deduction-single",
-            "citation": "Georgia Department of Revenue, 2025 IT-511 Individual Income Tax Booklet, Form 500 Schedule 3, Line 10"
+            "citation": "Georgia Department of Revenue, 2025 IT-511 Individual Income Tax Booklet, Form 500 Schedule 3, Line 10",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ga-it511-2026-qss-standard-deduction-single",
-            "citation": "Georgia Department of Revenue, Important Tax Updates, 2026 Income Tax Changes"
+            "citation": "Georgia Department of Revenue, Important Tax Updates, 2026 Income Tax Changes",
+            "verdict": "EXACT"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "Virginia Department of Taxation, Filing Status"
+            "citation": "Virginia Department of Taxation, Filing Status",
+            "verdict": "EXACT"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Filing Status"
+            "citation": "Virginia Department of Taxation, 2025 Form 760 Resident Individual Income Tax Instructions, Filing Status",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "Va. Code §58.1-322.03(1)(b)(v)"
+            "citation": "Va. Code §58.1-322.03(1)(b)(v)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "Va. Code §58.1-322.03(2)(a)"
+            "citation": "Va. Code §58.1-322.03(2)(a)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "IRC 2(a)(1)(B)"
+            "citation": "IRC 2(a)(1)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "va-760-2026-qss-files-single",
-            "citation": "IRC 151(d)(5)(B)"
+            "citation": "IRC 151(d)(5)(B)",
+            "verdict": "EXACT"
           },
           {
             "id": "ks-k40-2026-qss-head-of-household",
-            "citation": "Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status"
+            "citation": "Kansas Department of Revenue, 2025 Kansas Individual Income Tax Instructions (IP25), Filing Status",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "ks-k40-2026-qss-head-of-household",
-            "citation": "K.S.A. 79-32,119(c)(2)"
+            "citation": "K.S.A. 79-32,119(c)(2)",
+            "verdict": "ELISION-EXACT"
           },
           {
             "id": "ks-k40-2026-qss-head-of-household",
-            "citation": "K.S.A. 79-32,110(a)(2)"
+            "citation": "K.S.A. 79-32,110(a)(2)",
+            "verdict": "ELISION-EXACT"
           }
         ]
       },
@@ -3367,7 +3895,8 @@
         "entries": [
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value"
+            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value",
+            "verdict": "PDF-WORD-LEVEL"
           }
         ]
       },
@@ -3377,19 +3906,50 @@
         "entries": [
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 7"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 7",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nj-direct-qcd-ira-basis-treatment",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a, part-year residents"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a, part-year residents",
+            "verdict": "PDF-WORD-LEVEL"
           },
           {
             "id": "nj-stat-54a-6-10-retirement-income-exclusion",
-            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a"
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a",
+            "verdict": "PDF-WORD-LEVEL"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added by the fix for RetireGolden #823 (the Wisconsin age-65 exemption for a January 1 birthday): one new quote on wi-2026-rates-standard-deduction-exemptions, from the 2025 Wisconsin Form 1 instructions (the Age paragraph on page 3 and line 10b on page 15). verify-quotes could not reach revenue.wi.gov from the session that made the change (the session's proxy refused the tunnel with HTTP 403), so the row is UNFETCHABLE here; the same day the two quoted sentences were read from the PDF's text through a fetch tool and found as quoted. A later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "wi-2026-rates-standard-deduction-exemptions",
+            "citation": "2025 Wisconsin Form 1 instructions, Age (page 3) and line 10b (page 15)",
+            "verdict": "UNFETCHABLE"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-04",
+        "note": "Added for RetireGolden #840 (review r1-8 and r1-11): the 2025 PIT-RES Line 6 sentence counting pensions of a deceased taxpayer is now an authority on de-early-distribution-gate, and the 2025 NJ-1040 line 7 sentence dating the age exemption on the last day of the tax year (born in 1960 or earlier) an authority on nj-stat-54a-3-1-personal-exemptions. verify-quotes could not reach revenuefiles.delaware.gov or www.nj.gov from the session that made the change (the session's proxy refused the tunnel with HTTP 403, on 2026-11-04), so both rows are UNFETCHABLE here; the same day each sentence was read from the PDF through a fetch tool and found as quoted. A later networked run filtered to these records re-checks them like any other entry. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "de-early-distribution-gate",
+            "citation": "2025 PIT-RES instructions, p.6, Line 6 pension exclusion, pensions of a deceased taxpayer",
+            "verdict": "UNFETCHABLE"
+          },
+          {
+            "id": "nj-stat-54a-3-1-personal-exemptions",
+            "citation": "2025 Form NJ-1040 instructions, line 7, Senior 65+",
+            "verdict": "UNFETCHABLE"
           }
         ]
       }

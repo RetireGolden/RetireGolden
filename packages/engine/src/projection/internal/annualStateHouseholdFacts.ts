@@ -1,4 +1,4 @@
-import { ageOnDate, householdFactsForYear } from './stateRetirementFactsAdapter.js'
+import { householdFactsForYear } from './stateRetirementFactsAdapter.js'
 /** Annual source facts, not a second state-tax calculator.
  * State household bases and eligibility are characterized inputs. Household
  * §86 inclusion cannot be allocated between recipients by an invented ratio.
@@ -131,28 +131,23 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
   if (storedRecipients !== undefined && !storedIncludedMatches) warnings.push('Stored recipient Social Security inclusion does not establish this candidate ledger allocation.')
   const allRailroadInclusionKnown = railroad !== undefined && railroad.every((row) => row.federallyIncludedAmount !== undefined)
   const claimantIds = input.claimantPersonIds ?? plan.household.people.map((person) => person.id)
-  const allClaimantsKnown = claimantIds.every((id) => people.has(id))
-  const dates = claimantIds.flatMap((id) => {
-    const person = people.get(id)
-    if (person === undefined) { warnings.push(`Unknown state-return claimant ${id}.`); return [] }
-    return [person.dob]
-  })
+  for (const id of claimantIds) if (!people.has(id)) warnings.push(`Unknown state-return claimant ${id}.`)
   const derivedOwners = householdFactsForYear(plan, taxYear, { claimantPersonIds: claimantIds,
     ...(input.wagesByPerson === undefined ? {} : { ownerStateTaxFacts: claimantIds.map((ownerPersonId) => ({ ownerPersonId, wages: input.wagesByPerson!.get(ownerPersonId) ?? 0 })) }) })
-  const claimantAges = dates.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
-  const validDerivedAge65Count = allClaimantsKnown && claimantAges.length === claimantIds.length && claimantAges.every((age) => age !== undefined)
-    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
-    : undefined
+  // The age-65 count and the claimants' dates of birth come from
+  // householdFactsForYear with these claimants: a stored count as
+  // `age65EligibleCount`, through storedFacts too, or else the count derived
+  // from their dates of birth under each age-attainment convention as
+  // `age65EligibleCountByConvention` alone; the stored dates of birth, or one
+  // per claimant, left out when a claimant names no household person.
+  const { claimantDatesOfBirth: claimantDates, ...derivedOwnerFacts } = derivedOwners ?? {}
   const householdFacts: AnnualStateHouseholdFacts = {
-    ...derivedOwners,
+    ...derivedOwnerFacts,
     ...storedFacts,
+    ...(claimantDates === undefined ? {} : { claimantDatesOfBirth: [...claimantDates] }),
     ownerStateTaxFacts: derivedOwners?.ownerStateTaxFacts,
     stateFilingStatus: stored?.stateFilingStatus ?? plan.household.filingStatus,
     ...(stored?.stateFilingStatus === undefined ? { stateFilingStatusDefaulted: true } : {}),
-    claimantDatesOfBirth: stored?.claimantDatesOfBirth ?? dates,
-    ...(stored?.age65EligibleCount !== undefined
-      ? { age65EligibleCount: stored.age65EligibleCount }
-      : validDerivedAge65Count === undefined ? {} : { age65EligibleCount: validDerivedAge65Count }),
     federalAgi: federal.agi, federalTaxableIncome: federal.taxableIncome,
     federalDeductionUsed: federal.deductionUsed,
     ...(federal.seniorDeduction === undefined ? {} : { federalSeniorDeduction: federal.seniorDeduction }),

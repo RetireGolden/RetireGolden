@@ -1,10 +1,10 @@
 {
   "generatedAt": "2026-09-23T22:50:50.754Z",
   "recordCount": 608,
-  "urlCount": 529,
+  "urlCount": 530,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1909,
+  "entryCount": 1912,
   "counts": {
     "ELISION-EXACT": 155,
     "ELISION-PUNCTUATION": 1,
@@ -12,7 +12,7 @@
     "PDF-NOT-VERIFIABLE": 1,
     "PDF-WORD-LEVEL": 478,
     "PUNCTUATION": 4,
-    "UNFETCHABLE": 11
+    "UNFETCHABLE": 14
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -14716,6 +14716,16 @@
       "diagnosis": null
     },
     {
+      "id": "de-early-distribution-gate",
+      "citation": "2025 PIT-RES instructions, p.6, Line 6 pension exclusion, pensions of a deceased taxpayer",
+      "host": "revenuefiles.delaware.gov",
+      "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-RES_Instructions_2025-01.pdf",
+      "quoteSha256": "e3fb051c0106bdbd",
+      "verdict": "UNFETCHABLE",
+      "detail": "CONNECT tunnel failed, response 403",
+      "diagnosis": null
+    },
+    {
       "id": "dc-code-47-1803-03-government-survivor-exclusion",
       "citation": "D.C. Code §47-1803.02(a)(2)(N)(ii)",
       "host": "code.dccouncil.gov",
@@ -18967,6 +18977,16 @@
       "diagnosis": null
     },
     {
+      "id": "nj-stat-54a-3-1-personal-exemptions",
+      "citation": "2025 Form NJ-1040 instructions, line 7, Senior 65+",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quoteSha256": "201749b3d3722db1",
+      "verdict": "UNFETCHABLE",
+      "detail": "CONNECT tunnel failed, response 403",
+      "diagnosis": null
+    },
+    {
       "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
       "citation": "Form N-15 (Rev. 2025), lines 37, 40b, 42b, 43 and 44",
       "host": "files.hawaii.gov",
@@ -19054,6 +19074,16 @@
       "quoteSha256": "627153af4edc3732",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "4 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "wi-2026-rates-standard-deduction-exemptions",
+      "citation": "2025 Wisconsin Form 1 instructions, Age (page 3) and line 10b (page 15)",
+      "host": "www.revenue.wi.gov",
+      "url": "https://www.revenue.wi.gov/TaxForms2025/2025-Form1-Inst.pdf",
+      "quoteSha256": "26a0e09e6be03400",
+      "verdict": "UNFETCHABLE",
+      "detail": "CONNECT tunnel failed, response 403",
       "diagnosis": null
     },
     {
@@ -21843,6 +21873,30 @@
         {
           "id": "nj-stat-54a-6-10-retirement-income-exclusion",
           "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a"
+        }
+      ]
+    },
+    {
+      "on": "2026-11-03",
+      "note": "Added by the fix for RetireGolden #823 (the Wisconsin age-65 exemption for a January 1 birthday): one new quote on wi-2026-rates-standard-deduction-exemptions, from the 2025 Wisconsin Form 1 instructions (the Age paragraph on page 3 and line 10b on page 15). verify-quotes could not reach revenue.wi.gov from the session that made the change (the session's proxy refused the tunnel with HTTP 403), so the row is UNFETCHABLE here; the same day the two quoted sentences were read from the PDF's text through a fetch tool and found as quoted. A later networked run filtered to this record re-checks it like any other entry. No other ledger entry was re-run.",
+      "entries": [
+        {
+          "id": "wi-2026-rates-standard-deduction-exemptions",
+          "citation": "2025 Wisconsin Form 1 instructions, Age (page 3) and line 10b (page 15)"
+        }
+      ]
+    },
+    {
+      "on": "2026-11-04",
+      "note": "Added for RetireGolden #840 (review r1-8 and r1-11): the 2025 PIT-RES Line 6 sentence counting pensions of a deceased taxpayer is now an authority on de-early-distribution-gate, and the 2025 NJ-1040 line 7 sentence dating the age exemption on the last day of the tax year (born in 1960 or earlier) an authority on nj-stat-54a-3-1-personal-exemptions. verify-quotes could not reach revenuefiles.delaware.gov or www.nj.gov from the session that made the change (the session's proxy refused the tunnel with HTTP 403, on 2026-11-04), so both rows are UNFETCHABLE here; the same day each sentence was read from the PDF through a fetch tool and found as quoted. A later networked run filtered to these records re-checks them like any other entry. No other ledger entry was re-run.",
+      "entries": [
+        {
+          "id": "de-early-distribution-gate",
+          "citation": "2025 PIT-RES instructions, p.6, Line 6 pension exclusion, pensions of a deceased taxpayer"
+        },
+        {
+          "id": "nj-stat-54a-3-1-personal-exemptions",
+          "citation": "2025 Form NJ-1040 instructions, line 7, Senior 65+"
         }
       ]
     }

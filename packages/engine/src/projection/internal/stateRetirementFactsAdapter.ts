@@ -24,6 +24,7 @@ import type {
   StateQcdYearFactsInput,
   StateRetirementDistributionFactInput,
 } from '../types.js'
+import type { StateAgeAttainmentConvention } from '../../params/state/types.js'
 
 export type StateRetirementSourceKind = StateRetirementDistributionFactInput['sourceKind']
 
@@ -154,6 +155,7 @@ export function characterizePensionDistribution(input: {
       explicit: eligibility?.earlyDistributionDisqualifier,
       minimumAgeAtDistributionYears,
       military,
+      cause,
     }),
     ...(minimumAgeAtDistributionYears === undefined
       ? {}
@@ -204,6 +206,26 @@ export function characterizePensionDistribution(input: {
   }
 }
 
+/**
+ * The claimants' dates of birth for a projected year: supplied or stored ones
+ * as given, else one per claimant in claimant order. A date that does not
+ * parse is kept, so every reader fails closed on it; when a claimant id names
+ * no household person there is no date to publish for that claimant, so the
+ * list is left out rather than published short, and a reader cannot derive
+ * an age count from the claimants it does know.
+ */
+function claimantDatesOfBirthFor(
+  plan: Readonly<Plan>,
+  projected: StateHouseholdTaxFactsInput,
+  stored: readonly string[] | undefined,
+): { claimantDatesOfBirth?: string[] } {
+  const given = projected.claimantDatesOfBirth ?? stored
+  if (given !== undefined) return { claimantDatesOfBirth: [...given] }
+  const claimantIds = projected.claimantPersonIds ?? plan.household.people.map((person) => person.id)
+  const dates = claimantIds.map((id) => plan.household.people.find((person) => person.id === id)?.dob)
+  return dates.every((dob) => dob !== undefined) ? { claimantDatesOfBirth: dates as string[] } : {}
+}
+
 export function householdFactsForYear(
   plan: Readonly<Plan>,
   year: number,
@@ -231,17 +253,22 @@ export function householdFactsForYear(
       ...(age === undefined ? {} : { recipientAgeYears: age }),
     }
   })
-  const claimantAges = ownerPeople.map((person) => ageOnDate(person.dob, `${year}-12-31`))
-  const derivedAge65 = storedAge65 ?? (allClaimantsKnown && claimantAges.every((age) => age !== undefined)
-    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
-    : undefined)
+  // A stored count is the plan's assertion for every state and is the only
+  // thing published as `age65EligibleCount`. Otherwise the count comes from
+  // the claimants' dates of birth under each convention and is published only
+  // as `age65EligibleCountByConvention`, so a caller that later sets
+  // `age65EligibleCount` asserts it whatever value the derivation had.
+  const derivedAge65ByConvention = storedAge65 === undefined && allClaimantsKnown
+    ? age65EligibleCountsByConvention(ownerPeople.map((person) => person.dob), year)
+    : undefined
   return {
     ...household,
     ...projected,
     ...(projected === undefined ? {} : { ownerStateTaxFacts: mergedOwners }),
-    ...(derivedAge65 === undefined ? {} : { age65EligibleCount: derivedAge65 }),
+    ...(storedAge65 === undefined ? {} : { age65EligibleCount: storedAge65 }),
+    ...(derivedAge65ByConvention === undefined ? {} : { age65EligibleCountByConvention: derivedAge65ByConvention }),
     ...(row?.stateFilingStatus === undefined ? {} : { stateFilingStatus: row.stateFilingStatus }),
-    ...(projected === undefined ? {} : { claimantDatesOfBirth: projected.claimantDatesOfBirth ?? household.claimantDatesOfBirth ?? plan.household.people.map((person) => person.dob) }),
+    ...(projected === undefined ? {} : claimantDatesOfBirthFor(plan, projected, household.claimantDatesOfBirth)),
     ...(election === undefined
       ? {}
       : {
@@ -773,6 +800,16 @@ export interface AnnualStateRetirementEvent {
   distributionDate?: string
   eligibility?: PensionStateEligibility
   stateAllocation?: readonly { state: string; fraction: number }[]
+  /**
+   * Whether the event is a distribution "made to a beneficiary ... on or
+   * after the death of the employee" (IRC 72(t)(2)(A)(ii)): true for an
+   * inherited account the year's owner-treatment facts leave inherited, false
+   * for an owned account or an inherited IRA a surviving spouse's effective
+   * election has made the spouse's own, and absent when the producer cannot
+   * tell. It is the row's cause (`death`, or `unknown` otherwise) unless the
+   * plan states a distribution reason; the two person ids never decide it.
+   */
+  paidToBeneficiaryAfterDeath?: boolean
 }
 
 /** Characterize each actual action, preserving the original owner and current payee. */
@@ -789,7 +826,7 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
       ...(evidence === undefined ? {} : { eligibility: { ...evidence.eligibility, ...event.eligibility } }),
     })
   }
-  return [...byId.values()].map((event) => {
+  return [...byId.values()].map(({ paidToBeneficiaryAfterDeath, ...event }) => {
     const recipient = plan.household.people.find((person) => person.id === event.recipientPersonId)
     const age = recipient === undefined ? undefined : ageOnDate(recipient.dob, `${year}-12-31`)
     const distributionAge = recipient === undefined || event.distributionDate === undefined ? undefined
@@ -797,6 +834,11 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
     const minimumAgeAtDistributionYears = recipient === undefined || distributionAge !== undefined
       ? undefined
       : ageOnDate(recipient.dob, `${year}-01-01`)
+    // The producer classifies the event from the account's inherited marker
+    // and the year's owner treatment; a recipient who differs from the source
+    // owner does not by itself make the distribution a death distribution.
+    const cause = event.eligibility?.distributionReason ??
+      (paidToBeneficiaryAfterDeath === true ? 'death' as const : 'unknown' as const)
     return {
       ...event, ...mapEligibility(event.eligibility),
       ownerPersonId: event.recipientPersonId,
@@ -805,34 +847,40 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
       ...(distributionAge === undefined
         ? { minimumAgeAtDistributionYears }
         : { ageAtDistributionYears: distributionAge }),
-      cause: event.eligibility?.distributionReason ??
-        (event.recipientPersonId !== event.sourceOwnerPersonId ? 'death' as const : 'unknown' as const),
+      cause,
       earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
         explicit: event.eligibility?.earlyDistributionDisqualifier,
         ageAtDistributionYears: distributionAge,
         minimumAgeAtDistributionYears,
         military: event.source === 'militaryRetirement' || event.source === 'militarySurvivor',
+        cause,
       }),
     }
   })
 }
 
 /**
- * Infer Box 7 / premature-penalty disqualification from explicit facts or a
- * proved distribution-age lower bound. Year-end recipient age never establishes
- * eligibility; crossing-year undated withdrawals stay unknown. Military retired
- * pay and a Survivor Benefit Plan annuity are paid under title 10 of the U.S.
- * Code, not from a qualified plan, so IRC 72(t) never reaches them: `false`
- * at any age unless the plan asserts otherwise.
+ * Infer Box 7 / premature-penalty disqualification from explicit facts, the
+ * distribution's cause, or a proved distribution-age lower bound. Year-end
+ * recipient age never establishes eligibility; crossing-year undated
+ * withdrawals stay unknown. Military retired pay and a Survivor Benefit Plan
+ * annuity are paid under title 10 of the U.S. Code, not from a qualified plan,
+ * so IRC 72(t) never reaches them: `false` at any age unless the plan asserts
+ * otherwise. A distribution "made to a beneficiary (or to the estate of the
+ * employee) on or after the death of the employee" is excepted by IRC
+ * 72(t)(2)(A)(ii) at any age (Form 1099-R code 4), so a `death` cause is
+ * `false` too (irc-72-t-2-A-ii-death-beneficiary-exception). An explicit
+ * `true` still wins over both.
  */
 export function inferEarlyDistributionDisqualifier(input: {
   readonly explicit?: 'true' | 'false' | 'unknown'
   readonly ageAtDistributionYears?: number
   readonly minimumAgeAtDistributionYears?: number
   readonly military?: boolean
+  readonly cause?: StateRetirementDistributionFactInput['cause']
 }): 'true' | 'false' | 'unknown' {
   if (input.explicit === 'true') return 'true'
-  if (input.explicit === 'false' || input.military) return 'false'
+  if (input.explicit === 'false' || input.military || input.cause === 'death') return 'false'
   if (input.ageAtDistributionYears !== undefined) {
     return input.ageAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
   }
@@ -840,6 +888,33 @@ export function inferEarlyDistributionDisqualifier(input: {
     return input.minimumAgeAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
   }
   return 'unknown'
+}
+
+/**
+ * The date a state's "65 or older on December 31" test reads the age at.
+ * Under `dayBeforeBirthday` an age is attained the day before the birthday,
+ * which is the age on the following January 1.
+ */
+export function stateAgeTestDate(taxYear: number, convention: StateAgeAttainmentConvention): string {
+  return convention === 'dayBeforeBirthday' ? `${taxYear + 1}-01-01` : `${taxYear}-12-31`
+}
+
+/**
+ * The number of claimants 65 or older at the end of the tax year under each
+ * age-attainment convention. Undefined when any date of birth does not parse
+ * or falls after the test date.
+ */
+export function age65EligibleCountsByConvention(
+  datesOfBirth: readonly string[],
+  taxYear: number,
+): Readonly<Record<StateAgeAttainmentConvention, number>> | undefined {
+  const count = (convention: StateAgeAttainmentConvention): number | undefined => {
+    const ages = datesOfBirth.map((dob) => ageOnDate(dob, stateAgeTestDate(taxYear, convention)))
+    return ages.every((age) => age !== undefined) ? ages.filter((age) => age !== undefined && age >= 65).length : undefined
+  }
+  const lastDayOfTaxYear = count('lastDayOfTaxYear')
+  const dayBeforeBirthday = count('dayBeforeBirthday')
+  return lastDayOfTaxYear === undefined || dayBeforeBirthday === undefined ? undefined : { lastDayOfTaxYear, dayBeforeBirthday }
 }
 
 /** Calendar-month age preserves the 59.5 boundary without a 365.25-day proxy. */

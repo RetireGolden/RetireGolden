@@ -10,6 +10,7 @@
  * now point across a module boundary.
  */
 import type { FilingStatus } from '../../../params/types.js'
+import type { StateAgeAttainmentConvention } from '../../../params/state/types.js'
 
 export type ProjectedFilingStatus = FilingStatus | 'qualifyingSurvivingSpouse'
 
@@ -286,7 +287,19 @@ export interface StateHouseholdTaxFactsInput {
   federalSeniorDeduction?: number
   exemptionTaxpayerCount?: number
   exemptionDependentCount?: number
+  /**
+   * An asserted count of claimants 65 or older (a plan-stored row or the
+   * caller's own facts), read as given by every state. The projection never
+   * puts a count it derived here.
+   */
   age65EligibleCount?: number
+  /**
+   * The count the projection derived from the claimants' dates of birth, under
+   * each age-attainment convention, so a state reads the one its instructions
+   * date the test by (tax/stateTax.ts#stateAge65EligibleCount). An asserted
+   * `age65EligibleCount` wins over it.
+   */
+  age65EligibleCountByConvention?: Readonly<Record<StateAgeAttainmentConvention, number>>
   section63fQualificationCount?: number
   federalExemptionCount?: { known: true; value: number } | { known: false }
   zeroFederalExemptionReason?: 'irc151d2' | 'other' | 'unknown'

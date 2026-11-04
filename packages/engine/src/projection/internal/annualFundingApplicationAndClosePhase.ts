@@ -976,7 +976,7 @@ export function annualFundingApplicationAndClosePhase(
               }),
             }]
           })),
-        characterizeStateWithdrawals: (amounts: ReadonlyMap<string, number>, grossAmounts: ReadonlyMap<string, number>) => stateRetirementEventsFromAccountAmounts(plan, year, amounts, 'voluntary', grossAmounts),
+        characterizeStateWithdrawals: (amounts: ReadonlyMap<string, number>, grossAmounts: ReadonlyMap<string, number>) => stateRetirementEventsFromAccountAmounts(plan, year, amounts, 'voluntary', grossAmounts, undefined, (account) => isTreatAsOwnEffective(account, year)),
         withdrawalEffectAccounts: fundingWithdrawalEffectAccounts,
         hsaEffectAccounts: fundingHsaEffectAccounts,
         rothBasisByPool: rothBasis,

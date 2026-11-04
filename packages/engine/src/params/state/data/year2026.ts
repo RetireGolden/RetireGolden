@@ -1434,6 +1434,11 @@ const rawStateYear2026 = {
       // carries the exact income-tested phase-down. HOH shares the single rate
       // schedule; MFS is half of MFJ thresholds (Form 1-ES rate schedules).
       code: 'WI', name: 'Wisconsin', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      // 2025 Form 1 instructions, "Age": "If your birthday falls on January 1,
+      // 2026, you are considered to be a year older as of December 31, 2025."
+      // Line 10b's age-65 exemption is dated by it
+      // (wi-2026-rates-standard-deduction-exemptions).
+      ageAttainmentConvention: 'dayBeforeBirthday',
       standardDeduction: { single: 13960, marriedFilingJointly: 25840 },
       brackets: {
         single: [

@@ -176,8 +176,9 @@ describe('stateRetirementFactsAdapter', () => {
     expect(householdFactsForYear(plan, 2026)).toEqual({
       stateFilingStatus: 'headOfHousehold',
       exemptionTaxpayerCount: 1,
-      // Default plan DOB 1970-01-01 is age 56 at TY2026 year-end; derived, not invented.
-      age65EligibleCount: 0,
+      // Default plan DOB 1970-01-01 is age 56 at TY2026 year-end; derived, not
+      // invented, and published only under each convention.
+      age65EligibleCountByConvention: { lastDayOfTaxYear: 0, dayBeforeBirthday: 0 },
     })
     expect(householdFactsForYear(plan, 2027)).toBeUndefined()
   })
@@ -255,11 +256,19 @@ describe('state event integration boundaries', () => {
       ['2026-09-11', '2026-09-12'].map((distributionDate) => ({
         eventId: distributionDate, accountId: 'ira', sourceOwnerPersonId: 'decedent',
         recipientPersonId: 'owner', source: 'ira' as const, federallyIncludedAmount: 500,
-        distributionDate,
+        distributionDate, paidToBeneficiaryAfterDeath: true,
       })))
     expect(before!.ageAtDistributionYears).toBeLessThan(59.5)
     expect(boundary!.ageAtDistributionYears).toBe(59.5)
     expect(boundary).toMatchObject({ ownerPersonId: 'owner', sourceOwnerPersonId: 'decedent', accountId: 'ira', cause: 'death' })
+    expect(boundary).not.toHaveProperty('paidToBeneficiaryAfterDeath')
+    // The ids alone do not make the event a death distribution: the producer's
+    // classification does (an inherited account the year leaves inherited).
+    const [unclassified] = retirementDistributionFactsForYear(plan, 2026, [{
+      eventId: 'x', accountId: 'ira', sourceOwnerPersonId: 'decedent', recipientPersonId: 'owner',
+      source: 'ira' as const, federallyIncludedAmount: 500, distributionDate: '2026-09-11',
+    }])
+    expect(unclassified).toMatchObject({ cause: 'unknown', earlyDistributionDisqualifier: 'unknown' })
   })
 
   it('keeps a missing NJ denominator unknown instead of inventing a zero pool', () => {
@@ -545,6 +554,7 @@ it('leaves invalid claimant ages unknown instead of publishing zero', () => {
   const facts = householdFactsForYear(plan, 2026, { claimantPersonIds: ['p'] })!
   expect(facts.ownerStateTaxFacts).toEqual([{ ownerPersonId: 'p' }])
   expect(facts.age65EligibleCount).toBeUndefined()
+  expect(facts.age65EligibleCountByConvention).toBeUndefined()
 })
 
 it('preserves an explicitly supplied age-65 count despite an invalid claimant DOB', () => {

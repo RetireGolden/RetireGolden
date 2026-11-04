@@ -28,6 +28,14 @@ function prematureDisqualified(fact: StateRetirementDistributionFact): boolean {
   )
 }
 
+/**
+ * A death or disability cause is never an unknown premature status: IRC
+ * 72(t)(2)(A)(ii) and (iii) except both at any age, so a row left `unknown`
+ * with either cause is not withheld (an explicit `true` is still disqualified
+ * above). The projection's producers already resolve a death row to `false`
+ * (irc-72-t-2-A-ii-death-beneficiary-exception); this test keeps the exported
+ * leaves correct for a caller that passes the row directly.
+ */
 function prematureUnknown(fact: StateRetirementDistributionFact): boolean {
   return fact.earlyDistributionDisqualifier === 'unknown' && fact.cause !== 'death' && fact.cause !== 'disability'
 }

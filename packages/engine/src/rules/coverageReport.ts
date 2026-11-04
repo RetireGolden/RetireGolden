@@ -155,14 +155,17 @@ interface QuoteFidelitySummary {
   readonly cached: number | null
   readonly counts: Readonly<Record<string, number>>
   /**
-   * Entries verified individually after the run that `generatedAt` names,
-   * each with its date and a reason, so the ledger never passes a merged
-   * entry off as part of that run. Empty when the ledger is one run's output.
+   * Entries added or re-checked after the run that `generatedAt` names, each
+   * amendment with its date and a reason, so the ledger never passes a merged
+   * entry off as part of that run. Each entry carries the verdict the ledger
+   * records for it, so an entry whose verdict is serious (UNFETCHABLE, say)
+   * is not reported as verified. Empty when the ledger is one run's output.
+   * `verdict` is additive within version 5.
    */
   readonly amendments: readonly {
     readonly on: string
     readonly note: string
-    readonly entries: readonly { readonly id: string; readonly citation: string }[]
+    readonly entries: readonly { readonly id: string; readonly citation: string; readonly verdict: string }[]
   }[]
 }
 
@@ -738,9 +741,11 @@ function quoteFidelitySummary(
   const amendments: QuoteFidelitySummary['amendments'][number][] = []
   if (parsed.amendments !== undefined) {
     if (!Array.isArray(parsed.amendments)) throw new Error('quote-fidelity amendments must be an array')
-    const resultKeys = new Set(
+    const verdictByKey = new Map(
       ledgerResults.map((result: unknown) =>
-        isRecord(result) ? String(result.id) + '\u0000' + String(result.citation) : ''),
+        isRecord(result)
+          ? [String(result.id) + '\u0000' + String(result.citation), typeof result.verdict === 'string' ? result.verdict : '']
+          : ['', '']),
     )
     for (const amendment of parsed.amendments as unknown[]) {
       if (
@@ -758,10 +763,14 @@ function quoteFidelitySummary(
         if (!isRecord(entry) || typeof entry.id !== 'string' || typeof entry.citation !== 'string') {
           throw new Error('every quote-fidelity amendment entry must carry id and citation')
         }
-        if (!resultKeys.has(entry.id + '\u0000' + entry.citation)) {
+        const verdict = verdictByKey.get(entry.id + '\u0000' + entry.citation)
+        if (verdict === undefined) {
           throw new Error('quote-fidelity amendment names an entry the ledger does not hold: ' + entry.id + ' / ' + entry.citation)
         }
-        return { id: entry.id, citation: entry.citation }
+        if (verdict === '') {
+          throw new Error('quote-fidelity amendment entry has no ledger verdict: ' + entry.id + ' / ' + entry.citation)
+        }
+        return { id: entry.id, citation: entry.citation, verdict }
       })
       amendments.push({ on: amendment.on, note: amendment.note, entries })
     }
@@ -880,7 +889,7 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
     '',
     'Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix alone, since where the fix goes is the rule\'s own implementations; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.',
     '',
-    'The index\'s registry totals also carry approximatedByKind, the approximated rules counted by kind (convention, fix, needs-fact), every kind present and the three summing to byClassification.approximated. It and approximation are additive within version 5: a reader that does not know them ignores them, and one that needs them requires them.',
+    'The index\'s registry totals also carry approximatedByKind, the approximated rules counted by kind (convention, fix, needs-fact), every kind present and the three summing to byClassification.approximated. It and approximation are additive within version 5: a reader that does not know them ignores them, and one that needs them requires them. So is the verdict each quote-fidelity amendment entry carries, the verdict the ledger records for that entry.',
     '',
     'Version 5 is a breaking discriminator for strict version checks: manifest.rules moved out of the index into the shards. Version 4 added fixtures[].tests and per-function lines in place of the flat title and name lists of version 3.',
     '',
@@ -913,19 +922,25 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
         ', over ' +
         fidelity.entryCount +
         ' authority entries.',
-      ...fidelity.amendments.map(
-        (amendment) =>
-          'Amended on ' +
-          amendment.on +
-          ': ' +
-          amendment.entries.length +
-          ' ' +
-          (amendment.entries.length === 1 ? 'entry' : 'entries') +
-          ' verified individually after that run (' +
-          amendment.entries.map((entry) => entry.id + ', ' + entry.citation).join('; ') +
-          '). ' +
-          amendment.note,
-      ),
+      ...fidelity.amendments.map((amendment) => {
+        // An entry the ledger records with a serious verdict was added or
+        // re-checked after the run but not confirmed, so it is not counted
+        // among the verified ones.
+        const entryCount = (count: number): string => count + ' ' + (count === 1 ? 'entry' : 'entries')
+        const verified = amendment.entries.filter((entry) => classOf(entry.verdict) !== 'serious')
+        const unconfirmed = amendment.entries.filter((entry) => classOf(entry.verdict) === 'serious')
+        const parts = [
+          ...(verified.length === 0 ? [] : [
+            entryCount(verified.length) + ' verified individually after that run (' +
+              verified.map((entry) => entry.id + ', ' + entry.citation).join('; ') + ')',
+          ]),
+          ...(unconfirmed.length === 0 ? [] : [
+            entryCount(unconfirmed.length) + ' added or re-checked after that run and not confirmed by verify-quotes (' +
+              unconfirmed.map((entry) => entry.id + ', ' + entry.citation + ': ' + entry.verdict).join('; ') + ')',
+          ]),
+        ]
+        return 'Amended on ' + amendment.on + ': ' + parts.join('; ') + '. ' + amendment.note
+      }),
       '',
       classTotal('serious') +
         ' serious, ' +
