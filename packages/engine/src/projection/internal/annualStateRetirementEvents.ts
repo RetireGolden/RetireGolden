@@ -1,4 +1,5 @@
-import type { Plan } from '../../model/plan.js'
+import type { Account, Plan } from '../../model/plan.js'
+import { hasSpouseTreatAsOwnElection } from '../../strategies/accountEligibility.js'
 import { retirementDistributionFactsForYear, type AnnualStateRetirementEvent } from './stateRetirementFactsAdapter.js'
 
 /** IRC 72(t)(2)(A)(i) and the state rules that borrow it: the age a Roth conversion is tested at. */
@@ -23,20 +24,51 @@ export type StateRothConversionAmounts =
       readonly atAge59HalfOrOlderByAccount: ReadonlyMap<string, number>
     }
 
-/** Actual federal character, not gross balance debits, supplies the state distribution base. */
+type RetirementAccount = Extract<Account, { type: 'traditional' | 'roth' }>
+
+/**
+ * Whether this year's distribution from the account is paid to a beneficiary
+ * after the owner's death (IRC 72(t)(2)(A)(ii)), read as the federal penalty
+ * reads it (annualFundingWithdrawalEffects.ts): the account's inherited
+ * marker, unless the surviving spouse's treat-as-own election is effective
+ * this year, when the account is the spouse's own and 72(t) applies to its
+ * distributions normally (Treas. Reg. 1.408-8(c)). The marker holds whether or
+ * not the plan names the decedent (`inherited.decedentId` is optional). With
+ * no owner-treatment facts for the year, an inherited IRA whose plan records
+ * a treat-as-own election is left undecided (absent), so the state rules see
+ * an unknown cause; an inherited account that carries no such election is a
+ * beneficiary's account in every year.
+ */
+function paidToBeneficiaryAfterDeath(
+  account: RetirementAccount,
+  isTreatAsOwnEffective: ((account: RetirementAccount) => boolean) | undefined,
+): boolean | undefined {
+  if (account.inherited === undefined) return false
+  if (isTreatAsOwnEffective !== undefined) return !isTreatAsOwnEffective(account)
+  return hasSpouseTreatAsOwnElection(account) ? undefined : true
+}
+
+/**
+ * Actual federal character, not gross balance debits, supplies the state
+ * distribution base. `isTreatAsOwnEffective` is the year's owner-treatment
+ * routing (the same predicate the federal penalty and owner-RMD paths read).
+ */
 export function stateRetirementEventsFromAccountAmounts(plan: Readonly<Plan>, year: number,
   amounts: ReadonlyMap<string, number>, eventPrefix: string, grossAmounts: ReadonlyMap<string, number> = amounts,
-  conversions?: StateRothConversionAmounts) {
+  conversions?: StateRothConversionAmounts,
+  isTreatAsOwnEffective?: (account: RetirementAccount) => boolean) {
   const events: AnnualStateRetirementEvent[] = []
   for (const [accountId, amount] of amounts) {
     const account = plan.accounts.find((item) => item.id === accountId)
     if (account === undefined || (account.type !== 'traditional' && account.type !== 'roth') || (amount <= 0 && (grossAmounts.get(accountId) ?? 0) <= 0)) continue
     const recipientPersonId = account.ownerPersonId ?? plan.household.people[0]!.id
+    const afterDeath = paidToBeneficiaryAfterDeath(account, isTreatAsOwnEffective)
     events.push({
       eventId: `${eventPrefix}:${year}:${accountId}`, accountId, recipientPersonId,
       sourceOwnerPersonId: account.inherited?.decedentId ?? recipientPersonId,
       source: account.kind === 'ira' ? 'ira' : 'employerPlan',
       federallyIncludedAmount: amount,
+      ...(afterDeath === undefined ? {} : { paidToBeneficiaryAfterDeath: afterDeath }),
     })
   }
   return retirementDistributionFactsForYear(plan, year, events).map((fact) => {

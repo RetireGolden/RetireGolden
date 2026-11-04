@@ -63,14 +63,14 @@ describe('the age-65 count under each convention', () => {
     // 1962-01-01: December 31, 2026 is the day before the 65th birthday, so
     // the plain age is 64 and the age attained the day before a birthday is 65.
     expect(adapterFacts(JANUARY_FIRST)).toMatchObject({
-      age65EligibleCount: 0,
       age65EligibleCountByConvention: { lastDayOfTaxYear: 0, dayBeforeBirthday: 1 },
     })
     // 1962-01-02 turns 65 on January 2, 2027: 64 under both.
     expect(adapterFacts(JANUARY_SECOND)).toMatchObject({
-      age65EligibleCount: 0,
       age65EligibleCountByConvention: { lastDayOfTaxYear: 0, dayBeforeBirthday: 0 },
     })
+    // A derived count is never published as the asserted count.
+    expect(adapterFacts(JANUARY_FIRST).age65EligibleCount).toBeUndefined()
   })
 
   it('gives the annual household facts the same counts as householdFactsForYear', () => {
@@ -100,6 +100,33 @@ describe('the age-65 count under each convention', () => {
     expect(annual.age65EligibleCountByConvention).toBeUndefined()
     // Wisconsin then gives the $700 exemption only: 80,000 - 700.
     expect(stateYear('WI', facts).taxableIncome).toBe(79_300)
+  })
+
+  it('reads a caller\'s own count over the derived one, even when the two values agree', () => {
+    // The caller spreads the projected facts and asserts the count. For the
+    // January 1 birthday the derived December 31 count is also 0, and the
+    // assertion still wins over the dayBeforeBirthday count of 1: $700 only.
+    expect(stateYear('WI', { ...adapterFacts(JANUARY_FIRST), age65EligibleCount: 0 }).taxableIncome).toBe(79_300)
+    // An asserted 1 for the January 2 birthday takes the $250: 80,000 - 950.
+    expect(stateYear('WI', { ...adapterFacts(JANUARY_SECOND), age65EligibleCount: 1 }).taxableIncome).toBe(79_050)
+  })
+
+  it('derives the count from dates of birth alone, under the state\'s convention, when no count is supplied', () => {
+    // A caller's facts with the claimants' dates of birth and the exemption
+    // counts but neither count field (both optional in the plan schema).
+    const datesOnly = (dob: string): StateHouseholdTaxFacts => ({
+      claimantDatesOfBirth: [dob], exemptionTaxpayerCount: 1, exemptionDependentCount: 0, claimedAsDependent: false,
+    })
+    // Wisconsin, dayBeforeBirthday: $950 for the January 1 birthday, $700 for January 2.
+    expect(stateYear('WI', datesOnly(JANUARY_FIRST)).taxableIncome).toBe(79_050)
+    expect(stateYear('WI', datesOnly(JANUARY_SECOND)).taxableIncome).toBe(79_300)
+    expect(stateYear('WI', datesOnly(JANUARY_FIRST)).warnings.map((warning) => warning.code)).not.toContain('wi-exemption-counts-unknown')
+    // Illinois, the December 31 default: both 64, the $2,925 basic allowance only.
+    const illinois = stateYear('IL', datesOnly(JANUARY_FIRST))
+    expect(illinois.taxableIncome).toBe(80_000 - 2_925)
+    expect(illinois.warnings.map((warning) => warning.code)).not.toContain('il-exemption-counts-unknown')
+    // A claimant born in 1961 is 65 under both: $2,925 + $1,000.
+    expect(stateYear('IL', datesOnly('1961-06-30')).taxableIncome).toBe(80_000 - 3_925)
   })
 })
 

@@ -287,12 +287,17 @@ export interface StateHouseholdTaxFactsInput {
   federalSeniorDeduction?: number
   exemptionTaxpayerCount?: number
   exemptionDependentCount?: number
+  /**
+   * An asserted count of claimants 65 or older (a plan-stored row or the
+   * caller's own facts), read as given by every state. The projection never
+   * puts a count it derived here.
+   */
   age65EligibleCount?: number
   /**
-   * Set only when `age65EligibleCount` was derived from the claimants' dates
-   * of birth rather than stored for the year: the count under each age
-   * attainment convention, so a state reads the one its instructions date
-   * the test by (tax/stateTax.ts#stateAge65EligibleCount).
+   * The count the projection derived from the claimants' dates of birth, under
+   * each age-attainment convention, so a state reads the one its instructions
+   * date the test by (tax/stateTax.ts#stateAge65EligibleCount). An asserted
+   * `age65EligibleCount` wins over it.
    */
   age65EligibleCountByConvention?: Readonly<Record<StateAgeAttainmentConvention, number>>
   section63fQualificationCount?: number

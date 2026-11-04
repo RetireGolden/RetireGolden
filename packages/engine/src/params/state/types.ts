@@ -59,11 +59,24 @@ export type StatePartYearExclusionCap = 'full' | 'months' | 'retirementShare' | 
  * December 31" (`StateTaxParams.ageAttainmentConvention`).
  *
  * - `lastDayOfTaxYear`: the age on December 31 of the tax year, a birthday
- *   counting from the day itself. New Jersey's NJ-1040 instructions ("65 or
- *   older on the last day of the tax year") read this way.
+ *   counting from the day itself. New Jersey's 2025 NJ-1040 instructions say
+ *   so in terms: "You can claim a $1,000 exemption if you were 65 or older on
+ *   the last day of the tax year (born in 1960 or earlier)", which leaves out
+ *   a January 1, 1961 birthday (nj-stat-54a-3-1-personal-exemptions).
  * - `dayBeforeBirthday`: an age is attained on the day before the birthday, so
  *   a claimant born on January 1 is a year older as of the preceding December
- *   31. Wisconsin's Form 1 instructions say so in terms.
+ *   31. Wisconsin's Form 1 instructions say so in terms
+ *   (wi-2026-rates-standard-deduction-exemptions).
+ *
+ * The default is `lastDayOfTaxYear`, and for every state other than New
+ * Jersey and Wisconsin it is the engine's reading, not a cited one. Illinois
+ * (35 ILCS 5/204(d): "attained the age of 65 before the end of the taxable
+ * year") and Massachusetts (M.G.L. c.62 §3(b): "attained the age of
+ * sixty-five before the close of his taxable year"; the 2025 Form 1
+ * instructions: "age 65 or over before January 1, 2026") use the federal
+ * phrasing, which Treas. Reg. 1.151-1(c)(2) read with the day-before rule, and
+ * neither state's instructions say how a January 1 birthday counts; their
+ * convention is unsettled and kept at the default.
  */
 export type StateAgeAttainmentConvention = 'lastDayOfTaxYear' | 'dayBeforeBirthday'
 
@@ -93,12 +106,13 @@ export interface StateTaxParams {
   capitalGainsSources?: string[]
   standardDeduction: PerStatus<number>
   /**
-   * The convention the state's age-65 count (`age65EligibleCount` and its
-   * exemption or allowance) is dated by. Left out, `lastDayOfTaxYear`. A count
-   * the plan stores for the year is the plan's assertion and is read as given;
-   * the convention dates only a count derived from dates of birth
-   * (tax/stateTax.ts#stateAge65EligibleCount). Virginia's Form 760 tests keep
-   * their own path (tax/stateTax.ts#virginiaAgedTaxpayerCount).
+   * The convention the state's age-65 count (for its exemption or allowance)
+   * is dated by. Left out, `lastDayOfTaxYear`. An asserted
+   * `age65EligibleCount` (a plan-stored row or the caller's facts) is read as
+   * given; the convention dates only a count derived from dates of birth
+   * (`age65EligibleCountByConvention`, tax/stateTax.ts#stateAge65EligibleCount).
+   * Virginia's Form 760 tests keep their own path
+   * (tax/stateTax.ts#virginiaAgedTaxpayerCount).
    */
   ageAttainmentConvention?: StateAgeAttainmentConvention
   /**

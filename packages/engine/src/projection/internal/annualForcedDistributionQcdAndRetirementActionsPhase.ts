@@ -2532,7 +2532,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount, {
         taxableByAccount: stateNamedConversionTaxableByAccount,
         atAge59HalfOrOlderByAccount: stateNamedConversionAt59HalfByAccount,
-      }),
+      }, (account) => isTreatAsOwnEffective(account, year)),
       ...stateQcdEvents.flatMap((event) => retirementDistributionFactsForYear(plan, year, [{
         eventId: event.eventId, accountId: event.accountId,
         sourceOwnerPersonId: event.ownerPersonId, recipientPersonId: event.ownerPersonId,

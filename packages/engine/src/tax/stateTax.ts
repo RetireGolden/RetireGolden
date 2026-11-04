@@ -181,24 +181,27 @@ function retirementExclusion(rule: StateRetirementExclusion, retirementIncome: n
 /**
  * A state's count of claimants 65 or older at the end of the tax year, dated
  * by the convention its parameters declare (`ageAttainmentConvention`, left
- * out `lastDayOfTaxYear`). A count the plan stored is read as given. A count
- * the projection derived from dates of birth carries its value under every
- * convention, read here while `age65EligibleCount` is still the
- * `lastDayOfTaxYear` value it derived (a caller that replaced the count has
- * asserted it). With neither, and `fromDatesOfBirth`, the count is derived
- * from the claimants' dates of birth.
+ * out `lastDayOfTaxYear`).
+ *
+ * `age65EligibleCount` is always an asserted count (a plan-stored row or a
+ * caller's own facts) and is read as given under every convention. The
+ * projection publishes a count it derived from dates of birth only as
+ * `age65EligibleCountByConvention`, never as `age65EligibleCount`, so an
+ * assertion is never mistaken for a derivation whatever value it has. With
+ * neither, the count is derived here from the claimants' dates of birth
+ * (`claimantDatesOfBirth`) under the same convention, for every state that
+ * reads it; undefined when there are none or one does not parse.
  */
 function stateAge65EligibleCount(
   facts: StateHouseholdTaxFacts | undefined,
   taxYear: number,
   params: Pick<StateTaxParams, 'ageAttainmentConvention'>,
-  options: { readonly fromDatesOfBirth: boolean },
 ): number | undefined {
   const convention = params.ageAttainmentConvention ?? 'lastDayOfTaxYear'
-  const derived = facts?.age65EligibleCountByConvention
-  if (derived !== undefined && derived.lastDayOfTaxYear === facts?.age65EligibleCount) return derived[convention]
   if (facts?.age65EligibleCount !== undefined) return facts.age65EligibleCount
-  if (!options.fromDatesOfBirth || facts?.claimantDatesOfBirth === undefined) return undefined
+  const derived = facts?.age65EligibleCountByConvention
+  if (derived !== undefined) return derived[convention]
+  if (facts?.claimantDatesOfBirth === undefined) return undefined
   return age65EligibleCountsByConvention(facts.claimantDatesOfBirth, taxYear)?.[convention]
 }
 
@@ -217,7 +220,7 @@ function virginiaAgedTaxpayerCount(input: TaxYearInput, facts: StateHouseholdTax
     return agesOnJanuary1.filter((age) => age !== undefined && age >= 65).length
   }
   // The fallback keeps the shared year-end count Virginia's path always used.
-  return stateAge65EligibleCount(facts, input.year, {}, { fromDatesOfBirth: true }) ?? Math.max(0, input.peopleAged65Plus)
+  return stateAge65EligibleCount(facts, input.year, {}) ?? Math.max(0, input.peopleAged65Plus)
 }
 
 /**
@@ -1568,7 +1571,7 @@ export function computeStateTaxableIncomeResult(
     const ilExemption = params.illinoisPersonalExemption
     const belowAgiCutoff = ilExemption !== undefined &&
       opts.householdFacts.federalAgi <= (joint ? ilExemption.agiCutoffJoint : ilExemption.agiCutoffNonjoint)
-    const ilAge65EligibleCount = stateAge65EligibleCount(opts.householdFacts, input.year, params, { fromDatesOfBirth: false })
+    const ilAge65EligibleCount = stateAge65EligibleCount(opts.householdFacts, input.year, params)
     const ilExemptionCountsMissing =
       opts.householdFacts.exemptionTaxpayerCount === undefined ||
       opts.householdFacts.exemptionDependentCount === undefined ||
@@ -1610,7 +1613,7 @@ export function computeStateTaxableIncomeResult(
         eligibleDependentCount: opts.householdFacts.exemptionDependentCount,
         // Line 10b, 65 or older on December 31, dated by the Form 1
         // instructions' January 1 birthday rule (params ageAttainmentConvention).
-        age65EligibleCount: stateAge65EligibleCount(opts.householdFacts, input.year, params, { fromDatesOfBirth: false }),
+        age65EligibleCount: stateAge65EligibleCount(opts.householdFacts, input.year, params),
         claimedAsDependent: opts.householdFacts.claimedAsDependent === true,
         config: params.wisconsinStandardDeduction,
       }),
@@ -1690,7 +1693,7 @@ export function computeStateTaxableIncomeResult(
   // Massachusetts's and New Jersey's exemptions, which come off with the
   // deduction but prorate as exemptions in a split year.
   let exemptionTotal = 0
-  const age65EligibleCount = stateAge65EligibleCount(opts.householdFacts, input.year, params, { fromDatesOfBirth: true })
+  const age65EligibleCount = stateAge65EligibleCount(opts.householdFacts, input.year, params)
   if (params.code === 'MA' && opts.householdFacts?.stateFilingStatus && age65EligibleCount !== undefined) {
     exemptionTotal += massachusettsPersonalExemption({ filingStatus: opts.householdFacts.stateFilingStatus, age65EligibleCount, config: params.massachusettsRates })
   } else if (params.code === 'MA') {

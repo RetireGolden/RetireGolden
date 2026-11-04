@@ -978,10 +978,46 @@ describe('quote-fidelity ledger amendments', () => {
   it('publishes a dated amendment with its entries and note', () => {
     const amendment = { on: '2026-09-26', note: 'Re-verified from source.', entries: [{ id: 'fixture-rule', citation: 'Fix. Code 1' }] }
     const report = build(ledgerWith([amendment]))
-    expect(report.manifest.quoteFidelity).toMatchObject({ amendments: [amendment] })
+    expect(report.manifest.quoteFidelity).toMatchObject({
+      amendments: [{ ...amendment, entries: [{ id: 'fixture-rule', citation: 'Fix. Code 1', verdict: 'EXACT' }] }],
+    })
     expect(report.markdown).toContain(
       'Amended on 2026-09-26: 1 entry verified individually after that run (fixture-rule, Fix. Code 1). Re-verified from source.',
     )
+  })
+
+  it('does not call an entry the ledger records with a serious verdict verified', () => {
+    // An UNFETCHABLE row was added after the run but verify-quotes never
+    // confirmed it, so the summary says so and names the verdict.
+    const ledger = JSON.stringify({
+      generatedAt: '2026-09-23T00:00:00.000Z', entryCount: 2, fetched: 0, cached: 1, counts: { EXACT: 1, UNFETCHABLE: 1 },
+      results: [
+        { id: 'fixture-rule', citation: 'Fix. Code 1', url: 'https://example.gov/1', verdict: 'EXACT' },
+        { id: 'fixture-rule', citation: 'Fix. Code 2', url: 'https://example.gov/2', verdict: 'UNFETCHABLE' },
+      ],
+      amendments: [
+        { on: '2026-11-03', note: 'Proxy refused.', entries: [{ id: 'fixture-rule', citation: 'Fix. Code 2' }] },
+        { on: '2026-11-04', note: 'Mixed.', entries: [{ id: 'fixture-rule', citation: 'Fix. Code 1' }, { id: 'fixture-rule', citation: 'Fix. Code 2' }] },
+      ],
+    })
+    const twoEntryRegistry = {
+      'fixture-rule': { ...syntheticRule('Synthetic'), authority: [
+        { kind: 'statute', citation: 'Fix. Code 1', url: 'https://example.gov/1', quotedText: 'one' },
+        { kind: 'statute', citation: 'Fix. Code 2', url: 'https://example.gov/2', quotedText: 'two' },
+      ] },
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const report = buildCoverageReport({
+      registry: twoEntryRegistry, attestations: COVERAGE_ATTESTATIONS, baselineUnswept: BASELINE_UNSWEPT, testSources: {},
+      quoteFidelityLedger: ledger, dueOnFor: () => '2027-01-01', symbolLineFor: () => 47,
+      recordModules: [['synthetic', twoEntryRegistry]], approximationKinds: {},
+    })
+    expect(report.markdown).toContain(
+      'Amended on 2026-11-03: 1 entry added or re-checked after that run and not confirmed by verify-quotes (fixture-rule, Fix. Code 2: UNFETCHABLE). Proxy refused.',
+    )
+    expect(report.markdown).toContain(
+      'Amended on 2026-11-04: 1 entry verified individually after that run (fixture-rule, Fix. Code 1); 1 entry added or re-checked after that run and not confirmed by verify-quotes (fixture-rule, Fix. Code 2: UNFETCHABLE). Mixed.',
+    )
+    expect(report.markdown).not.toContain('Amended on 2026-11-03: 1 entry verified individually')
   })
 
   it('refuses an amendment that names an entry the ledger does not hold', () => {

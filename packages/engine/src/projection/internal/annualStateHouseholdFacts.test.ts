@@ -117,14 +117,19 @@ describe('annual state household source facts', () => {
     inputPlan.household.people[0]!.dob = '1960-01-01'
     const derived = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026,
       socialSecurityStreams: [stream('p1', 20000)], federal, railroadBenefits: [] })
-    expect(derived.householdFacts.age65EligibleCount).toBe(1)
+    // A derived count is published only under each convention, so a caller
+    // that later sets age65EligibleCount asserts it.
+    expect(derived.householdFacts.age65EligibleCount).toBeUndefined()
+    expect(derived.householdFacts.age65EligibleCountByConvention).toEqual({ lastDayOfTaxYear: 1, dayBeforeBirthday: 1 })
     inputPlan.stateTaxFacts.householdYearFacts = [{ year: 2026, age65EligibleCount: 0 }]
     const explicit = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026,
       socialSecurityStreams: [stream('p1', 20000)], federal, railroadBenefits: [] })
     expect(explicit.householdFacts.age65EligibleCount).toBe(0)
+    expect(explicit.householdFacts.age65EligibleCountByConvention).toBeUndefined()
+    inputPlan.stateTaxFacts.householdYearFacts = []
     const emptyClaimants = buildAnnualStateHouseholdFacts({ plan: inputPlan, taxYear: 2026,
       socialSecurityStreams: [stream('p1', 20000)], federal, railroadBenefits: [], claimantPersonIds: [] })
-    expect(emptyClaimants.householdFacts.age65EligibleCount).toBe(0)
+    expect(emptyClaimants.householdFacts.age65EligibleCountByConvention).toEqual({ lastDayOfTaxYear: 0, dayBeforeBirthday: 0 })
   })
 
   it('leaves Massachusetts age count unknown when any actual claimant DOB is impossible', () => {
@@ -134,5 +139,6 @@ describe('annual state household source facts', () => {
       socialSecurityStreams: [stream('p1', 20_000)], federal, railroadBenefits: [] })
     expect(result.householdFacts.claimantDatesOfBirth).toEqual(['1960-02-30'])
     expect(result.householdFacts.age65EligibleCount).toBeUndefined()
+    expect(result.householdFacts.age65EligibleCountByConvention).toBeUndefined()
   })
 })

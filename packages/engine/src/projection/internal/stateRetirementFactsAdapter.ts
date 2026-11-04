@@ -233,18 +233,19 @@ export function householdFactsForYear(
       ...(age === undefined ? {} : { recipientAgeYears: age }),
     }
   })
-  // A stored count is the plan's assertion for every state. Otherwise the
-  // count comes from the claimants' dates of birth under each convention, and
-  // the state reads the one its instructions use.
+  // A stored count is the plan's assertion for every state and is the only
+  // thing published as `age65EligibleCount`. Otherwise the count comes from
+  // the claimants' dates of birth under each convention and is published only
+  // as `age65EligibleCountByConvention`, so a caller that later sets
+  // `age65EligibleCount` asserts it whatever value the derivation had.
   const derivedAge65ByConvention = storedAge65 === undefined && allClaimantsKnown
     ? age65EligibleCountsByConvention(ownerPeople.map((person) => person.dob), year)
     : undefined
-  const derivedAge65 = storedAge65 ?? derivedAge65ByConvention?.lastDayOfTaxYear
   return {
     ...household,
     ...projected,
     ...(projected === undefined ? {} : { ownerStateTaxFacts: mergedOwners }),
-    ...(derivedAge65 === undefined ? {} : { age65EligibleCount: derivedAge65 }),
+    ...(storedAge65 === undefined ? {} : { age65EligibleCount: storedAge65 }),
     ...(derivedAge65ByConvention === undefined ? {} : { age65EligibleCountByConvention: derivedAge65ByConvention }),
     ...(row?.stateFilingStatus === undefined ? {} : { stateFilingStatus: row.stateFilingStatus }),
     ...(projected === undefined ? {} : { claimantDatesOfBirth: projected.claimantDatesOfBirth ?? household.claimantDatesOfBirth ?? plan.household.people.map((person) => person.dob) }),
@@ -779,6 +780,16 @@ export interface AnnualStateRetirementEvent {
   distributionDate?: string
   eligibility?: PensionStateEligibility
   stateAllocation?: readonly { state: string; fraction: number }[]
+  /**
+   * Whether the event is a distribution "made to a beneficiary ... on or
+   * after the death of the employee" (IRC 72(t)(2)(A)(ii)): true for an
+   * inherited account the year's owner-treatment facts leave inherited, false
+   * for an owned account or an inherited IRA a surviving spouse's effective
+   * election has made the spouse's own, and absent when the producer cannot
+   * tell. It is the row's cause (`death`, or `unknown` otherwise) unless the
+   * plan states a distribution reason; the two person ids never decide it.
+   */
+  paidToBeneficiaryAfterDeath?: boolean
 }
 
 /** Characterize each actual action, preserving the original owner and current payee. */
@@ -795,7 +806,7 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
       ...(evidence === undefined ? {} : { eligibility: { ...evidence.eligibility, ...event.eligibility } }),
     })
   }
-  return [...byId.values()].map((event) => {
+  return [...byId.values()].map(({ paidToBeneficiaryAfterDeath, ...event }) => {
     const recipient = plan.household.people.find((person) => person.id === event.recipientPersonId)
     const age = recipient === undefined ? undefined : ageOnDate(recipient.dob, `${year}-12-31`)
     const distributionAge = recipient === undefined || event.distributionDate === undefined ? undefined
@@ -803,10 +814,11 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
     const minimumAgeAtDistributionYears = recipient === undefined || distributionAge !== undefined
       ? undefined
       : ageOnDate(recipient.dob, `${year}-01-01`)
-    // A recipient other than the source owner holds an inherited account
-    // (account.inherited.decedentId names the source owner).
+    // The producer classifies the event from the account's inherited marker
+    // and the year's owner treatment; a recipient who differs from the source
+    // owner does not by itself make the distribution a death distribution.
     const cause = event.eligibility?.distributionReason ??
-      (event.recipientPersonId !== event.sourceOwnerPersonId ? 'death' as const : 'unknown' as const)
+      (paidToBeneficiaryAfterDeath === true ? 'death' as const : 'unknown' as const)
     return {
       ...event, ...mapEligibility(event.eligibility),
       ownerPersonId: event.recipientPersonId,
