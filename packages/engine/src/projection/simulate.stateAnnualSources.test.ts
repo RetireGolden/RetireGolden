@@ -33,12 +33,17 @@ describe('actual annual state source facts', () => {
     })
     const jointYear = result.years.find((row) => row.year === 2026)!
     const survivorYear = result.years.find((row) => row.year === 2027)!
+    // The projection publishes a count it derived from dates of birth under
+    // each age-attainment convention, never as the asserted age65EligibleCount.
     expect(jointYear.acceptedTaxInput?.stateHouseholdFacts).toMatchObject({
-      claimantDatesOfBirth: ['1950-01-01', '1945-01-01'], age65EligibleCount: 2,
+      claimantDatesOfBirth: ['1950-01-01', '1945-01-01'],
+      age65EligibleCountByConvention: { lastDayOfTaxYear: 2, dayBeforeBirthday: 2 },
     })
     expect(survivorYear.acceptedTaxInput?.stateHouseholdFacts).toMatchObject({
-      claimantDatesOfBirth: ['1945-01-01'], age65EligibleCount: 1,
+      claimantDatesOfBirth: ['1945-01-01'],
+      age65EligibleCountByConvention: { lastDayOfTaxYear: 1, dayBeforeBirthday: 1 },
     })
+    expect(jointYear.acceptedTaxInput?.stateHouseholdFacts?.age65EligibleCount).toBeUndefined()
   })
 
   it('emits actual voluntary IRA taxable distributions rather than pension-only facts', () => {
