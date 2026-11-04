@@ -188,3 +188,84 @@ describe('states that keep the year-end age', () => {
     expect(first.taxableIncome).toBe(second.taxableIncome)
   })
 })
+
+describe('a claimant whose date of birth is not known fails closed on both paths', () => {
+  // A joint couple: p is 64 at the end of 2026 under either convention (born
+  // 1962-01-02) and the spouse's date of birth does not parse (1960-02-30),
+  // or the claimant list names a person the household does not hold. No age
+  // count can be derived for the couple, so Wisconsin withholds its personal
+  // exemption and Massachusetts its personal and age exemptions; neither may
+  // count the known claimant alone.
+  function couple(state: string, spouseDob: string): Plan {
+    const plan = onePersonPlan(JANUARY_SECOND, state)
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({ ...plan.household.people[0]!, id: 's', name: 'Spouse', dob: spouseDob })
+    plan.stateTaxFacts.householdYearFacts = [{
+      year: 2026, stateFilingStatus: 'marriedFilingJointly', exemptionTaxpayerCount: 2, exemptionDependentCount: 0, claimedAsDependent: false,
+    }]
+    return plan
+  }
+  const bothPaths = (plan: Plan, claimantPersonIds: string[]): StateHouseholdTaxFacts[] => [
+    householdFactsForYear(plan, 2026, { claimantPersonIds })!,
+    buildAnnualStateHouseholdFacts({
+      plan, taxYear: 2026, socialSecurityStreams: [], claimantPersonIds,
+      federal: { agi: 80_000, taxableIncome: 80_000, deductionUsed: 0, taxableSocialSecurity: 0, taxExemptInterest: 0 },
+    }).householdFacts,
+  ]
+  const codes = (result: { warnings: readonly { code: string }[] }) => result.warnings.map((warning) => warning.code)
+
+  it('keeps an unparsable date of birth, so no count is derived from the claimant who is known', () => {
+    for (const facts of bothPaths(couple('WI', '1960-02-30'), ['p', 's'])) {
+      expect(facts.claimantDatesOfBirth).toEqual([JANUARY_SECOND, '1960-02-30'])
+      expect(facts.age65EligibleCount).toBeUndefined()
+      expect(facts.age65EligibleCountByConvention).toBeUndefined()
+    }
+  })
+
+  it('leaves the dates of birth out when a claimant names no household person', () => {
+    for (const facts of bothPaths(couple('WI', '1960-06-30'), ['p', 'ghost'])) {
+      expect(facts.claimantDatesOfBirth).toBeUndefined()
+      expect(facts.age65EligibleCountByConvention).toBeUndefined()
+    }
+  })
+
+  it('withholds the Wisconsin exemption for the couple on both paths', () => {
+    for (const [plan, ids] of [[couple('WI', '1960-02-30'), ['p', 's']], [couple('WI', '1960-06-30'), ['p', 'ghost']]] as const) {
+      for (const facts of bothPaths(plan, [...ids])) {
+        const year = stateYear('WI', facts, { filingStatus: 'marriedFilingJointly' })
+        // No exemption at all ($700 x 2 withheld), and the year says why.
+        expect(year.taxableIncome).toBe(80_000)
+        expect(codes(year)).toContain('wi-exemption-counts-unknown')
+      }
+    }
+  })
+
+  it('withholds the Massachusetts exemptions for the couple on both paths, which a known count gives', () => {
+    // Control: the same couple with both dates known (64 and 66) takes the
+    // $8,800 joint exemption plus $700 for the one claimant 65 or older.
+    const known = bothPaths(couple('MA', '1960-06-30'), ['p', 's'])[1]!
+    const knownYear = computeStateTaxYearResult(input('MA', { filingStatus: 'marriedFilingJointly' }), {
+      retirementDistributions: [], hsaAccounts: [], qcdEvents: [], householdFacts: { federalAgi: 80_000, ...known },
+    })
+    expect(codes(knownYear)).not.toContain('ma-personal-exemption-incomplete')
+    expect(80_000 - knownYear.taxableIncome).toBe(9_500)
+    for (const [plan, ids] of [[couple('MA', '1960-02-30'), ['p', 's']], [couple('MA', '1960-06-30'), ['p', 'ghost']]] as const) {
+      for (const facts of bothPaths(plan, [...ids])) {
+        // Without the standard-deduction override, which returns before the
+        // Massachusetts exemptions are reached.
+        const year = computeStateTaxYearResult(input('MA', { filingStatus: 'marriedFilingJointly' }), {
+          retirementDistributions: [], hsaAccounts: [], qcdEvents: [], householdFacts: { federalAgi: 80_000, ...facts },
+        })
+        expect(codes(year)).toContain('ma-personal-exemption-incomplete')
+      }
+    }
+  })
+
+  it('derives no count from a supplied list with one date that does not parse', () => {
+    const facts: StateHouseholdTaxFacts = {
+      claimantDatesOfBirth: ['1950-01-01', '1960-02-30'], exemptionTaxpayerCount: 2, exemptionDependentCount: 0, claimedAsDependent: false,
+    }
+    expect(codes(stateYear('WI', facts, { filingStatus: 'marriedFilingJointly' }))).toContain('wi-exemption-counts-unknown')
+    expect(codes(stateYear('IL', facts, { filingStatus: 'marriedFilingJointly' }))).toContain('il-exemption-counts-unknown')
+  })
+})

@@ -746,7 +746,7 @@
           "functions": [
             {
               "name": "inferEarlyDistributionDisqualifier",
-              "line": 855
+              "line": 875
             }
           ]
         },
@@ -792,32 +792,32 @@
         },
         {
           "path": "packages/engine/src/tax/stateDeathCauseEarlyDistribution.rules.test.ts",
-          "line": 102,
+          "line": 103,
           "note": "inherited 401(k) under 60",
           "tests": [
             {
               "title": "marks the inherited-account row death and not premature",
-              "line": 107
+              "line": 108
             },
             {
               "title": "gives the $2,000 line 6 exclusion with no unknown-status warning",
-              "line": 113
+              "line": 114
             },
             {
               "title": "reaches the row built from the account itself, its source owner the decedent",
-              "line": 120
+              "line": 121
             },
             {
               "title": "reads the inherited marker, so an account that does not name its decedent is a death distribution too",
-              "line": 126
+              "line": 127
             },
             {
               "title": "prices the projected year: the inherited 401(k) row the simulation emits takes the exclusion",
-              "line": 135
+              "line": 136
             },
             {
               "title": "lets an explicit true disqualifier win over the death cause",
-              "line": 175
+              "line": 176
             }
           ]
         },
@@ -2901,7 +2901,7 @@
           "functions": [
             {
               "name": "inferEarlyDistributionDisqualifier",
-              "line": 855
+              "line": 875
             }
           ]
         },

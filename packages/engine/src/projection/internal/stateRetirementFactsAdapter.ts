@@ -206,6 +206,26 @@ export function characterizePensionDistribution(input: {
   }
 }
 
+/**
+ * The claimants' dates of birth for a projected year: supplied or stored ones
+ * as given, else one per claimant in claimant order. A date that does not
+ * parse is kept, so every reader fails closed on it; when a claimant id names
+ * no household person there is no date to publish for that claimant, so the
+ * list is left out rather than published short, and a reader cannot derive
+ * an age count from the claimants it does know.
+ */
+function claimantDatesOfBirthFor(
+  plan: Readonly<Plan>,
+  projected: StateHouseholdTaxFactsInput,
+  stored: readonly string[] | undefined,
+): { claimantDatesOfBirth?: string[] } {
+  const given = projected.claimantDatesOfBirth ?? stored
+  if (given !== undefined) return { claimantDatesOfBirth: [...given] }
+  const claimantIds = projected.claimantPersonIds ?? plan.household.people.map((person) => person.id)
+  const dates = claimantIds.map((id) => plan.household.people.find((person) => person.id === id)?.dob)
+  return dates.every((dob) => dob !== undefined) ? { claimantDatesOfBirth: dates as string[] } : {}
+}
+
 export function householdFactsForYear(
   plan: Readonly<Plan>,
   year: number,
@@ -248,7 +268,7 @@ export function householdFactsForYear(
     ...(storedAge65 === undefined ? {} : { age65EligibleCount: storedAge65 }),
     ...(derivedAge65ByConvention === undefined ? {} : { age65EligibleCountByConvention: derivedAge65ByConvention }),
     ...(row?.stateFilingStatus === undefined ? {} : { stateFilingStatus: row.stateFilingStatus }),
-    ...(projected === undefined ? {} : { claimantDatesOfBirth: projected.claimantDatesOfBirth ?? household.claimantDatesOfBirth ?? plan.household.people.map((person) => person.dob) }),
+    ...(projected === undefined ? {} : claimantDatesOfBirthFor(plan, projected, household.claimantDatesOfBirth)),
     ...(election === undefined
       ? {}
       : {

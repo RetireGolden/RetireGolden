@@ -21,7 +21,8 @@ import { stateRetirementEventsFromAccountAmounts } from '../projection/internal/
 import { characterizePensionDistribution, retirementDistributionFactsForYear } from '../projection/internal/stateRetirementFactsAdapter.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { describeRule } from '../rules/describeRule.js'
-import { runPlan, validatePlan } from '../testing/planFixtures.js'
+import { simulatePlan } from '../projection/simulate.js'
+import { couplePlan, runPlan, validatePlan } from '../testing/planFixtures.js'
 import { computeStateTaxYearResult, createStateTaxCalculator } from './stateTax.js'
 import { scMilitaryDeduction, scSection1170Deduction } from './stateSouthCarolinaRetirement.js'
 import { mapStateIncomeComponent, type StateHouseholdTaxFacts, type StateRetirementDistributionFact } from './stateRetirementFacts.js'
@@ -284,5 +285,33 @@ describe('the exported South Carolina leaves, called directly', () => {
     const military = scMilitaryDeduction([deathRow({ sourceKind: 'militarySurvivor', federallyIncludedAmount: 20_000, grossDistribution: 20_000 })])
     expect(military.taxableIncomeDelta).toBe(-20_000)
     expect(military.warnings).toEqual([])
+  })
+})
+
+describe('an annuity whose owner dies under 59 and a half', () => {
+  // The ledger keeps a person alive through the year of death (dob year +
+  // death age is the last joint year, projection/survivorTransition.ts) and
+  // not alive from the next year, so the death year's payments are the
+  // owner's own and every payment in a later year is made after the death,
+  // which IRC 72(t)(2)(A)(ii) excepts.
+  it('marks the death year\'s annuity rows ordinary and the following year\'s death', () => {
+    const plan = couplePlan({ p1Dob: '1976-03-01', p2Dob: '1976-03-01', p1PlanningAge: 90, p2PlanningAge: 90, state: 'DE' })
+    plan.accounts = [{
+      type: 'annuity', id: 'spia', name: 'SPIA', ownerPersonId: 'p1', annualReturnPct: null,
+      startAge: 50, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+      payoutForm: { kind: 'jointSurvivor', survivorPct: 100 },
+    }]
+    // p1 dies at 52: 2028 is the death year, 2029 the first year after it.
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026, horizonEndYear: 2029, deathAgeByPersonId: { p1: 52 }, taxCalculator: { compute: () => 0 },
+    })
+    const annuityRows = (calendarYear: number) => result.years.find((entry) => entry.year === calendarYear)!
+      .acceptedTaxInput!.stateRetirementDistributions!.filter((row) => row.accountId === 'spia')
+    const deathYear = annuityRows(2028)
+    expect(deathYear).toHaveLength(1)
+    expect(deathYear[0]).toMatchObject({ ownerPersonId: 'p1', cause: 'ordinary', earlyDistributionDisqualifier: 'unknown' })
+    const afterDeath = annuityRows(2029)
+    expect(afterDeath).toHaveLength(1)
+    expect(afterDeath[0]).toMatchObject({ ownerPersonId: 'p2', cause: 'death', earlyDistributionDisqualifier: 'false' })
   })
 })
