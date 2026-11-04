@@ -1005,7 +1005,7 @@ export const northeastStateRecords = {
   'nj-stat-54a-6-10-retirement-income-exclusion': {
     title: 'New Jersey’s pension exclusion is for a person 62 or older, only with gross income of $150,000 or less, and steps down above $100,000',
     statement:
-      'From 2021 New Jersey excludes pension, annuity and retirement plan payments, IRA distributions included, received by a person 62 or older, or by one disabled as the Social Security Act defines it, but only if gross income for the year is not more than $150,000. At or below $100,000 of gross income the exclusion is the payments up to $100,000 on a joint return or $75,000 on a single, head of household or surviving spouse return; above $100,000 it is 50% (joint) or 37.5% (other returns) of the payments to $125,000, and 25% or 18.75% to $150,000. The NJ-1040 line 28a worksheet takes the lesser of the qualifying payments and that amount, and on a joint return counts only the payments of a spouse who qualifies, as the statute’s payments received by any person who is 62 or older require. The engine computes the exclusion after every other New Jersey adjustment and tests the base at that point as gross income (tax/stateTax.ts#computeStateTaxableIncomeResult, tax/stateNortheastExtras.ts#newJerseyPensionExclusion); it reads each recipient’s age on the last day of the year, as line 28a does, and counts a Roth conversion like any other IRA distribution, as GIT-2 reports it on line 20a. Until 2026-10-06 the engine gave $50,000 for each household member 62 or older with no income test: a single filer of 65 with $200,000 of gross income including an $80,000 pension had $50,000 excluded where the law allows none, and one whose whole $80,000 income was pension had $50,000 excluded where the law allows $75,000. Settled for the age, income and payment tests. Not modeled: the unclaimed exclusion of line 28b and the special exclusion for a retiree outside Social Security; married filing separately, not a plan filing status; the New Jersey basis of a distribution whose state taxable amount differs from the federal one; and a QCD New Jersey taxes, which enters gross income but not the payments counted. In a year split between states, line 28a tests the whole year’s New Jersey gross income and, at $100,000 or less, prorates the maximum by the months resident, against the payments received while resident (tax/stateTax.ts#computeSplitYearResult, from 2026-10-08; before, the slice was tested against bounds scaled with the months, which agreed only when income was spread evenly). The slice is taxed on the ordinary table, unscaled, as NJ-1040 taxes a part-year resident’s resident-period income (nj-stat-54a-3-1-personal-exemptions); until 2026-10-07 its brackets were scaled with the months too, which overstated New Jersey tax on a split year with income above the lowest band. Social Security is registered separately at nj-njit12-social-security-exclusion.',
+      'From 2021 New Jersey excludes pension, annuity and retirement plan payments, IRA distributions included, received by a person 62 or older, or by one disabled as the Social Security Act defines it, but only if gross income for the year is not more than $150,000. At or below $100,000 of gross income the exclusion is the payments up to $100,000 on a joint return or $75,000 on a single, head of household or surviving spouse return; above $100,000 it is 50% (joint) or 37.5% (other returns) of the payments to $125,000, and 25% or 18.75% to $150,000. The NJ-1040 line 28a worksheet takes the lesser of the qualifying payments and that amount, and on a joint return counts only the payments of a spouse who qualifies, as the statute’s payments received by any person who is 62 or older require. The engine computes the exclusion after every other New Jersey adjustment and tests the base at that point as gross income (tax/stateTax.ts#computeStateTaxableIncomeResult, tax/stateNortheastExtras.ts#newJerseyPensionExclusion); it reads each recipient’s age on the last day of the year, as line 28a does, and counts a Roth conversion like any other IRA distribution, as GIT-2 reports it on line 20a. Until 2026-10-06 the engine gave $50,000 for each household member 62 or older with no income test: a single filer of 65 with $200,000 of gross income including an $80,000 pension had $50,000 excluded where the law allows none, and one whose whole $80,000 income was pension had $50,000 excluded where the law allows $75,000. Settled for the age, income and payment tests. Not modeled: the unclaimed exclusion of line 28b and the special exclusion for a retiree outside Social Security; and married filing separately, not a plan filing status. Line 28a excludes income reported on line 20a, and an owner IRA withdrawal is on line 20a at its Worksheet C line 7 amount whenever the owner’s Worksheet C is computable, a QCD’s New Jersey taxable portion included, so those are the payments counted (tax/stateTax.ts#newJerseyOwnerIraLine20a, nj-direct-qcd-ira-basis-treatment); a QCD’s owner was 70½ or older on the transfer, so 62 or older at year end. Until 2026-11-03 the engine counted the federal amount of such a withdrawal and left a QCD New Jersey taxes out of the payments. In a year split between states, line 28a tests the whole year’s New Jersey gross income and, at $100,000 or less, prorates the maximum by the months resident, against the payments received while resident (tax/stateTax.ts#computeSplitYearResult, from 2026-10-08; before, the slice was tested against bounds scaled with the months, which agreed only when income was spread evenly). The slice is taxed on the ordinary table, unscaled, as NJ-1040 taxes a part-year resident’s resident-period income (nj-stat-54a-3-1-personal-exemptions); until 2026-10-07 its brackets were scaled with the months too, which overstated New Jersey tax on a split year with income above the lowest band. Social Security is registered separately at nj-njit12-social-security-exclusion.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1041,6 +1041,11 @@ export const northeastStateRecords = {
       url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
       quotedText:
         'for taxable years beginning on or after January 1, 2021, for a taxpayer with gross income in excess of $125,000, but not more than $150,000, 25 percent of payments for a married couple filing jointly, 12.5 percent of payments for a married couple filing separately, or 18.75 percent of payments for an individual filing as a single taxpayer or individual determining tax pursuant to subsection a. of N.J.S.54A:2-1',
+    }, {
+      kind: 'formInstruction',
+      citation: 'NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a',
+      url: 'https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf',
+      quotedText: 'You can exclude all or part of the income reported on line 20a if you meet the following qualifications:',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2021,
@@ -1056,6 +1061,7 @@ export const northeastStateRecords = {
       'packages/engine/src/tax/stateNortheastExtras.ts#newJerseyPensionExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult',
       'packages/engine/src/tax/stateTax.ts#newJerseyPensionPayments',
+      'packages/engine/src/tax/stateTax.ts#newJerseyOwnerIraLine20a',
       'packages/engine/src/tax/stateTax.ts#computeSplitYearResult',
     ],
   },
@@ -1992,7 +1998,7 @@ export const northeastStateRecords = {
 
   "nj-direct-qcd-ira-basis-treatment": {
   "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
-  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected New Jersey QCD with no IRA-basis evidence is detected and left incomplete, and the transfer is not priced. A1290 is proposed legislation, not a current charitable carve-out.",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. An exempt-obligation amount asserted on one IRA is kept when another IRA of the same owner omits the field. A negative exempt-obligation amount is rejected rather than clamped to zero. Basis rows match New Jersey regardless of case, and an asserted full liquidation is honored. A projected year with no IRA-basis evidence for an owner fills Worksheet C from the projection ledger: line 1 is the December 31 value after the year's investment return (the balance left after the year's distributions, grown as the ledger grows it), line 2 counts every IRA distribution of the year once (QCDs, other distributions and Roth conversions), and line 4b is the immediately preceding year's Part II carry (its line 4b less its line 8) plus the year's modeled contributions. The carry opens from the basis evidence of the year before the projection or from an accepted earlier projected year. With no basis evidence in any year, or a year without a Worksheet C in between, a projected QCD is detected and left incomplete and is not priced at a zero basis. A line 1 the year-end ledger does not confirm makes the year incomplete, and so does an owner whose IRA aggregate holds an IRA-funded annuity contract, which is on no ledger row and which no New Jersey authority found says how to value on line 1. An IRA held as several physical rows grows each row by its own return; a need-based draw on such an IRA, which is not split between its rows, leaves the year incomplete unless the rows grow alike. Wherever an owner's Worksheet C is computable, in evidence and projected years alike, every traditional IRA withdrawal of the owner (a QCD, an ordinary or need-based draw, an RMD or a Roth conversion) is on line 20a at its gross times the line 6 decimal, which replaces its federally included amount; the portions add to line 7, and the line 28a pension exclusion counts them (nj-stat-54a-6-10-retirement-income-exclusion). A part-year resident's withdrawals received in the New Jersey months take the whole year's decimal. Where Worksheet C is not computable, an ordinary withdrawal keeps its federal amount and a QCD stays incomplete. A1290 is proposed legislation, not a current charitable carve-out.",
   "classification": "settled",
   "contraryReading": null,
   "errorDirection": null,
@@ -2013,6 +2019,12 @@ export const northeastStateRecords = {
     },
     {
       "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
+      "quotedText": "Total Value means the value of the IRA on December 31 of the tax year (including contributions made for the tax year from January 1 through April 15 of the following year), plus total IRA distributions during the tax year."
+    },
+    {
+      "kind": "formInstruction",
       "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 8",
       "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
       "quotedText": "Excludable portion of this year\u2019s withdrawal. Subtract line 7 from line 2. Enter here and on line 20b, Form NJ-1040."
@@ -2022,6 +2034,24 @@ export const northeastStateRecords = {
       "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20b IRA withdrawal",
       "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
       "quotedText": "IRA withdrawal. Include the amount from Worksheet C, line 8. If you converted an existing IRA to a rollover Roth IRA, report the excludable portion on this line."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 7",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quotedText": "Taxable portion of this year\u2019s withdrawal. Multiply line 2 by decimal amount on line 6. Enter here and on line 20a, Form NJ-1040."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quotedText": "The New Jersey taxable amount may be different from the federal amount."
+    },
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a, part-year residents",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/current/1040i.pdf",
+      "quotedText": "Part-Year Residents. Include only the taxable amounts you received while you were a resident of New Jersey."
     }
   ],
   "volatility": "staticStatute",
@@ -2032,14 +2062,22 @@ export const northeastStateRecords = {
     "packages/engine/src/tax/stateQcdHsa.ts",
     "packages/engine/src/tax/stateTax.ts",
     "packages/engine/src/params/state/data/year2026.ts",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts"
   ],
   "implementedByFunctions": [
     "packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment",
     "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
     "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
     "packages/engine/src/params/state/data/year2026.ts#NJ",
-    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear"
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraOwnerPoolsForYear",
+    "packages/engine/src/projection/internal/stateRetirementFactsAdapter.ts#njIraLedgerOwnerPools",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#applyAcceptedNjIraBasisToYearFacts",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#seedAcceptedNjIraBasisFromEvidence",
+    "packages/engine/src/projection/internal/stateNjIraBasisLifecycle.ts#reconcileProjectedNjIraYearEnd",
+    "packages/engine/src/tax/stateTax.ts#njIraBasisPools",
+    "packages/engine/src/tax/stateTax.ts#newJerseyOwnerIraLine20a",
+    "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult"
   ]
 },
   'me-mrs-36-5122-2-m-2-1-b-military-retirement-deduction': {

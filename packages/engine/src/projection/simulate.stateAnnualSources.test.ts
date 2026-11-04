@@ -427,6 +427,257 @@ it('carries lowercase nj basis evidence into the next year', () => {
   expect(result.years[1]!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 90, basisConsumed: 10, closingBasis: 80 })
 })
 
+describe('projected New Jersey Worksheet C pool from the ledger and the Part II carry (#810 Case B, #818)', () => {
+  // GIT-1 & 2 (January 2026) and the 2025 NJ-1040 Worksheet C:
+  //   line 1 December 31 value, line 2 all distributions during the year,
+  //   line 3 = 1 + 2, line 4b unrecovered contributions, line 5 = 3 - 4b,
+  //   line 6 = 5 / 3, line 7 taxable = 2 x 6, line 8 excludable = 2 - 7.
+  //   Part II: next year's line 4b = this year's 4b - line 8.
+  const njBasisEvidence = (taxYear: number, unrecoveredStateBasis: number, yearEndAccountValue: number) => ({
+    taxYear, ownerPersonId: 'p1', state: 'NJ', accountId: 'ira', unrecoveredStateBasis,
+    annualDistributionsComplete: true, yearEndAccountValue, distributionsDuringYear: 0,
+    postYearContributionsThroughFilingDeadline: 0,
+    provenance: { source: 'NJ-1040 Worksheet C as filed', asOf: `${taxYear}-12-31` },
+  })
+  function njQcdPlan(qcdAnnual: number, iraAnnualReturnPct = 0) {
+    // Born 1956-09-01: 70 1/2 on 2027-03-01 (IRC 408(d)(8)(B)(ii)), so no
+    // 2026 QCD. RMDs start at 73 in 2029, so the QCD is the IRA's only
+    // distribution in 2027 and 2028. NJ wages above $150,000 rule out the
+    // NJ-1040 line 28a pension exclusion.
+    const plan = singlePersonPlan({ dob: '1956-09-01', planningAge: 90, state: 'NJ' })
+    plan.accounts = [{ ...traditionalAccount('ira', 200_000, 'p1', 'ira'), annualReturnPct: iraAnnualReturnPct }, cashAccount('cash', 50_000)]
+    plan.incomes = [{ type: 'wages', id: 'wages', personId: 'p1', annualGross: 200_000, endAge: null, realGrowthPct: 0 }]
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.inflationPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.strategies.qcdAnnual = qcdAnnual
+    return plan
+  }
+  type StateComputation = { taxableIncome: number; status: string; issues: { code: string }[] }
+  const run = (plan: ReturnType<typeof njQcdPlan>, startYear: number, horizonEndYear: number) =>
+    simulatePlan(validatePlan(plan), { startYear, horizonEndYear, taxCalculator: createStateTaxCalculator({}) }).years
+
+  it('prices a projected QCD from 2026 evidence carried through Part II: $7,500 of $10,000, then $7,500 again', () => {
+    // 2026 evidence: line 4b 50,000, no 2026 distributions, so line 8 is 0
+    // and 50,000 carries into 2027.
+    // 2027: line 1 190,000 (200,000 less the 10,000 QCD, 0% return),
+    //   line 2 10,000, line 3 200,000, line 5 150,000, line 6 0.75,
+    //   line 7 7,500 taxable, line 8 2,500, so 47,500 carries into 2028.
+    // 2028: line 1 180,000, line 2 10,000, line 3 190,000, line 5 142,500,
+    //   line 6 0.75, line 7 7,500, line 8 2,500, leaving 45,000.
+    // Without the 2027 recovery 2028 would be 10,000 x 140,000/190,000 =
+    // 7,368.42; at a zero basis each year would tax 10,000.
+    const plan = njQcdPlan(10_000)
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const years = run(plan, 2026, 2028)
+    const baselinePlan = njQcdPlan(0)
+    baselinePlan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const baseline = run(baselinePlan, 2026, 2028)
+    expect(years[0]!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 50_000, basisConsumed: 0, closingBasis: 50_000 })
+    for (const [index, line1, opening] of [[1, 190_000, 50_000], [2, 180_000, 47_500]] as const) {
+      const year = years[index]!
+      expect(year.acceptedTaxInput?.stateNjIraOwnerPools?.[0]).toMatchObject({
+        december31IraValue: line1, allAnnualDistributions: 10_000,
+        unrecoveredNjTaxedContributions: { known: true, amount: opening },
+      })
+      expect(year.balances.ira).toBeCloseTo(line1, 6)
+      const tax = year.taxComputation as unknown as StateComputation
+      expect(tax.status).toBe('complete')
+      expect(tax.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
+      const base = baseline[index]!.taxComputation as unknown as StateComputation
+      expect(tax.taxableIncome - base.taxableIncome).toBeCloseTo(7_500, 6)
+      expect(year.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: opening })
+      expect(year.taxComputation?.njIraBasisPools?.[0]?.basisConsumed).toBeCloseTo(2_500, 6)
+    }
+    expect(years[2]!.taxComputation?.njIraBasisPools?.[0]?.closingBasis).toBeCloseTo(45_000, 6)
+  })
+
+  it('fills line 1 with the December 31 value after the year return: 202,000 and $7,641.51 taxable', () => {
+    // #818. The projection starts in 2027; the filed 2026 Worksheet C opens
+    // the carry at 50,000 (no 2026 distributions). The ledger debits the
+    // 10,000 QCD and grows the 190,000 left by 120/19 % = 12,000.
+    // Line 1 = 200,000 + 12,000 - 10,000 = 202,000; line 3 212,000;
+    // line 5 162,000; line 7 = 10,000 x 162,000 / 212,000 = 7,641.509434.
+    // The pre-return 190,000 would give 7,500.00.
+    const plan = njQcdPlan(10_000, 120 / 19)
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const [year] = run(plan, 2027, 2027)
+    const baselinePlan = njQcdPlan(0, 120 / 19)
+    baselinePlan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const [baseline] = run(baselinePlan, 2027, 2027)
+    expect(year!.balances.ira).toBeCloseTo(202_000, 6)
+    const pool = year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+    expect(pool?.december31IraValue).toBeCloseTo(202_000, 6)
+    expect(pool).toMatchObject({ allAnnualDistributions: 10_000, unrecoveredNjTaxedContributions: { known: true, amount: 50_000 } })
+    const tax = year!.taxComputation as unknown as StateComputation
+    expect(tax.status).toBe('complete')
+    const base = baseline!.taxComputation as unknown as StateComputation
+    expect(tax.taxableIncome - base.taxableIncome).toBeCloseTo(7_641.51, 2)
+    expect(year!.taxComputation?.njIraBasisPools?.[0]?.closingBasis).toBeCloseTo(50_000 - 2_358.490566, 5)
+  })
+
+  it('fills line 1 from a class-allocated IRA with per-class shocks: 206,150 and $7,686.79 taxable (#839 r1-9)', () => {
+    // A 50/50 usStocks/bonds IRA with the default class returns (usStocks 7%,
+    // bonds 4%) and 2027 class shocks of +10 and -4 grows by
+    // 0.5 x (7 + 10) + 0.5 x (4 - 4) = 8.5%. The 190,000 left after the
+    // 10,000 QCD grows to 190,000 x 1.085 = 206,150 = line 1.
+    // Line 3 216,150; line 5 = 216,150 - 50,000 = 166,150;
+    // line 7 = 10,000 x 166,150 / 216,150 = 7,686.79; line 8 = 2,313.21,
+    // so 47,686.79 carries. The pre-return 190,000 would give 7,500.00, and
+    // an unshocked 5.5% blend (line 1 200,450) 7,624.14.
+    const market = { classReturnShockPct: { usStocks: [10], bonds: [-4] } }
+    const build = (qcdAnnual: number) => {
+      const plan = njQcdPlan(qcdAnnual)
+      plan.accounts = [Object.assign(traditionalAccount('ira', 200_000, 'p1', 'ira'), {
+        allocation: { mode: 'static' as const, rebalancing: 'annual' as const, weights: { usStocks: 50, intlStocks: 0, bonds: 50, cash: 0 } },
+      }), cashAccount('cash', 50_000)]
+      plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+      return validatePlan(plan)
+    }
+    const options = { startYear: 2027, horizonEndYear: 2027, taxCalculator: createStateTaxCalculator({}), market }
+    const [year] = simulatePlan(build(10_000), options).years
+    const [baseline] = simulatePlan(build(0), options).years
+    expect(year!.balances.ira).toBeCloseTo(206_150, 6)
+    const pool = year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+    expect(pool?.december31IraValue).toBeCloseTo(206_150, 6)
+    expect(pool).toMatchObject({ allAnnualDistributions: 10_000, unrecoveredNjTaxedContributions: { known: true, amount: 50_000 } })
+    const tax = year!.taxComputation as unknown as StateComputation
+    expect(tax.status).toBe('complete')
+    const base = baseline!.taxComputation as unknown as StateComputation
+    expect(tax.taxableIncome - base.taxableIncome).toBeCloseTo(7_686.79, 2)
+    expect(year!.taxComputation?.njIraBasisPools?.[0]?.closingBasis).toBeCloseTo(47_686.79, 2)
+  })
+
+  it('keeps the carry known for one IRA held as two physical rows (#839 r1-3)', () => {
+    // Two compatible rows of one IRA (80,000 and 120,000) and no
+    // contributions: each row's contribution delta is 0, so line 4b is the
+    // 50,000 carried. Keyed by account id, the first row read 80,000 - 120,000
+    // = -40,000 and the carry turned unknown.
+    const plan = njQcdPlan(10_000)
+    plan.accounts = [traditionalAccount('ira', 80_000, 'p1', 'ira'), traditionalAccount('ira', 120_000, 'p1', 'ira'), cashAccount('cash', 50_000)]
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const [year] = run(plan, 2027, 2027)
+    const pool = year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+    expect(pool).toMatchObject({ december31IraValue: 190_000, allAnnualDistributions: 10_000,
+      unrecoveredNjTaxedContributions: { known: true, amount: 50_000 } })
+    expect(year!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 50_000 })
+  })
+
+  it('does not price a projected pool whose owner holds an IRA-funded annuity contract (#839 r1-2)', () => {
+    // A qualified contract bought from the IRA stays in the owner's IRA
+    // aggregate, but its value is on no ledger row. No New Jersey authority
+    // found values it for Worksheet C line 1, so the year is not priced.
+    const plan = njQcdPlan(10_000)
+    plan.accounts = [...plan.accounts, {
+      type: 'annuity', id: 'q', name: 'Qualified annuity', ownerPersonId: 'p1', annualReturnPct: null,
+      startAge: 72, monthlyAmount: 300, colaPct: 0, taxablePct: 100,
+      purchase: { year: 2027, premium: 50_000, fundingAccountId: 'ira', taxQualification: 'qualified' },
+    }]
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const [year] = run(plan, 2027, 2027)
+    expect(year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]?.unvaluedIraAnnuityContract).toBe(true)
+    expect(year!.taxComputation?.status).toBe('incomplete')
+    expect(year!.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-ira-annuity-contract-unvalued')
+    expect(year!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'incomplete' })
+  })
+
+  it('keeps line 1 plus line 2 at the opening balance when spending also draws the IRA', () => {
+    // A need-based draw W solved inside the funding fixed point leaves line 1
+    // and joins line 2, so at a 0% return line 3 stays 200,000 and the QCD's
+    // taxable share stays 10,000 x 150,000 / 200,000 = 7,500 whatever W is.
+    // Line 8 for the year is (10,000 + W) x 50,000 / 200,000.
+    const plan = njQcdPlan(10_000)
+    plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira')]
+    plan.incomes = []
+    plan.expenses.baseAnnual = 20_000
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    const [year] = run(plan, 2027, 2027)
+    const pool = year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+    expect(pool?.allAnnualDistributions).toBeGreaterThan(10_000 + 20_000 - 0.01)
+    expect(pool!.december31IraValue + pool!.allAnnualDistributions).toBeCloseTo(200_000, 6)
+    expect(year!.balances.ira).toBeCloseTo(pool!.december31IraValue, 6)
+    expect(year!.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-ira-projected-year-end-mismatch')
+    expect(year!.taxComputation?.issues.map((issue) => issue.code)).not.toContain('nj-qcd-basis-unknown')
+    expect(year!.taxComputation?.njIraBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 50_000 })
+    expect(year!.taxComputation?.njIraBasisPools?.[0]?.basisConsumed).toBeCloseTo(pool!.allAnnualDistributions * 0.25, 6)
+  })
+
+  it('does not carry basis across a year with no Worksheet C', () => {
+    // Evidence for 2025 only; the projection starts in 2027. 2026's
+    // distributions and recovery are unknown, so 2027 has no line 4b.
+    const plan = njQcdPlan(10_000)
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2025, 50_000, 200_000)]
+    const [year] = run(plan, 2027, 2027)
+    expect(year!.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+    expect(year!.taxComputation?.status).toBe('incomplete')
+    expect(year!.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
+  })
+
+  it('keeps a year marked iraBasis unknown incomplete even with a carry', () => {
+    const plan = njQcdPlan(10_000)
+    plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+    plan.stateTaxFacts.annualEvidenceCompleteness = [{ taxYear: 2027, state: 'NJ', iraBasis: 'unknown',
+      provenance: { source: 'NJ-1040 Worksheet C not prepared', asOf: '2027-12-31' } }]
+    const [year] = run(plan, 2027, 2027)
+    expect(year!.acceptedTaxInput?.stateNjIraOwnerPools).toBeUndefined()
+    expect(year!.taxComputation?.issues.map((issue) => issue.code)).toContain('nj-qcd-basis-unknown')
+  })
+
+  it('taxes $7,500 of a projected $10,000 Roth conversion, not the federal $10,000 (#839 r1-1)', () => {
+    // 2025 NJ-1040 instructions, line 20a: a conversion's "amount from the
+    // existing IRA that would be taxable if withdrawn" goes on line 20a.
+    // 2027: line 1 190,000 (200,000 less the 10,000 converted, 0% return),
+    // line 2 10,000, line 3 200,000, line 4b 50,000 carried, line 6 0.75,
+    // line 7 7,500; line 8 2,500, so 47,500 carries.
+    const build = (amount: number) => {
+      const plan = njQcdPlan(0)
+      plan.accounts = [...plan.accounts, { type: 'roth', kind: 'ira', id: 'roth', name: 'Roth', ownerPersonId: 'p1',
+        annualReturnPct: 0, balance: 0, annualContribution: 0, contributionBasis: 0 } as Account]
+      plan.strategies.rothConversion = { mode: 'manual', conversions: [{ year: 2027, amount }] }
+      plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+      return plan
+    }
+    const [year] = run(build(10_000), 2027, 2027)
+    const [baseline] = run(build(0), 2027, 2027)
+    expect(year!.rothConversion).toBe(10_000)
+    expect(year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]).toMatchObject({ december31IraValue: 190_000, allAnnualDistributions: 10_000 })
+    const tax = year!.taxComputation as unknown as StateComputation
+    expect(tax.status).toBe('complete')
+    const base = baseline!.taxComputation as unknown as StateComputation
+    expect(tax.taxableIncome - base.taxableIncome).toBeCloseTo(7_500, 6)
+    expect(year!.taxComputation?.njIraBasisPools?.[0]?.closingBasis).toBeCloseTo(47_500, 6)
+  })
+
+  it('taxes a projected RMD and its QCD at one line 6 decimal: 0.75 x 8,130.08 (#839 r1-1)', () => {
+    // Born 1952-06-01: 75 in 2027, Uniform Lifetime divisor 24.6, so the RMD
+    // is 200,000 / 24.6 = 8,130.08, of which the 4,000 QCD satisfies part.
+    // Line 1 191,869.92, line 2 8,130.08, line 3 200,000, line 4b 50,000,
+    // line 6 0.75, line 7 6,097.56: 3,097.56 on the 4,130.08 RMD remainder and
+    // 3,000 on the QCD. The RMD remainder at its federal amount gives
+    // 4,130.08 + 3,000 = 7,130.08.
+    const build = (withIra: boolean) => {
+      const plan = njQcdPlan(4_000)
+      plan.household.people[0]!.dob = '1952-06-01'
+      if (withIra) plan.stateTaxFacts.iraBasisYearEvidence = [njBasisEvidence(2026, 50_000, 200_000)]
+      else plan.accounts = plan.accounts.filter((account) => account.id !== 'ira')
+      return plan
+    }
+    const [year] = run(build(true), 2027, 2027)
+    const [baseline] = run(build(false), 2027, 2027)
+    const rmd = 200_000 / 24.6
+    expect(year!.rmd).toBeCloseTo(rmd, 2)
+    expect(year!.acceptedTaxInput?.stateQcdEventFacts?.reduce((sum, event) => sum + event.grossIraDistribution, 0)).toBeCloseTo(4_000, 6)
+    const pool = year!.acceptedTaxInput?.stateNjIraOwnerPools?.[0]
+    expect(pool?.allAnnualDistributions).toBeCloseTo(rmd, 2)
+    expect(pool!.december31IraValue + pool!.allAnnualDistributions).toBeCloseTo(200_000, 6)
+    const tax = year!.taxComputation as unknown as StateComputation
+    expect(tax.status).toBe('complete')
+    const base = baseline!.taxComputation as unknown as StateComputation
+    expect(tax.taxableIncome - base.taxableIncome).toBeCloseTo(0.75 * rmd, 2)
+  })
+})
+
 it('leaves a projected New Jersey QCD incomplete when spending also draws the IRA', () => {
   const plan = singlePersonPlan({ dob: '1956-03-01', planningAge: 90, state: 'NJ' })
   plan.accounts = [traditionalAccount('ira', 200_000, 'p1', 'ira')]

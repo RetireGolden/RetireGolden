@@ -1,11 +1,11 @@
 # Mutation receipt: medicare-magi-composition
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `54306786` (branch `claude/mc-provenance-and-seed`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `5f0bdbda` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-10-10 against RetireGolden `f2c5db07` (branch `claude/optimizer-solver-output`, decision D-OPTIMIZER-SOLVER-OUTPUT; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -1344,8 +1344,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1354,8 +1354,7 @@ export function annualFundingApplicationAndClosePhase(
          ordinaryRealized +
            gainsRealized +
            incomes.qualifiedDividends +
@@ -27,21 +27,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for decision D-OPTIMIZER-SOLVER-OUTPUT, whose changes moved lines of its production file; the mutation is unchanged, and the diff's line numbers and blob hashes and the capture are refreshed against this head. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed for #810 Case B and #818 (the projected New Jersey Worksheet C pool) on `fix/nj-qcd-projected-pool`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
- RUN  v5.0.0 packages/engine
+RUN  v5.0.5 packages/engine
 
- ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 2 failed) 44ms
+ ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 2 failed) 279ms
    ❯ medicare-magi-composition — Ledger MAGI composition (3)
-     × composes the five realized terms into a 51,000 published MAGI 31ms
-     × counts tax-exempt interest, which AGI does not 2ms
+     × composes the five realized terms into a 51,000 published MAGI 135ms
+     × counts tax-exempt interest, which AGI does not 38ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 4 passed (6)
 
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 

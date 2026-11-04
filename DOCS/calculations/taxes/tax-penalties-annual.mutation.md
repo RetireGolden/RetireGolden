@@ -1,11 +1,11 @@
 # Mutation receipt: tax-penalties-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eleven` at base `60e47fd8`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `d8edbfd2` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts`
 
 ```diff
-@@ -456,7 +456,6 @@
+@@ -465,7 +465,6 @@
        aca.healthcareExcludingEnrollment + aca.grossEnrollmentPremium
    }
    const penalties =
@@ -25,20 +25,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The second verification's fixes on this branch (V1 to V4) moved the lines these receipts quote; the mutations are unchanged. The baseline is green (annualFundingCandidateEvaluation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed for #810 Case B and #818 (the projected New Jersey Worksheet C pool) on `fix/nj-qcd-projected-pool`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (annualFundingCandidateEvaluation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.0.5 packages/engine
 
- ❯ src/projection/internal/annualFundingCandidateEvaluation.evidence.test.ts (4 tests | 1 failed) 33ms
+ ❯ src/projection/internal/annualFundingCandidateEvaluation.evidence.test.ts (4 tests | 1 failed) 149ms
    ❯ tax-penalties-annual — Annual penalties: early withdrawal plus the IRC 4974 excise (4)
-     × publishes 4000 of penalties on a real 2026 ledger row carrying both channels 31ms
+     × publishes 4000 of penalties on a real 2026 ledger row carrying both channels 138ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯

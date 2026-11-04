@@ -267,22 +267,28 @@ describeRule('ks-direct-qcd-conformity', { readings: { coveredCreditAddback: 10_
   })
 })
 describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_000, blanketFederalExclusion: 0 }, accepted: 'worksheetC' }, ({ accepted }) => {
+  // Option A: line 28a excludes the QCD's line 20a portion for an owner 62 or
+  // older (a QCD owner is 70 1/2 or older) when NJ gross income is $150,000
+  // or less. These fixtures test Worksheet C alone, so their year sits
+  // above the limit; the line 28a reading has its own fixture below.
+  const aboveLine28a = { ordinaryIncome: 200_000, agesAlive: [71] }
+  const njAnnual = (options: StateTaxYearOptions = {}) => annual('NJ', options, aboveLine28a)
   it('taxes $32,000 of a $40,000 full liquidation after recovering $8,000 NJ basis', () => {
     // GIT-1&2 Worksheet C full-liquidation supplement: $40,000 minus $8,000.
     const event = qcd({ grossIraDistribution: 40_000, directCharityTransfer: 40_000, federalExcludedAmount: 40_000 })
     const pool = { ownerPersonId: 'owner', december31IraValue: 0, allAnnualDistributions: 40_000, unrecoveredNjTaxedContributions: knownMoney(8_000), fullLiquidation: true, annualInputsComplete: true }
-    const result = annual('NJ', { qcdEvents: [event], njIraOwnerPools: [pool] })
-    expect(result.taxableIncome - annual('NJ').taxableIncome).toBe(32_000)
+    const result = njAnnual({ qcdEvents: [event], njIraOwnerPools: [pool] })
+    expect(result.taxableIncome - njAnnual().taxableIncome).toBe(32_000)
     expect(result.njIraBasisPools?.[0]).toMatchObject({ basisConsumed: 8_000, closingBasis: 0 })
-    const withoutBasis = annual('NJ', { qcdEvents: [event], njIraOwnerPools: [{ ...pool, unrecoveredNjTaxedContributions: knownMoney(0) }] })
-    expect(withoutBasis.taxableIncome - annual('NJ').taxableIncome).toBe(40_000)
+    const withoutBasis = njAnnual({ qcdEvents: [event], njIraOwnerPools: [{ ...pool, unrecoveredNjTaxedContributions: knownMoney(0) }] })
+    expect(withoutBasis.taxableIncome - njAnnual().taxableIncome).toBe(40_000)
   })
   it('uses NJ basis for a full liquidation and conserves recovery across events', () => {
     const options = { qcdEvents: [qcd({ eventId: 'a', grossIraDistribution: 5_000, directCharityTransfer: 5_000, federalExcludedAmount: 5_000 }), qcd({ eventId: 'b', grossIraDistribution: 5_000, directCharityTransfer: 5_000, federalExcludedAmount: 5_000 })], njIraOwnerPools: [{ ownerPersonId: 'owner', december31IraValue: 0, allAnnualDistributions: 10_000, unrecoveredNjTaxedContributions: knownMoney(6_000), fullLiquidation: true, annualInputsComplete: true }] }
-    const result = annual('NJ', options)
-    expect(result.taxableIncome - annual('NJ').taxableIncome).toBe(accepted)
+    const result = njAnnual(options)
+    expect(result.taxableIncome - njAnnual().taxableIncome).toBe(accepted)
     expect(result.njIraBasisPools?.[0]).toMatchObject({ basisConsumed: 6_000, closingBasis: 0 })
-    expect(annual('NJ', { qcdEvents: [qcd()] }).status).toBe('incomplete')
+    expect(njAnnual({ qcdEvents: [qcd()] }).status).toBe('incomplete')
   })
   it('keeps one IRA exempt-obligation amount when the other IRA omits the field', () => {
     // GIT-1 & 2 Worksheet C, line 3 = 90,000 + 90,000 + 20,000 = 200,000.
@@ -296,8 +302,8 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     const pool = njIraOwnerPoolsForYear(plan, 2026)?.[0]
     expect(pool?.exemptObligationIncome).toBe(5_000)
     const event = qcd({ grossIraDistribution: 20_000, directCharityTransfer: 20_000, federalExcludedAmount: 20_000 })
-    const result = annual('NJ', { qcdEvents: [event], njIraOwnerPools: pool === undefined ? [] : [pool] })
-    expect(result.taxableIncome - annual('NJ').taxableIncome).toBe(19_500)
+    const result = njAnnual({ qcdEvents: [event], njIraOwnerPools: pool === undefined ? [] : [pool] })
+    expect(result.taxableIncome - njAnnual().taxableIncome).toBe(19_500)
   })
   it('rejects a negative exempt-obligation adjustment instead of taxing the transfer in full', () => {
     // Worksheet C lines are nonnegative. Clamping −500 to 0 would tax all $20,000.
@@ -308,14 +314,14 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     const pool = njIraOwnerPoolsForYear(njBasisPlan([row]), 2026)?.[0]
     expect(pool?.exemptObligationIncome).toBe(-500)
     expect(pool?.annualInputsComplete).not.toBe(false)
-    const priced = annual('NJ', {
+    const priced = njAnnual({
       qcdEvents: [qcd({ grossIraDistribution: 20_000, directCharityTransfer: 20_000, federalExcludedAmount: 20_000 })],
       njIraOwnerPools: pool === undefined ? [] : [pool],
     })
     expect(priced.status).toBe('incomplete')
     expect(priced.warnings.map((warning) => warning.code)).toContain('nj-qcd-pool-invalid')
     expect(priced.warnings.map((warning) => warning.code)).not.toContain('nj-ira-annual-inputs-incomplete')
-    expect(priced.taxableIncome).toBe(annual('NJ').taxableIncome)
+    expect(priced.taxableIncome).toBe(njAnnual().taxableIncome)
   })
   it('reads a lowercase nj basis row and honors an asserted full liquidation', () => {
     // yearEnd 700 + post-year 200 = December 31 value 900. Distributions 100.
@@ -329,23 +335,23 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     }], [{ taxYear: 2026, state: 'NJ', iraBasis: 'complete' }])
     const pool = njIraOwnerPoolsForYear(plan, 2026)?.[0]
     expect(pool?.december31IraValue).toBe(900)
-    const result = annual('NJ', {
+    const result = njAnnual({
       qcdEvents: [qcd({ grossIraDistribution: 100, directCharityTransfer: 100, federalExcludedAmount: 100 })],
       njIraOwnerPools: pool === undefined ? [] : [pool],
     })
-    expect(result.taxableIncome - annual('NJ').taxableIncome).toBe(80)
+    expect(result.taxableIncome - njAnnual().taxableIncome).toBe(80)
     const liquidated = njBasisPlan([njBasisRow({
       yearEndAccountValue: 1_000, distributionsDuringYear: 10_000, fullLiquidation: true,
     })])
     const liquidatedPool = njIraOwnerPoolsForYear(liquidated, 2026)?.[0]
     expect(liquidatedPool?.fullLiquidation).toBe(true)
-    const refused = annual('NJ', {
+    const refused = njAnnual({
       qcdEvents: [qcd()],
       njIraOwnerPools: liquidatedPool === undefined ? [] : [liquidatedPool],
     })
     expect(refused.status).toBe('incomplete')
     expect(refused.warnings.map((warning) => warning.code)).toContain('nj-ira-liquidation-inconsistent')
-    expect(refused.taxableIncome).toBe(annual('NJ').taxableIncome)
+    expect(refused.taxableIncome).toBe(njAnnual().taxableIncome)
     const open = njBasisPlan([njBasisRow({
       yearEndAccountValue: 0, distributionsDuringYear: 10_000, fullLiquidation: false,
     })])
@@ -381,6 +387,84 @@ describeRule('nj-direct-qcd-ira-basis-treatment', { readings: { worksheetC: 4_00
     expect(result.taxableIncome).toBe(annual('NJ').taxableIncome)
   })
 })
+describe('New Jersey line 20a: Worksheet C line 7 for every owner IRA withdrawal (#839 r1-1)', () => {
+  // 2025 NJ-1040 instructions: Worksheet C line 7, "Taxable portion of this
+  // year's withdrawal. Multiply line 2 by decimal amount on line 6. Enter
+  // here and on line 20a"; line 20a, "The New Jersey taxable amount may be
+  // different from the federal amount."
+  // Pool: line 1 190,000, line 2 10,000, line 3 200,000, line 4b 50,000,
+  // line 5 150,000, line 6 0.75. A $10,000 withdrawal: line 7 7,500.
+  const pool = { ownerPersonId: 'owner', december31IraValue: 190_000, allAnnualDistributions: 10_000, unrecoveredNjTaxedContributions: knownMoney(50_000), fullLiquidation: false, annualInputsComplete: true }
+  const ira = (change: Partial<StateRetirementDistributionFact> = {}) => fact({
+    eventId: 'draw', accountId: 'ira', sourceKind: 'ira', accountTaxTreatment: 'traditional',
+    grossDistribution: 10_000, federallyIncludedAmount: 10_000, recipientAgeYears: 71, ...change,
+  })
+  // Above the $150,000 line 28a limit, so line 20a is taxed whole.
+  const above = (draw: number) => ({ ordinaryIncome: 190_000 + draw, agesAlive: [71] })
+  const taxed = (options: StateTaxYearOptions, draw: number) =>
+    annual('NJ', options, above(draw)).taxableIncome - annual('NJ', {}, above(0)).taxableIncome
+
+  it('taxes $7,500 of a $10,000 ordinary draw against $50,000 of basis', () => {
+    // Full taxation of the federal amount would be 10,000.
+    expect(taxed({ retirementDistributions: [ira()], njIraOwnerPools: [pool] }, 10_000)).toBeCloseTo(7_500, 6)
+    // No computable Worksheet C: the federal amount, as before.
+    expect(taxed({ retirementDistributions: [ira()] }, 10_000)).toBeCloseTo(10_000, 6)
+    expect(taxed({ retirementDistributions: [ira()], njIraOwnerPools: [{ ...pool, unrecoveredNjTaxedContributions: unknownMoney() }] }, 10_000)).toBeCloseTo(10_000, 6)
+    // The federal amount after Form 8606 basis does not set the NJ amount:
+    // federal 6,000 of the 10,000, NJ still 7,500.
+    expect(taxed({ retirementDistributions: [ira({ federallyIncludedAmount: 6_000 })], njIraOwnerPools: [pool] }, 6_000)).toBeCloseTo(7_500, 6)
+  })
+
+  it('taxes $7,500 of a $10,000 Roth conversion', () => {
+    // NJ-1040 instructions, line 20a: on a conversion to a Roth IRA "any
+    // amount from the existing IRA that would be taxable if withdrawn must be
+    // included on line 20a", the line 7 portion of the converted 10,000.
+    const conversion = ira({ eventId: 'conversion', rothConversionAmount: 10_000, rothConversionAmountAtAge59HalfOrOlder: 10_000 })
+    expect(taxed({ retirementDistributions: [conversion], njIraOwnerPools: [pool] }, 10_000)).toBeCloseTo(7_500, 6)
+  })
+
+  it('splits line 7 between an RMD and a QCD of the same year: $4,500 and $3,000', () => {
+    // A 10,000 RMD of which 4,000 goes to charity as a QCD: federally 6,000
+    // included and 4,000 excluded. Line 2 is 10,000 either way, so line 7 is
+    // 7,500: 6,000 x 0.75 = 4,500 on the RMD row and 4,000 x 0.75 = 3,000 on
+    // the QCD. Taxing the RMD row at its federal 6,000 would give 9,000.
+    const rmd = ira({ eventId: 'rmd', grossDistribution: 6_000, federallyIncludedAmount: 6_000 })
+    const gift = qcd({ grossIraDistribution: 4_000, directCharityTransfer: 4_000, federalExcludedAmount: 4_000 })
+    expect(taxed({ retirementDistributions: [rmd], qcdEvents: [gift], njIraOwnerPools: [pool] }, 6_000)).toBeCloseTo(7_500, 6)
+  })
+
+  it('excludes under line 28a from the line 20a amount, not the federal one', () => {
+    // Line 28a: "You can exclude all or part of the income reported on line
+    // 20a". Ordinary income 110,000 with the 10,000 draw; NJ gross 107,500,
+    // in the over-$100,000 tier, so line B is 37.5% of line 20a:
+    // 7,500 x 0.375 = 2,812.50, leaving 4,687.50 of the draw taxed.
+    // Line 28a on the federal 10,000 would leave 7,500 - 3,750 = 3,750, and
+    // full taxation 10,000 - 3,750 = 6,250.
+    const year = (draw: number) => ({ ordinaryIncome: 100_000 + draw, agesAlive: [71] })
+    const result = annual('NJ', { retirementDistributions: [ira()], njIraOwnerPools: [pool] }, year(10_000))
+    expect(result.taxableIncome - annual('NJ', {}, year(0)).taxableIncome).toBeCloseTo(4_687.5, 6)
+    // The QCD's line 7 portion is line 20a income too: a 10,000 QCD,
+    // line 7 7,500, excluded at 37.5% (2,812.50), so 4,687.50.
+    const qcdYear = { ordinaryIncome: 100_000, agesAlive: [71] }
+    const qcdPool = { ...pool, december31IraValue: 190_000 }
+    const withQcd = annual('NJ', { qcdEvents: [qcd()], njIraOwnerPools: [qcdPool] }, qcdYear)
+    expect(withQcd.taxableIncome - annual('NJ', {}, qcdYear).taxableIncome).toBeCloseTo(4_687.5, 6)
+  })
+
+  it('takes the whole year line 6 decimal for a draw received while a New Jersey resident', () => {
+    // NJ-1040 instructions, line 20a: "Part-Year Residents. Include only the
+    // taxable amounts you received while you were a resident of New Jersey."
+    // A March draw in the six New Jersey months is taxed 7,500; a September
+    // draw, in the Texas months, adds nothing to the New Jersey slice.
+    const split = (date: string, pools?: typeof pool[]) => computeStateTaxYearResult(
+      input('NJ', { ...above(10_000), stateResidency: [{ state: 'NJ', months: 6 }, { state: 'TX', months: 6 }] }),
+      { retirementDistributions: [ira({ distributionDate: date })], hsaAccounts: [], qcdEvents: [], householdFacts: household(), ...(pools ? { njIraOwnerPools: pools } : {}) },
+    ).taxableIncome
+    expect(split('2026-03-15') - split('2026-03-15', [pool])).toBeCloseTo(2_500, 6)
+    expect(split('2026-09-15') - split('2026-09-15', [pool])).toBeCloseTo(0, 6)
+  })
+})
+
 describe('QCD classification controls shared by both original findings', () => {
   it.each(['AR', 'HI', 'KS', 'NJ'])('%s never certifies a nondirect transfer or missing activity as exact', (state) => {
     expect(annual(state, { qcdEvents: [qcd({ directTransfer: false })] }).status).toBe('incomplete')

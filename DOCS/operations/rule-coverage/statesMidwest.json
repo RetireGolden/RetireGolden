@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -234,7 +234,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1709
+              "line": 1789
             }
           ]
         }
@@ -359,7 +359,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -452,7 +452,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -521,7 +521,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -637,7 +637,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1709
+              "line": 1789
             }
           ]
         }
@@ -730,7 +730,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncomeResult",
-              "line": 1255
+              "line": 1329
             }
           ]
         }
@@ -799,7 +799,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -815,20 +815,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 515,
+          "line": 599,
           "note": null,
           "tests": [
             {
               "title": "removes qualifying IRA income already in federal AGI",
-              "line": 516
+              "line": 600
             },
             {
               "title": "removes qualifying employer-plan income already in federal AGI",
-              "line": 519
+              "line": 603
             },
             {
               "title": "removes qualifying private-pension income already in federal AGI",
-              "line": 522
+              "line": 606
             }
           ]
         },
@@ -896,7 +896,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -970,7 +970,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -981,12 +981,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 526,
+          "line": 610,
           "note": null,
           "tests": [
             {
               "title": "uses $2,925 plus $1,000 age65 and removes it above the income cutoff",
-              "line": 527
+              "line": 611
             }
           ]
         }
@@ -1049,7 +1049,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -1158,7 +1158,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -1242,7 +1242,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -1307,7 +1307,7 @@
           "functions": [
             {
               "name": "stateDirectQcdCollectionAdjustment",
-              "line": 278
+              "line": 293
             }
           ]
         },
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -1390,11 +1390,11 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1709
+              "line": 1789
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -1488,7 +1488,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -1500,28 +1500,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 532,
+          "line": 616,
           "note": null,
           "tests": [
             {
               "title": "subtracts each enumerated Kansas and federal retirement-system family",
-              "line": 533
+              "line": 617
             },
             {
               "title": "requires a named system such as KPERS",
-              "line": 542
+              "line": 626
             },
             {
               "title": "does not flag a missing code on a source no named system pays",
-              "line": 547
+              "line": 631
             },
             {
               "title": "flags an employer plan that may be Washburn University's 403(b), and subtracts it under KS-WASHBURN",
-              "line": 566
+              "line": 650
             },
             {
               "title": "flags a missing code on a public source, where the code decides it",
-              "line": 594
+              "line": 678
             }
           ]
         },
@@ -1605,7 +1605,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -1679,7 +1679,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -1792,7 +1792,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -1872,7 +1872,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -2003,7 +2003,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2075,7 +2075,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -2154,7 +2154,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -2241,7 +2241,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2311,7 +2311,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -2411,7 +2411,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -2561,7 +2561,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -2572,16 +2572,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 701,
+          "line": 785,
           "note": null,
           "tests": [
             {
               "title": "phases private pension dollar-for-dollar above $25,000 single",
-              "line": 702
+              "line": 786
             },
             {
               "title": "uses a different public limit and independent military/RRB exclusions",
-              "line": 706
+              "line": 790
             }
           ]
         }
@@ -2648,7 +2648,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -2722,7 +2722,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -2795,7 +2795,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 1709
+              "line": 1789
             }
           ]
         }
@@ -2895,7 +2895,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3028,7 +3028,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3101,7 +3101,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3178,7 +3178,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -3259,7 +3259,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3337,7 +3337,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -3429,7 +3429,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3506,7 +3506,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3636,7 +3636,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -3722,7 +3722,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -3894,7 +3894,7 @@
           "functions": [
             {
               "name": "computeStateTaxYearResult",
-              "line": 2595
+              "line": 2680
             }
           ]
         }
@@ -3965,7 +3965,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",
@@ -4137,7 +4137,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -4224,11 +4224,11 @@
           "functions": [
             {
               "name": "computeSplitYearResult",
-              "line": 2211
+              "line": 2291
             },
             {
               "name": "computeStateTaxDetailResult",
-              "line": 1723
+              "line": 1803
             }
           ]
         }
@@ -4240,20 +4240,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 922,
+          "line": 1006,
           "note": null,
           "tests": [
             {
               "title": "matches Form 1-ES cumulative taxes at all Schedule A B and C band edges",
-              "line": 923
+              "line": 1007
             },
             {
               "title": "adds the age65 exemption to the $700 personal allowance",
-              "line": 938
+              "line": 1022
             },
             {
               "title": "uses the published2026 rates and floors the standard deduction at zero",
-              "line": 945
+              "line": 1029
             }
           ]
         },
@@ -4319,7 +4319,7 @@
           "functions": [
             {
               "name": "mapPensionSourceToStateKind",
-              "line": 54
+              "line": 55
             }
           ]
         },
@@ -4341,7 +4341,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -4431,7 +4431,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }
@@ -4510,7 +4510,7 @@
           "functions": [
             {
               "name": "characterizedRetirementDelta",
-              "line": 607
+              "line": 681
             }
           ]
         }
@@ -4595,7 +4595,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             },
             {
               "name": "retirementExclusion",

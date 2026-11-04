@@ -408,8 +408,8 @@
     },
     {
       "path": "projection/internal/stateNjIraBasisLifecycle.ts",
-      "sweptOn": "2026-09-12",
-      "note": "NJ annual owner-pool closing-basis carryforward and characterized new contributions; intervening unknown years, duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts."
+      "sweptOn": "2026-11-03",
+      "note": "NJ annual owner-pool closing-basis carryforward and characterized new contributions, opened from the year before the projection and applied to projected ledger pools, which are dropped without a carry and held to the year-end ledger (nj-direct-qcd-ira-basis-treatment); duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts."
     },
     {
       "path": "projection/internal/statePensionBasisLifecycle.ts",
@@ -533,13 +533,13 @@
     },
     {
       "path": "tax/stateQcdHsa.ts",
-      "sweptOn": "2026-10-23",
-      "note": "Direct QCD collection, NJ Worksheet C and CA/NJ account calculations now have records. transactionKind is read with the split-interest and direct-transfer gates (state-direct-qcd-conformity-policies, nj-direct-qcd-ira-basis-treatment). The NJ collection emits those refusals before the missing Worksheet C pool continuation. Legacy single-event and HSA aggregate bridges, policy resolution and NJ collection entry point still lack direct function trails."
+      "sweptOn": "2026-11-03",
+      "note": "Direct QCD collection, NJ Worksheet C and CA/NJ account calculations now have records. transactionKind is read with the split-interest and direct-transfer gates, which every state shares and which cite the federal IRC 408(d)(8) records they enforce (irc-408-d-8-F-i-split-interest-direct-payment, irc-408-d-8-B-i-qualified-recipient). The unresearched-policy and residency gates are engine-wide and carry no rule id, since the registry has no multi-state jurisdiction. The NJ collection emits those refusals before the missing Worksheet C pool continuation. Legacy single-event and HSA aggregate bridges, policy resolution and NJ collection entry point still lack direct function trails."
     },
     {
       "path": "tax/stateRetirementFacts.ts",
-      "sweptOn": "2026-10-23",
-      "note": "Source-kind grouping, income-component mapping and legacy HSA completeness bridge carry tax-character claims beyond the type-only definitions. StateQcdEventFacts.transactionKind records that splitInterest is refused and that other and unknown do not inherit direct-QCD treatment (state-direct-qcd-conformity-policies). No direct rule trail for the type module."
+      "sweptOn": "2026-11-03",
+      "note": "Source-kind grouping, income-component mapping and legacy HSA completeness bridge carry tax-character claims beyond the type-only definitions. StateQcdEventFacts.transactionKind records that splitInterest is refused and that other and unknown do not inherit direct-QCD treatment (irc-408-d-8-F-i-split-interest-direct-payment, irc-408-d-8-B-i-qualified-recipient). No direct rule trail for the type module."
     },
     {
       "path": "tax/stateSouthCarolinaRetirement.ts",
@@ -846,7 +846,7 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1904,
+    "entryCount": 1909,
     "fetched": 0,
     "cached": 433,
     "counts": {
@@ -854,7 +854,7 @@
       "ELISION-PUNCTUATION": 1,
       "EXACT": 1259,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 473,
+      "PDF-WORD-LEVEL": 478,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 11
     },
@@ -3358,6 +3358,38 @@
           {
             "id": "ks-k40-2026-qss-head-of-household",
             "citation": "K.S.A. 79-32,110(a)(2)"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added for RetireGolden #839 (review r1-7 and r1-11): the GIT-1 & 2 Total Value sentence that defines Worksheet C line 1 for the projected New Jersey pool is now an authority on nj-direct-qcd-ira-basis-treatment. verify-quotes could not reach www.nj.gov from the session that made the change (the sandbox proxy refused CONNECT, HTTP 403, on 2026-11-03), so the quote was checked the same day against a WebFetch rendering of the January 2026 PDF, which matched word for word, and is recorded PDF-WORD-LEVEL as the PDF entries of this record are. A networked verify-quotes run filtered to this record should re-check it. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "nj-direct-qcd-ira-basis-treatment",
+            "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, IRA withdrawals, Total Value"
+          }
+        ]
+      },
+      {
+        "on": "2026-11-03",
+        "note": "Added for RetireGolden #839 (review r1-1, option A): New Jersey now taxes every owner IRA withdrawal at its Worksheet C line 7 amount on line 20a and the line 28a exclusion reads that amount. The 2025 Form NJ-1040 instructions for Worksheet C line 7, line 20a and its part-year sentence are new authorities on nj-direct-qcd-ira-basis-treatment, and the line 28a sentence on nj-stat-54a-6-10-retirement-income-exclusion. verify-quotes could not reach www.nj.gov from the session that made the change (the sandbox proxy refused CONNECT, HTTP 403, on 2026-11-03), so each quote was checked the same day against a WebFetch rendering of the PDF, which matched word for word, and is recorded PDF-WORD-LEVEL. A networked verify-quotes run filtered to these records should re-check them. No other ledger entry was re-run.",
+        "entries": [
+          {
+            "id": "nj-direct-qcd-ira-basis-treatment",
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, Worksheet C line 7"
+          },
+          {
+            "id": "nj-direct-qcd-ira-basis-treatment",
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a"
+          },
+          {
+            "id": "nj-direct-qcd-ira-basis-treatment",
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 20a, part-year residents"
+          },
+          {
+            "id": "nj-stat-54a-6-10-retirement-income-exclusion",
+            "citation": "NJ Division of Taxation, 2025 Form NJ-1040 instructions, line 28a"
           }
         ]
       }

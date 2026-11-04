@@ -2,7 +2,9 @@ import type { InheritedAccountYearEvidence } from './types.js'
 import { preStartEvents } from './preStartEvents.js'
 import { deriveAnnualStateRailroadBenefits } from './internal/annualStateRailroadFacts.js'
 import { applyAcceptedPensionBasisToYearFacts, commitAcceptedPensionBasis, type AcceptedStatePensionBasisSnapshot } from './internal/statePensionBasisLifecycle.js'
-import { applyAcceptedNjIraBasisToYearFacts, commitAcceptedNjIraBasis, type AcceptedStateNjIraBasisSnapshot } from './internal/stateNjIraBasisLifecycle.js'
+import { applyAcceptedNjIraBasisToYearFacts, commitAcceptedNjIraBasis, njIraYearContributionAdditions, reconcileProjectedNjIraYearEnd, seedAcceptedNjIraBasisFromEvidence, type AcceptedStateNjIraBasisSnapshot } from './internal/stateNjIraBasisLifecycle.js'
+import { njIraLedgerAccounts, njIraOwnerPoolsForYear, njIraResidentInYear } from './internal/stateRetirementFactsAdapter.js'
+import { annualPostSolveGrowthFactors } from './internal/annualPostSolveAccountGrowth.js'
 import type { SpousalElectionSimulationContext } from '../actions/beneficiarySpousalElectionAnnualGate.js'
 import { asUsdCents } from '../actions/money.js'
 import { computeFederalTax } from '../tax/federalTax.js'
@@ -815,7 +817,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // Inherited Roth tax-character pools — attempt-scoped; clone for counterfactuals.
   const inheritedRothPools = initializeInheritedRothPoolState(plan)
   const modeledSpousalHistory = new Map<string, SpousalElectionSimulationContext['requiredDistributionHistory']>()
-  let acceptedStateNjIraBasis: readonly AcceptedStateNjIraBasisSnapshot[] = []
+  // NJ Worksheet C Part II carries basis year to year; the year before the
+  // projection opens it from that year's basis evidence, when there is any.
+  let acceptedStateNjIraBasis: readonly AcceptedStateNjIraBasisSnapshot[] =
+    seedAcceptedNjIraBasisFromEvidence(startYear - 1, njIraOwnerPoolsForYear(plan, startYear - 1))
   const completedSpousalRothBasisHandoffs = new Set<string>()
   let acceptedStatePensionBasis: readonly AcceptedStatePensionBasisSnapshot[] = []
   let acceptedStateHsaBasis: readonly AcceptedStateHsaBasisSnapshot[] = []
@@ -1825,13 +1830,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       return { ...input, stateHouseholdFacts: { ...input.stateHouseholdFacts, ...household.householdFacts },
         stateNjIraOwnerPools: applyAcceptedNjIraBasisToYearFacts(input.stateNjIraOwnerPools, year, acceptedStateNjIraBasis,
-          people.map((person) => {
-            const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter((row) => row.taxYear === year && row.state.toUpperCase() === 'NJ' && row.ownerPersonId === person.id)
-            const complete = rows.length > 0 && rows.every((row) => row.postYearContributionsThroughFilingDeadline !== undefined)
-            return { ownerPersonId: person.id, amount: complete
-              ? { known: true as const, amount: (stateNjTaxedContributions.get(person.id) ?? 0) + rows.reduce((sum,row) => sum + row.postYearContributionsThroughFilingDeadline!, 0) }
-              : { known: false as const } }
-          })),
+          njIraYearContributionAdditions(plan.stateTaxFacts.iraBasisYearEvidence, year, people.map((person) => person.id), stateNjTaxedContributions)),
         stateRetirementDistributions: applyAcceptedPensionBasisToYearFacts(input.stateRetirementDistributions, input.state ?? plan.household.state, year, acceptedStatePensionBasis),
         stateHsaAccountYearFacts: applyAcceptedHsaBasisToYearFacts(input.stateHsaAccountYearFacts,
           input.state ?? plan.household.state, year, acceptedStateHsaBasis),
@@ -2083,8 +2082,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         asOfDate: row.asOf,
       })
     }
+    // Keyed by the physical row, not the account id: compatible duplicate
+    // rows share an id, and the contribution phase updates each row in place.
     const iraBeforeContribution = new Map(balances.filter((row) => row.account.type === 'traditional' && row.account.kind === 'ira')
-      .map((row) => [row.account.id, row.balance]))
+      .map((row) => [row, row.balance]))
     const hsaBeforeContribution = new Map(balances.filter((row) => row.account.type === 'hsa')
       .map((row) => [row.account.id, row.balance]))
     const contributionReconciliation = annualContributionReconciliationPhase({
@@ -2121,7 +2122,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (row.account.type !== 'traditional' || row.account.kind !== 'ira') continue
       const owner = row.account.ownerPersonId ?? primary.id
       stateNjTaxedContributions.set(owner, (stateNjTaxedContributions.get(owner) ?? 0) +
-        row.balance - (iraBeforeContribution.get(row.account.id) ?? row.balance))
+        row.balance - (iraBeforeContribution.get(row) ?? row.balance))
     }
     const stateHsaContributions = new Map(balances.filter((row) => row.account.type === 'hsa')
       .map((row) => [row.account.id, row.balance - (hsaBeforeContribution.get(row.account.id) ?? row.balance)]))
@@ -2608,6 +2609,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
           : null,
       }))
+    // NJ Worksheet C line 1 for a projected owner pool: the owners' IRAs on
+    // the live ledger and the factor this year's post-solve growth applies to
+    // each, read when a pricing needs them (after the debits made so far).
+    // A row's growth rate does not depend on its balance, so the factors are
+    // read once per year; balances are read at each call.
+    // With no owner carrying a complete prior-year Part II basis, every
+    // projected pool is dropped (applyAcceptedNjIraBasisToYearFacts), so no
+    // growth factor is computed; the factorless pools are dropped the same.
+    let njIraGrowthFactors: readonly number[] | undefined
+    const njIraCarryOpen = acceptedStateNjIraBasis.some((row) => row.taxYear === year - 1 && row.status === 'complete')
+    const njIraLedgerAccountsNow = () => njIraResidentInYear(plan, year) ? njIraLedgerAccounts({
+      balances,
+      growthFactors: !njIraCarryOpen ? [] : njIraGrowthFactors ??= annualPostSolveGrowthFactors({
+        states: balances, allocationTrack, distributedYieldByBalanceIndex, classParams,
+        defaultReturnPct: plan.assumptions.defaultReturnPct, shockPct: returnShockAt(year), year, classShockAt,
+      }),
+      isOwnerIraThisYear: forcedDistributionPhase.isAggregatedIraThisYear,
+      primaryPersonId: primary.id,
+      // A contract bought from an owner's IRA stays in that owner's IRA
+      // aggregate (irc-408-d-1-ira-annuity-premium-is-not-a-distribution).
+      iraAnnuityContractOwners: new Set(ownedIraFundedAnnuityContracts(plan)
+        .filter(({ contract }) => contract.purchase!.year <= year).map(({ ownerPersonId }) => ownerPersonId)),
+    }) : undefined
     const aggregateRothPhase = annualAggregateRothConversionPhase(Object.freeze({
       facts: Object.freeze({
         year,
@@ -2658,6 +2682,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       },
       callbacks: Object.freeze({
         stateOf,
+        njIraLedgerAccounts: njIraLedgerAccountsNow,
         splitWithAssumedCharacter,
         noteForm8606Taxable,
         recordAnnualRetirementRuntimeOccurrence,
@@ -2811,6 +2836,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ledger: fundingCloseLedger,
       callbacks: Object.freeze({
         stateOf,
+        njIraLedgerAccounts: njIraLedgerAccountsNow,
         isTreatAsOwnEffective: annualOwnerTreatment,
         evaluateSpousalElectionAtYearEnd: (rows: readonly InheritedAccountYearEvidence[]) => annualIdKeyedBalances.flatMap((state) => {
           if ((state.account.type !== 'traditional' && state.account.type !== 'roth') ||
@@ -2966,6 +2992,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         distributedAmount: asUsdCents(Math.round((row.executedRequiredAmount + row.voluntaryAmount) * 100)),
         legalDeadline: `${year}-12-31`, commitId: `${plan.id}:${account.id}:${year}:committed`,
       }])
+    }
+    if (settledAnnualPass.yearResult.taxComputation !== undefined &&
+      settledAnnualPass.yearResult.acceptedTaxInput?.stateNjIraOwnerPools?.some((pool) => pool.projectedLedger !== undefined) === true) {
+      // A projected NJ pool priced line 1 inside the solve; hold it to the
+      // year-end ledger before its basis transition carries forward.
+      const yearEndByAccount = new Map<string, number>()
+      for (const state of balances) yearEndByAccount.set(state.account.id, (yearEndByAccount.get(state.account.id) ?? 0) + state.balance)
+      const priced = settledAnnualPass.yearResult.taxComputation
+      const reconciled = reconcileProjectedNjIraYearEnd(year, priced,
+        settledAnnualPass.yearResult.acceptedTaxInput.stateNjIraOwnerPools, (accountId) => yearEndByAccount.get(accountId) ?? 0)
+      // The funding phase has already copied the year's issues into the
+      // projection warnings; a mismatch found after growth is added here.
+      for (const issue of reconciled.issues.slice(priced.issues.length)) warnings.add(issue.message)
+      settledAnnualPass.yearResult.taxComputation = reconciled
     }
     if (settledAnnualPass.yearResult.taxComputation !== undefined) {
       acceptedStateNjIraBasis = commitAcceptedNjIraBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateNjIraBasis)

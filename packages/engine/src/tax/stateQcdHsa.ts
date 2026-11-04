@@ -27,24 +27,31 @@ import {
   type StateTaxExactnessWarning,
 } from './stateRetirementFacts.js'
 
-function incomplete(code: string, ruleId: string, message: string, missingFacts: string[]): StateLeafAdjustment {
+/**
+ * A refusal leaf. `ruleId` names the registered record whose law the gate
+ * enforces; `null` marks an engine-wide gate no single sovereign's law
+ * creates (an unresearched state policy, residency the projection cannot
+ * allocate), which carries no rule id, as state-pack-unavailable does.
+ */
+function incomplete(code: string, ruleId: string | null, message: string, missingFacts: string[]): StateLeafAdjustment {
   return {
     taxableIncomeDelta: 0,
     taxCredit: 0,
-    warnings: [{ code, ruleId, message, missingFacts }],
+    warnings: [ruleId === null ? { code, message, missingFacts } : { code, ruleId, message, missingFacts }],
   }
 }
 
 function requireKnown(
   fact: KnownMoney | undefined,
   missing: string,
+  ruleId: 'ca-hsa-state-basis-nonconformity' | 'nj-hsa-state-basis-nonconformity',
 ): { ok: true; amount: number } | { ok: false; warning: StateTaxExactnessWarning } {
   if (!isKnownMoney(fact)) {
     return {
       ok: false,
       warning: {
         code: 'state-hsa-money-unknown',
-        ruleId: 'state-hsa-known-money',
+        ruleId,
         message: `Exact HSA adjustment unavailable: ${missing} is unknown (not known zero).`,
         missingFacts: [missing],
       },
@@ -68,7 +75,15 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   correspondingGrossDistributions: number
 }): StateLeafAdjustment & { stateTaxableIraAmount?: number; basisRecovered?: number } {
   const { pool } = args
-  if (pool.annualInputsComplete === false) return incomplete('nj-ira-annual-inputs-incomplete', 'state-direct-qcd-conformity', 'New Jersey annual IRA pool does not reconcile with actual annual distributions.', ['allAnnualDistributions', 'annualInputsComplete'])
+  if (pool.unvaluedIraAnnuityContract === true) {
+    return incomplete(
+      'nj-ira-annuity-contract-unvalued',
+      'nj-direct-qcd-ira-basis-treatment',
+      'New Jersey Worksheet C line 1 for a projected year leaves out an IRA-funded annuity contract the owner holds; no New Jersey authority found values the contract, so the year is not priced.',
+      ['december31IraValue', 'iraAnnuityContractValue'],
+    )
+  }
+  if (pool.annualInputsComplete === false) return incomplete('nj-ira-annual-inputs-incomplete', 'nj-direct-qcd-ira-basis-treatment', 'New Jersey annual IRA pool does not reconcile with actual annual distributions.', ['allAnnualDistributions', 'annualInputsComplete'])
   const dec31 = pool.december31IraValue
   const allDist = pool.allAnnualDistributions
   // GIT-1 & 2 Worksheet C removes exempt-obligation earnings from the taxable
@@ -78,7 +93,7 @@ export function newJerseyWorksheetCTaxableAmount(args: {
     (!Number.isFinite(pool.exemptObligationIncome) || pool.exemptObligationIncome < 0)) {
     return incomplete(
       'nj-qcd-pool-invalid',
-      'state-direct-qcd-conformity',
+      'nj-direct-qcd-ira-basis-treatment',
       'New Jersey IRA Worksheet C pool rejected: exempt-obligation income must be finite and nonnegative.',
       ['exemptObligationIncome'],
     )
@@ -88,7 +103,7 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   if (!Number.isFinite(dec31) || !Number.isFinite(allDist) || dec31 < 0 || allDist < 0) {
     return incomplete(
       'nj-qcd-pool-invalid',
-      'state-direct-qcd-conformity',
+      'nj-direct-qcd-ira-basis-treatment',
       'New Jersey IRA Worksheet C pool rejected: December 31 value and annual distributions must be finite and nonnegative.',
       ['december31IraValue', 'allAnnualDistributions'],
     )
@@ -97,7 +112,7 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   if (!isKnownMoney(pool.unrecoveredNjTaxedContributions)) {
     return incomplete(
       'nj-qcd-basis-unknown',
-      'state-direct-qcd-conformity',
+      'nj-direct-qcd-ira-basis-treatment',
       'New Jersey QCD/IRA taxable component incomplete: unrecovered NJ contribution basis is unknown; no fabricated addition.',
       ['unrecoveredNjTaxedContributions', 'njIraBasisPool'],
     )
@@ -108,7 +123,7 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   if (totalValue < 0 || unrecovered > totalValue + 1e-9) {
     return incomplete(
       'nj-qcd-pool-inconsistent',
-      'state-direct-qcd-conformity',
+      'nj-direct-qcd-ira-basis-treatment',
       'New Jersey IRA Worksheet C pool rejected: unrecovered basis exceeds total value or totals are inconsistent.',
       ['unrecoveredNjTaxedContributions', 'december31IraValue', 'allAnnualDistributions'],
     )
@@ -118,13 +133,13 @@ export function newJerseyWorksheetCTaxableAmount(args: {
   if (corresponding > allDist + 1e-9) {
     return incomplete(
       'nj-qcd-pool-inconsistent',
-      'state-direct-qcd-conformity',
+      'nj-direct-qcd-ira-basis-treatment',
       'New Jersey IRA Worksheet C pool rejected: corresponding distributions exceed the annual distribution total.',
       ['allAnnualDistributions', 'correspondingGrossDistributions'],
     )
   }
 
-  if (pool.fullLiquidation && dec31 !== 0) return incomplete('nj-ira-liquidation-inconsistent', 'state-direct-qcd-conformity', 'A fully liquidated IRA owner pool cannot retain a December 31 value.', ['december31IraValue', 'fullLiquidation'])
+  if (pool.fullLiquidation && dec31 !== 0) return incomplete('nj-ira-liquidation-inconsistent', 'nj-direct-qcd-ira-basis-treatment', 'A fully liquidated IRA owner pool cannot retain a December 31 value.', ['december31IraValue', 'fullLiquidation'])
   if (pool.fullLiquidation) {
     // Full liquidation recovers remaining NJ basis against the corresponding
     // gross; taxable = max(0, corresponding − unrecovered) after exempt-obligation.
@@ -169,7 +184,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-split-interest-refused',
-        'state-direct-qcd-conformity',
+        'irc-408-d-8-F-i-split-interest-direct-payment',
         'Split-interest QCD remains a typed refusal; state policy is not applied.',
         ['supportedDirectQcdTransactionType'],
       ),
@@ -181,7 +196,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-direct-transfer-required',
-        'state-direct-qcd-conformity',
+        'irc-408-d-8-B-i-qualified-recipient',
         'State QCD adjustment requires a direct charity transfer; unsupported transaction kinds do not inherit direct-QCD policy.',
         ['directTransfer'],
       ),
@@ -193,7 +208,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-policy-unknown',
-        'state-direct-qcd-conformity',
+        null,
         'Exact state QCD result unavailable: direct-QCD conformity policy is unknown; federal exclusion is not silently carried as an exact state answer.',
         ['stateDirectQcdPolicy'],
       ),
@@ -209,7 +224,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'state-qcd-residency-incomplete',
-        'state-direct-qcd-conformity',
+        null,
         'State QCD allocation incomplete without full residency/date facts.',
         ['residency', 'transferDate'],
       ),
@@ -219,7 +234,7 @@ function qcdEventAdjustment(args: {
 
   if (policy.kind === 'conforms') {
     if (policy.charitableCreditAdjustment === 'coveredCreditAddback' && event.kansasCoveredCharitableCreditClaimed === undefined) {
-      return { adjustment: incomplete('ks-qcd-charitable-credit-unknown', 'ks-qcd-charitable-credit-adjustment', 'Kansas QCD treatment is incomplete until covered charitable-credit use is known.', ['kansasCoveredCharitableCreditClaimed']), ownerCapConsumed: 0 }
+      return { adjustment: incomplete('ks-qcd-charitable-credit-unknown', 'ks-direct-qcd-conformity', 'Kansas QCD treatment is incomplete until covered charitable-credit use is known.', ['kansasCoveredCharitableCreditClaimed']), ownerCapConsumed: 0 }
     }
     if (policy.charitableCreditAdjustment === 'coveredCreditAddback' && event.kansasCoveredCharitableCreditClaimed) {
       return { adjustment: { taxableIncomeDelta: Math.max(0, event.federalExcludedAmount), taxCredit: 0, warnings: [] }, ownerCapConsumed: 0 }
@@ -245,7 +260,7 @@ function qcdEventAdjustment(args: {
     return {
       adjustment: incomplete(
         'nj-qcd-basis-unknown',
-        'state-direct-qcd-conformity',
+        'nj-direct-qcd-ira-basis-treatment',
         'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.',
         ['njIraOwnerPool', 'unrecoveredNjTaxedContributions'],
       ),
@@ -300,12 +315,12 @@ export function stateDirectQcdCollectionAdjustment(args: {
       // IRC 408(d)(8)(F) and the direct-transfer gate do not depend on
       // Worksheet C basis. A missing pool must not hide those refusals.
       for (const event of events) {
-        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'state-direct-qcd-conformity', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
-        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'state-direct-qcd-conformity', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
-        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', 'state-direct-qcd-conformity', 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
+        if (event.transactionKind === 'splitInterest' || event.splitInterest) parts.push(incomplete('state-qcd-split-interest-refused', 'irc-408-d-8-F-i-split-interest-direct-payment', 'Split-interest QCD remains a typed refusal; state policy is not applied.', ['supportedDirectQcdTransactionType']))
+        else if (event.transactionKind === 'other' || event.transactionKind === 'unknown' || !event.directTransfer || event.directCharityTransfer <= 0) parts.push(incomplete('state-qcd-direct-transfer-required', 'irc-408-d-8-B-i-qualified-recipient', 'State QCD adjustment requires a direct charity transfer.', ['directTransfer']))
+        else if (event.residency === 'unknown' || event.residency === 'partYear') parts.push(incomplete('state-qcd-residency-incomplete', null, 'State QCD allocation incomplete without full residency/date facts.', ['residency', 'transferDate']))
       }
       if (!pool) {
-        parts.push(incomplete('nj-qcd-basis-unknown', 'state-direct-qcd-conformity', 'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.', ['njIraOwnerPool', 'unrecoveredNjTaxedContributions']))
+        parts.push(incomplete('nj-qcd-basis-unknown', 'nj-direct-qcd-ira-basis-treatment', 'New Jersey QCD/IRA taxable component incomplete: annual Worksheet C owner pool is missing.', ['njIraOwnerPool', 'unrecoveredNjTaxedContributions']))
         continue
       }
       const directQcd = (event: StateQcdEventFacts) =>
@@ -401,7 +416,7 @@ export function stateDirectQcdAdjustment(
       if (facts.splitInterest) {
         return incomplete(
           'state-qcd-split-interest-refused',
-          'state-direct-qcd-conformity',
+          'irc-408-d-8-F-i-split-interest-direct-payment',
           'Split-interest QCD remains a typed refusal; state policy is not applied.',
           ['supportedDirectQcdTransactionType'],
         )
@@ -410,7 +425,7 @@ export function stateDirectQcdAdjustment(
       if (facts.residency === 'unknown' || facts.residency === 'partYear') {
         return incomplete(
           'state-qcd-residency-incomplete',
-          'state-direct-qcd-conformity',
+          null,
           'State QCD allocation incomplete without full residency/date facts.',
           ['residency', 'transferDate'],
         )
@@ -426,7 +441,7 @@ export function stateDirectQcdAdjustment(
 export function californiaHsaAccountAdjustment(facts: StateHsaAccountYearFacts): StateLeafAdjustment {
   const warnings: StateTaxExactnessWarning[] = []
   if (facts.annualActivityComplete !== true) {
-    return incomplete('ca-hsa-annual-activity-incomplete', 'ca-hsa-nonconformity', 'California HSA result is incomplete until annual contribution, gain, and distribution activity is explicitly complete.', ['annualActivityComplete'])
+    return incomplete('ca-hsa-annual-activity-incomplete', 'ca-hsa-state-basis-nonconformity', 'California HSA result is incomplete until annual contribution, gain, and distribution activity is explicitly complete.', ['annualActivityComplete'])
   }
   const fields: Array<[KnownMoney, string]> = [
     [facts.federalHsaDeduction, 'federalHsaDeduction'],
@@ -439,7 +454,7 @@ export function californiaHsaAccountAdjustment(facts: StateHsaAccountYearFacts):
   let earnings = 0
   let nonqualifiedFederal = 0
   for (const [money, name] of fields) {
-    const resolved = requireKnown(money, name)
+    const resolved = requireKnown(money, name, 'ca-hsa-state-basis-nonconformity')
     if (!resolved.ok) {
       warnings.push(resolved.warning)
       continue
@@ -457,11 +472,11 @@ export function californiaHsaAccountAdjustment(facts: StateHsaAccountYearFacts):
   if (caLots !== undefined) {
     for (const lot of caLots) {
       if (!Number.isFinite(lot.proceeds) || !Number.isFinite(lot.californiaLotBasis) || lot.proceeds < 0 || lot.californiaLotBasis < 0) {
-        warnings.push({ code: 'ca-hsa-lot-invalid', ruleId: 'ca-hsa-nonconformity', message: 'California HSA disposition requires finite nonnegative proceeds and California basis.', missingFacts: ['californiaAssetDispositions'] })
+        warnings.push({ code: 'ca-hsa-lot-invalid', ruleId: 'ca-hsa-state-basis-nonconformity', message: 'California HSA disposition requires finite nonnegative proceeds and California basis.', missingFacts: ['californiaAssetDispositions'] })
       } else realizedGain += Math.max(0, lot.proceeds - lot.californiaLotBasis)
     }
   } else {
-    const gain = requireKnown(facts.realizedGains, 'realizedGains')
+    const gain = requireKnown(facts.realizedGains, 'realizedGains', 'ca-hsa-state-basis-nonconformity')
     if (!gain.ok) warnings.push(gain.warning)
     else realizedGain = gain.amount
   }
@@ -498,10 +513,10 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
   const warnings: StateTaxExactnessWarning[] = []
   let delta = 0
 
-  const employer = requireKnown(facts.employerContributionExcludedFederally, 'employerContributionExcludedFederally')
+  const employer = requireKnown(facts.employerContributionExcludedFederally, 'employerContributionExcludedFederally', 'nj-hsa-state-basis-nonconformity')
   const alreadyInWages = requireKnown(
     facts.employerContributionAlreadyInStateWages,
-    'employerContributionAlreadyInStateWages',
+    'employerContributionAlreadyInStateWages', 'nj-hsa-state-basis-nonconformity',
   )
   if (!employer.ok) warnings.push(employer.warning)
   if (!alreadyInWages.ok) warnings.push(alreadyInWages.warning)
@@ -518,20 +533,20 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
     [facts.interest, 'interest'],
     [facts.dividends, 'dividends'],
   ] as const) {
-    const resolved = requireKnown(money, name)
+    const resolved = requireKnown(money, name, 'nj-hsa-state-basis-nonconformity')
     if (!resolved.ok) warnings.push(resolved.warning)
     else delta += resolved.amount
   }
   void facts.unrealizedAppreciation
 
   if (facts.njAssetDispositions !== undefined && facts.realizedGains.known) {
-    warnings.push({ code: 'nj-hsa-gain-representation-ambiguous', ruleId: 'nj-hsa-nonconformity', message: 'New Jersey HSA uses either aggregate realized gains or state-basis lots, not both.', missingFacts: ['realizedGains', 'njAssetDispositions'] })
+    warnings.push({ code: 'nj-hsa-gain-representation-ambiguous', ruleId: 'nj-hsa-state-basis-nonconformity', message: 'New Jersey HSA uses either aggregate realized gains or state-basis lots, not both.', missingFacts: ['realizedGains', 'njAssetDispositions'] })
   } else if (facts.njAssetDispositions !== undefined) {
     for (const lot of facts.njAssetDispositions) {
       if (!Number.isFinite(lot.proceeds) || !Number.isFinite(lot.njLotBasis) || lot.proceeds < 0 || lot.njLotBasis < 0) {
         warnings.push({
           code: 'nj-hsa-lot-invalid',
-          ruleId: 'nj-hsa-nonconformity',
+          ruleId: 'nj-hsa-state-basis-nonconformity',
           message: 'New Jersey HSA asset disposition rejected: proceeds and lot basis must be finite and nonnegative.',
           missingFacts: ['njAssetDispositions'],
         })
@@ -540,7 +555,7 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
       delta += Math.max(0, lot.proceeds - lot.njLotBasis)
     }
   } else {
-    const gains = requireKnown(facts.realizedGains, 'realizedGains')
+    const gains = requireKnown(facts.realizedGains, 'realizedGains', 'nj-hsa-state-basis-nonconformity')
     if (!gains.ok) warnings.push(gains.warning)
     else delta += gains.amount
   }
@@ -554,7 +569,7 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
     if (!hasLots) {
       warnings.push({
         code: 'nj-hsa-distribution-category-unknown',
-        ruleId: 'nj-hsa-nonconformity',
+        ruleId: 'nj-hsa-state-basis-nonconformity',
         message:
           'New Jersey HSA nonqualified distribution exactness incomplete without NJ category/lot facts; federal inclusion is not copied as NJ cash-distribution income.',
         missingFacts: ['njAssetDispositions', 'interest', 'dividends', 'realizedGains'],
@@ -563,7 +578,7 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
   } else if (nq !== undefined && !nq.known) {
     warnings.push({
       code: 'nj-hsa-distribution-category-unknown',
-      ruleId: 'nj-hsa-nonconformity',
+      ruleId: 'nj-hsa-state-basis-nonconformity',
       message:
         'New Jersey HSA distribution exactness incomplete: federally included distribution amount is unknown.',
       missingFacts: ['nonqualifiedDistributionFederalAmount'],
@@ -576,7 +591,7 @@ export function newJerseyHsaAccountAdjustment(facts: StateHsaAccountYearFacts): 
   void facts.stateBasisBeforeYear
 
   if (facts.annualActivityComplete !== true) {
-    warnings.push({ code: 'nj-hsa-annual-activity-incomplete', ruleId: 'nj-hsa-nonconformity', message: 'New Jersey HSA result is incomplete until annual activity is explicitly complete.', missingFacts: ['annualActivityComplete'] })
+    warnings.push({ code: 'nj-hsa-annual-activity-incomplete', ruleId: 'nj-hsa-state-basis-nonconformity', message: 'New Jersey HSA result is incomplete until annual activity is explicitly complete.', missingFacts: ['annualActivityComplete'] })
   }
   if (warnings.length > 0) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings }
@@ -592,7 +607,7 @@ export function newJerseyHsaAdjustment(facts: StateHsaYearFacts): StateLeafAdjus
 export function californiaHsaCollectionAdjustment(
   rows: readonly StateHsaAccountYearFacts[] | undefined,
 ): StateLeafAdjustment {
-  if (rows === undefined) return incomplete('ca-hsa-activity-unavailable', 'ca-hsa-nonconformity', 'California HSA activity is unavailable; explicit empty annual activity is required for an exact result.', ['hsaAccounts'])
+  if (rows === undefined) return incomplete('ca-hsa-activity-unavailable', 'ca-hsa-state-basis-nonconformity', 'California HSA activity is unavailable; explicit empty annual activity is required for an exact result.', ['hsaAccounts'])
   if (rows.length === 0) return emptyLeafAdjustment()
   return mergeLeafAdjustments(rows.map(californiaHsaAccountAdjustment))
 }
@@ -600,7 +615,7 @@ export function californiaHsaCollectionAdjustment(
 export function newJerseyHsaCollectionAdjustment(
   rows: readonly StateHsaAccountYearFacts[] | undefined,
 ): StateLeafAdjustment {
-  if (rows === undefined) return incomplete('nj-hsa-activity-unavailable', 'nj-hsa-nonconformity', 'New Jersey HSA activity is unavailable; explicit empty annual activity is required for an exact result.', ['hsaAccounts'])
+  if (rows === undefined) return incomplete('nj-hsa-activity-unavailable', 'nj-hsa-state-basis-nonconformity', 'New Jersey HSA activity is unavailable; explicit empty annual activity is required for an exact result.', ['hsaAccounts'])
   if (rows.length === 0) return emptyLeafAdjustment()
   return mergeLeafAdjustments(rows.map(newJerseyHsaAccountAdjustment))
 }

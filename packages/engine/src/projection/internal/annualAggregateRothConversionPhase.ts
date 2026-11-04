@@ -26,6 +26,7 @@ import {
   householdFactsForYear,
   hsaAccountYearFactsForYear,
   njIraOwnerPoolsForYear,
+  type NjIraLedgerAccount,
 } from './stateRetirementFactsAdapter.js'
 import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
@@ -130,6 +131,8 @@ interface AnnualAggregateRothConversionPhaseLedger {
 }
 
 interface AnnualAggregateRothConversionPhaseCallbacks {
+  /** The owners' IRAs on the live ledger with this year's growth factors (NJ Worksheet C line 1); undefined outside a New Jersey year. */
+  readonly njIraLedgerAccounts?: () => readonly NjIraLedgerAccount[] | undefined
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly splitWithAssumedCharacter: (
     state: IraProRataYear,
@@ -615,8 +618,22 @@ export function annualAggregateRothConversionPhase(
               return hsa === undefined ? {} : { stateHsaAccountYearFacts: hsa }
             })(),
             ...(() => {
+              // The probed conversion is not debited yet: it leaves the
+              // December 31 value and is counted once on Worksheet C line 2.
+              const njIraLedger = callbacks.njIraLedgerAccounts?.()
+              const pendingGrossByAccount = new Map<string, number>()
+              for (const row of conversionStateFacts) {
+                if (row.accountId === undefined) continue
+                pendingGrossByAccount.set(row.accountId,
+                  (pendingGrossByAccount.get(row.accountId) ?? 0) + Math.max(0, row.grossDistribution ?? 0))
+              }
               const pools =
-                facts.stateNjIraOwnerPools ?? njIraOwnerPoolsForYear(plan, year)
+                facts.stateNjIraOwnerPools ?? njIraOwnerPoolsForYear(plan, year, njIraLedger === undefined ? undefined : {
+                  accounts: njIraLedger,
+                  distributions: [...(facts.stateRetirementDistributions ?? []), ...conversionStateFacts],
+                  ...(facts.stateQcdEventFacts === undefined ? {} : { qcdEvents: facts.stateQcdEventFacts }),
+                  pendingGrossByAccount,
+                })
               return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
             })(),
             ...(facts.stateQcdEventFacts === undefined

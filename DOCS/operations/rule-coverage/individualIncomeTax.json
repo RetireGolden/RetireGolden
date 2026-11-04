@@ -143,7 +143,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 423
+              "line": 425
             }
           ]
         }
@@ -1377,7 +1377,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 1701
+              "line": 1781
             }
           ]
         }

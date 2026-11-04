@@ -145,3 +145,21 @@ export function annualPostSolveAccountGrowth(
       returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0,
   }
 }
+
+/**
+ * The market factor this year's post-solve growth multiplies each physical
+ * row's balance by, before reinvested yield. A row's rate depends on its
+ * account, allocation track, the year's class parameters and shocks, never
+ * on its balance, so a pricing inside the funding solve can read the
+ * December 31 value its candidate implies (the balance left after the year's
+ * distributions, times this factor) before the year commits. Positional over
+ * `states`; it reads exactly what the growth phase reads and writes nothing.
+ */
+export function annualPostSolveGrowthFactors(
+  input: AnnualPostSolveAccountGrowthInput,
+): readonly number[] {
+  return annualPostSolveAccountGrowth({
+    ...input,
+    states: input.states.map((state) => ({ account: state.account, balance: 1 })),
+  }).rows.map((row) => row.marketClosingBalance)
+}

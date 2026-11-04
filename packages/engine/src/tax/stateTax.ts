@@ -212,11 +212,19 @@ function virginiaAgedTaxpayerCount(input: TaxYearInput, facts: StateHouseholdTax
  * is left out because it may be military. From the characterized rows when the
  * year has them; otherwise from the coarse retirement fields, which name no
  * recipient, so all of it qualifies when anyone in the household is old enough.
+ *
+ * Line 28a excludes "all or part of the income reported on line 20a", and an
+ * owner IRA withdrawal goes on line 20a at its Worksheet C line 7 amount, not
+ * the federal one (2025 NJ-1040 instructions). So a row `line20a` prices
+ * counts at that amount, and the owner's QCDs at theirs. A QCD's owner was
+ * 70 1/2 or older on the transfer (IRC 408(d)(8)(B)(ii)), so 62 or older on
+ * the last day of the year.
  */
 function newJerseyPensionPayments(
   minAge: number,
   input: TaxYearInput,
   distributions: readonly StateRetirementDistributionFact[] | undefined,
+  line20a?: NewJerseyOwnerIraLine20a,
 ): { payments: number; qualifyingPayments: number; warnings: StateTaxExactnessWarning[] } {
   if (distributions === undefined) {
     const payments =
@@ -224,12 +232,12 @@ function newJerseyPensionPayments(
     const anyoneQualifies = (input.agesAlive ?? []).some((age) => age >= minAge)
     return { payments, qualifyingPayments: anyoneQualifies ? payments : 0, warnings: [] }
   }
-  let payments = 0
-  let qualifyingPayments = 0
+  let payments = line20a?.qcdAmount ?? 0
+  let qualifyingPayments = payments
   const warnings: StateTaxExactnessWarning[] = []
   for (const fact of distributions) {
     if (isMilitarySource(fact.sourceKind) || isRailroadSource(fact.sourceKind) || fact.sourceKind === 'unknownPublic') continue
-    const included = Math.max(0, fact.federallyIncludedAmount)
+    const included = line20a?.rowAmounts.get(fact) ?? Math.max(0, fact.federallyIncludedAmount)
     payments += included
     if (fact.recipientDisabled === true) {
       qualifyingPayments += included
@@ -245,6 +253,72 @@ function newJerseyPensionPayments(
     }
   }
   return { payments, qualifyingPayments, warnings }
+}
+
+/**
+ * New Jersey NJ-1040 line 20a for the owner IRA withdrawals a computable
+ * Worksheet C prices. Line 7, the "Taxable portion of this year's
+ * withdrawal", is entered "here and on line 20a", and "The New Jersey taxable
+ * amount may be different from the federal amount" (2025 NJ-1040
+ * instructions). Line 7 is line 2, all the year's distributions, times the
+ * line 6 decimal, so each withdrawal's taxable portion is its gross times
+ * that decimal, and the portions add to line 7.
+ *
+ * Each traditional IRA row of the owner that the QCD collection does not
+ * carry (an ordinary or need-based draw, an RMD, or a Roth conversion, of
+ * which "any amount from the existing IRA that would be taxable if withdrawn
+ * must be included on line 20a") is taxed at that portion in place of its
+ * federally included amount: the delta form the QCD path uses. The rows are
+ * the ones the pool's line 2 reconciles against. A part-year slice's rows
+ * are the amounts "received while you were a resident" and take the whole
+ * year's decimal. `qcdAmount` is the line 7 portion the QCD collection adds
+ * for the owner's direct, full-year-resident QCDs, which line 28a reads with
+ * the rows.
+ *
+ * An owner with no pool, an unknown basis or a pool that does not reconcile
+ * has no computable Worksheet C: the rows keep their federal amounts, the
+ * full taxation the state base already carries, and the QCD collection
+ * reports its own incomplete warning for any QCD.
+ */
+interface NewJerseyOwnerIraLine20a {
+  taxableIncomeDelta: number
+  rowAmounts: Map<StateRetirementDistributionFact, number>
+  qcdAmount: number
+}
+
+function newJerseyOwnerIraLine20a(
+  distributions: readonly StateRetirementDistributionFact[] | undefined,
+  qcdEvents: readonly StateQcdEventFacts[] | undefined,
+  pools: readonly StateNjIraOwnerPoolFacts[] | undefined,
+): NewJerseyOwnerIraLine20a {
+  const out: NewJerseyOwnerIraLine20a = { taxableIncomeDelta: 0, rowAmounts: new Map(), qcdAmount: 0 }
+  for (const pool of pools ?? []) {
+    const events = (qcdEvents ?? []).filter((event) => event.ownerPersonId === pool.ownerPersonId)
+    const rows = (distributions ?? []).filter((row) =>
+      row.ownerPersonId === pool.ownerPersonId && row.sourceKind === 'ira' && row.accountTaxTreatment !== 'roth')
+    const eligible = events.filter((event) =>
+      event.transactionKind !== 'splitInterest' && event.transactionKind !== 'other' && event.transactionKind !== 'unknown' &&
+      !event.splitInterest && event.directTransfer && event.directCharityTransfer > 0 && event.residency === 'fullYearResident')
+    const unmatched = rows.filter((row) => !events.some((event) => event.eventId === row.eventId && event.accountId === row.accountId))
+    if (unmatched.some((row) => row.grossDistribution === undefined)) continue
+    const gross = unmatched.reduce((sum, row) => sum + Math.max(0, row.grossDistribution!), 0)
+    const worksheet = newJerseyWorksheetCTaxableAmount({ pool, correspondingGrossDistributions: gross })
+    if (worksheet.warnings.length > 0 || worksheet.stateTaxableIraAmount === undefined) continue
+    for (const row of unmatched) {
+      const amount = gross > 0 ? worksheet.stateTaxableIraAmount * Math.max(0, row.grossDistribution!) / gross : 0
+      out.rowAmounts.set(row, amount)
+      out.taxableIncomeDelta += amount - Math.max(0, row.federallyIncludedAmount)
+    }
+    // A row an eligible QCD carries is on line 20a at the QCD's portion.
+    for (const row of rows) {
+      if (eligible.some((event) => event.eventId === row.eventId && event.accountId === row.accountId)) out.rowAmounts.set(row, 0)
+    }
+    const qcdGross = eligible.reduce((sum, event) => sum + Math.max(0, event.directCharityTransfer), 0)
+    if (qcdGross > 0) {
+      out.qcdAmount += newJerseyWorksheetCTaxableAmount({ pool, correspondingGrossDistributions: qcdGross }).stateTaxableIraAmount ?? 0
+    }
+  }
+  return out
 }
 
 type VirginiaAgeDeductionConfig = NonNullable<StateTaxParams['virginiaAgeDeduction']>
@@ -1393,11 +1467,17 @@ export function computeStateTaxableIncomeResult(
     // cannot treat it as known-empty either.
     acc.warnings.push({
       code: 'state-qcd-annual-activity-unavailable',
-      ruleId: 'state-direct-qcd-conformity',
       message: 'State QCD result requires an explicit known-empty annual event collection when no QCD occurred.',
       missingFacts: ['qcdEvents'],
     })
   }
+
+  // New Jersey line 20a: Worksheet C line 7 for the owner IRA rows the QCD
+  // collection does not carry, before line 28a reads line 20a below.
+  const newJerseyLine20a = params.code === 'NJ'
+    ? newJerseyOwnerIraLine20a(distributions, params.directQcdPolicy?.kind === 'noGeneralFederalExclusion' ? opts.qcdEvents : undefined, opts.njIraOwnerPools)
+    : undefined
+  if (newJerseyLine20a !== undefined) acc.taxableIncomeDelta += newJerseyLine20a.taxableIncomeDelta
 
   if (params.code === 'CO' && params.highAgiFederalDeductionAddback && opts.householdFacts?.federalAgi !== undefined) {
     const deductionUsed = opts.householdFacts.federalDeductionUsed
@@ -1429,7 +1509,7 @@ export function computeStateTaxableIncomeResult(
   let newJerseyGrossIncome: number | undefined
   if (params.newJerseyPensionExclusion) {
     newJerseyGrossIncome = taxable + acc.taxableIncomeDelta
-    const payments = newJerseyPensionPayments(params.newJerseyPensionExclusion.minAge, input, distributions)
+    const payments = newJerseyPensionPayments(params.newJerseyPensionExclusion.minAge, input, distributions, newJerseyLine20a)
     acc.warnings.push(...payments.warnings)
     const njConfig = params.newJerseyPensionExclusion
     accumulateLeaf(acc, newJerseyPensionExclusion({
@@ -2435,7 +2515,7 @@ function computeSplitYearResult(input: TaxYearInput, opts: StateTaxYearOptions, 
   const yearHasQcd = opts.qcdEvents !== undefined ? opts.qcdEvents.length > 0 : opts.qcdFacts !== undefined
   if (yearHasQcd && slices.some((slice) => slice.method !== 'noIncomeTax') &&
     !warnings.some((warning) => warning.code === 'state-qcd-residency-incomplete')) {
-    warnings.push({ code: 'state-qcd-residency-incomplete', ruleId: 'state-direct-qcd-conformity', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
+    warnings.push({ code: 'state-qcd-residency-incomplete', message: 'A QCD in a year split between states: no state QCD adjustment is applied for the year.', missingFacts: ['residency', 'transferDate'] })
   }
   if ([...(hsaPools ?? []), ...(njPools ?? []), ...pensionPools].some((pool) => pool.status === 'incomplete')) {
     warnings.push({ code: BASIS_INCOMPLETE, message: 'The annual state basis transition requires complete account, contribution and distribution facts.', missingFacts: ['stateBasisPoolFacts'] })
@@ -2549,7 +2629,12 @@ function pensionBasisPools(state: string, facts: readonly StateRetirementDistrib
   return [...pools.values()]
 }
 
-function njIraBasisPools(state: string, rows: readonly StateNjIraOwnerPoolFacts[] | undefined): readonly StateNjIraBasisPoolResult[] | undefined {
+/**
+ * Worksheet C Part II for each New Jersey owner pool: the opening unrecovered
+ * basis, the excludable portion of the year's distributions it recovers, and
+ * the closing basis carried to the next year.
+ */
+export function njIraBasisPools(state: string, rows: readonly StateNjIraOwnerPoolFacts[] | undefined): readonly StateNjIraBasisPoolResult[] | undefined {
   if (state !== 'NJ' || rows === undefined) return undefined
   return rows.map((row) => {
     const worksheet = newJerseyWorksheetCTaxableAmount({ pool: row, correspondingGrossDistributions: row.allAnnualDistributions })

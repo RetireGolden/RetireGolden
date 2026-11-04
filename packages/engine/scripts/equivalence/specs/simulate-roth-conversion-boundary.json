@@ -217,36 +217,36 @@
       "label": "caller invocation, exact snapshot publication and subtract/add replay",
       "file": "projection/internal/annualAggregateRothConversionPhase.ts",
       "lines": [
-        673,
-        697
+        690,
+        714
       ],
       "anchors": [
         {
-          "line": 673,
+          "line": 690,
           "text": "// Each selected ID retains its first Plan insertion position; that is"
         },
         {
-          "line": 678,
+          "line": 695,
           "text": "aggregateRothConversionAllocationDesired = desired"
         },
         {
-          "line": 679,
+          "line": 696,
           "text": "const plannedAllocation = annualAggregateRothConversionPlan({"
         },
         {
-          "line": 686,
+          "line": 703,
           "text": "})"
         },
         {
-          "line": 693,
+          "line": 710,
           "text": "const allocation = withAnnualAggregateRothConversionReservations("
         },
         {
-          "line": 696,
+          "line": 713,
           "text": ")"
         },
         {
-          "line": 697,
+          "line": 714,
           "text": "if (allocation.status === 'refused') {"
         }
       ],
