@@ -116,11 +116,14 @@ module"),
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
 `appShell.theme` test files. The Design-QA chrome pins live beside the planner as
 `planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`, `clusterF`,
-`clusterH`, `clusterI`, `clusterJ`, `decisions`, `validation`): each reads the stylesheet block its cluster
-appended rather than rendering it, since jsdom computes no layout. A cluster's rendered checks sit in a
-sibling file named for what they render: `designQa.clusterC.markup.test.tsx`,
-`designQa.clusterH.markup.test.tsx`, `designQa.clusterI.markup.test.tsx` and
-`designQa.decisions.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM).
+`clusterG`, `clusterH`, `clusterI`, `clusterJ`, `clusterK`, `decisions`, `validation`): each reads the stylesheet
+block its cluster appended rather than rendering it, since jsdom computes no layout. A cluster's rendered checks
+sit in a sibling file named for what they render: `designQa.clusterC.markup.test.tsx`,
+`designQa.clusterG.markup.test.tsx`, `designQa.clusterH.markup.test.tsx`, `designQa.clusterI.markup.test.tsx`,
+`designQa.clusterK.markup.test.tsx` and `designQa.decisions.markup.test.tsx` (markup),
+`designQa.clusterJ.chips.test.tsx` and `designQa.clusterJ.kpi.test.tsx` (rendered), and
+`designQa.clusterE.dom.test.tsx` (DOM). Cluster K's real-browser half is the app e2e
+`app/e2e/phone-overflow.spec.ts` (375px overflow and the rail hover).
 `designQa.decisions.*` is the odd one out: it pins the product decisions answered on #495 (the field
 warning thresholds in `planner/warnings.ts`, the one fixed form-grid column rhythm, the fill-to-target
 bracket select) rather than one QA walk's stylesheet block. The list is by hand; `ls planner/designQa.*` is the truth.

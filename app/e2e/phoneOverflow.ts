@@ -2,11 +2,13 @@ import { expect, type Page, test } from '@playwright/test'
 import { openExamplePlan } from './helpers'
 
 /**
- * No page scrolls sideways at 375 (#766, #767, #778). jsdom has no layout, so
- * only a real browser can check this: the Example couple plan the Design QA
- * walks used, in both themes, on every screen those walks found overflowing
- * plus the pages whose back links #767 restyled. Wide tables may scroll
- * inside their own region; the document never does.
+ * The screens the Design QA walks found scrolling sideways at 375 do not
+ * any more (#766, #767, #778). jsdom has no layout, so only a real browser
+ * can check this: the Example couple plan those walks used, in both themes,
+ * on the screens they found overflowing plus the pages whose back links #767
+ * restyled. Wide tables may scroll inside their own region; on these screens
+ * the document never does. This is a list of screens, not every route: a new
+ * page or a new wide table elsewhere needs its own entry here.
  */
 
 async function pageWidth(page: Page) {
@@ -29,7 +31,10 @@ export function registerPhoneOverflowTests() {
         await page.setViewportSize({ width: 375, height: 800 })
         await openExamplePlan(page, 'Example couple')
         await page.getByRole('button', { name: theme === 'light' ? 'Light' : 'Dark', exact: true }).click()
-        const plan = page.url().replace(/\/results$/, '')
+        // The plan's own root, /plan/<id>, from wherever the opener landed.
+        const planRoot = /^\/plan\/[^/]+/.exec(new URL(page.url()).pathname)
+        expect(planRoot, `plan URL after opening the example: ${page.url()}`).not.toBeNull()
+        const plan = planRoot![0]
 
         // Household map with the text-list disclosure open (#778): the table
         // scrolls inside its region, which really is wider than its box.
@@ -49,11 +54,35 @@ export function registerPhoneOverflowTests() {
         await expect(page.getByRole('link', { name: '← Back to plan' })).toBeVisible()
         await expect(page.getByRole('row', { name: /Roth conversions/ })).toContainText('Fill to top of 22% bracket')
         await expectNoSidewaysScroll(page, 'Report')
-        const cards = page.locator('.report-kpis').first().locator('.report-kpi')
+        // Every headline card sits inside the viewport, and no card's label,
+        // value or caption paints past its own box (a no-wrap value inside a
+        // card that fits is still overlap).
+        const cards = page.locator('.report-kpis .report-kpi')
         const viewport = page.viewportSize()!.width
+        expect(await cards.count()).toBeGreaterThan(0)
         for (const card of await cards.all()) {
-          const box = (await card.boundingBox())!
-          expect(box.x + box.width).toBeLessThanOrEqual(viewport)
+          const box = await card.boundingBox()
+          expect(box, 'a headline card is laid out at 375').not.toBeNull()
+          expect(box!.x + box!.width).toBeLessThanOrEqual(viewport)
+          const parts = await card.locator('.kpi-label, .kpi-value, .kpi-sub').evaluateAll((els) =>
+            els.map((el) => ({ text: el.textContent ?? '', scroll: el.scrollWidth, client: el.clientWidth })),
+          )
+          for (const part of parts) {
+            expect(part.scroll, `"${part.text}" fits its card`).toBeLessThanOrEqual(part.client)
+          }
+        }
+        // The Example couple's values are short; the longest worded value
+        // the report prints, Money lasts' "short from <year>" for a plan short
+        // in its first year (moneyLastsValue), must wrap inside a phone card
+        // too. Put it in every card and measure again.
+        await cards.locator('.kpi-value').evaluateAll((els) => {
+          for (const el of els) el.textContent = 'short from 2026'
+        })
+        const values = await cards.locator('.kpi-value').evaluateAll((els) =>
+          els.map((el) => ({ scroll: el.scrollWidth, client: el.clientWidth })),
+        )
+        for (const value of values) {
+          expect(value.scroll, '"short from 2026" wraps inside its card').toBeLessThanOrEqual(value.client)
         }
 
         // Strategy (#777) and the pages with back links (#767).

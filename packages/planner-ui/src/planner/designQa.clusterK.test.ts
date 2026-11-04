@@ -3,7 +3,7 @@
  * no layout, so the 375px overflow and the hover state are pinned in the
  * stylesheet here; the real-browser check is the app e2e
  * `phone-overflow.spec.ts`, which loads the Example couple at 375 in both
- * themes and asserts the page never scrolls sideways.
+ * themes and asserts the screens these issues named never scroll sideways.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -53,6 +53,11 @@ describe('Printable report at phone width (#766)', () => {
 
   it('headline cards use shrinkable tracks and go two-up on a phone screen', () => {
     expect(rule('.report-kpis')).toMatch(/grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/)
+    // The shared .kpi-value and .kpi-label are nowrap; a report card's must
+    // wrap, or a worded value paints into the next card (r1-1).
+    const cardText = rule('.report-kpi .kpi-label,\n.report-kpi .kpi-value')
+    expect(cardText).toMatch(/white-space:\s*normal/)
+    expect(cardText).toMatch(/overflow-wrap:\s*anywhere/)
     expect(css).toMatch(
       /@media screen and \(max-width: 640px\) \{\s*\.report-kpis \{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
     )
@@ -134,5 +139,8 @@ describe('Household map text list (#778)', () => {
     expect(rule('.map-details-table .map-details-relations')).toMatch(/min-width:\s*22rem/)
     expect(rule('.map-details-table .map-details-status')).toMatch(/min-width:\s*12rem/)
     expect(rule('.map-details-table .map-details-item')).toMatch(/min-width:\s*8rem/)
+    // A long unbroken name breaks inside the column's measure, not past it (r1-5).
+    expect(rule('.map-details-table .map-details-item')).toMatch(/overflow-wrap:\s*anywhere/)
+    expect(rule('.map-details-table .map-details-relations')).toMatch(/overflow-wrap:\s*anywhere/)
   })
 })

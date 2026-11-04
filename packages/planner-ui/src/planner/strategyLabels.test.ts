@@ -45,6 +45,8 @@ describe('rothConversionSummary', () => {
     ['IRMAA tier', fill('irmaaTier', 2), 'Fill to just under IRMAA tier 2, 2028–2036'],
     ['ACA cliff', fill('acaCliff', null), 'Fill to just under the ACA 400% FPL cliff, 2028–2036'],
     ['fixed MAGI', fill('fixedMagi', 150_000), 'Fill to a MAGI of $150,000, 2028–2036'],
+    // The engine fills to the unrounded ceiling; whole dollars would say $150,001.
+    ['fixed MAGI with cents', fill('fixedMagi', 150_000.75), 'Fill to a MAGI of $150,000.75, 2028–2036'],
   ])('%s', (_name, rc, expected) => {
     const label = rothConversionSummary(rc)
     expect(label).toBe(expected)
@@ -62,12 +64,16 @@ describe('rothConversionSummary', () => {
 })
 
 describe('withdrawalOrderSummary', () => {
+  // The engine (projection/internal/annualWithdrawalPlanning.ts) drains HSA
+  // last in every mode: last in SEQUENTIAL_ORDER, outside PROPORTIONAL_POOL
+  // and drained after it, and after the bracket-targeted passes. Each label
+  // says so, as StrategySection's WITHDRAWAL_ORDER_HINTS do.
   it.each<[Plan['strategies']['withdrawalOrder'], string]>([
-    // The engine's SEQUENTIAL_ORDER drains HSA last, so the label names it.
     [{ mode: 'sequential' }, 'Sequential: cash, taxable, equity comp, traditional, Roth, HSA'],
-    [{ mode: 'proportional' }, 'Proportional across accounts'],
-    [{ mode: 'bracketTargeted', bracketPct: 22 }, 'Bracket-targeted to 22%'],
+    [{ mode: 'proportional' }, 'Proportional across cash, taxable, equity comp, traditional, and Roth; HSA last'],
+    [{ mode: 'bracketTargeted', bracketPct: 22 }, 'Bracket-targeted to 22%; HSA last'],
   ])('%j', (w, expected) => {
     expect(withdrawalOrderSummary(w)).toBe(expected)
+    expect(withdrawalOrderSummary(w)).toMatch(/HSA( last)?$/)
   })
 })

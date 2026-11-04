@@ -39,4 +39,50 @@ describe('distinctNameLabels (#777)', () => {
     )
     expect([labels.get('x'), labels.get('y')]).toEqual(['Unnamed IRA (1 of 2)', 'Unnamed IRA (2 of 2)'])
   })
+
+  it('never generates a label another item already holds as its name (r1-2)', () => {
+    const items = [
+      { id: 'a', name: 'Sam IRA' },
+      { id: 'b', name: 'Sam IRA' },
+      { id: 'c', name: 'Sam IRA (1 of 2)' },
+    ]
+    const labels = distinctNameLabels(items, 'Unnamed IRA')
+    expect(labels.get('a')).toBe('Sam IRA (1 of 2) (2)')
+    expect(labels.get('b')).toBe('Sam IRA (2 of 2)')
+    expect(labels.get('c')).toBe('Sam IRA (1 of 2)')
+  })
+
+  it('gives every item its own label, whatever names it is handed (r1-2)', () => {
+    // Names built to collide with each other's generated suffixes, in both
+    // orders, with case and space variants.
+    const names = ['A', 'a ', 'A (1 of 2)', 'a (1 of 2)', 'A (2 of 2)', 'A (1 of 2) (2)', '', 'Unnamed', 'unnamed (1 of 2)']
+    for (const order of [names, [...names].reverse()]) {
+      const items = order.map((name, i) => ({ id: `id${i}`, name }))
+      const labels = [...distinctNameLabels(items, 'Unnamed').values()]
+      expect(labels).toHaveLength(items.length)
+      expect(new Set(labels.map((l) => l.toLowerCase())).size).toBe(items.length)
+    }
+  })
+
+  it('groups names the same way under any runtime locale (r1-6)', () => {
+    // Turkish casing lowercases "I" to a dotless "ı", so a locale-sensitive
+    // fold would leave "IRA" and "ira" apart on a Turkish-locale browser.
+    expect('IRA'.toLocaleLowerCase('tr')).not.toBe('ira')
+    const original = String.prototype.toLocaleLowerCase
+    String.prototype.toLocaleLowerCase = function (this: string) {
+      return original.call(this, 'tr')
+    }
+    try {
+      const labels = distinctNameLabels(
+        [
+          { id: 'x', name: 'IRA' },
+          { id: 'y', name: 'ira' },
+        ],
+        'Unnamed IRA',
+      )
+      expect([labels.get('x'), labels.get('y')]).toEqual(['IRA (1 of 2)', 'ira (2 of 2)'])
+    } finally {
+      String.prototype.toLocaleLowerCase = original
+    }
+  })
 })

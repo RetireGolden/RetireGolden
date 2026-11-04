@@ -93,7 +93,7 @@ describe('conversion schedule totals on the example library (B2-P1 slice 3)', ()
     }
     const snapshot = buildAssumptionsSnapshot(withSchedule, EXAMPLE_FIXED_YEAR)
     const row = snapshot.groups.flatMap((group) => group.rows).find((r) => r.id === 'roth-conversion')!
-    expect(row.value).toBe(`optimized schedule (4 years, ${fmtMoney(retiredTotal(conversions))} total)`)
+    expect(row.value).toBe(`Optimized, 4 years, ${fmtMoney(retiredTotal(conversions))} total`)
   })
 })
 

@@ -2644,9 +2644,19 @@ html:has(.kpi-bar) {
   padding: 0.6rem 0.75rem;
 }
 
+/* A report card is a quarter of the page, or half a phone screen, and its
+   value may be words ("short from 2026" measured 160px of bold text in a
+   136px card at 375). The workspace's .kpi-value and .kpi-label keep to one
+   line; here both wrap between words first, and break inside a word only
+   when one alone is wider than the card (#766). */
+.report-kpi .kpi-label,
+.report-kpi .kpi-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .report-kpi .kpi-value {
   font-size: 1.25rem;
-  overflow-wrap: anywhere;
 }
 
 .report-table {
@@ -3315,12 +3325,18 @@ html:has(.kpi-bar) {
   border-bottom: 0;
 }
 
+/* Names are free text: an imported name of hundreds of unbroken characters
+   would otherwise widen its column to the whole name and push Connected to
+   and Status a long scroll away. The item and relation columns break inside
+   a word only when it is wider than the column's measure. */
 .map-details-table .map-details-item {
   min-width: 8rem;
+  overflow-wrap: anywhere;
 }
 
 .map-details-table .map-details-relations {
   min-width: 22rem;
+  overflow-wrap: anywhere;
 }
 
 .map-details-table .map-details-status {

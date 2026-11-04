@@ -31,7 +31,7 @@ import { conversionScheduleTotal } from '@retiregolden/engine/strategies/convers
 import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { fmtMoney } from './format'
 import { projectedParametersSentence, projectedParametersFrom } from './projectedParameters'
-import { rothConversionTargetPhrase, withdrawalOrderSummary } from './strategyLabels'
+import { rothConversionSummary, withdrawalOrderSummary } from './strategyLabels'
 
 /** Where a shown value comes from. */
 export type AssumptionProvenance = 'user-set' | 'app-default' | 'published-source'
@@ -306,12 +306,13 @@ function lawTogglesGroup(plan: Plan, defaults: Plan['assumptions']): AssumptionG
 
 function strategyGroup(plan: Plan): AssumptionGroup {
   const rc = plan.strategies.rothConversion
+  // The words are the shared strategy formatter's, so this card and both
+  // reports describe a strategy alike (#766). The card alone adds a
+  // schedule's total, which the engine sums.
   const conversionValue =
-    rc.mode === 'none'
-      ? 'none'
-      : rc.mode === 'manual' || rc.mode === 'optimized'
-        ? `${rc.mode} schedule (${rc.conversions.length} year${rc.conversions.length === 1 ? '' : 's'}, ${fmtMoney(conversionScheduleTotal(rc.conversions))} total)`
-        : `fill to ${rothConversionTargetPhrase(rc.target, rc.targetValue)}, ${rc.startYear}–${rc.endYear}`
+    rc.mode === 'manual' || rc.mode === 'optimized'
+      ? `${rothConversionSummary(rc)}, ${fmtMoney(conversionScheduleTotal(rc.conversions))} total`
+      : rothConversionSummary(rc)
   return {
     id: 'strategy',
     label: 'Strategy settings',

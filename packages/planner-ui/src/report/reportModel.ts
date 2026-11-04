@@ -278,6 +278,12 @@ export interface ReportAssumptionsBlock {
   stateEffectiveTaxPct: number
   localIncomeTaxPct: number
   heirTaxRatePct: number
+  /**
+   * The three strategy summaries are display text, worded by the shared
+   * strategy-label formatter at build time. Their wording can change in a
+   * release without a model version change (the field and its type do not);
+   * a persisted model keeps the words it was built with.
+   */
   rothConversionSummary: string
   withdrawalOrderSummary: string
   spendingPolicySummary: string
