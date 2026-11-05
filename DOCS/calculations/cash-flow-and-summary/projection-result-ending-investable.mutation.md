@@ -5,7 +5,7 @@ Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
-@@ -3047,7 +3047,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
+@@ -3048,7 +3048,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      endYear,
      years,
      depletionYear,

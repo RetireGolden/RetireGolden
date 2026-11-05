@@ -741,7 +741,7 @@ describeRule('ma-private-pension-basis-recovery', { readings: { stateBasis: 6_00
       const result = annual('MA', { retirementDistributions: facts }, { year })
       // The projection commits the annual result's pool transitions; only those are read.
       const settled = { amount: 0, status: 'complete' as const, issues: [], pensionBasisPools: result.pensionBasisPools }
-      return { facts, result, snapshots: commitAcceptedPensionBasis(year, 'MA', settled, snapshots) }
+      return { facts, result, snapshots: commitAcceptedPensionBasis(year, settled, snapshots, { state: 'MA', distributions: facts }) }
     }
     const y2026 = settle(2026, [ira(2026, 5_000)], [])
     expect(y2026.result.pensionBasisPools?.[0]).toMatchObject({ openingBasis: 20_000, basisConsumed: 5_000, closingBasis: 15_000 })

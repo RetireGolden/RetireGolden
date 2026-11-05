@@ -3009,9 +3009,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     if (settledAnnualPass.yearResult.taxComputation !== undefined) {
       acceptedStateNjIraBasis = commitAcceptedNjIraBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateNjIraBasis)
-      acceptedStatePensionBasis = commitAcceptedPensionBasis(year,
-        settledAnnualPass.yearResult.acceptedTaxInput?.state ?? plan.household.state,
-        settledAnnualPass.yearResult.taxComputation, acceptedStatePensionBasis)
+      acceptedStatePensionBasis = commitAcceptedPensionBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStatePensionBasis, {
+        state: settledAnnualPass.yearResult.acceptedTaxInput?.state ?? plan.household.state,
+        distributions: settledAnnualPass.yearResult.acceptedTaxInput?.stateRetirementDistributions,
+        basisPoolEvidence: plan.stateTaxFacts.basisPoolEvidence })
       acceptedStateHsaBasis = commitAcceptedHsaBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateHsaBasis)
     }
     years.push(settledAnnualPass.yearResult)

@@ -414,7 +414,7 @@
     {
       "path": "projection/internal/statePensionBasisLifecycle.ts",
       "sweptOn": "2026-11-05",
-      "note": "MA, VA and UT accepted pension/plan-basis carryforward keyed by state/account/owner/kind, including a zero-consumption carry through a same-state year with no distribution (#841); a year in another state or never settled stays unknown, and that gap rule and duplicate-transition refusal remain unregistered lifecycle contracts."
+      "note": "MA, VA and UT accepted pension/plan-basis carryforward keyed by state/account/owner/kind, including a zero-consumption carry through a same-state year whose accepted facts show no distribution from the account and no recorded basis addition (#841); a year in another state, a distribution with no transition, an addition, or a year never settled stays unknown, and that gap rule and duplicate-transition refusal remain unregistered lifecycle contracts."
     },
     {
       "path": "projection/internal/stateRetirementFactsAdapter.ts",
