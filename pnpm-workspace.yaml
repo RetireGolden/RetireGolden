@@ -31,9 +31,10 @@ trustPolicyExclude:
   - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
   - 'semver@6.3.1'
 
-# Root package.json `pnpm.overrides` holds three entries. `sharp` and
-# `ejs>jake` raise a transitive floor above what the declaring package's own
-# range allows, each for a named advisory; `why-is-node-running@^3` holds a
+# Root package.json `pnpm.overrides` holds five entries. `sharp`,
+# `ejs>jake`, and the scoped `glob` and `minimatch` entries raise a transitive
+# floor above what the declaring package's own range allows, each for a named
+# advisory; `why-is-node-running@^3` holds a
 # transitive at its last release with provenance, for the trust policy above.
 # None is a pin of a first-party dependency. Dependabot does not read `pnpm.overrides`; when it
 # bumps an overridden package it rewrites the lockfile's `overrides:` block to
@@ -97,6 +98,32 @@ trustPolicyExclude:
 #   choice, 2026-10-06).
 #   Drop when a 3.x release with provenance follows 3.2.2, or when vitest
 #   no longer depends on the package.
+#
+# glob@>=9.0.0 <14.0.2: ^14.0.2
+#   Scoped: only versions inside the advisory's affected range. Build-time
+#   only, reached through vite-plugin-pwa to workbox-build 7.4.1, which
+#   declares `glob: ^11.0.1`.
+#   Reason: GHSA-3g3m-2fjr-6pw4 (moderate; AbortSignal cancellation bypass
+#   lets a timed-out walk keep touching the filesystem) has no patched 11.x;
+#   the first fix is 14.0.2 (2026-10-27). workbox-build calls glob only over
+#   its own dist directory with patterns this repo writes. glob 14 drops the
+#   CLI dependencies but keeps the `glob`/`globSync` API, and a full
+#   production build including workbox generateSW precaches the same 198
+#   entries as before (2026-11-05).
+#   Drop when the workbox-build version the lockfile resolves declares a glob
+#   range whose floor is 14.0.2 or later.
+#
+# minimatch@>=7.0.0 <11.0.1: ^11.0.1
+#   Scoped: only versions inside the advisory's affected range. Dev-only,
+#   reached through eslint 10 (`minimatch: ^10.2.5`), @eslint/config-array,
+#   typescript-eslint, filelist (via the ejs>jake override above) and glob.
+#   Reason: GHSA-g3hv-75wg-m249 (moderate; denial of service through
+#   globparts amplification) has no patched 10.x; the first fix is 11.0.1
+#   (2026-10-27). minimatch 11 keeps the CommonJS and ESM exports and
+#   requires Node 20 or 22+, which the toolchain already does; lint and the
+#   build pass on it (2026-11-05).
+#   Drop when eslint and the other dependents above declare a minimatch
+#   range whose floor is 11.0.1 or later.
 #
 # Removed 2026-09-04: highs, react, react-dom, react-is, recharts,
 # es-toolkit, immer.

@@ -10,7 +10,9 @@
     "overrides": {
       "sharp": "^0.35.5",
       "ejs>jake": "^12.10.1",
-      "why-is-node-running@^3": "3.2.1"
+      "why-is-node-running@^3": "3.2.1",
+      "glob@>=9.0.0 <14.0.2": "^14.0.2",
+      "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
     }
   },
   "scripts": {
