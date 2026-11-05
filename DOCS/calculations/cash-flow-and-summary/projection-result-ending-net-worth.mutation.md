@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/projection/simulate.ts b/packages/engine/src/pr
 index 23f29500..5bac69d6 100644
 --- a/packages/engine/src/projection/simulate.ts
 +++ b/packages/engine/src/projection/simulate.ts
-@@ -3046,7 +3046,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
+@@ -3048,7 +3048,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      years,
      depletionYear,
      endingInvestable: last?.investableTotal ?? 0,

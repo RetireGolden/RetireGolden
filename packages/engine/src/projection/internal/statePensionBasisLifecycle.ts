@@ -37,9 +37,21 @@ export function applyAcceptedPensionBasisToYearFacts(
   })
 }
 
-/** One accepted annual transition per state/account/owner/kind. */
+/**
+ * One accepted annual transition per state/account/owner/kind.
+ *
+ * Previously taxed basis is recovered only against distributions, so a
+ * settled year with no distribution from an account leaves its basis as it
+ * was (M.G.L. c. 62 s. 2(a)(2) for MA; the VA and UT subtractions likewise
+ * recover only against amounts received). That year is known, not a gap: a
+ * complete prior-year closing in the year's own state, with no transition
+ * this year, is carried forward as a zero-consumption snapshot. A year in
+ * another state, an incomplete closing, or a year never committed still
+ * leaves a gap, which the next year reads as unknown basis.
+ */
 export function commitAcceptedPensionBasis(
   year: number,
+  state: string,
   result: TaxComputationResult,
   previous: readonly AcceptedStatePensionBasisSnapshot[],
 ): readonly AcceptedStatePensionBasisSnapshot[] {
@@ -53,6 +65,16 @@ export function commitAcceptedPensionBasis(
       ? { state: row.state, accountId: row.accountId, ownerPersonId: row.ownerPersonId,
           kind: row.kind, status: 'incomplete', taxYear: year }
       : { ...row, taxYear: year })
+  }
+  const kind = poolKind(state)
+  for (const row of previous) {
+    if (kind === undefined || row.taxYear !== year - 1 || row.state.toUpperCase() !== state.toUpperCase() ||
+      row.kind !== kind || row.status !== 'complete' || row.closingBasis === undefined ||
+      !Number.isFinite(row.closingBasis) || row.closingBasis < 0) continue
+    const key = JSON.stringify([row.state.toUpperCase(), row.accountId, row.ownerPersonId, row.kind])
+    if (current.has(key)) continue
+    current.set(key, { state: row.state, accountId: row.accountId, ownerPersonId: row.ownerPersonId, kind: row.kind,
+      status: 'complete', openingBasis: row.closingBasis, basisConsumed: 0, closingBasis: row.closingBasis, taxYear: year })
   }
   return [...previous.filter((row) => row.taxYear !== year), ...current.values()]
 }

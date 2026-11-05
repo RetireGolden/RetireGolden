@@ -537,12 +537,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 145,
+          "line": 146,
           "note": null,
           "tests": [
             {
               "title": "keeps private pension in the Indiana annual base",
-              "line": 148
+              "line": 149
             }
           ]
         },
@@ -815,20 +815,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 599,
+          "line": 600,
           "note": null,
           "tests": [
             {
               "title": "removes qualifying IRA income already in federal AGI",
-              "line": 600
+              "line": 601
             },
             {
               "title": "removes qualifying employer-plan income already in federal AGI",
-              "line": 603
+              "line": 604
             },
             {
               "title": "removes qualifying private-pension income already in federal AGI",
-              "line": 606
+              "line": 607
             }
           ]
         },
@@ -981,12 +981,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 610,
+          "line": 611,
           "note": null,
           "tests": [
             {
               "title": "uses $2,925 plus $1,000 age65 and removes it above the income cutoff",
-              "line": 611
+              "line": 612
             }
           ]
         }
@@ -1060,28 +1060,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 101,
+          "line": 102,
           "note": null,
           "tests": [
             {
               "title": "applies the 4.3 percent alternative to joint income above $13,500",
-              "line": 104
+              "line": 105
             },
             {
               "title": "uses single retention rather than granting the joint 4.3 percent alternative",
-              "line": 109
+              "line": 110
             },
             {
               "title": "uses the joint senior threshold separately and discloses missing test income",
-              "line": 115
+              "line": 116
             },
             {
               "title": "prorates the married-separate alternative by each spouse taxable income and honors the NOL election",
-              "line": 119
+              "line": 120
             },
             {
               "title": "conditions a dependent exemption on the claiming taxpayer income",
-              "line": 136
+              "line": 137
             }
           ]
         }
@@ -1170,16 +1170,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 76,
+          "line": 77,
           "note": null,
           "tests": [
             {
               "title": "selects each independently qualifying Iowa age disability survivor military and railroad limb",
-              "line": 80
+              "line": 81
             },
             {
               "title": "denies each unproved Iowa under55 disability or survivor limb",
-              "line": 91
+              "line": 92
             }
           ]
         },
@@ -1327,12 +1327,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 263,
+          "line": 264,
           "note": null,
           "tests": [
             {
               "title": "allows ordinary conformity but adds a transfer used for a covered Kansas credit",
-              "line": 264
+              "line": 265
             }
           ]
         }
@@ -1500,28 +1500,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 616,
+          "line": 617,
           "note": null,
           "tests": [
             {
               "title": "subtracts each enumerated Kansas and federal retirement-system family",
-              "line": 617
+              "line": 618
             },
             {
               "title": "requires a named system such as KPERS",
-              "line": 626
+              "line": 627
             },
             {
               "title": "does not flag a missing code on a source no named system pays",
-              "line": 631
+              "line": 632
             },
             {
               "title": "flags an employer plan that may be Washburn University's 403(b), and subtracts it under KS-WASHBURN",
-              "line": 650
+              "line": 651
             },
             {
               "title": "flags a missing code on a public source, where the code decides it",
-              "line": 678
+              "line": 679
             }
           ]
         },
@@ -2572,16 +2572,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 785,
+          "line": 810,
           "note": null,
           "tests": [
             {
               "title": "phases private pension dollar-for-dollar above $25,000 single",
-              "line": 786
+              "line": 811
             },
             {
               "title": "uses a different public limit and independent military/RRB exclusions",
-              "line": 790
+              "line": 815
             }
           ]
         }
@@ -4274,20 +4274,20 @@
         },
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1006,
+          "line": 1031,
           "note": null,
           "tests": [
             {
               "title": "matches Form 1-ES cumulative taxes at all Schedule A B and C band edges",
-              "line": 1007
+              "line": 1032
             },
             {
               "title": "adds the age65 exemption to the $700 personal allowance",
-              "line": 1022
+              "line": 1047
             },
             {
               "title": "uses the published2026 rates and floors the standard deduction at zero",
-              "line": 1029
+              "line": 1054
             }
           ]
         },
