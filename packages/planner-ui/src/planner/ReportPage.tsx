@@ -54,6 +54,7 @@ import { US_STATES } from './usStates'
 import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
 import { projectedParametersSentence } from './projectedParameters'
+import { rothConversionSummary, withdrawalOrderSummary } from './strategyLabels'
 
 
 const ACCOUNT_LABEL: Record<Account['type'], string> = {
@@ -73,21 +74,6 @@ function incomeLabel(plan: Plan, s: IncomeStream): string {
   if (s.type === 'wages') return `Wages: ${ownerName(plan, s.personId)}`
   if (s.type === 'socialSecurity') return `Social Security: ${ownerName(plan, s.personId)}`
   return s.label
-}
-
-function conversionSummary(plan: Plan): string {
-  const rc = plan.strategies.rothConversion
-  if (rc.mode === 'none') return 'None'
-  if (rc.mode === 'manual') return `Manual: ${rc.conversions.length} year(s)`
-  if (rc.mode === 'optimized') return `Optimized: ${rc.conversions.length} year(s)`
-  return `Fill to ${rc.target}${rc.targetValue !== null ? ` (${rc.targetValue})` : ''}, ${rc.startYear}–${rc.endYear}`
-}
-
-function withdrawalSummary(plan: Plan): string {
-  const w = plan.strategies.withdrawalOrder
-  if (w.mode === 'sequential') return 'Sequential (cash → taxable → equity comp → traditional → Roth)'
-  if (w.mode === 'proportional') return 'Proportional across accounts'
-  return `Bracket-targeted to ${w.bracketPct}%`
 }
 
 const td: React.CSSProperties = { padding: '0.3rem 0.6rem', borderBottom: '1px solid var(--border)' }
@@ -140,6 +126,11 @@ function ReportBody() {
     <article className="report">
       <header className="report-head">
         <div className="report-head-title">
+          {/* Returning to the plan is a back link like every other page's, not
+              a third button in the print actions (#767). */}
+          <Link to={`/plan/${plan.id}`} className="page-back no-print">
+            ← Back to plan
+          </Link>
           {/* The report sits outside the workspace shell; the breadcrumb is its
               way back into the plan (#432). Screen only: paper has no links. */}
           <nav className="workspace-breadcrumb no-print" aria-label="Breadcrumb">
@@ -177,9 +168,6 @@ function ReportBody() {
           >
             Download HTML report
           </button>
-          <Link to={`/plan/${plan.id}`} className="btn btn-secondary btn-small">
-            Back to plan
-          </Link>
         </div>
       </header>
 
@@ -280,119 +268,131 @@ function ReportBody() {
             Two people on a Single-filing plan: {SINGLE_WITH_PARTNER_NOTE}
           </p>
         ) : null}
-        <table className="report-table">
-          <caption className="sr-only">Household members</caption>
-          <thead><tr><th scope="col">Person</th><th scope="col">Date of birth</th><th scope="col">Retirement age</th><th scope="col">Planning age</th></tr></thead>
-          <tbody>
-            {plan.household.people.map((p) => (
-              <tr key={p.id}>
-                <td style={td}>{p.name}</td>
-                <td style={td}>{p.dob}</td>
-                <td style={td}>{p.retirementAge ?? '—'}</td>
-                <td style={td}>{p.longevity.planningAge}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ScrollRegion label="Household" grow className="report-table-wrap">
+          <table className="report-table">
+            <caption className="sr-only">Household members</caption>
+            <thead><tr><th scope="col">Person</th><th scope="col">Date of birth</th><th scope="col">Retirement age</th><th scope="col">Planning age</th></tr></thead>
+            <tbody>
+              {plan.household.people.map((p) => (
+                <tr key={p.id}>
+                  <td style={td}>{p.name}</td>
+                  <td style={td}>{p.dob}</td>
+                  <td style={td}>{p.retirementAge ?? '—'}</td>
+                  <td style={td}>{p.longevity.planningAge}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollRegion>
       </section>
 
       <section className="report-section">
         <h2>Accounts</h2>
-        <table className="report-table">
-          <caption className="sr-only">Accounts</caption>
-          <thead><tr><th scope="col">Account</th><th scope="col">Type</th><th scope="col">Owner</th><th scope="col" style={{ textAlign: 'right' }}>Balance</th><th scope="col" style={{ textAlign: 'right' }}>Return</th></tr></thead>
-          <tbody>
-            {plan.accounts.map((a) => (
-              <tr key={a.id}>
-                <td style={td}>{a.name}</td>
-                <td style={td}>{ACCOUNT_LABEL[a.type]}</td>
-                <td style={td}>{ownerName(plan, a.ownerPersonId)}</td>
-                <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(accountBalance(a))}</td>
-                <td style={{ ...td, textAlign: 'right' }}>{a.annualReturnPct !== null ? `${a.annualReturnPct}%` : 'default'}</td>
-              </tr>
-            ))}
-            {plan.accounts.length === 0 ? <tr><td style={td} colSpan={5}>No accounts.</td></tr> : null}
-          </tbody>
-        </table>
+        <ScrollRegion label="Accounts" grow className="report-table-wrap">
+          <table className="report-table">
+            <caption className="sr-only">Accounts</caption>
+            <thead><tr><th scope="col">Account</th><th scope="col">Type</th><th scope="col">Owner</th><th scope="col" style={{ textAlign: 'right' }}>Balance</th><th scope="col" style={{ textAlign: 'right' }}>Return</th></tr></thead>
+            <tbody>
+              {plan.accounts.map((a) => (
+                <tr key={a.id}>
+                  <td style={td}>{a.name}</td>
+                  <td style={td}>{ACCOUNT_LABEL[a.type]}</td>
+                  <td style={td}>{ownerName(plan, a.ownerPersonId)}</td>
+                  <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(accountBalance(a))}</td>
+                  <td style={{ ...td, textAlign: 'right' }}>{a.annualReturnPct !== null ? `${a.annualReturnPct}%` : 'default'}</td>
+                </tr>
+              ))}
+              {plan.accounts.length === 0 ? <tr><td style={td} colSpan={5}>No accounts.</td></tr> : null}
+            </tbody>
+          </table>
+        </ScrollRegion>
       </section>
 
       <section className="report-section">
         <h2>Income</h2>
-        <table className="report-table">
-          <caption className="sr-only">Income sources</caption>
-          <thead><tr><th scope="col">Source</th><th scope="col">Detail</th></tr></thead>
-          <tbody>
-            {plan.incomes.map((s) => (
-              <tr key={s.id}><td style={td}>{incomeLabel(plan, s)}</td><td style={td}>{incomeDetail(s)}</td></tr>
-            ))}
-            {plan.incomes.length === 0 ? <tr><td style={td} colSpan={2}>No income streams.</td></tr> : null}
-          </tbody>
-        </table>
+        <ScrollRegion label="Income" grow className="report-table-wrap">
+          <table className="report-table">
+            <caption className="sr-only">Income sources</caption>
+            <thead><tr><th scope="col">Source</th><th scope="col">Detail</th></tr></thead>
+            <tbody>
+              {plan.incomes.map((s) => (
+                <tr key={s.id}><td style={td}>{incomeLabel(plan, s)}</td><td style={td}>{incomeDetail(s)}</td></tr>
+              ))}
+              {plan.incomes.length === 0 ? <tr><td style={td} colSpan={2}>No income streams.</td></tr> : null}
+            </tbody>
+          </table>
+        </ScrollRegion>
       </section>
 
       <section className="report-section">
         <h2>Spending &amp; strategy</h2>
-        <table className="report-table">
-          <caption className="sr-only">Spending and strategy</caption>
-          <tbody>
-            <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} ({startYearDollarsWord(plan)} $)</td></tr>
-            <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
-            <tr><td style={td}>One-time goals</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.oneTimeGoals.length}</td></tr>
-            <tr><td style={td}>Pre-65 premium / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
-            <tr><td style={td}>Withdrawal order</td><td style={{ ...td, textAlign: 'right' }}>{withdrawalSummary(plan)}</td></tr>
-            <tr><td style={td}>Roth conversions</td><td style={{ ...td, textAlign: 'right' }}>{conversionSummary(plan)}</td></tr>
-            <tr><td style={td}>QCD per year</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.strategies.qcdAnnual)}</td></tr>
-          </tbody>
-        </table>
+        <ScrollRegion label="Spending and strategy" grow className="report-table-wrap">
+          <table className="report-table">
+            <caption className="sr-only">Spending and strategy</caption>
+            <tbody>
+              <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} ({startYearDollarsWord(plan)} $)</td></tr>
+              <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
+              <tr><td style={td}>One-time goals</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.oneTimeGoals.length}</td></tr>
+              <tr><td style={td}>Pre-65 premium / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
+              <tr><td style={td}>Withdrawal order</td><td style={{ ...td, textAlign: 'right' }}>{withdrawalOrderSummary(plan.strategies.withdrawalOrder)}</td></tr>
+              <tr><td style={td}>Roth conversions</td><td style={{ ...td, textAlign: 'right' }}>{rothConversionSummary(plan.strategies.rothConversion)}</td></tr>
+              <tr><td style={td}>QCD per year</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.strategies.qcdAnnual)}</td></tr>
+            </tbody>
+          </table>
+        </ScrollRegion>
       </section>
 
       {acaLedgerRows.length > 0 ? (
         <section className="report-section">
           <h2>ACA current-year ledger</h2>
-          <table className="report-table">
-            <caption className="sr-only">ACA current-year ledger</caption>
-            <thead>
-              <tr>
-                <th scope="col">Year</th>
-                <th scope="col">Gross enrollment premium</th>
-                <th scope="col">Applicable SLCSP</th>
-                <th scope="col">Modeled allowable PTC</th>
-                <th scope="col">Economic net premium</th>
-                <th scope="col">Readiness</th>
-              </tr>
-            </thead>
-            <tbody>
-              {acaLedgerRows.map((row) => (
-                <tr key={row.year}>
-                  <td style={td}>{row.year}</td>
-                  <td style={td}>{fmtMoney(row.grossEnrollmentPremium)}</td>
-                  <td style={td}>{row.applicableSlcspPremium === null ? 'Not modeled' : fmtMoney(row.applicableSlcspPremium)}</td>
-                  <td style={td}>{row.modeledAllowablePtc === null ? 'Not modeled' : fmtMoney(row.modeledAllowablePtc)}</td>
-                  <td style={td}>{fmtMoney(row.economicNetPremium)}</td>
-                  <td style={td}>{row.readiness === 'actionable' ? 'Actionable' : 'Non-actionable'}</td>
+          <ScrollRegion label="ACA current-year ledger" grow className="report-table-wrap">
+            <table className="report-table">
+              <caption className="sr-only">ACA current-year ledger</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Year</th>
+                  <th scope="col">Gross enrollment premium</th>
+                  <th scope="col">Applicable SLCSP</th>
+                  <th scope="col">Modeled allowable PTC</th>
+                  <th scope="col">Economic net premium</th>
+                  <th scope="col">Readiness</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {acaLedgerRows.map((row) => (
+                  <tr key={row.year}>
+                    <td style={td}>{row.year}</td>
+                    <td style={td}>{fmtMoney(row.grossEnrollmentPremium)}</td>
+                    <td style={td}>{row.applicableSlcspPremium === null ? 'Not modeled' : fmtMoney(row.applicableSlcspPremium)}</td>
+                    <td style={td}>{row.modeledAllowablePtc === null ? 'Not modeled' : fmtMoney(row.modeledAllowablePtc)}</td>
+                    <td style={td}>{fmtMoney(row.economicNetPremium)}</td>
+                    <td style={td}>{row.readiness === 'actionable' ? 'Actionable' : 'Non-actionable'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollRegion>
         </section>
       ) : null}
 
       <section className="report-section">
         <h2>Assumptions</h2>
-        <table className="report-table">
-          <caption className="sr-only">Assumptions</caption>
-          <tbody>
-            <tr><td style={td}>General inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.inflationPct / 100, 1)}</td></tr>
-            <tr><td style={td}>Healthcare extra inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.healthcareExtraInflationPct / 100, 1)}</td></tr>
-            <tr><td style={td}>Default return</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.defaultReturnPct / 100, 1)}</td></tr>
-            <tr><td style={td}>Safe withdrawal rate</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct((plan.assumptions.safeWithdrawalRatePct ?? 4) / 100, 1)}</td></tr>
-            <tr><td style={td}>State effective tax</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.stateEffectiveTaxPct / 100, 1)}</td></tr>
-            <tr><td style={td}>Local income tax</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.localIncomeTaxPct / 100, 1)}</td></tr>
-            <tr><td style={td}>Heir tax rate (pre-tax estate)</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.heirTaxRatePct / 100, 0)}</td></tr>
-            <tr><td style={td}>Social Security COLA</td><td style={{ ...td, textAlign: 'right' }}>{plan.assumptions.ssCola.mode === 'matchInflation' ? 'matches inflation' : `${plan.assumptions.ssCola.annualPct}% fixed`}</td></tr>
-            <tr><td style={td}>SS trust-fund cut</td><td style={{ ...td, textAlign: 'right' }}>{plan.assumptions.ssHaircut ? `${plan.assumptions.ssHaircut.cutPct}% from ${plan.assumptions.ssHaircut.fromYear}` : 'none (scheduled benefits)'}</td></tr>
-          </tbody>
-        </table>
+        <ScrollRegion label="Assumptions" grow className="report-table-wrap">
+          <table className="report-table">
+            <caption className="sr-only">Assumptions</caption>
+            <tbody>
+              <tr><td style={td}>General inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.inflationPct / 100, 1)}</td></tr>
+              <tr><td style={td}>Healthcare extra inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.healthcareExtraInflationPct / 100, 1)}</td></tr>
+              <tr><td style={td}>Default return</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.defaultReturnPct / 100, 1)}</td></tr>
+              <tr><td style={td}>Safe withdrawal rate</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct((plan.assumptions.safeWithdrawalRatePct ?? 4) / 100, 1)}</td></tr>
+              <tr><td style={td}>State effective tax</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.stateEffectiveTaxPct / 100, 1)}</td></tr>
+              <tr><td style={td}>Local income tax</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.localIncomeTaxPct / 100, 1)}</td></tr>
+              <tr><td style={td}>Heir tax rate (pre-tax estate)</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.heirTaxRatePct / 100, 0)}</td></tr>
+              <tr><td style={td}>Social Security COLA</td><td style={{ ...td, textAlign: 'right' }}>{plan.assumptions.ssCola.mode === 'matchInflation' ? 'matches inflation' : `${plan.assumptions.ssCola.annualPct}% fixed`}</td></tr>
+              <tr><td style={td}>SS trust-fund cut</td><td style={{ ...td, textAlign: 'right' }}>{plan.assumptions.ssHaircut ? `${plan.assumptions.ssHaircut.cutPct}% from ${plan.assumptions.ssHaircut.fromYear}` : 'none (scheduled benefits)'}</td></tr>
+            </tbody>
+          </table>
+        </ScrollRegion>
         <p className="muted small">
           Federal tax brackets, contribution limits, RMD tables, Medicare/IRMAA, and FPL come from dated parameter
           sets; values beyond the latest published year are indexed forward at the assumed inflation rate.

@@ -1671,7 +1671,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
       <h3>Survivor vs. personal timing</h3>
       <p className="card-hint">
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
-        growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value in
+        growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value in{' '}
         {startYearDollarsWord(plan)} dollars at {discountPct}%, with the plan's cost-of-living increases and any benefit cut{' '}
         <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection uses. Only one benefit is paid at a time, the larger of those claimed, and strategies that pay the same benefits are shown once. With wages in the plan, the earnings test holds back part of the benefit before full retirement age, and the months held back raise each benefit from its own full retirement age." />.
       </p>

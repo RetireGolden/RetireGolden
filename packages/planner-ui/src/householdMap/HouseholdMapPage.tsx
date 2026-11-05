@@ -16,6 +16,7 @@ import { usePlan } from '../planner/planContextCore'
 import { usePrivacy } from '../planner/privacyContextCore'
 import type { MapColumnId } from './layout'
 import { MAP_COLUMN_LABELS } from './layout'
+import { ScrollRegion } from '../planner/ScrollRegion'
 import { buildMapViewModel, type MapNodeVM } from './mapViewModel'
 
 const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const
@@ -284,33 +285,37 @@ export function HouseholdMapPage() {
 
         <details className="map-details">
           <summary>Text list of this map</summary>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th scope="col">Item</th>
-                <th scope="col">Type</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Connected to</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vm.nodes.map((n) => (
-                <tr key={n.id}>
-                  <th scope="row">
-                    <Link to={`../${n.to}`}>{n.label}</Link>
-                  </th>
-                  <td>
-                    {n.typeLabel}
-                    {n.notes.length > 0 ? `, ${n.notes.join('; ')}` : ''}
-                  </td>
-                  <td>{n.amountText ?? (vm.amountsHidden && n.hasAmount ? 'hidden' : '—')}</td>
-                  <td>{n.relations.length > 0 ? n.relations.join('; ') : '—'}</td>
-                  <td>{n.missing.length > 0 ? n.missing.join('; ') : 'Complete'}</td>
+          {/* Five columns do not fit a phone card: the table scrolls inside its
+              own region like the year tables do, never the page (#778). */}
+          <ScrollRegion label="Text list of this map" grow className="mt-sm">
+            <table className="report-table map-details-table">
+              <thead>
+                <tr>
+                  <th scope="col" className="map-details-item">Item</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col" className="map-details-relations">Connected to</th>
+                  <th scope="col" className="map-details-status">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {vm.nodes.map((n) => (
+                  <tr key={n.id}>
+                    <th scope="row" className="map-details-item">
+                      <Link to={`../${n.to}`}>{n.label}</Link>
+                    </th>
+                    <td>
+                      {n.typeLabel}
+                      {n.notes.length > 0 ? `, ${n.notes.join('; ')}` : ''}
+                    </td>
+                    <td>{n.amountText ?? (vm.amountsHidden && n.hasAmount ? 'hidden' : '—')}</td>
+                    <td className="map-details-relations">{n.relations.length > 0 ? n.relations.join('; ') : '—'}</td>
+                    <td className="map-details-status">{n.missing.length > 0 ? n.missing.join('; ') : 'Complete'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollRegion>
         </details>
       </div>
 

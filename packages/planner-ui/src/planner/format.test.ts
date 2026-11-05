@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { fmtMoney, fmtMoneyCents, fmtMoneyFromCents, fmtNumber, parseAmount } from './format'
+import { fmtMoney, fmtMoneyCents, fmtMoneyExact, fmtMoneyFromCents, fmtNumber, parseAmount } from './format'
 
 describe('fmtMoneyCents', () => {
   it('keeps a remainder whole dollars would hide', () => {
@@ -28,6 +28,24 @@ describe('fmtMoneyCents', () => {
   it('says so rather than printing NaN', () => {
     expect(fmtMoneyCents(Number.NaN)).toBe('—')
     expect(fmtMoneyCents(Number.POSITIVE_INFINITY)).toBe('—')
+  })
+})
+
+describe('fmtMoneyExact', () => {
+  it('echoes an entered amount without rounding it (#766 r1-3)', () => {
+    expect(fmtMoneyExact(150_000)).toBe('$150,000')
+    expect(fmtMoneyExact(150_000.75)).toBe('$150,000.75')
+    expect(fmtMoneyExact(150_000.5)).toBe('$150,000.50')
+    expect(fmtMoneyExact(150_000.125)).toBe('$150,000.125')
+    // Whole-dollar money would print the next dollar up: the setting misstated.
+    expect(fmtMoney(150_000.75)).toBe('$150,001')
+  })
+
+  it('never prints a binary float tail, and says so rather than printing NaN', () => {
+    // 1234.1 is stored as 1234.09999…; the fewest digits that read back as it are one.
+    expect(fmtMoneyExact(1234.1)).toBe('$1,234.10')
+    expect(fmtMoneyExact(-5.25)).toBe('-$5.25')
+    expect(fmtMoneyExact(Number.NaN)).toBe('—')
   })
 })
 

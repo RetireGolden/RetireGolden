@@ -27,6 +27,7 @@ import { useClockYear } from '../startYear'
 import { EXAMPLE_FIXED_YEAR } from './examples/exampleClock'
 import { compareExampleNote } from './compareExampleNote'
 import { ScrollRegion } from './ScrollRegion'
+import { usePlannerEdition } from './editionContext'
 import { formatDelta, type DeltaUnit } from './compareDeltas'
 import { moneyLastsValue } from './format'
 
@@ -184,6 +185,7 @@ function depletionAgeLabel(
 
 export function ComparePlansPage() {
   const store = usePlanStore()
+  const { homeLabel } = usePlannerEdition()
   const [summaries, setSummaries] = useState<PlanSummary[] | null>(null)
   const [leftId, setLeftId] = useState('')
   const [rightId, setRightId] = useState('')
@@ -327,11 +329,10 @@ export function ComparePlansPage() {
 
   return (
     <section className="page planner-shell" style={{ textAlign: 'left' }}>
-      <div className="results-toolbar">
-        <Link to="/" className="btn btn-secondary btn-small">
-          Back to plans
-        </Link>
-      </div>
+      {/* One name and one look for going back to the plans list (#767). */}
+      <Link to="/" className="page-back">
+        ← {homeLabel}
+      </Link>
       <h1>Compare plans</h1>
       <p className="lede">
         Compare two saved plans side by side. Use this for A/B planning after duplicating a plan, or for year-over-year

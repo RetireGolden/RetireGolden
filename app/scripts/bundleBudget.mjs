@@ -126,8 +126,19 @@ export const DEFAULT_CHUNK_KIB = 260
  * headroom, as the earlier raises did, so ordinary PRs do not trip it.
  */
 export const TOTAL_JS_KIB = 5300
-/** One stylesheet, and all of them. */
-export const MAX_CSS_KIB = 64
+/**
+ * One stylesheet, and all of them.
+ *
+ * Raised 64 -> 72 (one stylesheet) for the 375px Design QA fixes (#766, #767,
+ * #777, #778): main measured index-*.css at 63.8 KiB, 0.2 KiB under the old
+ * row, and the PR adds 0.5 KiB of rules that do the fixing (report cards two-up
+ * and wrapping on a phone, the report tables' scroll regions and page-coloured
+ * cue covers, the household-map text list's measured columns). The PR's own
+ * duplicate rules were merged first (-0.2 KiB); measured 64.3 KiB after. 72
+ * leaves 7.7 KiB (12%), inside the per-class band. The all-CSS row is
+ * unchanged at 80 (71.3 KiB measured), so it still bounds growth.
+ */
+export const MAX_CSS_KIB = 72
 export const TOTAL_CSS_KIB = 80
 /**
  * The landing critical path: the entry script plus everything index.html

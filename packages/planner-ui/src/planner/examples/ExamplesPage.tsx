@@ -16,7 +16,9 @@ export function ExamplesPage() {
   return (
     <section className="page examples-page">
       <nav className="examples-back" aria-label="Back to planner home">
-        <Link to="/">← {homeLabel}</Link>
+        <Link to="/" className="page-back">
+          ← {homeLabel}
+        </Link>
       </nav>
 
       {notice ? <div className="callout callout--info">{notice}</div> : null}

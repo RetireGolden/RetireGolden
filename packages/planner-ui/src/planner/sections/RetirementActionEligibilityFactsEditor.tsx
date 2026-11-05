@@ -43,6 +43,7 @@ import {
   type IraSubtype,
 } from '../retirementActionEligibilityFacts'
 import { namedQcdYearsForSource } from '../retirementActionQcdSchedule'
+import { distinctNameLabels } from '../distinctNameLabels'
 
 const ON_RECORD = 'On record'
 const NOT_ON_RECORD = 'Not on record'
@@ -50,10 +51,6 @@ const NOT_ON_RECORD = 'Not on record'
 /** Anchor the gift form links to when a missing IRA fact is what blocks it. */
 export const RETIREMENT_ACTION_IRA_FACTS_ANCHOR = 'retirement-action-ira-facts'
 export const RETIREMENT_ACTION_IRA_FACTS_HEADING = 'IRA facts on record'
-
-function accountLabel(account: Account): string {
-  return `${account.name} (ID ${account.id})`
-}
 
 function Chip({ recorded }: { recorded: boolean }) {
   return <TypeChip>{recorded ? ON_RECORD : NOT_ON_RECORD}</TypeChip>
@@ -80,7 +77,16 @@ function iraSubtypeStatement(
     : `${accountName} is a SIMPLE IRA I first took part in on ${participationStart}`
 }
 
-function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account: Account }) {
+function IraClassificationRow({
+  plan,
+  account,
+  label,
+}: {
+  plan: Readonly<Plan>
+  account: Account
+  /** The account's display name, suffixed only when another IRA here shares it (#777). */
+  label: string
+}) {
   const { update } = usePlan()
   const recorded = iraClassificationFor(plan, account.id)
   const recordedStart = recorded?.subtype === 'simple'
@@ -90,7 +96,7 @@ function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account
   const [participationStart, setParticipationStart] = useState(recordedStart)
   const [issue, setIssue] = useState<string | null>(null)
   const activityYears = sepSimpleActivityYears(plan, account.id)
-  const statement = iraSubtypeStatement(account.name, subtype, participationStart)
+  const statement = iraSubtypeStatement(label, subtype, participationStart)
   const dropsActivities = subtype === 'traditional' && activityYears.length > 0
 
   const confirm = () => {
@@ -128,7 +134,7 @@ function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account
       <div className="item-row-head">
         <span className="item-row-title">
           <Chip recorded={recorded !== null} />
-          {accountLabel(account)}
+          {label}
         </span>
         {recorded !== null ? (
           <button
@@ -179,7 +185,7 @@ function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account
         </button>
       </div>
       {recorded !== null && recorded.subtype !== 'traditional' ? (
-        <SepSimpleActivityBlock plan={plan} account={account} />
+        <SepSimpleActivityBlock plan={plan} account={account} label={label} />
       ) : null}
     </div>
   )
@@ -190,9 +196,11 @@ type SepSimpleAnswer = '' | 'made' | 'none'
 function SepSimpleActivityBlock({
   plan,
   account,
+  label,
 }: {
   plan: Readonly<Plan>
   account: Account
+  label: string
 }) {
   const statedYears = sepSimpleActivityYears(plan, account.id)
   const [addedYears, setAddedYears] = useState<readonly number[]>([])
@@ -210,7 +218,7 @@ function SepSimpleActivityBlock({
   const nextYear = Math.max(...years) + 1
   return (
     <div className="nested-form-section field-span-full">
-      <h4>Employer contributions to {account.name}</h4>
+      <h4>Employer contributions to {label}</h4>
       <p className="card-hint">
         RetireGolden needs an answer for the year of a charitable gift before it can model one
         from a SEP or SIMPLE IRA. A year you have not answered stays unknown; it is not read as
@@ -485,6 +493,7 @@ function DeductibleContributionRow({
 export function RetirementActionEligibilityFactsEditor() {
   const { plan } = usePlan()
   const accounts = classifiableIraAccounts(plan)
+  const labels = distinctNameLabels(accounts, 'Unnamed IRA')
   const donors = contributionDonors(plan, projectionStartYear(plan))
   if (accounts.length === 0 && donors.length === 0) return null
   return (
@@ -497,7 +506,7 @@ export function RetirementActionEligibilityFactsEditor() {
         recorded facts that no longer apply.
       </p>
       {accounts.map((account) => (
-        <IraClassificationRow key={account.id} plan={plan} account={account} />
+        <IraClassificationRow key={account.id} plan={plan} account={account} label={labels.get(account.id)!} />
       ))}
       {donors.map((entry) => (
         <DeductibleContributionBlock

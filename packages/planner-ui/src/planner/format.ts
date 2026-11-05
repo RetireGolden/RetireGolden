@@ -74,6 +74,28 @@ export function fmtMoneyCents(v: number): string {
 }
 
 /**
+ * A money setting exactly as the household entered it: whole dollars when it
+ * is whole ("$150,000"), otherwise every fraction digit it holds, at least
+ * two ("$150,000.75", "$150,000.50"). For echoing a user's own target back in
+ * words, where rounding would misstate the setting the engine used (a fixed
+ * MAGI ceiling of $150,000.75 is not "$150,001"). The digit count is the
+ * fewest that read back as the same number, so a binary float's tail never
+ * prints.
+ */
+export function fmtMoneyExact(v: number): string {
+  if (!Number.isFinite(v)) return '—'
+  if (Number.isInteger(v)) return money0.format(v)
+  let digits = 2
+  while (digits < 20 && Number(v.toFixed(digits)) !== v) digits += 1
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(v)
+}
+
+/**
  * Exact-cent money from an integer minor-unit amount, formatted through
  * BigInt so a cent count past `Number.MAX_SAFE_INTEGER` still renders its own
  * digits rather than a float's nearest neighbour. The minus is the U+2212 the

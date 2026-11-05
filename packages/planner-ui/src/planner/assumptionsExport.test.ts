@@ -162,6 +162,27 @@ describe('buildAssumptionsSnapshot', () => {
       expect(manual.row.provenance).toBe('user-set')
     })
   })
+
+  it('strategy rows read in words, never as schema values (#766)', () => {
+    const plan = createEmptyPlan({ name: 'Strategy labels' })
+    plan.strategies.rothConversion = { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: 2028, endYear: 2036 }
+    plan.strategies.withdrawalOrder = { mode: 'bracketTargeted', bracketPct: 12 }
+    const rows = buildAssumptionsSnapshot(plan, 2026).groups.find((g) => g.id === 'strategy')!.rows
+    expect(rows.find((r) => r.id === 'roth-conversion')!.value).toBe('Fill to top of 22% bracket, 2028–2036')
+    expect(rows.find((r) => r.id === 'withdrawal-order')!.value).toBe('Bracket-targeted to 12%; HSA last')
+    for (const row of rows) expect(row.value).not.toMatch(/topOfBracket|bracketTargeted|fillToTarget/)
+  })
+
+  it("every Roth row is the shared formatter's words, a schedule adding its total (#766 r1-7)", () => {
+    const plan = createEmptyPlan({ name: 'Strategy labels' })
+    const rothRow = () => buildAssumptionsSnapshot(plan, 2026).groups.find((g) => g.id === 'strategy')!.rows.find((r) => r.id === 'roth-conversion')!.value
+    plan.strategies.rothConversion = { mode: 'none' }
+    expect(rothRow()).toBe('None')
+    plan.strategies.rothConversion = { mode: 'manual', conversions: [{ year: 2030, amount: 30_000 }, { year: 2031, amount: 50_000 }] }
+    expect(rothRow()).toBe('Manual, 2 years, $80,000 total')
+    plan.strategies.rothConversion = { mode: 'optimized', conversions: [{ year: 2030, amount: 25_000 }] }
+    expect(rothRow()).toBe('Optimized, 1 year, $25,000 total')
+  })
 })
 
 describe('assumptionsExportText', () => {

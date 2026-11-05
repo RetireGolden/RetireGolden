@@ -119,7 +119,7 @@ describe('Workspace chrome', () => {
       expect(figure?.getAttribute('aria-label'), chart.querySelector('h3')?.textContent ?? '').toMatch(/\S/)
     }
     // Plan orientation survives leaving the workspace shell (#432): a breadcrumb
-    // back into the plan, and Back to plan lands on the plan itself, not Results.
+    // back into the plan, and ← Back to plan lands on the plan itself, not Results.
     const crumb = container.querySelector('.report-head nav[aria-label="Breadcrumb"]')!
     expect(crumb).not.toBeNull()
     expect(crumb.className).toContain('no-print')
@@ -129,8 +129,11 @@ describe('Workspace chrome', () => {
       [plan.name, `/plan/${plan.id}`],
     ])
     expect(crumb.querySelector('[aria-current="page"]')?.textContent).toBe('Report')
-    const back = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Back to plan')
+    const back = [...container.querySelectorAll('a')].find((a) => a.textContent === '← Back to plan')
     expect(back?.getAttribute('href')).toBe(`/plan/${plan.id}`)
+    // The same back-link style as every other page, not a third action button (#767).
+    expect(back?.className).toBe('page-back no-print')
+    expect(back?.closest('.report-actions')).toBeNull()
     // The year-by-year appendix is a named, reachable scroll region (#474).
     const appendix = container.querySelector('.report-appendix [role="region"]')
     expect(appendix?.getAttribute('aria-label')).toBe('Year-by-year appendix')
