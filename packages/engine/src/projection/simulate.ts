@@ -1831,7 +1831,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return { ...input, stateHouseholdFacts: { ...input.stateHouseholdFacts, ...household.householdFacts },
         stateNjIraOwnerPools: applyAcceptedNjIraBasisToYearFacts(input.stateNjIraOwnerPools, year, acceptedStateNjIraBasis,
           njIraYearContributionAdditions(plan.stateTaxFacts.iraBasisYearEvidence, year, people.map((person) => person.id), stateNjTaxedContributions)),
-        stateRetirementDistributions: applyAcceptedPensionBasisToYearFacts(input.stateRetirementDistributions, input.state ?? plan.household.state, year, acceptedStatePensionBasis),
+        stateRetirementDistributions: applyAcceptedPensionBasisToYearFacts(input.stateRetirementDistributions, input.state ?? plan.household.state, year, acceptedStatePensionBasis, plan.stateTaxFacts.basisPoolEvidence),
         stateHsaAccountYearFacts: applyAcceptedHsaBasisToYearFacts(input.stateHsaAccountYearFacts,
           input.state ?? plan.household.state, year, acceptedStateHsaBasis),
       }
