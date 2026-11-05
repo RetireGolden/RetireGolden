@@ -10,6 +10,7 @@ import { createEmptyPlan } from '../model/plan.js'
 import { stateIraBasisYearEvidenceSchema } from '../model/stateTaxPlanFacts.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { njIraOwnerPoolsForYear } from '../projection/internal/stateRetirementFactsAdapter.js'
+import { applyAcceptedPensionBasisToYearFacts, commitAcceptedPensionBasis, type AcceptedStatePensionBasisSnapshot } from '../projection/internal/statePensionBasisLifecycle.js'
 import { computeStateTaxYearResult, createStateTaxCalculator, type StateTaxYearOptions } from './stateTax.js'
 import { knownMoney, unknownMoney, type StateRetirementDistributionFact, type StateHouseholdTaxFacts, type StateHsaAccountYearFacts, type StateQcdEventFacts } from './stateRetirementFacts.js'
 
@@ -727,6 +728,30 @@ describeRule('ma-private-pension-basis-recovery', { readings: { stateBasis: 6_00
     expect(exclusion('MA', rows)).toBe(accepted)
     expect(annual('MA', { retirementDistributions: rows }).pensionBasisPools?.[0]).toMatchObject({ basisConsumed: 6_000, closingBasis: 0 })
     expect(annual('MA', { retirementDistributions: [fact({ knownPreviouslyTaxedBasis: undefined })] }).status).toBe('incomplete')
+  })
+  it('keeps Massachusetts basis through a year with no distribution (#841)', () => {
+    // $20,000 of IRA basis already taxed by MA. 2026 draws $5,000 and closes
+    // at $15,000; 2027 draws nothing, so basis is unchanged (basis is
+    // recovered only against distributions); 2028 draws $10,000, all of it a
+    // basis recovery, closing at $5,000.
+    const ira = (year: number, amount: number) => ({ ...fact({ accountId: 'ira', sourceKind: 'ira',
+      federallyIncludedAmount: amount, grossDistribution: amount, knownPreviouslyTaxedBasis: 20_000 }), taxYear: year })
+    const settle = (year: number, rows: readonly StateRetirementDistributionFact[], snapshots: readonly AcceptedStatePensionBasisSnapshot[]) => {
+      const facts = applyAcceptedPensionBasisToYearFacts(rows, 'MA', year, snapshots) as StateRetirementDistributionFact[]
+      const result = annual('MA', { retirementDistributions: facts }, { year })
+      // The projection commits the annual result's pool transitions; only those are read.
+      const settled = { amount: 0, status: 'complete' as const, issues: [], pensionBasisPools: result.pensionBasisPools }
+      return { facts, result, snapshots: commitAcceptedPensionBasis(year, settled, snapshots, { state: 'MA', distributions: facts }) }
+    }
+    const y2026 = settle(2026, [ira(2026, 5_000)], [])
+    expect(y2026.result.pensionBasisPools?.[0]).toMatchObject({ openingBasis: 20_000, basisConsumed: 5_000, closingBasis: 15_000 })
+    const y2027 = settle(2027, [], y2026.snapshots)
+    expect(y2027.snapshots.find((row) => row.taxYear === 2027)).toMatchObject({ status: 'complete', openingBasis: 15_000, basisConsumed: 0, closingBasis: 15_000 })
+    const y2028 = settle(2028, [ira(2028, 10_000)], y2027.snapshots)
+    expect(y2028.facts[0]?.knownPreviouslyTaxedBasis).toBe(15_000)
+    expect(y2028.result.pensionBasisPools?.[0]).toMatchObject({ status: 'complete', openingBasis: 15_000, basisConsumed: 10_000, closingBasis: 5_000 })
+    expect(exclusion('MA', y2028.facts, household(), { year: 2028 })).toBe(10_000)
+    expect(y2028.result.status).toBe('complete')
   })
 })
 describeRule('ma-rrb-and-public-pension-exclusions', { readings: { provenContributory: 12_000, taxableNoncontributory: 0 }, accepted: 'provenContributory' }, ({ accepted }) => {

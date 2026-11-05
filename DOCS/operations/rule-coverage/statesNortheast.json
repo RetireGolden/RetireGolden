@@ -264,16 +264,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 555,
+          "line": 556,
           "note": null,
           "tests": [
             {
               "title": "uses Connecticut AGI, and a dollar into the next thousand removes $1,000",
-              "line": 556
+              "line": 557
             },
             {
               "title": "does not use known federal AGI as a substitute for unknown Connecticut AGI",
-              "line": 569
+              "line": 570
             }
           ]
         }
@@ -361,12 +361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1117,
+          "line": 1142,
           "note": null,
           "tests": [
             {
               "title": "selects proved contributory Massachusetts income",
-              "line": 1118
+              "line": 1143
             }
           ]
         }
@@ -517,12 +517,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 715,
+          "line": 716,
           "note": null,
           "tests": [
             {
               "title": "adds 4% only to $1.2m minus the $1,107,750 threshold",
-              "line": 716
+              "line": 717
             }
           ]
         }
@@ -600,12 +600,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 724,
+          "line": 725,
           "note": null,
           "tests": [
             {
               "title": "recovers known Massachusetts basis once across two distributions",
-              "line": 725
+              "line": 726
+            },
+            {
+              "title": "keeps Massachusetts basis through a year with no distribution (#841)",
+              "line": 732
             }
           ]
         }
@@ -678,12 +682,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 732,
+          "line": 757,
           "note": null,
           "tests": [
             {
               "title": "requires contributory in-state or reciprocal public-system proof",
-              "line": 733
+              "line": 758
             }
           ]
         }
@@ -1464,40 +1468,40 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 269,
+          "line": 270,
           "note": null,
           "tests": [
             {
               "title": "taxes $32,000 of a $40,000 full liquidation after recovering $8,000 NJ basis",
-              "line": 276
+              "line": 277
             },
             {
               "title": "uses NJ basis for a full liquidation and conserves recovery across events",
-              "line": 286
+              "line": 287
             },
             {
               "title": "keeps one IRA exempt-obligation amount when the other IRA omits the field",
-              "line": 293
+              "line": 294
             },
             {
               "title": "rejects a negative exempt-obligation adjustment instead of taxing the transfer in full",
-              "line": 308
+              "line": 309
             },
             {
               "title": "reads a lowercase nj basis row and honors an asserted full liquidation",
-              "line": 326
+              "line": 327
             },
             {
               "title": "detects a projected New Jersey QCD with no basis evidence and leaves it unpriced",
-              "line": 360
+              "line": 361
             },
             {
               "title": "leaves an explicit unknown basis list incomplete instead of assuming zero",
-              "line": 372
+              "line": 373
             },
             {
               "title": "does not invent a zero-basis pool for an owner with no basis row",
-              "line": 376
+              "line": 377
             }
           ]
         }
@@ -1605,20 +1609,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 226,
+          "line": 227,
           "note": null,
           "tests": [
             {
               "title": "taxes a $1,000 sale with $800 NJ lot basis, not the cash withdrawal again",
-              "line": 229
+              "line": 230
             },
             {
               "title": "includes $600 of interest dividends and realized gain while ignoring $500 unrealized appreciation",
-              "line": 233
+              "line": 234
             },
             {
               "title": "does not re-add contributions already included in NJ wages",
-              "line": 240
+              "line": 241
             }
           ]
         }
@@ -2009,12 +2013,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 742,
+          "line": 767,
           "note": null,
           "tests": [
             {
               "title": "excludes military at age50 while OPM remains taxable",
-              "line": 743
+              "line": 768
             }
           ]
         }
@@ -3886,12 +3890,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 967,
+          "line": 992,
           "note": null,
           "tests": [
             {
               "title": "uses the exact marginal arithmetic at the joint top threshold",
-              "line": 968
+              "line": 993
             }
           ]
         }
@@ -3974,12 +3978,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 975,
+          "line": 1000,
           "note": null,
           "tests": [
             {
               "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
-              "line": 976
+              "line": 1001
             }
           ]
         }
@@ -4052,12 +4056,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 1002,
+          "line": 1027,
           "note": null,
           "tests": [
             {
               "title": "subtracts both included tiers without requiring a Social Security election",
-              "line": 1003
+              "line": 1028
             }
           ]
         }
@@ -4135,12 +4139,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 994,
+          "line": 1019,
           "note": null,
           "tests": [
             {
               "title": "phases military at$150k and preserves the independent election",
-              "line": 995
+              "line": 1020
             }
           ]
         }
@@ -4213,12 +4217,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
-          "line": 985,
+          "line": 1010,
           "note": null,
           "tests": [
             {
               "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
-              "line": 986
+              "line": 1011
             }
           ]
         }
