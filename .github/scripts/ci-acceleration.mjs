@@ -23,6 +23,9 @@ export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
 export const PROFILE_CONSUMER_MAX_BYTES = 128 * 1024
 export const TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA =
   '5531c87e34f55781d81289d98c2c2ff1b7f686f9'
+// A controller-staging PR may add the exact blob for one planned source-workflow
+// follow-up. Remove the entry after that source change reaches the default branch.
+export const TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS = new Set()
 /** Primary ledger producer: openrouter-pr-review-action@212775ffea22e806cddcb706c73a3df26fbcb6d0. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
@@ -83,10 +86,16 @@ export function azureControllerPrResultSuccess({
   return sourceReady && deployResult === 'success' && dastResult === 'success'
 }
 
-export function azureSourceWorkflowBlobAllowed(headFile, defaultBranchFile, legacyBackstop = false) {
+export function azureSourceWorkflowBlobAllowed(
+  headFile,
+  defaultBranchFile,
+  legacyBackstop = false,
+  stagedBlobShas = TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS,
+) {
   if (workflowBlobMatchesDefaultBranch(headFile, defaultBranchFile)) return true
-  return legacyBackstop && headFile?.data?.type === 'file' &&
-    headFile.data.sha === TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA
+  if (headFile?.data?.type !== 'file' || typeof headFile.data.sha !== 'string') return false
+  if (stagedBlobShas.has(headFile.data.sha)) return true
+  return legacyBackstop && headFile.data.sha === TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA
 }
 
 export function azureSourceCheckExternalId(runId, runAttempt) {

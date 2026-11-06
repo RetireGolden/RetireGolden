@@ -175,6 +175,10 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.match(inspect, /authorizeExactHeadPullRequest/)
   assert.match(inspect, /azureSourceWorkflowBlobAllowed\(\s*sourceFile, activeSourceFile, legacyBackstop,/)
   assert.match(inspect, /PR source workflow does not match the trusted default-branch workflow/)
+  assert.match(
+    read('.github/scripts/ci-acceleration.mjs'),
+    /TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS = new Set\(\)/,
+  )
   assert.match(inspect, /listWorkflowRunArtifacts/)
   assert.match(inspect, /dist\.length !== 1/)
   assert.match(preview, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/)

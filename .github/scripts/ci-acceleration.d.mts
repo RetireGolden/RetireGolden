@@ -219,6 +219,7 @@ export const TRUSTED_PROFILE_CONSUMER_REPO: string
 export const TRUSTED_PROFILE_CONSUMER_PATH: string
 export const PROFILE_CONSUMER_MAX_BYTES: number
 export const TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA: string
+export const TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS: ReadonlySet<string>
 export const EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
 export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
 export const REQUIRED_AZURE_CONTROLLER_JOB_NAMES: ReadonlySet<string>
@@ -239,6 +240,7 @@ export function azureSourceWorkflowBlobAllowed(
   headFile: WorkflowContentResponse | undefined,
   defaultBranchFile: WorkflowContentResponse | undefined,
   legacyBackstop?: boolean,
+  stagedBlobShas?: ReadonlySet<string>,
 ): boolean
 export function azureSourceCheckExternalId(runId: number, runAttempt: number): string
 export function azureSourceCheckIsNewer(

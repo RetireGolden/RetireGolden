@@ -36,7 +36,10 @@ head changes, so cleanup does not depend on a pending close job being preserved.
 checks out or executes PR code. For PR runs, it also requires the source-workflow blob at the exact head
 to match the active default-branch source workflow before it accepts the artifact. Changes to that source
 workflow therefore use the same staged-controller sequence as this cutover: land the trusted controller
-support first, then change the source workflow in a follow-up PR.
+support first, then change the source workflow in a follow-up PR. The controller-support PR adds the
+planned source file's exact Git blob SHA to `TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS` in the
+default-branch CI helper. After that PR merges, the source-workflow PR can use exactly that reviewed blob;
+once the source change reaches `main` and becomes the default blob, remove the temporary entry in a cleanup PR.
 
 Source-workflow prerequisites flow into controller-owned deployment:
 

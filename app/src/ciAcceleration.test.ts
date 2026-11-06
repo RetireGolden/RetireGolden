@@ -44,6 +44,7 @@ import {
   TRUSTED_PROFILE_CONSUMER_PATH,
   TRUSTED_PROFILE_CONSUMER_REPO,
   TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA,
+  TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS,
   TRUSTED_RECOVERY_WORKFLOW_PATH,
   TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA,
   TRUSTED_REUSABLE_REVIEW_WORKFLOW,
@@ -1477,6 +1478,13 @@ describe('OpenRouter CI authorization contract', () => {
     expect(azureSourceWorkflowBlobAllowed(
       { data: { type: 'file', sha: 'untrusted-source' } }, defaultSource, true,
     )).toBe(false)
+    expect(TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS.size).toBe(0)
+    expect(azureSourceWorkflowBlobAllowed(
+      { data: { type: 'file', sha: 'planned-source' } },
+      defaultSource,
+      false,
+      new Set(['planned-source']),
+    )).toBe(true)
     expect(azureControllerPrResultSuccess({
       newerConclusion: 'success',
       legacyResult: false,
