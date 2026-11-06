@@ -45,17 +45,28 @@ function specificity(selector: string): number {
 
 // The value of `property` in one rule body, or null when the body does not
 // declare it. Declarations are split on `;` and matched by exact property
-// name, so `gap` does not pick up `row-gap`; the last one wins, as in CSS.
-// Plain string parsing, not a RegExp built from the argument.
+// name, so `gap` does not pick up `row-gap`. An empty value is invalid CSS
+// and is skipped, as a browser drops it. This helper models only the simple
+// case, one declaration of the property per rule with no `!important`, so a
+// repeat or an `!important` throws: picking a winner there needs validity
+// and priority rules this text parse does not have. Plain string parsing,
+// not a RegExp built from the argument.
 function declaredValue(body: string, property: string): string | null {
-  let value: string | null = null
+  const values: string[] = []
   for (const declaration of body.split(';')) {
     const colon = declaration.indexOf(':')
     if (colon < 0) continue
     if (declaration.slice(0, colon).trim() !== property) continue
-    value = declaration.slice(colon + 1).trim()
+    const value = declaration.slice(colon + 1).trim()
+    if (value !== '') values.push(value)
   }
-  return value
+  if (values.length > 1 || values.some((value) => value.includes('!important'))) {
+    throw new Error(
+      `winningDeclaration models one plain \`${property}\` per rule; found ${JSON.stringify(values)}. ` +
+        'Extend the helper before relying on it for this rule.',
+    )
+  }
+  return values[0] ?? null
 }
 
 function winningDeclaration(css: string, className: string, property: string, ancestorClass?: string): string | null {
@@ -171,6 +182,13 @@ describe('planner home chrome (#297)', () => {
     expect(planGridAt).toBeGreaterThanOrEqual(0)
     expect(overrideAt).toBeGreaterThan(planGridAt)
     expect(plannerCss).not.toMatch(/\.home-paths\s+\.home-paths-grid\.plan-grid/)
+  })
+
+  it('winningDeclaration skips empty values and refuses rules it cannot rank', () => {
+    expect(winningDeclaration('.a { gap: 1px } .a.b { row-gap: 2px }', 'a b', 'gap')).toBe('1px')
+    expect(winningDeclaration('.a { gap: 1px } .a.b { gap: ; }', 'a b', 'gap')).toBe('1px')
+    expect(() => winningDeclaration('.a { gap: 1px; gap: nope }', 'a', 'gap')).toThrow(/one plain `gap` per rule/)
+    expect(() => winningDeclaration('.a { gap: 1px !important }', 'a', 'gap')).toThrow(/one plain `gap` per rule/)
   })
 
   it('Import step back control sits with the h2, not item-row-head space-between', () => {
