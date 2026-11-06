@@ -86,6 +86,26 @@ export function azureSourceCheckIsNewer(check, runId, runAttempt) {
   return checkRunId > runId || (checkRunId === runId && checkAttempt > runAttempt)
 }
 
+export function newestAzureSourceCheck(checks) {
+  let newest
+  let newestRunId = 0
+  let newestAttempt = 0
+  for (const check of checks ?? []) {
+    if (check?.status !== 'completed' || !['success', 'failure'].includes(check?.conclusion) ||
+        typeof check?.external_id !== 'string') continue
+    const match = /^azure-source:(\d+):(\d+)$/.exec(check.external_id)
+    if (!match) continue
+    const runId = Number(match[1])
+    const runAttempt = Number(match[2])
+    if (!newest || runId > newestRunId || (runId === newestRunId && runAttempt > newestAttempt)) {
+      newest = check
+      newestRunId = runId
+      newestAttempt = runAttempt
+    }
+  }
+  return newest
+}
+
 export function sourceWorkflowHasLegacyClose(source) {
   return typeof source === 'string' && /^  close_pull_request:\s*$/m.test(source)
 }

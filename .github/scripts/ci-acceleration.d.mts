@@ -232,6 +232,11 @@ export function azureSourceCheckIsNewer(
   runId: number,
   runAttempt: number,
 ): boolean
+export function newestAzureSourceCheck<T extends {
+  readonly external_id?: string | null
+  readonly status?: string | null
+  readonly conclusion?: string | null
+}>(checks: readonly T[]): T | undefined
 export function sourceWorkflowHasLegacyClose(source: string): boolean
 export function previewDeploymentSkipReason(
   pullRequest: PullRequest,

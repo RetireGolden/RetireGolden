@@ -331,12 +331,10 @@ jobs:
       always() && needs.inspect.result == 'success' &&
       needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' &&
       needs.inspect.outputs.cancelled == 'false' && needs.inspect.outputs.head_sha != ''
-    concurrency:
-      group: swa-zap-publish-${{ needs.inspect.outputs.head_sha }}
-      cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     permissions:
+      actions: read
       checks: write
       contents: read
     steps:
@@ -369,6 +367,25 @@ jobs:
             )
             const sourceRunId = Number(process.env.SOURCE_RUN_ID)
             const sourceRunAttempt = Number(process.env.SOURCE_RUN_ATTEMPT)
+            const activeStatuses = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested'])
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+              const sourceRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: 'azure-static-web-apps-retiregolden.yml',
+                event: 'pull_request',
+                head_sha: process.env.HEAD_SHA,
+                per_page: 100,
+              })
+              const active = sourceRuns.filter(run =>
+                run.id !== sourceRunId && activeStatuses.has(run.status))
+              if (active.length === 0) break
+              if (attempt === 29) {
+                throw new Error('Another exact-head Azure source run remained active')
+              }
+              core.info(`Waiting for ${active.length} other exact-head Azure source run(s)`)
+              await new Promise(resolve => setTimeout(resolve, 10000))
+            }
             const checks = await github.paginate(github.rest.checks.listForRef, {
               owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
             })
@@ -380,7 +397,7 @@ jobs:
             const success = process.env.SOURCE_READY === 'true' &&
               process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
             const detailsUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
-            await github.rest.checks.create({
+            const { data: published } = await github.rest.checks.create({
               owner,
               repo,
               name,
@@ -396,6 +413,26 @@ jobs:
                   : `${process.env.SOURCE_REASON}; deploy=${process.env.DEPLOY_RESULT}; ZAP=${process.env.DAST_RESULT}.`,
               },
             })
+            const refreshed = await github.paginate(github.rest.checks.listForRef, {
+              owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
+            })
+            const newest = helper.newestAzureSourceCheck(
+              refreshed.filter(check => check.name === name),
+            )
+            if (newest && helper.azureSourceCheckIsNewer(newest, sourceRunId, sourceRunAttempt)) {
+              await github.rest.checks.update({
+                owner,
+                repo,
+                check_run_id: published.id,
+                status: 'completed',
+                conclusion: newest.conclusion,
+                details_url: newest.details_url || detailsUrl,
+                output: {
+                  title: 'Superseded source result',
+                  summary: `Preserved newer Azure source result ${newest.external_id}.`,
+                },
+              })
+            }
 
   deploy_production:
     needs: inspect

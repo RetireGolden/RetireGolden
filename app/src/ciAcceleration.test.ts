@@ -27,6 +27,7 @@ import {
   isDependabotPullRequest,
   isExpensiveAzureJob,
   ledgerWorkflowRunUrlsFromReview,
+  newestAzureSourceCheck,
   newestWorkflowRun,
   parseWorkflowRunIdFromUrl,
   previewDeploymentSkipReason,
@@ -1399,6 +1400,11 @@ describe('OpenRouter CI authorization contract', () => {
     expect(azureSourceCheckIsNewer({ external_id: externalId }, 100, 2)).toBe(false)
     expect(azureSourceCheckIsNewer({ external_id: 'azure-source:999:1' }, 100, 2)).toBe(true)
     expect(azureSourceCheckIsNewer({ external_id: 'not-an-azure-source' }, 100, 2)).toBe(false)
+    expect(newestAzureSourceCheck([
+      { id: 1, status: 'completed', conclusion: 'success', external_id: 'azure-source:100:2' },
+      { id: 2, status: 'completed', conclusion: 'failure', external_id: 'azure-source:101:1' },
+      { id: 3, status: 'in_progress', conclusion: null, external_id: 'azure-source:999:1' },
+    ])?.id).toBe(2)
 
     const deployablePr = {
       state: 'open',
@@ -1519,7 +1525,9 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain('deployment_environment: pr${{ needs.inspect.outputs.pr_number }}')
     expect(swaController).toContain("const name = 'ZAP DAST / ZAP Baseline'")
     expect(swaController).toContain('helper.azureSourceCheckIsNewer')
-    expect(swaController).toContain('group: swa-zap-publish-${{ needs.inspect.outputs.head_sha }}')
+    expect(swaController).toContain('github.rest.actions.listWorkflowRuns')
+    expect(swaController).toContain('helper.newestAzureSourceCheck')
+    expect(swaController).toContain('github.rest.checks.update')
     expect(swaController).toContain('Recheck live preview ownership')
     expect(swaController).toContain('Recheck current production head')
     expect(swaController).toContain('group: swa-production')
