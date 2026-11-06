@@ -228,6 +228,8 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 - **Without the label**, `authorize` and the nested ZAP context fail while the expensive jobs remain
   **skipped**. The broker deliberately recognizes that exact shape, applies `run-ci` only after current
   review proof, and reruns the same exact-head Azure attempt. The authorized rerun must be green before merge.
+  A branch that predates a required Azure job name must first synchronize with `main`; the broker rejects
+  stale workflow shapes rather than treating a missing expensive job as safely skipped.
 - **Semgrep is exempt**: it runs on every PR push regardless of the label, so the SAST required check is
   always a real result. It's a cheap CLI scan — the label gate covers the expensive pipeline only.
 - **The resolve gate is also exempt**: [`resolve-gate.yml`](../../.github/workflows/resolve-gate.yml)
