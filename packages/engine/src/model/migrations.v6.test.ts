@@ -531,6 +531,43 @@ describe('migratePlanV5ToV6', () => {
     ])
   })
 
+  it('applies valid operations when another scenario path is rejected', () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const stored = structuredClone(contractsOf(raw))
+    raw['scenarios'] = [
+      {
+        id: 's-mixed-paths',
+        name: 'Mixed paths',
+        patch: canonicalScenarioPatch(raw, 'Mixed paths', [
+          {
+            op: 'set',
+            path: '/expenses/healthcare/pre65MonthlyPremiumPerPerson',
+            before: { present: true, value: 900 },
+            value: 1_300,
+          },
+          { op: 'set', path: '/outside/ignored', before: { present: false }, value: true },
+          {
+            op: 'set',
+            path: '/expenses/healthcare/acaYears',
+            before: { present: true, value: stored },
+            value: stored,
+          },
+        ]),
+      },
+    ]
+
+    const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
+    const operations = migrated[0]!['patch']!['operations'] as Record<string, unknown>[]
+    expect(operations[0]!['value']).toBe(1_300)
+    expect(operations[1]!['path']).toBe('/outside/ignored')
+    expect(operations[2]!['value']).toEqual([])
+    expect(operations[3]).toMatchObject({
+      op: 'set',
+      path: '/expenses/healthcare/acaYearsRemoved',
+      value: [{ edit: 'exampleNoLongerMatched', years: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] }],
+    })
+  })
+
   it('deep-merges a loose patch that carries an unrelated operations array', () => {
     const raw = rawV5(couple(), 'early-retiree-aca')
     const stored = structuredClone(contractsOf(raw))
