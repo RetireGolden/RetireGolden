@@ -88,7 +88,9 @@ jobs:
               )
               if (typeof helper.classifyAzureControllerSourceJobs !== 'function' ||
                   typeof helper.authorizeExactHeadPullRequest !== 'function' ||
-                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function') {
+                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function' ||
+                  typeof helper.azureSourceWorkflowBlobAllowed !== 'function' ||
+                  typeof helper.azureControllerPrResultSuccess !== 'function') {
                 throw new Error('Trusted CI helper is missing controller exports')
               }
               const activeSourceFile = await github.rest.repos.getContent({
@@ -141,6 +143,17 @@ jobs:
                   throw new Error('Source run does not identify exactly one same-repository default-branch PR')
                 }
                 const pr = matches[0]
+                const sourceFile = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: '.github/workflows/azure-static-web-apps-retiregolden.yml',
+                  ref: run.head_sha,
+                })
+                if (!helper.azureSourceWorkflowBlobAllowed(
+                  sourceFile, activeSourceFile, legacyBackstop,
+                )) {
+                  throw new Error('PR source workflow does not match the trusted default-branch workflow')
+                }
                 if (Array.isArray(run.pull_requests) && run.pull_requests.length > 0 &&
                     !run.pull_requests.some(item => item.number === pr.number)) {
                   throw new Error('Source run pull-request identity does not match the exact-head PR')
@@ -434,12 +447,14 @@ jobs:
               return
             }
             const legacyResult = process.env.SOURCE_MODE === 'legacy-result'
-            const success = newerExists
-              ? existingNewest.conclusion === 'success'
-              : legacyResult
-                ? process.env.LEGACY_GATE_SUCCESS === 'true'
-                : process.env.SOURCE_READY === 'true' &&
-                  process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
+            const success = helper.azureControllerPrResultSuccess({
+              newerConclusion: newerExists ? existingNewest.conclusion : undefined,
+              legacyResult,
+              legacyGateSuccess: process.env.LEGACY_GATE_SUCCESS === 'true',
+              sourceReady: process.env.SOURCE_READY === 'true',
+              deployResult: process.env.DEPLOY_RESULT,
+              dastResult: process.env.DAST_RESULT,
+            })
             const controllerUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
             const detailsUrl = newerExists ? existingNewest.details_url || controllerUrl : controllerUrl
             const externalId = newerExists

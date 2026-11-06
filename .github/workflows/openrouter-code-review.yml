@@ -101,7 +101,11 @@ jobs:
 
   gate-check:
     needs: review
-    if: always() && needs.review.outputs.gate_head_sha != ''
+    if: >-
+      always() &&
+        (needs.review.outputs.gate_head_sha != '' ||
+          (github.event_name == 'pull_request_target' && !github.event.pull_request.draft &&
+            github.event.pull_request.head.repo.full_name != github.event.repository.full_name))
     uses: RetireGolden/.github/.github/workflows/openrouter-review-gate-check.yml@a40c5eb8d588266531184ffc633dc2969d9138df # .github#54
     permissions:
       actions: read
@@ -109,7 +113,7 @@ jobs:
       contents: read
       pull-requests: read
     with:
-      pr_number: ${{ needs.review.outputs.gate_pr_number }}
-      head_sha: ${{ needs.review.outputs.gate_head_sha }}
-      conclusion: ${{ needs.review.outputs.gate_conclusion }}
-      review_url: ${{ needs.review.outputs.gate_review_url }}
+      pr_number: ${{ needs.review.outputs.gate_pr_number || github.event.pull_request.number }}
+      head_sha: ${{ needs.review.outputs.gate_head_sha || github.event.pull_request.head.sha }}
+      conclusion: ${{ needs.review.outputs.gate_conclusion || 'failure' }}
+      review_url: ${{ needs.review.outputs.gate_review_url || github.event.pull_request.html_url }}

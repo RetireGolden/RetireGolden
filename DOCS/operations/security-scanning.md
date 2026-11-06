@@ -170,7 +170,7 @@ branch) requires all four contexts:
 
 - `Scan (p/default)` (Semgrep job)
 - `authorize` (Azure authorization gate)
-- `ZAP DAST / ZAP Baseline` (the `dast` caller job / reusable ZAP job)
+- `ZAP DAST / ZAP Baseline` (the exact-head check published by the default-branch controller)
 - `review / openrouter-first-pass-gate` (independent OpenRouter full-PR review)
 
 Configuration: `strict` policy is **off** (PRs don't need to be rebased before merging, to keep friction
@@ -242,7 +242,7 @@ security findings are surfaced but never block.
 | Symptom | Likely cause / fix |
 |---|---|
 | A required check sits on "Expected — waiting for status to be reported" and the PR can't merge | A job was renamed but the ruleset context wasn't updated (see §5 warning). Realign the names. |
-| ZAP scans an empty/wrong URL | The deploy step's `static_web_app_url` output was empty; confirm the `deploy` job succeeded and produced the preview URL. |
+| ZAP scans an empty/wrong URL | The controller's `deploy_preview` output was empty or stale; confirm that job deployed the exact-head named preview and passed its URL to `dast`. |
 | Pull-request Semgrep results are not shown in code scanning | The pull-request job is read-only; use the `semgrep-sarif` artifact. Pushes to `main` publish there separately. |
 | ZAP gate fails but you expected a pass | Open `report_html.html` in the `zap-baseline-report` artifact and look for **High** risk alerts; the `dast` job log prints which alert(s) tripped the gate. |
 

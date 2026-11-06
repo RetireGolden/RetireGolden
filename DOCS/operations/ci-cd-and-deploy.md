@@ -33,17 +33,20 @@ late rerun of an old source workflow therefore enters the `legacy-result` path a
 source-identified ZAP result after the legacy job-level check.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
-checks out or executes PR code.
+checks out or executes PR code. For PR runs, it also requires the source-workflow blob at the exact head
+to match the active default-branch source workflow before it accepts the artifact. Changes to that source
+workflow therefore use the same staged-controller sequence as this cutover: land the trusted controller
+support first, then change the source workflow in a follow-up PR.
 
 Source-workflow prerequisites flow into controller-owned deployment:
 
 ```
-authorize ─┬─► lint
-           ├─► test engine ─┐
-           ├─► test planner-ui ─┼─► test
-           ├─► test web ──────┘
-           ├─► e2e
-           └─► build ─► dist artifact ─► controller deploy ─► dast (PR only)
+authorize --+--> lint ---------------------+
+            +--> test shards --> test -----+
+            +--> e2e ----------------------+--> successful source run
+            +--> build --> dist artifact --+              |
+                                                          v
+                                            controller deploy --> dast (PR only)
 ```
 
 | Job | Runs | What it does |
@@ -228,8 +231,9 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 - A rerun deliberately ignores its frozen event labels. `authorize` re-reads the live PR, label, review,
   and head immediately before releasing checkout jobs; a head race fails closed. Fork PRs never authorize
   or deploy. The broker never auto-reruns Dependabot PRs.
-- **Without the label**, `authorize` and the nested ZAP context fail while the expensive jobs remain
-  **skipped**. The broker deliberately recognizes that exact shape, applies `run-ci` only after current
+- **Without the label**, `authorize` fails while the expensive jobs remain **skipped**; after the source
+  run completes, the controller separately publishes a failed exact-head ZAP context. The broker
+  deliberately recognizes that exact shape, applies `run-ci` only after current
   review proof, and reruns the same exact-head Azure attempt. The authorized rerun must be green before merge.
   A branch that predates a required Azure job name must first synchronize with `main`; the broker rejects
   stale workflow shapes rather than treating a missing expensive job as safely skipped.
@@ -248,9 +252,17 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 The trust boundary is explicit: GitHub review objects do not expose which workflow created them.
 Authorization therefore admits only same-repository PRs and trusts the write-capable repository
 workflows on the default branch, the pinned reusable org workflows they invoke, and the org
-`scripts/profile_consumer.mjs` loaded at the org workflow pin. Trust is established through GitHub
+`scripts/profile_consumer.mjs` loaded at the org workflow pin. That pinned consumer exports both
+`verifyTargetBase` and `authorizeProfileReceipt`; the former binds target reviews to the expected base
+history before the latter admits the review/profile receipt. Trust is established through GitHub
 artifact, workflow run, job, and caller-blob provenance — not cryptographic signatures on review
 bodies or status descriptions.
+
+At this cutover, an open PR whose latest authoritative ledger came from the retired branch
+`pull_request` caller does not receive a new event merely because `main` changed. After active reviews
+settle, dispatch `openrouter-review-recovery.yml` from `main` once for each such unchanged head; the
+forwarder starts the normal trusted review. Wait for its exact-head clean ledger and current profile proof
+before CI authorization. A new PR event naturally uses the target caller.
 
 For operational recovery, a maintainer may dispatch the normal review workflow from `main`
 and wait for its exact-head clean ledger and current profile proof. The run may report `main`

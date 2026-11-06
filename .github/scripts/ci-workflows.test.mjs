@@ -142,15 +142,6 @@ test('Azure source workflow stops at the trusted build artifact', () => {
   assert.doesNotMatch(controller, /setup-toolchain|pnpm|npm install/)
 })
 
-test('existing ZAP check fails when no preview URL is authorized', () => {
-  const source = read('.github/workflows/zap.yml')
-  const zap = job(source, 'zap_baseline')
-  assert.match(zap, /name: ZAP Baseline/)
-  assert.match(zap, /Require an authorized preview URL/)
-  assert.match(zap, /if \[ -z "\$TARGET_URL" \]/)
-  assert.doesNotMatch(zap, /^\s+if: inputs\.target_url != ''$/m)
-})
-
 test('default-branch SWA controller owns deployment, scan publication, and teardown', () => {
   const source = read('.github/workflows/azure-static-web-apps-controller.yml')
   const inspect = job(source, 'inspect')
@@ -172,6 +163,8 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.match(inspect, /outputs\.mode = 'legacy-result'/)
   assert.match(inspect, /outputs\.gate_success/)
   assert.match(inspect, /authorizeExactHeadPullRequest/)
+  assert.match(inspect, /azureSourceWorkflowBlobAllowed\(\s*sourceFile, activeSourceFile, legacyBackstop,/)
+  assert.match(inspect, /PR source workflow does not match the trusted default-branch workflow/)
   assert.match(inspect, /listWorkflowRunArtifacts/)
   assert.match(inspect, /dist\.length !== 1/)
   assert.match(preview, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/)
@@ -188,6 +181,8 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.doesNotMatch(preview, /repo_token:/)
   assert.match(publisher, /const name = 'ZAP DAST \/ ZAP Baseline'/)
   assert.match(publisher, /checks\.create/)
+  assert.match(publisher, /azureControllerPrResultSuccess/)
+  assert.match(publisher, /SOURCE_READY: \$\{\{ needs\.inspect\.outputs\.deploy_ready \}\}/)
   assert.match(publisher, /azureSourceCheckExternalId/)
   assert.match(publisher, /azureSourceCheckIsNewer/)
   assert.match(publisher, /actions: read/)
@@ -231,4 +226,7 @@ test('review caller stages trusted default-branch events and exact gate publicat
   assert.match(review, /expected_head_sha: \$\{\{ github\.event\.client_payload\.head_sha \|\| '' \}\}/)
   assert.match(gate, new RegExp(`openrouter-review-gate-check\\.yml@${pin}`))
   assert.match(gate, /checks: write/)
+  assert.match(gate, /github\.event\.pull_request\.head\.repo\.full_name != github\.event\.repository\.full_name/)
+  assert.match(gate, /head_sha: \$\{\{ needs\.review\.outputs\.gate_head_sha \|\| github\.event\.pull_request\.head\.sha \}\}/)
+  assert.match(gate, /conclusion: \$\{\{ needs\.review\.outputs\.gate_conclusion \|\| 'failure' \}\}/)
 })

@@ -14,6 +14,8 @@ import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import readme from '../../README.md?raw'
 import openrouterProducerFixture from './fixtures/openrouter-producer.json'
 import {
+  azureControllerPrResultSuccess,
+  azureSourceWorkflowBlobAllowed,
   azureSourceCheckExternalId,
   azureSourceCheckIsNewer,
   authorizeExactHeadPullRequest,
@@ -41,6 +43,7 @@ import {
   TRUSTED_PROFILE_CONSUMER_OWNER,
   TRUSTED_PROFILE_CONSUMER_PATH,
   TRUSTED_PROFILE_CONSUMER_REPO,
+  TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA,
   TRUSTED_RECOVERY_WORKFLOW_PATH,
   TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA,
   TRUSTED_REUSABLE_REVIEW_WORKFLOW,
@@ -1183,7 +1186,7 @@ describe('OpenRouter CI authorization contract', () => {
       runAttempt: 2,
     })
     expect(result).toMatchObject({ authorized: false, failJob: true })
-    expect(result.reason).toMatch(/cannot verify the pull_request_target base history/)
+    expect(result.reason).toMatch(/cannot verify pull_request_target provenance: cannot load trusted profile consumer/)
   })
 
   it('fails the first unlabeled authorization while keeping expensive jobs unreleased', async () => {
@@ -1366,7 +1369,7 @@ describe('OpenRouter CI authorization contract', () => {
       expectedHeadSha: sha, pullNumber, reviews: [review()],
     })
     expect(result.provenanceReviewRuns).toEqual([])
-    expect(result.error).toBe('cannot verify the pull_request_target base history')
+    expect(result.error).toBe('cannot verify pull_request_target provenance: timeline unavailable')
   })
 
   it('does not require the target-only verifier for ordinary profile authorization', async () => {
@@ -1400,6 +1403,40 @@ describe('OpenRouter CI authorization contract', () => {
       .toEqual({ legacy: false, failed: ['build'], ready: false })
     expect(classifyAzureControllerSourceJobs([...successfulJobs, { name: 'deploy', conclusion: 'success' }], 'success'))
       .toMatchObject({ legacy: true, ready: false })
+    expect(azureControllerPrResultSuccess({
+      legacyResult: false,
+      legacyGateSuccess: false,
+      sourceReady: false,
+      deployResult: 'skipped',
+      dastResult: 'skipped',
+    })).toBe(false)
+    expect(azureControllerPrResultSuccess({
+      legacyResult: false,
+      legacyGateSuccess: false,
+      sourceReady: true,
+      deployResult: 'success',
+      dastResult: 'success',
+    })).toBe(true)
+    const defaultSource = { data: { type: 'file' as const, sha: 'current-source' } }
+    expect(azureSourceWorkflowBlobAllowed(
+      { data: { type: 'file', sha: 'current-source' } }, defaultSource,
+    )).toBe(true)
+    expect(azureSourceWorkflowBlobAllowed(
+      { data: { type: 'file', sha: TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA } },
+      defaultSource,
+      true,
+    )).toBe(true)
+    expect(azureSourceWorkflowBlobAllowed(
+      { data: { type: 'file', sha: 'untrusted-source' } }, defaultSource, true,
+    )).toBe(false)
+    expect(azureControllerPrResultSuccess({
+      newerConclusion: 'success',
+      legacyResult: false,
+      legacyGateSuccess: false,
+      sourceReady: false,
+      deployResult: 'skipped',
+      dastResult: 'skipped',
+    })).toBe(true)
     expect(sourceWorkflowHasLegacyClose('jobs:\n  close_pull_request:\n    runs-on: ubuntu-latest')).toBe(true)
     expect(sourceWorkflowHasLegacyClose('jobs:\n  build:\n    runs-on: ubuntu-latest')).toBe(false)
     expect(sourceWorkflowHasLegacyDeploy('jobs:\n  deploy:\n    runs-on: ubuntu-latest')).toBe(true)
@@ -1527,6 +1564,8 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain("outputs.legacy = 'true'")
     expect(swaController).toContain("path: '.github/scripts/ci-acceleration.mjs'")
     expect(swaController).toContain('helper.authorizeExactHeadPullRequest')
+    expect(swaController).toContain('helper.azureSourceWorkflowBlobAllowed(')
+    expect(swaController).toContain('helper.azureControllerPrResultSuccess')
     expect(swaController).toContain('run-id: ${{ github.event.workflow_run.id }}')
     expect(swaController).toContain('deployment_environment: pr${{ needs.inspect.outputs.pr_number }}')
     expect(swaController).toContain("const name = 'ZAP DAST / ZAP Baseline'")
