@@ -180,10 +180,13 @@ jobs:
                   const conclusions = new Map(jobs.map(job => [job?.name, job?.conclusion]))
                   const required = [
                     'authorize', 'lint', 'test', 'e2e', 'build', 'deploy',
-                    'ZAP DAST / ZAP Baseline',
                   ]
+                  const legacyZapSucceeded =
+                    conclusions.get('ZAP DAST') === 'success' ||
+                    conclusions.get('ZAP DAST / ZAP Baseline') === 'success'
                   outputs.gate_success = run.conclusion === 'success' &&
-                    required.every(name => conclusions.get(name) === 'success') ? 'true' : 'false'
+                    required.every(name => conclusions.get(name) === 'success') &&
+                    legacyZapSucceeded ? 'true' : 'false'
                   outputs.reason = outputs.gate_success === 'true'
                     ? 'Completed legacy exact-head deployment and scan'
                     : 'Legacy exact-head deployment or scan did not succeed'
