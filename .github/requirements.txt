@@ -5,4 +5,4 @@
 # guide on the same branch; the PR job never executes this file. Named
 # requirements.txt because that is the manifest name Dependabot's pip support
 # documents. Keep this the only pin here.
-semgrep==1.182.1
+semgrep==1.183.0
