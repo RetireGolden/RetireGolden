@@ -504,6 +504,8 @@ export async function collectProvenanceReviewRuns(github, {
 
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
+  let targetVerificationError
+  let validDispatchRunCount = 0
 
   // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
   // though the workflow definition and token execute from the default branch. The shared
@@ -530,11 +532,9 @@ export async function collectProvenanceReviewRuns(github, {
         run,
       }))) continue
     } catch (error) {
-      return {
-        provenanceReviewRuns: [],
-        defaultCaller,
-        error: `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`,
-      }
+      targetVerificationError =
+        `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`
+      continue
     }
     provenanceReviewRuns.push(run)
     seenRunIds.add(run.id)
@@ -589,7 +589,12 @@ export async function collectProvenanceReviewRuns(github, {
       }
       provenanceReviewRuns.push(run)
       seenRunIds.add(run.id)
+      validDispatchRunCount += 1
     }
+  }
+
+  if (targetVerificationError && validDispatchRunCount === 0) {
+    return { provenanceReviewRuns: [], defaultCaller, error: targetVerificationError }
   }
 
   return { provenanceReviewRuns, defaultCaller, error: undefined }
