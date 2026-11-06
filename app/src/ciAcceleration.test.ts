@@ -1519,6 +1519,7 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain('deployment_environment: pr${{ needs.inspect.outputs.pr_number }}')
     expect(swaController).toContain("const name = 'ZAP DAST / ZAP Baseline'")
     expect(swaController).toContain('helper.azureSourceCheckIsNewer')
+    expect(swaController).toContain('group: swa-zap-publish-${{ needs.inspect.outputs.head_sha }}')
     expect(swaController).toContain('Recheck live preview ownership')
     expect(swaController).toContain('Recheck current production head')
     expect(swaController).toContain('group: swa-production')

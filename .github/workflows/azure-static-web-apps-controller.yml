@@ -331,6 +331,9 @@ jobs:
       always() && needs.inspect.result == 'success' &&
       needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' &&
       needs.inspect.outputs.cancelled == 'false' && needs.inspect.outputs.head_sha != ''
+    concurrency:
+      group: swa-zap-publish-${{ needs.inspect.outputs.head_sha }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:

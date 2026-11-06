@@ -180,6 +180,8 @@ test('default-branch SWA controller stays inert until legacy deployment is remov
   assert.match(publisher, /checks\.create/)
   assert.match(publisher, /azureSourceCheckExternalId/)
   assert.match(publisher, /azureSourceCheckIsNewer/)
+  assert.match(publisher, /group: swa-zap-publish-\$\{\{ needs\.inspect\.outputs\.head_sha \}\}/)
+  assert.match(publisher, /cancel-in-progress: false/)
   assert.match(production, /group: swa-production/)
   assert.match(production, /cancel-in-progress: false/)
   assert.match(production, /Recheck current production head/)
