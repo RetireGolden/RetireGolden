@@ -173,6 +173,10 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.match(inspect, /outputs\.mode = 'unsupported'/)
   assert.match(inspect, /outputs\.gate_success/)
   assert.match(inspect, /authorizeExactHeadPullRequest/)
+  assert.match(inspect, /Retrying cutover deployment authorization with the reviewed immutable helper/)
+  assert.match(inspect, /authorization\.reason === 'cannot verify the pull_request_target base history'/)
+  assert.match(inspect, /authorization\.reason\.startsWith\('cannot verify pull_request_target provenance:'\)/)
+  assert.match(inspect, /github\.rest\.git\.getBlob\(\{ owner, repo, file_sha: helperPin \}\)/)
   assert.match(inspect, /azureSourceWorkflowBlobAllowed\(\s*sourceFile, activeSourceFile, legacyBackstop,/)
   assert.match(inspect, /PR source workflow does not match the trusted default-branch workflow/)
   assert.match(

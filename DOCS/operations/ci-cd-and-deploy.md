@@ -31,6 +31,8 @@ source run supersedes it, while a failed newer build leaves the last successful 
 The controller's `workflow_run: completed` trigger also receives rerun attempts. A
 late rerun of an old source workflow therefore enters the `legacy-result` path and republishes its
 source-identified ZAP result after the legacy job-level check.
+During the cutover window, both the source authorization gate and controller retry only a target-provenance
+compatibility failure with the reviewed immutable helper blob; every other authorization failure remains final.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
 checks out or executes PR code. For PR runs, it also requires the source-workflow blob at the exact head

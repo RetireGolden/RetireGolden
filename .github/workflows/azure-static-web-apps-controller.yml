@@ -44,6 +44,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
+            const helperPin = 'e0c305c8668e488f93f6bb185d461a4bddd05874'
             const run = context.payload.workflow_run
             const outputs = {
               legacy: 'false',
@@ -93,6 +94,19 @@ jobs:
                   typeof helper.azureSourceWorkflowBlobAllowed !== 'function' ||
                   typeof helper.azureControllerPrResultSuccess !== 'function') {
                 throw new Error('Trusted CI helper is missing controller exports')
+              }
+              const loadPinnedAuthorizationHelper = async () => {
+                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+                if (typeof blob.data?.content !== 'string') {
+                  throw new Error('Reviewed immutable CI helper has invalid content')
+                }
+                const pinned = await import(
+                  `data:text/javascript;base64,${blob.data.content.replace(/\s/g, '')}`
+                )
+                if (typeof pinned.authorizeExactHeadPullRequest !== 'function') {
+                  throw new Error('Reviewed immutable CI helper is missing authorization export')
+                }
+                return pinned
               }
               const activeSourceFile = await github.rest.repos.getContent({
                 owner,
@@ -177,14 +191,26 @@ jobs:
                   outputs.reason = `Source run prerequisites did not succeed: ${failed.join(', ') || run.conclusion}`
                 } else {
                   if (pr.state !== 'open') throw new Error('Pull request is no longer open')
-                  const authorization = await helper.authorizeExactHeadPullRequest(github, core, {
+                  const authorizationInput = {
                     owner,
                     repo,
                     repository,
                     defaultBranch,
                     eventPr: pr,
                     runAttempt: run.run_attempt,
-                  })
+                  }
+                  let authorization = await helper.authorizeExactHeadPullRequest(
+                    github, core, authorizationInput,
+                  )
+                  if (!authorization.authorized &&
+                      (authorization.reason === 'cannot verify the pull_request_target base history' ||
+                        authorization.reason.startsWith('cannot verify pull_request_target provenance:'))) {
+                    core.warning('Retrying cutover deployment authorization with the reviewed immutable helper')
+                    const pinnedHelper = await loadPinnedAuthorizationHelper()
+                    authorization = await pinnedHelper.authorizeExactHeadPullRequest(
+                      github, core, authorizationInput,
+                    )
+                  }
                   if (!authorization.authorized) {
                     throw new Error(`Live exact-head deployment authorization failed: ${authorization.reason}`)
                   }
