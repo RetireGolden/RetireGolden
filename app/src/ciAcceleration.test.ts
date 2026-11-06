@@ -1603,7 +1603,8 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaWorkflow).toContain('name: test planner-ui')
     expect(swaWorkflow).toContain('name: test web')
     expect(swaWorkflow).toContain('name: test')
-    expect(swaWorkflow).not.toContain('name: ZAP DAST')
+    expect(swaWorkflow).toContain("&& 'ZAP DAST / ZAP Baseline' || 'fork ZAP gate (not applicable)'")
+    expect(swaWorkflow).toContain('Require a same-repository preview')
   })
 
   it('keeps the default-branch deploy controller active after the cutover', () => {
@@ -1622,6 +1623,8 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain('helper.newestAzureSourceCheck')
     expect(swaController).toContain('github.rest.checks.update')
     expect(swaController).toContain("outputs.mode = 'legacy-result'")
+    expect(swaController).toContain("outputs.mode = 'unsupported'")
+    expect(swaController).toContain('run.head_repository?.full_name || run.repository?.full_name')
     expect(swaController).toContain('Reasserted newer Azure source result')
     expect(swaController).toContain('Recheck live preview ownership')
     expect(swaController).toContain('Recheck current production head')

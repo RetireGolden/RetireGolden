@@ -21,6 +21,17 @@ permissions:
   contents: read
 
 jobs:
+  fork_zap_gate:
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ZAP DAST / ZAP Baseline' || 'fork ZAP gate (not applicable)' }}
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require a same-repository preview
+        run: echo 'Fork pull requests do not receive preview deployment or DAST.' >&2; exit 1
+
   # This job does not check out code.  A rerun retains the original event
   # payload, so it reads the live PR and trusted review ledger from the API.
   authorize:
