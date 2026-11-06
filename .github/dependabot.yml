@@ -30,8 +30,8 @@ updates:
       github-actions:
         patterns:
           - "*"
-  # The semgrep CLI pin (.github/requirements.txt) that
-  # .github/workflows/semgrep.yml installs.
+  # The Semgrep update marker mirrored by the exact inline workflow install.
+  # A contract test requires a Dependabot bump to update both together.
   - package-ecosystem: "pip"
     directory: "/.github"
     schedule:

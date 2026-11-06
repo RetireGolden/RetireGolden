@@ -572,7 +572,7 @@ export async function authorizeExactHeadPullRequest(
   const ciRequested = isCiRequested({ runAttempt, hasRunCiLabel })
 
   if (!hasRunCiLabel) {
-    return { authorized: false, failJob: ciRequested, reason: 'live PR does not have run-ci' }
+    return { authorized: false, failJob: true, reason: 'live PR does not have run-ci' }
   }
 
   const reviews = await github.paginate(github.rest.pulls.listReviews, {

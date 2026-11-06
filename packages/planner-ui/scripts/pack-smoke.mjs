@@ -517,13 +517,13 @@ try {
         dependencies: {
           '@retiregolden/engine': engineSpec,
           '@retiregolden/planner-ui': `file:./${tarball}`,
-          react: '^19.2.7',
-          'react-dom': '^19.2.7',
-          'react-router': '^8.3.0',
+          react: '19.2.7',
+          'react-dom': '19.2.7',
+          'react-router': '8.3.0',
         },
         devDependencies: {
-          '@vitejs/plugin-react': '^6.0.1',
-          vite: '^8.0.16',
+          '@vitejs/plugin-react': '6.0.1',
+          vite: '8.0.16',
         },
       },
       null,

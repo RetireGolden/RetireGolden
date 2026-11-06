@@ -60,13 +60,13 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 
 | Job | What it does |
 |-----|----------------|
-| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review and current profile-proof gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes both the trusted clean-review and current profile-proof gates |
-| `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
+| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review and current profile-proof gate; push to `main` is authorized, while every unauthorized PR attempt fails this context and leaves the expensive jobs skipped for the broker rerun |
+| `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) + workflow contract tests |
 | `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
 | `build` | Runs with lint/tests/e2e after authorization; `pnpm build` → `app/dist/`, then Playwright against that build (`pnpm test:e2e:dist`); artifact retained 1 day |
-| `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) only after every authorized prerequisite passes |
-| `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
+| `deploy` | Downloads `app/dist` and uploads it to **Azure Static Web Apps** (`skip_app_build: true`) only after every authorized prerequisite passes; does not check out or execute PR helpers in the token-holding job |
+| `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL; the same required context fails on an unauthorized empty-URL attempt |
 | `close_pull_request` | Tears down the SWA preview environment when a PR is closed |
 
 **Triggers:** push to `main` deploys production; opened/synchronized/reopened PRs create a cheap placeholder and receive a preview only after exact-head authorization; closing a PR removes the preview.
@@ -75,7 +75,11 @@ Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an
 OpenRouter ledger from the real GitHub Actions bot, a review-caller blob equal to the default branch,
 and current trusted `openrouter-profile` proof. Manual and Dependabot paths require the same proof.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
-for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs. For manual recovery or a same-repository Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI.
+for them all. Without authorization, `authorize` and ZAP fail while those expensive jobs remain skipped so
+the broker can label and rerun the exact attempt after review proof. Forks never authorize or deploy; the
+broker does not automatically label or rerun Dependabot PRs. For manual recovery or a same-repository
+Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not
+start CI.
 
 ### OpenRouter CI broker
 
@@ -103,7 +107,7 @@ Manually triggered (Actions tab). Runs the Owl parity harness (`pnpm owl-parity`
 
 [`.github/workflows/semgrep.yml`](.github/workflows/semgrep.yml)
 
-Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). Uploads a SARIF report as a build artifact and publishes findings to GitHub code scanning when available. **Only ERROR-severity findings fail the check** — lower severities are reported but do not block merge.
+Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). The read-only job installs the exact scanner pin from the workflow and uploads a SARIF report as a build artifact. **Only ERROR-level findings fail the check** — other findings are reported but do not block merge.
 
 ### Rollover — the suites at next 1 January
 
@@ -159,13 +163,13 @@ For caller-pin migrations with an existing review ledger, dispatch this workflow
 
 [`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)
 
-Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Authenticates via npm Trusted Publishing (OIDC) — no long-lived token; the package is configured with a trusted publisher pinned to this repo and workflow file.
+Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). An unprivileged job builds, tests, smokes, packs, and records the tarball digest. The environment-protected job verifies that tarball and its package identity, then publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC); it does not check out the repository or install workspace dependencies.
 
 ### Planner UI package release
 
 [`.github/workflows/publish-planner-ui.yml`](.github/workflows/publish-planner-ui.yml)
 
-Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Uses the same npm Trusted Publishing (OIDC) flow — configure a trusted publisher for this package too, no token needed. Before publishing, a pack-smoke step builds a scratch Vite consumer from the packed tarball to prove the published surface (exports map, dep-internal workers, HiGHS wasm).
+Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Its unprivileged job builds the scratch Vite consumer with exact dependency versions, then packs and records the release tarball digest. The environment-protected job verifies that tarball and publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC), without checking out the repository or installing workspace dependencies.
 
 ## License
 
