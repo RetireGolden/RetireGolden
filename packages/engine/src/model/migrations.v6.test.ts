@@ -427,6 +427,82 @@ describe('migratePlanV5ToV6', () => {
     expect(((whole['before'] as Record<string, unknown>)['value'] as Record<string, unknown>)['acaYears']).toEqual(derived)
   })
 
+  it('does not traverse non-own property segments for legacy set operations', () => {
+    const property = 'retireGoldenLegacyScenarioSet'
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    raw['scenarios'] = [
+      {
+        id: 's-set-path',
+        name: 'Set path',
+        patch: {
+          operations: [{ op: 'set', path: `/expenses/__proto__/${property}`, value: 'changed' }],
+        },
+      },
+    ]
+
+    Reflect.deleteProperty(Object.prototype, property)
+    try {
+      migratePlanV5ToV6(raw)
+      expect(Object.hasOwn(Object.prototype, property)).toBe(false)
+    } finally {
+      Reflect.deleteProperty(Object.prototype, property)
+    }
+  })
+
+  it('rejects invalid scenario roots for legacy remove operations', () => {
+    const property = 'retireGoldenLegacyScenarioRemove'
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    raw['scenarios'] = [
+      {
+        id: 's-remove-path',
+        name: 'Remove path',
+        patch: {
+          operations: [{ op: 'remove', path: `/__proto__/${property}` }],
+        },
+      },
+    ]
+
+    Object.defineProperty(Object.prototype, property, {
+      value: 'kept',
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+    try {
+      migratePlanV5ToV6(raw)
+      expect(Object.getOwnPropertyDescriptor(Object.prototype, property)?.value).toBe('kept')
+    } finally {
+      Reflect.deleteProperty(Object.prototype, property)
+    }
+  })
+
+  it('migrates a valid v5 scenario operation after path validation', () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    raw['scenarios'] = [
+      {
+        id: 's-valid-path',
+        name: 'Higher spending',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: { planId: raw['id'], planSchemaVersion: 5, snapshotHash: 'fnv1a64:0000000000000000' },
+          title: 'Higher spending',
+          rationale: null,
+          createdAtIso: '2026-06-29T12:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [{ op: 'set', path: '/expenses/baseAnnual', before: { present: true, value: 50_000 }, value: 55_000 }],
+        },
+      },
+    ]
+
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(55_000)
+  })
+
   it('keeps an unedited converted plan\'s figures to the cent at a 2026 start', () => {
     // Before v6 the engine priced these stated recipe contracts as written (on
     // the deterministic run each equals the premium field grown at the plan's

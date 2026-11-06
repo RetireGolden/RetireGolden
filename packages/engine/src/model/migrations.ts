@@ -23,6 +23,7 @@ import {
   persistedRetirementActionRequestSchema,
 } from '../actions/contract.js'
 import {
+  decodeScenarioPointer,
   isScenarioPatchEnvelope,
   parseScenarioPatch,
 } from '../scenarios/contract.js'
@@ -1174,13 +1175,17 @@ function legacyDeepMerge(base: unknown, patch: unknown): unknown {
   return out
 }
 
-/** RFC 6901 pointer segments, or null for a pointer this reader does not follow. */
-function pointerSegments(path: unknown): string[] | null {
-  if (typeof path !== 'string' || !path.startsWith('/')) return null
-  return path
-    .slice(1)
-    .split('/')
-    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'))
+function ownValue(object: Record<string, unknown>, key: string): unknown {
+  return Object.getOwnPropertyDescriptor(object, key)?.value
+}
+
+function defineOwn(object: Record<string, unknown>, key: string, value: unknown): void {
+  Object.defineProperty(object, key, {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  })
 }
 
 /**
@@ -1194,11 +1199,16 @@ function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, un
   const out = structuredClone(doc)
   for (const operation of operations) {
     const record = plainObject(operation)
-    const segments = pointerSegments(record?.['path'])
+    const path = record === null ? null : ownValue(record, 'path')
+    const segments = typeof path === 'string' ? decodeScenarioPointer(path) : null
     if (record === null || segments === null || segments.length === 0) continue
     let parent: Record<string, unknown> | null = out
     for (const segment of segments.slice(0, -1)) {
-      const next: Record<string, unknown> | null = plainObject(parent[segment])
+      if (!Object.hasOwn(parent, segment)) {
+        parent = null
+        break
+      }
+      const next: Record<string, unknown> | null = plainObject(ownValue(parent, segment))
       if (next === null) {
         parent = null
         break
@@ -1207,8 +1217,9 @@ function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, un
     }
     if (parent === null) continue
     const last = segments[segments.length - 1]!
-    if (record['op'] === 'set') parent[last] = structuredClone(record['value'])
-    else if (record['op'] === 'remove') delete parent[last]
+    const op = ownValue(record, 'op')
+    if (op === 'set') defineOwn(parent, last, structuredClone(ownValue(record, 'value')))
+    else if (op === 'remove') Reflect.deleteProperty(parent, last)
   }
   return out
 }
