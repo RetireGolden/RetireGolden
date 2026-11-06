@@ -13,10 +13,10 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '949f6549ac2366ed69648e36a12e80aa4ecfc5e5'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'b75512aeaa05369a7fc6595d54764bdedd8da903'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@7cb4c04abfb03f81cd70c2e16a5d48e389e944dd'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '7cb4c04abfb03f81cd70c2e16a5d48e389e944dd'
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a40c5eb8d588266531184ffc633dc2969d9138df'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'a40c5eb8d588266531184ffc633dc2969d9138df'
 export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
 export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
 export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
@@ -39,6 +39,15 @@ export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'e2e',
   'build',
   'deploy',
+])
+export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES = new Set([
+  'lint',
+  'test engine',
+  'test planner-ui',
+  'test web',
+  'test',
+  'e2e',
+  'build',
 ])
 
 function codepointLength(value) {
@@ -229,14 +238,18 @@ function trustedOpenRouterRunProvenance(workflowRun, repository) {
 export function reviewRunSkipReason(workflowRun, repository) {
   const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
   if (provenanceReason) return provenanceReason
-  if (workflowRun.event !== 'pull_request') return 'review run event is not pull_request'
+  if (!['pull_request', 'pull_request_target'].includes(workflowRun.event)) {
+    return 'review run event is not pull_request or pull_request_target'
+  }
   return undefined
 }
 
 export function reviewDispatchRunSkipReason(workflowRun, repository) {
   const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
   if (provenanceReason) return provenanceReason
-  if (workflowRun.event !== 'workflow_dispatch') return 'review run event is not workflow_dispatch'
+  if (!['workflow_dispatch', 'repository_dispatch'].includes(workflowRun.event)) {
+    return 'review run event is not workflow_dispatch or repository_dispatch'
+  }
   return undefined
 }
 
@@ -328,6 +341,22 @@ async function proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCa
   }
 }
 
+async function proveTargetRunBase(
+  github,
+  { owner, repo, repository, defaultBranch, expectedHeadSha, pullNumber, run },
+) {
+  if (run.head_sha !== expectedHeadSha) return false
+  const consumer = await loadTrustedProfileConsumer(github)
+  const pullNumbers = await consumer.verifyTargetBase(
+    github,
+    { owner, repo, repository, defaultBranch },
+    run.head_branch,
+  )
+  if (!pullNumbers.includes(pullNumber)) return false
+  const { data: livePr } = await github.rest.pulls.get({ owner, repo, pull_number: pullNumber })
+  return livePr.head?.sha === expectedHeadSha && livePr.head?.ref === run.head_branch
+}
+
 async function proveRecoveryWorkflow(github, owner, repo, run, repository, defaultBranch) {
   if (run.name !== 'OpenRouter review recovery' || run.path !== TRUSTED_RECOVERY_WORKFLOW_PATH ||
       run.event !== 'workflow_dispatch' || run.head_branch !== defaultBranch ||
@@ -380,7 +409,19 @@ export async function collectProvenanceReviewRuns(github, {
     if (!Number.isSafeInteger(run.id) || run.head_sha !== expectedHeadSha) continue
     if (reviewRunSkipReason(run, repository)) continue
     try {
-      if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+      if (run.event === 'pull_request_target') {
+        if (!(await proveTargetRunBase(github, {
+          owner,
+          repo,
+          repository,
+          defaultBranch,
+          expectedHeadSha,
+          pullNumber,
+          run,
+        }))) continue
+      } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
+        continue
+      }
     } catch {
       return {
         provenanceReviewRuns: [],
@@ -427,6 +468,7 @@ export async function collectProvenanceReviewRuns(github, {
           }
         } else {
           if (reviewDispatchRunSkipReason(run, repository)) continue
+          if (run.head_branch !== defaultBranch) continue
           if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
         }
       } catch {
@@ -489,7 +531,8 @@ async function loadTrustedProfileConsumer(github) {
   }
 
   const module = await import(`data:text/javascript;base64,${source.toString('base64')}`)
-  if (typeof module.authorizeProfileReceipt !== 'function') {
+  if (typeof module.authorizeProfileReceipt !== 'function' ||
+    typeof module.verifyTargetBase !== 'function') {
     throw new Error('trusted profile consumer is missing required exports')
   }
   return module
@@ -634,7 +677,9 @@ export function isExpensiveAzureJob(job) {
 
 export function hasOnlySkippedExpensiveAzureJobs(jobs) {
   const expensiveJobs = jobs.filter(isExpensiveAzureJob)
-  return expensiveJobs.length > 0 && expensiveJobs.every((job) => job.conclusion === 'skipped')
+  const names = new Set(expensiveJobs.map((job) => job.name))
+  return [...REQUIRED_EXPENSIVE_AZURE_JOB_NAMES].every((name) => names.has(name)) &&
+    expensiveJobs.every((job) => job.conclusion === 'skipped')
 }
 
 export function hasActiveOrRealAzureWork(runs, jobLists) {

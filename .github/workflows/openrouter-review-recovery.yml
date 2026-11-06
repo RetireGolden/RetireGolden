@@ -53,7 +53,7 @@ jobs:
                   const titles = [run.name, run.display_title].filter(value => typeof value === 'string')
                   const hasPrTitle = titles.some(value => /^OpenRouter PR #[1-9][0-9]*: /.test(value))
                   return run.head_sha === pr.head.sha || titles.some(value => value.startsWith(prefix)) ||
-                    (run.event === 'workflow_dispatch' && !hasPrTitle)
+                    (['workflow_dispatch', 'repository_dispatch'].includes(run.event) && !hasPrTitle)
                 })) {
                   throw new Error('Wait for current review runs to finish before recovery')
                 }
