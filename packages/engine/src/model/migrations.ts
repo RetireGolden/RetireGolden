@@ -27,7 +27,12 @@ import {
   isScenarioPatchEnvelope,
   parseScenarioPatch,
 } from '../scenarios/contract.js'
-import { convertUndefinedLegacyScenarioPatches, rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
+import {
+  convertUndefinedLegacyScenarioPatches,
+  defineOwn,
+  ownValue,
+  rebindScenarioPatchesToPlan,
+} from '../scenarios/patch.js'
 import {
   accountChannel,
   policyChannel,
@@ -1175,33 +1180,18 @@ function legacyDeepMerge(base: unknown, patch: unknown): unknown {
   return out
 }
 
-function ownValue(object: Record<string, unknown>, key: string): unknown {
-  return Object.getOwnPropertyDescriptor(object, key)?.value
-}
-
-function defineOwn(object: Record<string, unknown>, key: string, value: unknown): void {
-  Object.defineProperty(object, key, {
-    value,
-    configurable: true,
-    enumerable: true,
-    writable: true,
-  })
-}
-
 /**
  * The plan a stored scenario makes of `doc`, as far as the step reads it: a
  * legacy loose patch deep-merged, or a canonical patch's operations applied
  * (they never traverse an array, scenarios/patch.ts).
  */
 function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
-  const operations = patch['operations']
-  if (!Array.isArray(operations)) return (legacyDeepMerge(doc, patch) as Record<string, unknown>) ?? doc
+  if (!isScenarioPatchEnvelope(patch)) return (legacyDeepMerge(doc, patch) as Record<string, unknown>) ?? doc
+  const parsed = parseScenarioPatch(patch)
+  if (!parsed.ok) return doc
   const out = structuredClone(doc)
-  for (const operation of operations) {
-    const record = plainObject(operation)
-    const path = record === null ? null : ownValue(record, 'path')
-    const segments = typeof path === 'string' ? decodeScenarioPointer(path) : null
-    if (record === null || segments === null || segments.length === 0) continue
+  for (const operation of parsed.patch.operations) {
+    const segments = decodeScenarioPointer(operation.path)!
     let parent: Record<string, unknown> | null = out
     for (const segment of segments.slice(0, -1)) {
       if (!Object.hasOwn(parent, segment)) {
@@ -1217,9 +1207,8 @@ function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, un
     }
     if (parent === null) continue
     const last = segments[segments.length - 1]!
-    const op = ownValue(record, 'op')
-    if (op === 'set') defineOwn(parent, last, structuredClone(ownValue(record, 'value')))
-    else if (op === 'remove') Reflect.deleteProperty(parent, last)
+    if (operation.op === 'set') defineOwn(parent, last, structuredClone(operation.value))
+    else Reflect.deleteProperty(parent, last)
   }
   return out
 }
@@ -1283,8 +1272,10 @@ function migrateScenarioExampleContracts(
       id: typeof scenarioRecord['id'] === 'string' ? scenarioRecord['id'] : '',
       name: typeof scenarioRecord['name'] === 'string' ? scenarioRecord['name'] : '',
     }
-    const operations = patch['operations']
-    if (Array.isArray(operations)) {
+    if (isScenarioPatchEnvelope(patch as unknown)) {
+      const parsedPatch = parseScenarioPatch(patch)
+      if (!parsedPatch.ok) return scenario
+      const operations = parsedPatch.patch.operations
       let changed = false
       let sortedHere: SortedExampleContracts = EMPTY_SORT
       const next: unknown[] = []

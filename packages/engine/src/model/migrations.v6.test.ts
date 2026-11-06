@@ -98,6 +98,23 @@ function rawV5(plan: Plan, exampleSourceId: string | null): Record<string, unkno
 const contractsOf = (raw: Record<string, unknown>) =>
   (raw['expenses'] as { healthcare: { acaYears: Record<string, unknown>[] } }).healthcare.acaYears
 
+function canonicalScenarioPatch(
+  raw: Record<string, unknown>,
+  title: string,
+  operations: Record<string, unknown>[],
+): Record<string, unknown> {
+  return {
+    kind: 'retiregolden.scenario-patch',
+    version: 1,
+    base: { planId: raw['id'], planSchemaVersion: 5, snapshotHash: 'fnv1a64:0000000000000000' },
+    title,
+    rationale: null,
+    createdAtIso: '2026-06-29T12:00:00.000Z',
+    actor: { kind: 'user' },
+    operations,
+  }
+}
+
 // The v5 engine's figures below were measured on origin/main 5224c5d0, then
 // re-measured on a v5 engine carrying the 2027 published figures (decision
 // D-2027-PUBLISHED-FIGURES): Colorado's base is federal taxable income, which
@@ -397,23 +414,17 @@ describe('migratePlanV5ToV6', () => {
       {
         id: 's1',
         name: 'Contracts',
-        patch: {
-          kind: 'retiregolden.scenario-patch',
-          version: 1,
-          operations: [
+        patch: canonicalScenarioPatch(raw, 'Contracts', [
             { op: 'set', path: '/expenses/healthcare/acaYears', before: { present: true, value: stored }, value: stored },
-          ],
-        },
+        ]),
       },
       { id: 's2', name: 'Loose', patch: { expenses: { healthcare: { acaYears: stored } } } },
       {
         id: 's3',
         name: 'Whole healthcare',
-        patch: {
-          kind: 'retiregolden.scenario-patch',
-          version: 1,
-          operations: [{ op: 'set', path: '/expenses/healthcare', before: { present: true, value: healthcare }, value: healthcare }],
-        },
+        patch: canonicalScenarioPatch(raw, 'Whole healthcare', [
+          { op: 'set', path: '/expenses/healthcare', before: { present: true, value: healthcare }, value: healthcare },
+        ]),
       },
     ]
     const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
@@ -428,22 +439,29 @@ describe('migratePlanV5ToV6', () => {
   })
 
   it('does not traverse non-own property segments for legacy set operations', () => {
-    const property = 'retireGoldenLegacyScenarioSet'
+    const property = 'retireGoldenLegacyScenarioParent'
+    const inherited = {}
     const raw = rawV5(couple(), 'early-retiree-aca')
     raw['scenarios'] = [
       {
         id: 's-set-path',
         name: 'Set path',
-        patch: {
-          operations: [{ op: 'set', path: `/expenses/__proto__/${property}`, value: 'changed' }],
-        },
+        patch: canonicalScenarioPatch(raw, 'Set path', [
+          { op: 'set', path: `/expenses/${property}/changed`, before: { present: false }, value: true },
+        ]),
       },
     ]
 
-    Reflect.deleteProperty(Object.prototype, property)
+    Object.defineProperty(Object.prototype, property, {
+      value: inherited,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
     try {
-      migratePlanV5ToV6(raw)
-      expect(Object.hasOwn(Object.prototype, property)).toBe(false)
+      const migrated = migratePlanV5ToV6(raw)
+      expect(inherited).toEqual({})
+      expect(migrated['scenarios']).toEqual(raw['scenarios'])
     } finally {
       Reflect.deleteProperty(Object.prototype, property)
     }
@@ -456,9 +474,9 @@ describe('migratePlanV5ToV6', () => {
       {
         id: 's-remove-path',
         name: 'Remove path',
-        patch: {
-          operations: [{ op: 'remove', path: `/__proto__/${property}` }],
-        },
+        patch: canonicalScenarioPatch(raw, 'Remove path', [
+          { op: 'remove', path: `/__proto__/${property}`, before: { present: true, value: 'kept' } },
+        ]),
       },
     ]
 
@@ -478,20 +496,25 @@ describe('migratePlanV5ToV6', () => {
 
   it('migrates a valid v5 scenario operation after path validation', () => {
     const raw = rawV5(couple(), 'early-retiree-aca')
+    const stored = structuredClone(contractsOf(raw))
     raw['scenarios'] = [
       {
         id: 's-valid-path',
-        name: 'Higher spending',
-        patch: {
-          kind: 'retiregolden.scenario-patch',
-          version: 1,
-          base: { planId: raw['id'], planSchemaVersion: 5, snapshotHash: 'fnv1a64:0000000000000000' },
-          title: 'Higher spending',
-          rationale: null,
-          createdAtIso: '2026-06-29T12:00:00.000Z',
-          actor: { kind: 'user' },
-          operations: [{ op: 'set', path: '/expenses/baseAnnual', before: { present: true, value: 50_000 }, value: 55_000 }],
-        },
+        name: 'Higher premium',
+        patch: canonicalScenarioPatch(raw, 'Higher premium', [
+          {
+            op: 'set',
+            path: '/expenses/healthcare/pre65MonthlyPremiumPerPerson',
+            before: { present: true, value: 900 },
+            value: 1_300,
+          },
+          {
+            op: 'set',
+            path: '/expenses/healthcare/acaYears',
+            before: { present: true, value: stored },
+            value: stored,
+          },
+        ]),
       },
     ]
 
@@ -500,7 +523,42 @@ describe('migratePlanV5ToV6', () => {
     if (!result.ok) return
     const applied = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
     expect(applied.ok).toBe(true)
-    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(55_000)
+    if (!applied.ok) return
+    expect(applied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(1_300)
+    expect(applied.plan.expenses.healthcare.acaYears).toEqual([])
+    expect(applied.plan.expenses.healthcare.acaYearsRemoved).toEqual([
+      { edit: 'exampleNoLongerMatched', years: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] },
+    ])
+  })
+
+  it('deep-merges a loose patch that carries an unrelated operations array', () => {
+    const raw = rawV5(couple(), 'early-retiree-aca')
+    const stored = structuredClone(contractsOf(raw))
+    const unrelated = [{ label: 'keep as loose patch data' }]
+    raw['scenarios'] = [
+      {
+        id: 's-loose-operations',
+        name: 'Loose operations field',
+        patch: {
+          operations: unrelated,
+          expenses: {
+            healthcare: {
+              pre65MonthlyPremiumPerPerson: 1_300,
+              acaYears: stored,
+            },
+          },
+        },
+      },
+    ]
+
+    const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
+    const patch = migrated[0]!['patch'] as Record<string, unknown>
+    const healthcare = (patch['expenses'] as Record<string, Record<string, unknown>>)['healthcare']!
+    expect(patch['operations']).toEqual(unrelated)
+    expect(healthcare['acaYears']).toEqual([])
+    expect(healthcare['acaYearsRemoved']).toEqual([
+      { edit: 'exampleNoLongerMatched', years: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] },
+    ])
   })
 
   it('keeps an unedited converted plan\'s figures to the cent at a 2026 start', () => {

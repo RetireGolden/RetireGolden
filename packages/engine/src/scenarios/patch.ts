@@ -88,11 +88,11 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
 
-function ownValue(object: Record<string, unknown>, key: string): unknown {
+export function ownValue(object: Record<string, unknown>, key: string): unknown {
   return Object.getOwnPropertyDescriptor(object, key)?.value
 }
 
-function defineOwn(object: Record<string, unknown>, key: string, value: unknown): void {
+export function defineOwn(object: Record<string, unknown>, key: string, value: unknown): void {
   Object.defineProperty(object, key, {
     value,
     configurable: true,
