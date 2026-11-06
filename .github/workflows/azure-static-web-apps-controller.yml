@@ -44,6 +44,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
+            const helperPin = '559c0184190e86a8a82ccbb8c760b1b054ab3373'
             const run = context.payload.workflow_run
             const outputs = {
               legacy: 'false',
@@ -61,8 +62,9 @@ jobs:
                   run.path !== '.github/workflows/azure-static-web-apps-retiregolden.yml') {
                 throw new Error('Source run is not the active Azure CI workflow')
               }
-              const sourceRepository = run.repository?.full_name || run.head_repository?.full_name
+              const sourceRepository = run.head_repository?.full_name || run.repository?.full_name
               if (sourceRepository !== repository.full_name) {
+                outputs.mode = 'unsupported'
                 throw new Error('Source run is not from this repository')
               }
               const { data: workflow } = await github.rest.actions.getWorkflow({
@@ -88,8 +90,23 @@ jobs:
               )
               if (typeof helper.classifyAzureControllerSourceJobs !== 'function' ||
                   typeof helper.authorizeExactHeadPullRequest !== 'function' ||
-                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function') {
+                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function' ||
+                  typeof helper.azureSourceWorkflowBlobAllowed !== 'function' ||
+                  typeof helper.azureControllerPrResultSuccess !== 'function') {
                 throw new Error('Trusted CI helper is missing controller exports')
+              }
+              const loadPinnedAuthorizationHelper = async () => {
+                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+                if (typeof blob.data?.content !== 'string') {
+                  throw new Error('Reviewed immutable CI helper has invalid content')
+                }
+                const pinned = await import(
+                  `data:text/javascript;base64,${blob.data.content.replace(/\s/g, '')}`
+                )
+                if (typeof pinned.authorizeExactHeadPullRequest !== 'function') {
+                  throw new Error('Reviewed immutable CI helper is missing authorization export')
+                }
+                return pinned
               }
               const activeSourceFile = await github.rest.repos.getContent({
                 owner,
@@ -141,6 +158,17 @@ jobs:
                   throw new Error('Source run does not identify exactly one same-repository default-branch PR')
                 }
                 const pr = matches[0]
+                const sourceFile = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: '.github/workflows/azure-static-web-apps-retiregolden.yml',
+                  ref: run.head_sha,
+                })
+                if (!helper.azureSourceWorkflowBlobAllowed(
+                  sourceFile, activeSourceFile, legacyBackstop,
+                )) {
+                  throw new Error('PR source workflow does not match the trusted default-branch workflow')
+                }
                 if (Array.isArray(run.pull_requests) && run.pull_requests.length > 0 &&
                     !run.pull_requests.some(item => item.number === pr.number)) {
                   throw new Error('Source run pull-request identity does not match the exact-head PR')
@@ -152,10 +180,13 @@ jobs:
                   const conclusions = new Map(jobs.map(job => [job?.name, job?.conclusion]))
                   const required = [
                     'authorize', 'lint', 'test', 'e2e', 'build', 'deploy',
-                    'ZAP DAST / ZAP Baseline',
                   ]
+                  const legacyZapSucceeded =
+                    conclusions.get('ZAP DAST') === 'success' ||
+                    conclusions.get('ZAP DAST / ZAP Baseline') === 'success'
                   outputs.gate_success = run.conclusion === 'success' &&
-                    required.every(name => conclusions.get(name) === 'success') ? 'true' : 'false'
+                    required.every(name => conclusions.get(name) === 'success') &&
+                    legacyZapSucceeded ? 'true' : 'false'
                   outputs.reason = outputs.gate_success === 'true'
                     ? 'Completed legacy exact-head deployment and scan'
                     : 'Legacy exact-head deployment or scan did not succeed'
@@ -163,14 +194,26 @@ jobs:
                   outputs.reason = `Source run prerequisites did not succeed: ${failed.join(', ') || run.conclusion}`
                 } else {
                   if (pr.state !== 'open') throw new Error('Pull request is no longer open')
-                  const authorization = await helper.authorizeExactHeadPullRequest(github, core, {
+                  const authorizationInput = {
                     owner,
                     repo,
                     repository,
                     defaultBranch,
                     eventPr: pr,
                     runAttempt: run.run_attempt,
-                  })
+                  }
+                  let authorization = await helper.authorizeExactHeadPullRequest(
+                    github, core, authorizationInput,
+                  )
+                  if (!authorization.authorized &&
+                      (authorization.reason === 'cannot verify the pull_request_target base history' ||
+                        authorization.reason.startsWith('cannot verify pull_request_target provenance:'))) {
+                    core.warning('Retrying cutover deployment authorization with the reviewed immutable helper')
+                    const pinnedHelper = await loadPinnedAuthorizationHelper()
+                    authorization = await pinnedHelper.authorizeExactHeadPullRequest(
+                      github, core, authorizationInput,
+                    )
+                  }
                   if (!authorization.authorized) {
                     throw new Error(`Live exact-head deployment authorization failed: ${authorization.reason}`)
                   }
@@ -434,12 +477,14 @@ jobs:
               return
             }
             const legacyResult = process.env.SOURCE_MODE === 'legacy-result'
-            const success = newerExists
-              ? existingNewest.conclusion === 'success'
-              : legacyResult
-                ? process.env.LEGACY_GATE_SUCCESS === 'true'
-                : process.env.SOURCE_READY === 'true' &&
-                  process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
+            const success = helper.azureControllerPrResultSuccess({
+              newerConclusion: newerExists ? existingNewest.conclusion : undefined,
+              legacyResult,
+              legacyGateSuccess: process.env.LEGACY_GATE_SUCCESS === 'true',
+              sourceReady: process.env.SOURCE_READY === 'true',
+              deployResult: process.env.DEPLOY_RESULT,
+              dastResult: process.env.DAST_RESULT,
+            })
             const controllerUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
             const detailsUrl = newerExists ? existingNewest.details_url || controllerUrl : controllerUrl
             const externalId = newerExists

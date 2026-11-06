@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches: [main]
 
 # Every newer pull-request run cancels stale work. The broker applies `run-ci`
@@ -21,12 +21,23 @@ permissions:
   contents: read
 
 jobs:
+  fork_zap_gate:
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ZAP DAST / ZAP Baseline' || 'fork ZAP gate (not applicable)' }}
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require a same-repository preview
+        run: echo 'Fork pull requests do not receive preview deployment or DAST.' >&2; exit 1
+
   # This job does not check out code.  A rerun retains the original event
   # payload, so it reads the live PR and trusted review ledger from the API.
   authorize:
     if: >-
       github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.action != 'closed')
+      github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -43,7 +54,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = '3541d60b2b62ccea47ded4a77a33d5a9912c97d6'
+            const helperPin = '559c0184190e86a8a82ccbb8c760b1b054ab3373'
             const importHelper = async (content) => {
               if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
               const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
@@ -51,6 +62,10 @@ jobs:
                 throw new Error('trusted CI helper is missing authorization export')
               }
               return helper
+            }
+            const loadPinnedHelper = async () => {
+              const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+              return importHelper(blob.data?.content)
             }
             const loadHelper = async () => {
               let helperFile
@@ -65,8 +80,7 @@ jobs:
                 // The immutable blob is only an inaugural bootstrap fallback:
                 // default-branch helper load failures otherwise fail closed.
                 if (error?.status !== 404) throw error
-                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
-                return importHelper(blob.data?.content)
+                return loadPinnedHelper()
               }
               if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file') {
                 throw new Error('trusted CI helper response is not a file')
@@ -79,15 +93,23 @@ jobs:
                 core.info('authorized: push to main')
                 return
               }
-              const helper = await loadHelper()
-              const result = await helper.authorizeExactHeadPullRequest(github, core, {
+              const authorizationInput = {
                 owner,
                 repo,
                 repository,
                 defaultBranch,
                 eventPr: context.payload.pull_request,
                 runAttempt: context.runAttempt,
-              })
+              }
+              let helper = await loadHelper()
+              let result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
+              if (!result.authorized &&
+                  (result.reason === 'cannot verify the pull_request_target base history' ||
+                    result.reason.startsWith('cannot verify pull_request_target provenance:'))) {
+                core.warning('Retrying cutover authorization with the reviewed immutable helper')
+                helper = await loadPinnedHelper()
+                result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
+              }
               core.setOutput('authorized', result.authorized ? 'true' : 'false')
               core.info(`${result.authorized ? 'authorized' : 'not authorized'}: ${result.reason}`)
               if (!result.authorized) core.setFailed(result.reason)
@@ -215,8 +237,8 @@ jobs:
         working-directory: app
         run: pnpm test:e2e:dist
       # Uploaded even when the dist spec (or a step after the build) fails:
-      # the built chunk graph is the evidence for exactly that failure. `deploy`
-      # still requires this job to succeed, so a failed run never ships.
+      # the built chunk graph is the evidence for exactly that failure. The
+      # trusted default-branch controller deploys only a successful source run.
       - name: Upload build output
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -233,58 +255,3 @@ jobs:
           path: app/test-results
           if-no-files-found: ignore
           retention-days: 7
-
-  deploy:
-    if: >-
-      always() && needs.authorize.outputs.authorized == 'true' &&
-      needs.lint.result == 'success' && needs.test.result == 'success' &&
-      needs.e2e.result == 'success' && needs.build.result == 'success'
-    needs: [authorize, lint, test, e2e, build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    outputs:
-      preview_url: ${{ steps.builddeploy.outputs.static_web_app_url }}
-    steps:
-      - name: Download build output
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist
-          path: app/dist
-      - name: Deploy to Azure Static Web Apps
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          skip_app_build: true
-          app_location: app/dist
-          api_location: ''
-          output_location: ''
-
-  dast:
-    name: ZAP DAST
-    # Unauthorized PRs retain the empty-URL reusable invocation so the nested
-    # required check fails closed rather than being left Expected. Authorized
-    # PRs reach ZAP only after every gate and preview deployment succeeds.
-    if: >-
-      !cancelled() && github.event_name == 'pull_request' && github.event.action != 'closed' &&
-      (needs.authorize.outputs.authorized != 'true' || needs.deploy.result == 'success')
-    needs: [authorize, deploy]
-    uses: ./.github/workflows/zap.yml
-    permissions:
-      contents: read
-    with:
-      target_url: ${{ needs.deploy.outputs.preview_url }}
-
-  close_pull_request:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && !github.event.pull_request.head.repo.fork
-    runs-on: ubuntu-latest
-    steps:
-      - name: Close Pull Request
-        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: close
