@@ -136,6 +136,7 @@ test('Azure source workflow stops at the trusted build artifact', () => {
   assert.match(authorize, /if \(!result\.authorized\) core\.setFailed\(result\.reason\)/)
   assert.match(authorize, /Retrying cutover authorization with the reviewed immutable helper/)
   assert.match(authorize, /result\.reason === 'cannot verify the pull_request_target base history'/)
+  assert.match(authorize, /result\.reason\.startsWith\('cannot verify pull_request_target provenance:'\)/)
   assert.match(authorize, /github\.rest\.git\.getBlob\(\{ owner, repo, file_sha: helperPin \}\)/)
   assert.doesNotMatch(source, /^  (deploy|dast|close_pull_request):\s*$/m)
   assert.doesNotMatch(source, /AZURE_STATIC_WEB_APPS_API_TOKEN/)

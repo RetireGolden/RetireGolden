@@ -665,6 +665,8 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('pins the Azure fallback helper blob to the current helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
+    expect(swaWorkflow).toContain("result.reason.startsWith('cannot verify pull_request_target provenance:')")
+    expect(helperContent).toContain('cannot verify pull_request_target provenance:')
     expect(helperContent).toContain('return { authorized, failJob: !authorized, reason }')
     expect(helperContent).not.toMatch(/failJob:\s*(?:true|false|ciRequested)/)
     expect(helperContent).not.toContain('gitBlobSha')

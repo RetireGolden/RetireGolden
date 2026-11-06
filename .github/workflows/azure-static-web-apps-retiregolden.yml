@@ -93,7 +93,8 @@ jobs:
               let helper = await loadHelper()
               let result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
               if (!result.authorized &&
-                  result.reason === 'cannot verify the pull_request_target base history') {
+                  (result.reason === 'cannot verify the pull_request_target base history' ||
+                    result.reason.startsWith('cannot verify pull_request_target provenance:'))) {
                 core.warning('Retrying cutover authorization with the reviewed immutable helper')
                 helper = await loadPinnedHelper()
                 result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
