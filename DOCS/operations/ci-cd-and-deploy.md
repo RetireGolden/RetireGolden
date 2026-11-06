@@ -51,7 +51,7 @@ authorize --+--> lint ---------------------+
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + PR open/sync/reopen | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
+| `authorize` | push + PR open/sync/reopen | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass: the target caller publishes an explicit failed review gate, and a maintainer must reproduce the change on a same-repository branch before review and CI can proceed. Manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
 | `lint` | authorized push/PR | root `pnpm install --frozen-lockfile`, `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`), then workflow contract tests |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
@@ -262,7 +262,10 @@ At this cutover, an open PR whose latest authoritative ledger came from the reti
 `pull_request` caller does not receive a new event merely because `main` changed. After active reviews
 settle, dispatch `openrouter-review-recovery.yml` from `main` once for each such unchanged head; the
 forwarder starts the normal trusted review. Wait for its exact-head clean ledger and current profile proof
-before CI authorization. A new PR event naturally uses the target caller.
+before CI authorization. This one-time migration is intentionally operator-driven: repository reviews are
+serialized, and the broker does not initiate review recovery, so an automatic fan-out could overlap the
+review queue or spend on a head that a maintainer is already replacing. A new PR event naturally uses the
+target caller.
 
 For operational recovery, a maintainer may dispatch the normal review workflow from `main`
 and wait for its exact-head clean ledger and current profile proof. The run may report `main`
