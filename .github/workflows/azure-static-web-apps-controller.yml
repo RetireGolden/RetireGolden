@@ -195,6 +195,9 @@ jobs:
     if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' && needs.inspect.outputs.deploy_ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # The group is held for the whole job. If deploy starts first, close waits
+    # and tears it down afterward; if close starts first, the live-state check
+    # rejects the later deploy because the PR is already closed.
     concurrency:
       group: swa-preview-pr${{ needs.inspect.outputs.pr_number }}
       cancel-in-progress: false
@@ -326,6 +329,9 @@ jobs:
     if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'production' && needs.inspect.outputs.deploy_ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Production uploads run in source order without interruption. A queued
+    # older run is rejected by the live-head check; a newer deploy can never
+    # finish before an older deploy and then be overwritten by it.
     concurrency:
       group: swa-production
       cancel-in-progress: false
@@ -428,6 +434,8 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Close named preview environment
+        id: close_named
+        continue-on-error: true
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -435,9 +443,15 @@ jobs:
           app_location: app/dist
           deployment_environment: pr${{ needs.inspect_close.outputs.pr_number }}
       - name: Close legacy pull-request environment if present
+        id: close_legacy
         continue-on-error: true
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: close
           app_location: app/dist
+      - name: Require one preview teardown path
+        env:
+          NAMED_OUTCOME: ${{ steps.close_named.outcome }}
+          LEGACY_OUTCOME: ${{ steps.close_legacy.outcome }}
+        run: test "$NAMED_OUTCOME" = success || test "$LEGACY_OUTCOME" = success
