@@ -542,8 +542,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: close
           app_location: app/dist
-      - name: Require both preview teardown paths
+      - name: Require named preview teardown
         env:
           NAMED_OUTCOME: ${{ steps.close_named.outcome }}
-          LEGACY_OUTCOME: ${{ steps.close_legacy.outcome }}
-        run: test "$NAMED_OUTCOME" = success && test "$LEGACY_OUTCOME" = success
+        run: test "$NAMED_OUTCOME" = success

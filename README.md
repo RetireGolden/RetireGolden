@@ -75,7 +75,7 @@ and [`.github/workflows/azure-static-web-apps-controller.yml`](.github/workflows
 Bootstrap ownership remains with the source workflow while it contains `deploy` and
 `close_pull_request`. The default-branch controller detects those jobs and exits without side effects.
 Once they are removed, it downloads the one non-expired `dist` artifact from the completed source run,
-revalidates PR authorization from trusted `main`, deploys named previews, runs ZAP, and publishes the
+rechecks live PR ownership and the `run-ci` label from trusted `main`, deploys named previews, runs ZAP, and publishes the
 exact-head ZAP check. It does not check out or execute PR code.
 
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean

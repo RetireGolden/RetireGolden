@@ -26,7 +26,7 @@ During this bootstrap phase the source workflow still contains `deploy`, `dast`,
 source run's jobs and exits successfully when it finds the legacy `deploy` job; its close path likewise
 reads the active default-branch workflow and exits while `close_pull_request` is present. After those three legacy
 jobs are removed, the same default-branch controller consumes the exact source-run `dist` artifact,
-rechecks live PR authorization from `main`, deploys named `pr<number>` previews, invokes ZAP, and
+rechecks live PR ownership and the `run-ci` label from `main`, deploys named `pr<number>` previews, invokes ZAP, and
 publishes `ZAP DAST / ZAP Baseline` on the source head. Successful current-`main` artifacts deploy to
 production under a serialized production concurrency group, with a final live-branch check immediately
 before upload so a queued older run cannot replace a newer commit. Production intentionally represents
