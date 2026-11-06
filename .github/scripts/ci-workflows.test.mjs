@@ -169,6 +169,7 @@ test('default-branch SWA controller stays inert until legacy deployment is remov
   assert.match(preview, /deployment_environment: pr\$\{\{ needs\.inspect\.outputs\.pr_number \}\}/)
   assert.match(preview, /Recheck live preview ownership/)
   assert.match(preview, /previewDeploymentSkipReason/)
+  assert.equal((preview.match(/previewDeploymentSkipReason/g) ?? []).length, 2)
   assert.match(preview, /Clean preview closed or superseded during upload/)
   assert.match(preview, /Reject superseded preview deployment/)
   assert.match(preview, /cancel-in-progress: false/)
