@@ -531,7 +531,7 @@ describe('migratePlanV5ToV6', () => {
     ])
   })
 
-  it('applies valid operations when another scenario path is rejected', () => {
+  it('leaves an unparseable scenario envelope unchanged', () => {
     const raw = rawV5(couple(), 'early-retiree-aca')
     const stored = structuredClone(contractsOf(raw))
     raw['scenarios'] = [
@@ -556,16 +556,9 @@ describe('migratePlanV5ToV6', () => {
       },
     ]
 
-    const migrated = migratePlanV5ToV6(raw)['scenarios'] as Record<string, Record<string, unknown>>[]
-    const operations = migrated[0]!['patch']!['operations'] as Record<string, unknown>[]
-    expect(operations[0]!['value']).toBe(1_300)
-    expect(operations[1]!['path']).toBe('/outside/ignored')
-    expect(operations[2]!['value']).toEqual([])
-    expect(operations[3]).toMatchObject({
-      op: 'set',
-      path: '/expenses/healthcare/acaYearsRemoved',
-      value: [{ edit: 'exampleNoLongerMatched', years: [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] }],
-    })
+    const migrated = migratePlanV5ToV6(raw)
+    expect(migrated['scenarios']).toEqual(raw['scenarios'])
+    expect(contractsOf(migrated).every((contract) => contract['premiumBasis'] === 'premiumField')).toBe(true)
   })
 
   it('deep-merges a loose patch that carries an unrelated operations array', () => {

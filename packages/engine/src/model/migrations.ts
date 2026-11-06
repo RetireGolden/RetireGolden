@@ -1187,14 +1187,11 @@ function legacyDeepMerge(base: unknown, patch: unknown): unknown {
  */
 function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
   if (!isScenarioPatchEnvelope(patch)) return (legacyDeepMerge(doc, patch) as Record<string, unknown>) ?? doc
-  const operations = ownValue(patch, 'operations')
-  if (!Array.isArray(operations)) return doc
+  const parsed = parseScenarioPatch(patch)
+  if (!parsed.ok) return doc
   const out = structuredClone(doc)
-  for (const operation of operations) {
-    const record = plainObject(operation)
-    const path = record === null ? null : ownValue(record, 'path')
-    const segments = typeof path === 'string' ? decodeScenarioPointer(path) : null
-    if (record === null || segments === null) continue
+  for (const operation of parsed.patch.operations) {
+    const segments = decodeScenarioPointer(operation.path)!
     let parent: Record<string, unknown> | null = out
     for (const segment of segments.slice(0, -1)) {
       if (!Object.hasOwn(parent, segment)) {
@@ -1210,9 +1207,8 @@ function scenarioDocument(doc: Record<string, unknown>, patch: Record<string, un
     }
     if (parent === null) continue
     const last = segments[segments.length - 1]!
-    const op = ownValue(record, 'op')
-    if (op === 'set') defineOwn(parent, last, structuredClone(ownValue(record, 'value')))
-    else if (op === 'remove') Reflect.deleteProperty(parent, last)
+    if (operation.op === 'set') defineOwn(parent, last, structuredClone(operation.value))
+    else Reflect.deleteProperty(parent, last)
   }
   return out
 }
@@ -1277,27 +1273,17 @@ function migrateScenarioExampleContracts(
       name: typeof scenarioRecord['name'] === 'string' ? scenarioRecord['name'] : '',
     }
     if (isScenarioPatchEnvelope(patch as unknown)) {
-      const operations = ownValue(patch, 'operations')
-      if (!Array.isArray(operations)) return scenario
+      const parsedPatch = parseScenarioPatch(patch)
+      if (!parsedPatch.ok) return scenario
+      const operations = parsedPatch.patch.operations
       let changed = false
       let sortedHere: SortedExampleContracts = EMPTY_SORT
       const next: unknown[] = []
       for (const operation of operations) {
-        const record = plainObject(operation)
-        const path = record === null ? null : ownValue(record, 'path')
-        const segments = typeof path === 'string' ? decodeScenarioPointer(path) : null
-        if (record === null || segments === null) {
-          next.push(operation)
-          continue
-        }
-        let out = record
-        const op = ownValue(record, 'op')
-        if (op !== 'set' && op !== 'remove') {
-          next.push(operation)
-          continue
-        }
-        if (op === 'set') {
-          const value = ownValue(record, 'value')
+        const path = operation.path
+        let out: Record<string, unknown> = operation
+        if (operation.op === 'set') {
+          const value = operation.value
           if (path === '/expenses/healthcare/acaYears' && Array.isArray(value)) {
             const sorted = sortExampleContracts(value, context)
             sortedHere = sorted
@@ -1313,16 +1299,15 @@ function migrateScenarioExampleContracts(
             if (migratedValue.healthcare !== expenses['healthcare']) out = { ...out, value: { ...expenses, healthcare: migratedValue.healthcare } }
           }
         }
-        const before = plainObject(ownValue(out, 'before'))
-        const beforeValue = before === null ? undefined : ownValue(before, 'value')
-        if (before !== null && ownValue(before, 'present') === true) {
-          const side = basePlanSide(path, beforeValue)
+        const before = operation.before
+        if (before.present) {
+          const side = basePlanSide(path, before.value)
           if (side.present === false) out = { ...out, before: { present: false } }
-          else if (side.value !== beforeValue) out = { ...out, before: { ...before, value: side.value } }
+          else if (side.value !== before.value) out = { ...out, before: { ...before, value: side.value } }
         }
-        if (out !== record) changed = true
+        if (out !== operation) changed = true
         next.push(out)
-        if (path === '/expenses/healthcare/acaYears' && op === 'set' && sortedHere.removedYears.length > 0) {
+        if (path === '/expenses/healthcare/acaYears' && operation.op === 'set' && sortedHere.removedYears.length > 0) {
           // The array operation leaves the rest of the healthcare object as the
           // plan has it, so the scenario's record is its own operation.
           next.push({
