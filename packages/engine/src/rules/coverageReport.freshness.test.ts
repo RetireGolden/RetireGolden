@@ -145,6 +145,21 @@ function engineSourceOf(path: string): string {
 }
 
 const symbolLineTables = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
+// Whether `line` shows `name` in declaration position: as its own token (not
+// preceded by an identifier character, `$` or `.`) and followed, after
+// optional whitespace, by :, (, =, <, {, comma, or line end. Plain string
+// scanning, not a RegExp built from the name.
+function declaresMember(line: string, name: string): boolean {
+  if (name.length === 0) return false
+  for (let at = line.indexOf(name); at >= 0; at = line.indexOf(name, at + 1)) {
+    const before = at === 0 ? '' : line[at - 1]!
+    if (/[\w$.]/u.test(before)) continue
+    const rest = line.slice(at + name.length).trimStart()
+    if (rest === '' || ':(=<,{'.includes(rest[0]!)) return true
+  }
+  return false
+}
+
 function symbolLineFor(path: string, symbol: string): number {
   let table = symbolLineTables.get(path)
   if (table === undefined) {
@@ -1272,9 +1287,8 @@ describe('manifest rule projection contract', () => {
           // which is why the synthetic anchor probes in the conformance
           // suite, not this bind, pin the resolution rule itself.
           const memberName = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name
-          const declares = new RegExp(`(?:^|[^\\w$.])${memberName}\\s*(?:[:(=<,{]|$)`, 'u')
           expect(
-            declares.test(sourceLines[line - 1] ?? ''),
+            declaresMember(sourceLines[line - 1] ?? '', memberName),
             `${rule.id}: ${path}#${name} line ${line} does not declare ${memberName}`,
           ).toBe(true)
         }

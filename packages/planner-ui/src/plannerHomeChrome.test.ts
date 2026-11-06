@@ -43,6 +43,32 @@ function specificity(selector: string): number {
   return ids * 10000 + classes * 100 + types
 }
 
+// The value of `property` in one rule body, or null when the body does not
+// declare it. Declarations are split on `;` and matched by exact property
+// name, so `gap` does not pick up `row-gap`. An empty value is invalid CSS
+// and is skipped, as a browser drops it. This helper models only the simple
+// case, one declaration of the property per rule with no `!important`, so a
+// repeat or an `!important` throws: picking a winner there needs validity
+// and priority rules this text parse does not have. Plain string parsing,
+// not a RegExp built from the argument.
+function declaredValue(body: string, property: string): string | null {
+  const values: string[] = []
+  for (const declaration of body.split(';')) {
+    const colon = declaration.indexOf(':')
+    if (colon < 0) continue
+    if (declaration.slice(0, colon).trim() !== property) continue
+    const value = declaration.slice(colon + 1).trim()
+    if (value !== '') values.push(value)
+  }
+  if (values.length > 1 || values.some((value) => value.includes('!important'))) {
+    throw new Error(
+      `winningDeclaration models one plain \`${property}\` per rule; found ${JSON.stringify(values)}. ` +
+        'Extend the helper before relying on it for this rule.',
+    )
+  }
+  return values[0] ?? null
+}
+
 function winningDeclaration(css: string, className: string, property: string, ancestorClass?: string): string | null {
   const doc = `<!doctype html><html><head><style>${css}</style></head><body>
     ${ancestorClass ? `<div class="${ancestorClass}">` : ''}<div class="${className}" id="target"></div>${ancestorClass ? '</div>' : ''}
@@ -61,8 +87,8 @@ function winningDeclaration(css: string, className: string, property: string, an
   while ((match = ruleRe.exec(stripped)) !== null) {
     const selectors = match[1]!.split(',').map((s) => s.trim())
     const body = match[2]
-    const prop = body!.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
-    if (!prop) continue
+    const value = declaredValue(body!, property)
+    if (value === null) continue
     for (const sel of selectors) {
       if (sel.includes('@') || sel.includes(':') || sel.includes('[')) continue
       const parts = sel.split(/\s+/).filter(Boolean)
@@ -80,7 +106,7 @@ function winningDeclaration(css: string, className: string, property: string, an
       const spec = specificity(sel)
       if (spec >= bestSpec) {
         bestSpec = spec
-        bestValue = prop[1]!.trim()
+        bestValue = value
       }
     }
   }
@@ -156,6 +182,13 @@ describe('planner home chrome (#297)', () => {
     expect(planGridAt).toBeGreaterThanOrEqual(0)
     expect(overrideAt).toBeGreaterThan(planGridAt)
     expect(plannerCss).not.toMatch(/\.home-paths\s+\.home-paths-grid\.plan-grid/)
+  })
+
+  it('winningDeclaration skips empty values and refuses rules it cannot rank', () => {
+    expect(winningDeclaration('.a { gap: 1px } .a.b { row-gap: 2px }', 'a b', 'gap')).toBe('1px')
+    expect(winningDeclaration('.a { gap: 1px } .a.b { gap: ; }', 'a b', 'gap')).toBe('1px')
+    expect(() => winningDeclaration('.a { gap: 1px; gap: nope }', 'a', 'gap')).toThrow(/one plain `gap` per rule/)
+    expect(() => winningDeclaration('.a { gap: 1px !important }', 'a', 'gap')).toThrow(/one plain `gap` per rule/)
   })
 
   it('Import step back control sits with the h2, not item-row-head space-between', () => {
