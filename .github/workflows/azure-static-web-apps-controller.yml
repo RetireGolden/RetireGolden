@@ -244,11 +244,12 @@ jobs:
               expectedHeadSha: process.env.HEAD_SHA,
             })
             core.setOutput('should_deploy', reason ? 'false' : 'true')
+            core.setOutput('cleanup', pr.state === 'open' ? 'false' : 'true')
             if (reason) {
               core.warning(`Preview deployment skipped: ${reason}`)
             }
-      - name: Clean named preview when ownership changed before upload
-        if: steps.live_preview.outputs.should_deploy != 'true'
+      - name: Clean named preview for a closed PR before upload
+        if: steps.live_preview.outputs.cleanup == 'true'
         continue-on-error: true
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
@@ -369,8 +370,8 @@ jobs:
               owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
             })
             if (checks.some(check => check.name === name &&
-                helper.successfulAzureSourceCheckIsNewer(check, sourceRunId, sourceRunAttempt))) {
-              core.info('A newer successful exact-head ZAP gate already exists; preserving it.')
+                helper.azureSourceCheckIsNewer(check, sourceRunId, sourceRunAttempt))) {
+              core.info('A newer exact-head ZAP gate already exists; preserving it.')
               return
             }
             const success = process.env.SOURCE_READY === 'true' &&

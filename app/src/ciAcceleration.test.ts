@@ -15,6 +15,7 @@ import readme from '../../README.md?raw'
 import openrouterProducerFixture from './fixtures/openrouter-producer.json'
 import {
   azureSourceCheckExternalId,
+  azureSourceCheckIsNewer,
   authorizeExactHeadPullRequest,
   authorizeReviewProfile,
   classifyAzureControllerSourceJobs,
@@ -34,7 +35,6 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   sourceWorkflowHasLegacyClose,
-  successfulAzureSourceCheckIsNewer,
   terminalSameRepositoryWorkflowRunUrl,
   TRUSTED_PROFILE_CONSUMER_OWNER,
   TRUSTED_PROFILE_CONSUMER_PATH,
@@ -1394,10 +1394,11 @@ describe('OpenRouter CI authorization contract', () => {
 
     const externalId = azureSourceCheckExternalId(100, 2)
     expect(externalId).toBe('azure-source:100:2')
-    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 99, 4)).toBe(true)
-    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 1)).toBe(true)
-    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 2)).toBe(false)
-    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'failure', external_id: 'azure-source:999:1' }, 100, 2)).toBe(false)
+    expect(azureSourceCheckIsNewer({ external_id: externalId }, 99, 4)).toBe(true)
+    expect(azureSourceCheckIsNewer({ external_id: externalId }, 100, 1)).toBe(true)
+    expect(azureSourceCheckIsNewer({ external_id: externalId }, 100, 2)).toBe(false)
+    expect(azureSourceCheckIsNewer({ external_id: 'azure-source:999:1' }, 100, 2)).toBe(true)
+    expect(azureSourceCheckIsNewer({ external_id: 'not-an-azure-source' }, 100, 2)).toBe(false)
 
     const deployablePr = {
       state: 'open',
@@ -1517,7 +1518,7 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain('run-id: ${{ github.event.workflow_run.id }}')
     expect(swaController).toContain('deployment_environment: pr${{ needs.inspect.outputs.pr_number }}')
     expect(swaController).toContain("const name = 'ZAP DAST / ZAP Baseline'")
-    expect(swaController).toContain('helper.successfulAzureSourceCheckIsNewer')
+    expect(swaController).toContain('helper.azureSourceCheckIsNewer')
     expect(swaController).toContain('Recheck live preview ownership')
     expect(swaController).toContain('Recheck current production head')
     expect(swaController).toContain('group: swa-production')

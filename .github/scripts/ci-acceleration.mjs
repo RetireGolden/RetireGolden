@@ -77,8 +77,8 @@ export function azureSourceCheckExternalId(runId, runAttempt) {
   return `azure-source:${runId}:${runAttempt}`
 }
 
-export function successfulAzureSourceCheckIsNewer(check, runId, runAttempt) {
-  if (check?.conclusion !== 'success' || typeof check?.external_id !== 'string') return false
+export function azureSourceCheckIsNewer(check, runId, runAttempt) {
+  if (typeof check?.external_id !== 'string') return false
   const match = /^azure-source:(\d+):(\d+)$/.exec(check.external_id)
   if (!match) return false
   const checkRunId = Number(match[1])

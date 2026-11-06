@@ -227,8 +227,8 @@ export function classifyAzureControllerSourceJobs(
   runConclusion: string | null | undefined,
 ): { readonly legacy: boolean; readonly failed: readonly string[]; readonly ready: boolean }
 export function azureSourceCheckExternalId(runId: number, runAttempt: number): string
-export function successfulAzureSourceCheckIsNewer(
-  check: { readonly conclusion?: string | null; readonly external_id?: string | null },
+export function azureSourceCheckIsNewer(
+  check: { readonly external_id?: string | null },
   runId: number,
   runAttempt: number,
 ): boolean
