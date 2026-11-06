@@ -233,6 +233,18 @@ export function successfulAzureSourceCheckIsNewer(
   runAttempt: number,
 ): boolean
 export function sourceWorkflowHasLegacyClose(source: string): boolean
+export function previewDeploymentSkipReason(
+  pullRequest: PullRequest,
+  input: {
+    readonly repository: RepositoryRef
+    readonly defaultBranch: string
+    readonly expectedHeadSha: string
+  },
+): string | undefined
+export function productionDeploymentSkipReason(
+  liveHeadSha: string | undefined,
+  expectedHeadSha: string,
+): string | undefined
 
 export function workflowRunUrl(owner: string, repo: string, runId: number): string
 export function parseWorkflowRunIdFromUrl(url: string): number | undefined

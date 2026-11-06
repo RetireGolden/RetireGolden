@@ -28,6 +28,8 @@ import {
   ledgerWorkflowRunUrlsFromReview,
   newestWorkflowRun,
   parseWorkflowRunIdFromUrl,
+  previewDeploymentSkipReason,
+  productionDeploymentSkipReason,
   pullRequestSkipReason,
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
@@ -1396,6 +1398,24 @@ describe('OpenRouter CI authorization contract', () => {
     expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 1)).toBe(true)
     expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 2)).toBe(false)
     expect(successfulAzureSourceCheckIsNewer({ conclusion: 'failure', external_id: 'azure-source:999:1' }, 100, 2)).toBe(false)
+
+    const deployablePr = {
+      state: 'open',
+      head: { sha, repo: repository },
+      base: { ref: 'main' },
+      labels: [{ name: 'run-ci' }],
+    }
+    const previewInput = { repository, defaultBranch: 'main', expectedHeadSha: sha }
+    expect(previewDeploymentSkipReason(deployablePr, previewInput)).toBeUndefined()
+    expect(previewDeploymentSkipReason({ ...deployablePr, state: 'closed' }, previewInput))
+      .toBe('pull request is not open')
+    expect(previewDeploymentSkipReason({ ...deployablePr, head: { sha: 'b'.repeat(40), repo: repository } }, previewInput))
+      .toBe('pull request head changed')
+    expect(previewDeploymentSkipReason({ ...deployablePr, labels: [] }, previewInput))
+      .toBe('run-ci label is absent')
+    expect(productionDeploymentSkipReason(sha, sha)).toBeUndefined()
+    expect(productionDeploymentSkipReason('b'.repeat(40), sha))
+      .toBe('a newer default-branch commit superseded this production run')
   })
 
   it('classifies only exact expensive Azure display names as real work', () => {

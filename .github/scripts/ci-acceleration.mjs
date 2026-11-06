@@ -90,6 +90,26 @@ export function sourceWorkflowHasLegacyClose(source) {
   return typeof source === 'string' && /^  close_pull_request:\s*$/m.test(source)
 }
 
+export function previewDeploymentSkipReason(
+  pullRequest,
+  { repository, defaultBranch, expectedHeadSha },
+) {
+  if (pullRequest?.state !== 'open') return 'pull request is not open'
+  if (pullRequest?.head?.sha !== expectedHeadSha) return 'pull request head changed'
+  if (pullRequest?.head?.repo?.full_name !== repository?.full_name) {
+    return 'pull request is not from this repository'
+  }
+  if (pullRequest?.base?.ref !== defaultBranch) return 'pull request no longer targets the default branch'
+  if (!pullRequest?.labels?.some((label) => label?.name === 'run-ci')) return 'run-ci label is absent'
+  return undefined
+}
+
+export function productionDeploymentSkipReason(liveHeadSha, expectedHeadSha) {
+  return liveHeadSha === expectedHeadSha
+    ? undefined
+    : 'a newer default-branch commit superseded this production run'
+}
+
 function codepointLength(value) {
   return Array.from(value).length
 }

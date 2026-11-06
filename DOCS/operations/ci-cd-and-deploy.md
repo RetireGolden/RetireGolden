@@ -29,8 +29,12 @@ jobs are removed, the same default-branch controller consumes the exact source-r
 rechecks live PR authorization from `main`, deploys named `pr<number>` previews, invokes ZAP, and
 publishes `ZAP DAST / ZAP Baseline` on the source head. Successful current-`main` artifacts deploy to
 production under a serialized production concurrency group, with a final live-branch check immediately
-before upload so a queued older run cannot replace a newer commit. The controller never checks out or
-executes PR code.
+before upload so a queued older run cannot replace a newer commit. Production intentionally represents
+the last successfully built `main` artifact; if `main` advances during an upload, the later successful
+source run supersedes it, while a failed newer build leaves the last successful deployment in place.
+Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
+head changes, so cleanup does not depend on a pending close job being preserved. The controller never
+checks out or executes PR code.
 
 Bootstrap source-workflow layout (until the cutover removes the final three jobs):
 

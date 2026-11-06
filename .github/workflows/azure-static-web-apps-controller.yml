@@ -195,9 +195,8 @@ jobs:
     if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' && needs.inspect.outputs.deploy_ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # The group is held for the whole job. If deploy starts first, close waits
-    # and tears it down afterward; if close starts first, the live-state check
-    # rejects the later deploy because the PR is already closed.
+    # A pending close may be replaced by another pending job in this group.
+    # Every deploy therefore owns cleanup when it observes a closed or changed PR.
     concurrency:
       group: swa-preview-pr${{ needs.inspect.outputs.pr_number }}
       cancel-in-progress: false
@@ -216,23 +215,49 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Recheck live preview ownership
+        id: live_preview
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.inspect.outputs.pr_number }}
           HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
         with:
           script: |
+            const helperFile = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
             const { data: pr } = await github.rest.pulls.get({
               ...context.repo,
               pull_number: Number(process.env.PR_NUMBER),
             })
-            if (pr.state !== 'open' || pr.head?.sha !== process.env.HEAD_SHA ||
-                pr.head?.repo?.full_name !== context.payload.repository.full_name ||
-                pr.base?.ref !== context.payload.repository.default_branch ||
-                !pr.labels?.some(label => label.name === 'run-ci')) {
-              throw new Error('Preview ownership changed before deployment')
+            const reason = helper.previewDeploymentSkipReason(pr, {
+              repository: context.payload.repository,
+              defaultBranch: context.payload.repository.default_branch,
+              expectedHeadSha: process.env.HEAD_SHA,
+            })
+            core.setOutput('should_deploy', reason ? 'false' : 'true')
+            if (reason) {
+              core.warning(`Preview deployment skipped: ${reason}`)
             }
+      - name: Clean named preview when ownership changed before upload
+        if: steps.live_preview.outputs.should_deploy != 'true'
+        continue-on-error: true
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+          deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
       - name: Deploy named preview environment
+        if: steps.live_preview.outputs.should_deploy == 'true'
         id: deploy
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
@@ -244,6 +269,34 @@ jobs:
           output_location: ''
           # workflow_run has no pull_request payload; repo_token is intentionally omitted.
           deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
+      - name: Recheck preview ownership after upload
+        if: steps.deploy.outcome == 'success'
+        id: uploaded_preview
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.inspect.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            })
+            const changed = pr.state !== 'open' || pr.head?.sha !== process.env.HEAD_SHA
+            core.setOutput('cleanup', changed ? 'true' : 'false')
+      - name: Clean preview closed or superseded during upload
+        if: steps.uploaded_preview.outputs.cleanup == 'true'
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+          deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
+      - name: Reject superseded preview deployment
+        if: >-
+          steps.live_preview.outputs.should_deploy != 'true' ||
+          steps.uploaded_preview.outputs.cleanup == 'true'
+        run: exit 1
 
   dast:
     name: ZAP DAST
@@ -329,9 +382,8 @@ jobs:
     if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'production' && needs.inspect.outputs.deploy_ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Production uploads run in source order without interruption. A queued
-    # older run is rejected by the live-head check; a newer deploy can never
-    # finish before an older deploy and then be overwritten by it.
+    # Production is the last successfully built main artifact. Uploads are not
+    # interrupted; a queued stale run is rejected before it reaches Azure.
     concurrency:
       group: swa-production
       cancel-in-progress: false
@@ -352,13 +404,24 @@ jobs:
           HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
         with:
           script: |
+            const helperFile = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
             const { data: branch } = await github.rest.repos.getBranch({
               ...context.repo,
               branch: context.payload.repository.default_branch,
             })
-            if (branch.commit?.sha !== process.env.HEAD_SHA) {
-              throw new Error('A newer default-branch commit superseded this production run')
-            }
+            const reason = helper.productionDeploymentSkipReason(branch.commit?.sha, process.env.HEAD_SHA)
+            if (reason) throw new Error(reason)
       - name: Deploy production artifact
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
@@ -369,6 +432,19 @@ jobs:
           api_location: ''
           output_location: ''
           production_branch: ${{ github.event.repository.default_branch }}
+      - name: Record a newer main commit after upload
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const { data: branch } = await github.rest.repos.getBranch({
+              ...context.repo,
+              branch: context.payload.repository.default_branch,
+            })
+            if (branch.commit?.sha !== process.env.HEAD_SHA) {
+              core.notice('Main advanced during upload; its successful source run will supersede this deployment.')
+            }
 
   inspect_close:
     if: >-
@@ -450,8 +526,8 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: close
           app_location: app/dist
-      - name: Require one preview teardown path
+      - name: Require both preview teardown paths
         env:
           NAMED_OUTCOME: ${{ steps.close_named.outcome }}
           LEGACY_OUTCOME: ${{ steps.close_legacy.outcome }}
-        run: test "$NAMED_OUTCOME" = success || test "$LEGACY_OUTCOME" = success
+        run: test "$NAMED_OUTCOME" = success && test "$LEGACY_OUTCOME" = success
