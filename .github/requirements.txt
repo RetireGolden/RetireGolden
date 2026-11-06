@@ -1,7 +1,8 @@
 # Semgrep CLI version used by .github/workflows/semgrep.yml. Pinned like every
 # GitHub Action in this repo; Dependabot (pip ecosystem, directory /.github)
-# proposes bumps. The workflow contract test requires this update marker and
-# the inline workflow install to match; the PR job never executes this file.
-# Named requirements.txt because that is the manifest name Dependabot's pip
-# support documents. Keep this the only pin here.
+# proposes bumps to this marker only. The workflow contract test intentionally
+# waits for a maintainer to align the inline workflow install and operations
+# guide on the same branch; the PR job never executes this file. Named
+# requirements.txt because that is the manifest name Dependabot's pip support
+# documents. Keep this the only pin here.
 semgrep==1.182.1

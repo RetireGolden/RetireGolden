@@ -175,8 +175,9 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   it authorizes the label-gated path and are required checks on `main`. GitHub
   counts a skipped required check as satisfied,
   which is why the shared rule demands that the gated jobs actually ran:
-  an unlabeled ZAP skip is not acceptable evidence here even though the
-  ruleset would let it through. Semgrep (`Scan (p/default)`), `CLA`, and
+  on an unauthorized attempt, `authorize` and ZAP fail while the expensive
+  jobs stay skipped for the broker rerun. Only a later authorized run in which
+  the gated jobs actually ran is acceptable evidence. Semgrep (`Scan (p/default)`), `CLA`, and
   the first-pass review gate (`review / openrouter-first-pass-gate`) run
   without the label. The broker normally adds `run-ci` after an exact-head
   clean review and current trusted profile proof, then reruns the existing

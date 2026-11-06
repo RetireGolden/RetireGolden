@@ -59,11 +59,6 @@ jobs:
       - name: Test
         run: pnpm --filter @retiregolden/planner-ui test
 
-      - name: Smoke test the packed artifact
-        env:
-          PLANNER_PACK_SMOKE_ENGINE_SOURCE: registry
-        run: node packages/planner-ui/scripts/pack-smoke.mjs
-
       - name: Pack release tarball and record digest
         id: pack
         working-directory: packages/planner-ui
@@ -80,6 +75,13 @@ jobs:
           digest="$(sha256sum "$tarball" | awk '{print $1}')"
           (cd "$artifact_dir" && sha256sum "$tarball_name" > package.sha256)
           echo "sha256=$digest" >> "$GITHUB_OUTPUT"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test the release tarball
+        env:
+          PACK_SMOKE_TARBALL: ${{ steps.pack.outputs.tarball }}
+          PLANNER_PACK_SMOKE_ENGINE_SOURCE: registry
+        run: node packages/planner-ui/scripts/pack-smoke.mjs
 
       - name: Upload release tarball
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

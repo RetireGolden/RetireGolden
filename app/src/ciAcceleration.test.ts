@@ -639,6 +639,8 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
+    expect(helperContent).toContain('return { authorized, failJob: !authorized, reason }')
+    expect(helperContent).not.toMatch(/failJob:\s*(?:true|false|ciRequested)/)
     expect(helperContent).not.toContain('gitBlobSha')
     expect(helperContent).not.toContain('node:crypto')
   })

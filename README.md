@@ -107,7 +107,7 @@ Manually triggered (Actions tab). Runs the Owl parity harness (`pnpm owl-parity`
 
 [`.github/workflows/semgrep.yml`](.github/workflows/semgrep.yml)
 
-Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). The read-only job installs the exact scanner pin from the workflow and uploads a SARIF report as a build artifact. **Only ERROR-level findings fail the check** — other findings are reported but do not block merge.
+Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). The read-only scan job installs the exact workflow pin and uploads a SARIF artifact; a separate push-to-`main` job publishes that artifact to code scanning with write permission. **Only ERROR-level findings fail the check** — other findings are reported but do not block merge.
 
 ### Rollover — the suites at next 1 January
 
@@ -163,13 +163,13 @@ For caller-pin migrations with an existing review ledger, dispatch this workflow
 
 [`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)
 
-Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). An unprivileged job builds, tests, smokes, packs, and records the tarball digest. The environment-protected job verifies that tarball and its package identity, then publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC); it does not check out the repository or install workspace dependencies.
+Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). An unprivileged job builds, tests, packs, records the tarball digest, and smokes that exact tarball. The environment-protected job verifies the same tarball and its package identity, then publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC); it does not check out the repository or install workspace dependencies.
 
 ### Planner UI package release
 
 [`.github/workflows/publish-planner-ui.yml`](.github/workflows/publish-planner-ui.yml)
 
-Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Its unprivileged job builds the scratch Vite consumer with exact dependency versions, then packs and records the release tarball digest. The environment-protected job verifies that tarball and publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC), without checking out the repository or installing workspace dependencies.
+Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Its unprivileged job packs and records the release tarball digest, then builds a scratch Vite consumer from that exact tarball with exact dependency versions. The environment-protected job verifies the same tarball and publishes it with exactly npm 11.5.1 via Trusted Publishing (OIDC), without checking out the repository or installing workspace dependencies.
 
 ## License
 

@@ -315,8 +315,9 @@ the job exchanges GitHub's OIDC token (`id-token: write`) for short-lived publis
 provenance automatically. OIDC requires npm ≥ 11.5.1, so the workflow upgrades npm before publishing.
 
 Each workflow first runs an unprivileged `build-and-smoke` job with read-only repository access. It
-installs the frozen workspace, runs the package checks and pack smoke, creates a release tarball, records
-its SHA-256 digest, and uploads it with seven-day retention. The environment-protected `publish` job does
+installs the frozen workspace, runs the package checks, creates a release tarball, records its SHA-256
+digest, runs the pack smoke against that exact tarball, and uploads it with seven-day retention. The
+environment-protected `publish` job does
 not check out the repository or install workspace dependencies. It downloads that tarball, verifies the
 digest and packed name/version against the tag, installs exactly npm 11.5.1, and publishes the tarball.
 

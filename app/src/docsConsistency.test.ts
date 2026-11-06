@@ -118,6 +118,7 @@ describe('docs consistency', () => {
     for (const workflow of [publishEngineWorkflow, publishPlannerUiWorkflow]) {
       expect(workflow).toContain(`uses: ${setupNodePin}`)
       expect(workflow.match(/uses: actions\/setup-node@/g)).toHaveLength(1)
+      expect(workflow.match(/node-version: '(\d+)'/)?.[1]).toBe(ciNodeVersion)
     }
     // Other workflows continue to use only the shared composite.
     expect(Object.keys(allWorkflowSources).length).toBe(workflowFiles.length)

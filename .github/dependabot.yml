@@ -1,5 +1,8 @@
 version: 2
 updates:
+  # Action pins are also checked by workflow contract tests, and setup-node is
+  # repeated in the two isolated publish jobs. An automated pin update may
+  # therefore wait for the matching contract or publish-job edit on its branch.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -30,8 +33,9 @@ updates:
       github-actions:
         patterns:
           - "*"
-  # The Semgrep update marker mirrored by the exact inline workflow install.
-  # A contract test requires a Dependabot bump to update both together.
+  # Dependabot updates only this Semgrep marker. The workflow deliberately
+  # installs its own exact literal, so the automated PR is expected to wait for
+  # a maintainer to align semgrep.yml and the operations guide on that branch.
   - package-ecosystem: "pip"
     directory: "/.github"
     schedule:
