@@ -42,8 +42,6 @@ name: OpenRouter code review
 run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || github.event.client_payload.pr_number || inputs.pr_number, github.event.client_payload.review_level || inputs.review_level || 'auto') }}"
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
   repository_dispatch:
@@ -77,57 +75,14 @@ permissions:
   statuses: write
 
 jobs:
-  # During the bootstrap overlap, a branch caller that still declares
-  # pull_request owns its review. Once that trigger is removed, the trusted
-  # default-branch pull_request_target caller becomes the single owner.
-  target-selection:
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      run_review: ${{ steps.owner.outputs.run_review }}
-    steps:
-      - name: Select the single review trigger
-        id: owner
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            core.setOutput('run_review', 'false')
-            const pr = context.payload.pull_request
-            if (pr.head?.repo?.full_name !== context.payload.repository.full_name) {
-              core.info('Fork pull requests are not eligible for the secret-backed target review.')
-              return
-            }
-            const { data } = await github.rest.repos.getContent({
-              ...context.repo,
-              path: '.github/workflows/openrouter-code-review.yml',
-              ref: pr.head.sha,
-            })
-            if (Array.isArray(data) || data?.type !== 'file' || typeof data.content !== 'string') {
-              throw new Error('Pull-request review caller is not a file')
-            }
-            const source = Buffer.from(data.content.replace(/\s/g, ''), 'base64').toString('utf8')
-            if (/^  pull_request:\s*$/m.test(source)) {
-              core.info('The branch pull_request trigger owns this review.')
-              return
-            }
-            core.setOutput('run_review', 'true')
-
   # Keep this id stable: it is the first half of the required check context
   # `review / openrouter-first-pass-gate`.
   review:
-    needs: target-selection
     if: >-
-      always() && (
-        github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' ||
         github.event_name == 'repository_dispatch' ||
-        (github.event_name == 'pull_request' && !github.event.pull_request.draft) ||
         (github.event_name == 'pull_request_target' && !github.event.pull_request.draft &&
-          needs.target-selection.outputs.run_review == 'true')
-      )
+          github.event.pull_request.head.repo.full_name == github.event.repository.full_name)
     uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a40c5eb8d588266531184ffc633dc2969d9138df # .github#54; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0
     permissions:
       actions: write

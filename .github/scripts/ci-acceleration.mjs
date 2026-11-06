@@ -38,7 +38,6 @@ export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'test',
   'e2e',
   'build',
-  'deploy',
 ])
 export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'lint',
@@ -322,8 +321,8 @@ function trustedOpenRouterRunProvenance(workflowRun, repository) {
 export function reviewRunSkipReason(workflowRun, repository) {
   const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
   if (provenanceReason) return provenanceReason
-  if (!['pull_request', 'pull_request_target'].includes(workflowRun.event)) {
-    return 'review run event is not pull_request or pull_request_target'
+  if (workflowRun.event !== 'pull_request_target') {
+    return 'review run event is not pull_request_target'
   }
   return undefined
 }
@@ -500,26 +499,20 @@ export async function collectProvenanceReviewRuns(github, {
     if (!Number.isSafeInteger(run.id) || run.head_sha !== expectedHeadSha) continue
     if (reviewRunSkipReason(run, repository)) continue
     try {
-      if (run.event === 'pull_request_target') {
-        if (!(await proveTargetRunBase(github, {
-          owner,
-          repo,
-          repository,
-          defaultBranch,
-          expectedHeadSha,
-          pullNumber,
-          run,
-        }))) continue
-      } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
-        continue
-      }
+      if (!(await proveTargetRunBase(github, {
+        owner,
+        repo,
+        repository,
+        defaultBranch,
+        expectedHeadSha,
+        pullNumber,
+        run,
+      }))) continue
     } catch {
       return {
         provenanceReviewRuns: [],
         defaultCaller,
-        error: run.event === 'pull_request_target'
-          ? 'cannot verify the pull_request_target base history'
-          : 'cannot inspect the exact-head OpenRouter caller',
+        error: 'cannot verify the pull_request_target base history',
       }
     }
     provenanceReviewRuns.push(run)

@@ -79,14 +79,12 @@ Running both on each authorized same-repository PR gives coverage from both dire
 **Workflow:** [`.github/workflows/zap.yml`](../../.github/workflows/zap.yml) — a **reusable** workflow
 (`workflow_call`), also runnable manually (`workflow_dispatch`).
 
-- **How it's invoked:** during bootstrap, the Azure source workflow calls it from a PR-only `dast` job
-  *after* an authorized same-repository preview deploy completes (see §4). The staged default-branch
-  controller detects that legacy `deploy` job and remains inert. After the deployment cutover, the
-  controller calls this same reusable workflow for the exact source-run artifact and publishes the
-  exact-head required check. It can also be run on demand from **Actions → OWASP ZAP
+- **How it's invoked:** the trusted default-branch Azure controller calls it from a PR-only `dast` job
+  *after* an authorized same-repository preview deploy completes (see §4), then publishes the exact-head
+  required check. It can also be run on demand from **Actions → OWASP ZAP
   DAST → Run workflow** against any URL.
 - **Target — read from CI/CD, never hardcoded:** the `dast` job passes
-  `target_url: ${{ needs.deploy.outputs.preview_url }}`, which is wired to the Azure deploy step's
+  `target_url: ${{ needs.deploy_preview.outputs.preview_url }}`, which is wired to the controller deploy step's
   **`static_web_app_url`** output. Azure creates a fresh per-PR preview environment (e.g.
   `https://calm-forest-xxxxxxxxx-<PR#>.<region>.azurestaticapps.net`), and that URL changes per PR — so it
   must be read dynamically, which this does.
@@ -115,21 +113,20 @@ Running both on each authorized same-repository PR gives coverage from both dire
 ## 4. How it fits the CI/CD pipeline
 
 The base pipeline is the Azure Static Web Apps source workflow
-([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)),
-with deployment ownership staged in
-[`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml):
+([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml))
+plus its trusted default-branch deployment owner
+([`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml)):
 `authorize` releases `lint`, three coverage shards (aggregated as required check `test`), `e2e`, and
-`build` in parallel; `deploy` is the all-gates barrier. The security scanners attach like this:
+`build` in parallel; the controller accepts the successful source run and exact `dist` artifact. The security scanners attach like this:
 
 - **Semgrep** is an **independent workflow** that runs in parallel on pushes to `main` and PRs targeting `main` —
   it needs no deployment.
-- **ZAP** is wired into the current legacy `dast` job, which `needs: [authorize, deploy]` and consumes the
-  preview URL. After cutover, the default-branch controller downloads the exact `dist` artifact, rechecks
-  live authorization, deploys a named preview, invokes `zap.yml`, and publishes the same required context
+- **ZAP** is wired into the controller `dast` job. The controller downloads the exact `dist` artifact,
+  rechecks live authorization, deploys a named preview, invokes `zap.yml`, and publishes the required context
   on the source head. It is **PR-only** (it does not run on push-to-`main`/production) and runs **after** deploy, so
   it can never affect or roll back the deployment.
 
-Bootstrap source-workflow layout (before deployment ownership moves to the controller):
+Current source-workflow and controller layout:
 
 ```mermaid
 flowchart TD
@@ -140,10 +137,11 @@ flowchart TD
     AUTH --> E2E[e2e]
     AUTH --> BUILD[build]
     SHARDS --> TEST[aggregate test]
-    LINT --> DEPLOY[deploy → PR preview env]
-    TEST --> DEPLOY
-    E2E --> DEPLOY
-    BUILD --> DEPLOY
+    LINT --> SOURCE[successful source run]
+    TEST --> SOURCE
+    E2E --> SOURCE
+    BUILD --> SOURCE
+    SOURCE --> DEPLOY[controller deploy → named PR preview]
     DEPLOY --> DAST[ZAP DAST baseline<br/>zap.yml]
 
     SEM --> SGATE{ERROR-severity<br/>finding?}
@@ -154,13 +152,13 @@ flowchart TD
     ZGATE -- no --> OK
 ```
 
-After cutover, the source workflow ends at the `dist` artifact. The trusted default-branch controller
+The source workflow ends at the `dist` artifact. The trusted default-branch controller
 rechecks the live head, deploys the named preview, runs the same reusable ZAP workflow, and publishes the
 explicit exact-head `ZAP DAST / ZAP Baseline` check. A later source run may replace an earlier result; an
 older controller run cannot overwrite a newer successful result.
 
-During bootstrap, `authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and
-`dast` are jobs in the Azure source workflow; Semgrep is its own workflow.
+`authorize`, `lint`, the three coverage shards, `test`, `e2e`, and `build` are jobs in the Azure source
+workflow. Preview deploy, `dast`, and exact-head ZAP publication are controller jobs; Semgrep is separate.
 
 ---
 
@@ -186,15 +184,14 @@ security findings are surfaced but never block.
 > [!NOTE]
 > **Authorization gate.** For pushes to `main` and PRs targeting `main`, **Semgrep always runs** (cheap scan,
 > real required-check result), while ZAP runs only after live exact-head `run-ci` + trusted-clean-review
-> authorization and a successful preview deploy. Unauthorized runs still call `zap.yml` with an empty URL so the nested check
-> reports a failure instead of waiting as Expected, while the broker-classified expensive jobs stay skipped. For manual recovery or a same-repository Dependabot PR,
+> authorization and a successful preview deploy. For an unauthorized source run, the controller publishes a failed exact-head
+> ZAP context instead of starting a preview or scan, while the broker-classified expensive jobs stay skipped. For manual recovery or a same-repository Dependabot PR,
 > apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI. See
 > [Label-gated PR CI](ci-cd-and-deploy.md#label-gated-pr-ci).
 
 > [!WARNING]
 > **Renaming coupling.** The required checks are keyed to **job/display names**. If you rename the Semgrep
-> job (`Scan (p/default)`), the `dast` job (`ZAP DAST`), the reusable ZAP job
-> (`ZAP Baseline`), the OpenRouter caller job (`review`), or its reusable gate
+> job (`Scan (p/default)`), the controller-published ZAP context, the OpenRouter caller job (`review`), or its reusable gate
 > (`openrouter-first-pass-gate`), you must update the "Main Guard" ruleset's
 > required-check contexts to match — otherwise every merge to `main` will block
 > forever, waiting on a check that never reports under the old name.

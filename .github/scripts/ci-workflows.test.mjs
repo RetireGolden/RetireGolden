@@ -128,16 +128,18 @@ test('pack smoke scripts exercise a caller-provided release tarball', () => {
   }
 })
 
-test('Azure deploy runs only pinned artifact and deployment actions', () => {
+test('Azure source workflow stops at the trusted build artifact', () => {
   const source = read('.github/workflows/azure-static-web-apps-retiregolden.yml')
+  const controller = read('.github/workflows/azure-static-web-apps-controller.yml')
   const authorize = job(source, 'authorize')
-  const deploy = job(source, 'deploy')
+  const preview = job(controller, 'deploy_preview')
   assert.match(authorize, /if \(!result\.authorized\) core\.setFailed\(result\.reason\)/)
-  assert.match(deploy, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/)
-  assert.match(deploy, /Azure\/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1/)
-  assert.doesNotMatch(deploy, /actions\/checkout/)
-  assert.doesNotMatch(deploy, /setup-toolchain/)
-  assert.doesNotMatch(deploy, /pnpm|npm install/)
+  assert.doesNotMatch(source, /^  (deploy|dast|close_pull_request):\s*$/m)
+  assert.doesNotMatch(source, /AZURE_STATIC_WEB_APPS_API_TOKEN/)
+  assert.match(preview, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/)
+  assert.match(preview, /Azure\/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1/)
+  assert.doesNotMatch(controller, /actions\/checkout/)
+  assert.doesNotMatch(controller, /setup-toolchain|pnpm|npm install/)
 })
 
 test('existing ZAP check fails when no preview URL is authorized', () => {
@@ -149,7 +151,7 @@ test('existing ZAP check fails when no preview URL is authorized', () => {
   assert.doesNotMatch(zap, /^\s+if: inputs\.target_url != ''$/m)
 })
 
-test('default-branch SWA controller stays inert until legacy deployment is removed', () => {
+test('default-branch SWA controller owns deployment, scan publication, and teardown', () => {
   const source = read('.github/workflows/azure-static-web-apps-controller.yml')
   const inspect = job(source, 'inspect')
   const preview = job(source, 'deploy_preview')
@@ -160,6 +162,10 @@ test('default-branch SWA controller stays inert until legacy deployment is remov
   assert.match(source, /workflow_run:[\s\S]*?workflows: \[Azure Static Web Apps CI\/CD\]/)
   assert.match(source, /GitHub emits `completed` for rerun attempts too/)
   assert.match(source, /pull_request_target:\n\s+types: \[closed\]/)
+  assert.doesNotMatch(
+    read('.github/workflows/azure-static-web-apps-retiregolden.yml'),
+    /^  (deploy|dast|close_pull_request):\s*$/m,
+  )
   assert.match(inspect, /classifyAzureControllerSourceJobs/)
   assert.match(inspect, /outputs\.legacy = 'true'/)
   assert.match(inspect, /sourceWorkflowHasLegacyDeploy/)
@@ -212,15 +218,14 @@ test('review caller stages trusted default-branch events and exact gate publicat
   const source = read('.github/workflows/openrouter-code-review.yml')
   const review = job(source, 'review')
   const gate = job(source, 'gate-check')
-  const selection = job(source, 'target-selection')
   const pin = 'a40c5eb8d588266531184ffc633dc2969d9138df'
 
+  assert.doesNotMatch(source, /^  pull_request:\s*$/m)
   assert.match(source, /pull_request_target:\n\s+types: \[opened, synchronize, reopened, ready_for_review\]/)
   assert.match(source, /repository_dispatch:\n\s+types: \[openrouter-review\]/)
   assert.match(source, /checks: write/)
-  assert.match(selection, /Fork pull requests are not eligible/)
-  assert.match(selection, /\^  pull_request:/)
-  assert.match(review, /needs\.target-selection\.outputs\.run_review == 'true'/)
+  assert.doesNotMatch(source, /^  target-selection:\s*$/m)
+  assert.match(review, /github\.event\.pull_request\.head\.repo\.full_name == github\.event\.repository\.full_name/)
   assert.match(review, new RegExp(`openrouter-code-review\\.yml@${pin}`))
   assert.doesNotMatch(review, /checks: write/)
   assert.match(review, /expected_head_sha: \$\{\{ github\.event\.client_payload\.head_sha \|\| '' \}\}/)

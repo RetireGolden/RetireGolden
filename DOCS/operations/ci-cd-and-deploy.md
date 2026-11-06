@@ -12,54 +12,50 @@ The source workflow
 [`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)
 drives authorization, lint, tests, and build. The default-branch
 [`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml)
-is staged for deployment ownership after the cutover.
-It triggers on push to `main` and on `opened`, `synchronize`, `reopened`, and `closed` pull-request
-events targeting `main`. On a same-repository PR,
+owns deployment, preview scanning, and teardown from trusted default-branch code.
+The source workflow triggers on push to `main` and on `opened`, `synchronize`, and `reopened`
+pull-request events targeting `main`; the controller separately handles PR close. On a same-repository PR,
 the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
 the `run-ci` label, an exact-head clean OpenRouter review ledger, and a successful trusted
 `openrouter-profile` completion status for that head. An unauthorized run fails the existing
-`authorize` and ZAP contexts while its expensive jobs remain skipped, preserving the broker's
+`authorize` context while its expensive jobs remain skipped, preserving the broker's
 cheap exact-head rerun path (see [Label-gated PR CI](#label-gated-pr-ci) below).
 
-During this bootstrap phase the source workflow still contains `deploy`, `dast`, and
-`close_pull_request`, so it remains the sole deployment owner. The controller enumerates every
-source run's jobs and exits successfully when it finds the legacy `deploy` job; its close path likewise
-reads the active default-branch workflow and exits while `close_pull_request` is present. After those three legacy
-jobs are removed, the same default-branch controller consumes the exact source-run `dist` artifact,
+The source workflow ends at the exact `dist` artifact. The default-branch controller consumes that artifact,
 rechecks live PR ownership and the `run-ci` label from `main`, deploys named `pr<number>` previews, invokes ZAP, and
 publishes `ZAP DAST / ZAP Baseline` on the source head. Successful current-`main` artifacts deploy to
 production under a serialized production concurrency group, with a final live-branch check immediately
 before upload so a queued older run cannot replace a newer commit. Production intentionally represents
 the last successfully built `main` artifact; if `main` advances during an upload, the later successful
 source run supersedes it, while a failed newer build leaves the last successful deployment in place.
-The controller's `workflow_run: completed` trigger also receives rerun attempts. After cutover, a
+The controller's `workflow_run: completed` trigger also receives rerun attempts. A
 late rerun of an old source workflow therefore enters the `legacy-result` path and republishes its
 source-identified ZAP result after the legacy job-level check.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
 checks out or executes PR code.
 
-Bootstrap source-workflow layout (until the cutover removes the final three jobs):
+Source-workflow prerequisites flow into controller-owned deployment:
 
 ```
-authorize ─┬─► lint ─────┐
+authorize ─┬─► lint
            ├─► test engine ─┐
-           ├─► test planner-ui ─┼─► test ─┐
-           ├─► test web ──────┘          ├─► deploy ─► dast (PR only)
-           ├─► e2e ──────────────────────┤
-           └─► build ────────────────────┘
+           ├─► test planner-ui ─┼─► test
+           ├─► test web ──────┘
+           ├─► e2e
+           └─► build ─► dist artifact ─► controller deploy ─► dast (PR only)
 ```
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
+| `authorize` | push + PR open/sync/reopen | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
 | `lint` | authorized push/PR | root `pnpm install --frozen-lockfile`, `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`), then workflow contract tests |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
 | `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks, then the production-build Playwright spec (`pnpm test:e2e:dist` in `app/`, `vite preview` of the built `dist`); uploads `app/dist` as the `dist` artifact |
-| `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, then deploys it directly via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; the token-holding job does not check out the PR or run repository setup; exposes the deployed URL as `preview_url` |
-| `dast` | PR only; needs `authorize` and `deploy` | OWASP ZAP baseline scan of the freshly deployed authorized same-repository PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL so the existing required nested check fails instead of hanging on "Expected" |
-| `close_pull_request` | PR close | tears down the SWA preview environment |
+| controller `deploy_preview` / `deploy_production` | successful completed source run | downloads the exact `dist` artifact and deploys it via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; token-holding jobs do not check out PR code or run repository setup |
+| controller `dast` / `publish_pr_result` | authorized PR preview | scans the deployed URL with OWASP ZAP and publishes the exact-head `ZAP DAST / ZAP Baseline` check — see [security-scanning.md](security-scanning.md) |
+| controller `close_preview` | PR close | tears down the named preview plus any transitional legacy preview environment |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
 `packageManager` pin plus `actions/setup-node` with the pnpm store cache; the fresh-resolve gate passes
@@ -71,7 +67,7 @@ scan is cheap and it is a Main Guard required check (also in [security-scanning.
 ## Label-gated PR CI
 
 To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by default — review bots can
-iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
+iterate without every commit running lint/test/e2e/build or starting the controller deploy/DAST path. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
 `run-ci` only after independently validating an eligible open same-repository PR to `main`.
 Review, profile-completion, and Azure completion events, plus explicit default-branch
@@ -99,8 +95,8 @@ generation id, a positive round, and a `findings` array that is either empty or 
 not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
 resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
 successful review run came from the same repository and that its caller workflow blob at
-the run commit exactly equals the caller blob on the default branch for branch and dispatch runs. Normal
-`pull_request` runs use the reviewed head. Trusted `pull_request_target` runs execute the caller from the
+the run commit exactly equals the caller blob on the default branch for dispatch runs. Trusted
+`pull_request_target` runs execute the caller from the
 default branch and instead require the exact reviewed head,
 the live head branch, and every same-repository PR from that branch to have always targeted the
 default branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
@@ -318,8 +314,8 @@ and has a ten-minute job limit so a stuck sweep releases the queue.
   orchestration uses the built-in `GITHUB_TOKEN`. The post-cutover `workflow_run` deploy intentionally
   omits the action's `repo_token` because it has no pull-request event context for preview comments; the
   preview URL is passed directly to ZAP and remains visible in the controller run.
-- Azure creates a **fresh preview environment per PR** (a unique `*.azurestaticapps.net` URL); the `dast`
-  job reads that URL dynamically from the deploy job's output. Pushing to `main` deploys production.
+- Azure creates a **fresh named preview environment per PR** (a unique `*.azurestaticapps.net` URL); the
+  controller passes its deploy output directly to the `dast` job. Pushing to `main` deploys production.
 
 ## Branch protection
 
