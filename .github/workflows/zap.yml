@@ -10,10 +10,10 @@ on:
   workflow_call:
     inputs:
       target_url:
-        # Empty means "nothing was deployed" (label-gated PR CI): the caller
-        # invokes this workflow anyway so the required `ZAP DAST / ZAP Baseline`
-        # check reports as skipped instead of hanging on "Expected".
-        description: URL of the deployed environment to scan (empty = skip the scan)
+        # Empty means authorization did not release a deployment. The caller
+        # still invokes this workflow so the existing required context fails
+        # closed instead of hanging on "Expected".
+        description: URL of the deployed environment to scan
         required: false
         default: ''
         type: string
@@ -31,11 +31,17 @@ permissions:
 jobs:
   zap_baseline:
     name: ZAP Baseline
-    # Skip (rather than fail) when there is no deployed environment to scan;
-    # a skipped run still reports the required check. See target_url above.
-    if: inputs.target_url != ''
     runs-on: ubuntu-latest
     steps:
+      - name: Require an authorized preview URL
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+        run: |
+          if [ -z "$TARGET_URL" ]; then
+            echo "::error::No authorized preview URL was provided."
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: ZAP Baseline Scan

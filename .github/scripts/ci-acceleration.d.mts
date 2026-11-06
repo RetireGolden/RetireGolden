@@ -88,6 +88,7 @@ export interface CiRequestedInput {
 
 export interface AuthorizationResult {
   readonly authorized: boolean
+  /** Always the inverse of authorized; retained for callers that consume the result directly. */
   readonly failJob: boolean
   readonly reason: string
 }

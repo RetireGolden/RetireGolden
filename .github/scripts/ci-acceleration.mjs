@@ -277,6 +277,10 @@ export function isCiRequested({ runAttempt, hasRunCiLabel }) {
   return false
 }
 
+function authorizationResult(authorized, reason) {
+  return { authorized, failJob: !authorized, reason }
+}
+
 export function terminalSameRepositoryWorkflowRunUrl(review, repository) {
   const body = typeof review.body === 'string' ? review.body : ''
   const lines = body.split(/\r?\n/)
@@ -536,12 +540,11 @@ export async function authorizeExactHeadPullRequest(
 },
 ) {
   const eventHasRunCi = (eventPr.labels ?? []).some((entry) => entry.name === 'run-ci')
-  const eventRequested = isCiRequested({ runAttempt, hasRunCiLabel: eventHasRunCi })
   const expectedHeadSha = eventPr.head?.sha
   const pullNumber = eventPr.number
 
   if (typeof expectedHeadSha !== 'string' || !Number.isSafeInteger(pullNumber)) {
-    return { authorized: false, failJob: eventRequested, reason: 'pull-request event is missing a number or head SHA' }
+    return authorizationResult(false, 'pull-request event is missing a number or head SHA')
   }
 
   const associated = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
@@ -557,22 +560,14 @@ export async function authorizeExactHeadPullRequest(
     }
   }
   if (liveAssociatedPrs.length !== 1 || liveAssociatedPrs[0].number !== pullNumber) {
-    return {
-      authorized: false,
-      failJob: isCiRequested({
-        runAttempt,
-        hasRunCiLabel: eventHasRunCi,
-      }),
-      reason: `expected exactly one live same-repository PR at ${expectedHeadSha}`,
-    }
+    return authorizationResult(false, `expected exactly one live same-repository PR at ${expectedHeadSha}`)
   }
 
   const pr = liveAssociatedPrs[0]
   const hasRunCiLabel = (pr.labels ?? []).some((entry) => entry.name === 'run-ci')
-  const ciRequested = isCiRequested({ runAttempt, hasRunCiLabel })
 
   if (!hasRunCiLabel) {
-    return { authorized: false, failJob: ciRequested, reason: 'live PR does not have run-ci' }
+    return authorizationResult(false, 'live PR does not have run-ci')
   }
 
   const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -590,17 +585,13 @@ export async function authorizeExactHeadPullRequest(
     allowDispatch: true,
   })
   if (error) {
-    return { authorized: false, failJob: ciRequested, reason: error }
+    return authorizationResult(false, error)
   }
 
   const authoritativeReviewRun = newestWorkflowRun(provenanceReviewRuns)
   if (!authoritativeReviewRun || authoritativeReviewRun.status !== 'completed' ||
     authoritativeReviewRun.conclusion !== 'success') {
-    return {
-      authorized: false,
-      failJob: ciRequested,
-      reason: 'newest provenance-valid exact-head OpenRouter run is not successful',
-    }
+    return authorizationResult(false, 'newest provenance-valid exact-head OpenRouter run is not successful')
   }
 
   const authoritativeRunUrl = workflowRunUrl(owner, repo, authoritativeReviewRun.id)
@@ -611,11 +602,7 @@ export async function authorizeExactHeadPullRequest(
     workflowRunUrl: authoritativeRunUrl,
   })
   if (!trustedCleanReview) {
-    return {
-      authorized: false,
-      failJob: ciRequested,
-      reason: 'latest exact current-head OpenRouter bot review is not a clean authoritative ledger',
-    }
+    return authorizationResult(false, 'latest exact current-head OpenRouter bot review is not a clean authoritative ledger')
   }
 
   const profileAuthorization = await authorizeReviewProfile(github, {
@@ -629,24 +616,16 @@ export async function authorizeExactHeadPullRequest(
     reviewRun: authoritativeReviewRun,
   })
   if (!profileAuthorization.authorized) {
-    return {
-      authorized: false,
-      failJob: ciRequested,
-      reason: profileAuthorization.reason,
-    }
+    return authorizationResult(false, profileAuthorization.reason)
   }
 
   const { data: finalPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number })
   if (pullRequestSkipReason(finalPr, repository, expectedHeadSha) ||
     !(finalPr.labels ?? []).some((entry) => entry.name === 'run-ci')) {
-    return {
-      authorized: false,
-      failJob: ciRequested,
-      reason: 'PR head/state/repository/label changed during authorization',
-    }
+    return authorizationResult(false, 'PR head/state/repository/label changed during authorization')
   }
 
-  return { authorized: true, failJob: false, reason: `exact-head trusted clean review for ${expectedHeadSha}` }
+  return authorizationResult(true, `exact-head trusted clean review for ${expectedHeadSha}`)
 }
 
 export function isExpensiveAzureJob(job) {

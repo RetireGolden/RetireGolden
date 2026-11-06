@@ -14,8 +14,9 @@ It triggers on push to `main` and on `opened`, `synchronize`, `reopened`, and `c
 events targeting `main`. On a same-repository PR,
 the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
 the `run-ci` label, an exact-head clean OpenRouter review ledger, and a successful trusted
-`openrouter-profile` completion status for that head. An unauthorized run therefore stays
-cheap and its expensive jobs report skipped (see [Label-gated PR CI](#label-gated-pr-ci) below).
+`openrouter-profile` completion status for that head. An unauthorized run fails the existing
+`authorize` and ZAP contexts while its expensive jobs remain skipped, preserving the broker's
+cheap exact-head rerun path (see [Label-gated PR CI](#label-gated-pr-ci) below).
 
 ```
 authorize ─┬─► lint ─────┐
@@ -28,18 +29,18 @@ authorize ─┬─► lint ─────┐
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts remain cheap placeholders; requested paths fail closed. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
-| `lint` | authorized push/PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
+| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
+| `lint` | authorized push/PR | root `pnpm install --frozen-lockfile`, `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`), then workflow contract tests |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
 | `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks, then the production-build Playwright spec (`pnpm test:e2e:dist` in `app/`, `vite preview` of the built `dist`); uploads `app/dist` as the `dist` artifact |
-| `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
-| `dast` | PR only; needs `authorize` and `deploy` | OWASP ZAP baseline scan of the freshly deployed authorized same-repository PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
+| `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, then deploys it directly via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; the token-holding job does not check out the PR or run repository setup; exposes the deployed URL as `preview_url` |
+| `dast` | PR only; needs `authorize` and `deploy` | OWASP ZAP baseline scan of the freshly deployed authorized same-repository PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL so the existing required nested check fails instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
-`packageManager` pin plus `actions/setup-node` with the pnpm store cache; the deploy job passes `pnpm: 'false'`
-and the fresh-resolve gate `cache: 'false'`); the workspaces require **Node ≥ 24.15.0**. Dependencies install
+`packageManager` pin plus `actions/setup-node` with the pnpm store cache; the fresh-resolve gate passes
+`cache: 'false'`); the workspaces require **Node ≥ 24.15.0**. Dependencies install
 once at the repo root (`pnpm install --frozen-lockfile` against the root `pnpm-lock.yaml` — the repo is a pnpm workspace).
 Semgrep SAST runs as a separate workflow on every push/PR — deliberately **not** label-gated, because the
 scan is cheap and it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).
@@ -205,9 +206,9 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 - A rerun deliberately ignores its frozen event labels. `authorize` re-reads the live PR, label, review,
   and head immediately before releasing checkout jobs; a head race fails closed. Fork PRs never authorize
   or deploy. The broker never auto-reruns Dependabot PRs.
-- **Without the label**, the gated jobs report as **skipped**. Skipped checks *satisfy* the Main Guard
-  required checks, so always apply `run-ci` (and let CI go green) **before merging** — a merge without
-  the label lands on `main` unvalidated (the push-to-`main` run will still catch it, but after the fact).
+- **Without the label**, `authorize` and the nested ZAP context fail while the expensive jobs remain
+  **skipped**. The broker deliberately recognizes that exact shape, applies `run-ci` only after current
+  review proof, and reruns the same exact-head Azure attempt. The authorized rerun must be green before merge.
 - **Semgrep is exempt**: it runs on every PR push regardless of the label, so the SAST required check is
   always a real result. It's a cheap CLI scan — the label gate covers the expensive pipeline only.
 - **The resolve gate is also exempt**: [`resolve-gate.yml`](../../.github/workflows/resolve-gate.yml)
@@ -313,12 +314,19 @@ the package on npmjs.com is configured with a trusted publisher pinned to this r
 the job exchanges GitHub's OIDC token (`id-token: write`) for short-lived publish credentials, generating
 provenance automatically. OIDC requires npm ≥ 11.5.1, so the workflow upgrades npm before publishing.
 
-The publish job runs in the **`npm-publish`** GitHub environment, which requires manual reviewer approval
-before any of its steps run — this includes manual `workflow_dispatch` dry-runs, which also pause for
-approval. A separate ungated `guard` job forces `workflow_dispatch` runs to `--dry-run`, so an approved
-dispatch can only ever rehearse; a real release must come from a version-matched `engine-v*` /
-`planner-ui-v*` tag push. The `npm-publish` environment is shared by both package workflows; its
-deployment-branch policy allows the `engine-v*` and `planner-ui-v*` tag patterns plus `main`.
+Each workflow first runs an unprivileged `build-and-smoke` job with read-only repository access. It
+installs the frozen workspace, runs the package checks, creates a release tarball, records its SHA-256
+digest, runs the pack smoke against that exact tarball, and uploads it with seven-day retention. The
+environment-protected `publish` job does
+not check out the repository or install workspace dependencies. It downloads that tarball, verifies the
+digest and packed name/version against the tag, installs exactly npm 11.5.1, and publishes the tarball.
+
+The `publish` job runs in the **`npm-publish`** GitHub environment, which requires manual reviewer approval
+before its steps run — this includes manual `workflow_dispatch` dry-runs, which also pause for approval.
+A separate ungated `guard` job forces `workflow_dispatch` runs to `--dry-run`, so an approved dispatch can
+only rehearse; a real release must come from a version-matched `engine-v*` / `planner-ui-v*` tag push. The
+`npm-publish` environment is shared by both package workflows; its deployment-branch policy allows the
+`engine-v*` and `planner-ui-v*` tag patterns plus `main`.
 
 [`publish-planner-ui.yml`](../../.github/workflows/publish-planner-ui.yml) is the same pipeline for
 `packages/planner-ui` → **`@retiregolden/planner-ui`**, firing on `planner-ui-v<version>` tags. Its

@@ -3,7 +3,7 @@
 # workflow): the scan is cheap, and it is a Main Guard required check — keeping
 # it always-on means every PR gets a real SAST result rather than a skipped one.
 # Purely open-source local scan using the p/default ruleset (no account or token required).
-# Reports ALL findings (artifact + code scanning), but gates the build only on
+# Reports ALL findings as an artifact, but gates the build only on
 # high-severity (ERROR) findings — low/medium issues are surfaced, never blocking.
 name: Semgrep SAST
 
@@ -20,8 +20,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: read          # checkout
-  security-events: write  # upload SARIF to the Security tab (Code Scanning)
+  contents: read
 
 jobs:
   semgrep:
@@ -40,8 +39,10 @@ jobs:
       - name: Install Semgrep CLI
         # Pinned like every Action in this repo: the scanner runs over the
         # checked-out tree and gates a required check, so "latest" is not an
-        # acceptable version. Dependabot (pip ecosystem) proposes bumps.
-        run: python -m pip install -r .github/requirements.txt
+        # acceptable version. Dependabot proposes the marker update in
+        # .github/requirements.txt; its PR intentionally waits for this inline
+        # pin and the operations guide to be updated in the same change.
+        run: python -m pip install 'semgrep==1.182.1'
 
       - name: Semgrep scan
         # `semgrep scan` exits 0 even when findings exist (unlike `--error`),
@@ -57,20 +58,32 @@ jobs:
           path: semgrep.sarif
           retention-days: 7
 
-      - name: Publish results to GitHub code scanning
-        # Surfaces findings as PR annotations + the Security tab.
-        # continue-on-error keeps the pipeline green if Code Scanning is not
-        # available (e.g. a private repo without GitHub Advanced Security).
-        if: always()
-        continue-on-error: true
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
-        with:
-          sarif_file: semgrep.sarif
-          category: semgrep
-
       - name: Gate — fail only on high-severity (ERROR) findings
-        # Runs after reporting, so the artifact + code scanning upload above always
-        # happen first. Re-scans scoped to ERROR severity; --error makes the job
+        # Runs after reporting, so the artifact upload above always happens
+        # first. Re-scans scoped to ERROR severity; --error makes the job
         # (and therefore the check) fail ONLY when a high-severity finding exists.
         # WARNING/INFO findings remain visible in the report but do not block.
         run: semgrep scan --config=p/default --severity=ERROR --error --metrics=off
+
+  publish_sarif:
+    name: Publish SARIF on main
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.semgrep.result != 'cancelled'
+    needs: semgrep
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Download Semgrep SARIF
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: semgrep-sarif
+          path: semgrep-sarif
+
+      - name: Publish results to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: semgrep-sarif/semgrep.sarif
+          category: semgrep

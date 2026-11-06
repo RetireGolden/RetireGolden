@@ -23,7 +23,7 @@ noise never breaks the pipeline.
 | When it runs | Every `push` and `pull_request` to `main` | Only an authorized same-repository PR preview, after deploy; never production pushes |
 | Target | The repo checkout | The PR preview/staging URL (read from CI/CD, see below) |
 | Ruleset / scan | `p/default` (OSS, local) | Passive **baseline** scan (non-intrusive) |
-| Reports everything to | `semgrep-sarif` artifact + GitHub **code scanning** (Security tab) | `zap-baseline-report` artifact (HTML/MD/JSON) + job log |
+| Reports everything to | `semgrep-sarif` workflow artifact; pushes to `main` also publish to code scanning | `zap-baseline-report` artifact (HTML/MD/JSON) + job log |
 | **Blocks the merge on** | **ERROR**-severity findings only | **High-risk** alerts (`riskcode 3`) — or a missing `report_json.json`, which fails closed |
 | Secrets required | None (pure OSS local scan) | None (built-in `GITHUB_TOKEN`) |
 | Required status check | `Scan (p/default)` | `ZAP DAST / ZAP Baseline` |
@@ -49,10 +49,11 @@ Running both on each authorized same-repository PR gives coverage from both dire
 **Workflow:** [`.github/workflows/semgrep.yml`](../../.github/workflows/semgrep.yml)
 
 - **Triggers** on `push` and `pull_request` to `main`.
-- Runs the Semgrep CLI on a `setup-python` runner, installed from the version pin in
-  [`.github/requirements.txt`](../../.github/requirements.txt) (`pip install -r`).
-  The scanner is pinned like every Action in this repo, so a Semgrep CLI release cannot move a
-  required check on its own; Dependabot (pip ecosystem) proposes the bumps.
+- Runs the Semgrep CLI on a `setup-python` runner. The workflow installs the exact
+  `semgrep==1.182.1` pin directly rather than executing dependency input from the checked-out tree.
+  `.github/requirements.txt` is only the Dependabot update marker. Its automated PR is expected to
+  wait for the inline workflow pin and this guide to be aligned on the same branch; a contract test
+  requires all three values to match.
 - Uses the **`p/default`** ruleset — Semgrep's curated, low-false-positive set. This is a **purely local,
   open-source** scan: no Semgrep account or token is involved. Note that the ruleset itself is *not*
   pinned: `p/default` is fetched from the registry at scan time, so an upstream rule change can still
@@ -62,12 +63,10 @@ Running both on each authorized same-repository PR gives coverage from both dire
 **Two-phase behavior (report, then gate):**
 
 1. **Report** — `semgrep scan --config=p/default --sarif --output=semgrep.sarif` runs without `--error`,
-   so it exits `0` regardless of findings. The SARIF is:
-   - uploaded as the **`semgrep-sarif`** build artifact, and
-   - published to **GitHub code scanning** (`github/codeql-action/upload-sarif`), so findings appear as
-     PR annotations and in the **Security → Code scanning** tab. This upload is `continue-on-error`, so it
-     never breaks the build (e.g. on a private repo without GitHub Advanced Security, it degrades to just
-     the artifact).
+   so it exits `0` regardless of findings. The SARIF is uploaded as the **`semgrep-sarif`** build artifact.
+   The pull-request job keeps read-only repository permissions and does not publish to code scanning.
+   On a push to `main`, a separate job downloads that artifact and publishes it with
+   `security-events: write`; it never runs for a pull-request event.
 2. **Gate** — a final step re-runs scoped to high severity:
    `semgrep scan --config=p/default --severity=ERROR --error`. `--error` makes the job (and therefore the
    required check) fail **only when an ERROR-severity finding exists**. WARNING/INFO findings remain
@@ -174,7 +173,7 @@ security findings are surfaced but never block.
 > **Authorization gate.** For pushes to `main` and PRs targeting `main`, **Semgrep always runs** (cheap scan,
 > real required-check result), while ZAP runs only after live exact-head `run-ci` + trusted-clean-review
 > authorization and a successful preview deploy. Unauthorized runs still call `zap.yml` with an empty URL so the nested check
-> reports **skipped** instead of waiting as Expected. For manual recovery or a same-repository Dependabot PR,
+> reports a failure instead of waiting as Expected, while the broker-classified expensive jobs stay skipped. For manual recovery or a same-repository Dependabot PR,
 > apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI. See
 > [Label-gated PR CI](ci-cd-and-deploy.md#label-gated-pr-ci).
 
@@ -192,7 +191,7 @@ security findings are surfaced but never block.
 
 | | Location |
 |---|---|
-| Semgrep findings | Actions run → **Artifacts → `semgrep-sarif`**; and **Security → Code scanning** (PR annotations) |
+| Semgrep findings | Actions run → **Artifacts → `semgrep-sarif`**; pushes to `main` also publish the SARIF to **Security → Code scanning** |
 | ZAP findings | Actions run → **Artifacts → `zap-baseline-report`** (open `report_html.html`); the `dast` job log lists every rule `PASS`/`WARN`/`FAIL` and the High-risk gate result |
 
 ---
@@ -205,9 +204,8 @@ security findings are surfaced but never block.
 - **Optional — Semgrep dashboard:** to send results to Semgrep Cloud (managed rules, triage UI), add a
   `SEMGREP_APP_TOKEN` repo secret and switch the scan command to `semgrep ci`. Not needed for the
   OSS-local setup.
-- **Code scanning on private repos:** publishing SARIF to the Security tab requires GitHub Advanced
-  Security on private repos. Without it, the upload step is skipped gracefully and the `semgrep-sarif`
-  artifact remains the source of truth.
+- **Code scanning publication:** the pull-request scan intentionally keeps only read access. The companion
+  publisher runs only for pushes to `main`, downloads that run's SARIF artifact, and holds the write permission.
 
 ---
 
@@ -234,7 +232,7 @@ security findings are surfaced but never block.
 |---|---|
 | A required check sits on "Expected — waiting for status to be reported" and the PR can't merge | A job was renamed but the ruleset context wasn't updated (see §5 warning). Realign the names. |
 | ZAP scans an empty/wrong URL | The deploy step's `static_web_app_url` output was empty; confirm the `deploy` job succeeded and produced the preview URL. |
-| Semgrep code-scanning upload step is skipped | Private repo without GitHub Advanced Security — expected; use the `semgrep-sarif` artifact. |
+| Pull-request Semgrep results are not shown in code scanning | The pull-request job is read-only; use the `semgrep-sarif` artifact. Pushes to `main` publish there separately. |
 | ZAP gate fails but you expected a pass | Open `report_html.html` in the `zap-baseline-report` artifact and look for **High** risk alerts; the `dast` job log prints which alert(s) tripped the gate. |
 
 ---

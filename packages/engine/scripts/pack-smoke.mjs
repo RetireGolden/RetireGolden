@@ -10,15 +10,22 @@
  * actually resolve. Run from anywhere: `node packages/engine/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
 const require = createRequire(import.meta.url)
+const providedTarball = process.env.PACK_SMOKE_TARBALL
+  ? resolve(process.env.PACK_SMOKE_TARBALL)
+  : undefined
+if (providedTarball !== undefined &&
+  (!providedTarball.endsWith('.tgz') || !existsSync(providedTarball))) {
+  throw new Error(`pack smoke FAILED: PACK_SMOKE_TARBALL is not a readable .tgz: ${providedTarball}`)
+}
 
 function collectImportFootprint(entryPath, footprint = {
   modulePaths: new Set(),
@@ -1570,13 +1577,20 @@ export const options: Pick<SimulateOptions, 'annualCounterfactual'> =
 
 const work = mkdtempSync(join(tmpdir(), 'engine-pack-smoke-'))
 try {
-  const packOutput = execFileSync('pnpm', ['pack', '--pack-destination', work], {
-    cwd: pkgDir,
-    encoding: 'utf8',
-    shell,
-  })
-  const packed = packOutput.trim().split('\n').pop().trim()
-  const tarball = packed.endsWith('.tgz') ? packed : join(work, packed)
+  let tarball
+  if (providedTarball !== undefined) {
+    tarball = join(work, basename(providedTarball))
+    copyFileSync(providedTarball, tarball)
+    console.log(`pack smoke: using provided tarball ${basename(tarball)} ...`)
+  } else {
+    const packOutput = execFileSync('pnpm', ['pack', '--pack-destination', work], {
+      cwd: pkgDir,
+      encoding: 'utf8',
+      shell,
+    })
+    const packed = packOutput.trim().split('\n').pop().trim()
+    tarball = packed.endsWith('.tgz') ? packed : join(work, packed)
+  }
 
   writeFileSync(join(work, 'package.json'), JSON.stringify({ name: 'engine-pack-smoke', private: true, type: 'module' }))
   execFileSync('pnpm', ['add', tarball], {

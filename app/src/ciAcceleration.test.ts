@@ -639,6 +639,8 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
+    expect(helperContent).toContain('return { authorized, failJob: !authorized, reason }')
+    expect(helperContent).not.toMatch(/failJob:\s*(?:true|false|ciRequested)/)
     expect(helperContent).not.toContain('gitBlobSha')
     expect(helperContent).not.toContain('node:crypto')
   })
@@ -1144,7 +1146,7 @@ describe('OpenRouter CI authorization contract', () => {
     expect(result.reason).toMatch(/cannot inspect the exact-head OpenRouter caller/)
   })
 
-  it('keeps the first unlabeled placeholder path successful without failing authorize', async () => {
+  it('fails the first unlabeled authorization while keeping expensive jobs unreleased', async () => {
     const github = mockGithub({
       rest: {
         pulls: {
@@ -1172,7 +1174,8 @@ describe('OpenRouter CI authorization contract', () => {
       },
       runAttempt: 1,
     })
-    expect(result).toMatchObject({ authorized: false, failJob: false })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toBe('live PR does not have run-ci')
   })
 
   it('collects dispatch runs directly from ledger links without head_sha list filtering', async () => {
@@ -1219,9 +1222,9 @@ describe('OpenRouter CI authorization contract', () => {
     }
   })
 
-  it('treats a successful placeholder-only Azure run as eligible, but not a successful lint run', () => {
+  it('treats a failed-gate placeholder Azure run as eligible, but not a successful lint run', () => {
     const placeholderOnly = [
-      { name: 'authorize', conclusion: 'success' },
+      { name: 'authorize', conclusion: 'failure' },
       { name: 'lint', conclusion: 'skipped' },
       { name: 'test engine', conclusion: 'skipped' },
       { name: 'test planner-ui', conclusion: 'skipped' },
@@ -1230,8 +1233,8 @@ describe('OpenRouter CI authorization contract', () => {
       { name: 'e2e', conclusion: 'skipped' },
       { name: 'build', conclusion: 'skipped' },
       { name: 'deploy', conclusion: 'skipped' },
-      { name: 'ZAP DAST', conclusion: 'success' },
-      { name: 'ZAP DAST / ZAP Baseline', conclusion: 'success' },
+      { name: 'ZAP DAST', conclusion: 'failure' },
+      { name: 'ZAP DAST / ZAP Baseline', conclusion: 'failure' },
     ]
     expect(hasOnlySkippedExpensiveAzureJobs(placeholderOnly)).toBe(true)
     expect(hasOnlySkippedExpensiveAzureJobs([...placeholderOnly, { name: 'lint', conclusion: 'success' }])).toBe(false)
@@ -1272,9 +1275,9 @@ describe('OpenRouter CI authorization contract', () => {
     expect(authorize).toContain('pull-requests: read')
     expect(authorize).toContain('helper.authorizeExactHeadPullRequest')
     expect(authorize).toContain('github.rest.git.getBlob')
-    expect(authorize).toContain("core.setFailed(result.reason)")
-    expect(authorize).toContain('context.runAttempt > 1')
-    expect(authorize).toContain("eventPr?.labels?.some((label) => label.name === 'run-ci')")
+    expect(authorize).toContain("if (!result.authorized) core.setFailed(result.reason)")
+    expect(authorize).toContain('core.setFailed(message)')
+    expect(authorize).not.toContain('core.info(`not authorized: ${message}`)')
     expect(authorize).toContain("if (error?.status !== 404) throw error")
     expect(authorize).toContain("throw new Error('trusted CI helper response is not a file')")
     expect(authorize).toContain("throw new Error('trusted CI helper is missing authorization export')")

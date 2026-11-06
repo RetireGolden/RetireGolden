@@ -31,6 +31,7 @@
 import { execFileSync } from 'node:child_process'
 import {
   copyFileSync,
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -39,13 +40,20 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptsDir, '..')
 const enginePkgDir = resolve(pkgDir, '..', 'engine')
 const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
+const providedTarball = process.env.PACK_SMOKE_TARBALL
+  ? resolve(process.env.PACK_SMOKE_TARBALL)
+  : undefined
+if (providedTarball !== undefined &&
+  (!providedTarball.endsWith('.tgz') || !existsSync(providedTarball))) {
+  throw new Error(`pack smoke FAILED: PACK_SMOKE_TARBALL is not a readable .tgz: ${providedTarball}`)
+}
 const engineSourceMode = process.env.PLANNER_PACK_SMOKE_ENGINE_SOURCE ?? 'auto'
 if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
   throw new Error(
@@ -448,16 +456,23 @@ const exportsSmoke = [
 
 const scratchDir = mkdtempSync(join(tmpdir(), 'planner-ui-pack-smoke-'))
 try {
-  console.log(`pack smoke: packing ${pkgDir} ...`)
-  const packed = execFileSync('pnpm', ['pack', '--pack-destination', scratchDir], {
-    cwd: pkgDir,
-    encoding: 'utf8',
-    shell,
-  })
-    .trim()
-    .split('\n')
-    .at(-1)
-  const tarball = packed.endsWith('.tgz') ? packed.split(/[\\/]/).pop() : packed
+  let tarball
+  if (providedTarball !== undefined) {
+    tarball = basename(providedTarball)
+    copyFileSync(providedTarball, join(scratchDir, tarball))
+    console.log(`pack smoke: using provided tarball ${tarball} ...`)
+  } else {
+    console.log(`pack smoke: packing ${pkgDir} ...`)
+    const packed = execFileSync('pnpm', ['pack', '--pack-destination', scratchDir], {
+      cwd: pkgDir,
+      encoding: 'utf8',
+      shell,
+    })
+      .trim()
+      .split('\n')
+      .at(-1)
+    tarball = packed.endsWith('.tgz') ? packed.split(/[\\/]/).pop() : packed
+  }
 
   execFileSync('tar', ['-xzf', tarball, 'package/package.json'], { cwd: scratchDir })
   const packedManifest = JSON.parse(readFileSync(join(scratchDir, 'package', 'package.json'), 'utf8'))
@@ -517,13 +532,13 @@ try {
         dependencies: {
           '@retiregolden/engine': engineSpec,
           '@retiregolden/planner-ui': `file:./${tarball}`,
-          react: '^19.2.7',
-          'react-dom': '^19.2.7',
-          'react-router': '^8.3.0',
+          react: '19.2.8',
+          'react-dom': '19.2.8',
+          'react-router': '8.3.0',
         },
         devDependencies: {
-          '@vitejs/plugin-react': '^6.0.1',
-          vite: '^8.0.16',
+          '@vitejs/plugin-react': '6.0.1',
+          vite: '8.0.16',
         },
       },
       null,

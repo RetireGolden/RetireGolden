@@ -43,7 +43,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = '31c12f3f8413098316f478aa9a05e2f2d88573fd'
+            const helperPin = 'dff02cecd03e333a9d0533821bbbdbd4402dafc6'
             const importHelper = async (content) => {
               if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
               const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
@@ -73,11 +73,6 @@ jobs:
               }
               return importHelper(helperFile.data.content)
             }
-            const eventPr = context.payload.pull_request
-            const requested = context.eventName === 'pull_request' && (
-              context.runAttempt > 1 ||
-              eventPr?.labels?.some((label) => label.name === 'run-ci')
-            )
             try {
               if (context.eventName === 'push') {
                 core.setOutput('authorized', 'true')
@@ -95,12 +90,11 @@ jobs:
               })
               core.setOutput('authorized', result.authorized ? 'true' : 'false')
               core.info(`${result.authorized ? 'authorized' : 'not authorized'}: ${result.reason}`)
-              if (result.failJob) core.setFailed(result.reason)
+              if (!result.authorized) core.setFailed(result.reason)
             } catch (error) {
               core.setOutput('authorized', 'false')
               const message = error instanceof Error ? error.message : String(error)
-              if (requested) core.setFailed(message)
-              else core.info(`not authorized: ${message}`)
+              core.setFailed(message)
             }
 
   lint:
@@ -114,6 +108,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Lint (packages + app)
         run: pnpm lint
+      - name: Workflow contract tests
+        run: node --test .github/scripts/ci-workflows.test.mjs
 
   test_engine:
     name: test engine
@@ -251,15 +247,11 @@ jobs:
     outputs:
       preview_url: ${{ steps.builddeploy.outputs.static_web_app_url }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download build output
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
           path: app/dist
-      - uses: ./.github/actions/setup-toolchain
-        with:
-          pnpm: 'false'
       - name: Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
@@ -275,8 +267,8 @@ jobs:
   dast:
     name: ZAP DAST
     # Unauthorized PRs retain the empty-URL reusable invocation so the nested
-    # required check is skipped, not left Expected.  Authorized PRs reach ZAP
-    # only after every gate and preview deployment succeeds.
+    # required check fails closed rather than being left Expected. Authorized
+    # PRs reach ZAP only after every gate and preview deployment succeeds.
     if: >-
       !cancelled() && github.event_name == 'pull_request' && github.event.action != 'closed' &&
       (needs.authorize.outputs.authorized != 'true' || needs.deploy.result == 'success')

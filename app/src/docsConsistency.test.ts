@@ -47,9 +47,11 @@ const enginePackageNodeFloor = (JSON.parse(enginePackageJson) as { engines: { no
 const plannerUiPackageNodeFloor = (JSON.parse(plannerUiPackageJson) as { engines: { node: string } })
   .engines.node
 const publishedPackageNodeFloors = [enginePackageNodeFloor, plannerUiPackageNodeFloor]
-// The Node major CI installs lives in one place: the shared composite action every
-// workflow that runs Node uses (.github/actions/setup-toolchain).
+// The Node major CI installs lives in the shared composite. The two isolated
+// publish jobs use its exact setup-node pin directly so they do not check out or
+// execute repository helpers while holding publish credentials.
 const ciNodeVersion = setupToolchainAction.match(/node-version: '(\d+)'/)?.[1]
+const setupNodePin = setupToolchainAction.match(/uses: (actions\/setup-node@[0-9a-f]{40})/)?.[1]
 
 // Parses a '>=X[.Y[.Z]]' engines.node floor into numeric [major, minor, patch], defaulting
 // an omitted minor/patch to 0.
@@ -110,13 +112,18 @@ describe('docs consistency', () => {
     expect(nodeFloor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
     expect(nodeFloor.slice('>='.length).split('.')[0]).toBe(ciNodeVersion)
     for (const workflow of nodePinnedWorkflows) {
-      // Every Node-running workflow goes through the composite, so the version is pinned once.
       expect(workflow).toContain('uses: ./.github/actions/setup-toolchain')
     }
-    // ...and no workflow at all, listed here or added later, may carry a raw setup-node
-    // step, which would reintroduce a second place to bump.
+    expect(setupNodePin).toBeDefined()
+    for (const workflow of [publishEngineWorkflow, publishPlannerUiWorkflow]) {
+      expect(workflow).toContain(`uses: ${setupNodePin}`)
+      expect(workflow.match(/uses: actions\/setup-node@/g)).toHaveLength(1)
+      expect(workflow.match(/node-version: '(\d+)'/)?.[1]).toBe(ciNodeVersion)
+    }
+    // Other workflows continue to use only the shared composite.
     expect(Object.keys(allWorkflowSources).length).toBe(workflowFiles.length)
     for (const [path, source] of Object.entries(allWorkflowSources)) {
+      if (path.endsWith('/publish-engine.yml') || path.endsWith('/publish-planner-ui.yml')) continue
       expect(source, `${path} should use the composite, not a raw actions/setup-node`).not.toMatch(
         /uses: actions\/setup-node@/,
       )
