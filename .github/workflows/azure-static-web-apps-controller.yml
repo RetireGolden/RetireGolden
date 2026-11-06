@@ -44,7 +44,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = 'e0c305c8668e488f93f6bb185d461a4bddd05874'
+            const helperPin = '559c0184190e86a8a82ccbb8c760b1b054ab3373'
             const run = context.payload.workflow_run
             const outputs = {
               legacy: 'false',

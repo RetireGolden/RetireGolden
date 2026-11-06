@@ -513,7 +513,7 @@ export async function collectProvenanceReviewRuns(github, {
 
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
-  let targetVerificationError
+  const targetVerificationFailures = []
   let validDispatchRunCount = 0
 
   // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
@@ -541,8 +541,10 @@ export async function collectProvenanceReviewRuns(github, {
         run,
       }))) continue
     } catch (error) {
-      targetVerificationError =
-        `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`
+      targetVerificationFailures.push({
+        run,
+        error: `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`,
+      })
       continue
     }
     provenanceReviewRuns.push(run)
@@ -602,8 +604,19 @@ export async function collectProvenanceReviewRuns(github, {
     }
   }
 
-  if (targetVerificationError && validDispatchRunCount === 0) {
-    return { provenanceReviewRuns: [], defaultCaller, error: targetVerificationError }
+  if (targetVerificationFailures.length > 0 && validDispatchRunCount === 0) {
+    const verifiedTargetRuns = provenanceReviewRuns.filter(run => run.event === 'pull_request_target')
+    const newestTargetCandidate = newestWorkflowRun([
+      ...verifiedTargetRuns,
+      ...targetVerificationFailures.map(failure => failure.run),
+    ])
+    const newestVerifiedTarget = newestWorkflowRun(verifiedTargetRuns)
+    if (!newestVerifiedTarget || newestTargetCandidate?.id !== newestVerifiedTarget.id) {
+      const newestFailure = targetVerificationFailures.find(
+        failure => failure.run.id === newestTargetCandidate?.id,
+      ) ?? targetVerificationFailures[0]
+      return { provenanceReviewRuns: [], defaultCaller, error: newestFailure.error }
+    }
   }
 
   return { provenanceReviewRuns, defaultCaller, error: undefined }
