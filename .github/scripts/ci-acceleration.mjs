@@ -110,6 +110,10 @@ export function sourceWorkflowHasLegacyClose(source) {
   return typeof source === 'string' && /^  close_pull_request:\s*$/m.test(source)
 }
 
+export function sourceWorkflowHasLegacyDeploy(source) {
+  return typeof source === 'string' && /^  deploy:\s*$/m.test(source)
+}
+
 export function previewDeploymentSkipReason(
   pullRequest,
   { repository, defaultBranch, expectedHeadSha },

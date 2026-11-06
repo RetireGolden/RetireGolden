@@ -30,6 +30,7 @@ jobs:
       head_sha: ${{ steps.source.outputs.head_sha }}
       pr_number: ${{ steps.source.outputs.pr_number }}
       deploy_ready: ${{ steps.source.outputs.deploy_ready }}
+      gate_success: ${{ steps.source.outputs.gate_success }}
       cancelled: ${{ steps.source.outputs.cancelled }}
       reason: ${{ steps.source.outputs.reason }}
     steps:
@@ -48,6 +49,7 @@ jobs:
               head_sha: typeof run?.head_sha === 'string' ? run.head_sha : '',
               pr_number: '',
               deploy_ready: 'false',
+              gate_success: 'false',
               cancelled: run?.conclusion === 'cancelled' ? 'true' : 'false',
               reason: 'Source run was not eligible for deployment',
             }
@@ -83,20 +85,37 @@ jobs:
                 `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
               )
               if (typeof helper.classifyAzureControllerSourceJobs !== 'function' ||
-                  typeof helper.authorizeExactHeadPullRequest !== 'function') {
+                  typeof helper.authorizeExactHeadPullRequest !== 'function' ||
+                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function') {
                 throw new Error('Trusted CI helper is missing controller exports')
               }
+              const activeSourceFile = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: '.github/workflows/azure-static-web-apps-retiregolden.yml',
+                ref: defaultBranch,
+              })
+              if (Array.isArray(activeSourceFile.data) || activeSourceFile.data?.type !== 'file' ||
+                  typeof activeSourceFile.data.content !== 'string') {
+                throw new Error('Active Azure source workflow response is not a file')
+              }
+              const activeSource = Buffer.from(
+                activeSourceFile.data.content.replace(/\s/g, ''), 'base64',
+              ).toString('utf8')
               const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
                 owner, repo, run_id: run.id, per_page: 100,
               })
               const sourceDecision = helper.classifyAzureControllerSourceJobs(jobs, run.conclusion)
-              if (sourceDecision.legacy) {
+              const legacyBackstop = sourceDecision.legacy && run.event === 'pull_request' &&
+                !helper.sourceWorkflowHasLegacyDeploy(activeSource)
+              if (sourceDecision.legacy && !legacyBackstop) {
                 outputs.legacy = 'true'
                 outputs.reason = 'Legacy Azure CI still owns deployment'
                 core.info(outputs.reason)
                 finish()
                 return
               }
+              if (legacyBackstop) outputs.mode = 'legacy-result'
               if (!['pull_request', 'push'].includes(run.event)) {
                 throw new Error(`Unsupported source event ${run.event}`)
               }
@@ -127,6 +146,17 @@ jobs:
                 outputs.pr_number = String(pr.number)
                 if (run.conclusion === 'cancelled') {
                   outputs.reason = 'Source run was cancelled'
+                } else if (legacyBackstop) {
+                  const conclusions = new Map(jobs.map(job => [job?.name, job?.conclusion]))
+                  const required = [
+                    'authorize', 'lint', 'test', 'e2e', 'build', 'deploy',
+                    'ZAP DAST / ZAP Baseline',
+                  ]
+                  outputs.gate_success = run.conclusion === 'success' &&
+                    required.every(name => conclusions.get(name) === 'success') ? 'true' : 'false'
+                  outputs.reason = outputs.gate_success === 'true'
+                    ? 'Completed legacy exact-head deployment and scan'
+                    : 'Legacy exact-head deployment or scan did not succeed'
                 } else if (!sourceDecision.ready) {
                   outputs.reason = `Source run prerequisites did not succeed: ${failed.join(', ') || run.conclusion}`
                 } else {
@@ -329,7 +359,8 @@ jobs:
     needs: [inspect, deploy_preview, dast]
     if: >-
       always() && needs.inspect.result == 'success' &&
-      needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' &&
+      needs.inspect.outputs.legacy == 'false' &&
+      (needs.inspect.outputs.mode == 'pr' || needs.inspect.outputs.mode == 'legacy-result') &&
       needs.inspect.outputs.cancelled == 'false' && needs.inspect.outputs.head_sha != ''
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -343,6 +374,8 @@ jobs:
         env:
           HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
           SOURCE_READY: ${{ needs.inspect.outputs.deploy_ready }}
+          SOURCE_MODE: ${{ needs.inspect.outputs.mode }}
+          LEGACY_GATE_SUCCESS: ${{ needs.inspect.outputs.gate_success }}
           SOURCE_REASON: ${{ needs.inspect.outputs.reason }}
           DEPLOY_RESULT: ${{ needs.deploy_preview.result }}
           DAST_RESULT: ${{ needs.dast.result }}
@@ -389,14 +422,27 @@ jobs:
             const checks = await github.paginate(github.rest.checks.listForRef, {
               owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
             })
-            if (checks.some(check => check.name === name &&
-                helper.azureSourceCheckIsNewer(check, sourceRunId, sourceRunAttempt))) {
+            const existingNewest = helper.newestAzureSourceCheck(
+              checks.filter(check => check.name === name),
+            )
+            const newerExists = existingNewest &&
+              helper.azureSourceCheckIsNewer(existingNewest, sourceRunId, sourceRunAttempt)
+            if (newerExists && process.env.SOURCE_MODE !== 'legacy-result') {
               core.info('A newer exact-head ZAP gate already exists; preserving it.')
               return
             }
-            const success = process.env.SOURCE_READY === 'true' &&
-              process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
-            const detailsUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+            const legacyResult = process.env.SOURCE_MODE === 'legacy-result'
+            const success = newerExists
+              ? existingNewest.conclusion === 'success'
+              : legacyResult
+                ? process.env.LEGACY_GATE_SUCCESS === 'true'
+                : process.env.SOURCE_READY === 'true' &&
+                  process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
+            const controllerUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+            const detailsUrl = newerExists ? existingNewest.details_url || controllerUrl : controllerUrl
+            const externalId = newerExists
+              ? existingNewest.external_id
+              : helper.azureSourceCheckExternalId(sourceRunId, sourceRunAttempt)
             const { data: published } = await github.rest.checks.create({
               owner,
               repo,
@@ -404,15 +450,20 @@ jobs:
               head_sha: process.env.HEAD_SHA,
               status: 'completed',
               conclusion: success ? 'success' : 'failure',
-              external_id: helper.azureSourceCheckExternalId(sourceRunId, sourceRunAttempt),
+              external_id: externalId,
               details_url: detailsUrl,
               output: {
                 title: success ? 'Preview scan passed' : 'Preview scan did not pass',
-                summary: success
-                  ? 'The exact source artifact was deployed to its named preview and ZAP completed successfully.'
-                  : `${process.env.SOURCE_REASON}; deploy=${process.env.DEPLOY_RESULT}; ZAP=${process.env.DAST_RESULT}.`,
+                summary: newerExists
+                  ? `Reasserted newer Azure source result ${existingNewest.external_id}.`
+                  : success
+                    ? 'The exact source artifact was deployed to its named preview and ZAP completed successfully.'
+                    : `${process.env.SOURCE_REASON}; deploy=${process.env.DEPLOY_RESULT}; ZAP=${process.env.DAST_RESULT}.`,
               },
             })
+            // The refresh is intentionally after this run creates its check. If a
+            // newer source publishes later, its check is newer; if it published
+            // earlier, this run sees that identity here and adopts its conclusion.
             const refreshed = await github.paginate(github.rest.checks.listForRef, {
               owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
             })

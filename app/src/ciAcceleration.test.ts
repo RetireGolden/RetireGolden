@@ -36,6 +36,7 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   sourceWorkflowHasLegacyClose,
+  sourceWorkflowHasLegacyDeploy,
   terminalSameRepositoryWorkflowRunUrl,
   TRUSTED_PROFILE_CONSUMER_OWNER,
   TRUSTED_PROFILE_CONSUMER_PATH,
@@ -1392,6 +1393,8 @@ describe('OpenRouter CI authorization contract', () => {
       .toMatchObject({ legacy: true, ready: false })
     expect(sourceWorkflowHasLegacyClose('jobs:\n  close_pull_request:\n    runs-on: ubuntu-latest')).toBe(true)
     expect(sourceWorkflowHasLegacyClose('jobs:\n  build:\n    runs-on: ubuntu-latest')).toBe(false)
+    expect(sourceWorkflowHasLegacyDeploy('jobs:\n  deploy:\n    runs-on: ubuntu-latest')).toBe(true)
+    expect(sourceWorkflowHasLegacyDeploy('jobs:\n  build:\n    runs-on: ubuntu-latest')).toBe(false)
 
     const externalId = azureSourceCheckExternalId(100, 2)
     expect(externalId).toBe('azure-source:100:2')
@@ -1528,6 +1531,8 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaController).toContain('github.rest.actions.listWorkflowRuns')
     expect(swaController).toContain('helper.newestAzureSourceCheck')
     expect(swaController).toContain('github.rest.checks.update')
+    expect(swaController).toContain("outputs.mode = 'legacy-result'")
+    expect(swaController).toContain('Reasserted newer Azure source result')
     expect(swaController).toContain('Recheck live preview ownership')
     expect(swaController).toContain('Recheck current production head')
     expect(swaController).toContain('group: swa-production')
