@@ -157,7 +157,8 @@ test('default-branch SWA controller stays inert until legacy deployment is remov
   const production = job(source, 'deploy_production')
   const close = job(source, 'close_preview')
 
-  assert.match(source, /workflow_run:\n\s+workflows: \[Azure Static Web Apps CI\/CD\]/)
+  assert.match(source, /workflow_run:[\s\S]*?workflows: \[Azure Static Web Apps CI\/CD\]/)
+  assert.match(source, /GitHub emits `completed` for rerun attempts too/)
   assert.match(source, /pull_request_target:\n\s+types: \[closed\]/)
   assert.match(inspect, /classifyAzureControllerSourceJobs/)
   assert.match(inspect, /outputs\.legacy = 'true'/)

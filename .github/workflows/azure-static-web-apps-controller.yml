@@ -4,6 +4,8 @@ name: Azure Static Web Apps deploy controller
 
 on:
   workflow_run:
+    # GitHub emits `completed` for rerun attempts too; only `requested` is
+    # omitted on reruns. This lets legacy-result follow late old-workflow DAST.
     workflows: [Azure Static Web Apps CI/CD]
     types: [completed]
   pull_request_target:

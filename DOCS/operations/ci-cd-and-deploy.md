@@ -32,6 +32,9 @@ production under a serialized production concurrency group, with a final live-br
 before upload so a queued older run cannot replace a newer commit. Production intentionally represents
 the last successfully built `main` artifact; if `main` advances during an upload, the later successful
 source run supersedes it, while a failed newer build leaves the last successful deployment in place.
+The controller's `workflow_run: completed` trigger also receives rerun attempts. After cutover, a
+late rerun of an old source workflow therefore enters the `legacy-result` path and republishes its
+source-identified ZAP result after the legacy job-level check.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
 checks out or executes PR code.
