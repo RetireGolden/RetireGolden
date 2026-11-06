@@ -14,8 +14,10 @@ import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import readme from '../../README.md?raw'
 import openrouterProducerFixture from './fixtures/openrouter-producer.json'
 import {
+  azureSourceCheckExternalId,
   authorizeExactHeadPullRequest,
   authorizeReviewProfile,
+  classifyAzureControllerSourceJobs,
   collectProvenanceReviewRuns,
   findTrustedCleanReview,
   hasActiveOrRealAzureWork,
@@ -29,6 +31,8 @@ import {
   pullRequestSkipReason,
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
+  sourceWorkflowHasLegacyClose,
+  successfulAzureSourceCheckIsNewer,
   terminalSameRepositoryWorkflowRunUrl,
   TRUSTED_PROFILE_CONSUMER_OWNER,
   TRUSTED_PROFILE_CONSUMER_PATH,
@@ -138,7 +142,11 @@ const profileConsumerFixture = [
   '  }',
   '  return { authorized: true, reason: "fixture profile authorized" }',
   '}',
-  `export async function verifyTargetBase() { return [${pullNumber}] }`,
+  'export async function verifyTargetBase(_github, input, headBranch) {',
+  `  if (input.owner !== "RetireGolden" || input.repo !== "RetireGolden" || input.repository.full_name !== "${repository.full_name}" || input.defaultBranch !== "main") throw new Error("wrong repository input");`,
+  '  if (headBranch !== "feature") throw new Error("wrong head branch");',
+  `  return [${pullNumber}]`,
+  '}',
 ].join('\n')
 
 function profileConsumerContent(content = profileConsumerFixture) {
@@ -1259,6 +1267,137 @@ describe('OpenRouter CI authorization contract', () => {
     expect(result.provenanceReviewRuns).toEqual([targetRun])
   })
 
+  it('rejects target runs when the live branch no longer matches the reviewed run', async () => {
+    const targetRun = trustedRun({ event: 'pull_request_target' })
+    const base = mockGithub()
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [targetRun]
+        return base.paginate(request, params)
+      },
+      rest: {
+        pulls: {
+          get: async () => ({ data: {
+            state: 'open',
+            number: pullNumber,
+            base: { ref: 'main' },
+            head: { sha, ref: 'renamed', repo: repository },
+            labels: [{ name: 'run-ci' }],
+          } }),
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber, reviews: [review()],
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.provenanceReviewRuns).toEqual([])
+  })
+
+  it('rejects target runs when the shared verifier does not bind this PR', async () => {
+    const targetRun = trustedRun({ event: 'pull_request_target' })
+    const base = mockGithub()
+    const consumer = profileConsumerFixture.replace(`return [${pullNumber}]`, 'return [999]')
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [targetRun]
+        return base.paginate(request, params)
+      },
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber, reviews: [review()],
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.provenanceReviewRuns).toEqual([])
+  })
+
+  it('fails closed with a target-specific error when base-history verification cannot run', async () => {
+    const targetRun = trustedRun({ event: 'pull_request_target' })
+    const base = mockGithub()
+    const consumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`,
+      'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [targetRun]
+        return base.paginate(request, params)
+      },
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber, reviews: [review()],
+    })
+    expect(result.provenanceReviewRuns).toEqual([])
+    expect(result.error).toBe('cannot verify the pull_request_target base history')
+  })
+
+  it('does not require the target-only verifier for ordinary profile authorization', async () => {
+    const consumer = profileConsumerFixture.replace(/\nexport async function verifyTargetBase[\s\S]*$/, '')
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await authorizeReviewProfile(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      headSha: sha, pullNumber, review: review(), reviewRun: trustedRun(),
+    })
+    expect(result).toEqual({ authorized: true, reason: 'fixture profile authorized' })
+  })
+
+  it('executes controller source, close, and check-order decisions from the shared helper', () => {
+    const successfulJobs = ['authorize', 'lint', 'test', 'e2e', 'build']
+      .map(name => ({ name, conclusion: 'success' }))
+    expect(classifyAzureControllerSourceJobs(successfulJobs, 'success')).toEqual({
+      legacy: false,
+      failed: [],
+      ready: true,
+    })
+    expect(classifyAzureControllerSourceJobs(successfulJobs.filter(job => job.name !== 'build'), 'success'))
+      .toEqual({ legacy: false, failed: ['build'], ready: false })
+    expect(classifyAzureControllerSourceJobs([...successfulJobs, { name: 'deploy', conclusion: 'success' }], 'success'))
+      .toMatchObject({ legacy: true, ready: false })
+    expect(sourceWorkflowHasLegacyClose('jobs:\n  close_pull_request:\n    runs-on: ubuntu-latest')).toBe(true)
+    expect(sourceWorkflowHasLegacyClose('jobs:\n  build:\n    runs-on: ubuntu-latest')).toBe(false)
+
+    const externalId = azureSourceCheckExternalId(100, 2)
+    expect(externalId).toBe('azure-source:100:2')
+    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 99, 4)).toBe(true)
+    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 1)).toBe(true)
+    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'success', external_id: externalId }, 100, 2)).toBe(false)
+    expect(successfulAzureSourceCheckIsNewer({ conclusion: 'failure', external_id: 'azure-source:999:1' }, 100, 2)).toBe(false)
+  })
+
   it('classifies only exact expensive Azure display names as real work', () => {
     for (const name of ['lint', 'test engine', 'test planner-ui', 'test web', 'test', 'e2e', 'build', 'deploy']) {
       expect(isExpensiveAzureJob({ name })).toBe(true)
@@ -1351,13 +1490,16 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('stages an inert default-branch deploy controller for the cutover', () => {
     expect(swaController).toContain('workflows: [Azure Static Web Apps CI/CD]')
-    expect(swaController).toContain("jobs.some(job => job.name === 'deploy')")
+    expect(swaController).toContain('helper.classifyAzureControllerSourceJobs')
     expect(swaController).toContain("outputs.legacy = 'true'")
     expect(swaController).toContain("path: '.github/scripts/ci-acceleration.mjs'")
     expect(swaController).toContain('helper.authorizeExactHeadPullRequest')
     expect(swaController).toContain('run-id: ${{ github.event.workflow_run.id }}')
     expect(swaController).toContain('deployment_environment: pr${{ needs.inspect.outputs.pr_number }}')
     expect(swaController).toContain("const name = 'ZAP DAST / ZAP Baseline'")
+    expect(swaController).toContain('helper.successfulAzureSourceCheckIsNewer')
+    expect(swaController).toContain('Recheck live preview ownership')
+    expect(swaController).toContain('Recheck current production head')
     expect(swaController).toContain('group: swa-production')
     expect(swaController).not.toContain('actions/checkout@')
     expect(swaController).not.toContain('pnpm ')

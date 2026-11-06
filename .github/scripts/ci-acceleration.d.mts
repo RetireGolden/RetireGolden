@@ -219,6 +219,20 @@ export const TRUSTED_PROFILE_CONSUMER_REPO: string
 export const TRUSTED_PROFILE_CONSUMER_PATH: string
 export const PROFILE_CONSUMER_MAX_BYTES: number
 export const EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
+export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
+export const REQUIRED_AZURE_CONTROLLER_JOB_NAMES: ReadonlySet<string>
+
+export function classifyAzureControllerSourceJobs(
+  jobs: readonly AzureJob[],
+  runConclusion: string | null | undefined,
+): { readonly legacy: boolean; readonly failed: readonly string[]; readonly ready: boolean }
+export function azureSourceCheckExternalId(runId: number, runAttempt: number): string
+export function successfulAzureSourceCheckIsNewer(
+  check: { readonly conclusion?: string | null; readonly external_id?: string | null },
+  runId: number,
+  runAttempt: number,
+): boolean
+export function sourceWorkflowHasLegacyClose(source: string): boolean
 
 export function workflowRunUrl(owner: string, repo: string, runId: number): string
 export function parseWorkflowRunIdFromUrl(url: string): number | undefined

@@ -79,8 +79,10 @@ revalidates PR authorization from trusted `main`, deploys named previews, runs Z
 exact-head ZAP check. It does not check out or execute PR code.
 
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
-OpenRouter ledger from the real GitHub Actions bot, a review-caller blob equal to the default branch,
-and current trusted `openrouter-profile` proof. Manual and Dependabot paths require the same proof.
+OpenRouter ledger from the real GitHub Actions bot, trusted caller provenance for the event type,
+and current trusted `openrouter-profile` proof. Branch and dispatch runs match the default-branch caller
+blob; target runs bind the exact head and immutable default-branch target history. Manual and Dependabot
+paths require the same proof.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
 for them all. Without authorization, `authorize` and ZAP fail while those expensive jobs remain skipped so
 the broker can label and rerun the exact attempt after review proof. Forks never authorize or deploy; the

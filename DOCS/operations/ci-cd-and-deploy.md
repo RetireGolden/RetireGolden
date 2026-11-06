@@ -24,12 +24,15 @@ cheap exact-head rerun path (see [Label-gated PR CI](#label-gated-pr-ci) below).
 During this bootstrap phase the source workflow still contains `deploy`, `dast`, and
 `close_pull_request`, so it remains the sole deployment owner. The controller enumerates every
 source run's jobs and exits successfully when it finds the legacy `deploy` job; its close path likewise
-reads the PR-head workflow and exits while `close_pull_request` is present. After those three legacy
+reads the active default-branch workflow and exits while `close_pull_request` is present. After those three legacy
 jobs are removed, the same default-branch controller consumes the exact source-run `dist` artifact,
 rechecks live PR authorization from `main`, deploys named `pr<number>` previews, invokes ZAP, and
 publishes `ZAP DAST / ZAP Baseline` on the source head. Successful current-`main` artifacts deploy to
-production under a single cancelling production concurrency group. The controller never checks out or
+production under a serialized production concurrency group, with a final live-branch check immediately
+before upload so a queued older run cannot replace a newer commit. The controller never checks out or
 executes PR code.
+
+Bootstrap source-workflow layout (until the cutover removes the final three jobs):
 
 ```
 authorize ─┬─► lint ─────┐
@@ -89,8 +92,9 @@ generation id, a positive round, and a `findings` array that is either empty or 
 not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
 resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
 successful review run came from the same repository and that its caller workflow blob at
-the run commit exactly equals the caller blob on the default branch. Normal `pull_request` runs
-use the reviewed head. `pull_request_target` runs additionally require the exact reviewed head,
+the run commit exactly equals the caller blob on the default branch for branch and dispatch runs. Normal
+`pull_request` runs use the reviewed head. Trusted `pull_request_target` runs execute the caller from the
+default branch and instead require the exact reviewed head,
 the live head branch, and every same-repository PR from that branch to have always targeted the
 default branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
 commit and must be linked from the exact-head ledger. They read GitHub APIs only and
@@ -301,8 +305,10 @@ and has a ten-minute job limit so a stuck sweep releases the queue.
 
 ## Secrets and environments
 
-- **`AZURE_STATIC_WEB_APPS_API_TOKEN`** — the SWA deployment token (the only deploy secret). ZAP and the
-  PR comment use the built-in `GITHUB_TOKEN`.
+- **`AZURE_STATIC_WEB_APPS_API_TOKEN`** — the SWA deployment token (the only deploy secret). ZAP
+  orchestration uses the built-in `GITHUB_TOKEN`. The post-cutover `workflow_run` deploy intentionally
+  omits the action's `repo_token` because it has no pull-request event context for preview comments; the
+  preview URL is passed directly to ZAP and remains visible in the controller run.
 - Azure creates a **fresh preview environment per PR** (a unique `*.azurestaticapps.net` URL); the `dast`
   job reads that URL dynamically from the deploy job's output. Pushing to `main` deploys production.
 

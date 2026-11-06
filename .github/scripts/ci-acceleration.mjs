@@ -49,6 +49,46 @@ export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'e2e',
   'build',
 ])
+export const REQUIRED_AZURE_CONTROLLER_JOB_NAMES = new Set([
+  'authorize',
+  'lint',
+  'test',
+  'e2e',
+  'build',
+])
+
+export function classifyAzureControllerSourceJobs(jobs, runConclusion) {
+  const legacy = jobs.some((job) => job?.name === 'deploy')
+  const conclusions = new Map(jobs.map((job) => [job?.name, job?.conclusion]))
+  const failed = [...REQUIRED_AZURE_CONTROLLER_JOB_NAMES]
+    .filter((name) => conclusions.get(name) !== 'success')
+  return {
+    legacy,
+    failed,
+    ready: !legacy && runConclusion === 'success' && failed.length === 0,
+  }
+}
+
+export function azureSourceCheckExternalId(runId, runAttempt) {
+  if (!Number.isSafeInteger(runId) || runId <= 0 ||
+      !Number.isSafeInteger(runAttempt) || runAttempt <= 0) {
+    throw new Error('source run identity must use positive integers')
+  }
+  return `azure-source:${runId}:${runAttempt}`
+}
+
+export function successfulAzureSourceCheckIsNewer(check, runId, runAttempt) {
+  if (check?.conclusion !== 'success' || typeof check?.external_id !== 'string') return false
+  const match = /^azure-source:(\d+):(\d+)$/.exec(check.external_id)
+  if (!match) return false
+  const checkRunId = Number(match[1])
+  const checkAttempt = Number(match[2])
+  return checkRunId > runId || (checkRunId === runId && checkAttempt > runAttempt)
+}
+
+export function sourceWorkflowHasLegacyClose(source) {
+  return typeof source === 'string' && /^  close_pull_request:\s*$/m.test(source)
+}
 
 function codepointLength(value) {
   return Array.from(value).length
@@ -347,6 +387,9 @@ async function proveTargetRunBase(
 ) {
   if (run.head_sha !== expectedHeadSha) return false
   const consumer = await loadTrustedProfileConsumer(github)
+  if (typeof consumer.verifyTargetBase !== 'function') {
+    throw new Error('trusted profile consumer is missing verifyTargetBase')
+  }
   const pullNumbers = await consumer.verifyTargetBase(
     github,
     { owner, repo, repository, defaultBranch },
@@ -398,6 +441,10 @@ export async function collectProvenanceReviewRuns(github, {
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
 
+  // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
+  // though the workflow definition and token execute from the default branch. The shared
+  // verifyTargetBase helper independently binds that API result to the live branch and its
+  // immutable default-branch history.
   const pullRequestRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
     owner,
     repo,
@@ -426,7 +473,9 @@ export async function collectProvenanceReviewRuns(github, {
       return {
         provenanceReviewRuns: [],
         defaultCaller,
-        error: 'cannot inspect the exact-head OpenRouter caller',
+        error: run.event === 'pull_request_target'
+          ? 'cannot verify the pull_request_target base history'
+          : 'cannot inspect the exact-head OpenRouter caller',
       }
     }
     provenanceReviewRuns.push(run)
@@ -531,8 +580,7 @@ async function loadTrustedProfileConsumer(github) {
   }
 
   const module = await import(`data:text/javascript;base64,${source.toString('base64')}`)
-  if (typeof module.authorizeProfileReceipt !== 'function' ||
-    typeof module.verifyTargetBase !== 'function') {
+  if (typeof module.authorizeProfileReceipt !== 'function') {
     throw new Error('trusted profile consumer is missing required exports')
   }
   return module

@@ -129,6 +129,8 @@ with deployment ownership staged in
   on the source head. It is **PR-only** (it does not run on push-to-`main`/production) and runs **after** deploy, so
   it can never affect or roll back the deployment.
 
+Bootstrap source-workflow layout (before deployment ownership moves to the controller):
+
 ```mermaid
 flowchart TD
     PR([Pull request → main]) --> SEM[Semgrep SAST<br/>semgrep.yml]
@@ -152,8 +154,13 @@ flowchart TD
     ZGATE -- no --> OK
 ```
 
-`authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and `dast` are jobs in the
-Azure workflow; Semgrep is its own workflow.
+After cutover, the source workflow ends at the `dist` artifact. The trusted default-branch controller
+rechecks the live head, deploys the named preview, runs the same reusable ZAP workflow, and publishes the
+explicit exact-head `ZAP DAST / ZAP Baseline` check. A later source run may replace an earlier result; an
+older controller run cannot overwrite a newer successful result.
+
+During bootstrap, `authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and
+`dast` are jobs in the Azure source workflow; Semgrep is its own workflow.
 
 ---
 
