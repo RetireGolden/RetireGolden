@@ -13,10 +13,10 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '949f6549ac2366ed69648e36a12e80aa4ecfc5e5'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'b75512aeaa05369a7fc6595d54764bdedd8da903'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@7cb4c04abfb03f81cd70c2e16a5d48e389e944dd'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '7cb4c04abfb03f81cd70c2e16a5d48e389e944dd'
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a40c5eb8d588266531184ffc633dc2969d9138df'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'a40c5eb8d588266531184ffc633dc2969d9138df'
 export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
 export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
 export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
@@ -40,6 +40,99 @@ export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'build',
   'deploy',
 ])
+export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES = new Set([
+  'lint',
+  'test engine',
+  'test planner-ui',
+  'test web',
+  'test',
+  'e2e',
+  'build',
+])
+export const REQUIRED_AZURE_CONTROLLER_JOB_NAMES = new Set([
+  'authorize',
+  'lint',
+  'test',
+  'e2e',
+  'build',
+])
+
+export function classifyAzureControllerSourceJobs(jobs, runConclusion) {
+  const legacy = jobs.some((job) => job?.name === 'deploy')
+  const conclusions = new Map(jobs.map((job) => [job?.name, job?.conclusion]))
+  const failed = [...REQUIRED_AZURE_CONTROLLER_JOB_NAMES]
+    .filter((name) => conclusions.get(name) !== 'success')
+  return {
+    legacy,
+    failed,
+    ready: !legacy && runConclusion === 'success' && failed.length === 0,
+  }
+}
+
+export function azureSourceCheckExternalId(runId, runAttempt) {
+  if (!Number.isSafeInteger(runId) || runId <= 0 ||
+      !Number.isSafeInteger(runAttempt) || runAttempt <= 0) {
+    throw new Error('source run identity must use positive integers')
+  }
+  return `azure-source:${runId}:${runAttempt}`
+}
+
+export function azureSourceCheckIsNewer(check, runId, runAttempt) {
+  if (typeof check?.external_id !== 'string') return false
+  const match = /^azure-source:(\d+):(\d+)$/.exec(check.external_id)
+  if (!match) return false
+  const checkRunId = Number(match[1])
+  const checkAttempt = Number(match[2])
+  return checkRunId > runId || (checkRunId === runId && checkAttempt > runAttempt)
+}
+
+export function newestAzureSourceCheck(checks) {
+  let newest
+  let newestRunId = 0
+  let newestAttempt = 0
+  for (const check of checks ?? []) {
+    if (check?.status !== 'completed' || !['success', 'failure'].includes(check?.conclusion) ||
+        typeof check?.external_id !== 'string') continue
+    const match = /^azure-source:(\d+):(\d+)$/.exec(check.external_id)
+    if (!match) continue
+    const runId = Number(match[1])
+    const runAttempt = Number(match[2])
+    if (!newest || runId > newestRunId || (runId === newestRunId && runAttempt > newestAttempt)) {
+      newest = check
+      newestRunId = runId
+      newestAttempt = runAttempt
+    }
+  }
+  return newest
+}
+
+export function sourceWorkflowHasLegacyClose(source) {
+  return typeof source === 'string' && /^  close_pull_request:\s*$/m.test(source)
+}
+
+export function sourceWorkflowHasLegacyDeploy(source) {
+  return typeof source === 'string' && /^  deploy:\s*$/m.test(source)
+}
+
+export function previewDeploymentSkipReason(
+  pullRequest,
+  { repository, defaultBranch, expectedHeadSha },
+) {
+  if (pullRequest?.state !== 'open') return 'pull request is not open'
+  if (pullRequest?.head?.sha !== expectedHeadSha) return 'pull request head changed'
+  if (pullRequest?.head?.repo?.full_name !== repository?.full_name) {
+    return 'pull request is not from this repository'
+  }
+  if (pullRequest?.base?.ref !== defaultBranch) return 'pull request no longer targets the default branch'
+  if (!pullRequest?.labels?.some((label) => label?.name === 'run-ci')) return 'run-ci label is absent'
+  return undefined
+}
+
+export function productionDeploymentSkipReason(liveHeadSha, expectedHeadSha) {
+  return liveHeadSha === expectedHeadSha
+    ? undefined
+    : 'a newer default-branch commit superseded this production run'
+}
 
 function codepointLength(value) {
   return Array.from(value).length
@@ -229,14 +322,18 @@ function trustedOpenRouterRunProvenance(workflowRun, repository) {
 export function reviewRunSkipReason(workflowRun, repository) {
   const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
   if (provenanceReason) return provenanceReason
-  if (workflowRun.event !== 'pull_request') return 'review run event is not pull_request'
+  if (!['pull_request', 'pull_request_target'].includes(workflowRun.event)) {
+    return 'review run event is not pull_request or pull_request_target'
+  }
   return undefined
 }
 
 export function reviewDispatchRunSkipReason(workflowRun, repository) {
   const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
   if (provenanceReason) return provenanceReason
-  if (workflowRun.event !== 'workflow_dispatch') return 'review run event is not workflow_dispatch'
+  if (!['workflow_dispatch', 'repository_dispatch'].includes(workflowRun.event)) {
+    return 'review run event is not workflow_dispatch or repository_dispatch'
+  }
   return undefined
 }
 
@@ -328,6 +425,25 @@ async function proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCa
   }
 }
 
+async function proveTargetRunBase(
+  github,
+  { owner, repo, repository, defaultBranch, expectedHeadSha, pullNumber, run },
+) {
+  if (run.head_sha !== expectedHeadSha) return false
+  const consumer = await loadTrustedProfileConsumer(github)
+  if (typeof consumer.verifyTargetBase !== 'function') {
+    throw new Error('trusted profile consumer is missing verifyTargetBase')
+  }
+  const pullNumbers = await consumer.verifyTargetBase(
+    github,
+    { owner, repo, repository, defaultBranch },
+    run.head_branch,
+  )
+  if (!pullNumbers.includes(pullNumber)) return false
+  const { data: livePr } = await github.rest.pulls.get({ owner, repo, pull_number: pullNumber })
+  return livePr.head?.sha === expectedHeadSha && livePr.head?.ref === run.head_branch
+}
+
 async function proveRecoveryWorkflow(github, owner, repo, run, repository, defaultBranch) {
   if (run.name !== 'OpenRouter review recovery' || run.path !== TRUSTED_RECOVERY_WORKFLOW_PATH ||
       run.event !== 'workflow_dispatch' || run.head_branch !== defaultBranch ||
@@ -369,6 +485,10 @@ export async function collectProvenanceReviewRuns(github, {
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
 
+  // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
+  // though the workflow definition and token execute from the default branch. The shared
+  // verifyTargetBase helper independently binds that API result to the live branch and its
+  // immutable default-branch history.
   const pullRequestRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
     owner,
     repo,
@@ -380,12 +500,26 @@ export async function collectProvenanceReviewRuns(github, {
     if (!Number.isSafeInteger(run.id) || run.head_sha !== expectedHeadSha) continue
     if (reviewRunSkipReason(run, repository)) continue
     try {
-      if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+      if (run.event === 'pull_request_target') {
+        if (!(await proveTargetRunBase(github, {
+          owner,
+          repo,
+          repository,
+          defaultBranch,
+          expectedHeadSha,
+          pullNumber,
+          run,
+        }))) continue
+      } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
+        continue
+      }
     } catch {
       return {
         provenanceReviewRuns: [],
         defaultCaller,
-        error: 'cannot inspect the exact-head OpenRouter caller',
+        error: run.event === 'pull_request_target'
+          ? 'cannot verify the pull_request_target base history'
+          : 'cannot inspect the exact-head OpenRouter caller',
       }
     }
     provenanceReviewRuns.push(run)
@@ -427,6 +561,7 @@ export async function collectProvenanceReviewRuns(github, {
           }
         } else {
           if (reviewDispatchRunSkipReason(run, repository)) continue
+          if (run.head_branch !== defaultBranch) continue
           if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
         }
       } catch {
@@ -634,7 +769,9 @@ export function isExpensiveAzureJob(job) {
 
 export function hasOnlySkippedExpensiveAzureJobs(jobs) {
   const expensiveJobs = jobs.filter(isExpensiveAzureJob)
-  return expensiveJobs.length > 0 && expensiveJobs.every((job) => job.conclusion === 'skipped')
+  const names = new Set(expensiveJobs.map((job) => job.name))
+  return [...REQUIRED_EXPENSIVE_AZURE_JOB_NAMES].every((name) => names.has(name)) &&
+    expensiveJobs.every((job) => job.conclusion === 'skipped')
 }
 
 export function hasActiveOrRealAzureWork(runs, jobLists) {

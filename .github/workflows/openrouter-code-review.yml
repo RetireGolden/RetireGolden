@@ -35,15 +35,19 @@
 #
 # Standard: required GPT-6 Sol (Azure route) + optional GLM 5.3 Flash; Luna judge.
 # Deep adds required Astra Flex; effort and limits follow the selected profile.
-# Shared configuration: https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/.github/workflows/openrouter-code-review.yml
-# Policy reference: https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/README.md
+# Shared configuration: https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/README.md
 
 name: OpenRouter code review
-run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || inputs.pr_number, inputs.review_level || 'auto') }}"
+run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || github.event.client_payload.pr_number || inputs.pr_number, github.event.client_payload.review_level || inputs.review_level || 'auto') }}"
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  repository_dispatch:
+    types: [openrouter-review]
   workflow_dispatch:
     inputs:
       review_level:
@@ -63,24 +67,94 @@ on:
         default: false
 
 permissions:
-  # Required by the final notification job; model review jobs retain Actions read.
+  # Reusable jobs may only narrow this workflow-level permission ceiling. The
+  # review job does not receive checks: write; only gate-check does.
   actions: write
+  checks: write
   contents: read
   pull-requests: write
   # The central reusable publishes the stable required-gate commit status.
   statuses: write
 
 jobs:
+  # During the bootstrap overlap, a branch caller that still declares
+  # pull_request owns its review. Once that trigger is removed, the trusted
+  # default-branch pull_request_target caller becomes the single owner.
+  target-selection:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_review: ${{ steps.owner.outputs.run_review }}
+    steps:
+      - name: Select the single review trigger
+        id: owner
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            core.setOutput('run_review', 'false')
+            const pr = context.payload.pull_request
+            if (pr.head?.repo?.full_name !== context.payload.repository.full_name) {
+              core.info('Fork pull requests are not eligible for the secret-backed target review.')
+              return
+            }
+            const { data } = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/workflows/openrouter-code-review.yml',
+              ref: pr.head.sha,
+            })
+            if (Array.isArray(data) || data?.type !== 'file' || typeof data.content !== 'string') {
+              throw new Error('Pull-request review caller is not a file')
+            }
+            const source = Buffer.from(data.content.replace(/\s/g, ''), 'base64').toString('utf8')
+            if (/^  pull_request:\s*$/m.test(source)) {
+              core.info('The branch pull_request trigger owns this review.')
+              return
+            }
+            core.setOutput('run_review', 'true')
+
   # Keep this id stable: it is the first half of the required check context
   # `review / openrouter-first-pass-gate`.
   review:
-    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@7cb4c04abfb03f81cd70c2e16a5d48e389e944dd # .github#52; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0 (GPT-6 Sol on Azure replaces Grok)
+    needs: target-selection
+    if: >-
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'repository_dispatch' ||
+        (github.event_name == 'pull_request' && !github.event.pull_request.draft) ||
+        (github.event_name == 'pull_request_target' && !github.event.pull_request.draft &&
+          needs.target-selection.outputs.run_review == 'true')
+      )
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a40c5eb8d588266531184ffc633dc2969d9138df # .github#54; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: write
+      statuses: write
     with:
       review_policy: base
       review_profiles_enabled: true
-      review_level: ${{ inputs.review_level || 'auto' }}
+      review_level: ${{ github.event.client_payload.review_level || inputs.review_level || 'auto' }}
       reset_review: ${{ inputs.reset_review || false }}
-      pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
+      expected_head_sha: ${{ github.event.client_payload.head_sha || '' }}
+      pr_number: ${{ github.event.pull_request.number || github.event.client_payload.pr_number || inputs.pr_number || github.event.inputs.pr_number }}
     secrets:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  gate-check:
+    needs: review
+    if: always() && needs.review.outputs.gate_head_sha != ''
+    uses: RetireGolden/.github/.github/workflows/openrouter-review-gate-check.yml@a40c5eb8d588266531184ffc633dc2969d9138df # .github#54
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+      pull-requests: read
+    with:
+      pr_number: ${{ needs.review.outputs.gate_pr_number }}
+      head_sha: ${{ needs.review.outputs.gate_head_sha }}
+      conclusion: ${{ needs.review.outputs.gate_conclusion }}
+      review_url: ${{ needs.review.outputs.gate_review_url }}

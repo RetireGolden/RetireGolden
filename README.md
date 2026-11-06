@@ -52,11 +52,12 @@ pnpm dev
 
 ## CI/CD
 
-GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker accepts completion events and explicit default-branch delivery recovery. The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. The staged default-branch deploy controller remains inert while the source workflow still owns legacy deploy jobs, then takes artifact deployment, preview teardown, and ZAP publication after that ownership is removed. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review accepts pull-request, trusted default-branch, and manual events, and its broker accepts completion events and explicit default-branch delivery recovery. The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
 [`.github/workflows/azure-static-web-apps-retiregolden.yml`](.github/workflows/azure-static-web-apps-retiregolden.yml)
+and [`.github/workflows/azure-static-web-apps-controller.yml`](.github/workflows/azure-static-web-apps-controller.yml)
 
 | Job | What it does |
 |-----|----------------|
@@ -71,9 +72,17 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 
 **Triggers:** push to `main` deploys production; opened/synchronized/reopened PRs create a cheap placeholder and receive a preview only after exact-head authorization; closing a PR removes the preview.
 
+Bootstrap ownership remains with the source workflow while it contains `deploy` and
+`close_pull_request`. The default-branch controller detects those jobs and exits without side effects.
+Once they are removed, it downloads the one non-expired `dist` artifact from the completed source run,
+rechecks live PR ownership and the `run-ci` label from trusted `main`, deploys named previews, runs ZAP, and publishes the
+exact-head ZAP check. It does not check out or execute PR code.
+
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
-OpenRouter ledger from the real GitHub Actions bot, a review-caller blob equal to the default branch,
-and current trusted `openrouter-profile` proof. Manual and Dependabot paths require the same proof.
+OpenRouter ledger from the real GitHub Actions bot, trusted caller provenance for the event type,
+and current trusted `openrouter-profile` proof. Branch and dispatch runs match the default-branch caller
+blob; target runs bind the exact head and immutable default-branch target history. Manual and Dependabot
+paths require the same proof.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
 for them all. Without authorization, `authorize` and ZAP fail while those expensive jobs remain skipped so
 the broker can label and rerun the exact attempt after review proof. Forks never authorize or deploy; the
@@ -143,7 +152,7 @@ Manual-only from the Actions tab. A human supplies the PR number when an indepen
 
 [`.github/workflows/openrouter-code-review.yml`](.github/workflows/openrouter-code-review.yml)
 
-Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); GitHub prevents draft PRs from merging, and the review starts when a draft is marked ready. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow. The OpenRouter roster may route an `openai/gpt-6-sol` model lane through OpenRouter, but it never invokes the standalone Grok workflow, never receives `XAI_API_KEY`, and has no fallback to that legacy stack. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently. If the initial run fails before seeding that proof, rerun it with this workflow's manual `pr_number` dispatch; synchronize events deliberately do not restart an unseeded full review and its token spend automatically.
+Runs on pull-request open, sync, reopen, and ready-for-review, and accepts trusted default-branch `pull_request_target`, `repository_dispatch`, and manual events. The bootstrap keeps the branch `pull_request` trigger until the follow-up cutover removes it. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow. Default-branch reviews publish the required head check through the pinned gate-check reusable. The OpenRouter roster may route an `openai/gpt-6-sol` model lane through OpenRouter, but it never invokes the standalone Grok workflow, never receives `XAI_API_KEY`, and has no fallback to that legacy stack. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently. If the initial run fails before seeding that proof, rerun it with this workflow's manual `pr_number` dispatch; synchronize events deliberately do not restart an unseeded full review and its token spend automatically.
 
 Historical, already completed: the cutover from Grok used this ordered operation. First merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
 
@@ -205,7 +214,7 @@ current profile proof are still required; old-lineage evidence cannot unlock CI.
 
 ## Review profiles and CI proof
 
-The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/README.md). Code uses required GPT-6 Sol (Azure route) plus optional GLM; deep adds required Astra Flex. The standard/deep profile structure is unchanged; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/README.md). Code uses required GPT-6 Sol (Azure route) plus optional GLM; deep adds required Astra Flex. The standard/deep profile structure is unchanged; `REVIEW.md` cannot name arbitrary models or remove required lanes.
 
 From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
 
@@ -234,7 +243,7 @@ not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
 fails visibly with the source-run recovery instruction. Retry its dispatch after
 the source finishes; do not rerun the model panel.
 
-The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/7cb4c04abfb03f81cd70c2e16a5d48e389e944dd/.github/workflows/openrouter-code-review.yml#L169)
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/.github/workflows/openrouter-code-review.yml#L169)
 sets `actions: read` as its default, inherited by both model-review jobs. Its
 notification job explicitly overrides that default with `actions: write`.
 GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)

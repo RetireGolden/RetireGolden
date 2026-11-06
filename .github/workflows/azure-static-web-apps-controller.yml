@@ -1,0 +1,642 @@
+# Default-branch deployment controller. It consumes only trusted workflow
+# metadata and build artifacts; it never checks out or executes pull-request code.
+name: Azure Static Web Apps deploy controller
+
+on:
+  workflow_run:
+    # GitHub emits `completed` for rerun attempts too; only `requested` is
+    # omitted on reruns. This lets legacy-result follow late old-workflow DAST.
+    workflows: [Azure Static Web Apps CI/CD]
+    types: [completed]
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      legacy: ${{ steps.source.outputs.legacy }}
+      mode: ${{ steps.source.outputs.mode }}
+      head_sha: ${{ steps.source.outputs.head_sha }}
+      pr_number: ${{ steps.source.outputs.pr_number }}
+      deploy_ready: ${{ steps.source.outputs.deploy_ready }}
+      gate_success: ${{ steps.source.outputs.gate_success }}
+      cancelled: ${{ steps.source.outputs.cancelled }}
+      reason: ${{ steps.source.outputs.reason }}
+    steps:
+      - name: Verify source run and deployment eligibility
+        id: source
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const repository = context.payload.repository
+            const defaultBranch = repository.default_branch
+            const run = context.payload.workflow_run
+            const outputs = {
+              legacy: 'false',
+              mode: run?.event === 'pull_request' ? 'pr' : run?.event === 'push' ? 'production' : 'unsupported',
+              head_sha: typeof run?.head_sha === 'string' ? run.head_sha : '',
+              pr_number: '',
+              deploy_ready: 'false',
+              gate_success: 'false',
+              cancelled: run?.conclusion === 'cancelled' ? 'true' : 'false',
+              reason: 'Source run was not eligible for deployment',
+            }
+            const finish = () => Object.entries(outputs).forEach(([name, value]) => core.setOutput(name, value))
+            try {
+              if (!run || run.name !== 'Azure Static Web Apps CI/CD' ||
+                  run.path !== '.github/workflows/azure-static-web-apps-retiregolden.yml') {
+                throw new Error('Source run is not the active Azure CI workflow')
+              }
+              const sourceRepository = run.repository?.full_name || run.head_repository?.full_name
+              if (sourceRepository !== repository.full_name) {
+                throw new Error('Source run is not from this repository')
+              }
+              const { data: workflow } = await github.rest.actions.getWorkflow({
+                owner, repo, workflow_id: run.workflow_id,
+              })
+              if (workflow.id !== run.workflow_id ||
+                  workflow.path !== '.github/workflows/azure-static-web-apps-retiregolden.yml' ||
+                  workflow.state !== 'active') {
+                throw new Error('Source run does not match the active Azure CI workflow')
+              }
+              const helperFile = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: '.github/scripts/ci-acceleration.mjs',
+                ref: defaultBranch,
+              })
+              if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                  typeof helperFile.data.content !== 'string') {
+                throw new Error('Trusted CI helper response is not a file')
+              }
+              const helper = await import(
+                `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+              )
+              if (typeof helper.classifyAzureControllerSourceJobs !== 'function' ||
+                  typeof helper.authorizeExactHeadPullRequest !== 'function' ||
+                  typeof helper.sourceWorkflowHasLegacyDeploy !== 'function') {
+                throw new Error('Trusted CI helper is missing controller exports')
+              }
+              const activeSourceFile = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: '.github/workflows/azure-static-web-apps-retiregolden.yml',
+                ref: defaultBranch,
+              })
+              if (Array.isArray(activeSourceFile.data) || activeSourceFile.data?.type !== 'file' ||
+                  typeof activeSourceFile.data.content !== 'string') {
+                throw new Error('Active Azure source workflow response is not a file')
+              }
+              const activeSource = Buffer.from(
+                activeSourceFile.data.content.replace(/\s/g, ''), 'base64',
+              ).toString('utf8')
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                owner, repo, run_id: run.id, per_page: 100,
+              })
+              const sourceDecision = helper.classifyAzureControllerSourceJobs(jobs, run.conclusion)
+              const legacyBackstop = sourceDecision.legacy && run.event === 'pull_request' &&
+                !helper.sourceWorkflowHasLegacyDeploy(activeSource)
+              if (sourceDecision.legacy && !legacyBackstop) {
+                outputs.legacy = 'true'
+                outputs.reason = 'Legacy Azure CI still owns deployment'
+                core.info(outputs.reason)
+                finish()
+                return
+              }
+              if (legacyBackstop) outputs.mode = 'legacy-result'
+              if (!['pull_request', 'push'].includes(run.event)) {
+                throw new Error(`Unsupported source event ${run.event}`)
+              }
+              const failed = sourceDecision.failed
+
+              if (run.event === 'pull_request') {
+                const pulls = await github.paginate(github.rest.pulls.list, {
+                  owner,
+                  repo,
+                  state: 'all',
+                  head: `${owner}:${run.head_branch}`,
+                  base: defaultBranch,
+                  per_page: 100,
+                })
+                const matches = pulls.filter(pr =>
+                  pr.head?.sha === run.head_sha &&
+                  pr.head?.repo?.full_name === repository.full_name &&
+                  pr.base?.repo?.full_name === repository.full_name &&
+                  pr.base?.ref === defaultBranch)
+                if (matches.length !== 1) {
+                  throw new Error('Source run does not identify exactly one same-repository default-branch PR')
+                }
+                const pr = matches[0]
+                if (Array.isArray(run.pull_requests) && run.pull_requests.length > 0 &&
+                    !run.pull_requests.some(item => item.number === pr.number)) {
+                  throw new Error('Source run pull-request identity does not match the exact-head PR')
+                }
+                outputs.pr_number = String(pr.number)
+                if (run.conclusion === 'cancelled') {
+                  outputs.reason = 'Source run was cancelled'
+                } else if (legacyBackstop) {
+                  const conclusions = new Map(jobs.map(job => [job?.name, job?.conclusion]))
+                  const required = [
+                    'authorize', 'lint', 'test', 'e2e', 'build', 'deploy',
+                    'ZAP DAST / ZAP Baseline',
+                  ]
+                  outputs.gate_success = run.conclusion === 'success' &&
+                    required.every(name => conclusions.get(name) === 'success') ? 'true' : 'false'
+                  outputs.reason = outputs.gate_success === 'true'
+                    ? 'Completed legacy exact-head deployment and scan'
+                    : 'Legacy exact-head deployment or scan did not succeed'
+                } else if (!sourceDecision.ready) {
+                  outputs.reason = `Source run prerequisites did not succeed: ${failed.join(', ') || run.conclusion}`
+                } else {
+                  if (pr.state !== 'open') throw new Error('Pull request is no longer open')
+                  const authorization = await helper.authorizeExactHeadPullRequest(github, core, {
+                    owner,
+                    repo,
+                    repository,
+                    defaultBranch,
+                    eventPr: pr,
+                    runAttempt: run.run_attempt,
+                  })
+                  if (!authorization.authorized) {
+                    throw new Error(`Live exact-head deployment authorization failed: ${authorization.reason}`)
+                  }
+                  outputs.deploy_ready = 'true'
+                  outputs.reason = 'Authorized exact-head PR artifact'
+                }
+              } else {
+                if (run.head_branch !== defaultBranch) {
+                  throw new Error('Production source run is not on the default branch')
+                }
+                if (run.conclusion === 'cancelled') {
+                  outputs.reason = 'Source run was cancelled'
+                } else if (!sourceDecision.ready) {
+                  outputs.reason = `Source run prerequisites did not succeed: ${failed.join(', ') || run.conclusion}`
+                } else {
+                  const { data: branch } = await github.rest.repos.getBranch({
+                    owner, repo, branch: defaultBranch,
+                  })
+                  const liveSha = branch.commit?.sha
+                  const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+                    owner, repo, basehead: `${run.head_sha}...${liveSha}`,
+                  })
+                  if (!['ahead', 'identical'].includes(comparison.status)) {
+                    throw new Error('Production source commit is not on the default branch')
+                  }
+                  if (run.head_sha !== liveSha) {
+                    outputs.reason = 'A newer default-branch commit superseded this production run'
+                  } else {
+                    outputs.deploy_ready = 'true'
+                    outputs.reason = 'Current default-branch artifact'
+                  }
+                }
+              }
+
+              if (outputs.deploy_ready === 'true') {
+                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                  owner, repo, run_id: run.id, per_page: 100,
+                })
+                const dist = artifacts.filter(artifact => artifact.name === 'dist' && !artifact.expired)
+                if (dist.length !== 1) {
+                  outputs.deploy_ready = 'false'
+                  throw new Error('Source run must contain exactly one non-expired dist artifact')
+                }
+              }
+            } catch (error) {
+              outputs.deploy_ready = 'false'
+              outputs.reason = error instanceof Error ? error.message : String(error)
+              core.warning(outputs.reason)
+            }
+            finish()
+
+  deploy_preview:
+    needs: inspect
+    if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' && needs.inspect.outputs.deploy_ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # A pending close may be replaced by another pending job in this group.
+    # Every deploy therefore owns cleanup when it observes a closed or changed PR.
+    concurrency:
+      group: swa-preview-pr${{ needs.inspect.outputs.pr_number }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.static_web_app_url }}
+    steps:
+      - name: Download exact source artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: app/dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Recheck live preview ownership
+        id: live_preview
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.inspect.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const helperFile = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            })
+            const reason = helper.previewDeploymentSkipReason(pr, {
+              repository: context.payload.repository,
+              defaultBranch: context.payload.repository.default_branch,
+              expectedHeadSha: process.env.HEAD_SHA,
+            })
+            core.setOutput('should_deploy', reason ? 'false' : 'true')
+            core.setOutput('cleanup', pr.state === 'open' ? 'false' : 'true')
+            if (reason) {
+              core.warning(`Preview deployment skipped: ${reason}`)
+            }
+      - name: Clean named preview for a closed PR before upload
+        if: steps.live_preview.outputs.cleanup == 'true'
+        continue-on-error: true
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+          deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
+      - name: Deploy named preview environment
+        if: steps.live_preview.outputs.should_deploy == 'true'
+        id: deploy
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: app/dist
+          api_location: ''
+          output_location: ''
+          # workflow_run has no pull_request payload; repo_token is intentionally omitted.
+          deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
+      - name: Recheck preview ownership after upload
+        if: steps.deploy.outcome == 'success'
+        id: uploaded_preview
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.inspect.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const helperFile = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            })
+            const reason = helper.previewDeploymentSkipReason(pr, {
+              repository: context.payload.repository,
+              defaultBranch: context.payload.repository.default_branch,
+              expectedHeadSha: process.env.HEAD_SHA,
+            })
+            core.setOutput('cleanup', reason ? 'true' : 'false')
+      - name: Clean preview closed or superseded during upload
+        if: steps.uploaded_preview.outputs.cleanup == 'true'
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+          deployment_environment: pr${{ needs.inspect.outputs.pr_number }}
+      - name: Reject superseded preview deployment
+        if: >-
+          steps.live_preview.outputs.should_deploy != 'true' ||
+          steps.uploaded_preview.outputs.cleanup == 'true'
+        run: exit 1
+
+  dast:
+    name: ZAP DAST
+    needs: [inspect, deploy_preview]
+    if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'pr' && needs.deploy_preview.result == 'success'
+    uses: ./.github/workflows/zap.yml
+    permissions:
+      contents: read
+    with:
+      target_url: ${{ needs.deploy_preview.outputs.preview_url }}
+
+  publish_pr_result:
+    needs: [inspect, deploy_preview, dast]
+    if: >-
+      always() && needs.inspect.result == 'success' &&
+      needs.inspect.outputs.legacy == 'false' &&
+      (needs.inspect.outputs.mode == 'pr' || needs.inspect.outputs.mode == 'legacy-result') &&
+      needs.inspect.outputs.cancelled == 'false' && needs.inspect.outputs.head_sha != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+    steps:
+      - name: Publish exact-head ZAP gate
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+          SOURCE_READY: ${{ needs.inspect.outputs.deploy_ready }}
+          SOURCE_MODE: ${{ needs.inspect.outputs.mode }}
+          LEGACY_GATE_SUCCESS: ${{ needs.inspect.outputs.gate_success }}
+          SOURCE_REASON: ${{ needs.inspect.outputs.reason }}
+          DEPLOY_RESULT: ${{ needs.deploy_preview.result }}
+          DAST_RESULT: ${{ needs.dast.result }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const name = 'ZAP DAST / ZAP Baseline'
+            const helperFile = await github.rest.repos.getContent({
+              owner,
+              repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
+            const sourceRunId = Number(process.env.SOURCE_RUN_ID)
+            const sourceRunAttempt = Number(process.env.SOURCE_RUN_ATTEMPT)
+            const activeStatuses = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested'])
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+              const sourceRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: 'azure-static-web-apps-retiregolden.yml',
+                event: 'pull_request',
+                head_sha: process.env.HEAD_SHA,
+                per_page: 100,
+              })
+              const active = sourceRuns.filter(run =>
+                run.id !== sourceRunId && activeStatuses.has(run.status))
+              if (active.length === 0) break
+              if (attempt === 29) {
+                throw new Error('Another exact-head Azure source run remained active')
+              }
+              core.info(`Waiting for ${active.length} other exact-head Azure source run(s)`)
+              await new Promise(resolve => setTimeout(resolve, 10000))
+            }
+            const checks = await github.paginate(github.rest.checks.listForRef, {
+              owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
+            })
+            const existingNewest = helper.newestAzureSourceCheck(
+              checks.filter(check => check.name === name),
+            )
+            const newerExists = existingNewest &&
+              helper.azureSourceCheckIsNewer(existingNewest, sourceRunId, sourceRunAttempt)
+            if (newerExists && process.env.SOURCE_MODE !== 'legacy-result') {
+              core.info('A newer exact-head ZAP gate already exists; preserving it.')
+              return
+            }
+            const legacyResult = process.env.SOURCE_MODE === 'legacy-result'
+            const success = newerExists
+              ? existingNewest.conclusion === 'success'
+              : legacyResult
+                ? process.env.LEGACY_GATE_SUCCESS === 'true'
+                : process.env.SOURCE_READY === 'true' &&
+                  process.env.DEPLOY_RESULT === 'success' && process.env.DAST_RESULT === 'success'
+            const controllerUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+            const detailsUrl = newerExists ? existingNewest.details_url || controllerUrl : controllerUrl
+            const externalId = newerExists
+              ? existingNewest.external_id
+              : helper.azureSourceCheckExternalId(sourceRunId, sourceRunAttempt)
+            const { data: published } = await github.rest.checks.create({
+              owner,
+              repo,
+              name,
+              head_sha: process.env.HEAD_SHA,
+              status: 'completed',
+              conclusion: success ? 'success' : 'failure',
+              external_id: externalId,
+              details_url: detailsUrl,
+              output: {
+                title: success ? 'Preview scan passed' : 'Preview scan did not pass',
+                summary: newerExists
+                  ? `Reasserted newer Azure source result ${existingNewest.external_id}.`
+                  : success
+                    ? 'The exact source artifact was deployed to its named preview and ZAP completed successfully.'
+                    : `${process.env.SOURCE_REASON}; deploy=${process.env.DEPLOY_RESULT}; ZAP=${process.env.DAST_RESULT}.`,
+              },
+            })
+            // The refresh is intentionally after this run creates its check. If a
+            // newer source publishes later, its check is newer; if it published
+            // earlier, this run sees that identity here and adopts its conclusion.
+            const refreshed = await github.paginate(github.rest.checks.listForRef, {
+              owner, repo, ref: process.env.HEAD_SHA, check_name: name, per_page: 100,
+            })
+            const newest = helper.newestAzureSourceCheck(
+              refreshed.filter(check => check.name === name),
+            )
+            if (newest && helper.azureSourceCheckIsNewer(newest, sourceRunId, sourceRunAttempt)) {
+              await github.rest.checks.update({
+                owner,
+                repo,
+                check_run_id: published.id,
+                status: 'completed',
+                conclusion: newest.conclusion,
+                details_url: newest.details_url || detailsUrl,
+                output: {
+                  title: 'Superseded source result',
+                  summary: `Preserved newer Azure source result ${newest.external_id}.`,
+                },
+              })
+            }
+
+  deploy_production:
+    needs: inspect
+    if: needs.inspect.outputs.legacy == 'false' && needs.inspect.outputs.mode == 'production' && needs.inspect.outputs.deploy_ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Production is the last successfully built main artifact. Uploads are not
+    # interrupted; a queued stale run is rejected before it reaches Azure.
+    concurrency:
+      group: swa-production
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Download exact source artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: app/dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Recheck current production head
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const helperFile = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/scripts/ci-acceleration.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
+            const { data: branch } = await github.rest.repos.getBranch({
+              ...context.repo,
+              branch: context.payload.repository.default_branch,
+            })
+            const reason = helper.productionDeploymentSkipReason(branch.commit?.sha, process.env.HEAD_SHA)
+            if (reason) throw new Error(reason)
+      - name: Deploy production artifact
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: app/dist
+          api_location: ''
+          output_location: ''
+          production_branch: ${{ github.event.repository.default_branch }}
+      - name: Record a newer main commit after upload
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ needs.inspect.outputs.head_sha }}
+        with:
+          script: |
+            const { data: branch } = await github.rest.repos.getBranch({
+              ...context.repo,
+              branch: context.payload.repository.default_branch,
+            })
+            if (branch.commit?.sha !== process.env.HEAD_SHA) {
+              core.notice('Main advanced during upload; its successful source run will supersede this deployment.')
+            }
+
+  inspect_close:
+    if: >-
+      github.event_name == 'pull_request_target' && github.event.action == 'closed' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      should_close: ${{ steps.guard.outputs.should_close }}
+      pr_number: ${{ steps.guard.outputs.pr_number }}
+    steps:
+      - name: Check legacy close ownership
+        id: guard
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const pr = context.payload.pull_request
+            core.setOutput('should_close', 'false')
+            core.setOutput('pr_number', String(pr.number))
+            if (pr.head?.repo?.full_name !== context.payload.repository.full_name) {
+              core.info('Fork pull requests have no named preview environment.')
+              return
+            }
+            const defaultBranch = context.payload.repository.default_branch
+            const [{ data }, helperFile] = await Promise.all([
+              github.rest.repos.getContent({
+                ...context.repo,
+                path: '.github/workflows/azure-static-web-apps-retiregolden.yml',
+                ref: defaultBranch,
+              }),
+              github.rest.repos.getContent({
+                ...context.repo,
+                path: '.github/scripts/ci-acceleration.mjs',
+                ref: defaultBranch,
+              }),
+            ])
+            if (Array.isArray(data) || data?.type !== 'file' || typeof data.content !== 'string') {
+              throw new Error('Default-branch Azure workflow is not a file')
+            }
+            if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file' ||
+                typeof helperFile.data.content !== 'string') {
+              throw new Error('Trusted CI helper response is not a file')
+            }
+            const source = Buffer.from(data.content.replace(/\s/g, ''), 'base64').toString('utf8')
+            const helper = await import(
+              `data:text/javascript;base64,${helperFile.data.content.replace(/\s/g, '')}`
+            )
+            if (helper.sourceWorkflowHasLegacyClose(source)) {
+              core.info('Legacy Azure CI still owns preview teardown.')
+              return
+            }
+            core.setOutput('should_close', 'true')
+
+  close_preview:
+    needs: inspect_close
+    if: needs.inspect_close.outputs.should_close == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: swa-preview-pr${{ needs.inspect_close.outputs.pr_number }}
+      cancel-in-progress: false
+    steps:
+      - name: Close named preview environment
+        id: close_named
+        continue-on-error: true
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+          deployment_environment: pr${{ needs.inspect_close.outputs.pr_number }}
+      - name: Close legacy pull-request environment if present
+        id: close_legacy
+        continue-on-error: true
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: app/dist
+      - name: Require named preview teardown
+        env:
+          NAMED_OUTCOME: ${{ steps.close_named.outcome }}
+        run: test "$NAMED_OUTCOME" = success

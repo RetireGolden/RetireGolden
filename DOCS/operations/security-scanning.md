@@ -79,8 +79,11 @@ Running both on each authorized same-repository PR gives coverage from both dire
 **Workflow:** [`.github/workflows/zap.yml`](../../.github/workflows/zap.yml) — a **reusable** workflow
 (`workflow_call`), also runnable manually (`workflow_dispatch`).
 
-- **How it's invoked:** the Azure deploy workflow calls it from a PR-only `dast` job *after* an authorized
-  same-repository preview deploy completes (see §4). It can also be run on demand from **Actions → OWASP ZAP
+- **How it's invoked:** during bootstrap, the Azure source workflow calls it from a PR-only `dast` job
+  *after* an authorized same-repository preview deploy completes (see §4). The staged default-branch
+  controller detects that legacy `deploy` job and remains inert. After the deployment cutover, the
+  controller calls this same reusable workflow for the exact source-run artifact and publishes the
+  exact-head required check. It can also be run on demand from **Actions → OWASP ZAP
   DAST → Run workflow** against any URL.
 - **Target — read from CI/CD, never hardcoded:** the `dast` job passes
   `target_url: ${{ needs.deploy.outputs.preview_url }}`, which is wired to the Azure deploy step's
@@ -111,16 +114,22 @@ Running both on each authorized same-repository PR gives coverage from both dire
 
 ## 4. How it fits the CI/CD pipeline
 
-The base pipeline is the Azure Static Web Apps workflow
-([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)):
+The base pipeline is the Azure Static Web Apps source workflow
+([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)),
+with deployment ownership staged in
+[`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml):
 `authorize` releases `lint`, three coverage shards (aggregated as required check `test`), `e2e`, and
 `build` in parallel; `deploy` is the all-gates barrier. The security scanners attach like this:
 
 - **Semgrep** is an **independent workflow** that runs in parallel on pushes to `main` and PRs targeting `main` —
   it needs no deployment.
-- **ZAP** is wired **into** the deploy workflow as the `dast` job, which `needs: [authorize, deploy]` and consumes the
-  preview URL. It is **PR-only** (it does not run on push-to-`main`/production) and runs **after** deploy, so
+- **ZAP** is wired into the current legacy `dast` job, which `needs: [authorize, deploy]` and consumes the
+  preview URL. After cutover, the default-branch controller downloads the exact `dist` artifact, rechecks
+  live authorization, deploys a named preview, invokes `zap.yml`, and publishes the same required context
+  on the source head. It is **PR-only** (it does not run on push-to-`main`/production) and runs **after** deploy, so
   it can never affect or roll back the deployment.
+
+Bootstrap source-workflow layout (before deployment ownership moves to the controller):
 
 ```mermaid
 flowchart TD
@@ -145,8 +154,13 @@ flowchart TD
     ZGATE -- no --> OK
 ```
 
-`authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and `dast` are jobs in the
-Azure workflow; Semgrep is its own workflow.
+After cutover, the source workflow ends at the `dist` artifact. The trusted default-branch controller
+rechecks the live head, deploys the named preview, runs the same reusable ZAP workflow, and publishes the
+explicit exact-head `ZAP DAST / ZAP Baseline` check. A later source run may replace an earlier result; an
+older controller run cannot overwrite a newer successful result.
+
+During bootstrap, `authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and
+`dast` are jobs in the Azure source workflow; Semgrep is its own workflow.
 
 ---
 
@@ -240,7 +254,7 @@ security findings are surfaced but never block.
 ## References
 
 - Pipeline basics: [ci-cd-and-deploy.md](ci-cd-and-deploy.md)
-- Workflows: [`semgrep.yml`](../../.github/workflows/semgrep.yml) · [`zap.yml`](../../.github/workflows/zap.yml) · [`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)
+- Workflows: [`semgrep.yml`](../../.github/workflows/semgrep.yml) · [`zap.yml`](../../.github/workflows/zap.yml) · [`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml) · [`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml)
 - [Semgrep — GitHub Actions](https://semgrep.dev/docs/semgrep-ci/sample-ci-configs) · [`p/default` ruleset](https://semgrep.dev/p/default)
 - [OWASP ZAP Baseline Scan](https://www.zaproxy.org/docs/docker/baseline-scan/) · [`zaproxy/action-baseline`](https://github.com/zaproxy/action-baseline)
 - [Azure SWA preview environments](https://learn.microsoft.com/en-us/azure/static-web-apps/preview-environments) · [GitHub repository rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)

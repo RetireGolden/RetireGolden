@@ -219,6 +219,38 @@ export const TRUSTED_PROFILE_CONSUMER_REPO: string
 export const TRUSTED_PROFILE_CONSUMER_PATH: string
 export const PROFILE_CONSUMER_MAX_BYTES: number
 export const EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
+export const REQUIRED_EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
+export const REQUIRED_AZURE_CONTROLLER_JOB_NAMES: ReadonlySet<string>
+
+export function classifyAzureControllerSourceJobs(
+  jobs: readonly AzureJob[],
+  runConclusion: string | null | undefined,
+): { readonly legacy: boolean; readonly failed: readonly string[]; readonly ready: boolean }
+export function azureSourceCheckExternalId(runId: number, runAttempt: number): string
+export function azureSourceCheckIsNewer(
+  check: { readonly external_id?: string | null },
+  runId: number,
+  runAttempt: number,
+): boolean
+export function newestAzureSourceCheck<T extends {
+  readonly external_id?: string | null
+  readonly status?: string | null
+  readonly conclusion?: string | null
+}>(checks: readonly T[]): T | undefined
+export function sourceWorkflowHasLegacyClose(source: string): boolean
+export function sourceWorkflowHasLegacyDeploy(source: string): boolean
+export function previewDeploymentSkipReason(
+  pullRequest: PullRequest,
+  input: {
+    readonly repository: RepositoryRef
+    readonly defaultBranch: string
+    readonly expectedHeadSha: string
+  },
+): string | undefined
+export function productionDeploymentSkipReason(
+  liveHeadSha: string | undefined,
+  expectedHeadSha: string,
+): string | undefined
 
 export function workflowRunUrl(owner: string, repo: string, runId: number): string
 export function parseWorkflowRunIdFromUrl(url: string): number | undefined
