@@ -43,6 +43,21 @@ function specificity(selector: string): number {
   return ids * 10000 + classes * 100 + types
 }
 
+// The value of `property` in one rule body, or null when the body does not
+// declare it. Declarations are split on `;` and matched by exact property
+// name, so `gap` does not pick up `row-gap`; the last one wins, as in CSS.
+// Plain string parsing, not a RegExp built from the argument.
+function declaredValue(body: string, property: string): string | null {
+  let value: string | null = null
+  for (const declaration of body.split(';')) {
+    const colon = declaration.indexOf(':')
+    if (colon < 0) continue
+    if (declaration.slice(0, colon).trim() !== property) continue
+    value = declaration.slice(colon + 1).trim()
+  }
+  return value
+}
+
 function winningDeclaration(css: string, className: string, property: string, ancestorClass?: string): string | null {
   const doc = `<!doctype html><html><head><style>${css}</style></head><body>
     ${ancestorClass ? `<div class="${ancestorClass}">` : ''}<div class="${className}" id="target"></div>${ancestorClass ? '</div>' : ''}
@@ -61,8 +76,8 @@ function winningDeclaration(css: string, className: string, property: string, an
   while ((match = ruleRe.exec(stripped)) !== null) {
     const selectors = match[1]!.split(',').map((s) => s.trim())
     const body = match[2]
-    const prop = body!.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
-    if (!prop) continue
+    const value = declaredValue(body!, property)
+    if (value === null) continue
     for (const sel of selectors) {
       if (sel.includes('@') || sel.includes(':') || sel.includes('[')) continue
       const parts = sel.split(/\s+/).filter(Boolean)
@@ -80,7 +95,7 @@ function winningDeclaration(css: string, className: string, property: string, an
       const spec = specificity(sel)
       if (spec >= bestSpec) {
         bestSpec = spec
-        bestValue = prop[1]!.trim()
+        bestValue = value
       }
     }
   }
