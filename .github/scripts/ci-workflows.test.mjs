@@ -147,6 +147,21 @@ test('Azure source workflow stops at the trusted build artifact', () => {
   assert.doesNotMatch(controller, /setup-toolchain|pnpm|npm install/)
 })
 
+test('direct reusable ZAP calls fail closed when the target URL is empty', () => {
+  const source = read('.github/workflows/zap.yml')
+  const inputs = source.slice(source.indexOf('  workflow_call:'), source.indexOf('  workflow_dispatch:'))
+  const zap = job(source, 'zap_baseline')
+  const guardStart = zap.indexOf('name: Require an authorized preview URL')
+  const scanStart = zap.indexOf('name: ZAP Baseline Scan')
+  assert.match(inputs, /target_url:[\s\S]*?default: ''/)
+  assert.match(zap, /name: ZAP Baseline/)
+  assert.ok(guardStart >= 0 && scanStart > guardStart)
+  const guard = zap.slice(guardStart, scanStart)
+  assert.match(guard, /TARGET_URL: \${{ inputs\.target_url }}/)
+  assert.match(guard, /if \[ -z "\$TARGET_URL" \]; then[\s\S]*?exit 1/)
+  assert.doesNotMatch(zap, /^\s+if: inputs\.target_url != ''$/m)
+})
+
 test('default-branch SWA controller owns deployment, scan publication, and teardown', () => {
   const source = read('.github/workflows/azure-static-web-apps-controller.yml')
   const inspect = job(source, 'inspect')
