@@ -484,6 +484,7 @@ export async function collectProvenanceReviewRuns(github, {
 
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
+  const verificationFailures = []
 
   // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
   // though the workflow definition and token execute from the default branch. The shared
@@ -513,14 +514,17 @@ export async function collectProvenanceReviewRuns(github, {
       } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
         continue
       }
-    } catch {
-      return {
-        provenanceReviewRuns: [],
-        defaultCaller,
-        error: run.event === 'pull_request_target'
-          ? 'cannot verify the pull_request_target base history'
-          : 'cannot inspect the exact-head OpenRouter caller',
-      }
+    } catch (error) {
+      const reason = run.event === 'pull_request_target'
+        ? 'cannot verify pull_request_target provenance'
+        : 'cannot inspect the exact-head OpenRouter caller'
+      verificationFailures.push({
+        run,
+        error: safeProfileConsumerFailureReason(new Error(
+          `${reason}: ${error instanceof Error ? error.message : String(error)}`,
+        )),
+      })
+      continue
     }
     provenanceReviewRuns.push(run)
     seenRunIds.add(run.id)
@@ -575,6 +579,19 @@ export async function collectProvenanceReviewRuns(github, {
       }
       provenanceReviewRuns.push(run)
       seenRunIds.add(run.id)
+    }
+  }
+
+  if (verificationFailures.length > 0) {
+    // Recovery must itself be authoritative. An unrelated older dispatch must
+    // never hide a newer review whose provenance could not be verified.
+    const newestCandidate = newestWorkflowRun([
+      ...provenanceReviewRuns,
+      ...verificationFailures.map(failure => failure.run),
+    ])
+    const newestFailure = verificationFailures.find(failure => failure.run.id === newestCandidate?.id)
+    if (newestFailure) {
+      return { provenanceReviewRuns: [], defaultCaller, error: newestFailure.error }
     }
   }
 
