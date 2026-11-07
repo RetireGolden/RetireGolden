@@ -46,6 +46,11 @@ newer unverifiable review. The authoritative run must still succeed and carry it
 ledger and current profile proof. Error diagnostics are flattened and bounded. This prerequisite keeps
 legacy deployment active so the helper reaches `main` before the source-workflow cutover is validated.
 
+The prerequisite's source gate has one compatibility retry: the loaded default-branch helper must be
+exactly blob `3541d60b2b62ccea47ded4a77a33d5a9912c97d6` and reject with its known base-history error.
+Only then is the reviewed immutable fix used. Future helper versions and unrelated failures do not
+retry. The normal 404 bootstrap fallback remains separate. Runtime tests execute these decisions.
+
 Bootstrap source-workflow layout (until the cutover removes the final three jobs):
 
 ```

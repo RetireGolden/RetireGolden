@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { runInNewContext } from 'node:vm'
+import { constants, runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaController from '../../.github/workflows/azure-static-web-apps-controller.yml?raw'
@@ -335,6 +335,46 @@ function recoveryForwarderScript() {
   expect(block).toBeDefined()
   return (block ?? '').replace(/^ {12}/gm, '')
 }
+
+describe('one-time source authorization compatibility', () => {
+  it.each([
+    ['3541d60b2b62ccea47ded4a77a33d5a9912c97d6', 'cannot verify the pull_request_target base history', true],
+    ['3541d60b2b62ccea47ded4a77a33d5a9912c97d6', 'live PR does not have run-ci', false],
+    ['future-helper', 'cannot verify the pull_request_target base history', false],
+    ['future-helper', 'cannot verify pull_request_target provenance: stricter policy', false],
+  ])('bounds retry for helper %s with reason %s', async (blobSha, reason, retries) => {
+    const block = swaWorkflow.match(/ {10}script: \|\r?\n((?: {12}[^\n]*\n)+)/)?.[1]
+    expect(block).toBeDefined()
+    const script = (block ?? '').replace(/^ {12}/gm, '')
+    const source = (authorized: boolean) => Buffer.from(
+      `export async function authorizeExactHeadPullRequest() { return ${JSON.stringify({ authorized, reason })} }`,
+    ).toString('base64')
+    let blobReads = 0
+    const outputs: Record<string, string> = {}
+    const failures: string[] = []
+    const github = { rest: {
+      repos: { getContent: async () => ({ data: { type: 'file', sha: blobSha, content: source(false) } }) },
+      git: { getBlob: async ({ file_sha }: { file_sha: string }) => {
+        expect(file_sha).toBe(expectedHelperBlobSha)
+        blobReads += 1
+        return { data: { content: source(true) } }
+      } },
+    } }
+    const core = {
+      setOutput: (key: string, value: string) => { outputs[key] = value },
+      setFailed: (message: string) => { failures.push(message) },
+      info: () => undefined, warning: () => undefined,
+    }
+    const context = { repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, eventName: 'pull_request',
+      payload: { repository: { ...repository, default_branch: 'main' }, pull_request: {} }, runAttempt: 2 }
+    await runInNewContext(`(async () => { ${script} })()`, { github, core, context }, {
+      importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
+    })
+    expect(blobReads).toBe(retries ? 1 : 0)
+    expect(outputs.authorized).toBe(retries ? 'true' : 'false')
+    expect(failures).toEqual(retries ? [] : [reason])
+  })
+})
 
 describe('trusted default-branch review verification recovery', () => {
   it('pins the complete recovery workflow Git blob', () => {
