@@ -13,6 +13,7 @@ import profileCompletionCaller from '../../.github/workflows/openrouter-profile-
 import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import readme from '../../README.md?raw'
 import openrouterProducerFixture from './fixtures/openrouter-producer.json'
+import preCutoverHelper from './fixtures/ci-helper-pre-cutover.txt?raw'
 import {
   azureSourceCheckExternalId,
   azureSourceCheckIsNewer,
@@ -337,6 +338,33 @@ function recoveryForwarderScript() {
 }
 
 describe('one-time source authorization compatibility', () => {
+  it('proves the exact immutable legacy helper emits the compatibility error', async () => {
+    const source = preCutoverHelper.replaceAll('\r\n', '\n')
+    const blobSha = createHash('sha1').update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex')
+    expect(blobSha).toBe('3541d60b2b62ccea47ded4a77a33d5a9912c97d6')
+    expect(swaWorkflow).toContain(`const preCutoverHelperBlob = '${blobSha}'`)
+    const legacy = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
+    const base = mockGithub()
+    const consumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`, 'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [trustedRun({ event: 'pull_request_target' })]
+        return base.paginate(request, params)
+      },
+      rest: { repos: { getContent: async (request: GetContentRequest) => {
+        if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+        return base.rest.repos.getContent(request)
+      } } },
+    })
+    const result = await legacy.authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] }, runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, reason: 'cannot verify the pull_request_target base history' })
+  })
+
   it.each([
     ['3541d60b2b62ccea47ded4a77a33d5a9912c97d6', 'cannot verify the pull_request_target base history', true],
     ['3541d60b2b62ccea47ded4a77a33d5a9912c97d6', 'live PR does not have run-ci', false],
