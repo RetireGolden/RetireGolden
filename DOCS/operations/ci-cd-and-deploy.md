@@ -34,7 +34,8 @@ source-identified ZAP result after the legacy job-level check.
 Both authorization gates use the trusted default-branch helper. A newer independently verified dispatch can
 recover an unverifiable automatic review; older dispatches never hide a newer verification failure. The
 authoritative run must succeed with its own exact-head clean ledger and current profile proof. Neither gate
-retries a rejected live authorization under older helper semantics.
+retries a rejected live authorization under older helper semantics. The source gate loads the helper
+only from the default branch; missing files and other load failures fail closed without a bootstrap blob.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
 checks out or executes PR code. For PR runs, it also requires the source-workflow blob at the exact head
@@ -44,6 +45,8 @@ support first, then change the source workflow in a follow-up PR. The controller
 planned source file's exact Git blob SHA to `TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS` in the
 default-branch CI helper. After that PR merges, the source-workflow PR can use exactly that reviewed blob;
 once the source change reaches `main` and becomes the default blob, remove the temporary entry in a cleanup PR.
+Staging the helper does not change the source workflow: the retired bootstrap helper pin is absent,
+so the planned source blob and the helper allowlist have no circular hash dependency.
 
 Source-workflow prerequisites flow into controller-owned deployment:
 

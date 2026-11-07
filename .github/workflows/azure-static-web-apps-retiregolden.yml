@@ -54,7 +54,6 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = '74a8f0a4311e1a1e71dac3047c18ecd8048ec685'
             const importHelper = async (content) => {
               if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
               const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
@@ -64,21 +63,12 @@ jobs:
               return helper
             }
             const loadHelper = async () => {
-              let helperFile
-              try {
-                helperFile = await github.rest.repos.getContent({
-                  owner,
-                  repo,
-                  path: '.github/scripts/ci-acceleration.mjs',
-                  ref: defaultBranch,
-                })
-              } catch (error) {
-                // The immutable blob is only an inaugural bootstrap fallback:
-                // default-branch helper load failures otherwise fail closed.
-                if (error?.status !== 404) throw error
-                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
-                return importHelper(blob.data?.content)
-              }
+              const helperFile = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: '.github/scripts/ci-acceleration.mjs',
+                ref: defaultBranch,
+              })
               if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file') {
                 throw new Error('trusted CI helper response is not a file')
               }

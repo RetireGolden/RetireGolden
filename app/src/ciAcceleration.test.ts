@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { runInNewContext } from 'node:vm'
+import { constants, runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaController from '../../.github/workflows/azure-static-web-apps-controller.yml?raw'
@@ -60,11 +60,8 @@ import type {
 } from '../../.github/scripts/ci-acceleration.mjs'
 
 const helperPath = new URL('../../.github/scripts/ci-acceleration.mjs', import.meta.url)
-// The pin addresses Git's LF blob, independent of Windows checkout line endings.
+// Normalize Windows checkout line endings before loading the standalone helper.
 const helperContent = readFileSync(helperPath, 'utf8').replace(/\r\n/g, '\n')
-const expectedHelperBlobSha = createHash('sha1')
-  .update(`blob ${Buffer.byteLength(helperContent, 'utf8')}\0${helperContent}`, 'utf8')
-  .digest('hex')
 
 const sha = 'a'.repeat(40)
 const workflowUrl = 'https://github.com/RetireGolden/RetireGolden/actions/runs/123'
@@ -339,6 +336,48 @@ function recoveryForwarderScript() {
   expect(block).toBeDefined()
   return (block ?? '').replace(/^ {12}/gm, '')
 }
+
+describe('default-branch source authorization', () => {
+  it.each(['missing', 'api-error', 'directory', 'no-content', 'bad-export', 'bad-module', 'denied', 'authorized'])(
+    'uses only the live default-branch helper: %s', async (scenario) => {
+      const authorize = swaWorkflow.slice(swaWorkflow.indexOf('  authorize:'), swaWorkflow.indexOf('\n  lint:'))
+      const block = authorize.match(/ {10}script: \|\r?\n((?: {12}[^\n]*\n)+)/)?.[1]
+      expect(block).toBeDefined()
+      const script = (block ?? '').replace(/^ {12}/gm, '')
+      const outputs: Record<string, string> = {}
+      const failures: string[] = []
+      let blobReads = 0
+      const github = { rest: {
+        repos: { getContent: async (request: GetContentRequest) => {
+          expect(request).toMatchObject({ owner: 'RetireGolden', repo: 'RetireGolden',
+            path: '.github/scripts/ci-acceleration.mjs', ref: 'main' })
+          if (scenario === 'missing' || scenario === 'api-error') {
+            throw Object.assign(new Error('load failed'), { status: scenario === 'missing' ? 404 : 503 })
+          }
+          if (scenario === 'directory') return { data: [] }
+          if (scenario === 'no-content') return { data: { type: 'file' } }
+          const source = scenario === 'bad-export' ? 'export const unrelated = true'
+            : scenario === 'bad-module' ? 'invalid module {'
+              : `export async function authorizeExactHeadPullRequest() { return ${JSON.stringify({
+                authorized: scenario === 'authorized', reason: 'fixture decision',
+              })} }`
+          return { data: { type: 'file', content: Buffer.from(source).toString('base64') } }
+        } },
+        git: { getBlob: async () => { blobReads += 1; throw new Error('unexpected fallback') } },
+      } }
+      const core = { setOutput: (key: string, value: string) => { outputs[key] = value },
+        setFailed: (message: string) => { failures.push(message) }, info: () => undefined }
+      const context = { repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, eventName: 'pull_request',
+        payload: { repository: { ...repository, default_branch: 'main' }, pull_request: {} }, runAttempt: 2 }
+      await runInNewContext(`(async () => { ${script} })()`, { github, core, context }, {
+        importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
+      })
+      expect(blobReads).toBe(0)
+      expect(outputs.authorized).toBe(scenario === 'authorized' ? 'true' : 'false')
+      expect(failures).toHaveLength(scenario === 'authorized' ? 0 : 1)
+    },
+  )
+})
 
 describe('trusted default-branch review verification recovery', () => {
   it('pins the complete recovery workflow Git blob', () => {
@@ -664,8 +703,7 @@ describe('OpenRouter CI authorization contract', () => {
     },
   )
 
-  it('pins the Azure bootstrap helper blob to the current helper content', () => {
-    expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
+  it('preserves the standalone authorization result contract', () => {
     expect(helperContent).toContain('return { authorized, failJob: !authorized, reason }')
     expect(helperContent).not.toMatch(/failJob:\s*(?:true|false|ciRequested)/)
     expect(helperContent).not.toContain('gitBlobSha')
@@ -1745,14 +1783,13 @@ describe('OpenRouter CI authorization contract', () => {
     expect(authorize).toContain('contents: read')
     expect(authorize).toContain('pull-requests: read')
     expect(authorize).toContain('helper.authorizeExactHeadPullRequest')
-    expect(authorize).toContain('github.rest.git.getBlob')
+    expect(authorize).not.toContain('github.rest.git.getBlob')
     expect(authorize).toContain("if (!result.authorized) core.setFailed(result.reason)")
     expect(authorize).toContain('core.setFailed(message)')
     expect(authorize).not.toContain('core.info(`not authorized: ${message}`)')
-    expect(authorize).toContain("if (error?.status !== 404) throw error")
     expect(authorize).toContain("throw new Error('trusted CI helper response is not a file')")
     expect(authorize).toContain("throw new Error('trusted CI helper is missing authorization export')")
-    expect(authorize).toContain('return importHelper(blob.data?.content)')
+    expect(authorize).not.toContain('helperPin')
     expect(authorize).not.toContain('trustedReviewWorkflowId')
     expect(authorize).not.toContain('actions/checkout@')
     expect(authorize).not.toContain('listWorkflowRunAssociatedPullRequests')
