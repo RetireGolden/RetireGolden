@@ -1249,6 +1249,142 @@ describe('OpenRouter CI authorization contract', () => {
     expect(provenanceReviewRuns[0]?.event).toBe('workflow_dispatch')
   })
 
+  it('uses a linked trusted dispatch when target provenance cannot be verified', async () => {
+    const dispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    const targetRun = trustedRun({ event: 'pull_request_target' })
+    const base = mockGithub()
+    const consumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`,
+      'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [targetRun]
+        return base.paginate(request, params)
+      },
+      rest: {
+        actions: {
+          getWorkflowRun: async ({ run_id }: { run_id: number }) => ({
+            data: trustedRun({
+              id: run_id,
+              event: 'workflow_dispatch',
+              head_branch: 'main',
+              head_sha: 'b'.repeat(40),
+            }),
+          }),
+        },
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber,
+      reviews: [review({ body: dispatchBody })],
+      allowDispatch: true,
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.provenanceReviewRuns).toHaveLength(1)
+    expect(result.provenanceReviewRuns[0]).toMatchObject({ id: 456, event: 'workflow_dispatch' })
+  })
+
+  it('uses a newer verified target run when an older sibling cannot be verified', async () => {
+    const olderTarget = trustedRun({
+      id: 100,
+      event: 'pull_request_target',
+      created_at: '2026-09-04T12:00:00Z',
+    })
+    const newerTarget = trustedRun({
+      id: 101,
+      event: 'pull_request_target',
+      created_at: '2026-09-04T12:01:00Z',
+    })
+    const base = mockGithub()
+    let consumerReads = 0
+    const failingConsumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`,
+      'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [olderTarget, newerTarget]
+        return base.paginate(request, params)
+      },
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              consumerReads += 1
+              return { data: profileConsumerContent(consumerReads === 1 ? failingConsumer : profileConsumerFixture) }
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber, reviews: [review()],
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.provenanceReviewRuns).toEqual([newerTarget])
+  })
+
+  it('fails closed when a newer target run cannot be verified', async () => {
+    const olderTarget = trustedRun({
+      id: 100,
+      event: 'pull_request_target',
+      created_at: '2026-09-04T12:00:00Z',
+    })
+    const newerTarget = trustedRun({
+      id: 101,
+      event: 'pull_request_target',
+      created_at: '2026-09-04T12:01:00Z',
+    })
+    const base = mockGithub()
+    let consumerReads = 0
+    const failingConsumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`,
+      'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [olderTarget, newerTarget]
+        return base.paginate(request, params)
+      },
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              consumerReads += 1
+              return { data: profileConsumerContent(consumerReads === 2 ? failingConsumer : profileConsumerFixture) }
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      expectedHeadSha: sha, pullNumber, reviews: [review()],
+    })
+    expect(result.provenanceReviewRuns).toEqual([])
+    expect(result.error).toBe('cannot verify pull_request_target provenance: timeline unavailable')
+  })
+
   it('admits exact-head pull_request_target runs through the shared base-history verifier', async () => {
     const targetRun = trustedRun({ event: 'pull_request_target' })
     const base = mockGithub()
@@ -1357,7 +1493,7 @@ describe('OpenRouter CI authorization contract', () => {
       expectedHeadSha: sha, pullNumber, reviews: [review()],
     })
     expect(result.provenanceReviewRuns).toEqual([])
-    expect(result.error).toBe('cannot verify the pull_request_target base history')
+    expect(result.error).toBe('cannot verify pull_request_target provenance: timeline unavailable')
   })
 
   it('does not require the target-only verifier for ordinary profile authorization', async () => {

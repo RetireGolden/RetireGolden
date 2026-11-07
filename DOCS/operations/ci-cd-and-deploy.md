@@ -39,6 +39,13 @@ Preview deploy jobs recheck ownership before and after upload and self-clean whe
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
 checks out or executes PR code.
 
+During cutover, a target review whose base history cannot be verified does not prevent a separately
+verified, ledger-linked default-branch dispatch from authorizing the same head. Without that dispatch,
+a newer unverifiable target run still fails closed; only a newer verified target run supersedes an older
+failed verification. The source gate retries only the target-provenance compatibility failure with its
+reviewed immutable helper. Other authorization failures remain final. This prerequisite keeps legacy
+deployment active so the helper can reach `main` before the source-workflow cutover is validated.
+
 Bootstrap source-workflow layout (until the cutover removes the final three jobs):
 
 ```

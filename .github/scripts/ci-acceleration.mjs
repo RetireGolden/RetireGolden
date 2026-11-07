@@ -484,6 +484,8 @@ export async function collectProvenanceReviewRuns(github, {
 
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
+  const targetVerificationFailures = []
+  let validDispatchRunCount = 0
 
   // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
   // though the workflow definition and token execute from the default branch. The shared
@@ -513,13 +515,18 @@ export async function collectProvenanceReviewRuns(github, {
       } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
         continue
       }
-    } catch {
+    } catch (error) {
+      if (run.event === 'pull_request_target') {
+        targetVerificationFailures.push({
+          run,
+          error: `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`,
+        })
+        continue
+      }
       return {
         provenanceReviewRuns: [],
         defaultCaller,
-        error: run.event === 'pull_request_target'
-          ? 'cannot verify the pull_request_target base history'
-          : 'cannot inspect the exact-head OpenRouter caller',
+        error: 'cannot inspect the exact-head OpenRouter caller',
       }
     }
     provenanceReviewRuns.push(run)
@@ -575,6 +582,22 @@ export async function collectProvenanceReviewRuns(github, {
       }
       provenanceReviewRuns.push(run)
       seenRunIds.add(run.id)
+      validDispatchRunCount += 1
+    }
+  }
+
+  if (targetVerificationFailures.length > 0 && validDispatchRunCount === 0) {
+    const verifiedTargetRuns = provenanceReviewRuns.filter(run => run.event === 'pull_request_target')
+    const newestTargetCandidate = newestWorkflowRun([
+      ...verifiedTargetRuns,
+      ...targetVerificationFailures.map(failure => failure.run),
+    ])
+    const newestVerifiedTarget = newestWorkflowRun(verifiedTargetRuns)
+    if (!newestVerifiedTarget || newestTargetCandidate?.id !== newestVerifiedTarget.id) {
+      const newestFailure = targetVerificationFailures.find(
+        failure => failure.run.id === newestTargetCandidate?.id,
+      ) ?? targetVerificationFailures[0]
+      return { provenanceReviewRuns: [], defaultCaller, error: newestFailure.error }
     }
   }
 

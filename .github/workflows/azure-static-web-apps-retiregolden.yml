@@ -43,7 +43,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = '3541d60b2b62ccea47ded4a77a33d5a9912c97d6'
+            const helperPin = 'ee47fc6cfffa99986d3861819ff6958df060f558'
             const importHelper = async (content) => {
               if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
               const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
@@ -51,6 +51,10 @@ jobs:
                 throw new Error('trusted CI helper is missing authorization export')
               }
               return helper
+            }
+            const loadPinnedHelper = async () => {
+              const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+              return importHelper(blob.data?.content)
             }
             const loadHelper = async () => {
               let helperFile
@@ -65,8 +69,7 @@ jobs:
                 // The immutable blob is only an inaugural bootstrap fallback:
                 // default-branch helper load failures otherwise fail closed.
                 if (error?.status !== 404) throw error
-                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
-                return importHelper(blob.data?.content)
+                return loadPinnedHelper()
               }
               if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file') {
                 throw new Error('trusted CI helper response is not a file')
@@ -79,15 +82,23 @@ jobs:
                 core.info('authorized: push to main')
                 return
               }
-              const helper = await loadHelper()
-              const result = await helper.authorizeExactHeadPullRequest(github, core, {
+              const authorizationInput = {
                 owner,
                 repo,
                 repository,
                 defaultBranch,
                 eventPr: context.payload.pull_request,
                 runAttempt: context.runAttempt,
-              })
+              }
+              let helper = await loadHelper()
+              let result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
+              if (!result.authorized &&
+                  (result.reason === 'cannot verify the pull_request_target base history' ||
+                    result.reason.startsWith('cannot verify pull_request_target provenance:'))) {
+                core.warning('Retrying cutover authorization with the reviewed immutable helper')
+                helper = await loadPinnedHelper()
+                result = await helper.authorizeExactHeadPullRequest(github, core, authorizationInput)
+              }
               core.setOutput('authorized', result.authorized ? 'true' : 'false')
               core.info(`${result.authorized ? 'authorized' : 'not authorized'}: ${result.reason}`)
               if (!result.authorized) core.setFailed(result.reason)
