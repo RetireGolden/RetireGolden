@@ -530,27 +530,20 @@ export async function collectProvenanceReviewRuns(github, {
     if (!Number.isSafeInteger(run.id) || run.head_sha !== expectedHeadSha) continue
     if (reviewRunSkipReason(run, repository)) continue
     try {
-      if (run.event === 'pull_request_target') {
-        if (!(await proveTargetRunBase(github, {
-          owner,
-          repo,
-          repository,
-          defaultBranch,
-          expectedHeadSha,
-          pullNumber,
-          run,
-        }))) continue
-      } else if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) {
-        continue
-      }
+      if (!(await proveTargetRunBase(github, {
+        owner,
+        repo,
+        repository,
+        defaultBranch,
+        expectedHeadSha,
+        pullNumber,
+        run,
+      }))) continue
     } catch (error) {
-      const reason = run.event === 'pull_request_target'
-        ? 'cannot verify pull_request_target provenance'
-        : 'cannot inspect the exact-head OpenRouter caller'
       verificationFailures.push({
         run,
         error: safeProfileConsumerFailureReason(new Error(
-          `${reason}: ${error instanceof Error ? error.message : String(error)}`,
+          `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`,
         )),
       })
       continue
