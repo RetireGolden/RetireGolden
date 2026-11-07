@@ -228,7 +228,7 @@ test('review caller stages trusted default-branch events and exact gate publicat
   const source = read('.github/workflows/openrouter-code-review.yml')
   const review = job(source, 'review')
   const gate = job(source, 'gate-check')
-  const pin = 'a40c5eb8d588266531184ffc633dc2969d9138df'
+  const pin = '95062fb8c797143a78c17ef7e4aecdc6527fa1a3'
 
   assert.doesNotMatch(source, /^  pull_request:\s*$/m)
   assert.match(source, /pull_request_target:\n\s+types: \[opened, synchronize, reopened, ready_for_review\]/)

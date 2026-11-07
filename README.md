@@ -213,7 +213,7 @@ current profile proof are still required; old-lineage evidence cannot unlock CI.
 
 ## Review profiles and CI proof
 
-The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/README.md). Code uses required GPT-6 Sol (Azure route) plus optional GLM; deep adds required Astra Flex. The standard/deep profile structure is unchanged; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/README.md). Code uses required GPT-6 Sol (Azure route) plus optional GLM; deep adds required Astra Flex. The standard/deep profile structure is unchanged; `REVIEW.md` cannot name arbitrary models or remove required lanes.
 
 From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
 
@@ -242,7 +242,7 @@ not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
 fails visibly with the source-run recovery instruction. Retry its dispatch after
 the source finishes; do not rerun the model panel.
 
-The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/.github/workflows/openrouter-code-review.yml#L169)
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/.github/workflows/openrouter-code-review.yml#L169)
 sets `actions: read` as its default, inherited by both model-review jobs. Its
 notification job explicitly overrides that default with `actions: write`.
 GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)

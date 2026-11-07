@@ -109,7 +109,8 @@ the run commit exactly equals the caller blob on the default branch for dispatch
 `pull_request_target` runs execute the caller from the
 default branch and instead require the exact reviewed head,
 the live head branch, and every same-repository PR from that branch to have always targeted the
-default branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
+default branch. Base-history proof uses a complete filtered timeline connection with no base-change
+events; unrelated timeline counts cannot reject an unchanged branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
 commit and must be linked from the exact-head ledger. They read GitHub APIs only and
 never check out or execute PR code.
 
@@ -167,11 +168,11 @@ may name other action revisions. Guards recognize the documented action referenc
 
 The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-The current caller uses the [shared configuration through organization PR #54](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared configuration and provenance fix through organization PR #55](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
-`a40c5eb8d588266531184ffc633dc2969d9138df`. Root and nested `REVIEW.md` guidance comes from the
+`95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
 affecting reviews only after merge. The `code` profile uses required GPT-6 Sol (pinned to the Azure route) plus optional GLM;
 `review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
@@ -199,7 +200,7 @@ wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
 proof and broker dispatches from feature branches intentionally skip their jobs.
 
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
-org reusable at `a40c5eb8d588266531184ffc633dc2969d9138df`. Reviews publish both the v1 ledger
+org reusable at `95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
 profile, required and successful models, and the authoritative workflow run.
 
@@ -210,7 +211,7 @@ and current base policy. A separate publish job rechecks the obligations and suc
 before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
 
 CI authorization and the broker load the org
-[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/scripts/profile_consumer.mjs)
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/scripts/profile_consumer.mjs)
 at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
 only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
 requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review

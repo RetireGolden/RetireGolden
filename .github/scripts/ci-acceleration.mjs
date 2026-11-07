@@ -15,8 +15,8 @@ export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'b75512aeaa05369a7fc6595d54764bdedd8da903'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a40c5eb8d588266531184ffc633dc2969d9138df'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'a40c5eb8d588266531184ffc633dc2969d9138df'
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@95062fb8c797143a78c17ef7e4aecdc6527fa1a3'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '95062fb8c797143a78c17ef7e4aecdc6527fa1a3'
 export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
 export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
 export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
