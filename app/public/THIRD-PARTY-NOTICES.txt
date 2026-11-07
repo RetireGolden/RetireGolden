@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  39 packages, sha256 5bd8c92cebd9b98b488256c9d70e83e94af65fb4ff8b38023758913c76e9b1a1
+Attributed:  39 packages, sha256 c5a7cc19f590ed994012c1c8b8dc14bc45b99cfdd6990a4069674759c858a704
 
 ================================================================================
 
@@ -744,7 +744,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (8.5.0)
+react-router (8.5.1)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
