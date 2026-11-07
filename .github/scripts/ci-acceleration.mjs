@@ -484,8 +484,7 @@ export async function collectProvenanceReviewRuns(github, {
 
   const provenanceReviewRuns = []
   const seenRunIds = new Set()
-  const targetVerificationFailures = []
-  let validDispatchRunCount = 0
+  const verificationFailures = []
 
   // GitHub indexes pull_request_target workflow runs under the reviewed PR head SHA even
   // though the workflow definition and token execute from the default branch. The shared
@@ -516,18 +515,16 @@ export async function collectProvenanceReviewRuns(github, {
         continue
       }
     } catch (error) {
-      if (run.event === 'pull_request_target') {
-        targetVerificationFailures.push({
-          run,
-          error: `cannot verify pull_request_target provenance: ${error instanceof Error ? error.message : String(error)}`,
-        })
-        continue
-      }
-      return {
-        provenanceReviewRuns: [],
-        defaultCaller,
-        error: 'cannot inspect the exact-head OpenRouter caller',
-      }
+      const reason = run.event === 'pull_request_target'
+        ? 'cannot verify pull_request_target provenance'
+        : 'cannot inspect the exact-head OpenRouter caller'
+      verificationFailures.push({
+        run,
+        error: safeProfileConsumerFailureReason(new Error(
+          `${reason}: ${error instanceof Error ? error.message : String(error)}`,
+        )),
+      })
+      continue
     }
     provenanceReviewRuns.push(run)
     seenRunIds.add(run.id)
@@ -582,21 +579,18 @@ export async function collectProvenanceReviewRuns(github, {
       }
       provenanceReviewRuns.push(run)
       seenRunIds.add(run.id)
-      validDispatchRunCount += 1
     }
   }
 
-  if (targetVerificationFailures.length > 0 && validDispatchRunCount === 0) {
-    const verifiedTargetRuns = provenanceReviewRuns.filter(run => run.event === 'pull_request_target')
-    const newestTargetCandidate = newestWorkflowRun([
-      ...verifiedTargetRuns,
-      ...targetVerificationFailures.map(failure => failure.run),
+  if (verificationFailures.length > 0) {
+    // Recovery must itself be authoritative. An unrelated older dispatch must
+    // never hide a newer review whose provenance could not be verified.
+    const newestCandidate = newestWorkflowRun([
+      ...provenanceReviewRuns,
+      ...verificationFailures.map(failure => failure.run),
     ])
-    const newestVerifiedTarget = newestWorkflowRun(verifiedTargetRuns)
-    if (!newestVerifiedTarget || newestTargetCandidate?.id !== newestVerifiedTarget.id) {
-      const newestFailure = targetVerificationFailures.find(
-        failure => failure.run.id === newestTargetCandidate?.id,
-      ) ?? targetVerificationFailures[0]
+    const newestFailure = verificationFailures.find(failure => failure.run.id === newestCandidate?.id)
+    if (newestFailure) {
       return { provenanceReviewRuns: [], defaultCaller, error: newestFailure.error }
     }
   }

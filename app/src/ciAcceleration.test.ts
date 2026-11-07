@@ -1385,6 +1385,103 @@ describe('OpenRouter CI authorization contract', () => {
     expect(result.error).toBe('cannot verify pull_request_target provenance: timeline unavailable')
   })
 
+  it.each([
+    ['older', 'success'], ['older', 'failure'], ['older', 'malformed'],
+    ['newer', 'success'], ['newer', 'failure'], ['newer', 'malformed'],
+  ])('requires the %s dispatch with %s evidence to be authoritative', async (order, evidence) => {
+    const targetRun = trustedRun({ event: 'pull_request_target', created_at: '2026-09-04T12:01:00Z' })
+    const failedTarget = trustedRun({ id: 124, event: 'pull_request_target', created_at: '2026-09-04T12:02:00Z' })
+    let dispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    if (evidence === 'malformed') dispatchBody = dispatchBody.replace(encodedPayload, 'broken')
+    const reviews = [review({ id: 1 }), review({ id: 2, body: dispatchBody })]
+    const base = mockGithub()
+    let consumerReads = 0
+    const failingConsumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`, 'throw new Error("timeline unavailable")',
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [targetRun, failedTarget]
+        if (request.name.includes('listReviews')) return reviews
+        return base.paginate(request, params)
+      },
+      rest: {
+        actions: {
+          getWorkflowRun: async () => ({ data: trustedRun({
+            id: 456, event: 'workflow_dispatch', head_branch: 'main', head_sha: 'b'.repeat(40),
+            conclusion: evidence === 'failure' ? 'failure' : 'success',
+            created_at: order === 'older' ? '2026-09-04T12:00:00Z' : '2026-09-04T12:03:00Z',
+          }) }),
+        },
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              consumerReads += 1
+              return { data: profileConsumerContent(consumerReads === 2 ? failingConsumer : profileConsumerFixture) }
+            }
+            return base.rest.repos.getContent(request)
+          },
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] }, runAttempt: 2,
+    })
+    expect(result.authorized).toBe(order === 'newer' && evidence === 'success')
+    if (order === 'older') expect(result.reason).toMatch(/cannot verify pull_request_target provenance/)
+  })
+
+  it('recovers from a branch-caller API failure only through a newer linked dispatch', async () => {
+    const base = mockGithub()
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (request.path === '.github/workflows/openrouter-code-review.yml' && request.ref === sha) {
+              throw new Error('caller unavailable')
+            }
+            return base.rest.repos.getContent(request)
+          },
+        },
+        actions: {
+          getWorkflowRun: async () => ({ data: trustedRun({
+            id: 456, event: 'workflow_dispatch', head_branch: 'main', head_sha: 'b'.repeat(40),
+            created_at: '2026-09-04T12:01:00Z',
+          }) }),
+        },
+      },
+    })
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.error).toBeUndefined()
+    expect(result.provenanceReviewRuns.map(run => run.id)).toEqual([456])
+    const withoutDispatch = await collectProvenanceReviewRuns(github, { ...recoveryContext, allowDispatch: false })
+    expect(withoutDispatch.provenanceReviewRuns).toEqual([])
+    expect(withoutDispatch.error).toMatch(/cannot inspect the exact-head OpenRouter caller/)
+  })
+
+  it('flattens and bounds target-provenance error diagnostics', async () => {
+    const base = mockGithub()
+    const message = `timeline\r\nunavailable ${'x'.repeat(600)}`
+    const consumer = profileConsumerFixture.replace(
+      `return [${pullNumber}]`, `throw new Error(${JSON.stringify(message)})`,
+    )
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return [trustedRun({ event: 'pull_request_target' })]
+        return base.paginate(request, params)
+      },
+      rest: { repos: { getContent: async (request: GetContentRequest) => {
+        if (isTrustedProfileConsumerRequest(request)) return { data: profileConsumerContent(consumer) }
+        return base.rest.repos.getContent(request)
+      } } },
+    })
+    const result = await collectProvenanceReviewRuns(github, { ...recoveryContext, allowDispatch: false })
+    expect(result.error).toHaveLength(500)
+    expect(result.error).not.toMatch(/[\r\n]/)
+    expect(result.error).toMatch(/^cannot verify pull_request_target provenance: timeline {2}unavailable/)
+  })
+
   it('admits exact-head pull_request_target runs through the shared base-history verifier', async () => {
     const targetRun = trustedRun({ event: 'pull_request_target' })
     const base = mockGithub()
