@@ -1,18 +1,17 @@
 # OWASP ZAP DAST — passive baseline scan against a deployed environment.
-# Reusable workflow: the Azure deploy workflow calls this after a PR preview
-# environment is live and passes the deployed URL in. Can also be run manually.
+# Reusable workflow: the trusted default-branch Azure controller calls this
+# after a PR preview is live and passes the deployed URL in. Can also be run manually.
 # All alerts are reported (uploaded artifact); the build is gated only on
 # High-risk alerts — Low/Medium/Informational are surfaced but never blocking.
 name: OWASP ZAP DAST
 
 on:
-  # Invoked by .github/workflows/azure-static-web-apps-retiregolden.yml after deploy.
+  # Invoked by .github/workflows/azure-static-web-apps-controller.yml after deploy.
   workflow_call:
     inputs:
       target_url:
-        # Empty means authorization did not release a deployment. The caller
-        # still invokes this workflow so the existing required context fails
-        # closed instead of hanging on "Expected".
+        # The controller supplies a non-empty URL. The guard below also keeps
+        # direct reusable-workflow calls fail-closed.
         description: URL of the deployed environment to scan
         required: false
         default: ''

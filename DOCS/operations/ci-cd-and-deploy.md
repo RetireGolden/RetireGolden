@@ -12,69 +12,63 @@ The source workflow
 [`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)
 drives authorization, lint, tests, and build. The default-branch
 [`azure-static-web-apps-controller.yml`](../../.github/workflows/azure-static-web-apps-controller.yml)
-is staged for deployment ownership after the cutover.
-It triggers on push to `main` and on `opened`, `synchronize`, `reopened`, and `closed` pull-request
-events targeting `main`. On a same-repository PR,
+owns deployment, preview scanning, and teardown from trusted default-branch code.
+The source workflow triggers on push to `main` and on `opened`, `synchronize`, and `reopened`
+pull-request events targeting `main`; the controller separately handles PR close. On a same-repository PR,
 the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
 the `run-ci` label, an exact-head clean OpenRouter review ledger, and a successful trusted
 `openrouter-profile` completion status for that head. An unauthorized run fails the existing
-`authorize` and ZAP contexts while its expensive jobs remain skipped, preserving the broker's
+`authorize` context while its expensive jobs remain skipped, preserving the broker's
 cheap exact-head rerun path (see [Label-gated PR CI](#label-gated-pr-ci) below).
 
-During this bootstrap phase the source workflow still contains `deploy`, `dast`, and
-`close_pull_request`, so it remains the sole deployment owner. The controller enumerates every
-source run's jobs and exits successfully when it finds the legacy `deploy` job; its close path likewise
-reads the active default-branch workflow and exits while `close_pull_request` is present. After those three legacy
-jobs are removed, the same default-branch controller consumes the exact source-run `dist` artifact,
+The source workflow ends at the exact `dist` artifact. The default-branch controller consumes that artifact,
 rechecks live PR ownership and the `run-ci` label from `main`, deploys named `pr<number>` previews, invokes ZAP, and
 publishes `ZAP DAST / ZAP Baseline` on the source head. Successful current-`main` artifacts deploy to
 production under a serialized production concurrency group, with a final live-branch check immediately
 before upload so a queued older run cannot replace a newer commit. Production intentionally represents
 the last successfully built `main` artifact; if `main` advances during an upload, the later successful
 source run supersedes it, while a failed newer build leaves the last successful deployment in place.
-The controller's `workflow_run: completed` trigger also receives rerun attempts. After cutover, a
+The controller's `workflow_run: completed` trigger also receives rerun attempts. A
 late rerun of an old source workflow therefore enters the `legacy-result` path and republishes its
 source-identified ZAP result after the legacy job-level check.
+Both authorization gates use the trusted default-branch helper. A newer independently verified dispatch can
+recover an unverifiable automatic review; older dispatches never hide a newer verification failure. The
+authoritative run must succeed with its own exact-head clean ledger and current profile proof. Neither gate
+retries a rejected live authorization under older helper semantics. The source gate loads the helper
+only from the default branch; missing files and other load failures fail closed without a bootstrap blob.
 Preview deploy jobs recheck ownership before and after upload and self-clean when the PR closes or its
 head changes, so cleanup does not depend on a pending close job being preserved. The controller never
-checks out or executes PR code.
+checks out or executes PR code. For PR runs, it also requires the source-workflow blob at the exact head
+to match the active default-branch source workflow before it accepts the artifact. Changes to that source
+workflow therefore use the same staged-controller sequence as this cutover: land the trusted controller
+support first, then change the source workflow in a follow-up PR. The controller-support PR adds the
+planned source file's exact Git blob SHA to `TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS` in the
+default-branch CI helper. After that PR merges, the source-workflow PR can use exactly that reviewed blob;
+once the source change reaches `main` and becomes the default blob, remove the temporary entry in a cleanup PR.
+Staging the helper does not change the source workflow: the retired bootstrap helper pin is absent,
+so the planned source blob and the helper allowlist have no circular hash dependency.
 
-During cutover, an automatic review whose provenance cannot be verified does not prevent a newer,
-independently verified default-branch dispatch from becoming authoritative for the same head.
-All verified runs and verification failures share the same ordering: an older dispatch never hides a
-newer unverifiable review. The authoritative run must still succeed and carry its own exact-head clean
-ledger and current profile proof. Error diagnostics are flattened and bounded. This prerequisite keeps
-legacy deployment active so the helper reaches `main` before the source-workflow cutover is validated.
-
-The prerequisite's source gate has one compatibility retry: the loaded default-branch helper must be
-exactly blob `3541d60b2b62ccea47ded4a77a33d5a9912c97d6` and reject with its known base-history error.
-Only then is the reviewed immutable fix used. Future helper versions and unrelated failures do not
-retry. The normal 404 bootstrap fallback remains separate. Runtime tests execute these decisions.
-The immutable legacy source is preserved in `app/src/fixtures/ci-helper-pre-cutover.txt`: tests verify
-its Git blob hash and execute it to prove the exact error. The corresponding live failure is recorded
-in [Azure authorization job 128459196468](https://github.com/RetireGolden/RetireGolden/actions/runs/42390884708/job/128459196468).
-
-Bootstrap source-workflow layout (until the cutover removes the final three jobs):
+Source-workflow prerequisites flow into controller-owned deployment:
 
 ```
-authorize ─┬─► lint ─────┐
-           ├─► test engine ─┐
-           ├─► test planner-ui ─┼─► test ─┐
-           ├─► test web ──────┘          ├─► deploy ─► dast (PR only)
-           ├─► e2e ──────────────────────┤
-           └─► build ────────────────────┘
+authorize --+--> lint ---------------------+
+            +--> test shards --> test -----+
+            +--> e2e ----------------------+--> successful source run
+            +--> build --> dist artifact --+              |
+                                                          v
+                                            controller deploy --> dast (PR only)
 ```
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
+| `authorize` | push + PR open/sync/reopen | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts fail this gate but leave expensive jobs skipped for the broker rerun. Forks do not pass: the target caller publishes an explicit failed review gate, and the unprivileged source workflow publishes the fork-head ZAP failure without invoking the controller. A maintainer must reproduce the change on a same-repository branch before review and CI can proceed. Manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
 | `lint` | authorized push/PR | root `pnpm install --frozen-lockfile`, `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`), then workflow contract tests |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
 | `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks, then the production-build Playwright spec (`pnpm test:e2e:dist` in `app/`, `vite preview` of the built `dist`); uploads `app/dist` as the `dist` artifact |
-| `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, then deploys it directly via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; the token-holding job does not check out the PR or run repository setup; exposes the deployed URL as `preview_url` |
-| `dast` | PR only; needs `authorize` and `deploy` | OWASP ZAP baseline scan of the freshly deployed authorized same-repository PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL so the existing required nested check fails instead of hanging on "Expected" |
-| `close_pull_request` | PR close | tears down the SWA preview environment |
+| controller `deploy_preview` / `deploy_production` | successful completed source run | downloads the exact `dist` artifact and deploys it via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; token-holding jobs do not check out PR code or run repository setup |
+| controller `dast` / `publish_pr_result` | authorized PR preview | scans the deployed URL with OWASP ZAP and publishes the exact-head `ZAP DAST / ZAP Baseline` check — see [security-scanning.md](security-scanning.md) |
+| controller `close_preview` | PR close | tears down the named preview plus any transitional legacy preview environment |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
 `packageManager` pin plus `actions/setup-node` with the pnpm store cache; the fresh-resolve gate passes
@@ -86,7 +80,7 @@ scan is cheap and it is a Main Guard required check (also in [security-scanning.
 ## Label-gated PR CI
 
 To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by default — review bots can
-iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
+iterate without every commit running lint/test/e2e/build or starting the controller deploy/DAST path. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
 `run-ci` only after independently validating an eligible open same-repository PR to `main`.
 Review, profile-completion, and Azure completion events, plus explicit default-branch
@@ -114,11 +108,12 @@ generation id, a positive round, and a `findings` array that is either empty or 
 not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
 resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
 successful review run came from the same repository and that its caller workflow blob at
-the run commit exactly equals the caller blob on the default branch for branch and dispatch runs. Normal
-`pull_request` runs use the reviewed head. Trusted `pull_request_target` runs execute the caller from the
+the run commit exactly equals the caller blob on the default branch for dispatch runs. Trusted
+`pull_request_target` runs execute the caller from the
 default branch and instead require the exact reviewed head,
 the live head branch, and every same-repository PR from that branch to have always targeted the
-default branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
+default branch. Base-history proof uses a complete filtered timeline connection with no base-change
+events; unrelated timeline counts cannot reject an unchanged branch. Trusted `workflow_dispatch` and `repository_dispatch` runs use the default-branch
 commit and must be linked from the exact-head ledger. They read GitHub APIs only and
 never check out or execute PR code.
 
@@ -176,11 +171,11 @@ may name other action revisions. Guards recognize the documented action referenc
 
 The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-The current caller uses the [shared configuration through organization PR #54](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared configuration and provenance fix through organization PR #55](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
-`a40c5eb8d588266531184ffc633dc2969d9138df`. Root and nested `REVIEW.md` guidance comes from the
+`95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
 affecting reviews only after merge. The `code` profile uses required GPT-6 Sol (pinned to the Azure route) plus optional GLM;
 `review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
@@ -208,7 +203,7 @@ wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
 proof and broker dispatches from feature branches intentionally skip their jobs.
 
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
-org reusable at `a40c5eb8d588266531184ffc633dc2969d9138df`. Reviews publish both the v1 ledger
+org reusable at `95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
 profile, required and successful models, and the authoritative workflow run.
 
@@ -219,7 +214,7 @@ and current base policy. A separate publish job rechecks the obligations and suc
 before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
 
 CI authorization and the broker load the org
-[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/a40c5eb8d588266531184ffc633dc2969d9138df/scripts/profile_consumer.mjs)
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/scripts/profile_consumer.mjs)
 at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
 only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
 requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review
@@ -247,8 +242,9 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 - A rerun deliberately ignores its frozen event labels. `authorize` re-reads the live PR, label, review,
   and head immediately before releasing checkout jobs; a head race fails closed. Fork PRs never authorize
   or deploy. The broker never auto-reruns Dependabot PRs.
-- **Without the label**, `authorize` and the nested ZAP context fail while the expensive jobs remain
-  **skipped**. The broker deliberately recognizes that exact shape, applies `run-ci` only after current
+- **Without the label**, `authorize` fails while the expensive jobs remain **skipped**; after the source
+  run completes, the controller separately publishes a failed exact-head ZAP context. The broker
+  deliberately recognizes that exact shape, applies `run-ci` only after current
   review proof, and reruns the same exact-head Azure attempt. The authorized rerun must be green before merge.
   A branch that predates a required Azure job name must first synchronize with `main`; the broker rejects
   stale workflow shapes rather than treating a missing expensive job as safely skipped.
@@ -267,9 +263,20 @@ not initiate recovery forwarding. This rollout supplements the existing first-pa
 The trust boundary is explicit: GitHub review objects do not expose which workflow created them.
 Authorization therefore admits only same-repository PRs and trusts the write-capable repository
 workflows on the default branch, the pinned reusable org workflows they invoke, and the org
-`scripts/profile_consumer.mjs` loaded at the org workflow pin. Trust is established through GitHub
+`scripts/profile_consumer.mjs` loaded at the org workflow pin. That pinned consumer exports both
+`verifyTargetBase` and `authorizeProfileReceipt`; the former binds target reviews to the expected base
+history before the latter admits the review/profile receipt. Trust is established through GitHub
 artifact, workflow run, job, and caller-blob provenance — not cryptographic signatures on review
 bodies or status descriptions.
+
+At this cutover, an open PR whose latest authoritative ledger came from the retired branch
+`pull_request` caller does not receive a new event merely because `main` changed. After active reviews
+settle, dispatch `openrouter-review-recovery.yml` from `main` once for each such unchanged head; the
+forwarder starts the normal trusted review. Wait for its exact-head clean ledger and current profile proof
+before CI authorization. This one-time migration is intentionally operator-driven: repository reviews are
+serialized, and the broker does not initiate review recovery, so an automatic fan-out could overlap the
+review queue or spend on a head that a maintainer is already replacing. A new PR event naturally uses the
+target caller.
 
 For operational recovery, a maintainer may dispatch the normal review workflow from `main`
 and wait for its exact-head clean ledger and current profile proof. The run may report `main`
@@ -333,8 +340,8 @@ and has a ten-minute job limit so a stuck sweep releases the queue.
   orchestration uses the built-in `GITHUB_TOKEN`. The post-cutover `workflow_run` deploy intentionally
   omits the action's `repo_token` because it has no pull-request event context for preview comments; the
   preview URL is passed directly to ZAP and remains visible in the controller run.
-- Azure creates a **fresh preview environment per PR** (a unique `*.azurestaticapps.net` URL); the `dast`
-  job reads that URL dynamically from the deploy job's output. Pushing to `main` deploys production.
+- Azure creates a **fresh named preview environment per PR** (a unique `*.azurestaticapps.net` URL); the
+  controller passes its deploy output directly to the `dast` job. Pushing to `main` deploys production.
 
 ## Branch protection
 
