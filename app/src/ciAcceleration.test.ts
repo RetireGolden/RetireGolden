@@ -120,7 +120,7 @@ const cleanReviewBody = [
   '',
   '### Lanes',
   '',
-  '- `openai/gpt-6-sol`: ok (0 finding(s))',
+  '- `openai/gpt-6.1-sol`: ok (0 finding(s))',
   '- `z-ai/glm-5.3-flash`: ok (0 finding(s))',
   '',
   'No structured findings from the successful lane(s).',

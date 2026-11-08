@@ -15,8 +15,8 @@ export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'b75512aeaa05369a7fc6595d54764bdedd8da903'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@95062fb8c797143a78c17ef7e4aecdc6527fa1a3'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '95062fb8c797143a78c17ef7e4aecdc6527fa1a3'
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf'
 export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
 export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
 export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
@@ -26,7 +26,7 @@ export const TRUSTED_LEGACY_AZURE_SOURCE_WORKFLOW_BLOB_SHA =
 // A controller-staging PR may add the exact blob for one planned source-workflow
 // follow-up. Remove the entry after that source change reaches the default branch.
 export const TRUSTED_STAGED_AZURE_SOURCE_WORKFLOW_BLOB_SHAS = new Set()
-/** Primary ledger producer: openrouter-pr-review-action@212775ffea22e806cddcb706c73a3df26fbcb6d0. */
+/** Primary ledger producer: openrouter-pr-review-action@0d6a05e41616281368c1f6bb7fb5a47ddf41375d. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
 const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
@@ -234,7 +234,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Producer: openrouter-pr-review-action@212775ffea22e806cddcb706c73a3df26fbcb6d0
+  // Producer: openrouter-pr-review-action@0d6a05e41616281368c1f6bb7fb5a47ddf41375d
   // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&

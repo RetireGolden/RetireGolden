@@ -149,15 +149,15 @@ proof against current caller pins. Historical branch-caller audits therefore
 do not permanently block a workflow-pin migration.
 
 The embedded ledger is produced by the pinned upstream review action
-[`FlyOverCoderKY/openrouter-pr-review-action@212775ffea22e806cddcb706c73a3df26fbcb6d0`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/212775ffea22e806cddcb706c73a3df26fbcb6d0).
+[`FlyOverCoderKY/openrouter-pr-review-action@0d6a05e41616281368c1f6bb7fb5a47ddf41375d`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/0d6a05e41616281368c1f6bb7fb5a47ddf41375d).
 RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L486-L526) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L280-L282) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L255-L277); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L26). |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L196-L298) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L384-L408) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L445-L483) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/loop.py#L491-L531) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/schema.py#L281-L283) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/schema.py#L256-L278); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/schema.py#L26). |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/loop.py#L196-L298) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/loop.py#L384-L408) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/0d6a05e41616281368c1f6bb7fb5a47ddf41375d/src/or_pr_review/loop.py#L450-L488) |
 
 These function spans were checked against the source at the linked immutable action revision.
 The path predicate's short span is intentional: normalization contains the validation logic.
@@ -171,13 +171,13 @@ may name other action revisions. Guards recognize the documented action referenc
 
 The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-The current caller uses the [shared configuration and provenance fix through organization PR #55](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared Sol 6.1 configuration through organization PR #56](https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
-`95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Root and nested `REVIEW.md` guidance comes from the
+`cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
-affecting reviews only after merge. The `code` profile uses required GPT-6 Sol (pinned to the Azure route) plus optional GLM;
+affecting reviews only after merge. The `code` profile uses required GPT-6.1 Sol (pinned to Azure US ZDR) plus optional GLM;
 `review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
 arbitrary models. Model budgets and CI authorization remain workflow-owned.
 
@@ -203,7 +203,7 @@ wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
 proof and broker dispatches from feature branches intentionally skip their jobs.
 
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
-org reusable at `95062fb8c797143a78c17ef7e4aecdc6527fa1a3`. Reviews publish both the v1 ledger
+org reusable at `cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
 profile, required and successful models, and the authoritative workflow run.
 
@@ -214,7 +214,7 @@ and current base policy. A separate publish job rechecks the obligations and suc
 before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
 
 CI authorization and the broker load the org
-[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/scripts/profile_consumer.mjs)
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/scripts/profile_consumer.mjs)
 at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
 only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
 requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review

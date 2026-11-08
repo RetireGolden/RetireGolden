@@ -33,10 +33,10 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
-# Standard: required GPT-6 Sol (Azure route) + optional GLM 5.3 Flash; Luna judge.
+# Standard: required GPT-6.1 Sol (Azure US ZDR route) + optional GLM 5.3 Flash; Luna judge.
 # Deep adds required Astra Flex; effort and limits follow the selected profile.
-# Shared configuration: https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/.github/workflows/openrouter-code-review.yml
-# Policy reference: https://github.com/RetireGolden/.github/blob/95062fb8c797143a78c17ef7e4aecdc6527fa1a3/README.md
+# Shared configuration: https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/README.md
 
 name: OpenRouter code review
 run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || github.event.client_payload.pr_number || inputs.pr_number, github.event.client_payload.review_level || inputs.review_level || 'auto') }}"
@@ -83,7 +83,7 @@ jobs:
         github.event_name == 'repository_dispatch' ||
         (github.event_name == 'pull_request_target' && !github.event.pull_request.draft &&
           github.event.pull_request.head.repo.full_name == github.event.repository.full_name)
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@95062fb8c797143a78c17ef7e4aecdc6527fa1a3 # .github#55; action#41@212775ffea22e806cddcb706c73a3df26fbcb6d0
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf # .github#56; action#47@0d6a05e41616281368c1f6bb7fb5a47ddf41375d
     permissions:
       actions: write
       contents: read
@@ -106,7 +106,7 @@ jobs:
         (needs.review.outputs.gate_head_sha != '' ||
           (github.event_name == 'pull_request_target' && !github.event.pull_request.draft &&
             github.event.pull_request.head.repo.full_name != github.event.repository.full_name))
-    uses: RetireGolden/.github/.github/workflows/openrouter-review-gate-check.yml@95062fb8c797143a78c17ef7e4aecdc6527fa1a3 # .github#55
+    uses: RetireGolden/.github/.github/workflows/openrouter-review-gate-check.yml@cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf # .github#56
     permissions:
       actions: read
       checks: write
