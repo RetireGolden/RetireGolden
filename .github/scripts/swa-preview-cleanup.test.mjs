@@ -6,10 +6,11 @@ import { cleanupPreview, createAzureCliAdapter, planPreviewReconciliation, previ
 const repository = `${TARGET.owner}/${TARGET.repo}`
 const resource = `/subscriptions/${TARGET.subscription}/resourceGroups/${TARGET.resourceGroup}/providers/Microsoft.Web/staticSites/${TARGET.app}`
 const sha = 'a'.repeat(40)
-const environment = (n, extra = {}) => ({
-  name: `pr${n}`, buildId: `pr${n}`, id: `${resource}/builds/pr${n}`,
+const namedEnvironment = (name, extra = {}) => ({
+  name, buildId: name, id: `${resource}/builds/${name}`,
   databaseConnections: [], linkedBackends: [], userProvidedFunctionApps: null, ...extra,
 })
+const environment = (n, extra = {}) => namedEnvironment(`pr${n}`, extra)
 const pullRequest = (n, extra = {}) => ({
   number: n, state: 'closed',
   head: { sha, repo: { full_name: repository } },
@@ -78,11 +79,20 @@ test('normal cleanup protects every open preview even when run-ci is absent or h
   assert.equal(h.calls.some((call) => Array.isArray(call) && call[0] === 'delete'), false)
 })
 
-test('wrong subscription/app/build identifiers and unknown backend metadata block deletion', async (t) => {
+test('wrong subscription/app/build identifiers fail inventory validation', async (t) => {
   for (const extra of [
     { id: `${resource.replace(TARGET.subscription, 'wrong')}/builds/pr853` },
     { id: `${resource.replace(TARGET.app, 'AnotherApp')}/builds/pr853` },
     { buildId: 'default' }, { name: 'default' },
+  ]) await t.test(JSON.stringify(extra), async () => {
+    const h = harness({ lists: [[environment(853, extra)]] })
+    await assert.rejects(cleanupPreview(h), /invalid or mismatched identity/)
+    assert.deepEqual(h.calls, ['list'])
+  })
+})
+
+test('nonempty or unknown backend metadata blocks deletion', async (t) => {
+  for (const extra of [
     { databaseConnections: [{ name: 'db' }] }, { linkedBackends: [{ id: 'backend' }] },
     { userProvidedFunctionApps: [{ id: 'function' }] }, { databaseConnections: undefined },
   ]) await t.test(JSON.stringify(extra), async () => {
@@ -155,7 +165,7 @@ test('still-present preview fails after the configured bounded polling budget', 
 })
 
 test('ambiguous identity and changed backend metadata cannot establish safe deletion', async () => {
-  await assert.rejects(cleanupPreview(harness({ lists: [[environment(853), environment(853)]] })), /ambiguous/)
+  await assert.rejects(cleanupPreview(harness({ lists: [[environment(853), environment(853)]] })), /duplicate|ambiguous/)
   const changed = harness({
     lists: [[environment(853)], [environment(853, { linkedBackends: [{ id: 'new backend' }] })]],
   })
@@ -211,12 +221,12 @@ test('owned-upload requires full SHA and an injected trusted predicate', async (
 
 test('planner protects production/unknown names and sorts numeric PR candidates with bounds', async () => {
   const h = harness({
-    lists: [[{ name: 'default' }, { name: 'production' }, { name: 'pr01' }, { name: 'pr9007199254740992' }, environment(20), environment(3), environment(10)]],
+    lists: [['default', 'production', 'pr01', 'pr9007199254740992', 'custom-preview'].map((name) => namedEnvironment(name)).concat([environment(20), environment(3), environment(10)])],
   })
   h.github.rest.pulls.get = async ({ pull_number }) => ({ data: pullRequest(pull_number) })
   const plan = await planPreviewReconciliation({ ...h, limit: 2 })
   assert.deepEqual(plan.candidates, [{ prNumber: 3, environmentName: 'pr3' }, { prNumber: 10, environmentName: 'pr10' }])
-  assert.equal(plan.results.filter((r) => r.status === 'skipped').length, 4)
+  assert.equal(plan.results.filter((r) => r.status === 'skipped').length, 5)
   assert.equal(plan.results.find((r) => r.prNumber === 20).status, 'deferred')
   await assert.rejects(planPreviewReconciliation({ ...h, limit: 0 }), /limit/)
   await assert.rejects(planPreviewReconciliation(harness({ lists: [Array.from({ length: 201 }, (_, n) => environment(n + 1))] })), /unbounded/)
@@ -257,10 +267,30 @@ test('CLI adapter fails closed on errors, malformed JSON and unexpected list sha
   const denied = createAzureCliAdapter({ execFile(command, args, options, callback) { callback(Object.assign(new Error('secret stderr'), { code: 1 })) } })
   await assert.rejects(denied.listEnvironments(), /^Error: Azure CLI get failed \(1\)$/)
   await assert.rejects(denied.deleteEnvironment('pr853'), /Azure CLI delete failed/)
-  for (const stdout of ['bad json', '{}', 'null', '[null]', '{"value":[null]}', '{"value":[{}]}']) {
+  for (const stdout of ['bad json', '{}', 'null', '[null]', '{"value":[null]}', '{"value":[{}]}', '{"value":[{"properties":{}}]}']) {
     const azure = createAzureCliAdapter({ execFile(command, args, options, callback) { callback(null, stdout) } })
-    await assert.rejects(azure.listEnvironments(), /not JSON|invalid or unbounded|value array|properties/)
+    await assert.rejects(azure.listEnvironments(), /not JSON|invalid or unbounded|value array|properties|identity/)
   }
+})
+
+test('malformed inventory entries never prove absence before deletion or during polling', async () => {
+  for (const malformed of [{}, { properties: {} }, { name: 'other' },
+    namedEnvironment('other', { id: undefined }), namedEnvironment('other', { buildId: 'different' }),
+    namedEnvironment('other', { id: `${resource}/builds/different` })]) {
+    const before = harness({ lists: [[malformed]] })
+    await assert.rejects(cleanupPreview(before), /identity/)
+    assert.deepEqual(before.calls, ['list'])
+    const after = harness({ lists: [[environment(853)], [malformed]] })
+    await assert.rejects(cleanupPreview(after), /identity/)
+    assert.equal(after.calls.filter((call) => Array.isArray(call) && call[0] === 'delete').length, 1)
+    await assert.rejects(planPreviewReconciliation(harness({ lists: [[malformed]] })), /identity/)
+  }
+})
+
+test('valid production and unknown preview identities allow a truthful absence result', async () => {
+  const h = harness({ lists: [[namedEnvironment('default'), namedEnvironment('other-preview')]] })
+  assert.equal((await cleanupPreview(h)).status, 'absent')
+  assert.deepEqual(h.calls, ['list'])
 })
 
 test('REST pagination normalizes properties and stays under the fixed builds path', async () => {

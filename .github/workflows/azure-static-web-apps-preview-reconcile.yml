@@ -87,6 +87,7 @@ jobs:
     concurrency:
       group: swa-preview-pr${{ matrix.pr_number }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       pull-requests: read

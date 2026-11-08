@@ -91,12 +91,17 @@ Cleanup accepts only canonical `pr<number>` names in `RetireGoldenApp`, validate
 full Azure resource identity and empty backend metadata, and reads current PR state
 immediately before deletion. Close and reconciliation paths preserve open PRs. The
 post-upload path may also remove its own superseded or deauthorized upload while
-holding the same per-PR lock. Production `default`, unknown names, forks and unknown
+holding the same per-PR lock. All upload, close and sweep jobs use `queue: max`
+so a pending reconciliation cannot replace an eligible pending deployment. The queue
+holds up to 100 pending operations; jobs beyond that bound are canceled, never counted
+as completed cleanup. Production `default`, unknown names, forks and unknown
 PRs are protected. GitHub state and Azure deletion are separate operations; the final
 live read and shared lock minimize, rather than eliminate, a reopen race. A later
 eligible deployment restores a reopened preview.
 
-Success means the preview was already absent or an ARM list confirmed its absence.
+Only `absent` and `deleted` results establish verified absence. A successful workflow
+can also contain protected `skipped` results or manual `dry-run` results; inspect the
+per-preview summary before inferring removal.
 Authentication/API failures and deletion polling expiry fail the job. Missing or
 nonempty backend metadata blocks deletion and requires manual investigation. The
 sweep reports blocked or deferred entries as failure while still cleaning eligible
@@ -105,7 +110,8 @@ previews. It runs hourly at minute 17 UTC. Run **Azure SWA preview reconciliatio
 from `main` for recovery; manual dispatch defaults to `dry_run: true`, and an optional
 PR number narrows the target. Inspect its plan and result summaries, then dispatch
 with `dry_run: false` to delete eligible previews. A repeated run is idempotent.
-This workflow performs cleanup only and does not deploy production.
+This workflow performs cleanup only and does not deploy production. Queue behavior
+is documented in [GitHub concurrency guidance](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
 ### Cleanup identity setup
 
@@ -116,19 +122,30 @@ role granting only `Microsoft.Web/staticSites/builds/Read` and
 group and the actual role assignment is on the existing Static Web App alone.
 Azure RBAC cannot exclude the `default` build by name within that assignment; the
 helper's canonical-name and resource guards enforce that boundary. No client secret
-or repository-wide OIDC subject customization is used.
+or repository-wide OIDC subject customization is used. Role assignment names include
+the principal ID so identity recreation cannot collide with an orphaned assignment.
+When migrating an already-provisioned identity from the earlier resource-ID naming
+scheme, remove only its verified old app-scoped assignment before deploying the new
+one; Azure rejects duplicate grants for the same principal, role and scope. Preserve
+the old assignment details for rollback and verify the resulting scope/actions.
 
-An administrator provisions it with:
+Before merging or activating these workflows, an administrator must provision the
+identity and GitHub environment. Missing variables make Azure login fail visibly,
+and cleanup cannot proceed until configuration is restored. Use exactly subscription
+`5e4f5c69-c335-4522-8c94-18eba2057640`, fixed in the helper target; the commands below
+are not a portable subscription selector. Moving the app requires a reviewed update
+to that fixed target and matching IAM/environment configuration. Provision with:
 
 ```powershell
-az deployment sub what-if --subscription <subscription-id> --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
-az deployment sub create --subscription <subscription-id> --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
+az deployment sub what-if --subscription 5e4f5c69-c335-4522-8c94-18eba2057640 --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
+az deployment sub create --subscription 5e4f5c69-c335-4522-8c94-18eba2057640 --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
 ```
 
 Create the GitHub environment `azure-preview-cleanup` with **custom deployment branch
 policies allowing only `main`**. Set its environment variables `AZURE_CLIENT_ID`,
-`AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` from the deployment outputs. Only the
-cleanup inventory/deletion and preview controller jobs request `id-token: write`.
+`AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` from the deployment outputs. Within the Azure cleanup workflows, only the
+cleanup inventory/deletion and preview controller jobs request `id-token: write`;
+separate npm publishing jobs retain their existing OIDC permissions.
 The federated subject is
 `repo:RetireGolden/RetireGolden:environment:azure-preview-cleanup`; it is bound to the
 environment, not a specific workflow. The main-only environment policy and trusted

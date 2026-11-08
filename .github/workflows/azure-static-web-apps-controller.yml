@@ -248,11 +248,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: azure-preview-cleanup
-    # A pending close may be replaced by another pending job in this group.
-    # Every deploy therefore owns cleanup when it observes a closed or changed PR.
+    # Queue every lifecycle operation so cleanup cannot displace a pending upload.
+    # Every deploy also owns cleanup when it observes a closed or changed PR.
     concurrency:
       group: swa-preview-pr${{ needs.inspect.outputs.pr_number }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       contents: read
@@ -683,7 +684,7 @@ jobs:
     needs: inspect_close
     if: needs.inspect_close.outputs.should_close == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     environment: azure-preview-cleanup
     permissions:
       contents: read
@@ -692,6 +693,7 @@ jobs:
     concurrency:
       group: swa-preview-pr${{ needs.inspect_close.outputs.pr_number }}
       cancel-in-progress: false
+      queue: max
     steps:
       - name: Authenticate preview cleanup
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
@@ -718,7 +720,22 @@ jobs:
             })
             await core.summary.addHeading('Closed preview cleanup').addCodeBlock(JSON.stringify(result), 'json').write()
             if (result.status === 'blocked') core.setFailed(result.reason)
+      - name: Recheck live PR before independent legacy cleanup
+        id: legacy_guard
+        if: ${{ !cancelled() }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.inspect_close.outputs.pr_number }}
+        with:
+          script: |
+            const number = Number(process.env.PR_NUMBER)
+            if (!Number.isSafeInteger(number) || number <= 0) throw new Error('Invalid PR number')
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number })
+            core.setOutput('closed', pr.number === number && pr.state === 'closed' &&
+              pr.head?.repo?.full_name === context.payload.repository.full_name &&
+              pr.base?.repo?.full_name === context.payload.repository.full_name ? 'true' : 'false')
       - name: Close legacy pull-request environment if present
+        if: ${{ !cancelled() && steps.legacy_guard.outputs.closed == 'true' }}
         id: close_legacy
         continue-on-error: true
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1

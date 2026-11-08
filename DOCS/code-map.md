@@ -19,12 +19,14 @@ RetireGolden/
 ├── packages/planner-ui/  @retiregolden/planner-ui — the planner React UI (published to npm; ships TS source)
 ├── DOCS/             this documentation set
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
-├── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, azure-static-web-apps-controller.yml, openrouter-ci-broker.yml, grok-code-review.yml, openrouter-code-review.yml, owl-parity.yml, rollover.yml (the suites at next 1 January, weekly),
+├── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, azure-static-web-apps-controller.yml, azure-static-web-apps-preview-reconcile.yml, openrouter-ci-broker.yml, grok-code-review.yml, openrouter-code-review.yml, owl-parity.yml, rollover.yml (the suites at next 1 January, weekly),
                         openrouter-profile-completion.yml, openrouter-review-recovery.yml, semgrep.yml, zap.yml, cla.yml (CLA signatures), resolve-gate.yml (fresh
                         dependency resolve exercises the pnpm trust policy), publish-engine.yml /
                         publish-planner-ui.yml (npm releases on engine-v* / planner-ui-v* tags)
 ├── .github/scripts/    trusted CI broker predicates (`ci-acceleration.mjs`) and dependency-free workflow
-                        contracts (`ci-workflows.test.mjs`)
+                        contracts (`ci-workflows.test.mjs`), plus verified preview cleanup
+                        (`swa-preview-cleanup.mjs` and `swa-preview-cleanup.test.mjs`)
+├── .github/azure/      preview-cleanup.bicep, preview-cleanup-identity.bicep and preview-cleanup-grant.bicep provision app-scoped cleanup OIDC/RBAC
 └── .github/actions/setup-toolchain/  the workspace-job composite for pnpm + Node (single home of the CI Node
                         major and pnpm store cache); isolated publish jobs use the same pinned setup-node action
                         and Node major directly, while composite users keep their own checkout and install line

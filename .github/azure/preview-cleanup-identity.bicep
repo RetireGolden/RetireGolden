@@ -4,10 +4,6 @@ param appName string
 param identityLocation string
 param roleDefinitionId string
 
-resource app 'Microsoft.Web/staticSites@2024-04-01' existing = {
-  name: appName
-}
-
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'retiregolden-swa-preview-cleanup'
   location: identityLocation
@@ -23,13 +19,13 @@ resource github 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdent
   }
 }
 
-resource grant 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: app
-  name: guid(app.id, identity.id, roleDefinitionId)
-  properties: {
+// A separate deployment resolves the new identity's principal before naming its grant.
+module grant './preview-cleanup-grant.bicep' = {
+  name: 'retiregolden-preview-cleanup-grant'
+  params: {
+    appName: appName
     roleDefinitionId: roleDefinitionId
     principalId: identity.properties.principalId
-    principalType: 'ServicePrincipal'
   }
 }
 

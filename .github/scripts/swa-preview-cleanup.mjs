@@ -74,7 +74,7 @@ export function createAzureCliAdapter({ execFile = nodeExecFile } = {}) {
         let response
         try { response = JSON.parse(output) } catch { throw new Error('Azure environment list is not JSON') }
         if (!response || !Array.isArray(response.value)) throw new Error('Azure builds response lacks a value array')
-        for (const item of checkedList(response.value)) {
+        for (const item of checkedRecords(response.value)) {
           if (!item.properties || typeof item.properties !== 'object' || Array.isArray(item.properties)) {
             throw new Error('Azure build properties are unavailable')
           }
@@ -97,10 +97,29 @@ export function createAzureCliAdapter({ execFile = nodeExecFile } = {}) {
   }
 }
 
-function checkedList(environments) {
+function checkedRecords(environments) {
   if (!Array.isArray(environments) || environments.length > MAX_ENVIRONMENTS ||
       environments.some((environment) => !environment || typeof environment !== 'object' || Array.isArray(environment))) {
     throw new Error('Azure environment list has an invalid or unbounded shape')
+  }
+  return environments
+}
+
+function checkedList(environments) {
+  checkedRecords(environments)
+  const identities = new Set()
+  for (const environment of environments) {
+    // Validate every entry, including production and non-PR names. Otherwise an
+    // unidentified entry could conceal the requested preview and fake absence.
+    const { name, buildId, id } = environment
+    if (typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/.test(name) ||
+        buildId !== name || typeof id !== 'string' ||
+        id.toLowerCase() !== `${BUILDS_PATH}/${name}`.toLowerCase()) {
+      throw new Error('Azure environment inventory has an invalid or mismatched identity')
+    }
+    const identity = id.toLowerCase()
+    if (identities.has(identity)) throw new Error('Azure returned duplicate preview identities')
+    identities.add(identity)
   }
   return environments
 }
