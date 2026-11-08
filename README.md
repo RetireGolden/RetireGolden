@@ -242,7 +242,7 @@ not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
 fails visibly with the source-run recovery instruction. Retry its dispatch after
 the source finishes; do not rerun the model panel.
 
-The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/.github/workflows/openrouter-code-review.yml#L169)
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/cb192b3e6ae8f12cb7081a0b6a3de95098d4ffaf/.github/workflows/openrouter-code-review.yml#L201-L205)
 sets `actions: read` as its default, inherited by both model-review jobs. Its
 notification job explicitly overrides that default with `actions: write`.
 GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
