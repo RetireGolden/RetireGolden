@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import './swa-preview-cleanup.test.mjs'
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n')
 
@@ -202,10 +203,10 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.match(preview, /deployment_environment: pr\$\{\{ needs\.inspect\.outputs\.pr_number \}\}/)
   assert.match(preview, /Recheck live preview ownership/)
   assert.match(preview, /previewDeploymentSkipReason/)
-  assert.equal((preview.match(/previewDeploymentSkipReason/g) ?? []).length, 2)
+  assert.equal((preview.match(/previewDeploymentSkipReason/g) ?? []).length, 3)
   assert.match(preview, /core\.setOutput\('cleanup', pr\.state === 'open' \? 'false' : 'true'\)/)
-  assert.match(preview, /Clean named preview for a closed PR before upload/)
-  assert.match(preview, /Clean preview closed or superseded during upload/)
+  assert.match(preview, /Verify named preview removal for a closed PR before upload/)
+  assert.match(preview, /Verify preview removal after an invalidated upload/)
   assert.match(preview, /Reject superseded preview deployment/)
   assert.match(preview, /cancel-in-progress: false/)
   assert.doesNotMatch(preview, /repo_token:/)
@@ -229,12 +230,12 @@ test('default-branch SWA controller owns deployment, scan publication, and teard
   assert.match(production, /productionDeploymentSkipReason/)
   assert.match(production, /Record a newer main commit after upload/)
   assert.match(close, /action: close/)
-  assert.match(close, /deployment_environment: pr\$\{\{ needs\.inspect_close\.outputs\.pr_number \}\}/)
   assert.match(close, /Close legacy pull-request environment if present/)
-  assert.match(close, /id: close_named\n\s+continue-on-error: true/)
   assert.match(close, /id: close_legacy\n\s+continue-on-error: true/)
-  assert.match(close, /Require named preview teardown/)
-  assert.match(close, /test "\$NAMED_OUTCOME" = success/)
+  assert.match(close, /Delete and verify the closed named preview/)
+  assert.match(close, /cleanup\.cleanupPreview/)
+  assert.match(close, /if \(result\.status === 'blocked'\) core\.setFailed/)
+  assert.doesNotMatch(close, /NAMED_OUTCOME|close_named/)
   assert.doesNotMatch(source, /actions\/checkout@/)
   assert.doesNotMatch(source, /\bpnpm\b|npm install/)
 })
@@ -259,4 +260,68 @@ test('review caller stages trusted default-branch events and exact gate publicat
   assert.match(gate, /github\.event\.pull_request\.head\.repo\.full_name != github\.event\.repository\.full_name/)
   assert.match(gate, /head_sha: \$\{\{ needs\.review\.outputs\.gate_head_sha \|\| github\.event\.pull_request\.head\.sha \}\}/)
   assert.match(gate, /conclusion: \$\{\{ needs\.review\.outputs\.gate_conclusion \|\| 'failure' \}\}/)
+})
+
+
+test('cleanup credentials and helpers stay in trusted environment-bound jobs', () => {
+  const source = read('.github/workflows/azure-static-web-apps-controller.yml')
+  for (const id of ['deploy_preview', 'close_preview']) {
+    const section = job(source, id)
+    assert.match(section, /environment: azure-preview-cleanup/)
+    assert.match(section, /id-token: write/)
+    assert.match(section, /azure\/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906/)
+    assert.match(section, /group: swa-preview-pr\$\{\{/)
+    assert.match(section, /cancel-in-progress: false/)
+    assert.match(section, /path: '.github\/scripts\/swa-preview-cleanup\.mjs'|load\('.github\/scripts\/swa-preview-cleanup\.mjs'\)/)
+    assert.match(section, /ref: context\.payload\.repository\.default_branch/)
+    assert.match(section, /createAzureCliAdapter/)
+  }
+  const preview = job(source, 'deploy_preview')
+  assert.match(preview, /mode: 'owned-upload'/)
+  assert.match(preview, /expectedHeadSha: process\.env\.HEAD_SHA/)
+  assert.match(preview, /eligibilityPredicate: policy\.previewDeploymentSkipReason/)
+  assert.doesNotMatch(job(source, 'deploy_production'), /azure-preview-cleanup|azure\/login|cleanupPreview/)
+})
+
+test('hourly reconciliation revalidates under the shared lock and fails closed', () => {
+  const source = read('.github/workflows/azure-static-web-apps-preview-reconcile.yml')
+  const plan = job(source, 'plan')
+  const cleanup = job(source, 'cleanup')
+  const report = job(source, 'report')
+  assert.match(source, /cron: '17 \* \* \* \*'/)
+  assert.match(source, /dry_run:[\s\S]*?type: boolean\n\s+default: true/)
+  assert.match(plan, /github\.ref == format\('refs\/heads\/\{0\}', github\.event\.repository\.default_branch\)/)
+  assert.match(plan, /planPreviewReconciliation/)
+  assert.match(plan, /\['blocked', 'deferred'\]\.includes/)
+  assert.match(cleanup, /group: swa-preview-pr\$\{\{ matrix\.pr_number \}\}/)
+  assert.match(cleanup, /cancel-in-progress: false/)
+  assert.match(cleanup, /max-parallel: 2/)
+  assert.match(cleanup, /cleanup\.cleanupPreview/)
+  assert.match(cleanup, /dryRun: process\.env\.DRY_RUN === 'true'/)
+  assert.match(cleanup, /if \(result\.status === 'blocked'\) core\.setFailed/)
+  for (const section of [plan, cleanup]) {
+    assert.match(section, /environment: azure-preview-cleanup/)
+    assert.match(section, /id-token: write/)
+    assert.match(section, /ref: context\.payload\.repository\.default_branch/)
+  }
+  assert.match(report, /always\(\)/)
+  assert.match(report, /test "\$PLAN_RESULT" = success/)
+  assert.match(report, /test "\$BLOCKED" = 0/)
+  assert.match(report, /if \[ "\$HAS_WORK" = true \]; then test "\$CLEANUP_RESULT" = success; fi/)
+  assert.match(job(source, 'reject_other_refs'), /exit 1/)
+  assert.doesNotMatch(source, /actions\/checkout|static-web-apps-deploy|AZURE_STATIC_WEB_APPS_API_TOKEN|npm install|\bpnpm\b/)
+})
+
+test('cleanup infrastructure grants only app-scoped build reads and deletes', () => {
+  const role = read('.github/azure/preview-cleanup.bicep')
+  const identity = read('.github/azure/preview-cleanup-identity.bicep')
+  const actions = [...role.matchAll(/'Microsoft\.Web\/[^']+'/g)].map(match => match[0])
+  assert.deepEqual(actions, ["'Microsoft.Web/staticSites/builds/Read'", "'Microsoft.Web/staticSites/builds/Delete'"])
+  assert.match(role, /assignableScopes: \[groupId\]/)
+  assert.match(identity, /resource app 'Microsoft\.Web\/staticSites@[^']+' existing/)
+  assert.match(identity, /resource grant[\s\S]*?scope: app/)
+  assert.match(identity, /repo:RetireGolden\/RetireGolden:environment:azure-preview-cleanup/)
+  assert.match(identity, /https:\/\/token\.actions\.githubusercontent\.com/)
+  assert.match(identity, /api:\/\/AzureADTokenExchange/)
+  assert.doesNotMatch(identity, /clientSecret|passwordCredentials/)
 })

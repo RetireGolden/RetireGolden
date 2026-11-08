@@ -1,0 +1,148 @@
+name: Azure SWA preview reconciliation
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Optional closed PR number; blank reconciles all named previews
+        type: string
+        required: false
+      dry_run:
+        description: Report candidates without deleting previews
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: swa-preview-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.repository == 'RetireGolden/RetireGolden' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: azure-preview-cleanup
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+      blocked: ${{ steps.plan.outputs.blocked }}
+    steps:
+      - name: Authenticate preview inventory
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Plan closed preview cleanup
+        id: plan
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ inputs.pr_number || '' }}
+        with:
+          script: |
+            const file = await github.rest.repos.getContent({
+              ...context.repo, path: '.github/scripts/swa-preview-cleanup.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(file.data) || file.data.type !== 'file') throw new Error('Cleanup helper unavailable')
+            const cleanup = await import(`data:text/javascript;base64,${file.data.content.replace(/\s/g, '')}`)
+            const raw = process.env.PR_NUMBER
+            let plan
+            if (raw) {
+              if (!/^[1-9][0-9]*$/.test(raw) || !Number.isSafeInteger(Number(raw))) throw new Error('Invalid PR number')
+              const prNumber = Number(raw)
+              plan = { candidates: [{ prNumber, environmentName: cleanup.previewEnvironmentName(prNumber) }], results: [] }
+            } else {
+              plan = await cleanup.planPreviewReconciliation({
+                azure: cleanup.createAzureCliAdapter(), github,
+                defaultBranch: context.payload.repository.default_branch,
+              })
+            }
+            core.setOutput('matrix', JSON.stringify({ include: plan.candidates.map(item => ({ pr_number: item.prNumber })) }))
+            core.setOutput('has_work', plan.candidates.length > 0 ? 'true' : 'false')
+            core.setOutput('blocked', plan.results.filter(item => ['blocked', 'deferred'].includes(item.status)).length)
+            await core.summary.addHeading('Preview reconciliation plan').addCodeBlock(JSON.stringify(plan, null, 2), 'json').write()
+
+  cleanup:
+    needs: plan
+    if: needs.plan.outputs.has_work == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: azure-preview-cleanup
+    concurrency:
+      group: swa-preview-pr${{ matrix.pr_number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    steps:
+      - name: Authenticate preview cleanup
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Revalidate and verify preview removal
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ matrix.pr_number }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        with:
+          script: |
+            const file = await github.rest.repos.getContent({
+              ...context.repo, path: '.github/scripts/swa-preview-cleanup.mjs',
+              ref: context.payload.repository.default_branch,
+            })
+            if (Array.isArray(file.data) || file.data.type !== 'file') throw new Error('Cleanup helper unavailable')
+            const cleanup = await import(`data:text/javascript;base64,${file.data.content.replace(/\s/g, '')}`)
+            const result = await cleanup.cleanupPreview({
+              azure: cleanup.createAzureCliAdapter(), github,
+              defaultBranch: context.payload.repository.default_branch,
+              prNumber: Number(process.env.PR_NUMBER), dryRun: process.env.DRY_RUN === 'true',
+            })
+            await core.summary.addHeading('Preview cleanup result').addCodeBlock(JSON.stringify(result), 'json').write()
+            if (result.status === 'blocked') core.setFailed(result.reason)
+
+  report:
+    needs: [plan, cleanup]
+    if: >-
+      always() && github.repository == 'RetireGolden/RetireGolden' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require completed reconciliation
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          CLEANUP_RESULT: ${{ needs.cleanup.result }}
+          HAS_WORK: ${{ needs.plan.outputs.has_work }}
+          BLOCKED: ${{ needs.plan.outputs.blocked }}
+        run: |
+          test "$PLAN_RESULT" = success
+          test "$BLOCKED" = 0
+          if [ "$HAS_WORK" = true ]; then test "$CLEANUP_RESULT" = success; fi
+
+  reject_other_refs:
+    if: >-
+      github.repository != 'RetireGolden/RetireGolden' ||
+      github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo 'Run preview reconciliation from the trusted default branch.' >&2; exit 1

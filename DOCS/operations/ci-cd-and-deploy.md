@@ -68,7 +68,8 @@ authorize --+--> lint ---------------------+
 | `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks, then the production-build Playwright spec (`pnpm test:e2e:dist` in `app/`, `vite preview` of the built `dist`); uploads `app/dist` as the `dist` artifact |
 | controller `deploy_preview` / `deploy_production` | successful completed source run | downloads the exact `dist` artifact and deploys it via the pinned `Azure/static-web-apps-deploy` action with `skip_app_build: true` and `app_location: app/dist`; token-holding jobs do not check out PR code or run repository setup |
 | controller `dast` / `publish_pr_result` | authorized PR preview | scans the deployed URL with OWASP ZAP and publishes the exact-head `ZAP DAST / ZAP Baseline` check — see [security-scanning.md](security-scanning.md) |
-| controller `close_preview` | PR close | tears down the named preview plus any transitional legacy preview environment |
+| controller `close_preview` | PR close | deletes the named preview through ARM and verifies absence; also attempts transitional legacy cleanup |
+| preview reconciliation | hourly or manual | rechecks live closed PRs under the deployment lock and verifies named-preview deletion |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
 `packageManager` pin plus `actions/setup-node` with the pnpm store cache; the fresh-resolve gate passes
@@ -76,6 +77,65 @@ CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolc
 once at the repo root (`pnpm install --frozen-lockfile` against the root `pnpm-lock.yaml` — the repo is a pnpm workspace).
 Semgrep SAST runs as a separate workflow on every push/PR — deliberately **not** label-gated, because the
 scan is cheap and it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).
+
+## Verified preview cleanup
+
+Named `pr<number>` environments are deleted with the app-scoped ARM builds API.
+The deploy action's `close` success alone is insufficient: it can report no matching
+environment while a named preview remains. The controller and the hourly
+[`preview reconciliation workflow`](../../.github/workflows/azure-static-web-apps-preview-reconcile.yml)
+use the [cleanup helper](../../.github/scripts/swa-preview-cleanup.mjs), loaded through
+the GitHub API from the trusted default branch. They never check out PR code.
+
+Cleanup accepts only canonical `pr<number>` names in `RetireGoldenApp`, validates the
+full Azure resource identity and empty backend metadata, and reads current PR state
+immediately before deletion. Close and reconciliation paths preserve open PRs. The
+post-upload path may also remove its own superseded or deauthorized upload while
+holding the same per-PR lock. Production `default`, unknown names, forks and unknown
+PRs are protected. GitHub state and Azure deletion are separate operations; the final
+live read and shared lock minimize, rather than eliminate, a reopen race. A later
+eligible deployment restores a reopened preview.
+
+Success means the preview was already absent or an ARM list confirmed its absence.
+Authentication/API failures and deletion polling expiry fail the job. Missing or
+nonempty backend metadata blocks deletion and requires manual investigation. The
+sweep reports blocked or deferred entries as failure while still cleaning eligible
+entries. Transitional legacy close remains best effort; the sweep manages only named
+previews. It runs hourly at minute 17 UTC. Run **Azure SWA preview reconciliation**
+from `main` for recovery; manual dispatch defaults to `dry_run: true`, and an optional
+PR number narrows the target. Inspect its plan and result summaries, then dispatch
+with `dry_run: false` to delete eligible previews. A repeated run is idempotent.
+This workflow performs cleanup only and does not deploy production.
+
+### Cleanup identity setup
+
+The versioned [Bicep deployment](../../.github/azure/preview-cleanup.bicep) creates a
+dedicated user-assigned managed identity and GitHub OIDC federation, plus a custom
+role granting only `Microsoft.Web/staticSites/builds/Read` and
+`Microsoft.Web/staticSites/builds/Delete`. Assignability is limited to the resource
+group and the actual role assignment is on the existing Static Web App alone.
+Azure RBAC cannot exclude the `default` build by name within that assignment; the
+helper's canonical-name and resource guards enforce that boundary. No client secret
+or repository-wide OIDC subject customization is used.
+
+An administrator provisions it with:
+
+```powershell
+az deployment sub what-if --subscription <subscription-id> --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
+az deployment sub create --subscription <subscription-id> --location centralus --name retiregolden-preview-cleanup --template-file .github/azure/preview-cleanup.bicep
+```
+
+Create the GitHub environment `azure-preview-cleanup` with **custom deployment branch
+policies allowing only `main`**. Set its environment variables `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` from the deployment outputs. Only the
+cleanup inventory/deletion and preview controller jobs request `id-token: write`.
+The federated subject is
+`repo:RetireGolden/RetireGolden:environment:azure-preview-cleanup`; it is bound to the
+environment, not a specific workflow. The main-only environment policy and trusted
+workflow code are therefore part of the credential boundary. Retain that policy when
+recreating the environment, and do not change repository OIDC subjects used by npm
+publishing. After merge, validate OIDC with a default-branch dry run before the first
+manual real sweep and confirm production remains present.
 
 ## Label-gated PR CI
 
