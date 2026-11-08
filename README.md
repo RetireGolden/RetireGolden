@@ -89,6 +89,15 @@ broker does not automatically label or rerun Dependabot PRs. For manual recovery
 Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not
 start CI.
 
+### Azure SWA preview reconciliation
+
+[`.github/workflows/azure-static-web-apps-preview-reconcile.yml`](.github/workflows/azure-static-web-apps-preview-reconcile.yml)
+
+Runs hourly and manually from `main` to remove stale closed-PR named previews using
+an app-scoped OIDC identity. Manual runs default to dry run. It shares the queued
+per-PR deployment lock, rechecks current PR state, and confirms absence through ARM.
+See [verified preview cleanup](DOCS/operations/ci-cd-and-deploy.md#verified-preview-cleanup).
+
 ### OpenRouter CI broker
 
 [`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
