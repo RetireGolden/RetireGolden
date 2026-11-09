@@ -583,12 +583,15 @@ function streamPublishedSsdiThrough(
  * must not displace the resolved gate/winner stream used for prior-year
  * current-spouse spousal pricing.
  */
-function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityIncome | undefined {
+function lastSsIncomeForPerson(plan: Plan, personId: string, streamId?: string): SocialSecurityIncome | undefined {
   const person = plan.household.people.find((row) => row.id === personId)
   if (person === undefined) return undefined
   let last: SocialSecurityIncome | undefined
   for (const candidate of plan.incomes) {
     if (candidate.type !== 'socialSecurity' || candidate.personId !== personId) continue
+    // With a stream id, only that id's occurrences: income ids may repeat, and
+    // the gate is the last resolved occurrence, not the first row with the id.
+    if (streamId !== undefined && candidate.id !== streamId) continue
     // Skip unresolved (no published PIA resolution) — householdYear.ts
     // never writes them into gateByPerson for spousal/survivor gating.
     if (resolveOwnPiaMonthly(candidate, person, null) === null) continue
@@ -833,13 +836,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   const gateStreamId = (firstProjectionYear.socialSecurityStreams ?? []).find(
     (row) => row.personId === coPerson.id && row.isSpousalSurvivorGateStream,
   )?.streamId
-  const coIncome =
-    gateStreamId !== undefined
-      ? plan.incomes.find(
-          (candidate): candidate is SocialSecurityIncome =>
-            candidate.type === 'socialSecurity' && candidate.id === gateStreamId,
-        )
-      : lastSsIncomeForPerson(plan, coPerson.id)
+  const coIncome = lastSsIncomeForPerson(plan, coPerson.id, gateStreamId)
   // A co-spouse on disability benefits enables the spouse benefit from his
   // first disability month, whatever his claim age (42 U.S.C. 402(b)(1),
   // (c)(1)), as the ledger pays it: pre-horizon when that month is before the

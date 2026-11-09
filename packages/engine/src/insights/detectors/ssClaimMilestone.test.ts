@@ -3345,6 +3345,19 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(disabledWorkerSpouseContext({ onsetAge: 57 }))).toBeNull()
   })
 
+  it('reads the disability of the gate\'s last occurrence when a stream id repeats', () => {
+    // Income ids may repeat, and the ledger's gate is the last resolved
+    // occurrence (householdYear.ts gateByPerson). A first occurrence of
+    // ss-higher with no disability followed by the disabled one: the spouse
+    // benefit was paying before the start, as in the case above, so the
+    // detector stays silent. Reading the first occurrence would fall back to
+    // his claim age of 70 and announce the spouse benefit as a new claim.
+    const ctx = disabledWorkerSpouseContext({ onsetAge: 57 })
+    const disabled = ctx.plan.incomes[1]
+    ctx.plan.incomes.splice(1, 0, { ...disabled, disability: undefined } as never)
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('fires for a spouse benefit on a worker whose first disability month falls in the start year', () => {
     // Disabled in September 2025 at 58: waiting October 2025 to February 2026,
     // first paid March 2026, so the spouse benefit begins inside the horizon.
