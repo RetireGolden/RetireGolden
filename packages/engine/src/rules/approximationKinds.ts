@@ -243,6 +243,27 @@
  *   minor child's majority-plus-ten deadline (R3) and a spouse's treat-as-own
  *   transition (S2) each change it (review of PR #834, r1-1).
  *
+ * Fixed in the calculation validation round of 2026-11-09, the three
+ * disability family records the triage paired:
+ * - usc-42-402-c-2-ssdi-spouse-auxiliary, fix: the current spouse on a
+ *   disabled worker's record is paid from his first disability month rather
+ *   than his retirement claim age, and is suspended with him when earnings
+ *   above SGA suspend his benefit (42 U.S.C. 425(a)). Settled and removed
+ *   from this list.
+ * - usc-42-403-a-2-D-family-maximum-eligibility-after-disability, fix: the
+ *   retirement and survivor maximum takes the bend points of the earlier of
+ *   the year the disability began and the year of attaining 62. Settled and
+ *   removed from this list.
+ * - usc-42-403-a-6-ssdi-family-maximum, fix to needs-fact: while the worker
+ *   is entitled to disability benefits the spouse is held to the disability
+ *   maximum, with 85 percent of the AIME taken from the earnings computation
+ *   when the PIA comes from an earnings history. What stays approximated
+ *   needs a fact: an entered PIA comes with no AIME, so the engine takes the
+ *   150 percent of PIA ceiling, the largest maximum the statute allows. The
+ *   AIME is not worked back from the PIA formula: an entered PIA carries
+ *   cost-of-living increases each rounded down to the dime and may reflect
+ *   recomputations, so more than one AIME can lie behind it.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -381,9 +402,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure': { kind: 'convention', reason: 'future enrollment and death months are not credible beneficiary-year inputs' },
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': { kind: 'fix' },
   'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': { kind: 'fix' },
-  'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
-  'usc-42-403-a-2-D-family-maximum-eligibility-after-disability': { kind: 'fix' },
-  'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
+  'usc-42-403-a-6-ssdi-family-maximum': { kind: 'needs-fact', missingInput: 'the average indexed monthly earnings behind a disabled worker\'s benefit amount when that amount is entered directly rather than computed from an earnings history' },
   'usc-42-403-f-5-earnings-counted': { kind: 'needs-fact', missingInput: 'whose work a recurring income pays for, if any: the person it is earned by' },
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },

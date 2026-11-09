@@ -12,13 +12,13 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 608 |
-| Classification: approximated | 122 |
+| Classification: approximated | 120 |
 | Classification: outOfScope | 78 |
-| Classification: settled | 400 |
+| Classification: settled | 402 |
 | Classification: unsettled | 8 |
 | Approximated kind: convention | 25 |
-| Approximated kind: fix | 67 |
-| Approximated kind: needs-fact | 30 |
+| Approximated kind: fix | 64 |
+| Approximated kind: needs-fact | 31 |
 | Volatility: annuallyIndexed | 92 |
 | Volatility: awaitingGuidance | 14 |
 | Volatility: staticStatute | 492 |

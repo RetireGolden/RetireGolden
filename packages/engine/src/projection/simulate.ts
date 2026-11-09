@@ -166,6 +166,7 @@ import {
   type AnnualConversionLinkedWithdrawalRelease,
 } from './internal/annualConversionLinkedWithdrawalFunding.js'
 import { resolveStreamPiaMonthly, socialSecurityColaAssumptionPct } from '../socialSecurity/piaFromEarnings.js'
+import { disabilityFamilyMaximumAtStart } from '../socialSecurity/familyMaximum.js'
 import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
 import { socialSecurityColaFactor, socialSecurityHaircutFactor } from '../socialSecurity/colaFactor.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
@@ -973,6 +974,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // Resolve each SS stream's PIA once: entered directly, or derived from the
   // earnings history via the AIME → bend-point engine.
   const resolvedPiaByStreamId = new Map<string, number>()
+  // The disability family maximum (42 U.S.C. 403(a)(6)) of a disability stream
+  // whose PIA the earnings history gives, from the computation's own AIME.
+  const disabilityFamilyMaximumByStreamId = new Map<string, number>()
   const piaAsOf = { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity') continue
@@ -999,6 +1003,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
     resolvedPiaByStreamId.set(stream.id, resolved.piaMonthly)
+    const disabilityMaximum = stream.disability === undefined ? null : disabilityFamilyMaximumAtStart(resolved, piaAsOf)
+    if (disabilityMaximum !== null) disabilityFamilyMaximumByStreamId.set(stream.id, disabilityMaximum)
   }
 
   const years: YearResult[] = []
@@ -1764,6 +1770,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       personById,
       stateOf,
       resolvedPiaByStreamId,
+      disabilityFamilyMaximumByStreamId,
       wagesByPerson,
       withheldMonthsByPerson,
       withheldSurvivorMonthsBySource,

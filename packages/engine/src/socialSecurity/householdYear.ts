@@ -67,7 +67,13 @@ import {
   spouseReductionFactorAtAgeMonths,
 } from './dualEntitlement.js'
 import { earningsTestYear, excessEarnings, type EarningsTestMonthlyDue, type EarningsTestPerson } from './earningsTest.js'
-import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from './familyMaximum.js'
+import {
+  claimAgeTotalMonths,
+  currentSpouseMonthlyUnderFamilyMaximum,
+  disabilityFamilyMaximumMonthly,
+  workerFamilyMaximumMonthlyAt,
+  type WorkerDisabilityForMaximum,
+} from './familyMaximum.js'
 import { formerSpouseSurvivorEntitlementAgeMonths, maritalBenefitFor, type MaritalBenefitCandidate } from './maritalBenefits.js'
 import {
   attainedAgeZeroMonthIndex,
@@ -134,6 +140,15 @@ export interface SocialSecurityYearInput {
   readonly personById: ReadonlyMap<string, Readonly<SocialSecurityYearPerson>>
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly resolvedPiaByStreamId: ReadonlyMap<string, number>
+  /**
+   * The disability family maximum (42 U.S.C. 403(a)(6)) of each stream whose
+   * PIA comes from an earnings history, in the PIA's dollars
+   * (familyMaximum.ts#disabilityFamilyMaximumAtStart). A disability stream
+   * with no entry, an entered PIA, has no AIME, and its maximum is taken at
+   * 150 percent of the PIA (usc-42-403-a-6-ssdi-family-maximum). A caller
+   * whose streams carry no disability may omit it.
+   */
+  readonly disabilityFamilyMaximumByStreamId?: ReadonlyMap<string, number>
   /** Each living person's wages for the year (the plan's wage rows): the earnings the test counts. */
   readonly wagesByPerson: ReadonlyMap<string, number>
   /**
@@ -381,6 +396,16 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     if (person.alive) claimInForce.add(stream.id)
   }
 
+  // A disability benefit suspended for the year by earnings above SGA. Its
+  // worker is paid nothing for the year, and neither is a spouse on his
+  // record (42 U.S.C. 425(a)).
+  const annualSga = pack.socialSecurity.sgaMonthlyNonBlind * 12 * limitGrowth
+  const sgaSuspended = new Set<string>()
+  for (const [personId, ssdi] of ssdiByPerson) {
+    const wages = wagesByPerson.get(personId) ?? 0
+    if (ssdi.sgaApplies && wages > 0 && ssdiSuspendedBySga(wages, annualSga)) sgaSuspended.add(personId)
+  }
+
   // A household of one is unmarried; a couple member is from January after the
   // other's death (the ledger keeps a person alive through the death year).
   const unmarriedFromOf = (personId: string): number | null => {
@@ -410,6 +435,8 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     lower: PersonFacts
     higherGate: { pia: number; claimAge: ClaimAge; streamId: string }
     lowerGate: { pia: number; claimAge: ClaimAge; streamId: string }
+    /** The worker's disability benefit, which the family maximum on his record reads; null without one. */
+    higherDisability: WorkerDisabilityForMaximum | null
     sourceKey: string
     sharedFrom: number
     entitlementMonths: number
@@ -425,7 +452,18 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
       const higherGate = aHigher ? aGate : bGate
       const lowerGate = aHigher ? bGate : aGate
       const lowerPayable = annualSocialSecurityPayableMonths(lower.ageAttained, lowerGate.claimAge)
-      const higherPayable = annualSocialSecurityPayableMonths(higher.ageAttained, higherGate.claimAge)
+      // A worker entitled to disability benefits has a spouse on his record
+      // from his first disability month, whatever his retirement claim age:
+      // 42 U.S.C. 402(b)(1) and (c)(1) qualify the spouse of "an individual
+      // entitled to disability insurance benefits", and the benefit continues
+      // as the converted old-age benefit from his full retirement age.
+      const higherOnset = incomes.find((income): income is SocialSecurityStream =>
+        income.type === 'socialSecurity' && income.id === higherGate.streamId && income.personId === higher.id)?.disability
+      const higherSchedule = higherOnset === undefined ? null : ssdiSchedule(higher.dob, higherOnset)
+      const higherDisabilityMonths = higherSchedule === null ? null : ssdiMonthsInYear(higherSchedule, year)
+      const higherPayable = higherDisabilityMonths === null
+        ? annualSocialSecurityPayableMonths(higher.ageAttained, higherGate.claimAge)
+        : higherDisabilityMonths.disability + higherDisabilityMonths.retirement
       const shared = Math.min(lowerPayable, higherPayable)
       if (lower.alive && higher.alive && shared > 0) {
         couple = {
@@ -433,15 +471,27 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
           lower,
           higherGate,
           lowerGate,
+          higherDisability: higherSchedule === null || higherOnset === undefined
+            ? null
+            : {
+              onsetYear: higher.dob.year + higherOnset.onsetAge,
+              firstPayableMonthIndex: higherSchedule.firstPayableMonthIndex,
+              fraMonthIndex: higherSchedule.fraMonthIndex,
+              disabilityMaximumMonthly: input.disabilityFamilyMaximumByStreamId?.get(higherGate.streamId)
+                ?? disabilityFamilyMaximumMonthly(higherGate.pia, null),
+            },
           sourceKey: auxiliaryBenefitSourceKey(lower.id, 'person', higher.id),
           sharedFrom: 12 - shared,
           // The spouse benefit starts in the later of the lower earner's own
           // claim month and the month the worker's benefit starts (deemed
-          // filing, 402(r)), and is reduced for the lower earner's age then.
+          // filing, 402(r)): his first disability month, or his configured
+          // claim month. It is reduced for the lower earner's age then.
           entitlementMonths: spouseEntitlementAgeMonths(
             lower.dob,
             claimAgeTotalMonths(lowerGate.claimAge),
-            claimStartMonthIndex(higher.dob, claimAgeTotalMonths(higherGate.claimAge)),
+            higherSchedule !== null
+              ? higherSchedule.firstPayableMonthIndex
+              : claimStartMonthIndex(higher.dob, claimAgeTotalMonths(higherGate.claimAge)),
           ),
         }
       }
@@ -595,13 +645,17 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
 
     // The current spouse: own benefit plus the separately reduced excess
     // (402(q)(3)(B), (k)(3)(A)), with half the worker's PIA held first to the
-    // family maximum room above his PIA (20 CFR 404.404, 404.410(b)).
-    if (couple !== null && month >= couple.sharedFrom) {
+    // family maximum room above his PIA (20 CFR 404.404, 404.410(b)): the
+    // disability maximum while he is entitled to disability benefits. While
+    // his disability benefit is suspended, so is the spouse's benefit on his
+    // record (42 U.S.C. 425(a)), and only her own benefit is paid.
+    if (couple !== null && month >= couple.sharedFrom && !sgaSuspended.has(couple.higher.id)) {
       const { higher, lower, higherGate, lowerGate } = couple
       const spouseAgeMonths = creditedAgeMonths(couple.entitlementMonths, spouseCredits.get(couple.sourceKey), monthIndex, lower.fraMonthIndex, lower.fraMonths)
       const total = currentSpouseMonthlyUnderFamilyMaximum({
         workerPiaMonthly: higherGate.pia,
         workerDob: higher.dob,
+        familyMaximumMonthly: workerFamilyMaximumMonthlyAt({ piaMonthly: higherGate.pia, dob: higher.dob, disability: couple.higherDisability }, monthIndex),
         ownPiaMonthly: lowerGate.pia,
         ownActualMonthly: actualByPerson.get(lower.id) ?? 0,
         spouseFactor: spouseReductionFactorAtAgeMonths(lower.dob, spouseAgeMonths),
@@ -836,13 +890,9 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     const ssdi = ssdiByPerson.get(personId)
     if (ssdi) {
       let paid = pre
-      if (ssdi.sgaApplies) {
-        const wages = wagesByPerson.get(personId) ?? 0
-        const annualSga = pack.socialSecurity.sgaMonthlyNonBlind * 12 * limitGrowth
-        if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {
-          paid = 0
-          warningValues.push(SGA_SUSPENDED_WARNING)
-        }
+      if (sgaSuspended.has(personId)) {
+        paid = 0
+        warningValues.push(SGA_SUSPENDED_WARNING)
       }
       // Only the disability months are SSDI; in the year that holds the FRA
       // month the months from it on are the converted old-age benefit.

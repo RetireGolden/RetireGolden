@@ -9,7 +9,13 @@ import {
   spouseEntitlementAgeMonths,
   spouseReductionFactorAtAgeMonths,
 } from '../../socialSecurity/dualEntitlement.js'
-import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
+import {
+  claimAgeTotalMonths,
+  currentSpouseMonthlyUnderFamilyMaximum,
+  disabilityFamilyMaximumAtStart,
+  disabilityFamilyMaximumMonthly,
+  workerFamilyMaximumMonthlyAt,
+} from '../../socialSecurity/familyMaximum.js'
 import {
   bestMaritalBenefit,
   formerSpouseSurvivorEntitlementAgeMonths,
@@ -173,7 +179,10 @@ function resolveOwnMonthlyRate(
  * when not eligible. Mirrors its current-spouse pass after the former-spouse menu:
  * the shared dual-entitlement composition at the claimant's age in the first
  * month of the spouse benefit, from the configured claim ages (no earnings-test
- * credit before the horizon).
+ * credit before the horizon). A worker on disability benefits starts the spouse
+ * benefit from his first disability month and holds it to his disability
+ * maximum while he is entitled to them, as the ledger does; the prior year's
+ * wages are not read, so a suspension for earnings above SGA is not mirrored.
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   plan: Plan
@@ -209,7 +218,12 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     claimantAgePrior,
     claimantStream.claimAge,
   )
-  const coMonths = annualSocialSecurityPayableMonths(coPersonAgePrior, coStream.claimAge)
+  const coSchedule = ssdiScheduleFor(coStream, coPerson)
+  const coPriorYear = socialSecurityDobParts(coPerson).y + coPersonAgePrior
+  const coDisabilityMonths = coSchedule === null ? null : ssdiMonthsInYear(coSchedule, coPriorYear)
+  const coMonths = coDisabilityMonths === null
+    ? annualSocialSecurityPayableMonths(coPersonAgePrior, coStream.claimAge)
+    : coDisabilityMonths.disability + coDisabilityMonths.retirement
   const spousalMonths = Math.min(claimantMonths, coMonths)
   if (spousalMonths <= 0) return 0
 
@@ -246,20 +260,37 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     spouseEntitlementAgeMonths(
       lowerDob,
       claimAgeTotalMonths(lower.stream.claimAge),
-      claimStartMonthIndex(higherDob, claimAgeTotalMonths(higher.stream.claimAge)),
+      coSchedule !== null
+        ? coSchedule.firstPayableMonthIndex
+        : claimStartMonthIndex(higherDob, claimAgeTotalMonths(higher.stream.claimAge)),
     ),
   )
   const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age, asOf) ?? 0
   // Half the worker's PIA held first to the room above his PIA, then the
-  // own-PIA subtraction and the age reduction, as the ledger composes it.
-  const spousalTotalMonthly = currentSpouseMonthlyUnderFamilyMaximum({
+  // own-PIA subtraction and the age reduction, as the ledger composes it, in
+  // each month both are paid (the maximum changes at a disabled worker's full
+  // retirement age).
+  const coDisability = coSchedule === null || coStream.disability === undefined
+    ? null
+    : {
+      onsetYear: higherDob.year + coStream.disability.onsetAge,
+      firstPayableMonthIndex: coSchedule.firstPayableMonthIndex,
+      fraMonthIndex: coSchedule.fraMonthIndex,
+      disabilityMaximumMonthly: disabilityFamilyMaximumAtStart(resolveStreamPiaMonthly(coStream, coPerson, asOf), asOf)
+        ?? disabilityFamilyMaximumMonthly(higher.pia, null),
+    }
+  const spousalTotalMonthlyAt = (monthIndex: number): number => currentSpouseMonthlyUnderFamilyMaximum({
     workerPiaMonthly: higher.pia,
     workerDob: higherDob,
+    familyMaximumMonthly: workerFamilyMaximumMonthlyAt({ piaMonthly: higher.pia, dob: higherDob, disability: coDisability }, monthIndex),
     ownPiaMonthly: lower.pia,
     ownActualMonthly: lowerOwnMonthly,
     spouseFactor,
   })
-  return spousalTotalMonthly * spousalMonths
+  if (coDisability === null) return spousalTotalMonthlyAt(coPriorYear * 12) * spousalMonths
+  let annual = 0
+  for (let month = 12 - spousalMonths; month < 12; month++) annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
+  return annual
 }
 
 /**

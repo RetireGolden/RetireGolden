@@ -4,6 +4,28 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the current spouse on a disabled worker's record, and the disability family maximum**
+  (2026-11-09; calculation validation round). Three `approximated` records with kind `fix` shared
+  `socialSecurity/familyMaximum.ts` and `socialSecurity/householdYear.ts`. A spouse on the record
+  of a worker entitled to disability benefits is now paid from the later of her own claim and his
+  first disability month, not from his retirement claim age (42 U.S.C. 402(b)(1), (c)(1)), and is
+  suspended with him in a year earnings above SGA suspend his benefit (425(a)): a 58-year-old
+  worker with a 2,000 PIA and a 67-year-old spouse with none receive 36,000 a year, was 24,000,
+  and in a suspended year nothing, was 12,000 (`usc-42-402-c-2-ssdi-spouse-auxiliary`, settled).
+  While he is entitled to disability benefits the spouse is held to the disability maximum, the
+  smaller of 85% of the AIME (not less than the PIA) and 150% of the PIA (403(a)(6); 20 CFR
+  404.403(d-1)), raised by later cost-of-living increases with the PIA (415(i)(2)(A)(ii)): an
+  earnings-derived AIME of 2,328 and PIA of 1,490.80 give a maximum of 1,978.80, so a spouse with
+  no benefit of her own is paid 488.00 a month, was 745.40. An entered PIA has no AIME, so it keeps
+  the 150% ceiling and the record is reclassified fix to needs-fact
+  (`usc-42-403-a-6-ssdi-family-maximum`). After the benefit converts at full retirement age the
+  retirement and survivor maximum uses the bend points of the earlier of the disability year and
+  the year of 62 (403(a)(2)(D); 404.403(a)(2), (g)(3);
+  `usc-42-403-a-2-D-family-maximum-eligibility-after-disability`, settled; no single-spouse figure
+  moves). The year function takes the new optional `disabilityFamilyMaximumByStreamId`; the
+  claim-milestone insight's prior-year spouse mirror follows the start month and the maximum.
+  Approximation kinds: fix 64, needs-fact 31, convention 25.
+
 - **Fixed: a qualifying surviving spouse files under each state's own row, not the federal joint
   row, in Georgia, Virginia and Kansas** (2026-11-03; issues #831, #832, #833). Each state pack
   can declare `qualifyingSurvivingSpouseFilesAs`, and the new `stateFilingRowFor` selects the

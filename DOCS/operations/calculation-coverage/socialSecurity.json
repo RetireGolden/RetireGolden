@@ -421,7 +421,7 @@
           },
           {
             "symbol": "workerStartMonth",
-            "meaning": "Calendar month the worker's record first supports the spouse benefit: the worker's configured claim month, or the first month the ex is 62 throughout",
+            "meaning": "Calendar month the worker's record first supports the spouse benefit: the worker's configured claim month, his first disability month when he is on disability benefits, or the first month the ex is 62 throughout",
             "unit": "month index",
             "domain": "integer"
           },
@@ -436,10 +436,10 @@
         "rounding": "none"
       },
       "limits": [
-        "One claim age serves the own and the spouse benefit, and a spouse benefit is paid only from the year both the claimant and the worker have reached their configured claim ages; the months within a year follow the payable-month rule of social-security-payable-months",
+        "One claim age serves the own and the spouse benefit, and a spouse benefit is paid only from the year both the claimant and the worker have reached their configured claim ages, or, for a worker on disability benefits, from the later of the claimant's claim and the worker's first disability month (usc-42-402-c-2-ssdi-spouse-auxiliary); the months within a year follow the payable-month rule of social-security-payable-months",
         "A divorced spouse's benefit is paid from the calendar year of the first month the ex is 62 throughout, and the ledger pays that whole year, its annual convention for a first year (maritalBenefits.ts#isDivorcedSpouseEligible); an ex born in December after the 2nd starts it the next January, so the year the ex turns 62 pays only the own benefit (worksheet case I)",
         "For people born before January 2, 1954, who could restrict an application to the spouse benefit, the one claim age cannot express that choice; they are priced as if they applied for both",
-        "A worker on disability benefits is taken to start at the claim age configured for him, not at the disability onset, and a claimant on disability benefits is priced with the same composition; 42 U.S.C. 402(q)(3)(C) and (D) govern a disabled claimant and are not modeled separately",
+        "A claimant on disability benefits is priced with the same composition; 42 U.S.C. 402(q)(3)(C) and (D) govern a disabled claimant and are not modeled separately",
         "The family maximum caps a current spouse's excess only; a divorced spouse's benefit is outside the family maximum, and no child benefits are modeled",
         "The spouse reduction is credited with the months of the spouse benefit's own reduction period in which it was subject to an earnings-test deduction, the worker's excess charged to the family or the claimant's own, counted for that record (the current spouse, or that former-spouse entry) from the benefit's first month (poms-rs-00615-482-arf-crediting-months), and the credit takes effect in the claimant's full-retirement-age month (cfr-20-404-412-b-arf-effective-fra-month); the claim-milestone insight reconstructs the prior year from configured claim ages without that credit",
         "A couple member's divorced-spouse benefit on a living ex's record starts no earlier than the January after the current spouse's death, and is reduced for the claimant's age in its first month (usc-42-402-b-1-C-divorced-spouse-after-widowhood)"
@@ -562,9 +562,9 @@
         "rounding": "floored to the next lower dime"
       },
       "limits": [
-        "The four band rates 150/272/134/175 percent are the retirement and survivor family maximum, not the disability family maximum, which SSA computes differently",
-        "The bend points are eligibility-year values (the year the worker attains 62 under familyMaximumEligibilityYearFromDobParts), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
-        "RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker's PIA (not above the benefit the worker is paid; cfr-20-404-404-family-maximum-counts-the-worker-pia) to the single current-spouse auxiliary. Under this retirement and survivor maximum that room holds a spouse's whole original benefit less the dime rounding of the maximum (under 10 cents a month); the disability maximum of a worker on SSDI can leave no room and is not modeled (usc-42-403-a-6-ssdi-family-maximum). The worker's own benefit is never reduced by this ceiling",
+        "The four band rates 150/272/134/175 percent are the retirement and survivor family maximum. While the worker is entitled to disability benefits the ledger uses the disability maximum instead (familyMaximum.ts#workerFamilyMaximumMonthlyAt, usc-42-403-a-6-ssdi-family-maximum)",
+        "The bend points are eligibility-year values (the year the worker attains 62, or the earlier year his disability began, under familyMaximumEligibilityYear; usc-42-403-a-2-D-family-maximum-eligibility-after-disability), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
+        "RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker's PIA (not above the benefit the worker is paid; cfr-20-404-404-family-maximum-counts-the-worker-pia) to the single current-spouse auxiliary. Under this retirement and survivor maximum that room holds a spouse's whole original benefit less the dime rounding of the maximum (under 10 cents a month); the disability maximum of a worker on SSDI can leave no room (usc-42-403-a-6-ssdi-family-maximum). The worker's own benefit is never reduced by this ceiling",
         "The dime floor is part of the published contract: the test compares the floored figure exactly and treats the unrounded sum as an intermediate"
       ],
       "worksheet": "DOCS/calculations/social-security/family-maximum-bend-points.md",
