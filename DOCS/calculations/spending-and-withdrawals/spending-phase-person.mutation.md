@@ -1,15 +1,15 @@
 # Mutation receipt: spending-phase-person
 
-Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7bcf555a` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 on branch `claude/people-order-and-scenarios` at base `da378d9b` (no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `df5da329` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `6567821b` (branch `claude/people-order-and-scenarios`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `015a4b64` (branch `claude/2027-rollover`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `c74ae372` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `7bcf555a` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `afdfdb53` (branch `claude/scrub-local-paths`; no pull request is open yet), and re-executed 2026-11-03 against RetireGolden base `19d0bdf1` (branch `fix/nj-qcd-projected-pool`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `66f13d51` (branch `claude/project-thread-o6j8od`, pull request #855) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/simulate.ts b/packages/engine/src/projection/simulate.ts
-index 94a711a3..e13d96c1 100644
+index de65ba39..89680000 100644
 --- a/packages/engine/src/projection/simulate.ts
 +++ b/packages/engine/src/projection/simulate.ts
-@@ -1950,3 +1950,3 @@
+@@ -1953,3 +1953,3 @@
        // then its only person is the one.
 -      phasesPersonId: plan.expenses.phasesAgeOf ?? primary.id,
 +      phasesPersonId: primary.id,
@@ -26,15 +26,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for the disability family maximum fix (usc-42-403-a-6-ssdi-family-maximum, usc-42-402-c-2-ssdi-spouse-auxiliary and usc-42-403-a-2-D-family-maximum-eligibility-after-disability) on `claude/project-thread-o6j8od`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed after the first review round of #855 (the disability family maximum and the SSDI spouse auxiliary), because its fixes moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (peopleNamed.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.5 packages/engine
 
- ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 438ms
+ ❯ src/projection/peopleNamed.evidence.test.ts (10 tests | 2 failed) 362ms
    ❯ spending-phase-person — Whose age the spending phases follow (4)
-     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 80ms
-     × gives the same spending with the people listed the other way round 62ms
+     × follows Sam’s age, the person the plan names, not Alex’s, who is listed first 79ms
+     × gives the same spending with the people listed the other way round 51ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 8 passed (10)

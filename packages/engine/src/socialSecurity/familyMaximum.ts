@@ -17,7 +17,8 @@
 import type { ClaimAge } from './claimFactor.js'
 import { spouseDualEntitlementMonthly } from './dualEntitlement.js'
 import { effectiveBirthYear } from './nra.js'
-import { piaWithCostOfLivingIncreases, type PiaAsOf, type ResolvedStreamPia } from './piaFromEarnings.js'
+import { type PiaAsOf, type ResolvedStreamPia } from './piaFromEarnings.js'
+import { COLA_PCT_BY_YEAR } from './ssaWageData.js'
 import { familyMaximumBendPointsForEligibilityYearOrLatest } from './ssaWageData.js'
 
 function floorToDime(value: number): number {
@@ -99,12 +100,22 @@ export function disabilityFamilyMaximumMonthly(piaMonthly: number, aimeMonthly: 
  * lower multiple of $0.10 (42 U.S.C. 415(i)(2)(A)(ii) increases "the amount
  * of total monthly benefits based on any primary insurance amount which is
  * permitted under section 203" with the PIA; 403(a)(6) is "subject to"
- * it). Null for an entered PIA, which comes with no AIME.
+ * it). A year with no increase leaves the amount as it was: the rounding
+ * applies to an increased amount, so a maximum that 403(a)(6) left at a
+ * multiple of five cents keeps it. Null for an entered PIA, which comes with
+ * no AIME. From the first projected year the ledger's COLA factor carries it,
+ * as it carries the PIA, with no further dime rounding.
  */
 export function disabilityFamilyMaximumAtStart(resolved: ResolvedStreamPia, asOf: PiaAsOf): number | null {
   if (resolved.status !== 'fromEarnings') return null
-  const atEligibility = disabilityFamilyMaximumMonthly(resolved.detail.piaMonthly, resolved.detail.aime)
-  return piaWithCostOfLivingIncreases(atEligibility, resolved.detail.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct).piaMonthly
+  let maximum = disabilityFamilyMaximumMonthly(resolved.detail.piaMonthly, resolved.detail.aime)
+  for (let year = resolved.detail.eligibilityYear; year <= asOf.startYear - 1; year++) {
+    const pct = COLA_PCT_BY_YEAR[year] ?? asOf.colaAssumptionPct
+    if (pct === 0) continue
+    // Decreased to the next lower $0.10, as piaFromEarnings.ts rounds the PIA.
+    maximum = Math.floor(maximum * (1 + pct / 100) * 10 + 1e-9) / 10
+  }
+  return maximum
 }
 
 /** A worker's disability benefit, as the family maximum on his record reads it. */

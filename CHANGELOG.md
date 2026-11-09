@@ -22,8 +22,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   retirement and survivor maximum uses the bend points of the earlier of the disability year and
   the year of 62 (403(a)(2)(D); 404.403(a)(2), (g)(3);
   `usc-42-403-a-2-D-family-maximum-eligibility-after-disability`, settled; no single-spouse figure
-  moves). The year function takes the new optional `disabilityFamilyMaximumByStreamId`; the
-  claim-milestone insight's prior-year spouse mirror follows the start month and the maximum.
+  moves). The year function takes the new optional `disabilityFamilyMaximumByStreamId`, and the
+  Social Security analysis paths take it per person as `PathPerson.disabilityFamilyMaximumMonthly`.
+  The spouse's start, maximum and suspension follow the worker's gate stream occurrence, also when a
+  stream id repeats. A zero cost-of-living year no longer rounds the maximum down (1,836.85 stays
+  1,836.85). The claim-milestone insight's prior-year spouse mirror follows the start month and the
+  maximum, dates an already-paying spouse benefit from the worker's first disability month, and treats
+  a prior year with wages inside the disability window as unknown.
   Approximation kinds: fix 64, needs-fact 31, convention 25.
 
 - **Fixed: a qualifying surviving spouse files under each state's own row, not the federal joint

@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-expected-value
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `f7a4d2f7` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `c7edd464` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `42d3fa38` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `2e3e92a5` (branch `claude/ss-review-fixes`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `f7a4d2f7` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `c7edd464` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `42d3fa38` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-29 against RetireGolden base `8ccc9f8f` (branch `claude/ss-analysis-earnings-test`; no pull request is open yet), and re-executed 2026-09-30 against RetireGolden base `2e3e92a5` (branch `claude/ss-review-fixes`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `66f13d51` (branch `claude/project-thread-o6j8od`, pull request #855) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/householdYear.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/householdYear.ts b/packages/engine/src/socialSecurity/householdYear.ts
-index 6c627a37..000ed9cc 100644
+index 2662bec0..9a1b08ee 100644
 --- a/packages/engine/src/socialSecurity/householdYear.ts
 +++ b/packages/engine/src/socialSecurity/householdYear.ts
-@@ -532,7 +532,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
+@@ -534,7 +534,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
          survivorGate,
          deceasedPia,
          payableFrom: 12 - payableMonths,
@@ -30,17 +30,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed for the disability family maximum fix (usc-42-403-a-6-ssdi-family-maximum, usc-42-402-c-2-ssdi-spouse-auxiliary and usc-42-403-a-2-D-family-maximum-eligibility-after-disability) on `claude/project-thread-o6j8od`, because that change moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (expectedValue.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed after the first review round of #855 (the disability family maximum and the SSDI spouse auxiliary), because its fixes moved the lines this receipt quotes; the mutation is unchanged, and the hunk header, blob hashes and capture are refreshed against this head. The baseline is green (expectedValue.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
 RUN  v5.0.5 packages/engine
 
- ❯ src/socialSecurity/analysis/expectedValue.evidence.test.ts (11 tests | 4 failed) 549ms
+ ❯ src/socialSecurity/analysis/expectedValue.evidence.test.ts (11 tests | 4 failed) 644ms
    ❯ social-security-expected-value — Benefits-only expected present value of Social Security (11)
-     × C-A, the R7 case: 690 a month while both live (25,080 in 2026) and the widow benefit reduced in January after the death 16ms
-     × C-B: a spouse benefit that starts with the worker's claim at 70 is unreduced (960 a month, not 780) 10ms
-     × C-F: example-couple, the earnings test on both people's wages and the widow's limit on the deceased's credited benefit 193ms
-     × C-G: a couple member is paid on a deceased former spouse's record (3,000 a month from her claim at 67) 165ms
+     × C-A, the R7 case: 690 a month while both live (25,080 in 2026) and the widow benefit reduced in January after the death 27ms
+     × C-B: a spouse benefit that starts with the worker's claim at 70 is unreduced (960 a month, not 780) 25ms
+     × C-F: example-couple, the earnings test on both people's wages and the widow's limit on the deceased's credited benefit 202ms
+     × C-G: a couple member is paid on a deceased former spouse's record (3,000 a month from her claim at 67) 172ms
 
  Test Files  1 failed (1)
       Tests  4 failed | 7 passed (11)

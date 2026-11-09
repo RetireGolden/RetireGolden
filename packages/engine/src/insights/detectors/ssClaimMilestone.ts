@@ -22,7 +22,7 @@ import {
   type MaritalBenefitCandidate,
 } from '../../socialSecurity/maritalBenefits.js'
 import { attainedAgeZeroMonthIndex } from '../../socialSecurity/nra.js'
-import { ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
+import { inSsdiWindow, ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
   resolveStreamPiaMonthly,
@@ -181,8 +181,11 @@ function resolveOwnMonthlyRate(
  * month of the spouse benefit, from the configured claim ages (no earnings-test
  * credit before the horizon). A worker on disability benefits starts the spouse
  * benefit from his first disability month and holds it to his disability
- * maximum while he is entitled to them, as the ledger does; the prior year's
- * wages are not read, so a suspension for earnings above SGA is not mirrored.
+ * maximum while he is entitled to them, as the ledger does. Null (unknown)
+ * when the prior year fell in his disability window and the plan gives him
+ * wages that year: the ledger suspends his benefit, and the spouse's on his
+ * record (42 U.S.C. 425(a)), for wages above SGA, and the plan's wages are
+ * the start year's, so they cannot say whether that year's were above it.
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   plan: Plan
@@ -191,7 +194,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   coPersonId: string
   coPersonAgePrior: number
   asOf: PiaAsOf
-}): number {
+}): number | null {
   const {
     plan,
     claimantPersonId,
@@ -230,6 +233,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const higherIsClaimant = claimantPia >= coPia
   // Current-spouse top-up pays only the lower earner.
   if (higherIsClaimant) return 0
+  if (coDisabilityMonths !== null && inSsdiWindow(coDisabilityMonths) && hadWagesAtAge(plan, coPerson, coPersonAgePrior)) return null
 
   const higher = {
     person: coPerson,
@@ -291,6 +295,19 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   let annual = 0
   for (let month = 12 - spousalMonths; month < 12; month++) annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
   return annual
+}
+
+/**
+ * Whether the plan gives the person a wage stream in force at `ageAttained`:
+ * the wage rows' own stop test (projection/internal/wageIncomeStreams.ts, the
+ * stream's `endAge`, else the person's `retirementAge`).
+ */
+function hadWagesAtAge(plan: Plan, person: HouseholdPerson, ageAttained: number): boolean {
+  return plan.incomes.some((income) => {
+    if (income.type !== 'wages' || income.personId !== person.id || income.annualGross <= 0) return false
+    const stopAge = income.endAge ?? person.retirementAge
+    return stopAge === null || ageAttained < stopAge
+  })
 }
 
 /**
@@ -456,13 +473,16 @@ function formerSpouseWonOverOwnPriorYear(args: PriorYearFormerSpouseArgs & {
   if (ownAnnual === null) {
     // Cannot prove former > own; if current-spouse already beats former, former
     // was never the paying source.
-    if (currentSpousalAnnual > bestFormerAnnual) return false
+    if (currentSpousalAnnual !== null && currentSpousalAnnual > bestFormerAnnual) return false
     return null
   }
 
   // Highest wins across own / former / current — former is the actual prior-year
   // source only when it strictly beats own and is not displaced by current-spouse.
   if (!(bestFormerAnnual > ownAnnual)) return false
+  // A current-spouse benefit that may have been suspended cannot prove the
+  // former was displaced.
+  if (currentSpousalAnnual === null) return null
   if (currentSpousalAnnual > bestFormerAnnual) return false
   return true
 }
@@ -820,6 +840,12 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
             candidate.type === 'socialSecurity' && candidate.id === gateStreamId,
         )
       : lastSsIncomeForPerson(plan, coPerson.id)
+  // A co-spouse on disability benefits enables the spouse benefit from his
+  // first disability month, whatever his claim age (42 U.S.C. 402(b)(1),
+  // (c)(1)), as the ledger pays it: pre-horizon when that month is before the
+  // start year.
+  const coSchedule = ssdiScheduleFor(coIncome, coPerson)
+  if (coSchedule !== null) return coSchedule.firstPayableMonthIndex < firstProjectionYear.year * 12
   // Co-spouse claim-in-force at start with age past their claim age = pre-horizon
   // enabling event. If co-spouse is in their first claim year (age == claimAge),
   // the enabling claim occurs in year one — not already-paying.

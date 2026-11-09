@@ -307,4 +307,19 @@ describe('disability family maximum (42 U.S.C. 403(a)(6); 20 CFR 404.403(d-1))',
     expect(disabilityFamilyMaximumAtStart(resolved, { startYear: 2026, colaAssumptionPct: 0 })).toBeCloseTo(1_791.2, 9)
     expect(disabilityFamilyMaximumAtStart({ status: 'entered', piaMonthly: 1_460.1 }, { startYear: 2026, colaAssumptionPct: 0 })).toBeNull()
   })
+
+  it('leaves the maximum unrounded through a year with no increase', () => {
+    // The rounding of 415(i)(2)(A)(ii) applies to "any amount so increased";
+    // a year with no increase raises nothing. Eligibility 2026, first projected
+    // year 2027: the December 2026 increase is unannounced, so the plan's
+    // assumption stands in for it.
+    //   AIME 2,161, PIA 1,437.40: 85% = 1,836.85 (below 150%, 2,156.10).
+    //   A 0 percent assumption: 1,836.85 stays 1,836.85, not 1,836.80.
+    //   A 2 percent assumption: 1,836.85 x 1.02 = 1,873.587, to the dime 1,873.50.
+    const detail = { aime: 2_161, piaMonthly: 1_437.4, eligibilityYear: 2026 } as PiaFromEarningsResult
+    const resolved = { status: 'fromEarnings' as const, piaMonthly: 1_437.4, detail, standInColaYears: [2026] }
+    expect(disabilityFamilyMaximumAtStart(resolved, { startYear: 2027, colaAssumptionPct: 0 })).toBeCloseTo(1_836.85, 9)
+    expect(disabilityFamilyMaximumAtStart(resolved, { startYear: 2027, colaAssumptionPct: 0 })).not.toBeCloseTo(1_836.8, 9)
+    expect(disabilityFamilyMaximumAtStart(resolved, { startYear: 2027, colaAssumptionPct: 2 })).toBeCloseTo(1_873.5, 9)
+  })
 })

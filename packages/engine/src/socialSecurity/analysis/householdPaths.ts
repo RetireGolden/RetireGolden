@@ -49,6 +49,16 @@ export interface PathPerson {
   readonly stream: SocialSecurityStream | null
   /** The monthly PIA the projection pays from; unused when there is no stream. */
   readonly piaMonthly: number
+  /**
+   * The disability family maximum of a disability stream whose PIA an earnings
+   * history gives (familyMaximum.ts#disabilityFamilyMaximumAtStart), as the
+   * projection passes it to the year function. Omitted, a disabled worker's
+   * maximum is the 150 percent ceiling the year function gives a PIA with no
+   * AIME (usc-42-403-a-6-ssdi-family-maximum), so a caller pricing an
+   * earnings-derived disability stream supplies it to price a year as the
+   * projection does.
+   */
+  readonly disabilityFamilyMaximumMonthly?: number
 }
 
 export interface PathHousehold {
@@ -179,7 +189,12 @@ export function householdPathYear(household: PathHousehold, call: YearCall): Soc
   const birthYear = new Map(people.map((person) => [person.id, dobOf(person).year]))
   const incomes = household.people.flatMap((entry) => (entry.stream === null ? [] : [entry.stream]))
   const resolvedPiaByStreamId = new Map<string, number>()
-  for (const entry of household.people) if (entry.stream !== null) resolvedPiaByStreamId.set(entry.stream.id, entry.piaMonthly)
+  const disabilityFamilyMaximumByStreamId = new Map<string, number>()
+  for (const entry of household.people) {
+    if (entry.stream === null) continue
+    resolvedPiaByStreamId.set(entry.stream.id, entry.piaMonthly)
+    if (entry.disabilityFamilyMaximumMonthly !== undefined) disabilityFamilyMaximumByStreamId.set(entry.stream.id, entry.disabilityFamilyMaximumMonthly)
+  }
   const stateOf = (personId: string): PersonYearState => {
     const born = birthYear.get(personId)!
     const death = call.deaths.get(personId)
@@ -203,6 +218,7 @@ export function householdPathYear(household: PathHousehold, call: YearCall): Soc
     personById,
     stateOf,
     resolvedPiaByStreamId,
+    disabilityFamilyMaximumByStreamId,
     wagesByPerson,
     withheldMonthsByPerson: call.credits.own,
     withheldSurvivorMonthsBySource: call.credits.survivor,

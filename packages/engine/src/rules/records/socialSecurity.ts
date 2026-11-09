@@ -2077,7 +2077,7 @@ export const socialSecurityRecords = {
   'usc-42-403-a-6-ssdi-family-maximum': {
     title: 'The SSDI family maximum is AIME-based, not the retirement/survivor bend-point formula',
     statement:
-      'For a worker entitled to disability insurance benefits, the family maximum is the smaller of 85 percent of AIME (but no less than 100 percent of PIA) and 150 percent of PIA. While the worker is entitled to those benefits, from his first disability month to the month before full retirement age, the engine holds the current spouse on his record to that maximum (familyMaximum.ts#workerFamilyMaximumMonthlyAt). For a PIA computed from an earnings history it takes the 85 percent from that computation\'s own AIME, raised by each later cost-of-living increase with the PIA (#disabilityFamilyMaximumAtStart). A PIA entered directly comes with no AIME, and for it the engine takes the 150 percent ceiling, the largest maximum the statute allows; that leaves a single spouse room for half the PIA, as the retirement and survivor maximum the engine used for every disabled worker until 2026-11-09 did. For an AIME of 500 and an entered PIA of 450 the statutory maximum is 450 a month (5,400 a year with the companion spouse), while the ceiling of 675 lets the companion household receive 8,100 a year.',
+      'For a worker entitled to disability insurance benefits, the family maximum is the smaller of 85 percent of AIME (but no less than 100 percent of PIA) and 150 percent of PIA. While the worker is entitled to those benefits, from his first disability month to the month before full retirement age, the engine holds the current spouse on his record to that maximum (familyMaximum.ts#workerFamilyMaximumMonthlyAt). For a PIA computed from an earnings history it takes the 85 percent from that computation\'s own AIME, raised by each cost-of-living increase before the projection\'s first year with the PIA and decreased to the dime after each nonzero increase (#disabilityFamilyMaximumAtStart); from the first year the ledger\'s COLA factor carries it with every benefit, unrounded, as it carries the PIA. The projection passes it to the year function, and the Social Security analysis paths take it from their caller (analysis/householdPaths.ts#householdPathYear), whose benefits-only ranking, OASDI return and survivor-switching tables do not price a disability claimant. A PIA entered directly comes with no AIME, and for it the engine takes the 150 percent ceiling, the largest maximum the statute allows; that leaves a single spouse room for half the PIA, as the retirement and survivor maximum the engine used for every disabled worker until 2026-11-09 did. For an AIME of 500 and an entered PIA of 450 the statutory maximum is 450 a month (5,400 a year with the companion spouse), while the ceiling of 675 lets the companion household receive 8,100 a year.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -2099,9 +2099,11 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/socialSecurity/householdYear.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts#householdPathYear',
       'packages/engine/src/socialSecurity/familyMaximum.ts#disabilityFamilyMaximumAtStart',
       'packages/engine/src/socialSecurity/familyMaximum.ts#disabilityFamilyMaximumMonthly',
       'packages/engine/src/socialSecurity/familyMaximum.ts#workerFamilyMaximumMonthlyAt',
@@ -2117,7 +2119,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The claim-milestone insight\'s reconstruction of the prior year follows the start month and the maximum but reads no prior-year wages, so it does not apply the suspension. Until 2026-11-09 the engine gated the spouse on the worker\'s 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker\'s claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.',
+      'The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The spouse benefit follows the worker\'s gate stream (the last resolved occurrence, whose PIA and claim age it already takes): its disability facts start it, and its suspension suspends it. The claim-milestone insight\'s reconstruction of the prior year follows the start month and the maximum, and dates a spouse benefit already paying at the start from the worker\'s first disability month; the plan\'s wages are the start year\'s, so when the worker had wages in a prior year inside his disability window it cannot say whether the suspension applied and treats the spouse benefit\'s amount that year as unknown. Until 2026-11-09 the engine gated the spouse on the worker\'s 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker\'s claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2148,6 +2150,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#auxiliaryAlreadyPayingAtHorizonStart',
       'packages/engine/src/insights/detectors/ssClaimMilestone.ts#resolveCurrentSpouseSpousalAnnualPriorYear',
       'packages/engine/src/socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum',
       'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',

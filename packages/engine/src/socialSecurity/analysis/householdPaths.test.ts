@@ -8,7 +8,10 @@ import { expect, it } from 'vitest'
 
 import type { Assumptions } from '../../model/plan.js'
 import { describeRule } from '../../rules/describeRule.js'
-import { priceHouseholdPaths, type PathHousehold } from './householdPaths.js'
+import { householdPathYear, NO_CREDITS, priceHouseholdPaths, type PathHousehold } from './householdPaths.js'
+import { disabilityFamilyMaximumAtStart } from '../familyMaximum.js'
+import { resolveStreamPiaMonthly } from '../piaFromEarnings.js'
+import { AWI_BY_YEAR } from '../ssaWageData.js'
 
 function alone(dob: string, pia: number, claimYears: number, wagesInYear: (year: number) => number, inflationPct: number): PathHousehold {
   const assumptions: Pick<Assumptions, 'inflationPct' | 'ssCola' | 'ssHaircut'> = { inflationPct, ssCola: { mode: 'matchInflation' }, ssHaircut: null }
@@ -99,4 +102,47 @@ describeRule('usc-42-403-f-3-fra-year-months-before-fra', {
     expect(observed).not.toEqual(readings.theYearOfTheWholeYears)
     expect(observed).not.toEqual(readings.oneMonthTooMany)
   })
+})
+
+// The disability family maximum through the path contract (42 U.S.C.
+// 403(a)(6)), on the household of simulate.social-security.test.ts's earnings
+// worksheet: a worker born 1964-06-15 with 14 years of earnings at the average
+// wage index (2004 to 2017), so an AIME of 2,328 and a PIA on 2026 bend points
+// of 1,490.80, disabled in January 2026; his spouse, born 1958-06-15, has no
+// own benefit and is past her full retirement age. His maximum is
+// min(max(0.85 x 2,328, 1,490.80), 1.5 x 1,490.80) = 1,978.80, room 488.00, so
+// a full 2027 pays 12 x 1,978.80 = 23,745.60. With no maximum given, the path
+// takes the ceiling a PIA with no AIME gets, 2,236.20, room 745.40 (half the
+// PIA): 12 x 2,236.20 = 26,834.40.
+it('prices a disabled worker\'s year at the disability maximum the caller gives, as the projection does', () => {
+  const earnings = Array.from({ length: 14 }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
+  const worker = { id: 'w', name: 'w', dob: '1964-06-15' }
+  const stream = {
+    type: 'socialSecurity' as const, id: 'w-ss', personId: 'w', piaMonthly: null, earnings,
+    disability: { onsetAge: 62, onsetMonth: 1 }, claimAge: { years: 70, months: 0 },
+  }
+  const asOf = { startYear: 2026, colaAssumptionPct: 0 }
+  const resolved = resolveStreamPiaMonthly(stream, { ...worker, retirementAge: null }, asOf)
+  const maximum = disabilityFamilyMaximumAtStart(resolved, asOf)
+  expect(resolved.status === 'fromEarnings' ? resolved.piaMonthly : null).toBeCloseTo(1_490.8, 9)
+  expect(maximum).toBeCloseTo(1_978.8, 9)
+  const household = (disabilityFamilyMaximumMonthly?: number): PathHousehold => ({
+    people: [
+      { person: worker, stream, piaMonthly: 1_490.8, ...(disabilityFamilyMaximumMonthly === undefined ? {} : { disabilityFamilyMaximumMonthly }) },
+      {
+        person: { id: 's', name: 's', dob: '1958-06-15' },
+        stream: { type: 'socialSecurity', id: 's-ss', personId: 's', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+        piaMonthly: 0,
+      },
+    ],
+    startYear: 2026,
+    assumptions: { inflationPct: 0, ssCola: { mode: 'matchInflation' }, ssHaircut: null },
+    wages: () => 0,
+  })
+  const total = (priced: PathHousehold): number => {
+    const result = householdPathYear(priced, { year: 2027, deaths: new Map(), credits: NO_CREDITS, withWages: false, cola: 1, haircut: 1 })
+    return [...result.paidByPerson.values()].reduce((sum, value) => sum + value, 0)
+  }
+  expect(total(household(maximum!))).toBeCloseTo(23_745.6, 6)
+  expect(total(household())).toBeCloseTo(26_834.4, 6)
 })

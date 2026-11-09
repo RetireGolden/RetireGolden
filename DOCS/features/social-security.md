@@ -373,11 +373,18 @@ age, and is suspended with him when earnings above SGA suspend his benefit (42 U
 `usc-42-402-c-2-ssdi-spouse-auxiliary`). While he is entitled to disability benefits the family maximum is
 the disability maximum of 42 U.S.C. 403(a)(6), from the AIME of an earnings-derived PIA
 (`familyMaximum.ts#disabilityFamilyMaximumAtStart`, passed to the year function as
-`disabilityFamilyMaximumByStreamId`); an entered PIA has no AIME and gets the 150%-of-PIA ceiling
-(`usc-42-403-a-6-ssdi-family-maximum`, needs-fact). After the benefit converts, the retirement and survivor
-maximum uses the bend points of the disability's year of eligibility
-(`usc-42-403-a-2-D-family-maximum-eligibility-after-disability`). The claim-milestone insight's prior-year
-spouse reconstruction mirrors the start month and the maximum but not the SGA suspension.
+`disabilityFamilyMaximumByStreamId`; the analysis paths take it from their caller as
+`PathPerson.disabilityFamilyMaximumMonthly`, and their benefits-only ranking, OASDI return and survivor
+switching refuse a disability claimant); an entered PIA has no AIME and gets the 150%-of-PIA ceiling
+(`usc-42-403-a-6-ssdi-family-maximum`, needs-fact). From the first projected year the ledger's COLA factor
+carries that maximum, as it carries the PIA, without the dime rounding of each increase. After the benefit
+converts, the retirement and survivor maximum uses the bend points of the disability's year of eligibility
+(`usc-42-403-a-2-D-family-maximum-eligibility-after-disability`). The spouse benefit follows the worker's
+gate stream: its disability facts start it and its suspension suspends it. The claim-milestone insight's
+prior-year spouse reconstruction mirrors the start month and the maximum, and dates a spouse benefit
+already paying at the start from the worker's first disability month; a prior year inside his disability
+window in which the plan gives him wages is treated as unknown, since the plan's wages are the start
+year's and cannot say whether SGA suspended it.
 Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-program-parameters-2026.md).
 
 ## Documented simplifications / deferred

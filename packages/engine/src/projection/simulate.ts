@@ -1003,8 +1003,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
     resolvedPiaByStreamId.set(stream.id, resolved.piaMonthly)
+    // Keyed like the PIA: a later occurrence of the same id replaces an
+    // earlier one's maximum, or clears it when it has none of its own.
     const disabilityMaximum = stream.disability === undefined ? null : disabilityFamilyMaximumAtStart(resolved, piaAsOf)
     if (disabilityMaximum !== null) disabilityFamilyMaximumByStreamId.set(stream.id, disabilityMaximum)
+    else disabilityFamilyMaximumByStreamId.delete(stream.id)
   }
 
   const years: YearResult[] = []

@@ -58,6 +58,7 @@ import {
   ssdiMonthsInYear,
   ssdiSchedule,
   ssdiSuspendedBySga,
+  type SsdiOnset,
   type SsdiSchedule,
 } from './disability.js'
 import {
@@ -146,7 +147,8 @@ export interface SocialSecurityYearInput {
    * (familyMaximum.ts#disabilityFamilyMaximumAtStart). A disability stream
    * with no entry, an entered PIA, has no AIME, and its maximum is taken at
    * 150 percent of the PIA (usc-42-403-a-6-ssdi-family-maximum). A caller
-   * whose streams carry no disability may omit it.
+   * whose streams carry no disability may omit it; the analysis paths pass
+   * what their caller gives (analysis/householdPaths.ts#PathPerson).
    */
   readonly disabilityFamilyMaximumByStreamId?: ReadonlyMap<string, number>
   /** Each living person's wages for the year (the plan's wage rows): the earnings the test counts. */
@@ -332,7 +334,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
   // The person's gate stream (the last resolved stream, whose PIA and claim age
   // key the spouse and survivor benefits), every resolved stream's own pay site,
   // and the order streams are published in.
-  const gateByPerson = new Map<string, { pia: number; claimAge: ClaimAge; streamId: string }>()
+  const gateByPerson = new Map<string, { pia: number; claimAge: ClaimAge; streamId: string; disability: SsdiOnset | undefined }>()
   const ownSites: OwnSite[] = []
   const everReduced = new Set<string>()
   const publicationOrder: string[] = []
@@ -345,7 +347,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     const stream = income
     const pia = resolvedPiaByStreamId.get(stream.id)
     if (pia === undefined) continue
-    gateByPerson.set(stream.personId, { pia, claimAge: stream.claimAge, streamId: stream.id })
+    gateByPerson.set(stream.personId, { pia, claimAge: stream.claimAge, streamId: stream.id, disability: stream.disability })
     if (!publicationOrder.includes(stream.id)) publicationOrder.push(stream.id)
     const person = factsOf(stream.personId)
     const personName = personById.get(stream.personId)!.name
@@ -457,8 +459,8 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
       // 42 U.S.C. 402(b)(1) and (c)(1) qualify the spouse of "an individual
       // entitled to disability insurance benefits", and the benefit continues
       // as the converted old-age benefit from his full retirement age.
-      const higherOnset = incomes.find((income): income is SocialSecurityStream =>
-        income.type === 'socialSecurity' && income.id === higherGate.streamId && income.personId === higher.id)?.disability
+      // The gate occurrence's own disability facts, like its PIA and claim age.
+      const higherOnset = higherGate.disability
       const higherSchedule = higherOnset === undefined ? null : ssdiSchedule(higher.dob, higherOnset)
       const higherDisabilityMonths = higherSchedule === null ? null : ssdiMonthsInYear(higherSchedule, year)
       const higherPayable = higherDisabilityMonths === null
@@ -647,9 +649,11 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     // (402(q)(3)(B), (k)(3)(A)), with half the worker's PIA held first to the
     // family maximum room above his PIA (20 CFR 404.404, 404.410(b)): the
     // disability maximum while he is entitled to disability benefits. While
-    // his disability benefit is suspended, so is the spouse's benefit on his
-    // record (42 U.S.C. 425(a)), and only her own benefit is paid.
-    if (couple !== null && month >= couple.sharedFrom && !sgaSuspended.has(couple.higher.id)) {
+    // his disability benefit on the gate stream is suspended, so is the
+    // spouse's benefit on his record (42 U.S.C. 425(a)), and only her own
+    // benefit is paid. A gate stream without disability facts keys the spouse
+    // benefit to his retirement claim, which no SGA suspension reaches.
+    if (couple !== null && month >= couple.sharedFrom && !(couple.higherDisability !== null && sgaSuspended.has(couple.higher.id))) {
       const { higher, lower, higherGate, lowerGate } = couple
       const spouseAgeMonths = creditedAgeMonths(couple.entitlementMonths, spouseCredits.get(couple.sourceKey), monthIndex, lower.fraMonthIndex, lower.fraMonths)
       const total = currentSpouseMonthlyUnderFamilyMaximum({

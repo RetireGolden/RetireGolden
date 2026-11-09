@@ -3182,6 +3182,180 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  // The prior-year current-spouse competitor on a disabled worker's record
+  // (42 U.S.C. 402(c)(1): the spouse of an individual entitled to disability
+  // benefits). The three-way household above, with the decedent born
+  // 1966-01-01, disabled at 55 (2021, first paid June 2021), claim age 67, and
+  // dying at 59 in December 2025, so 2026 is the first deceased year. In 2025
+  // he was 59, eight years before his claim age, but paid disability benefits
+  // all year, so the current-spouse benefit was paid all year: own 500 plus
+  // the excess 1,000 - 500, 1,000 a month (his entered PIA of 2,000 has the
+  // 150 percent ceiling, 3,000, room 1,000), 12,000 against the deceased
+  // former's 7,200. The former never paid, so the survivor benefit at the start
+  // is a new entitlement. Read from the claim age, nothing was paid in 2025,
+  // the former's 7,200 beat the own 6,000 and the opening survivor row would be
+  // silenced as already paying.
+  function disabledDecedentContext(): DetectorContext {
+    const ctx = context(70, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-claimant',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+        formerSpouses: [
+          { id: 'ex-deceased', relationship: 'deceased', dob: '1950-01-01', piaMonthly: 600, marriageYears: 15, remarriedAtAge: null },
+        ],
+      },
+    ] as never
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1966-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 59, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-decedent',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000,
+      earnings: null,
+      claimAge: { years: 67, months: 0 },
+      disability: { onsetAge: 55 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        { personId: 'p2', ageAttained: 60 + (year.year - 2026), alive: false, lifeAge: 59 },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-claimant',
+          source: 'survivor',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-decedent',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+    return ctx
+  }
+
+  it('prices the prior-year current-spouse competitor from a disabled worker\'s first disability month, not his claim age', () => {
+    expect(ssClaimMilestone.screen(disabledDecedentContext())).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (survivor)", value: '$24,000', year: 2026 },
+      ]),
+    })
+  })
+
+  it('cannot rank the prior-year current-spouse competitor when the disabled worker had wages that year', () => {
+    // Wages of 60,000 a year for the decedent: the ledger suspends a disability
+    // benefit, and the spouse benefit on his record, for wages above 12 x SGA
+    // (42 U.S.C. 425(a); 2025: 12 x 1,620 = 19,440), and the plan's wages are
+    // the start year's, which cannot say what 2025's were. With 2025's wages
+    // above SGA the spouse benefit was suspended and the former's 7,200 was
+    // paid, so the survivor row continues an entitlement; the detector treats
+    // an unprovable displacement as already paying, as it does a former it
+    // cannot rank against an own benefit.
+    const ctx = disabledDecedentContext()
+    ctx.plan.incomes.push({ id: 'w-p2', type: 'wages', personId: 'p2', annualGross: 60_000, endAge: null, realGrowthPct: 0 } as never)
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  function disabledWorkerSpouseContext(disability: { onsetAge: number; onsetMonth?: number }): DetectorContext {
+    // Pat (born 1958 by the published ages, claimed at 62, PIA 500) is paid a
+    // spouse benefit on Sam's record at the start. Sam, born 1967-01-01, is 59,
+    // eleven years before his claim age of 70, and paid disability benefits.
+    const ctx = context(68, 62, 0)
+    ctx.plan.incomes = [
+      { id: 'ss-lower', type: 'socialSecurity', personId: 'p1', piaMonthly: 500, earnings: null, claimAge: { years: 62, months: 0 } },
+    ] as never
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1967-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-higher', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_500, earnings: null,
+      claimAge: { years: 70, months: 0 }, disability,
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.people = [
+        { personId: 'p1', ageAttained: 68 + (year.year - 2026), alive: true },
+        { personId: 'p2', ageAttained: 59 + (year.year - 2026), alive: true },
+      ]
+      year.socialSecurityStreams = [
+        { personId: 'p1', streamId: 'ss-lower', source: 'spousal', annualAmount: 15_000, claimInForce: true, preWithholdingAnnual: 15_000, isSpousalSurvivorGateStream: true },
+        { personId: 'p2', streamId: 'ss-higher', source: 'ssdi', annualAmount: 30_000, claimInForce: true, preWithholdingAnnual: 30_000, isSpousalSurvivorGateStream: true },
+      ]
+    }
+    return ctx
+  }
+
+  it('stays silent for a spouse benefit already paying on a worker disabled before the horizon, below his claim age', () => {
+    // Disabled at 57 (January 2024): first paid June 2024, before 2026, so the
+    // spouse benefit on his record was paying before the start (402(c)(1)).
+    expect(ssClaimMilestone.screen(disabledWorkerSpouseContext({ onsetAge: 57 }))).toBeNull()
+  })
+
+  it('fires for a spouse benefit on a worker whose first disability month falls in the start year', () => {
+    // Disabled in September 2025 at 58: waiting October 2025 to February 2026,
+    // first paid March 2026, so the spouse benefit begins inside the horizon.
+    expect(ssClaimMilestone.screen(disabledWorkerSpouseContext({ onsetAge: 58, onsetMonth: 9 }))).toMatchObject({
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$15,000', year: 2026 },
+      ]),
+    })
+  })
+
   it('skips trailing unresolved streams when selecting prior-year spousal gate/winner (resolved-then-unresolved)', () => {
     // Same three-way as above (former beats own, loses to current-spouse spousal)
     // but each person has a resolved stream followed by an unresolved sibling

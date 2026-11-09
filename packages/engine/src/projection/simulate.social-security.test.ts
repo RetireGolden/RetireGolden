@@ -362,38 +362,66 @@ describe('social security', () => {
   // The retirement and survivor maximum (2026 family bend points 1,643 /
   // 2,371 / 3,093): 1.50 x 1,490.80 = 2,236.20, room 745.40, so the spouse
   // would get her whole 745.40: 2027 = 17,889.60 + 8,944.80 = 26,834.40.
-  describe('usc-42-403-a-6-ssdi-family-maximum from an earnings history', () => {
+  // 2031 holds his full retirement age (67, June 2031): January to May under
+  // the disability maximum, 5 x 1,978.80 = 9,894.00, and June to December
+  // under the retirement and survivor maximum on the bend points of his
+  // disability's year of eligibility, 2026 (403(a)(2)(D)), 2,236.20 a month,
+  // 7 x 2,236.20 = 15,653.40: 25,547.40. Held to the disability maximum all
+  // year it would be 23,745.60; to the retirement maximum all year, 26,834.40.
+  // The same worker with the PIA of 1,490.80 entered instead: the engine has no
+  // AIME and takes the 150 percent ceiling, 2,236.20, so 2027 pays 26,834.40
+  // where the statute, on the same AIME of 2,328, pays 23,745.60.
+  describeRule('usc-42-403-a-6-ssdi-family-maximum', {
+    readings: {
+      statute: { fromEarnings2027: 23_745.6, fromEarningsFraYear: 25_547.4, entered2027: 23_745.6 },
+      ceilingWithoutAime: { fromEarnings2027: 23_745.6, fromEarningsFraYear: 25_547.4, entered2027: 26_834.4 },
+    },
+    accepted: 'statute',
+    produced: 'ceilingWithoutAime',
+    note: 'from an earnings history, through his full retirement age',
+  }, ({ accepted, produced }) => {
     const disabilityMaximum = { fullYear: 23_745.6, firstYear: 11_872.8 }
     const retirementMaximum = { fullYear: 26_834.4, firstYear: 13_417.2 }
-
-    it('holds the spouse to 85 percent of the AIME the earnings history gives', () => {
+    const earnings = Array.from({ length: 14 }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
+    const household = (piaMonthly: number | null) => {
       const plan = basePlan()
       plan.household.filingStatus = 'marriedFilingJointly'
       plan.household.people = [
         { id: 'p1', name: 'Disabled worker', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
         { id: 'p2', name: 'Spouse', dob: '1958-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
       ]
-      const earnings = Array.from({ length: 14 }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
       plan.incomes = [
         {
-          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: null, earnings,
+          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly, earnings: piaMonthly === null ? earnings : null,
           disability: { onsetAge: 62, onsetMonth: 1 }, claimAge: { years: 70, months: 0 },
         },
         { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
       ]
       plan.accounts = [cash(2_000_000)]
+      return simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    }
 
+    it('holds the spouse to 85 percent of the AIME the earnings history gives, until his full retirement age', () => {
       // The inputs the worksheet rests on, from the earnings computation itself.
       const computed = computePiaFromEarnings({ dobYear: 1964, dobMonth: 6, dobDay: 15, earnings, lastEarningsYear: 2017, projection: null })
       if (isPiaFromEarningsError(computed)) throw new Error(computed.message)
       expect(computed.aime).toBe(2_328)
       expect(computed.piaMonthly).toBeCloseTo(1_490.8, 9)
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const result = household(null)
       expect(socialSecurityIncomeIn(result, 2026)).toBeCloseTo(disabilityMaximum.firstYear, 6)
-      expect(socialSecurityIncomeIn(result, 2027)).toBeCloseTo(disabilityMaximum.fullYear, 6)
-      expect(socialSecurityIncomeIn(result, 2027)).not.toBeCloseTo(retirementMaximum.fullYear, 0)
       expect(socialSecurityIncomeIn(result, 2026)).not.toBeCloseTo(retirementMaximum.firstYear, 0)
+      expect(socialSecurityIncomeIn(result, 2027)).toBeCloseTo(accepted.fromEarnings2027, 6)
+      expect(socialSecurityIncomeIn(result, 2027)).not.toBeCloseTo(retirementMaximum.fullYear, 0)
+      expect(socialSecurityIncomeIn(result, 2031)).toBeCloseTo(accepted.fromEarningsFraYear, 6)
+      expect(socialSecurityIncomeIn(result, 2031)).not.toBeCloseTo(disabilityMaximum.fullYear, 0)
+      expect(socialSecurityIncomeIn(result, 2031)).not.toBeCloseTo(retirementMaximum.fullYear, 0)
+    })
+
+    it('takes the ceiling for the same PIA entered, with no AIME', () => {
+      const observed = socialSecurityIncomeIn(household(1_490.8), 2027)
+      expect(observed).toBeCloseTo(produced.entered2027, 6)
+      expect(observed).not.toBeCloseTo(accepted.entered2027, 0)
     })
   })
 
@@ -414,10 +442,25 @@ describe('social security', () => {
   //   suspension: wages of 20,281 exceed 12 x the 2026 SGA of 1,690 = 20,280,
   //     so the worker's 2026 benefit is suspended, and with it the spouse's on
   //     his record: 0. The former engine paid the spouse 12,000.
+  //   below her full retirement age: the same worker, claim age 70, and a
+  //     spouse born 1963-01-02 (full retirement age 67, January 2030) who
+  //     claims at 62 in January 2025. Her spouse benefit starts with his, June
+  //     2025, and is reduced for her age then: 42 U.S.C. 402(q)(1) reduces it
+  //     when "the first month for which an individual is entitled to ... [a]
+  //     wife's ... insurance benefit is a month before" retirement age, and
+  //     402(q)(6)(A)(ii) starts the reduction period with that month. That is
+  //     55 months before January 2030; SSA's spouse reduction, 25/36 of 1
+  //     percent for each of the first 36 months and 5/12 of 1 percent for each
+  //     further month (ssa.gov/benefits/retirement/planner/applying7.html),
+  //     takes 25 % + 19 x 5/12 % = 32.9167 %, so 1,000 x 0.670833 = 670.83 a
+  //     month, and 2026 pays 24,000 + 12 x 670.8333 = 24,000 + 8,050 = 32,050. Reduced at his retirement claim month (2037, past her full
+  //     retirement age) it would be 36,000; at her own claim month (60 months
+  //     early, 35 %), 24,000 + 7,800 = 31,800. The former engine paid her
+  //     nothing before his claim age: 24,000.
   describeRule('usc-42-402-c-2-ssdi-spouse-auxiliary', {
     readings: {
-      statute: { claimAgeGate: 36_000, suspension: 0 },
-      formerEngine: { claimAgeGate: 24_000, suspension: 12_000 },
+      statute: { claimAgeGate: 36_000, suspension: 0, belowFullRetirementAge: 32_050 },
+      formerEngine: { claimAgeGate: 24_000, suspension: 12_000, belowFullRetirementAge: 24_000 },
     },
     accepted: 'statute',
   }, ({ accepted, readings }) => {
@@ -443,6 +486,30 @@ describe('social security', () => {
 
       expect(observed).toBeCloseTo(accepted.claimAgeGate, 6)
       expect(observed).not.toBeCloseTo(readings.formerEngine.claimAgeGate, 6)
+    })
+
+    it('reduces a spouse below her full retirement age from the worker\'s first disability month', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1967-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Younger spouse', dob: '1963-01-02', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      plan.incomes = [
+        {
+          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+          disability: { onsetAge: 58 }, claimAge: { years: 70, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const observed = socialSecurityIncomeIn(simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }), 2026)
+      expect(observed).toBeCloseTo(accepted.belowFullRetirementAge, 6)
+      expect(observed).not.toBeCloseTo(readings.formerEngine.belowFullRetirementAge, 0)
+      // Reduced at his retirement claim month, or at her own claim month.
+      expect(observed).not.toBeCloseTo(36_000, 0)
+      expect(observed).not.toBeCloseTo(31_800, 0)
     })
 
     it('suspends the spouse on the SSDI worker\'s record with him when wages exceed annual SGA', () => {
@@ -497,6 +564,71 @@ describe('social security', () => {
       const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
       expect(socialSecurityIncomeIn(result, 2026)).toBeCloseTo(7_296, 6)
       expect(socialSecurityIncomeIn(result, 2026)).not.toBeCloseTo(12_000, 6)
+    })
+  })
+
+  // Accepted plans may repeat a Social Security stream id (parsePlan does not
+  // reject it); the gate is the last resolved occurrence, and its PIA, claim
+  // age and disability facts go together. Spouse figures as in the gate case
+  // above: an entered PIA of 2,000 has the 150 percent ceiling, 3,000, room
+  // 1,000, so a spouse past her full retirement age with no own benefit is
+  // paid 1,000 a month, 12,000 a year, while the worker is on disability.
+  describe('a repeated stream id keys the spouse benefit to the gate occurrence', () => {
+    const spouseIn = (result: ReturnType<typeof simulatePlan>, year: number): number =>
+      (result.years.find((row) => row.year === year)?.socialSecurityStreams ?? [])
+        .filter((row) => row.personId === 'p2')
+        .reduce((sum, row) => sum + row.annualAmount, 0)
+
+    it('takes the disability start month from the last occurrence, not the first', () => {
+      // First occurrence: no disability, claim age 62 (2029). Last: disabled
+      // at 58 (January 2025, first paid June 2025). The spouse is paid all
+      // 2026, 12,000; read from the first occurrence she would wait for 2029.
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1967-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Eligible spouse', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      plan.incomes = [
+        { type: 'socialSecurity', id: 'ss-dup', personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+        {
+          type: 'socialSecurity', id: 'ss-dup', personId: 'p1', piaMonthly: 2_000, earnings: null,
+          disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      expect(spouseIn(simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }), 2026)).toBeCloseTo(12_000, 6)
+    })
+
+    it('does not keep an earlier occurrence\'s earnings-derived maximum for a later entered PIA', () => {
+      // First occurrence: the earnings worksheet above (maximum 1,978.80);
+      // last: the same id with an entered PIA of 2,000, the gate PIA. Its own
+      // maximum is the ceiling, 3,000, so a full 2027 pays the spouse 12,000;
+      // the first occurrence's 1,978.80, below the PIA of 2,000, would leave
+      // her nothing.
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Spouse', dob: '1958-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      const earnings = Array.from({ length: 14 }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
+      plan.incomes = [
+        {
+          type: 'socialSecurity', id: 'ss-dup', personId: 'p1', piaMonthly: null, earnings,
+          disability: { onsetAge: 62, onsetMonth: 1 }, claimAge: { years: 70, months: 0 },
+        },
+        {
+          type: 'socialSecurity', id: 'ss-dup', personId: 'p1', piaMonthly: 2_000, earnings: null,
+          disability: { onsetAge: 62, onsetMonth: 1 }, claimAge: { years: 70, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      expect(spouseIn(simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }), 2027)).toBeCloseTo(12_000, 6)
     })
   })
 
