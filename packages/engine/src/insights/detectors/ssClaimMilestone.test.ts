@@ -3817,6 +3817,40 @@ describe('a spouse on a disabled worker\'s record under the disability maximum',
     })
   })
 
+  // With wages for the worker in 2030 the plan cannot say whether SGA
+  // suspended his 2030 benefit (42 U.S.C. 425(a)), but a suspension takes
+  // away only a spouse benefit there was room for: under the 448.20 maximum
+  // there was none, so 2030 paid her nothing either way and 2031 is still her
+  // first spouse payment. Under the 1,978.80 maximum the 488.00 a month could
+  // have been suspended, so the prior year cannot be ranked and reads as
+  // already paying.
+  function withWorkerWages(plan: Plan, annualGross: number): Plan {
+    plan.incomes.unshift({ type: 'wages', id: testIds(), personId: 'p1', annualGross, endAge: 67, realGrowthPct: 0 })
+    return plan
+  }
+
+  for (const annualGross of [1, 1_200]) {
+    it(`announces her first spouse payment with ${annualGross} of worker wages when the maximum left no room`, () => {
+      const ctx = simulatedContext(withWorkerWages(household(3), annualGross), 2031)
+      expect(spouseActivity(ctx, 2031).annualAmount).toBeCloseTo(1_568.7, 6)
+      expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+        severity: 'attention',
+        evidence: expect.arrayContaining([
+          { label: "Pat's modeled benefit in first claim year (spousal)", value: '$1,568.70', year: 2031 },
+        ]),
+      })
+      expect(ssClaimMilestone.screen(simulatedContext(withWorkerWages(household(3), annualGross), 2030))).toMatchObject({
+        evidence: expect.arrayContaining([
+          { label: "Pat's modeled benefit in first claim year (spousal)", value: '$1,568.70', year: 2031 },
+        ]),
+      })
+    })
+  }
+
+  it('reads a prior year with room and worker wages as already paying', () => {
+    expect(ssClaimMilestone.screen(simulatedContext(withWorkerWages(household(14), 1_200), 2031))).toBeNull()
+  })
+
   it('stays silent when the maximum left her room before the start', () => {
     // 2030 under the 1,978.80 maximum: 12 x 488.00 = 5,856.00 already paid.
     const ctx = simulatedContext(household(14), 2031)

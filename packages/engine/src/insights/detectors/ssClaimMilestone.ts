@@ -182,9 +182,9 @@ function resolveOwnMonthlyRate(
  * credit before the horizon). A worker on disability benefits starts the spouse
  * benefit from his first disability month and holds it to his disability
  * maximum while he is entitled to them, as the ledger does. Null (unknown)
- * when the prior year fell in his disability window and the plan gives him
- * wages that year: the ledger suspends his benefit, and the spouse's on his
- * record (42 U.S.C. 425(a)), for wages above SGA, and the plan's wages are
+ * when the prior year fell in his disability window, the maximum left her a
+ * spouse benefit above her own, and the plan gives him wages that year: the
+ * ledger suspends his benefit, and the spouse's on his record (42 U.S.C. 425(a)), for wages above SGA, and the plan's wages are
  * the start year's, so they cannot say whether that year's were above it.
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
@@ -236,7 +236,10 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const higherIsClaimant = claimantPia >= coPia
   // Current-spouse top-up pays only the lower earner.
   if (higherIsClaimant) return 0
-  if (coDisabilityMonths !== null && inSsdiWindow(coDisabilityMonths) && hadWagesAtAge(plan, coPerson, coPersonAgePrior)) return null
+  // A suspension (425(a)) can change the year only when it had a spouse
+  // benefit above her own to suspend; with no room under the maximum the
+  // answer is definite whatever his wages were.
+  const suspensionUnknown = coDisabilityMonths !== null && inSsdiWindow(coDisabilityMonths) && hadWagesAtAge(plan, coPerson, coPersonAgePrior)
 
   const higher = {
     person: coPerson,
@@ -294,12 +297,18 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     ownActualMonthly: lowerOwnMonthly,
     spouseFactor,
   })
+  const auxiliaryMonthlyAt = (monthIndex: number): number => Math.max(0, composedMonthlyAt(monthIndex) - lowerOwnMonthly)
   const spousalTotalMonthlyAt = (monthIndex: number): number => measure === 'total'
     ? composedMonthlyAt(monthIndex)
-    : Math.max(0, composedMonthlyAt(monthIndex) - lowerOwnMonthly)
+    : auxiliaryMonthlyAt(monthIndex)
   if (coDisability === null) return spousalTotalMonthlyAt(coPriorYear * 12) * spousalMonths
   let annual = 0
-  for (let month = 12 - spousalMonths; month < 12; month++) annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
+  let auxiliary = 0
+  for (let month = 12 - spousalMonths; month < 12; month++) {
+    annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
+    auxiliary += auxiliaryMonthlyAt(coPriorYear * 12 + month)
+  }
+  if (suspensionUnknown && isVisiblePositiveAmount(auxiliary)) return null
   return annual
 }
 
