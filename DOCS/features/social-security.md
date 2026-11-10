@@ -367,9 +367,26 @@ or insured-status adjudication (`usc-42-415-b-2-b-disability-freeze-aime-exclusi
 stated limits (an onset on the 1st paid one month late, a timely application assumed, no re-entitlement or
 ALS exception; `usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
 (`cfr-20-404-1592-trial-work-period`, `cfr-20-404-1592a-extended-period-of-eligibility`), the 24-month
-Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). The
-current-spouse auxiliary and family maximum on an SSDI worker are produced by the generic paths with
-registered approximations (`usc-42-402-c-2-ssdi-spouse-auxiliary`, `usc-42-403-a-6-ssdi-family-maximum`).
+Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). A
+current spouse on an SSDI worker's record is paid from his first disability month, not his retirement claim
+age, and is suspended with him when earnings above SGA suspend his benefit (42 U.S.C. 402(c)(1), 425(a);
+`usc-42-402-c-2-ssdi-spouse-auxiliary`). While he is entitled to disability benefits the family maximum is
+the disability maximum of 42 U.S.C. 403(a)(6), from the AIME of an earnings-derived PIA
+(`familyMaximum.ts#disabilityFamilyMaximumAtStart`, passed to the year function as
+`disabilityFamilyMaximumByStreamId`; the analysis paths take it from their caller as
+`PathPerson.disabilityFamilyMaximumMonthly`, and their benefits-only ranking, OASDI return and survivor
+switching refuse a disability claimant); an entered PIA has no AIME and gets the 150%-of-PIA ceiling
+(`usc-42-403-a-6-ssdi-family-maximum`, needs-fact). From the first projected year the ledger's COLA factor
+carries that maximum, as it carries the PIA, without the dime rounding of each increase. After the benefit
+converts, the retirement and survivor maximum uses the bend points of the disability's year of eligibility
+(`usc-42-403-a-2-D-family-maximum-eligibility-after-disability`). The spouse benefit follows the worker's
+gate stream: its disability facts start it and its suspension suspends it. The claim-milestone insight's
+prior-year spouse reconstruction mirrors the start month and the maximum, and counts a spouse benefit as
+already paying at the start only when the year before paid her a spouse benefit above her own (a disability
+maximum equal to his PIA pays her nothing until he converts); a suspended spouse benefit is still published
+as due before withholding, as his is. A prior year inside his disability
+window in which the plan gives him wages is treated as unknown, since the plan's wages are the start
+year's and cannot say whether SGA suspended it.
 Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-program-parameters-2026.md).
 
 ## Documented simplifications / deferred
@@ -377,8 +394,9 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
 - **Disability (SSDI)** is modeled (worker's own SSDI from the first month after the five-month waiting
   period + FRA conversion; see above). The disability freeze, the waiting period's day-of-month and
   application-timing limits, trial-work / EPE, and 24-month Medicare wait are registered approximations or
-  note-only absences; living-child auxiliaries remain out of scope. Spouse auxiliary and family maximum on
-  SSDI are produced via the generic retirement/survivor paths with the named approximation records above.
+  note-only absences; living-child auxiliaries remain out of scope. The spouse auxiliary and the disability
+  family maximum on SSDI are modeled (see above); the maximum for an entered PIA, which has no AIME, is a
+  needs-fact approximation.
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only
   because child/dependent auxiliaries are not yet modeled.
 - Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM after it, and the

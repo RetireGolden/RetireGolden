@@ -282,14 +282,14 @@ export const socialSecurityRecords = {
   },
 
   'usc-42-403-a-2-D-family-maximum-eligibility-after-disability': {
-    title: 'The family maximum\'s eligibility year does not follow an earlier disability',
+    title: 'The family maximum\'s eligibility year follows an earlier disability',
     statement:
-      'The bend points of the family maximum come from the worker\'s year of eligibility, which is generally the year the worker attains 62 or becomes disabled. 42 U.S.C. 403(a)(2)(D) does not count the year of attaining 62 when the worker was entitled to disability insurance benefits in any of the 12 months before, and counts instead the year of eligibility for that disability benefit (20 CFR 404.403(a)(2)). familyMaximumEligibilityYearFromDobParts always takes the year the worker attains 62 (the effective birth year plus 62), including for a worker the plan gives a disability onset whose disability benefit runs until full retirement age, so after that benefit converts, the retirement and survivor maximum is priced on the bend points of a later year than the statute uses.',
-    classification: 'approximated',
+      'The bend points of the family maximum come from the worker\'s year of eligibility, which is generally the year the worker attains 62 or becomes disabled, whichever is earlier (20 CFR 404.403(a)(2)). 42 U.S.C. 403(a)(2)(D) does not count the year of attaining 62 when the worker was entitled to disability insurance benefits in any of the 12 months before, and counts instead the year of eligibility for that disability benefit. A disability benefit in the plan runs without a break from its first payable month to full retirement age, so familyMaximum.ts#familyMaximumEligibilityYear takes the earlier of the year the disability began and the year the worker attains 62 (the effective birth year plus 62) for a worker the plan gives one, and the year of attaining 62 otherwise. After the disability benefit converts at full retirement age, the retirement and survivor maximum is priced on that year\'s bend points (#workerFamilyMaximumMonthlyAt); 20 CFR 404.403(g)(3) computes the maximum after that conversion without regard to the disability maximum, which governs before it (usc-42-403-a-6-ssdi-family-maximum).',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'Recorded as a known limit rather than fixed in the same change, because the fix belongs with the disability maximum the engine also does not model (usc-42-403-a-6-ssdi-family-maximum): while the disability benefit is paid the disability maximum governs, and this eligibility year matters from the conversion at full retirement age on. Later bend points can raise or lower the maximum for the same PIA, depending on which band the PIA falls in, so the error runs both ways. A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; the engine uses the year he attains 62, 2032, which falls back to the latest table on file (2026), and gives 3,435.50. With only a current spouse on the record no figure moves: under the retirement and survivor maximum the room above the PIA holds a spouse\'s whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record.',
+      'A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; until 2026-11-09 the engine used the year he attains 62, 2032, which falls back to the latest table on file (2026), and gave 3,435.50. With only a current spouse on the record no projected figure moves either way: under the retirement and survivor maximum the room above the PIA holds a spouse\'s whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record, which the plan cannot hold (usc-42-402-d-2-ssdi-child-auxiliary).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -307,12 +307,15 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-27',
+    verifiedOn: '2026-11-09',
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumEligibilityYearFromDobParts',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumEligibilityYear',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#workerFamilyMaximumMonthlyAt',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
     ],
   },
 
@@ -2074,12 +2077,12 @@ export const socialSecurityRecords = {
   'usc-42-403-a-6-ssdi-family-maximum': {
     title: 'The SSDI family maximum is AIME-based, not the retirement/survivor bend-point formula',
     statement:
-      'For a worker entitled to disability insurance benefits, the family maximum is the smaller of 85 percent of AIME (but no less than 100 percent of PIA) and 150 percent of PIA. The engine instead applies the retirement/survivor marginal bend-point formula whenever its generic current-spouse path calls `capAuxiliaryForFamilyMaximum`, including when the worker is receiving SSDI. That produces a family-benefit figure for an expressible SSDI household but can be materially different from the disability maximum; for example, an AIME of 500 and PIA of 450 gives a statutory maximum of 450 a month (5,400 a year), while the retirement first tier gives 675, and the companion household observably receives 8,100 a year.',
+      'For a worker entitled to disability insurance benefits, the family maximum is the smaller of 85 percent of AIME (but no less than 100 percent of PIA) and 150 percent of PIA. While the worker is entitled to those benefits, from his first disability month to the month before full retirement age, the engine holds the current spouse on his record to that maximum (familyMaximum.ts#workerFamilyMaximumMonthlyAt). For a PIA computed from an earnings history it takes the 85 percent from that computation\'s own AIME, raised by each cost-of-living increase before the projection\'s first year with the PIA and decreased to the dime after each nonzero increase (#disabilityFamilyMaximumAtStart); from the first year the ledger\'s COLA factor carries it with every benefit, unrounded, as it carries the PIA. The projection passes it to the year function, and the Social Security analysis paths take it from their caller (analysis/householdPaths.ts#householdPathYear), whose benefits-only ranking, OASDI return and survivor-switching tables do not price a disability claimant. A PIA entered directly comes with no AIME, and for it the engine takes the 150 percent ceiling, the largest maximum the statute allows; that leaves a single spouse room for half the PIA, as the retirement and survivor maximum the engine used for every disabled worker until 2026-11-09 did. For an AIME of 500 and an entered PIA of 450 the statutory maximum is 450 a month (5,400 a year with the companion spouse), while the ceiling of 675 lets the companion household receive 8,100 a year.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Section 403(a)(6)\'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the exact retirement/survivor reading this record rejects). The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.',
+      'Section 403(a)(6)\'s 85/100/150 percentages are the controlling disability-family formula; 20 CFR 404.403(d-1) states it the same way and rounds neither amount. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the retirement and survivor reading this record rejects). What stays approximated needs a fact: the AIME behind an entered PIA. Taking the ceiling can only overstate the maximum, by up to half the PIA when 85 percent of the AIME is below the PIA, but the sign is not one-sided in taxpayer-tax terms: a too-large Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used. An earnings-derived AIME is the ordinary age-62 computation, which a disability computation can change (usc-42-415-b-2-b-disability-freeze-aime-exclusion); the maximum is applied to the AIME and PIA that computation gives. An example on the earnings path: fourteen years of earnings equal to the national average wage index, for a worker who attains 62 and becomes disabled in 2026, give an AIME of 2,328 and a PIA of 1,490.80, so the maximum is 1,978.80 and a spouse at full retirement age with no benefit of her own is paid 488.00 a month, not 745.40.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2091,29 +2094,32 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-11-09',
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
-      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/householdYear.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
-      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumMonthlyFromPia',
+      'packages/engine/src/socialSecurity/analysis/householdPaths.ts#householdPathYear',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#disabilityFamilyMaximumAtStart',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#disabilityFamilyMaximumMonthly',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#workerFamilyMaximumMonthlyAt',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
     ],
   },
 
   'usc-42-402-c-2-ssdi-spouse-auxiliary': {
     title: 'An SSDI spouse auxiliary is one-half PIA before the disability-family reduction',
     statement:
-      'A qualifying husband on a living disabled worker\'s record has a one-half-PIA auxiliary amount before the family maximum reduces it. The generic current-spouse code does compute a 50-percent PIA top-up, but it applies a retirement `claimAge` gate to the disabled worker and uses the retirement/survivor family maximum. Thus an expressible 58-year-old SSDI worker with a 67-year-old spouse receives no auxiliary until the worker\'s irrelevant retirement claim age. The engine returns a benefit figure, so this is an approximation rather than a refused auxiliary rule.',
-    classification: 'approximated',
+      'A husband or wife qualifies on the record of a living worker entitled to disability insurance benefits without that worker claiming old-age benefits (42 U.S.C. 402(b)(1) and (c)(1)), and the spouse benefit is one-half of the worker\'s PIA before the family maximum reduces it. The engine pays the current spouse on a disabled worker\'s record from the later of the spouse\'s own claim month and the worker\'s first disability month, and reduces it for the spouse\'s age in that month; the worker\'s retirement claim age plays no part, and after his full retirement age the spouse benefit continues on the converted benefit. When earnings above SGA suspend the worker\'s disability benefit for a year, section 425(a) suspends the spouse benefit on his record for the same months, and the engine then pays the spouse her own benefit only (householdYear.ts#socialSecurityYear), while still publishing the suspended benefit as due before withholding, as it does his. The family maximum that holds the spouse benefit while the worker is entitled to disability benefits is usc-42-403-a-6-ssdi-family-maximum.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. annualSocialSecurity.ts nevertheless calculates `higherPayableMonths` from the worker stream\'s 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker\'s disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.',
+      'The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The spouse benefit follows the worker\'s gate stream (the last resolved occurrence, whose PIA and claim age it already takes): its disability facts start it, and its suspension suspends it. The claim-milestone insight\'s reconstruction of the prior year follows the start month and the maximum, and counts a spouse benefit as already paying at the start only when the year before paid her a spouse benefit above her own under the maximum then in force (a disability maximum equal to his PIA leaves her nothing until he converts); the plan\'s wages are the start year\'s, so when the worker had wages in a prior year inside his disability window it cannot say whether the suspension applied and treats the spouse benefit\'s amount that year as unknown. Until 2026-11-09 the engine gated the spouse on the worker\'s 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker\'s claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2137,16 +2143,17 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-11-09',
     implementedBy: [
+      'packages/engine/src/socialSecurity/householdYear.ts',
       'packages/engine/src/socialSecurity/familyMaximum.ts',
-      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
-      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#auxiliaryAlreadyPayingAtHorizonStart',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#resolveCurrentSpouseSpousalAnnualPriorYear',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum',
+      'packages/engine/src/socialSecurity/householdYear.ts#socialSecurityYear',
     ],
   },
 

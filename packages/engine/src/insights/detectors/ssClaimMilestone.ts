@@ -9,14 +9,20 @@ import {
   spouseEntitlementAgeMonths,
   spouseReductionFactorAtAgeMonths,
 } from '../../socialSecurity/dualEntitlement.js'
-import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
+import {
+  claimAgeTotalMonths,
+  currentSpouseMonthlyUnderFamilyMaximum,
+  disabilityFamilyMaximumAtStart,
+  disabilityFamilyMaximumMonthly,
+  workerFamilyMaximumMonthlyAt,
+} from '../../socialSecurity/familyMaximum.js'
 import {
   bestMaritalBenefit,
   formerSpouseSurvivorEntitlementAgeMonths,
   type MaritalBenefitCandidate,
 } from '../../socialSecurity/maritalBenefits.js'
 import { attainedAgeZeroMonthIndex } from '../../socialSecurity/nra.js'
-import { ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
+import { inSsdiWindow, ssdiMonthsInYear, ssdiSchedule, type SsdiSchedule } from '../../socialSecurity/disability.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
   resolveStreamPiaMonthly,
@@ -173,7 +179,13 @@ function resolveOwnMonthlyRate(
  * when not eligible. Mirrors its current-spouse pass after the former-spouse menu:
  * the shared dual-entitlement composition at the claimant's age in the first
  * month of the spouse benefit, from the configured claim ages (no earnings-test
- * credit before the horizon).
+ * credit before the horizon). A worker on disability benefits starts the spouse
+ * benefit from his first disability month and holds it to his disability
+ * maximum while he is entitled to them, as the ledger does. Null (unknown)
+ * when the prior year fell in his disability window, the maximum left her a
+ * spouse benefit above her own, and the plan gives him wages that year: the
+ * ledger suspends his benefit, and the spouse's on his record (42 U.S.C. 425(a)), for wages above SGA, and the plan's wages are
+ * the start year's, so they cannot say whether that year's were above it.
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   plan: Plan
@@ -182,7 +194,9 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   coPersonId: string
   coPersonAgePrior: number
   asOf: PiaAsOf
-}): number {
+  /** 'auxiliary': only the spouse benefit above the claimant's own benefit, month by month. */
+  measure?: 'total' | 'auxiliary'
+}): number | null {
   const {
     plan,
     claimantPersonId,
@@ -191,6 +205,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     coPersonAgePrior,
     asOf,
   } = args
+  const measure = args.measure ?? 'total'
   const claimant = plan.household.people.find((row) => row.id === claimantPersonId)
   const coPerson = plan.household.people.find((row) => row.id === coPersonId)
   if (claimant === undefined || coPerson === undefined) return 0
@@ -209,13 +224,22 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     claimantAgePrior,
     claimantStream.claimAge,
   )
-  const coMonths = annualSocialSecurityPayableMonths(coPersonAgePrior, coStream.claimAge)
+  const coSchedule = ssdiScheduleFor(coStream, coPerson)
+  const coPriorYear = socialSecurityDobParts(coPerson).y + coPersonAgePrior
+  const coDisabilityMonths = coSchedule === null ? null : ssdiMonthsInYear(coSchedule, coPriorYear)
+  const coMonths = coDisabilityMonths === null
+    ? annualSocialSecurityPayableMonths(coPersonAgePrior, coStream.claimAge)
+    : coDisabilityMonths.disability + coDisabilityMonths.retirement
   const spousalMonths = Math.min(claimantMonths, coMonths)
   if (spousalMonths <= 0) return 0
 
   const higherIsClaimant = claimantPia >= coPia
   // Current-spouse top-up pays only the lower earner.
   if (higherIsClaimant) return 0
+  // A suspension (425(a)) can change the year only when it had a spouse
+  // benefit above her own to suspend; with no room under the maximum the
+  // answer is definite whatever his wages were.
+  const suspensionUnknown = coDisabilityMonths !== null && inSsdiWindow(coDisabilityMonths) && hadWagesAtAge(plan, coPerson, coPersonAgePrior)
 
   const higher = {
     person: coPerson,
@@ -246,20 +270,59 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     spouseEntitlementAgeMonths(
       lowerDob,
       claimAgeTotalMonths(lower.stream.claimAge),
-      claimStartMonthIndex(higherDob, claimAgeTotalMonths(higher.stream.claimAge)),
+      coSchedule !== null
+        ? coSchedule.firstPayableMonthIndex
+        : claimStartMonthIndex(higherDob, claimAgeTotalMonths(higher.stream.claimAge)),
     ),
   )
   const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age, asOf) ?? 0
   // Half the worker's PIA held first to the room above his PIA, then the
-  // own-PIA subtraction and the age reduction, as the ledger composes it.
-  const spousalTotalMonthly = currentSpouseMonthlyUnderFamilyMaximum({
+  // own-PIA subtraction and the age reduction, as the ledger composes it, in
+  // each month both are paid (the maximum changes at a disabled worker's full
+  // retirement age).
+  const coDisability = coSchedule === null || coStream.disability === undefined
+    ? null
+    : {
+      onsetYear: higherDob.year + coStream.disability.onsetAge,
+      firstPayableMonthIndex: coSchedule.firstPayableMonthIndex,
+      fraMonthIndex: coSchedule.fraMonthIndex,
+      disabilityMaximumMonthly: disabilityFamilyMaximumAtStart(resolveStreamPiaMonthly(coStream, coPerson, asOf), asOf)
+        ?? disabilityFamilyMaximumMonthly(higher.pia, null),
+    }
+  const composedMonthlyAt = (monthIndex: number): number => currentSpouseMonthlyUnderFamilyMaximum({
     workerPiaMonthly: higher.pia,
     workerDob: higherDob,
+    familyMaximumMonthly: workerFamilyMaximumMonthlyAt({ piaMonthly: higher.pia, dob: higherDob, disability: coDisability }, monthIndex),
     ownPiaMonthly: lower.pia,
     ownActualMonthly: lowerOwnMonthly,
     spouseFactor,
   })
-  return spousalTotalMonthly * spousalMonths
+  const auxiliaryMonthlyAt = (monthIndex: number): number => Math.max(0, composedMonthlyAt(monthIndex) - lowerOwnMonthly)
+  const spousalTotalMonthlyAt = (monthIndex: number): number => measure === 'total'
+    ? composedMonthlyAt(monthIndex)
+    : auxiliaryMonthlyAt(monthIndex)
+  if (coDisability === null) return spousalTotalMonthlyAt(coPriorYear * 12) * spousalMonths
+  let annual = 0
+  let auxiliary = 0
+  for (let month = 12 - spousalMonths; month < 12; month++) {
+    annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
+    auxiliary += auxiliaryMonthlyAt(coPriorYear * 12 + month)
+  }
+  if (suspensionUnknown && isVisiblePositiveAmount(auxiliary)) return null
+  return annual
+}
+
+/**
+ * Whether the plan gives the person a wage stream in force at `ageAttained`:
+ * the wage rows' own stop test (projection/internal/wageIncomeStreams.ts, the
+ * stream's `endAge`, else the person's `retirementAge`).
+ */
+function hadWagesAtAge(plan: Plan, person: HouseholdPerson, ageAttained: number): boolean {
+  return plan.incomes.some((income) => {
+    if (income.type !== 'wages' || income.personId !== person.id || income.annualGross <= 0) return false
+    const stopAge = income.endAge ?? person.retirementAge
+    return stopAge === null || ageAttained < stopAge
+  })
 }
 
 /**
@@ -425,13 +488,16 @@ function formerSpouseWonOverOwnPriorYear(args: PriorYearFormerSpouseArgs & {
   if (ownAnnual === null) {
     // Cannot prove former > own; if current-spouse already beats former, former
     // was never the paying source.
-    if (currentSpousalAnnual > bestFormerAnnual) return false
+    if (currentSpousalAnnual !== null && currentSpousalAnnual > bestFormerAnnual) return false
     return null
   }
 
   // Highest wins across own / former / current — former is the actual prior-year
   // source only when it strictly beats own and is not displaced by current-spouse.
   if (!(bestFormerAnnual > ownAnnual)) return false
+  // A current-spouse benefit that may have been suspended cannot prove the
+  // former was displaced.
+  if (currentSpousalAnnual === null) return null
   if (currentSpousalAnnual > bestFormerAnnual) return false
   return true
 }
@@ -532,12 +598,15 @@ function streamPublishedSsdiThrough(
  * must not displace the resolved gate/winner stream used for prior-year
  * current-spouse spousal pricing.
  */
-function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityIncome | undefined {
+function lastSsIncomeForPerson(plan: Plan, personId: string, streamId?: string): SocialSecurityIncome | undefined {
   const person = plan.household.people.find((row) => row.id === personId)
   if (person === undefined) return undefined
   let last: SocialSecurityIncome | undefined
   for (const candidate of plan.incomes) {
     if (candidate.type !== 'socialSecurity' || candidate.personId !== personId) continue
+    // With a stream id, only that id's occurrences: income ids may repeat, and
+    // the gate is the last resolved occurrence, not the first row with the id.
+    if (streamId !== undefined && candidate.id !== streamId) continue
     // Skip unresolved (no published PIA resolution) — householdYear.ts
     // never writes them into gateByPerson for spousal/survivor gating.
     if (resolveOwnPiaMonthly(candidate, person, null) === null) continue
@@ -782,13 +851,29 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   const gateStreamId = (firstProjectionYear.socialSecurityStreams ?? []).find(
     (row) => row.personId === coPerson.id && row.isSpousalSurvivorGateStream,
   )?.streamId
-  const coIncome =
-    gateStreamId !== undefined
-      ? plan.incomes.find(
-          (candidate): candidate is SocialSecurityIncome =>
-            candidate.type === 'socialSecurity' && candidate.id === gateStreamId,
-        )
-      : lastSsIncomeForPerson(plan, coPerson.id)
+  const coIncome = lastSsIncomeForPerson(plan, coPerson.id, gateStreamId)
+  // A co-spouse on disability benefits enables the spouse benefit from his
+  // first disability month, whatever his claim age (42 U.S.C. 402(b)(1),
+  // (c)(1)), as the ledger pays it. His entitlement alone does not make it
+  // already paying: the disability maximum (403(a)(6)) can equal his PIA and
+  // leave her nothing until he converts at full retirement age. It is
+  // pre-horizon when the year before the start paid her a spouse benefit
+  // above her own; a year his wages may have suspended (425(a)) cannot be
+  // ranked and reads as already paying.
+  const coSchedule = ssdiScheduleFor(coIncome, coPerson)
+  if (coSchedule !== null) {
+    if (coSchedule.firstPayableMonthIndex >= firstProjectionYear.year * 12) return false
+    const priorAuxiliary = resolveCurrentSpouseSpousalAnnualPriorYear({
+      plan,
+      claimantPersonId: personId,
+      claimantAgePrior: projectedAge - 1,
+      coPersonId: coPerson.id,
+      coPersonAgePrior: coState.ageAttained - 1,
+      asOf: piaAsOf(plan, firstProjectionYear.year),
+      measure: 'auxiliary',
+    })
+    return priorAuxiliary === null || isVisiblePositiveAmount(priorAuxiliary)
+  }
   // Co-spouse claim-in-force at start with age past their claim age = pre-horizon
   // enabling event. If co-spouse is in their first claim year (age == claimAge),
   // the enabling claim occurs in year one — not already-paying.

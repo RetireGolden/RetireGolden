@@ -31,17 +31,17 @@
       "label": "credited total-month claim age reconstruction",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        241,
-        243
+        264,
+        266
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The helper moved unchanged.",
       "anchors": [
         {
-          "line": 241,
+          "line": 264,
           "text": "function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {"
         },
         {
-          "line": 242,
+          "line": 265,
           "text": "return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }"
         }
       ]
@@ -51,17 +51,17 @@
       "label": "claim-year payable-month boundaries",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        98,
-        101
+        105,
+        108
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The helper moved unchanged.",
       "anchors": [
         {
-          "line": 98,
+          "line": 105,
           "text": "if (ageAttained < claimAge.years) return 0"
         },
         {
-          "line": 100,
+          "line": 107,
           "text": "return Math.max(0, 12 - claimAge.months)"
         }
       ]
@@ -71,26 +71,30 @@
       "label": "own-retirement, never-claimed and SSDI pay sites",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        320,
-        381
+        343,
+        415
       ],
-      "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The pay sites are collected first and priced month by month later (H.compose).",
+      "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The pay sites are collected first and priced month by month later (H.compose). Extended on 2026-11-09 to the SGA suspension set that follows the pay sites (42 U.S.C. 425(a), usc-42-402-c-2-ssdi-spouse-auxiliary), which the withholding and the current spouse read. The gate entry carries the occurrence's disability facts since the same day, so the spouse benefit reads the gate occurrence.",
       "anchors": [
         {
-          "line": 320,
-          "text": "const gateByPerson = new Map<string, { pia: number; claimAge: ClaimAge; streamId: string }>()"
+          "line": 343,
+          "text": "const gateByPerson = new Map<string, { pia: number; claimAge: ClaimAge; streamId: string; disability: SsdiOnset | undefined }>()"
         },
         {
-          "line": 337,
+          "line": 360,
           "text": "const schedule: SsdiSchedule | null = stream.disability === undefined ? null : ssdiSchedule(person.dob, stream.disability)"
         },
         {
-          "line": 362,
+          "line": 385,
           "text": "const monthly = ssdiMonthlyBenefit(pia)"
         },
         {
-          "line": 377,
+          "line": 400,
           "text": "const payableMonths = annualSocialSecurityPayableMonths(person.ageAttained, stream.claimAge)"
+        },
+        {
+          "line": 411,
+          "text": "const sgaSuspended = new Set<string>()"
         }
       ]
     },
@@ -99,21 +103,21 @@
       "label": "marital status and the former-spouse candidate sites",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        386,
-        404
+        419,
+        437
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. A couple member is unmarried from the January after the death of the spouse.",
       "anchors": [
         {
-          "line": 386,
+          "line": 419,
           "text": "const unmarriedFromOf = (personId: string): number | null => {"
         },
         {
-          "line": 387,
+          "line": 420,
           "text": "if (people.length === 1) return -Infinity"
         },
         {
-          "line": 397,
+          "line": 430,
           "text": "const formerSites: { stream: SocialSecurityStream; person: PersonFacts; payableFrom: number; unmarriedFrom: number | null }[] = []"
         }
       ]
@@ -123,25 +127,25 @@
       "label": "the current spouse: worker, lower earner, shared months and the spouse benefit's first month",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        408,
-        452
+        441,
+        510
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The range ends at the survivors' declaration, the line after this block.",
       "anchors": [
         {
-          "line": 408,
+          "line": 441,
           "text": "let couple: {"
         },
         {
-          "line": 422,
+          "line": 457,
           "text": "const aHigher = aGate.pia >= bGate.pia"
         },
         {
-          "line": 429,
+          "line": 475,
           "text": "const shared = Math.min(lowerPayable, higherPayable)"
         },
         {
-          "line": 441,
+          "line": 497,
           "text": "entitlementMonths: spouseEntitlementAgeMonths("
         }
       ]
@@ -151,21 +155,21 @@
       "label": "current-household survivor sites and the widow(er) benefit's first month",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        452,
-        492
+        510,
+        550
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. The range ends at the first line of the month composition.",
       "anchors": [
         {
-          "line": 452,
+          "line": 510,
           "text": "const survivorSites: {"
         },
         {
-          "line": 470,
+          "line": 528,
           "text": "const payableMonths = annualSocialSecurityPayableMonths(survivor.ageAttained, survivorGate.claimAge)"
         },
         {
-          "line": 485,
+          "line": 543,
           "text": "entitlementMonths: deceased.deathYear !== null ? widowEntitlementAgeMonths(survivor.dob, deceased.deathYear, ownClaimMonths) : ownClaimMonths,"
         }
       ]
@@ -175,17 +179,17 @@
       "label": "one month's composition: own benefits, former-spouse, current-spouse and survivor candidates, and the family maximum",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        492,
-        660
+        550,
+        728
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 492,
+          "line": 550,
           "text": "const ownMonthlyAt = (site: OwnSite, monthIndex: number): number => {"
         },
         {
-          "line": 499,
+          "line": 557,
           "text": "const compose = (month: number): MonthComposition => {"
         }
       ]
@@ -195,21 +199,21 @@
       "label": "the months a year can change, the excess earnings and the month-by-month charge",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        665,
-        748
+        733,
+        816
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 665,
+          "line": 733,
           "text": "const boundaries = new Set<number>([0])"
         },
         {
-          "line": 692,
+          "line": 760,
           "text": "const excess = excessEarnings({ wages, fraMonthIndex: facts.fraMonthIndex, year, belowFraExemptAnnual: lower, fraYearExemptAnnual: higherExempt })"
         },
         {
-          "line": 709,
+          "line": 777,
           "text": "test = earningsTestYear({"
         }
       ]
@@ -219,21 +223,21 @@
       "label": "each pay site's and stream's year before the test",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        753,
-        822
+        821,
+        898
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 753,
+          "line": 821,
           "text": "const monthComposition = (month: number): MonthComposition => compositions[segmentOf(month)]!"
         },
         {
-          "line": 754,
+          "line": 822,
           "text": "const runsProduct = (monthly: (month: number) => number): number => {"
         },
         {
-          "line": 780,
+          "line": 856,
           "text": "const preByPerson = new Map<string, number>()"
         }
       ]
@@ -243,21 +247,21 @@
       "label": "SSDI SGA gate, the earnings test's result, withheld amounts and warnings",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        826,
-        866
+        902,
+        939
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 826,
+          "line": 902,
           "text": "const postByPerson = new Map<string, number>()"
         },
         {
-          "line": 842,
-          "text": "if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {"
+          "line": 916,
+          "text": "if (sgaSuspended.has(personId)) {"
         },
         {
-          "line": 853,
+          "line": 926,
           "text": "const withheld = test?.withheldByPerson.get(personId) ?? 0"
         }
       ]
@@ -267,25 +271,25 @@
       "label": "living-household total and ordered per-stream publication",
       "file": "socialSecurity/householdYear.ts",
       "lines": [
-        868,
-        924
+        941,
+        997
       ],
       "note": "RE-MEASURED on 2026-09-29 (decision D-SS-ANALYSIS-EARNINGS-TEST): the annual Social Security phase moved into socialSecurity/householdYear.ts#socialSecurityYear, one year function the ledger and the analysis models share, which composes the year month by month where a month can differ and charges the earnings test month by month (socialSecurity/earningsTest.ts#earningsTestYear); projection/internal/annualSocialSecurity.ts is its adapter. ",
       "anchors": [
         {
-          "line": 868,
+          "line": 941,
           "text": "let socialSecurity = 0"
         },
         {
-          "line": 878,
+          "line": 951,
           "text": "const preSumByPerson = new Map<string, number>()"
         },
         {
-          "line": 906,
+          "line": 979,
           "text": "annualAmount: preSum > 0 ? pre * (post / preSum) : 0,"
         },
         {
-          "line": 913,
+          "line": 986,
           "text": "return {"
         }
       ]
@@ -383,24 +387,24 @@
       "label": "annual Social Security scalar selection, helper invocation and effect consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        1759,
-        1789
+        1768,
+        1799
       ],
       "anchors": [
         {
-          "line": 1759,
+          "line": 1768,
           "text": "const ssColaFactor = socialSecurityColaFactor(plan.assumptions.ssCola, inflFactorFrom, startYear, year)"
         },
         {
-          "line": 1761,
+          "line": 1770,
           "text": "const socialSecurity = annualSocialSecurity({"
         },
         {
-          "line": 1777,
+          "line": 1787,
           "text": "incomes.socialSecurity += socialSecurity.socialSecurity"
         },
         {
-          "line": 1788,
+          "line": 1798,
           "text": "const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } ="
         }
       ]

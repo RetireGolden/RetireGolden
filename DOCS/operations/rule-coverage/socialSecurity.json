@@ -47,7 +47,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -208,7 +208,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -228,12 +228,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 411,
+          "line": 651,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
-              "line": 425
+              "line": 665
             }
           ]
         }
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -320,12 +320,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 442,
+          "line": 682,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
-              "line": 456
+              "line": 696
             }
           ]
         }
@@ -562,7 +562,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 178
+              "line": 190
             }
           ]
         },
@@ -580,11 +580,11 @@
           "functions": [
             {
               "name": "capAuxiliaryForFamilyMaximum",
-              "line": 76
+              "line": 188
             },
             {
               "name": "currentSpouseMonthlyUnderFamilyMaximum",
-              "line": 116
+              "line": 228
             }
           ]
         }
@@ -595,39 +595,39 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
-          "line": 66,
+          "line": 71,
           "note": null,
           "tests": [
             {
               "title": "counts the worker's PIA against the family maximum, not the benefit raised by delayed credits",
-              "line": 72
+              "line": 77
             },
             {
               "title": "holds an auxiliary total above the room to the room",
-              "line": 80
+              "line": 85
             },
             {
               "title": "leaves a single spouse room for half the PIA under the retirement and survivor maximum, less the dime rounding",
-              "line": 88
+              "line": 93
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
-          "line": 128,
+          "line": 133,
           "note": "the maximum on the original benefit, before the own benefit and the age reduction",
           "tests": [
             {
               "title": "holds half the PIA to the room before the own PIA is subtracted",
-              "line": 135
+              "line": 140
             },
             {
               "title": "does the same for an SSDI worker whose numbers come from one AIME, and reduces for age after the maximum",
-              "line": 147
+              "line": 152
             },
             {
               "title": "matches the old order whenever the room holds half the PIA, as under the retirement maximum",
-              "line": 172
+              "line": 177
             }
           ]
         }
@@ -780,7 +780,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         },
@@ -875,7 +875,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -886,12 +886,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1167,
+          "line": 1407,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 1181
+              "line": 1421
             }
           ]
         }
@@ -1354,7 +1354,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -1363,7 +1363,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -1538,7 +1538,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -1565,7 +1565,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -1577,16 +1577,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1092,
+          "line": 1332,
           "note": null,
           "tests": [
             {
               "title": "credits the full and the partial deduction month of each working year",
-              "line": 1099
+              "line": 1339
             },
             {
               "title": "charges from the first month of entitlement: a June birth's January-May 2026 are paid under the claim-year convention and not charged, so June and July are the deduction months",
-              "line": 1105
+              "line": 1345
             }
           ]
         },
@@ -1805,7 +1805,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         },
@@ -1877,7 +1877,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 178
+              "line": 190
             }
           ]
         },
@@ -1895,7 +1895,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -1952,40 +1952,33 @@
     {
       "id": "usc-42-402-c-2-ssdi-spouse-auxiliary",
       "title": "An SSDI spouse auxiliary is one-half PIA before the disability-family reduction",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. annualSocialSecurity.ts nevertheless calculates `higherPayableMonths` from the worker stream's 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker's disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The spouse benefit follows the worker's gate stream (the last resolved occurrence, whose PIA and claim age it already takes): its disability facts start it, and its suspension suspends it. The claim-milestone insight's reconstruction of the prior year follows the start month and the maximum, and counts a spouse benefit as already paying at the start only when the year before paid her a spouse benefit above her own under the maximum then in force (a disability maximum equal to his PIA leaves her nothing until he converts); the plan's wages are the start year's, so when the worker had wages in a prior year inside his disability window it cannot say whether the suspension applied and treats the spouse benefit's amount that year as unknown. Until 2026-11-09 the engine gated the spouse on the worker's 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker's claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-11-09",
+      "dueOn": "2027-11-09",
       "implementedBy": [
-        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/familyMaximum.ts"
+        "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "path": "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
           "functions": [
             {
-              "name": "annualSocialSecurity",
-              "line": 44
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
+              "name": "auxiliaryAlreadyPayingAtHorizonStart",
+              "line": 691
+            },
             {
-              "name": "simulatePlan",
-              "line": 425
+              "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
+              "line": 190
             }
           ]
         },
@@ -1993,8 +1986,17 @@
           "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
           "functions": [
             {
-              "name": "capAuxiliaryForFamilyMaximum",
-              "line": 76
+              "name": "currentSpouseMonthlyUnderFamilyMaximum",
+              "line": 228
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 290
             }
           ]
         }
@@ -2005,16 +2007,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 336,
+          "line": 460,
           "note": null,
           "tests": [
             {
-              "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
-              "line": 344
+              "title": "starts the SSDI spouse auxiliary with the worker's disability benefit, not his claimAge",
+              "line": 467
             },
             {
-              "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
-              "line": 369
+              "title": "reduces a spouse below her full retirement age from the worker's first disability month",
+              "line": 491
+            },
+            {
+              "title": "suspends the spouse on the SSDI worker's record with him when wages exceed annual SGA",
+              "line": 515
+            },
+            {
+              "title": "keeps paying a suspended worker's spouse her own benefit",
+              "line": 539
             }
           ]
         }
@@ -2613,7 +2623,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -2624,16 +2634,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1305,
+          "line": 1545,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1313
+              "line": 1553
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1340
+              "line": 1580
             }
           ]
         }
@@ -2774,7 +2784,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 178
+              "line": 190
             }
           ]
         },
@@ -2816,34 +2826,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 565,
+          "line": 805,
           "note": null,
           "tests": [
             {
               "title": "adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims",
-              "line": 573
+              "line": 813
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 608,
+          "line": 848,
           "note": "a worker who files after the claimant",
           "tests": [
             {
               "title": "reduces the excess at the claimant’s age when the worker files, and adds it to her own benefit",
-              "line": 616
+              "line": 856
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 649,
+          "line": 889,
           "note": "a divorced spouse",
           "tests": [
             {
               "title": "pays a divorced spouse her own benefit plus the excess reduced when the ex is first 62 throughout a month",
-              "line": 658
+              "line": 898
             }
           ]
         }
@@ -2925,7 +2935,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -2934,7 +2944,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         },
@@ -3138,7 +3148,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -3149,16 +3159,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 510,
+          "line": 750,
           "note": null,
           "tests": [
             {
               "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-              "line": 517
+              "line": 757
             },
             {
               "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-              "line": 540
+              "line": 780
             }
           ]
         }
@@ -3231,7 +3241,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -3343,30 +3353,42 @@
     },
     {
       "id": "usc-42-403-a-2-D-family-maximum-eligibility-after-disability",
-      "title": "The family maximum's eligibility year does not follow an earlier disability",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "Recorded as a known limit rather than fixed in the same change, because the fix belongs with the disability maximum the engine also does not model (usc-42-403-a-6-ssdi-family-maximum): while the disability benefit is paid the disability maximum governs, and this eligibility year matters from the conversion at full retirement age on. Later bend points can raise or lower the maximum for the same PIA, depending on which band the PIA falls in, so the error runs both ways. A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; the engine uses the year he attains 62, 2032, which falls back to the latest table on file (2026), and gives 3,435.50. With only a current spouse on the record no figure moves: under the retirement and survivor maximum the room above the PIA holds a spouse's whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record.",
+      "title": "The family maximum's eligibility year follows an earlier disability",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "A worker born 1970-06-15 with a PIA of 2,000 and a disability that began in 2025 has a maximum of 3,528.20 on the 2025 bend points; until 2026-11-09 the engine used the year he attains 62, 2032, which falls back to the latest table on file (2026), and gave 3,435.50. With only a current spouse on the record no projected figure moves either way: under the retirement and survivor maximum the room above the PIA holds a spouse's whole original benefit in every year, apart from the dime rounding of the maximum. It would move with more auxiliaries on the record, which the plan cannot hold (usc-42-402-d-2-ssdi-child-auxiliary).",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-27",
-      "dueOn": "2027-09-27",
+      "verifiedOn": "2026-11-09",
+      "dueOn": "2027-11-09",
       "implementedBy": [
-        "packages/engine/src/socialSecurity/familyMaximum.ts"
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
           "functions": [
             {
-              "name": "familyMaximumEligibilityYearFromDobParts",
-              "line": 25
+              "name": "familyMaximumEligibilityYear",
+              "line": 48
+            },
+            {
+              "name": "workerFamilyMaximumMonthlyAt",
+              "line": 144
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 290
             }
           ]
         }
@@ -3377,16 +3399,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
-          "line": 209,
+          "line": 221,
           "note": "a worker disabled in 2025, after his disability benefit converts",
           "tests": [
             {
-              "title": "prices the maximum on the year he attains 62, not the year of his disability",
-              "line": 215
+              "title": "prices the maximum after the conversion on the year of his disability",
+              "line": 226
+            },
+            {
+              "title": "keeps the year of attaining 62 for a worker with no disability, or one that began after it",
+              "line": 235
             },
             {
               "title": "moves no single-spouse figure: the room above the PIA holds half the PIA on either year",
-              "line": 222
+              "line": 244
             }
           ]
         }
@@ -3430,7 +3456,7 @@
           "functions": [
             {
               "name": "familyMaximumMonthlyFromPia",
-              "line": 37
+              "line": 64
             }
           ]
         },
@@ -3450,12 +3476,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
-          "line": 25,
+          "line": 30,
           "note": null,
           "tests": [
             {
               "title": "applies each rate only to the PIA inside its own band",
-              "line": 29
+              "line": 34
             }
           ]
         }
@@ -3476,37 +3502,39 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix"
+        "kind": "needs-fact",
+        "missingInput": "the average indexed monthly earnings behind a disabled worker's benefit amount when that amount is entered directly rather than computed from an earnings history"
       },
-      "conventionRationale": "Section 403(a)(6)'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the exact retirement/survivor reading this record rejects). The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.",
+      "conventionRationale": "Section 403(a)(6)'s 85/100/150 percentages are the controlling disability-family formula; 20 CFR 404.403(d-1) states it the same way and rounds neither amount. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the retirement and survivor reading this record rejects). What stays approximated needs a fact: the AIME behind an entered PIA. Taking the ceiling can only overstate the maximum, by up to half the PIA when 85 percent of the AIME is below the PIA, but the sign is not one-sided in taxpayer-tax terms: a too-large Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used. An earnings-derived AIME is the ordinary age-62 computation, which a disability computation can change (usc-42-415-b-2-b-disability-freeze-aime-exclusion); the maximum is applied to the AIME and PIA that computation gives. An example on the earnings path: fourteen years of earnings equal to the national average wage index, for a worker who attains 62 and becomes disabled in 2026, give an AIME of 2,328 and a PIA of 1,490.80, so the maximum is 1,978.80 and a spouse at full retirement age with no benefit of her own is paid 488.00 a month, not 745.40.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-11-09",
+      "dueOn": "2027-11-09",
       "implementedBy": [
-        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/familyMaximum.ts"
+        "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/householdYear.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
-          "functions": [
-            {
-              "name": "annualSocialSecurity",
-              "line": 44
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/analysis/householdPaths.ts",
+          "functions": [
+            {
+              "name": "householdPathYear",
+              "line": 186
             }
           ]
         },
@@ -3514,28 +3542,68 @@
           "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
           "functions": [
             {
-              "name": "capAuxiliaryForFamilyMaximum",
-              "line": 76
+              "name": "disabilityFamilyMaximumAtStart",
+              "line": 109
             },
             {
-              "name": "familyMaximumMonthlyFromPia",
-              "line": 37
+              "name": "disabilityFamilyMaximumMonthly",
+              "line": 88
+            },
+            {
+              "name": "workerFamilyMaximumMonthlyAt",
+              "line": 144
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.ts",
+          "functions": [
+            {
+              "name": "socialSecurityYear",
+              "line": 290
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.social-security.test.ts"
+        "packages/engine/src/projection/simulate.social-security.test.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 300,
-          "note": null,
+          "line": 302,
+          "note": "an entered PIA, with no AIME",
           "tests": [
             {
-              "title": "uses the retirement/survivor maximum for an SSDI worker and spouse",
-              "line": 308
+              "title": "takes the 150 percent ceiling for an SSDI worker whose PIA is entered",
+              "line": 311
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 374,
+          "note": "from an earnings history, through his full retirement age",
+          "tests": [
+            {
+              "title": "holds the spouse to 85 percent of the AIME the earnings history gives, until his full retirement age",
+              "line": 404
+            },
+            {
+              "title": "takes the ceiling for the same PIA entered, with no AIME",
+              "line": 421
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
+          "line": 276,
+          "note": "the ceiling an entered PIA gets, the AIME behind it unknown",
+          "tests": [
+            {
+              "title": "gives each arm of the formula, and the ceiling only when the AIME is unknown",
+              "line": 282
             }
           ]
         }
@@ -3593,7 +3661,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -3754,7 +3822,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -3781,7 +3849,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -3792,12 +3860,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1118,
+          "line": 1358,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "charges the first month and then the next, each a deduction month",
-              "line": 1126
+              "line": 1366
             }
           ]
         }
@@ -3854,7 +3922,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -3866,23 +3934,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
-          "line": 65,
+          "line": 68,
           "note": "a path whose only wages fall in the year full retirement age is reached",
           "tests": [
             {
               "title": "tests a path whose only wages before full retirement age fall in the FRA year",
-              "line": 73
+              "line": 76
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
-          "line": 86,
+          "line": 89,
           "note": "a path in a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months",
           "tests": [
             {
               "title": "prices the 2026 path of a person born 1959-06-15 against the three months before April",
-              "line": 95
+              "line": 98
             }
           ]
         },
@@ -3975,7 +4043,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -3984,7 +4052,7 @@
           "functions": [
             {
               "name": "householdPathYear",
-              "line": 176
+              "line": 186
             }
           ]
         },
@@ -4006,7 +4074,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -4017,12 +4085,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 878,
+          "line": 1118,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 888
+              "line": 1128
             }
           ]
         }
@@ -4094,7 +4162,7 @@
           "functions": [
             {
               "name": "planWages",
-              "line": 429
+              "line": 445
             }
           ]
         },
@@ -4103,7 +4171,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 267
+              "line": 290
             }
           ]
         }
@@ -4177,7 +4245,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -4205,12 +4273,12 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/analysis/householdPaths.test.ts",
-          "line": 41,
+          "line": 44,
           "note": "carried past the latest published year at the plan's inflation, in the models",
           "tests": [
             {
               "title": "prices a path's 2027 against the exempt amounts grown at the plan's inflation",
-              "line": 49
+              "line": 52
             }
           ]
         },
@@ -4447,7 +4515,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -4467,12 +4535,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1284,
+          "line": 1524,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1292
+              "line": 1532
             }
           ]
         }
@@ -4739,7 +4807,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         }
@@ -4814,7 +4882,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },
@@ -4922,7 +4990,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 425
+              "line": 426
             }
           ]
         },

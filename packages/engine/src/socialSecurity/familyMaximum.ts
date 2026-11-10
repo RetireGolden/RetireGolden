@@ -1,5 +1,7 @@
 /**
- * Retirement/survivor family maximum (MFB), using SSA's PIA-based formula.
+ * The family maximum (MFB) on a worker record: SSA's PIA-based retirement and
+ * survivor formula, and, while the worker is entitled to disability insurance
+ * benefits, the disability maximum of 42 U.S.C. 403(a)(6).
  *
  * The worker's own benefit is never reduced by the family maximum; auxiliary
  * benefits payable on that worker's record share the room left after "an amount
@@ -15,15 +17,40 @@
 import type { ClaimAge } from './claimFactor.js'
 import { spouseDualEntitlementMonthly } from './dualEntitlement.js'
 import { effectiveBirthYear } from './nra.js'
+import { type PiaAsOf, type ResolvedStreamPia } from './piaFromEarnings.js'
+import { COLA_PCT_BY_YEAR } from './ssaWageData.js'
 import { familyMaximumBendPointsForEligibilityYearOrLatest } from './ssaWageData.js'
 
 function floorToDime(value: number): number {
   return Math.floor(value * 10 + 1e-9) / 10
 }
 
-/** Year of eligibility for the retirement/survivor family maximum. */
+/** The year a worker attains 62 (the effective birth year plus 62): his year of eligibility absent a disability. */
 export function familyMaximumEligibilityYearFromDobParts(year: number, month: number, day: number): number {
   return effectiveBirthYear(year, month, day) + 62
+}
+
+/**
+ * The year of eligibility the retirement and survivor maximum takes its bend
+ * points from. 20 CFR 404.403(a)(2) counts the year of death, of attaining 62
+ * or of the beginning of a current disability, "whichever is earlier", and
+ * 42 U.S.C. 403(a)(2)(D) does not count the year of attaining 62 when the
+ * worker was entitled to disability benefits in any of the 12 months before,
+ * counting instead the year of eligibility for that disability benefit. A
+ * disability benefit in the plan runs without a break from its first payable
+ * month to the full-retirement-age month, so for a worker with one the year
+ * of eligibility is the earlier of the year the disability began and the year
+ * he attains 62: before 62 the disability year counts either way, and a
+ * disability that begins after the year of 62 leaves that year in place.
+ * `disabilityOnsetYear` is null for a worker the plan gives no disability
+ * benefit (no disability month payable before full retirement age).
+ */
+export function familyMaximumEligibilityYear(
+  dob: { year: number; month: number; day: number },
+  disabilityOnsetYear: number | null,
+): number {
+  const attainsSixtyTwo = familyMaximumEligibilityYearFromDobParts(dob.year, dob.month, dob.day)
+  return disabilityOnsetYear === null ? attainsSixtyTwo : Math.min(disabilityOnsetYear, attainsSixtyTwo)
 }
 
 /**
@@ -44,6 +71,91 @@ export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear:
   return floorToDime(first * 1.5 + second * 2.72 + third * 1.34 + above * 1.75)
 }
 
+/**
+ * The family maximum on the record of a worker entitled to disability
+ * insurance benefits, 42 U.S.C. 403(a)(6) and 20 CFR 404.403(d-1): the smaller
+ * of 85 percent of the AIME (or 100 percent of the PIA, if larger) and 150
+ * percent of the PIA, in the dollars of the year of eligibility the AIME and
+ * PIA are computed for. Neither the statute nor the regulation rounds it; a
+ * later cost-of-living increase does (#disabilityFamilyMaximumAtStart).
+ *
+ * `aimeMonthly` null is a worker whose PIA the plan holds without the AIME it
+ * was computed from (an entered PIA). The engine then takes the 150 percent
+ * ceiling, the largest maximum the statute allows for that PIA, which leaves a
+ * single spouse room for half the PIA
+ * (usc-42-403-a-6-ssdi-family-maximum, needs-fact).
+ */
+export function disabilityFamilyMaximumMonthly(piaMonthly: number, aimeMonthly: number | null): number {
+  if (piaMonthly <= 0) return 0
+  const ceiling = 1.5 * piaMonthly
+  if (aimeMonthly === null) return ceiling
+  return Math.min(Math.max(0.85 * aimeMonthly, piaMonthly), ceiling)
+}
+
+/**
+ * The disability maximum for a stream whose PIA the earnings history gives, in
+ * the dollars of the projection's first year: #disabilityFamilyMaximumMonthly on
+ * the computation's own AIME and eligibility-year PIA, raised by the same
+ * cost-of-living increases the PIA is raised by, each decreased to the next
+ * lower multiple of $0.10 (42 U.S.C. 415(i)(2)(A)(ii) increases "the amount
+ * of total monthly benefits based on any primary insurance amount which is
+ * permitted under section 203" with the PIA; 403(a)(6) is "subject to"
+ * it). A year with no increase leaves the amount as it was: the rounding
+ * applies to an increased amount, so a maximum that 403(a)(6) left at a
+ * multiple of five cents keeps it. Null for an entered PIA, which comes with
+ * no AIME. From the first projected year the ledger's COLA factor carries it,
+ * as it carries the PIA, with no further dime rounding.
+ */
+export function disabilityFamilyMaximumAtStart(resolved: ResolvedStreamPia, asOf: PiaAsOf): number | null {
+  if (resolved.status !== 'fromEarnings') return null
+  let maximum = disabilityFamilyMaximumMonthly(resolved.detail.piaMonthly, resolved.detail.aime)
+  for (let year = resolved.detail.eligibilityYear; year <= asOf.startYear - 1; year++) {
+    const pct = COLA_PCT_BY_YEAR[year] ?? asOf.colaAssumptionPct
+    if (pct === 0) continue
+    // Decreased to the next lower $0.10, as piaFromEarnings.ts rounds the PIA.
+    maximum = Math.floor(maximum * (1 + pct / 100) * 10 + 1e-9) / 10
+  }
+  return maximum
+}
+
+/** A worker's disability benefit, as the family maximum on his record reads it. */
+export interface WorkerDisabilityForMaximum {
+  /** The calendar year the disability began (the birth year plus `onsetAge`). */
+  readonly onsetYear: number
+  /** The first month the disability benefit is payable, as `year * 12 + (month - 1)`. */
+  readonly firstPayableMonthIndex: number
+  /** The full-retirement-age month, from which the benefit is the converted old-age benefit. */
+  readonly fraMonthIndex: number
+  /** #disabilityFamilyMaximumMonthly for the worker, in the PIA's dollars. */
+  readonly disabilityMaximumMonthly: number
+}
+
+/**
+ * The family maximum on a worker record in a month (`year * 12 + (month - 1)`).
+ * While the worker is entitled to disability benefits, from the first payable
+ * month to the month before full retirement age (42 U.S.C. 423(a)(1)), it is
+ * the disability maximum (403(a)(6)). Otherwise it is the retirement and
+ * survivor maximum on the bend points of #familyMaximumEligibilityYear, which,
+ * after the disability benefit converts at full retirement age, is the year of
+ * eligibility for the disability benefit: 20 CFR 404.403(g)(3) computes the
+ * maximum after that second entitlement "without regard to" the disability
+ * maximum, and 403(a)(2)(D) supplies the year.
+ */
+export function workerFamilyMaximumMonthlyAt(
+  worker: {
+    readonly piaMonthly: number
+    readonly dob: { year: number; month: number; day: number }
+    readonly disability: WorkerDisabilityForMaximum | null
+  },
+  monthIndex: number,
+): number {
+  const disability = worker.disability
+  if (disability !== null && monthIndex >= disability.firstPayableMonthIndex && monthIndex < disability.fraMonthIndex) {
+    return disability.disabilityMaximumMonthly
+  }
+  return familyMaximumMonthlyFromPia(worker.piaMonthly, familyMaximumEligibilityYear(worker.dob, disability?.onsetYear ?? null))
+}
+
 export interface AuxiliaryFamilyMaximumInput {
   /** Worker PIA on whose record the auxiliary is paid, today's dollars. */
   workerPiaMonthly: number
@@ -53,11 +165,11 @@ export interface AuxiliaryFamilyMaximumInput {
   auxiliaryMonthly: number
   /**
    * The family maximum to apply, for a caller that has one other than the
-   * retirement and survivor maximum (the disability maximum of 20 CFR
-   * 404.403(d-1), for example). Omitted, it is familyMaximumMonthlyFromPia at
-   * the worker's eligibility year. The ledger passes none, so a worker on SSDI
-   * gets the retirement and survivor maximum too
-   * (usc-42-403-a-6-ssdi-family-maximum).
+   * retirement and survivor maximum at the year the worker attains 62: the
+   * ledger passes #workerFamilyMaximumMonthlyAt, which is the disability
+   * maximum of 20 CFR 404.403(d-1) while the worker is entitled to disability
+   * benefits. Omitted, it is familyMaximumMonthlyFromPia at the year the
+   * worker attains 62.
    */
   familyMaximumMonthly?: number
 }
@@ -70,8 +182,8 @@ export interface AuxiliaryFamilyMaximumInput {
  * is at least 150 percent of the PIA before it is floored to the dime, the
  * room is at least half the PIA less that rounding (under 10 cents a month),
  * so a single spouse's original benefit fits in it within those cents. The
- * disability maximum can be as low as the PIA itself and leave no room at all;
- * the engine does not model it (usc-42-403-a-6-ssdi-family-maximum).
+ * disability maximum can be as low as the PIA itself and leave no room at all
+ * (#disabilityFamilyMaximumMonthly).
  */
 export function capAuxiliaryForFamilyMaximum(input: AuxiliaryFamilyMaximumInput): number {
   if (input.auxiliaryMonthly <= 0 || input.workerPiaMonthly <= 0) return 0
