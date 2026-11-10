@@ -780,7 +780,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         },
@@ -1363,7 +1363,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -1565,7 +1565,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -1805,7 +1805,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         },
@@ -1955,7 +1955,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The spouse benefit follows the worker's gate stream (the last resolved occurrence, whose PIA and claim age it already takes): its disability facts start it, and its suspension suspends it. The claim-milestone insight's reconstruction of the prior year follows the start month and the maximum, and dates a spouse benefit already paying at the start from the worker's first disability month; the plan's wages are the start year's, so when the worker had wages in a prior year inside his disability window it cannot say whether the suspension applied and treats the spouse benefit's amount that year as unknown. Until 2026-11-09 the engine gated the spouse on the worker's 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker's claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.",
+      "conventionRationale": "The SGA test is annual (cfr-20-404-1592-trial-work-period and cfr-20-404-1592a-extended-period-of-eligibility record its limits), so a suspended year suspends the spouse benefit for the whole year as well. The spouse benefit follows the worker's gate stream (the last resolved occurrence, whose PIA and claim age it already takes): its disability facts start it, and its suspension suspends it. The claim-milestone insight's reconstruction of the prior year follows the start month and the maximum, and counts a spouse benefit as already paying at the start only when the year before paid her a spouse benefit above her own under the maximum then in force (a disability maximum equal to his PIA leaves her nothing until he converts); the plan's wages are the start year's, so when the worker had wages in a prior year inside his disability window it cannot say whether the suspension applied and treats the spouse benefit's amount that year as unknown. Until 2026-11-09 the engine gated the spouse on the worker's 62 to 70 claim age and zeroed only the worker on an SGA suspension: a 58-year-old worker on disability benefits with a 2,000 dollar PIA and a 67-year-old spouse with no benefit of her own received 24,000 dollars a year until the worker's claim age instead of 36,000, and in a suspended year the spouse was still paid 12,000.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1974,7 +1974,7 @@
           "functions": [
             {
               "name": "auxiliaryAlreadyPayingAtHorizonStart",
-              "line": 676
+              "line": 682
             },
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
@@ -1996,7 +1996,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -2944,7 +2944,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         },
@@ -3388,7 +3388,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -3560,7 +3560,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -3661,7 +3661,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -3849,7 +3849,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -3922,7 +3922,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -4074,7 +4074,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }
@@ -4171,7 +4171,7 @@
           "functions": [
             {
               "name": "socialSecurityYear",
-              "line": 284
+              "line": 290
             }
           ]
         }

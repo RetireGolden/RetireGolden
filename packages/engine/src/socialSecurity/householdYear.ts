@@ -241,6 +241,12 @@ interface Arrangement {
   /** The stream the replacing benefit is paid through; null while the own streams pay. */
   payingStreamId: string | null
   payingSource: SocialSecurityBenefitSource | null
+  /**
+   * The spouse benefit is suspended this month with the worker's disability
+   * benefit (42 U.S.C. 425(a)): published as due before withholding, paid
+   * only as the own part.
+   */
+  auxSuspended: boolean
 }
 
 interface MonthComposition {
@@ -571,7 +577,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
         const own = ownDueByPerson.get(personId) ?? 0
         arrangement = {
           total: own, ownPart: own, auxKind: null, auxSourceKey: null, auxWorkerId: null,
-          auxPeriodStart: 0, auxPeriodEnd: 0, payingStreamId: null, payingSource: null,
+          auxPeriodStart: 0, auxPeriodEnd: 0, payingStreamId: null, payingSource: null, auxSuspended: false,
         }
         arrangements.set(personId, arrangement)
       }
@@ -651,9 +657,12 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     // disability maximum while he is entitled to disability benefits. While
     // his disability benefit on the gate stream is suspended, so is the
     // spouse's benefit on his record (42 U.S.C. 425(a)), and only her own
-    // benefit is paid. A gate stream without disability facts keys the spouse
-    // benefit to his retirement claim, which no SGA suspension reaches.
-    if (couple !== null && month >= couple.sharedFrom && !(couple.higherDisability !== null && sgaSuspended.has(couple.higher.id))) {
+    // benefit is paid; the spouse benefit is still composed and published as
+    // due before withholding, as his suspended benefit is. A gate stream
+    // without disability facts keys the spouse benefit to his retirement
+    // claim, which no SGA suspension reaches.
+    const spouseSuspended = couple !== null && couple.higherDisability !== null && sgaSuspended.has(couple.higher.id)
+    if (couple !== null && month >= couple.sharedFrom && !(spouseSuspended && arrangementOf(couple.lower.id).payingStreamId !== null)) {
       const { higher, lower, higherGate, lowerGate } = couple
       const spouseAgeMonths = creditedAgeMonths(couple.entitlementMonths, spouseCredits.get(couple.sourceKey), monthIndex, lower.fraMonthIndex, lower.fraMonths)
       const total = currentSpouseMonthlyUnderFamilyMaximum({
@@ -676,6 +685,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
         arrangement.auxPeriodEnd = lower.fraMonthIndex
         arrangement.payingStreamId = lowerGate.streamId
         arrangement.payingSource = 'spousal'
+        arrangement.auxSuspended = spouseSuspended
       }
     }
 
@@ -781,7 +791,7 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
           const own = scale(arrangement.ownPart)
           dues.set(person.id, {
             own,
-            auxiliary: Math.max(0, scale(arrangement.total) - own),
+            auxiliary: arrangement.auxSuspended ? 0 : Math.max(0, scale(arrangement.total) - own),
             auxiliaryWorkerId: arrangement.auxWorkerId,
             ownEntitled: monthIndex >= ownStart,
             auxiliaryEntitled: arrangement.auxKind !== null && monthIndex >= arrangement.auxPeriodStart,
@@ -831,6 +841,14 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
       const arrangement = monthComposition(month).arrangements.get(personId)
       if (arrangement === undefined || arrangement.payingStreamId === null) return 0
       return streamId === null || arrangement.payingStreamId === streamId ? arrangement.total : 0
+    })
+
+  // The part of a person's year suspended with a disabled worker's benefit
+  // (425(a)): the spouse benefit above her own part.
+  const suspendedAnnual = (personId: string): number =>
+    runsProduct((month) => {
+      const arrangement = monthComposition(month).arrangements.get(personId)
+      return arrangement?.auxSuspended === true ? arrangement.total - arrangement.ownPart : 0
     })
 
   // Each person's year before the test: the own sites in plan order, then any
@@ -891,9 +909,10 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
       postByPerson.set(personId, factsOf(personId).alive ? pre : 0)
       continue
     }
+    const suspended = suspendedAnnual(personId)
     const ssdi = ssdiByPerson.get(personId)
     if (ssdi) {
-      let paid = pre
+      let paid = pre - suspended
       if (sgaSuspended.has(personId)) {
         paid = 0
         warningValues.push(SGA_SUSPENDED_WARNING)
@@ -908,13 +927,13 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
     if (withheld > 0) {
       const months = test!.paidByMonth.get(personId)!
       const paid = months.reduce((sum, value) => sum + value, 0)
-      const post = paid <= 0 ? 0 : Math.max(0, pre - withheld)
+      const post = paid <= 0 ? 0 : Math.max(0, pre - suspended - withheld)
       postByPerson.set(personId, post)
-      withheldByPerson.set(personId, pre - post)
-      ssEarningsTestWithheld += pre - post
+      withheldByPerson.set(personId, pre - suspended - post)
+      ssEarningsTestWithheld += pre - suspended - post
       anyWithheld = true
     } else {
-      postByPerson.set(personId, pre)
+      postByPerson.set(personId, pre - suspended)
     }
   }
   if (anyWithheld) warningValues.push(EARNINGS_TEST_WITHHELD_WARNING)

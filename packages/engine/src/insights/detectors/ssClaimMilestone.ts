@@ -194,6 +194,8 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   coPersonId: string
   coPersonAgePrior: number
   asOf: PiaAsOf
+  /** 'auxiliary': only the spouse benefit above the claimant's own benefit, month by month. */
+  measure?: 'total' | 'auxiliary'
 }): number | null {
   const {
     plan,
@@ -203,6 +205,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     coPersonAgePrior,
     asOf,
   } = args
+  const measure = args.measure ?? 'total'
   const claimant = plan.household.people.find((row) => row.id === claimantPersonId)
   const coPerson = plan.household.people.find((row) => row.id === coPersonId)
   if (claimant === undefined || coPerson === undefined) return 0
@@ -283,7 +286,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
       disabilityMaximumMonthly: disabilityFamilyMaximumAtStart(resolveStreamPiaMonthly(coStream, coPerson, asOf), asOf)
         ?? disabilityFamilyMaximumMonthly(higher.pia, null),
     }
-  const spousalTotalMonthlyAt = (monthIndex: number): number => currentSpouseMonthlyUnderFamilyMaximum({
+  const composedMonthlyAt = (monthIndex: number): number => currentSpouseMonthlyUnderFamilyMaximum({
     workerPiaMonthly: higher.pia,
     workerDob: higherDob,
     familyMaximumMonthly: workerFamilyMaximumMonthlyAt({ piaMonthly: higher.pia, dob: higherDob, disability: coDisability }, monthIndex),
@@ -291,6 +294,9 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     ownActualMonthly: lowerOwnMonthly,
     spouseFactor,
   })
+  const spousalTotalMonthlyAt = (monthIndex: number): number => measure === 'total'
+    ? composedMonthlyAt(monthIndex)
+    : Math.max(0, composedMonthlyAt(monthIndex) - lowerOwnMonthly)
   if (coDisability === null) return spousalTotalMonthlyAt(coPriorYear * 12) * spousalMonths
   let annual = 0
   for (let month = 12 - spousalMonths; month < 12; month++) annual += spousalTotalMonthlyAt(coPriorYear * 12 + month)
@@ -839,10 +845,26 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   const coIncome = lastSsIncomeForPerson(plan, coPerson.id, gateStreamId)
   // A co-spouse on disability benefits enables the spouse benefit from his
   // first disability month, whatever his claim age (42 U.S.C. 402(b)(1),
-  // (c)(1)), as the ledger pays it: pre-horizon when that month is before the
-  // start year.
+  // (c)(1)), as the ledger pays it. His entitlement alone does not make it
+  // already paying: the disability maximum (403(a)(6)) can equal his PIA and
+  // leave her nothing until he converts at full retirement age. It is
+  // pre-horizon when the year before the start paid her a spouse benefit
+  // above her own; a year his wages may have suspended (425(a)) cannot be
+  // ranked and reads as already paying.
   const coSchedule = ssdiScheduleFor(coIncome, coPerson)
-  if (coSchedule !== null) return coSchedule.firstPayableMonthIndex < firstProjectionYear.year * 12
+  if (coSchedule !== null) {
+    if (coSchedule.firstPayableMonthIndex >= firstProjectionYear.year * 12) return false
+    const priorAuxiliary = resolveCurrentSpouseSpousalAnnualPriorYear({
+      plan,
+      claimantPersonId: personId,
+      claimantAgePrior: projectedAge - 1,
+      coPersonId: coPerson.id,
+      coPersonAgePrior: coState.ageAttained - 1,
+      asOf: piaAsOf(plan, firstProjectionYear.year),
+      measure: 'auxiliary',
+    })
+    return priorAuxiliary === null || isVisiblePositiveAmount(priorAuxiliary)
+  }
   // Co-spouse claim-in-force at start with age past their claim age = pre-horizon
   // enabling event. If co-spouse is in their first claim year (age == claimAge),
   // the enabling claim occurs in year one — not already-paying.

@@ -27,8 +27,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   The spouse's start, maximum and suspension follow the worker's gate stream occurrence, also when a
   stream id repeats. A zero cost-of-living year no longer rounds the maximum down (1,836.85 stays
   1,836.85). The claim-milestone insight's prior-year spouse mirror follows the start month and the
-  maximum, dates an already-paying spouse benefit from the worker's first disability month, and treats
-  a prior year with wages inside the disability window as unknown.
+  maximum, counts a spouse benefit as already paying only when the prior year paid her one above her own
+  benefit, and treats a prior year with wages inside the disability window as unknown. A spouse benefit
+  suspended with the worker's is published as due before withholding (12,000 due, 0 paid), as his is.
   Approximation kinds: fix 64, needs-fact 31, convention 25.
 
 - **Fixed: a qualifying surviving spouse files under each state's own row, not the federal joint

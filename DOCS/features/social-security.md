@@ -381,8 +381,10 @@ carries that maximum, as it carries the PIA, without the dime rounding of each i
 converts, the retirement and survivor maximum uses the bend points of the disability's year of eligibility
 (`usc-42-403-a-2-D-family-maximum-eligibility-after-disability`). The spouse benefit follows the worker's
 gate stream: its disability facts start it and its suspension suspends it. The claim-milestone insight's
-prior-year spouse reconstruction mirrors the start month and the maximum, and dates a spouse benefit
-already paying at the start from the worker's first disability month; a prior year inside his disability
+prior-year spouse reconstruction mirrors the start month and the maximum, and counts a spouse benefit as
+already paying at the start only when the year before paid her a spouse benefit above her own (a disability
+maximum equal to his PIA pays her nothing until he converts); a suspended spouse benefit is still published
+as due before withholding, as his is. A prior year inside his disability
 window in which the plan gives him wages is treated as unknown, since the plan's wages are the start
 year's and cannot say whether SGA suspended it.
 Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-program-parameters-2026.md).

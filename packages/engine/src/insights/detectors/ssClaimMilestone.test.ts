@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import type { Plan } from '../../model/plan.js'
+import { simulatePlan } from '../../projection/simulate.js'
+import { basePlan, cash, noTax, testIds, validate } from '../../projection/simulate.test-support.js'
+import { computePiaFromEarnings, isPiaFromEarningsError } from '../../socialSecurity/piaFromEarnings.js'
+import { AWI_BY_YEAR } from '../../socialSecurity/ssaWageData.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
 import { ssClaimMilestone } from './ssClaimMilestone.js'
@@ -3728,5 +3733,127 @@ describe('Social Security claim milestone detector', () => {
 
       expect(ssClaimMilestone.screen(ctx)).toBeNull()
     })
+  })
+})
+
+// The detector on the ledger's own output for a worker on disability benefits
+// (simulatePlan, zero inflation, no haircut).
+function simulatedContext(plan: Plan, startYear: number): DetectorContext {
+  const valid = validate(plan)
+  const result = simulatePlan(valid, { startYear, taxCalculator: noTax })
+  return { plan: valid, params: { year: startYear }, projection: { startYear, result } } as unknown as DetectorContext
+}
+
+function spouseActivity(ctx: DetectorContext, year: number): { annualAmount: number; preWithholdingAnnual: number } {
+  const rows = (ctx.projection.result.years.find((row) => row.year === year)?.socialSecurityStreams ?? []).filter((row) => row.personId === 'p2')
+  return {
+    annualAmount: rows.reduce((sum, row) => sum + row.annualAmount, 0),
+    preWithholdingAnnual: rows.reduce((sum, row) => sum + row.preWithholdingAnnual, 0),
+  }
+}
+
+describe('a spouse on a disabled worker\'s record under the disability maximum', () => {
+  // A worker born 1964-06-15, disabled in January 2026 (first paid July 2026),
+  // claim age 70, with earnings equal to the national average wage index in
+  // each of `years` years from 2004; each indexes to the 2024 index, 69,846.57
+  // (ssa.gov/oact/cola/AWI.html), over 35 computation years (420 months).
+  // His spouse, born 1958-06-15, has no benefit of her own and claimed at 67.
+  //   Three years: AIME = floor(3 x 69,846.57 / 420) = floor(498.90) = 498; PIA
+  //   on 2026 bend points (1,286 / 7,749) = 0.90 x 498 = 448.20. The
+  //   disability maximum, min(max(0.85 x 498 = 423.30, 448.20), 1.5 x 448.20
+  //   = 672.30) = 448.20 (42 U.S.C. 403(a)(6)), equals the PIA and leaves her
+  //   nothing. From his full retirement age, June 2031, the retirement and
+  //   survivor maximum on 2026 family bend points (1,643 / 2,371 / 3,093) is
+  //   1.5 x 448.20 = 672.30, room 224.10, half the PIA: June to December 2031
+  //   pay her 7 x 224.10 = 1,568.70, her first spouse payment.
+  //   Fourteen years (the earnings worksheet of
+  //   simulate.social-security.test.ts): maximum 1,978.80, room 488.00, paid
+  //   her from July 2026, so by 2031 her spouse benefit is already paying.
+  function household(years: number): Plan {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      { id: 'p1', name: 'Sam', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      { id: 'p2', name: 'Pat', dob: '1958-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+    ]
+    const earnings = Array.from({ length: years }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
+    plan.incomes = [
+      {
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: null, earnings,
+        disability: { onsetAge: 62, onsetMonth: 1 }, claimAge: { years: 70, months: 0 },
+      },
+      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    return plan
+  }
+
+  it('rests on an AIME of 498 and a PIA of 448.20', () => {
+    const earnings = Array.from({ length: 3 }, (_, index) => ({ year: 2004 + index, amount: AWI_BY_YEAR[2004 + index]! }))
+    const computed = computePiaFromEarnings({ dobYear: 1964, dobMonth: 6, dobDay: 15, earnings, lastEarningsYear: 2006, projection: null })
+    if (isPiaFromEarningsError(computed)) throw new Error(computed.message)
+    expect(computed.aime).toBe(498)
+    expect(computed.piaMonthly).toBeCloseTo(448.2, 9)
+  })
+
+  it('announces her first spouse payment in the conversion year when the projection starts then', () => {
+    const ctx = simulatedContext(household(3), 2031)
+    expect(spouseActivity(ctx, 2031).annualAmount).toBeCloseTo(1_568.7, 6)
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$1,568.70', year: 2031 },
+      ]),
+    })
+  })
+
+  it('announces the same payment a year ahead from a 2030 start', () => {
+    const ctx = simulatedContext(household(3), 2030)
+    expect(spouseActivity(ctx, 2030).annualAmount).toBe(0)
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$1,568.70', year: 2031 },
+      ]),
+    })
+  })
+
+  it('stays silent when the maximum left her room before the start', () => {
+    // 2030 under the 1,978.80 maximum: 12 x 488.00 = 5,856.00 already paid.
+    const ctx = simulatedContext(household(14), 2031)
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+    expect(spouseActivity(simulatedContext(household(14), 2030), 2030).annualAmount).toBeCloseTo(5_856, 6)
+  })
+})
+
+describe('a spouse benefit suspended with the worker\'s disability benefit', () => {
+  // Worker born 1964-06-15, entered PIA 2,000, disabled at 58 (2022), wages of
+  // 20,281 until 63. Spouse born 1959-06-15, no own benefit, claims at 67 in
+  // 2026, past her full retirement age of 66 and 10 months: half the PIA,
+  // 1,000 a month, within the 3,000 ceiling. 2026 wages exceed 12 x the 2026
+  // SGA of 1,690 = 20,280, so 425(a) suspends her 2026 benefit with his: due
+  // 12,000 before withholding, paid 0. From 2027 (no wages) she is paid 12,000.
+  // Her claim year is 2026; 2027 only resumes payment.
+  it('publishes her suspended year as due, and does not announce 2027 as her first claim year', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      { id: 'p1', name: 'Sam', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      { id: 'p2', name: 'Pat', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+    ]
+    plan.incomes = [
+      { type: 'wages', id: testIds(), personId: 'p1', annualGross: 20_281, endAge: 63, realGrowthPct: 0 },
+      {
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+      },
+      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const ctx = simulatedContext(plan, 2026)
+    expect(spouseActivity(ctx, 2026)).toEqual({ annualAmount: 0, preWithholdingAnnual: 12_000 })
+    expect(spouseActivity(ctx, 2027).annualAmount).toBeCloseTo(12_000, 6)
+    const card = ssClaimMilestone.screen(ctx)
+    const years = (card?.evidence ?? []).map((row) => row.year)
+    expect(years).not.toContain(2027)
   })
 })
