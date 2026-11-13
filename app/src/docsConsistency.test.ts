@@ -107,7 +107,8 @@ describe('docs consistency', () => {
   it('documentation states the repository Node.js floor and CI version', () => {
     expect(ciNodeVersion).toBeDefined()
     // The workspace floor may name a minor/patch inside the CI major: a dependency can
-    // require one (jsdom 30 declares `^24.15.0`). The major still has to be the one CI
+    // require one (jsdom 31's Node 24 range is `^24.15.0`; see its engines entry
+    // in pnpm-lock.yaml). The major still has to be the one CI
     // installs, because `node-version: '24'` resolves to the latest 24.x and nothing older.
     expect(nodeFloor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
     expect(nodeFloor.slice('>='.length).split('.')[0]).toBe(ciNodeVersion)

@@ -16,20 +16,18 @@ trustPolicy: no-downgrade
 
 # no-downgrade compares trust evidence by publish date, not semver, so a
 # version published after a provenance-bearing sibling reads as a downgrade
-# even when nothing was taken over. Two lockfile pins are false positives of
-# that kind and fail every non-frozen resolve (ERR_PNPM_TRUST_DOWNGRADE):
+# even when nothing was taken over. One transitive pin is a false positive of
+# that kind and fails a fresh resolve (ERR_PNPM_TRUST_DOWNGRADE):
 # - @trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1: workbox-build
 #   (via vite-plugin-pwa) pins ^3.0.0-pre1; the 3.x prereleases were
 #   published without the provenance that 2.x had and 4.x restored, and
 #   nothing in workbox's range carries provenance. Drop once workbox
 #   depends on a provenance-bearing release.
-# - semver@6.3.1: the 6.x backport (2023-07) postdates provenance-bearing
-#   7.5.x; Babel tooling still pins ^6.3.1.
-# Exact versions only — both are integrity-pinned in pnpm-lock.yaml, and
-# any other version of either package stays gated.
+# Exact versions only — the exception is integrity-pinned in pnpm-lock.yaml,
+# and every other version stays gated. The former semver@6.3.1 exception is
+# no longer needed: a fresh resolve selects 6.3.2 without an exemption.
 trustPolicyExclude:
   - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
-  - 'semver@6.3.1'
 
 # Root package.json `pnpm.overrides` holds five entries. `sharp`,
 # `ejs>jake`, and the scoped `glob` and `minimatch` entries raise a transitive
@@ -124,9 +122,9 @@ trustPolicyExclude:
 #   Reason: GHSA-g3hv-75wg-m249 (moderate; denial of service through
 #   globparts amplification) has no patched 10.x; the first fix is 11.0.1
 #   (2026-10-27). minimatch 11 keeps the CommonJS and ESM exports. The
-#   resolved 11.0.3 declares `node: 18 || 20 || >=22` (11.0.4 drops 18),
+#   resolved 11.0.5 declares `node: 20 || >=22`,
 #   inside the root `engines.node` floor; lint and the build pass on it
-#   (2026-11-05).
+#   (2026-11-13).
 #   Drop when eslint and the other dependents above declare a minimatch
 #   range whose floor is 11.0.1 or later.
 #

@@ -22,8 +22,8 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, existsSync, realpathSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const appDir = join(__dirname, '..')
@@ -207,6 +207,11 @@ function main() {
   }
   const listed = JSON.parse(json)
   const tree = Array.isArray(listed) ? listed[0] : listed
+  generateNotices(tree, appDir)
+}
+
+/** Generate notices for the listed production tree, using its installed copies. */
+export function generateNotices(tree, appDir) {
   const prodNames = flatten(tree.dependencies)
 
   // Walk the actual install tree to find each package's directory. pnpm
@@ -265,11 +270,15 @@ function main() {
   const copyleftHits = []
   const missing = []
   const blocks = []
+  const resolvedPackages = included.flatMap(([name, versions]) =>
+    [...versions].sort().map((version) => ({ name, version })))
 
-  for (const [name, versions] of included) {
-    const copies = installed.get(name) ?? []
+  for (const { name, version } of resolvedPackages) {
+    // A reused virtual store can contain older versions alongside the resolved
+    // production copy. Their metadata and license text do not describe this tree.
+    const copies = (installed.get(name) ?? []).filter((copy) => copy.version === version)
     if (copies.length === 0) {
-      missing.push(`${name}@${[...versions].join('/')} (not found in node_modules)`)
+      missing.push(`${name}@${version} (not found in node_modules)`)
       continue
     }
     // Prefer a copy that has a LICENSE file; fall back to the first.
@@ -280,14 +289,14 @@ function main() {
     const homepage = pkg.homepage ?? (typeof pkg.repository === 'object' ? pkg.repository.url : pkg.repository) ?? ''
     const text = readLicenseText(pkgDir, treeRoots)
 
-    if (detectCopyleft(licenseField)) copyleftHits.push(`${name}@${[...versions].join('/')}`)
+    if (detectCopyleft(licenseField)) copyleftHits.push(`${name}@${version}`)
 
     const lines = []
-    lines.push(`${name} (${[...versions].join(', ')})`)
+    lines.push(`${name} (${version})`)
     if (licenseField) lines.push(`License: ${licenseField}`)
     if (author) lines.push(`Author: ${author}`)
     if (homepage) lines.push(`Homepage: ${homepage}`)
-    if (!text) missing.push(`${name}@${[...versions].join('/')}`)
+    if (!text) missing.push(`${name}@${version}`)
     blocks.push({ heading: lines.join('\n'), text: text ?? '(No LICENSE file found in the package; see the package metadata above.)' })
   }
 
@@ -313,7 +322,7 @@ function main() {
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
   out.push(`Source:      pnpm list --prod --depth Infinity (workspace root)`)
-  out.push(`Attributed:  ${included.length} packages, sha256 ${attributedDigest}`)
+  out.push(`Attributed:  ${resolvedPackages.length} packages, sha256 ${attributedDigest}`)
   out.push('')
   out.push('================================================================================')
   out.push('')
@@ -359,10 +368,14 @@ function main() {
     console.error('ERROR: no production packages were attributed — pnpm list or node_modules walk failed.')
     process.exitCode = 1
   }
+  if (missing.length > 0) {
+    console.error(`ERROR: incomplete third-party attribution: ${missing.join(', ')}`)
+    process.exitCode = 1
+  }
   if (copyleftHits.length > 0) {
     console.error(`WARNING: copyleft licenses detected: ${copyleftHits.join(', ')}`)
     process.exitCode = 1
   }
 }
 
-await main()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main()

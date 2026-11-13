@@ -11,7 +11,7 @@ import type { ReportBranding } from './report/reportHtml'
 import { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider'
 import { routeTitleOf } from './routeTitles'
 import { usePlannerWorksheetNavigation } from './planner/usePlannerWorksheetNavigation'
-import { SocialLinks } from './SocialLinks.tsx'
+import { SocialLinks } from './FooterSocialLinks.tsx'
 import './planner/planner.css'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>

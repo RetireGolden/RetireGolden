@@ -50,7 +50,7 @@ Running both on each authorized same-repository PR gives coverage from both dire
 
 - **Triggers** on `push` and `pull_request` to `main`.
 - Runs the Semgrep CLI on a `setup-python` runner. The workflow installs the exact
-  `semgrep==1.183.0` pin directly rather than executing dependency input from the checked-out tree.
+  `semgrep==1.184.0` pin directly rather than executing dependency input from the checked-out tree.
   `.github/requirements.txt` is only the Dependabot update marker. Its automated PR is expected to
   wait for the inline workflow pin and this guide to be aligned on the same branch; a contract test
   requires all three values to match.
