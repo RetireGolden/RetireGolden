@@ -209,7 +209,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-array/
 ----------
-Copyright 2010-2023 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -230,7 +230,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-color/
 ----------
-Copyright 2010-2022 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -251,7 +251,7 @@ License: BSD-3-Clause
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-ease/
 ----------
-Copyright 2010-2021 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 Copyright 2001 Robert Penner
 All rights reserved.
 
@@ -308,7 +308,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-interpolate/
 ----------
-Copyright 2010-2021 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -329,7 +329,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-path/
 ----------
-Copyright 2015-2022 Mike Bostock
+Copyright 2015-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -350,7 +350,7 @@ License: ISC
 Author: Mike Bostock (https://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-scale/
 ----------
-Copyright 2010-2021 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -371,7 +371,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-shape/
 ----------
-Copyright 2010-2022 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -392,7 +392,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-time/
 ----------
-Copyright 2010-2022 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -413,7 +413,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-time-format/
 ----------
-Copyright 2010-2021 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -434,7 +434,7 @@ License: ISC
 Author: Mike Bostock (http://bost.ocks.org/mike)
 Homepage: https://d3js.org/d3-timer/
 ----------
-Copyright 2010-2021 Mike Bostock
+Copyright 2010-2026 Mike Bostock
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
@@ -948,7 +948,7 @@ SOFTWARE.
 
 use-sync-external-store (1.7.0)
 License: MIT
-Homepage: https://github.com/facebook/react.git
+Homepage: https://github.com/react/react.git
 ----------
 MIT License
 

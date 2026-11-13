@@ -22,8 +22,8 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, existsSync, realpathSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const appDir = join(__dirname, '..')
@@ -207,6 +207,11 @@ function main() {
   }
   const listed = JSON.parse(json)
   const tree = Array.isArray(listed) ? listed[0] : listed
+  generateNotices(tree, appDir)
+}
+
+/** Generate notices for the listed production tree, using its installed copies. */
+export function generateNotices(tree, appDir) {
   const prodNames = flatten(tree.dependencies)
 
   // Walk the actual install tree to find each package's directory. pnpm
@@ -267,7 +272,9 @@ function main() {
   const blocks = []
 
   for (const [name, versions] of included) {
-    const copies = installed.get(name) ?? []
+    // A reused virtual store can contain older versions alongside the resolved
+    // production copy. Their metadata and license text do not describe this tree.
+    const copies = (installed.get(name) ?? []).filter((copy) => versions.has(copy.version))
     if (copies.length === 0) {
       missing.push(`${name}@${[...versions].join('/')} (not found in node_modules)`)
       continue
@@ -365,4 +372,4 @@ function main() {
   }
 }
 
-await main()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main()
