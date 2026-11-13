@@ -122,9 +122,9 @@ trustPolicyExclude:
 #   Reason: GHSA-g3hv-75wg-m249 (moderate; denial of service through
 #   globparts amplification) has no patched 10.x; the first fix is 11.0.1
 #   (2026-10-27). minimatch 11 keeps the CommonJS and ESM exports. The
-#   resolved 11.0.3 declares `node: 18 || 20 || >=22` (11.0.4 drops 18),
+#   resolved 11.0.5 declares `node: 20 || >=22`,
 #   inside the root `engines.node` floor; lint and the build pass on it
-#   (2026-11-05).
+#   (2026-11-13).
 #   Drop when eslint and the other dependents above declare a minimatch
 #   range whose floor is 11.0.1 or later.
 #

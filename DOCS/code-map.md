@@ -104,7 +104,7 @@ Top level of `src/`: `index.ts` (public API: `PlannerApp`, the `PlanStore` seam,
 `ReportBrandingProvider`, and `PlannerEditionProvider` / `usePlannerEdition` — route-group hosts
 override the home label and the two host-specific Disclaimer sections via
 `planner/editionContext.ts`), `App.tsx` (app shell: chrome + theme + `useRoutes` over the exported
-route groups; the footer social row is `SocialLinks.tsx`, and the approved
+route groups; the footer social row is `FooterSocialLinks.tsx`, and the approved
 profile URLs live in `socialLinks.ts`), `routeTitles.ts` (the non-plan tab titles, shared by the shell and the workspace
 not-found page's site-level escapes so the two never drift, #536), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
 `plannerContentRoutes` / `plannerHomeRoutes` route-object arrays: `/` plan picker + `/import` in
