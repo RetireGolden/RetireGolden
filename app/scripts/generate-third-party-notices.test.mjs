@@ -29,10 +29,10 @@ function fixture() {
   return { root, appDir }
 }
 
-function install(root, version, author, license) {
-  const dir = join(root, 'node_modules', '.pnpm', `example@${version}`, 'node_modules', 'example')
+function install(root, version, author, license, name = 'example') {
+  const dir = join(root, 'node_modules', '.pnpm', `${name}@${version}`, 'node_modules', name)
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'example', version, author, license: 'MIT' }))
+  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name, version, author, license: 'MIT' }))
   writeFileSync(join(dir, 'LICENSE'), license)
   return dir
 }
@@ -64,6 +64,56 @@ describe('third-party notices production versions', () => {
     expect(content).toContain('example@2.0.0 (not found in node_modules)')
     expect(content).not.toContain('example (2.0.0)')
     expect(content).not.toContain('Previous license text')
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('fails incomplete attribution even when another production package has a license block', () => {
+    const { root, appDir } = fixture()
+    install(root, '1.0.0', 'Previous author', 'Previous license text')
+    const available = install(root, '1.0.0', 'Available author', 'Available license text', 'available')
+
+    generateNotices({ dependencies: {
+      available: { version: '1.0.0', path: available },
+      example: { version: '2.0.0' },
+    } }, appDir)
+
+    const content = readFileSync(join(appDir, 'THIRD-PARTY-NOTICES.txt'), 'utf8')
+    expect(content).toContain('available (1.0.0)')
+    expect(content).toContain('Available license text')
+    expect(content).toContain('example@2.0.0 (not found in node_modules)')
+    expect(content).not.toContain('Previous license text')
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('attributes each resolved version with its own metadata and license', () => {
+    const { root, appDir } = fixture()
+    install(root, '1.0.0', 'First author', 'First license text')
+    install(root, '2.0.0', 'Second author', 'Second license text')
+
+    generateNotices({ dependencies: { example: {
+      version: '1.0.0',
+      dependencies: { example: { version: '2.0.0' } },
+    } } }, appDir)
+
+    const content = readFileSync(join(appDir, 'THIRD-PARTY-NOTICES.txt'), 'utf8')
+    expect(content).toContain('example (1.0.0)\nLicense: MIT\nAuthor: First author\n----------\nFirst license text')
+    expect(content).toContain('example (2.0.0)\nLicense: MIT\nAuthor: Second author\n----------\nSecond license text')
+    expect(content).toContain('Packages attributed: 2')
+    expect(process.exitCode).toBe(originalExitCode)
+  })
+
+  it('fails when only one of two resolved versions is installed', () => {
+    const { root, appDir } = fixture()
+    install(root, '1.0.0', 'First author', 'First license text')
+
+    generateNotices({ dependencies: { example: {
+      version: '1.0.0',
+      dependencies: { example: { version: '2.0.0' } },
+    } } }, appDir)
+
+    const content = readFileSync(join(appDir, 'THIRD-PARTY-NOTICES.txt'), 'utf8')
+    expect(content).toContain('example@2.0.0 (not found in node_modules)')
+    expect(content).not.toContain('example (2.0.0)')
     expect(process.exitCode).toBe(1)
   })
 })
