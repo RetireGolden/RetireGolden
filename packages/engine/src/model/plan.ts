@@ -1923,11 +1923,12 @@ export const formerSpouseSchema = z.object({
   /** Years the marriage lasted: gates divorced-spousal (≥10), ordinary survivor (≥9 months), and surviving-divorced (≥10). */
   marriageYears: nonNegative,
   /**
-   * Survivor paths only: the claimant's age when they remarried after this
-   * death, if they did. null = did not remarry after this spouse's death. The
-   * engine treats a value below 60 as a permanent forfeiture even when the
-   * claimant is now single, and preserves a value at or after 60 even when the
-   * claimant is still married.
+   * Survivor paths only: the claimant's age when they remarried, if they did;
+   * for a couple member, the age the current marriage began. null = not
+   * stated. A claimant living alone is unmarried and is paid whatever the
+   * value; a couple member is paid while married only when the value is 60 or
+   * more (20 CFR 404.335(e)(1), 404.336(e)(1)), and a value below 60 or null
+   * holds the benefit until the January after the current spouse's death.
    */
   remarriedAtAge: z.number().int().min(0).max(120).nullable(),
   /**

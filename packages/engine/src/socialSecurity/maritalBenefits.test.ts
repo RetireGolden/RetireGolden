@@ -111,8 +111,11 @@ describe('survivor eligibility', () => {
     expect(c.monthly).toBeCloseTo(2_400 * 1.24, 5)
   })
 
-  it('does not require the claimant to be single (remarriage rules govern instead)', () => {
-    expect(maritalBenefitFor(deceased, { ...baseCtx, claimantIsSingle: false })).not.toBeNull()
+  it('pays a married claimant only on a remarriage at 60 or later (20 CFR 404.335(e), (e)(1))', () => {
+    // A couple member is married while the current spouse lives; a blank
+    // remarriage age establishes no (e)(1) exception.
+    expect(maritalBenefitFor(deceased, { ...baseCtx, claimantIsSingle: false })).toBeNull()
+    expect(maritalBenefitFor({ ...deceased, remarriedAtAge: 60 }, { ...baseCtx, claimantIsSingle: false })).not.toBeNull()
   })
 
   it('requires at least a 9-month marriage', () => {

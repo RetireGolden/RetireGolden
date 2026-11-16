@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { singlePersonPlan, socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
+import { couplePlan, singlePersonPlan, socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
 import { benefitsOnlyPlanLimits } from './benefitsOnlyPlanLimits'
 
 const OTHER_INCOME = "Income entered as other income, such as part-time work, doesn't count as earnings for the earnings test here or in the projection: only wages do."
@@ -31,5 +31,29 @@ describe('benefitsOnlyPlanLimits: the other-income note', () => {
     // Born 1960-01-15: FRA month January 2027 leaves no month of 2027 before it.
     expect(limitsFor('1960-01-15', 2027)).not.toContain(OTHER_INCOME)
     expect(limitsFor('1960-01-15', 2026)).toContain(OTHER_INCOME)
+  })
+})
+
+// Calculation validation round of 2026-11-16: in a couple, a blank remarriage
+// age on a survivor record no longer counts the benefit while the claimant is
+// married (20 CFR 404.335(e), 404.336(e)); the note says when it is counted.
+describe('benefitsOnlyPlanLimits: a blank remarriage age in a couple', () => {
+  function coupleLimits(remarriedAtAge: number | null): string[] {
+    const plan = couplePlan({ p1Dob: '1964-02-10', p2Dob: '1962-03-20', p1PlanningAge: 92, p2PlanningAge: 90 })
+    const income = socialSecurityIncome('ss', 600, 62) as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+    income.formerSpouses = [{ id: 'first', relationship: 'deceased', dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge }]
+    plan.incomes = [income, socialSecurityIncome('ss2', 1_000, 67, 'p2')] as Plan['incomes']
+    return benefitsOnlyPlanLimits(plan, (id) => (id === 'p1' ? 'Jo' : 'Hal'), 2026)
+  }
+
+  it('says the benefit is counted only from the January after the current spouse\'s death', () => {
+    expect(coupleLimits(null)).toContain(
+      "Jo's remarriage age is blank on a former spouse's record. The law pays a survivor benefit during a marriage only when that marriage began at 60 or later, so the benefit on it is counted only from the January after the current spouse's death, reduced for Jo's age in that January. If the current marriage began at 60 or later, enter that age.",
+    )
+    expect(coupleLimits(null).join(' ')).not.toContain('counted while')
+  })
+
+  it('names nothing for a remarriage at 60, which the law disregards', () => {
+    expect(coupleLimits(60)).toEqual([])
   })
 })

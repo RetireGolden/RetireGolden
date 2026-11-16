@@ -234,6 +234,67 @@ describeRule('usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month', {
   })
 })
 
+// Case B's facts with the remarriage age left blank, the calculation validation
+// round of 2026-11-16. J, born 1964-02-10, PIA 600, claims at 62 (February 2026,
+// 600 x 0.70 = 420 a month, 5,040 a year). Her first husband (PIA 3,000, claimed
+// at his full retirement age, married 20 years) died; she is married to H, born
+// 1962-03-20, PIA 1,000, who claims at 67 and dies in December 2030.
+//
+// Worksheet. 20 CFR 404.335(e) (and 404.336(e) for a surviving divorced wife):
+// "You are unmarried, unless ... (1) You remarried after you became 60 years
+// old." While H lives J is married, and the blank age establishes no (e)(1)
+// remarriage at 60 or later, so nothing is paid on her first husband's record
+// in 2029 and 2030: her own 5,040. From January 2031 she is unmarried, and
+// entitlement can begin then (POMS RS 00207.003 A), so the reduction runs from
+// that month (42 U.S.C. 402(q)(6)(A)(iii)): her attained-age zero month is
+// February 1964 (index 23,569), January 2031 is index 24,372, so 803 months,
+// 1 month before her survivor full retirement age of 67 (804 months);
+// 84 months lie between 60 and 67, so 3,000 x (1 - 0.285 x 1/84) = 2,989.82 a
+// month, 35,877.86 a year (2,989.8214 x 12).
+//
+// Rejected: the blank read as no remarriage (the engine before 2026-11-16): paid
+// from her own claim at 744 months, 60 months early, 3,000 x (1 - 0.285 x
+// 60/84) = 2,389.29 a month, 28,671.43 in every year from 2026, H alive or not.
+// Rejected: the blank read as a bar for life: the widow benefit on H from
+// January 2031, 1,000 x (1 - 0.285/84) = 996.61 a month, 11,959.29.
+const blankRemarriageCaseB = (relationship: 'deceased' | 'surviving-divorced') => {
+  const first: FormerSpouse = { id: 'first', relationship, dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: null }
+  const paid = paidBy([person('H', '1962-03-20', 68), person('J', '1964-02-10')], [ss('H', 1_000, 67), ss('J', 600, 62, 0, [first])])
+  return [paid('J', 2029), paid('J', 2030), paid('J', 2031)]
+}
+const blankRemarriageReadings = {
+  readings: {
+    marriedWithoutAnExceptionThenEntitledFromTheJanuaryAfterTheDeath: [5_040, 5_040, 35_877.86],
+    blankReadAsNoRemarriage: [28_671.43, 28_671.43, 28_671.43],
+    blankBarsForLife: [5_040, 5_040, 11_959.29],
+  },
+  accepted: 'marriedWithoutAnExceptionThenEntitledFromTheJanuaryAfterTheDeath',
+} as const
+
+describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
+  note: 'a blank remarriage age in a couple, through the whole household year',
+  ...blankRemarriageReadings,
+}, ({ accepted, readings }) => {
+  it('pays nothing on a deceased spouse\'s record while the claimant is married on a blank remarriage age, then from the January after the current spouse\'s death', () => {
+    const amounts = blankRemarriageCaseB('deceased')
+    expect(amounts).toEqual(accepted)
+    expect(amounts).not.toEqual(readings.blankReadAsNoRemarriage)
+    expect(amounts).not.toEqual(readings.blankBarsForLife)
+  })
+})
+
+describeRule('cfr-20-404-336-e-surviving-divorced-remarriage', {
+  note: 'a blank remarriage age in a couple, through the whole household year',
+  ...blankRemarriageReadings,
+}, ({ accepted, readings }) => {
+  it('pays nothing on a surviving-divorced record while the claimant is married on a blank remarriage age, then from the January after the current spouse\'s death', () => {
+    const amounts = blankRemarriageCaseB('surviving-divorced')
+    expect(amounts).toEqual(accepted)
+    expect(amounts).not.toEqual(readings.blankReadAsNoRemarriage)
+    expect(amounts).not.toEqual(readings.blankBarsForLife)
+  })
+})
+
 // The second verification's gap S3, the age-60 boundary of case B's rule. J,
 // born 1964-02-10, PIA 1,200, claims at 62 (February 2026). Her first husband
 // died: PIA 3,000, claimed at his full retirement age, married 20 years. H, born

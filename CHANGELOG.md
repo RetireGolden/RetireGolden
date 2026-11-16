@@ -4,6 +4,25 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a blank remarriage age no longer pays a former spouse's survivor benefit to a married
+  couple member** (2026-11-16; calculation validation round). 20 CFR 404.335(e) and 404.336(e)
+  pay a widow(er) or surviving divorced spouse only while unmarried, unless the remarriage was at
+  or after 60 ((e)(1)). A couple member is married to the current spouse, and a blank
+  `remarriedAtAge` establishes no exception, yet the engine read it as no remarriage and paid the
+  survivor benefit while that marriage lasted. The remarriage gate
+  (`maritalBenefits.ts#passesSurvivorRemarriageGate`) now refuses it while the current spouse
+  lives, as it refuses a remarriage before 60, and the benefit starts with the January after the
+  current spouse's death, reduced for the claimant's age then (POMS RS 00207.003 A; 42 U.S.C.
+  402(q)(6)(A)(iii)). A claimant born 1964-02-10 with a 600 PIA claimed at 62, married to a
+  spouse who dies in December 2030, with a first husband's 3,000 PIA on a deceased record and a
+  blank remarriage age, is paid her own 5,040 a year in 2029 and 2030, was 28,671.43, and
+  35,877.86 in 2031, was 28,671.43. A person living alone is unmarried and is paid whatever the
+  remarriage age, as before. `cfr-20-404-335-ordinary-widow-eligibility` and
+  `cfr-20-404-336-e-surviving-divorced-remarriage` are settled; the (e)(2) and (e)(3)
+  disabled-remarriage alternatives stay with the out-of-scope disabled widow(er) record. The
+  remarriage-age help text and the benefits-only page's plan limit now say so.
+  Approximation kinds: fix 62, needs-fact 31, convention 25.
+
 - **Fixed: the current spouse on a disabled worker's record, and the disability family maximum**
   (2026-11-09; calculation validation round). Three `approximated` records with kind `fix` shared
   `socialSecurity/familyMaximum.ts` and `socialSecurity/householdYear.ts`. A spouse on the record

@@ -18,14 +18,18 @@
  *    years since divorce are unmodeled
  *    (`cfr-20-404-331-living-divorced-spouse-eligibility`).
  *  - Ordinary survivor (deceased spouse): marriage lasted ≥9 months, the
- *    claimant is ≥60, and a remarriage before 60 bars the benefit only while
- *    the claimant is married: a household of one, or a couple member from
- *    January after the current spouse's death, is unmarried, and the benefit
- *    is payable again (POMS RS 00207.003 A); at/after 60 preserves it.
+ *    claimant is ≥60, and the claimant is unmarried or remarried at 60 or
+ *    later (20 CFR 404.335(e), (e)(1)). A household of one, or a couple member
+ *    from January after the current spouse's death, is unmarried, and the
+ *    benefit is payable whatever the remarriage age (POMS RS 00207.003 A). A
+ *    couple member is married while the current spouse lives, so the benefit
+ *    is paid then only on a recorded remarriage age of 60 or more; a blank age
+ *    establishes no (e)(1) exception and is refused.
  *    Ordinary-widow 20 CFR 404.335 (`cfr-20-404-335-ordinary-widow-eligibility`).
  *  - Surviving-divorced survivor: marriage lasted ≥10 years before divorce, with
  *    the same age-60 and remarriage gates on the non-disabled path. 20 CFR
- *    404.336 (`cfr-20-404-336-surviving-divorced-spouse-eligibility`). Survivor
+ *    404.336 (`cfr-20-404-336-surviving-divorced-spouse-eligibility`,
+ *    `cfr-20-404-336-e-surviving-divorced-remarriage`). Survivor
  *    benefit is based
  *    on the deceased's actual benefit, with the early-claim widow(er) reduction
  *    and the RIB-LIM widow's-limit cap applied by the shared
@@ -133,17 +137,24 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
 }
 
 /**
- * The remarriage gate on a survivor benefit. A remarriage at or after 60 is
- * disregarded (42 U.S.C. 402(e)(3)(A); 20 CFR 404.335(e)(1), 404.336(e)(1)). A
- * remarriage before 60 bars the benefit while that later marriage lasts, and
- * no longer once it has ended, by death or divorce (POMS RS 00207.003 A): the
- * claimant is then unmarried (`claimantUnmarried`), a household of one, or a
- * couple member after the current spouse's death. The plan records no other end
- * to a later marriage, so a couple member whose spouse is alive is taken to be
- * married to the spouse the remarriage age records.
+ * The remarriage gate on a survivor benefit (20 CFR 404.335(e), 404.336(e);
+ * 42 U.S.C. 402(e)(1)(A)): the claimant must be unmarried, except that a
+ * remarriage at or after 60 is disregarded (402(e)(3)(A); 404.335(e)(1),
+ * 404.336(e)(1)). An unmarried claimant (`claimantUnmarried`: a household of
+ * one, or a couple member from January after the current spouse's death)
+ * passes whatever the remarriage age, since a later marriage that has ended by
+ * death or divorce no longer bars the benefit (POMS RS 00207.003 A). A couple
+ * member whose spouse is alive is married, and the plan records no other end
+ * to a later marriage, so the gate passes only when the record's remarriage
+ * age shows that marriage began at 60 or later. A blank remarriage age in a
+ * couple establishes no (e)(1) exception and is refused, as a remarriage
+ * before 60 is. The disabled-widow alternatives in (e)(2) and (e)(3) turn on
+ * entitlement as a disabled widow(er), which the plan cannot express
+ * (`usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`).
  */
 export function passesSurvivorRemarriageGate(record: FormerSpouse, claimantUnmarried = false): boolean {
-  return record.remarriedAtAge === null || record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE || claimantUnmarried
+  if (claimantUnmarried) return true
+  return record.remarriedAtAge !== null && record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE
 }
 
 /**
@@ -152,13 +163,15 @@ export function passesSurvivorRemarriageGate(record: FormerSpouse, claimantUnmar
  * is measured from (42 U.S.C. 402(q)(6)(A)(iii): "the first day of the first
  * month for which such individual is entitled to such benefit"). A former
  * spouse's death date is not in the plan, so it is the claimant's own claim;
- * but when a remarriage before 60 bars the benefit while that later marriage
- * lasts and the plan ends it, with the current spouse's death, entitlement can
+ * but when the record does not establish the (e)(1) exception (a remarriage
+ * before 60, or a blank remarriage age), the remarriage gate bars the benefit
+ * while the claimant is married (#passesSurvivorRemarriageGate), and when the
+ * plan ends that marriage, with the current spouse's death, entitlement can
  * begin only with the first month the claimant is unmarried (POMS RS 00207.003
  * A: "Entitlement can begin with the month the subsequent marriage
  * terminated"; in the plan, January after the death), so it is the later of
  * the two. A household of one is taken to be unmarried throughout: the plan
- * does not say when that later marriage ended, so it is taken to have ended
+ * does not say when a later marriage ended, so it is taken to have ended
  * before the claim.
  */
 export function formerSpouseSurvivorEntitlementAgeMonths(
@@ -167,7 +180,7 @@ export function formerSpouseSurvivorEntitlementAgeMonths(
   ownClaimMonths: number,
   claimantUnmarriedFromMonthIndex: number | null,
 ): number {
-  const barredWhileMarried = record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE
+  const barredWhileMarried = record.remarriedAtAge === null || record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE
   if (!barredWhileMarried || claimantUnmarriedFromMonthIndex === null || !Number.isFinite(claimantUnmarriedFromMonthIndex)) return ownClaimMonths
   return Math.max(ownClaimMonths, claimantUnmarriedFromMonthIndex - claimantZeroMonthIndex)
 }

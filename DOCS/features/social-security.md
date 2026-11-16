@@ -120,23 +120,27 @@ Benefits-only analysis separately illustrates survivor switching
   benefits** use two explicit record types. A **`deceased`** record follows the ordinary-widow path: the
   modeled nine-month marriage duration, age-60, and remarriage gates, including after a remarriage at or
   after 60 while still married. A **`surviving-divorced`** record follows the surviving-divorced duration
-  gate only: ten years immediately before divorce — no nine-month floor — plus the same historical
-  remarriage-before-60 gate as the ordinary survivor path (`cfr-20-404-336-surviving-divorced-spouse-eligibility`).
+  gate only: ten years immediately before divorce — no nine-month floor — plus the same
+  remarriage gate as the ordinary survivor path (`cfr-20-404-336-surviving-divorced-spouse-eligibility`).
   Saved plans that still store `relationship: deceased` for a deceased divorced ex keep the ordinary-widow
   nine-month path; choose **`surviving-divorced`** for the ten-year divorce-duration path. Both survivor
   record types share the same remaining modeled limits: the other entitlement requirements (fully insured,
   valid marriage, application — which may already be met under 404.335(b)(1)–(4) or 404.336(b)(1)–(4)
   without a new application — and the own-old-age-benefit restriction) are not adjudicated; the candidate
-  menu does not compare own PIA or own benefit. A remarriage before 60 bars the survivor benefit while
-  that later marriage lasts, and no longer once it has ended (POMS RS 00207.003): a claimant living alone is taken
-  to be unmarried now, and a couple member to be married to the current spouse until the January after that
-  spouse's death. Entitlement can begin only in the month that marriage ends, so the widow(er) reduction is
+  menu does not compare own PIA or own benefit. The claimant must be unmarried unless the remarriage was at
+  or after 60 (404.335(e), 404.336(e), (e)(1)): a claimant living alone is taken to be unmarried now, whatever
+  the remarriage age (POMS RS 00207.003), and a couple member to be married to the current spouse until the
+  January after that spouse's death. While married, a couple member is paid only on a recorded remarriage
+  age of 60 or more; a remarriage before 60, or a blank remarriage age, which establishes no exception, bars
+  the benefit until that January. Entitlement can begin only in the month that marriage ends, so the widow(er) reduction is
   measured from that January, not from the claimant's earlier own claim (402(q)(6)(A)(iii);
   `maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths`). The plan cannot say when a person living alone
   ended a later marriage, so it is taken to have ended before the claim; the analysis page says so when it
-  applies. Until 2026-09-29 it was an unconditional forfeiture even for a claimant now single. A schema-valid coupled household with
-  `remarriedAtAge: null` still receives a candidate without establishing a remarriage exception
-  (`cfr-20-404-335-ordinary-widow-eligibility`). The nine-month statutory duration exceptions, the
+  applies. Until 2026-09-29 a remarriage before 60 was an unconditional forfeiture even for a claimant now single,
+  and until 2026-11-16 a coupled household with `remarriedAtAge: null` was paid while married as if it had
+  not remarried (`cfr-20-404-335-ordinary-widow-eligibility`, `cfr-20-404-336-e-surviving-divorced-remarriage`,
+  both settled). The 404.335(e)(2)–(3) and 404.336(e)(2)–(3) disabled-remarriage alternatives need
+  disabled-widow(er) entitlement, which is out of scope. The nine-month statutory duration exceptions, the
   alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
   remarriage-continuation exception are outside the Plan
   (`cfr-20-404-335-a-widow-duration-exceptions`,
@@ -288,7 +292,8 @@ benefit at a claim age the ranking prices, the page names that person and the cl
 `withheldBy`); the values count it. The two views differ by taxes, portfolio growth and the plan's fixed planning
 ages, which the benefits-only view replaces with survival odds, and by one claim age per person. Two limits the
 page states when they apply: income entered as other income is not tested, and a couple member's former-spouse
-record with a remarriage before 60 is read as the current marriage (blank, it is priced as no remarriage). On
+record with a remarriage before 60, or a blank remarriage age, holds the survivor benefit on it until the January
+after the current spouse's death. On
 example-couple the 2% headline moved from 70/62 ($865k) to 70/63 ($860k): Sam's claims at 62 and 63 are withheld
 from their first month of entitlement while she works to 64, and the months of each claim year before it are paid.
 The five other couple examples' ranking rows differ from before this decision by at most 2e-15 of their value,
@@ -402,14 +407,12 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
 - Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM after it, and the
   deceased's claim-age-adjusted base are all modeled; what remains simplified): living
   divorced-spouse eligibility uses a calendar-year age-62 blanket and omits worker entitlement, fully-insured status,
-  and the two-year independently entitled path (`cfr-20-404-331-living-divorced-spouse-eligibility`); ordinary-widow
-  eligibility on `relationship: deceased` treats remarriage before 60 as an unconditional historical forfeiture
-  even when the claimant is now single, and a coupled household with `remarriedAtAge: null` still receives a
-  candidate without establishing a 404.335(e) exception (`cfr-20-404-335-ordinary-widow-eligibility`); surviving-divorced
-  eligibility on `relationship: surviving-divorced` applies only the ten-year divorce-duration gate plus the same
-  historical remarriage gate — not full surviving-divorced entitlement, not the ordinary-widow nine-month path, and
-  not survivor pricing or remarriage adjudication beyond those modeled gates
-  (`cfr-20-404-336-surviving-divorced-spouse-eligibility`); the nine-month statutory duration exceptions, the
+  and the two-year independently entitled path (`cfr-20-404-331-living-divorced-spouse-eligibility`); survivor
+  eligibility on `relationship: deceased` and `relationship: surviving-divorced` does not adjudicate fully insured
+  status, valid marriage, application, or the own-old-age-benefit restriction, and reads a person living alone as
+  unmarried with any later marriage ended before the claim (the remarriage gates themselves are settled:
+  `cfr-20-404-335-ordinary-widow-eligibility`, `cfr-20-404-336-e-surviving-divorced-remarriage`,
+  `cfr-20-404-336-surviving-divorced-spouse-eligibility`); the nine-month statutory duration exceptions, the
   alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse remarriage-continuation
   exception are outside the Plan
   (`cfr-20-404-335-a-widow-duration-exceptions`,

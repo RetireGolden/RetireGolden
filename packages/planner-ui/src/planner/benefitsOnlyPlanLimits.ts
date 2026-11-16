@@ -58,7 +58,7 @@ export function benefitsOnlyPlanLimits(plan: Plan, personName: (id: string) => s
       }
       if (record.remarriedAtAge === null) {
         out.push(
-          `${name}'s remarriage age is blank on a former spouse's record, so the survivor benefit on it is counted while ${name} is married. The law pays it during a marriage only when that marriage began at 60 or later.`,
+          `${name}'s remarriage age is blank on a former spouse's record. The law pays a survivor benefit during a marriage only when that marriage began at 60 or later, so the benefit on it is counted only from the January after the current spouse's death, reduced for ${name}'s age in that January. If the current marriage began at 60 or later, enter that age.`,
         )
       } else if (record.remarriedAtAge < 60) {
         out.push(

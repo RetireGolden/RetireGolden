@@ -264,6 +264,20 @@
  *   cost-of-living increases each rounded down to the dime and may reflect
  *   recomputations, so more than one AIME can lie behind it.
  *
+ * Settled in the calculation validation round of 2026-11-16, the two
+ * remarriage gates on a survivor benefit from a former spouse's record:
+ * - cfr-20-404-335-ordinary-widow-eligibility and
+ *   cfr-20-404-336-e-surviving-divorced-remarriage, fix: a couple member is
+ *   married while the current spouse lives, and 20 CFR 404.335(e) and
+ *   404.336(e) pay a married widow(er) only when an exception applies. A blank
+ *   remarriage age establishes none, so it is now refused as a remarriage
+ *   before 60 is, and the benefit starts with the January after the current
+ *   spouse's death, reduced for the age then. Until then a blank age was read
+ *   as no remarriage and paid while the claimant was still married. The
+ *   disabled widow(er) alternatives in (e)(2) and (e)(3) stay with the
+ *   disabled widow(er) record, which is out of scope. Both settled and
+ *   removed from this list.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -304,8 +318,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'cfr-20-404-1592a-extended-period-of-eligibility': { kind: 'convention', reason: 'future month-by-month SGA is unknowable from annual wages' },
   'cfr-20-404-211-d-3-indexed-earnings-nearer-penny': { kind: 'fix' },
   'cfr-20-404-331-living-divorced-spouse-eligibility': { kind: 'needs-fact', missingInput: 'worker entitlement and fully-insured status plus exact divorce date' },
-  'cfr-20-404-335-ordinary-widow-eligibility': { kind: 'fix' },
-  'cfr-20-404-336-e-surviving-divorced-remarriage': { kind: 'fix' },
   'cfr-20-404-435-grace-year-monthly-earnings-test': { kind: 'convention', reason: 'annual plans cannot credibly place future earnings in service versus non-service months' },
   'ct-cgs-12-701-20-b-social-security-retirement': { kind: 'fix' },
   'de-code-30-1106-social-security-retirement-subtractions': { kind: 'fix' },

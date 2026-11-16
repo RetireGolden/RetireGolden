@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -789,7 +789,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 252
+              "line": 265
             }
           ]
         }
@@ -853,7 +853,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             },
             {
               "name": "wagesIncomeSchema",
@@ -944,7 +944,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -1269,7 +1269,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -1438,7 +1438,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 252
+              "line": 265
             }
           ]
         },
@@ -1592,34 +1592,34 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 345,
+          "line": 406,
           "note": "a spouse month the worker's excess was charged to, her prorated share paid in full",
           "tests": [
             {
               "title": "credits the spouse benefit in a partial month whose prorated share is her whole benefit (RS 00615.482 B.2)",
-              "line": 353
+              "line": 414
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 370,
+          "line": 431,
           "note": "a former spouse's widow(er) benefit, from its first month of entitlement",
           "tests": [
             {
               "title": "charges and credits a former spouse's widow(er) benefit only from its first month of entitlement",
-              "line": 378
+              "line": 439
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 428,
+          "line": 489,
           "note": "a partial month charged to both records of a person paid on two",
           "tests": [
             {
               "title": "credits both of her benefits for a month her own excess is charged against them (RS 02501.145 B.2; RS 00615.482 B.3 note)",
-              "line": 437
+              "line": 498
             }
           ]
         }
@@ -1814,7 +1814,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 252
+              "line": 265
             }
           ]
         }
@@ -1825,12 +1825,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 271,
+          "line": 332,
           "note": null,
           "tests": [
             {
               "title": "pays a widowed couple member on a living ex's record from January after the death",
-              "line": 278
+              "line": 339
             }
           ]
         }
@@ -1913,7 +1913,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 252
+              "line": 265
             }
           ]
         }
@@ -2072,7 +2072,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -2162,7 +2162,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -2222,7 +2222,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -2568,7 +2568,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         }
@@ -2815,7 +2815,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 252
+              "line": 265
             }
           ]
         }
@@ -2953,7 +2953,7 @@
           "functions": [
             {
               "name": "formerSpouseSurvivorEntitlementAgeMonths",
-              "line": 164
+              "line": 177
             }
           ]
         },
@@ -3039,23 +3039,23 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 248,
+          "line": 309,
           "note": "a remarriage at exactly 60 does not bar the benefit, so its reduction runs from the own claim",
           "tests": [
             {
               "title": "reduces from the own claim when the remarriage was at 60, and from the January after the death when it was at 59",
-              "line": 256
+              "line": 317
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 295,
+          "line": 356,
           "note": "months withheld after the survivor full-retirement-age month are not credited",
           "tests": [
             {
               "title": "credits the widow(er) benefit only with months before the survivor FRA month (E9)",
-              "line": 303
+              "line": 364
             }
           ]
         }
@@ -3130,7 +3130,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -3223,7 +3223,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -3694,34 +3694,34 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 322,
+          "line": 383,
           "note": "the worker's share of a partial month held to his own benefit",
           "tests": [
             {
               "title": "gives the other the part of the worker's share above his own benefit (404.440)",
-              "line": 330
+              "line": 391
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 462,
+          "line": 523,
           "note": "a worker also paid on a former spouse's record: each record charged in proportion, the split two to one only on his own",
           "tests": [
             {
               "title": "charges the worker's partial month to each record in proportion and shares only his own record two to one (RS 02501.145 B.2; 404.439)",
-              "line": 470
+              "line": 531
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 489,
+          "line": 550,
           "note": "a worker also paid on a former spouse's record, no share capped",
           "tests": [
             {
               "title": "apportions a partial month by record when no share reaches what the person is due",
-              "line": 497
+              "line": 558
             }
           ]
         }
@@ -3967,12 +3967,12 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 517,
+          "line": 578,
           "note": "a full-retirement-age year with FRA months: born 1959, FRA 66 and 10 months",
           "tests": [
             {
               "title": "tests 2026 for a person born 1959-06-15, against the three months before April",
-              "line": 526
+              "line": 587
             }
           ]
         }
@@ -4144,7 +4144,7 @@
           "functions": [
             {
               "name": "recurringIncomeSchema",
-              "line": 2027
+              "line": 2028
             }
           ]
         },
@@ -4284,12 +4284,12 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
-          "line": 398,
+          "line": 459,
           "note": "carried past the latest published year at the plan's inflation, in the ledger",
           "tests": [
             {
               "title": "tests 2027 against the 2026 amounts grown at the plan's inflation",
-              "line": 406
+              "line": 467
             }
           ]
         }
@@ -4789,7 +4789,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -4972,7 +4972,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
@@ -5137,7 +5137,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1957
+              "line": 1958
             }
           ]
         },
