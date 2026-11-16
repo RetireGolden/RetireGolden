@@ -139,8 +139,9 @@ Benefits-only analysis separately illustrates survivor switching
   applies. Until 2026-09-29 a remarriage before 60 was an unconditional forfeiture even for a claimant now single,
   and until 2026-11-16 a coupled household with `remarriedAtAge: null` was paid while married as if it had
   not remarried (`cfr-20-404-335-ordinary-widow-eligibility`, `cfr-20-404-336-e-surviving-divorced-remarriage`,
-  both settled). The 404.335(e)(2)–(3) and 404.336(e)(2)–(3) disabled-remarriage alternatives need
-  disabled-widow(er) entitlement, which is out of scope. The nine-month statutory duration exceptions, the
+  both settled). The 404.335(e)(2)–(3) and 404.336(e)(2)–(3) disability-related remarriage
+  alternatives (among them a marriage after 50 by a claimant already entitled to disability-based
+  widow(er)'s benefits, 402(e)(3)(A)) are not modeled; both records disclose them. The nine-month statutory duration exceptions, the
   alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
   remarriage-continuation exception are outside the Plan
   (`cfr-20-404-335-a-widow-duration-exceptions`,
@@ -292,8 +293,10 @@ benefit at a claim age the ranking prices, the page names that person and the cl
 `withheldBy`); the values count it. The two views differ by taxes, portfolio growth and the plan's fixed planning
 ages, which the benefits-only view replaces with survival odds, and by one claim age per person. Two limits the
 page states when they apply: income entered as other income is not tested, and a couple member's former-spouse
-record with a remarriage before 60, or a blank remarriage age, holds the survivor benefit on it until the January
-after the current spouse's death. On
+record with a remarriage before 60, or a blank remarriage age, holds the survivor benefit on it back while the
+current spouse lives (the modeled non-disabled rule; the disabled-widow(er) remarriage exceptions from 50 are not
+evaluated), so it is counted from the later of the claim and the January after the current spouse's death, and
+reduced only if that month is before the survivor full retirement age. On
 example-couple the 2% headline moved from 70/62 ($865k) to 70/63 ($860k): Sam's claims at 62 and 63 are withheld
 from their first month of entitlement while she works to 64, and the months of each claim year before it are paid.
 The five other couple examples' ranking rows differ from before this decision by at most 2e-15 of their value,

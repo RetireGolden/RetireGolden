@@ -19,7 +19,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   35,877.86 in 2031, was 28,671.43. A person living alone is unmarried and is paid whatever the
   remarriage age, as before. `cfr-20-404-335-ordinary-widow-eligibility` and
   `cfr-20-404-336-e-surviving-divorced-remarriage` are settled; the (e)(2) and (e)(3)
-  disabled-remarriage alternatives stay with the out-of-scope disabled widow(er) record. The
+  disability-related remarriage alternatives are not modeled and both records disclose them. The
   remarriage-age help text and the benefits-only page's plan limit now say so.
   Approximation kinds: fix 62, needs-fact 31, convention 25.
 

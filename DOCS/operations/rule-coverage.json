@@ -468,8 +468,8 @@
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
-      "sweptOn": "2026-09-29",
-      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the first month of a former spouse's survivor benefit freed by the end of a remarriage before 60 (formerSpouseSurvivorEntitlementAgeMonths) is named by usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
+      "sweptOn": "2026-11-16",
+      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the first month of a former spouse's survivor benefit freed by the end of a marriage that a remarriage before 60, or a blank remarriage age, barred (formerSpouseSurvivorEntitlementAgeMonths) is named by usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
     },
     {
       "path": "socialSecurity/openClaims.ts",

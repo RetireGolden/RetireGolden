@@ -252,7 +252,7 @@ describe('Social Security analysis page on the engine models', () => {
     expect(text()).toContain("Pat remarried before 60. The plan can't say when that later marriage ended, so it's taken to have ended before Pat's claim, and the survivor benefit on the former spouse's record is reduced for Pat's age at the claim.")
   })
 
-  it('says a couple member\'s survivor benefit freed by the current spouse\'s death is reduced for the age in that January', async () => {
+  it('says a couple member\'s survivor benefit freed by the current spouse\'s death counts from the later of the claim and that January', async () => {
     const first: FormerSpouse = { id: 'first', relationship: 'deceased', dob: '1958-05-10', piaMonthly: 3_000, marriageYears: 20, remarriedAtAge: 55 }
     const draft = createEmptyPlan({ newId: id })
     draft.household.filingStatus = 'marriedFilingJointly'
@@ -268,7 +268,7 @@ describe('Social Security analysis page on the engine models', () => {
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
     await render(parsed.plan)
     await openTab('Benefits only')
-    expect(text()).toContain("Jo remarried before 60, which is read as the current marriage: the survivor benefit on the former spouse's record is counted only from the January after the current spouse's death, reduced for Jo's age in that January.")
+    expect(text()).toContain("Jo remarried before 60, which is read as the current marriage. While Jo is married, a survivor benefit is counted here only when that marriage began at 60 or later; the exceptions for a disabled widow(er) who remarried at 50 or later are not evaluated. So the survivor benefit on the former spouse's record is counted from the later of Jo's claim and the January after the current spouse's death, and is reduced only if that month is before Jo's survivor full retirement age.")
   })
 
   it('the couple primer calls PIA x 12 the full-retirement-age benefit', async () => {

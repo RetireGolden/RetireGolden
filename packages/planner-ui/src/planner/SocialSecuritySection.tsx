@@ -305,7 +305,7 @@ export function FormerSpousesEditor({
               {isSurvivorRecord ? (
                 <NumberField
                   label="Age you remarried"
-                  help="If you are married now, enter the age you married your current spouse: while you are married, the survivor benefit is counted only when that marriage began at 60 or later. A remarriage before 60, or a blank age, holds it back until that marriage ends. Living alone, a later marriage that ended does not bar it. Leave blank if you did not remarry."
+                  help="If you are married now, enter the age you married your current spouse: while you are married, the survivor benefit is counted only when that marriage began at 60 or later (exceptions for a disabled widow or widower are not evaluated). A remarriage before 60, or a blank age, holds it back until that marriage ends. Living alone, a later marriage that ended does not bar it. Leave blank if you did not remarry."
                   path={`incomes.${streamIndex}.formerSpouses.${i}.remarriedAtAge`}
                   value={r.remarriedAtAge}
                   allowNull

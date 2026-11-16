@@ -56,14 +56,14 @@ export function benefitsOnlyPlanLimits(plan: Plan, personName: (id: string) => s
         }
         continue
       }
+      // The modeled non-disabled rule (20 CFR 404.335(e)(1), 404.336(e)(1)): the
+      // engine starts the benefit with the later of the claim and the January
+      // after the current spouse's death (maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths).
+      const counted = `While ${name} is married, a survivor benefit is counted here only when that marriage began at 60 or later; the exceptions for a disabled widow(er) who remarried at 50 or later are not evaluated. So the survivor benefit on the former spouse's record is counted from the later of ${name}'s claim and the January after the current spouse's death, and is reduced only if that month is before ${name}'s survivor full retirement age.`
       if (record.remarriedAtAge === null) {
-        out.push(
-          `${name}'s remarriage age is blank on a former spouse's record. The law pays a survivor benefit during a marriage only when that marriage began at 60 or later, so the benefit on it is counted only from the January after the current spouse's death, reduced for ${name}'s age in that January. If the current marriage began at 60 or later, enter that age.`,
-        )
+        out.push(`${name}'s remarriage age is blank on a former spouse's record. ${counted} If the current marriage began at 60 or later, enter that age.`)
       } else if (record.remarriedAtAge < 60) {
-        out.push(
-          `${name} remarried before 60, which is read as the current marriage: the survivor benefit on the former spouse's record is counted only from the January after the current spouse's death, reduced for ${name}'s age in that January.`,
-        )
+        out.push(`${name} remarried before 60, which is read as the current marriage. ${counted}`)
       }
     }
   }

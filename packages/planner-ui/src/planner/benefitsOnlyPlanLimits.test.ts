@@ -48,9 +48,13 @@ describe('benefitsOnlyPlanLimits: a blank remarriage age in a couple', () => {
 
   it('says the benefit is counted only from the January after the current spouse\'s death', () => {
     expect(coupleLimits(null)).toContain(
-      "Jo's remarriage age is blank on a former spouse's record. The law pays a survivor benefit during a marriage only when that marriage began at 60 or later, so the benefit on it is counted only from the January after the current spouse's death, reduced for Jo's age in that January. If the current marriage began at 60 or later, enter that age.",
+      "Jo's remarriage age is blank on a former spouse's record. While Jo is married, a survivor benefit is counted here only when that marriage began at 60 or later; the exceptions for a disabled widow(er) who remarried at 50 or later are not evaluated. So the survivor benefit on the former spouse's record is counted from the later of Jo's claim and the January after the current spouse's death, and is reduced only if that month is before Jo's survivor full retirement age. If the current marriage began at 60 or later, enter that age.",
     )
-    expect(coupleLimits(null).join(' ')).not.toContain('counted while')
+    expect(coupleLimits(null).join(' ')).not.toContain('The law pays')
+  })
+
+  it('names the same rule for a remarriage before 60, read as the current marriage', () => {
+    expect(coupleLimits(55)).toEqual(["Jo remarried before 60, which is read as the current marriage. While Jo is married, a survivor benefit is counted here only when that marriage began at 60 or later; the exceptions for a disabled widow(er) who remarried at 50 or later are not evaluated. So the survivor benefit on the former spouse's record is counted from the later of Jo's claim and the January after the current spouse's death, and is reduced only if that month is before Jo's survivor full retirement age."])
   })
 
   it('names nothing for a remarriage at 60, which the law disregards', () => {

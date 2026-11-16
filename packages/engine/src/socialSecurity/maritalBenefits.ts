@@ -148,9 +148,10 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
  * to a later marriage, so the gate passes only when the record's remarriage
  * age shows that marriage began at 60 or later. A blank remarriage age in a
  * couple establishes no (e)(1) exception and is refused, as a remarriage
- * before 60 is. The disabled-widow alternatives in (e)(2) and (e)(3) turn on
- * entitlement as a disabled widow(er), which the plan cannot express
- * (`usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`).
+ * before 60 is. The disability-related alternatives in (e)(2) and (e)(3)
+ * (402(e)(3)(A): marriage after 50 by a claimant already entitled to disability-
+ * based widow(er)'s benefits) are not modeled; the plan has no disabled-widow(er)
+ * fact, and the remarriage records disclose them.
  */
 export function passesSurvivorRemarriageGate(record: FormerSpouse, claimantUnmarried = false): boolean {
   if (claimantUnmarried) return true

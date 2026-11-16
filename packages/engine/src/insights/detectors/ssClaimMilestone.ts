@@ -370,9 +370,9 @@ interface PriorYearFormerSpouseArgs {
  * The largest former-spouse benefit the claimant was paid in the year before
  * the start, by the ledger's former-spouse pass (householdYear.ts): each
  * stream's records are priced only when the stream has payable months that
- * year, and a survivor benefit that a remarriage before 60 barred until the
- * current spouse's death starts, and is reduced from, the January after that
- * death (maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths; POMS RS
+ * year, and a survivor benefit that a remarriage before 60, or a blank
+ * remarriage age, barred until the current spouse's death starts, and is
+ * reduced from, the later of the own claim and the January after that death (maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths; POMS RS
  * 00207.003 A). Null when no record paid a visible amount. Exported for its
  * test.
  */

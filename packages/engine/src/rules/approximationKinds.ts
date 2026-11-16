@@ -274,9 +274,9 @@
  *   before 60 is, and the benefit starts with the January after the current
  *   spouse's death, reduced for the age then. Until then a blank age was read
  *   as no remarriage and paid while the claimant was still married. The
- *   disabled widow(er) alternatives in (e)(2) and (e)(3) stay with the
- *   disabled widow(er) record, which is out of scope. Both settled and
- *   removed from this list.
+ *   disability-related alternatives in (e)(2) and (e)(3) are not modeled,
+ *   since the plan has no disabled widow(er) fact; both records disclose
+ *   them. Both settled and removed from this list.
  *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public

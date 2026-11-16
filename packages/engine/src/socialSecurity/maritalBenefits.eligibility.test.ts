@@ -106,8 +106,8 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
   //   [6] 9-month, remarriedAtAge null, claimantIsSingle false → null. A couple
   //       member whose spouse is alive is married; 404.335(e) pays a married
   //       claimant only under (e)(1)–(3), and a blank remarriage age establishes
-  //       no (e)(1) remarriage at 60 or later ((e)(2)–(3) need disabled-widow
-  //       entitlement, which the plan cannot express). Until 2026-11-16 the
+  //       no (e)(1) remarriage at 60 or later ((e)(2)–(3), the disability-
+  //       related alternatives, are not modeled and are disclosed on the record). Until 2026-11-16 the
   //       engine read the blank as no remarriage and paid 2,400.
   //   [7] 9-month, remarried at 59, still married → null: 59 is below the
   //       (e)(1) age, so the later marriage bars the benefit while it lasts.
@@ -235,8 +235,8 @@ describeRule('cfr-20-404-336-e-surviving-divorced-remarriage', {
   //       blank as no remarriage and paid 2,400.
   //   [4] remarriedAtAge 59, currently married → null (below the (e)(1) age).
   //   [5] remarriedAtAge null, currently single → 2,400 (unmarried).
-  // (e)(2)–(3) need entitlement as a disabled widow(er), which the plan cannot
-  // express (usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period).
+  // (e)(2)–(3), the disability-related alternatives, are not modeled; the
+  // record discloses them.
   readings: {
     statutory404336UnmarriedOrRemarriedAfter60: [2_400, 2_400, null, null, null, 2_400],
     blankRemarriageAgeInACoupleReadAsNoRemarriage: [2_400, 2_400, null, 2_400, null, 2_400],
