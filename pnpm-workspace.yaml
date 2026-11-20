@@ -14,6 +14,12 @@ blockExoticSubdeps: true
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
 
+# Reviewed 2026-11-20: rolldown@1.2.19's optional wasm32-wasi binding adds
+# @emnapi/core and @emnapi/runtime at 2.0.0-beta.2. Both registry releases
+# date to 2026-10-15, advertise SLSA provenance, and match the lockfile's
+# integrity hashes. The from-scratch Resolve Gate passes with the defaults
+# above; these optional build-tool dependencies need no trust exemption.
+
 # no-downgrade compares trust evidence by publish date, not semver, so a
 # version published after a provenance-bearing sibling reads as a downgrade
 # even when nothing was taken over. One transitive pin is a false positive of
