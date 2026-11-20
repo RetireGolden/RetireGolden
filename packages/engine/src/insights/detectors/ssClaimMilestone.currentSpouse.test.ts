@@ -135,9 +135,12 @@ function deathAtStartCurrentSpouseContext(
 
 /**
  * MFJ with a live co-person and a surviving-divorced former already paying
- * survivor benefits before the horizon. 404.336(a)(2) ten-year duration and
- * preserved remarriage (null remarriedAtAge) are plan facts; published survivor
- * at start is the insight input.
+ * survivor benefits before the horizon. The 404.336(a)(2) ten-year duration is a
+ * plan fact. The record's remarriedAtAge is null, which the real remarriage gate
+ * refuses while the co-person lives (404.336(e)); these fixtures pass only
+ * because bestMaritalBenefit is mocked with a sentinel, so they test the
+ * detector's handling of an already-paying former, not the gate. Published
+ * survivor at start is the insight input.
  */
 function survivingDivorcedAlreadyPayingWithLiveCoPersonContext(): DetectorContext {
   const plan = singlePersonPlan({ dob: '1956-01-01', planningAge: 95 })

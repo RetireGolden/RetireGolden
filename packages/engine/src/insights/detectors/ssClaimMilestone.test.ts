@@ -3017,7 +3017,8 @@ describe('Social Security claim milestone detector', () => {
             dob: '1950-01-01',
             piaMonthly: 2_500,
             marriageYears: 15,
-            remarriedAtAge: null,
+            // Married the current spouse at 60: 20 CFR 404.335(e)(1) lets the survivor benefit be paid while married; a blank age would not.
+            remarriedAtAge: 60,
           },
         ],
       },
@@ -3084,8 +3085,10 @@ describe('Social Security claim milestone detector', () => {
 
   it('fires death-at-start survivor when former survivor lost to current-spouse spousal pre-horizon (three-way)', () => {
     // Prior-year sources (monthly, unreduced claim ages): own $500, deceased-former
-    // survivor $600, current-spouse spousal $1,000. Former beats own but loses to
-    // current-spouse — former never paid. Household death-at-start is a NEW
+    // survivor $600 (payable while married only because the record shows a
+    // remarriage at 60; a blank age would refuse it outright), current-spouse
+    // spousal $1,000. Former beats own but loses to current-spouse — former never
+    // paid. Household death-at-start is a NEW
     // survivor entitlement and must fire (not former-survivor pre-horizon silence).
     const ctx = context(70, 67, 0)
     ctx.plan.incomes = [
@@ -3103,7 +3106,8 @@ describe('Social Security claim milestone detector', () => {
             dob: '1950-01-01',
             piaMonthly: 600, // survivor monthly ~600; annual 7_200 > own 6_000
             marriageYears: 15,
-            remarriedAtAge: null,
+            // Married the current spouse at 60: 20 CFR 404.335(e)(1) lets the survivor benefit be paid while married; a blank age would not.
+            remarriedAtAge: 60,
           },
         ],
       },
@@ -3211,7 +3215,8 @@ describe('Social Security claim milestone detector', () => {
         earnings: null,
         claimAge: { years: 67, months: 0 },
         formerSpouses: [
-          { id: 'ex-deceased', relationship: 'deceased', dob: '1950-01-01', piaMonthly: 600, marriageYears: 15, remarriedAtAge: null },
+          // Married the current spouse at 60: 20 CFR 404.335(e)(1) lets the survivor benefit be paid while married; a blank age would not.
+          { id: 'ex-deceased', relationship: 'deceased', dob: '1950-01-01', piaMonthly: 600, marriageYears: 15, remarriedAtAge: 60 },
         ],
       },
     ] as never
@@ -3398,7 +3403,8 @@ describe('Social Security claim milestone detector', () => {
             dob: '1950-01-01',
             piaMonthly: 600,
             marriageYears: 15,
-            remarriedAtAge: null,
+            // Married the current spouse at 60: 20 CFR 404.335(e)(1) lets the survivor benefit be paid while married; a blank age would not.
+            remarriedAtAge: 60,
           },
         ],
       },
@@ -3683,7 +3689,8 @@ describe('Social Security claim milestone detector', () => {
               dob: '1950-01-01',
               piaMonthly: 1_000,
               marriageYears: 15,
-              remarriedAtAge: null,
+              // Married the current spouse at 60: 20 CFR 404.335(e)(1) lets the survivor benefit be paid while married; a blank age would not.
+              remarriedAtAge: 60,
             },
           ],
         },

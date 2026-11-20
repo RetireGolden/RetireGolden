@@ -603,10 +603,10 @@ export function socialSecurityYear(input: SocialSecurityYearInput): SocialSecuri
           claimantOwnActualMonthly: actualByPerson.get(claimant.id) ?? 0,
           claimantSpouseWithheldMonths: spouseCredits.get(sourceKey),
           // A former spouse's death date is not in the plan; the widow(er)
-          // benefit is taken to start with the claimant's own claim, after that
-          // death, or, when a remarriage before 60 barred it until the current
-          // spouse's death, with the January after that death; its credits
-          // adjust it from the survivor FRA month.
+          // benefit starts with the claimant's own claim, after that death, or,
+          // when a remarriage before 60 or a blank remarriage age barred it until
+          // the current spouse's death, with the January after that death if
+          // later; its credits adjust it from the survivor FRA month.
           claimantSurvivorClaimAge: claimAgeFromTotalMonths(
             creditedAgeMonths(
               formerSpouseSurvivorEntitlementAgeMonths(record, claimant.zero, claimAgeTotalMonths(site.stream.claimAge), site.unmarriedFrom),

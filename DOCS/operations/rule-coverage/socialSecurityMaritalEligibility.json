@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "isDivorcedSpouseEligible",
-              "line": 126
+              "line": 130
             }
           ]
         }
@@ -223,19 +223,17 @@
     {
       "id": "cfr-20-404-335-ordinary-widow-eligibility",
       "title": "Ordinary widow nine-month duration, age-60, and remarriage gates, including currently unmarried after an intervening marriage ends",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "Known limit, stated on the analysis page. 20 CFR 404.335(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in, and the gate pays her then (fixed on 2026-09-29, decision D-SS-ANALYSIS-EARNINGS-TEST: until then a remarriage before 60 was an unconditional forfeiture even for a claimant now single). The plan records when a later marriage began, not when it ended; a household of one is unmarried, and a couple member becomes unmarried when the current spouse dies, which is the only end of a marriage the plan can express. A couple member's remarriage age below 60 is therefore read as the current marriage, and a remarriage before 60 followed by a current marriage entered at 60 or later cannot be expressed. When the current spouse's death ends that marriage, entitlement can begin only with the January after the death (POMS RS 00207.003 A: \"Entitlement can begin with the month the subsequent marriage terminated\"), so the widow(er) reduction is measured from that month, not from the claimant's earlier own claim (402(q)(6)(A)(iii); maritalBenefits.ts#formerSpouseSurvivorEntitlementAgeMonths; fixed after the implementation review of D-SS-ANALYSIS-EARNINGS-TEST, whose case B pays 35,877.86 dollars a year where the reduction from the own claim paid 28,671.43). For a person living alone who remarried before 60, the plan cannot say when the later marriage ended, so it is taken to have ended before the claim, and the benefit is reduced from the claim; if it ended later, the law starts entitlement, and the reduction, later. The analysis page says so when it applies. A schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.335(e) exception and does not prove a marriage before 60. The marital-benefit tests (maritalBenefits.test.ts) already characterize that coupled-null admission. The companion test holds the deceased at FRA so RIB-LIM and the survivor-FRA cohort error are not in play: 9-month ordinary, 8-month with no duration exception, remarried at 59 now single (paid, 2,400), remarried at 60 still married, the same 9-month no-remarriage facts at claimant age 59 and 60, then the same FRA-67 9-month facts with claimantIsSingle false and remarriedAtAge null where the worksheet current pre-60 marriage is projected out. The age-60 gate is the helper's own claimantAge test. The age-59 and age-60 cells use a direct helper contract (claimantClaimAge equal to claimantAge so the claim-age guard passes and age 59 is refused by isWidowEligible); a whole-plan stream claimAge is clamped to 62–70 and is outside this test. Fully-insured status, application (including the 404.335(b)(1) through (4) exceptions), and the 404.335(d) own-old-age-benefit restriction have no formerSpouse or stream fields and are not adjudicated here; the dual-entitlement offset is a pricing comparison elsewhere. The disabled-widow age-50 limb is `usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`; the 9-month statutory exceptions are `cfr-20-404-335-a-widow-duration-exceptions`.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "20 CFR 404.335(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in, and the gate pays her then (fixed on 2026-09-29, decision D-SS-ANALYSIS-EARNINGS-TEST: until then a remarriage before 60 was an unconditional forfeiture even for a claimant now single). Settled in the calculation validation round of 2026-11-16: until then a couple member with a blank remarriage age was paid while still married, as if the blank proved no remarriage, although a couple member is married to the current spouse and a blank establishes no (e)(1) remarriage at 60 or later. The gate now refuses that case while the current spouse lives and pays from the January after the death, reduced for the claimant's age then (case B with a blank age, householdYear.test.ts: 5,040 a year of own benefit in 2029 and 2030, then 35,877.86 in 2031, where the engine paid 28,671.43 in every year). The plan records when a later marriage began, not when it ended; a household of one is unmarried, and a couple member becomes unmarried when the current spouse dies, which is the only end of a marriage the plan can express. A couple member's remarriage age is therefore read as the current marriage, and a remarriage before 60 followed by a current marriage entered at 60 or later is entered as the current marriage's age. For a person living alone who remarried before 60, the plan cannot say when the later marriage ended, so it is taken to have ended before the claim, and the benefit is reduced from the claim; if it ended later, the law starts entitlement, and the reduction, later. The analysis page says so when it applies, and says when a blank remarriage age in a couple holds the benefit back until the current spouse's death. The companion test holds the deceased at FRA so RIB-LIM and the survivor-FRA cohort error are not in play: 9-month ordinary, 8-month with no duration exception, remarried at 59 now single (paid, 2,400), remarried at 60 still married (paid), the same 9-month no-remarriage facts at claimant age 59 and 60, a blank remarriage age still married (refused; the engine paid 2,400 until 2026-11-16), and remarried at 59 still married (refused). The age-60 gate is the helper's own claimantAge test. The age-59 and age-60 cells use a direct helper contract (claimantClaimAge equal to claimantAge so the claim-age guard passes and age 59 is refused by isWidowEligible); a whole-plan stream claimAge is clamped to 62 to 70 and is outside this test. Fully insured status, application (including the 404.335(b)(1) through (4) exceptions), and the 404.335(d) own-old-age-benefit restriction have no formerSpouse or stream fields and are not adjudicated here; the dual-entitlement offset is a pricing comparison elsewhere. The disabled-widow age-50 limb is `usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`; the (e)(2) and (e)(3) disability-related remarriage alternatives are not modeled and are disclosed in this record's statement, not in that one; the 9-month statutory exceptions are `cfr-20-404-335-a-widow-duration-exceptions`.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-04",
-      "dueOn": "2027-09-04",
+      "verifiedOn": "2026-11-16",
+      "dueOn": "2027-11-16",
       "implementedBy": [
         "packages/engine/src/socialSecurity/maritalBenefits.ts"
       ],
@@ -244,20 +242,40 @@
           "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
           "functions": [
             {
+              "name": "formerSpouseSurvivorEntitlementAgeMonths",
+              "line": 178
+            },
+            {
               "name": "isWidowEligible",
-              "line": 215
+              "line": 229
             },
             {
               "name": "passesModeledOrdinaryWidowRecordGates",
-              "line": 182
+              "line": 196
+            },
+            {
+              "name": "passesSurvivorRemarriageGate",
+              "line": 156
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts",
         "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 274,
+          "note": "a blank remarriage age in a couple, through the whole household year",
+          "tests": [
+            {
+              "title": "pays nothing on a deceased spouse's record while the claimant is married on a blank remarriage age, then from the January after the current spouse's death",
+              "line": 278
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
           "line": 82,
@@ -265,7 +283,7 @@
           "tests": [
             {
               "title": "pins the ordinary nine-month widow path, including currently-single after a pre-60 intervening marriage and coupled null remarriage timing",
-              "line": 126
+              "line": 132
             }
           ]
         }
@@ -333,19 +351,17 @@
     {
       "id": "cfr-20-404-336-e-surviving-divorced-remarriage",
       "title": "Surviving-divorced remarriage gate under 404.336(e) and (e)(1)",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "Known limit, stated on the analysis page. 20 CFR 404.336(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in, and the gate pays her then (fixed on 2026-09-29, decision D-SS-ANALYSIS-EARNINGS-TEST: until then a remarriage below 60 was rejected even when the claimant was now single). The plan records when a later marriage began, not when it ended; a couple member becomes unmarried only when the current spouse dies, and a remarriage age below 60 is read as that marriage. When that death ends it, entitlement, and the widow(er) reduction, start with the January after the death (POMS RS 00207.003 A; 402(q)(6)(A)(iii)), not with the claimant's earlier own claim. For a person living alone who remarried before 60, the later marriage is taken to have ended before the claim, and the benefit is reduced from the claim; if it ended later, the law starts entitlement, and the reduction, later. The analysis page says so when it applies. A schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.336(e) exception and does not prove a marriage before 60. The companion test holds ten-year duration, claimant age 67, deceased ex at FRA, and PIA 2,400 so the unreduced survivor amount is 2,400 when the gate passes: remarried at 55 now single (unmarried, pays), remarried at 60 still married ((e)(1) pays), remarried at 55 still married (the later marriage lasts, nothing), and a blank remarriage age still married (the authority pays nothing without an exception; the engine pays 2,400). Paragraph (e)(2) and (e)(3) disabled-remarriage facts have no formerSpouse fields and are not adjudicated here.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "20 CFR 404.336(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in, and the gate pays her then (fixed on 2026-09-29, decision D-SS-ANALYSIS-EARNINGS-TEST: until then a remarriage below 60 was rejected even when the claimant was now single). Settled in the calculation validation round of 2026-11-16: until then a couple member with a blank remarriage age was paid while still married, as if the blank proved no remarriage; the gate now refuses that case while the current spouse lives and pays from the January after the death, reduced for the claimant's age then (case B with a blank age on a surviving-divorced record, householdYear.test.ts: 5,040 a year of own benefit in 2029 and 2030, then 35,877.86 in 2031, where the engine paid 28,671.43 in every year). The plan records when a later marriage began, not when it ended; a couple member becomes unmarried only when the current spouse dies, and the remarriage age is read as that marriage. For a person living alone who remarried before 60, the later marriage is taken to have ended before the claim, and the benefit is reduced from the claim; if it ended later, the law starts entitlement, and the reduction, later. The analysis page says so when it applies. The companion test holds ten-year duration, claimant age 67, deceased ex at FRA, and PIA 2,400 so the unreduced survivor amount is 2,400 when the gate passes: remarried at 55 now single (unmarried, pays), remarried at 60 still married ((e)(1) pays), remarried at 55 still married (the later marriage lasts, nothing), a blank remarriage age still married (nothing; the engine paid 2,400 until 2026-11-16), remarried at 59 still married (nothing), and a blank remarriage age now single (unmarried, pays). Paragraph (e)(2) and (e)(3) disabled-remarriage facts have no formerSpouse fields and are not adjudicated here.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
+      "verifiedOn": "2026-11-16",
+      "dueOn": "2027-11-16",
       "implementedBy": [
         "packages/engine/src/socialSecurity/maritalBenefits.ts"
       ],
@@ -354,24 +370,40 @@
           "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
           "functions": [
             {
+              "name": "formerSpouseSurvivorEntitlementAgeMonths",
+              "line": 178
+            },
+            {
               "name": "passesSurvivorRemarriageGate",
-              "line": 145
+              "line": 156
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/socialSecurity/householdYear.test.ts",
         "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts"
       ],
       "fixtures": [
         {
+          "path": "packages/engine/src/socialSecurity/householdYear.test.ts",
+          "line": 286,
+          "note": "a blank remarriage age in a couple, through the whole household year",
+          "tests": [
+            {
+              "title": "pays nothing on a surviving-divorced record while the claimant is married on a blank remarriage age, then from the January after the current spouse's death",
+              "line": 290
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 210,
+          "line": 218,
           "note": null,
           "tests": [
             {
-              "title": "pins the remarriage gate: unmarried or remarried at 60 pays, a later marriage that lasts bars, a blank age in a couple pays",
-              "line": 237
+              "title": "pins the remarriage gate: unmarried or remarried at 60 pays, a later marriage that lasts or a blank age in a couple bars",
+              "line": 248
             }
           ]
         }
@@ -419,7 +451,7 @@
           "functions": [
             {
               "name": "passesModeledSurvivingDivorcedDurationGates",
-              "line": 195
+              "line": 209
             }
           ]
         }
@@ -430,12 +462,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 174,
+          "line": 182,
           "note": null,
           "tests": [
             {
               "title": "pins the surviving-divorced ten-year duration against the ordinary nine-month proxy",
-              "line": 191
+              "line": 199
             }
           ]
         }

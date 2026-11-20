@@ -1016,7 +1016,7 @@ export const socialSecurityRecords = {
   'usc-42-402-e-1-a-current-survivor-remarriage-before-60': {
     title: 'A current-spouse survivor’s later remarriage is outside the Plan',
     statement:
-      'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge`, and bars a deceased former spouse\'s survivor benefit after a remarriage below 60 while the claimant is married; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
+      'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge`, and bars a deceased former spouse\'s survivor benefit after a remarriage below 60, or on a blank remarriage age, while the claimant is married; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
