@@ -1,15 +1,15 @@
 # Mutation receipt: zero-year-replacement-gain
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 63f98d3..c63c2f2 100644
+index c636100..d8bc559 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -586,7 +586,7 @@ export function zeroYearReplacementGain(
+@@ -630,7 +630,7 @@ export function zeroYearReplacementGain(
    const before = computePiaFromEarnings(input)
    if (isPiaFromEarningsError(before) || before.zeroYearsInAime === 0) return null
    let year: number | null = null
@@ -35,9 +35,9 @@ Re-executed 2026-11-23 because the disability computation added lines above or b
 ```
 RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts (5 tests | 4 failed) 14ms
+ ❯ src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts (5 tests | 4 failed) 16ms
    ❯ zero-year-replacement-gain — PIA gain from replacing a year with no earnings (5)
-     × case A: 2027 at $60,000, unindexed, adds $45.70 (3,141.70 to 3,187.40) 9ms
+     × case A: 2027 at $60,000, unindexed, adds $45.70 (3,141.70 to 3,187.40) 10ms
      × case B: $300,000 is capped at the base and crosses the second bend point: $110.40, not $228.57 1ms
      × case C: above the second bend point the capped year adds $66.00 1ms
      × case O: past 61 the latest $0 year, 2019, has passed; its 17.90 for 2020 is 22.50 in 2026 dollars 1ms

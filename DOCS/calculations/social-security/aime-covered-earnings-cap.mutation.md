@@ -1,15 +1,15 @@
 # Mutation receipt: aime-covered-earnings-cap
 
-Executed 2026-09-27 against RetireGolden base `81d4bf03` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `81d4bf03` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 63f98d3..4d994e1 100644
+index c636100..6fa239b 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -151,7 +151,7 @@ function capEarnings(year: number, amount: number): number {
+@@ -171,7 +171,7 @@ function capEarnings(year: number, amount: number): number {
    // are not counted. The base is SSA's for every year from 1937, and the latest
    // published one for projected/future years SSA has not set yet (otherwise high
    // earners' projected years would inflate AIME past the taxable maximum).
@@ -35,9 +35,9 @@ Re-executed 2026-11-23 because the disability computation added lines above or b
 ```
 RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.wageBase.evidence.test.ts (3 tests | 2 failed) 14ms
+ ❯ src/socialSecurity/piaFromEarnings.wageBase.evidence.test.ts (3 tests | 2 failed) 13ms
    ❯ aime-covered-earnings-cap — Covered earnings counted up to each year's contribution and benefit base, from 1951 (3)
-     × case A: the 1978 wage counts only its 17,700 base (AIME 7,436, PIA 2,551.90, not 7,790 and 2,605.00) 8ms
+     × case A: the 1978 wage counts only its 17,700 base (AIME 7,436, PIA 2,551.90, not 7,790 and 2,605.00) 7ms
      × case B: the window starts at 1951 and each year counts its base (31 years, AIME 111, PIA 99.90) 1ms
 
  Test Files  1 failed (1)

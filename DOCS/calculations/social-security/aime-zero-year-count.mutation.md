@@ -1,18 +1,18 @@
 # Mutation receipt: aime-zero-year-count
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 63f98d3..69228b2 100644
+index c636100..f6da2c7 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -328,7 +328,7 @@ function computeWithReplacedYear(
-     yearsUsedInAime: top,
+@@ -361,7 +361,7 @@ function computeWithReplacedYear(
      computationYearCount,
      disabilityComputation,
+     dropoutYearCount,
 -    zeroYearsInAime: top.filter((value) => value === 0).length,
 +    zeroYearsInAime: annualIndexedList.filter((value) => value === 0).length,
      projectedYearCount,
