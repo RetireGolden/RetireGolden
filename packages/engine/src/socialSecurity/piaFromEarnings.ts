@@ -149,6 +149,25 @@ export function eligibilityYearFromDobParts(y: number, m: number, d: number): nu
 }
 
 /**
+ * The year of eligibility for a worker given the year he attains 62 and the
+ * year his disability began (null without one). A disability that begins
+ * before the year of 62 makes its own year the year of eligibility
+ * (42 U.S.C. 415(b)(2)(B)(ii); 403(a)(2)(D) for the family maximum); one
+ * beginning in or after the year of 62 leaves that year, and so does one
+ * beginning before 1979, whose computation (and family maximum) for an
+ * earlier year of eligibility is out of scope. The PIA computation and the
+ * retirement and survivor family maximum both take their year from here, so
+ * the maximum is always priced on the year the PIA was computed for.
+ */
+export function yearOfEligibilityWithDisability(attainsSixtyTwoYear: number, disabilityOnsetYear: number | null): number {
+  return disabilityOnsetYear !== null &&
+    disabilityOnsetYear < attainsSixtyTwoYear &&
+    disabilityOnsetYear >= FIRST_MODERN_ELIGIBILITY_YEAR
+    ? disabilityOnsetYear
+    : attainsSixtyTwoYear
+}
+
+/**
  * PIA from AIME using eligibility-year bend points (monthly formula): 90% of
  * AIME up to the first bend point, plus 32% of AIME between the first and
  * second, plus 15% of AIME above the second, then floored to the dime.
@@ -223,14 +242,8 @@ function computeWithReplacedYear(
   const { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection } = input
   const attainsSixtyTwoYear = eligibilityYearFromDobParts(dobYear, dobMonth, dobDay)
   const disability = input.disability ?? null
-  // A disability that begins before the year of 62 makes that year the year of
-  // eligibility; one beginning in or after it leaves the ordinary computation,
-  // and so does one beginning before 1979, whose computation is out of scope.
-  const disabilityComputation =
-    disability !== null &&
-    disability.onsetYear < attainsSixtyTwoYear &&
-    disability.onsetYear >= FIRST_MODERN_ELIGIBILITY_YEAR
-  const eligibilityYear = disabilityComputation ? disability.onsetYear : attainsSixtyTwoYear
+  const eligibilityYear = yearOfEligibilityWithDisability(attainsSixtyTwoYear, disability?.onsetYear ?? null)
+  const disabilityComputation = disability !== null && eligibilityYear !== attainsSixtyTwoYear
 
   if (eligibilityYear < FIRST_MODERN_ELIGIBILITY_YEAR) {
     return {

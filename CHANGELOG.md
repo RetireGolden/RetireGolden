@@ -8,14 +8,18 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   computation** (2026-11-23; calculation validation round). A Social Security stream's
   `disability.onsetAge` placed the SSDI payments but the PIA derived from earnings was still the
   computation for the year the worker attains 62. When the disability began earlier, the onset
-  year is now the year of eligibility (`piaFromEarnings.ts#computePiaFromEarnings`, given
-  `disabilityOnsetYear` by `streamPiaFromEarningsInput`): earnings are indexed to the second year
+  year is now the year of eligibility (`piaFromEarnings.ts#computePiaFromEarnings`, given its
+  `disability` facts, the onset year and the first entitlement month, by `streamPiaFromEarningsInput`
+  through `disabilityComputationFacts`): earnings are indexed to the second year
   before it (42 U.S.C. 415(b)(3)(A); 20 CFR 404.211(d)(1)), its bend points price the PIA and
   cost-of-living increases run from it, the elapsed years end with the year before it
   (415(b)(2)(B)(iii); 404.211(e)(1)), and one year is dropped per five elapsed years, at most five,
   with at least two averaged (415(b)(2)(A)(ii); 404.211(e)(3)); a first entitlement before July 1980
   keeps the usual five. An onset before 1979 keeps the ordinary computation (the pre-1979 method is
-  out of scope), and a late-year onset is computed for the onset year, an unresolved limit the
+  out of scope), and so does the retirement and survivor family maximum on that record, which
+  shares the year of eligibility (`piaFromEarnings.ts#yearOfEligibilityWithDisability`; born
+  1938-06-15 and disabled in 1978 with a 2026 PIA of 2,084.60, a maximum of 3,648.00 on the 2000
+  bend points, where pricing it on 1978 fell back to the 2026 ones for 3,665.60), and a late-year onset is computed for the onset year, an unresolved limit the
   record states. A worker born 1964-06-15 with
   earnings equal to the national average wage index for 1986 through 2018 and a disability that
   began in 2019 has an AIME of 4,198, was 5,487, and a PIA of 1,880.40 on the 2019 bend points,

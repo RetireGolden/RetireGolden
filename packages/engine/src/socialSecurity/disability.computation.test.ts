@@ -5,6 +5,7 @@ import { simulatePlan } from '../projection/simulate.js'
 import { describeRule } from '../rules/describeRule.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 
+import { familyMaximumEligibilityYear, workerFamilyMaximumMonthlyAt } from './familyMaximum.js'
 import { resolveStreamPiaMonthly } from './piaFromEarnings.js'
 import { AWI_BY_YEAR } from './ssaWageData.js'
 
@@ -186,5 +187,78 @@ describe('usc-42-415-b-2-b-disability-freeze-aime-exclusion: onset before 1979',
     expect(paid).toBeCloseTo(12 * resolved.piaMonthly, 6)
     expect(paid).toBeGreaterThan(0)
     expect(result.warnings.some((warning) => warning.includes('could not be used'))).toBe(false)
+  })
+})
+
+// The retirement and survivor family maximum for that worker follows the PIA
+// onto the year of 62 (42 U.S.C. 403(a)(2)(D) would count 1978, whose
+// maximum, like its PIA, is out of scope). Worker born 1938-06-15, disabled
+// from 1978, earnings equal to each year's AWI for the 35 years 1963-1997.
+// Ordinary computation for 2000 (the year of 62), indexing year 1998 (AWI
+// 28,861.44): every year indexes to 28,861.44; elapsed years 1960-1999 are 40,
+// five dropped, 35 averaged:
+//   AIME = floor(35 × 28,861.44 / 420) = floor(2,405.12) = 2,405
+//   PIA (2000 bend points 531 / 3,202) = 477.90 + 0.32 × 1,874 = 1,077.58 → 1,077.50
+// Raised by the 2000-2025 increases, each floored to the dime
+// (415(i)(2)(A)(ii)): 3.5% 1,115.20; 2.6% 1,144.10; 1.4% 1,160.10;
+// 2.1% 1,184.40; 2.7% 1,216.30; 4.1% 1,266.10; 3.3% 1,307.80; 2.3% 1,337.80;
+// 5.8% 1,415.30; 0% 1,415.30; 0% 1,415.30; 3.6% 1,466.20; 1.7% 1,491.10;
+// 1.5% 1,513.40; 1.7% 1,539.10; 0% 1,539.10; 0.3% 1,543.70; 2% 1,574.50;
+// 2.8% 1,618.50; 1.6% 1,644.30; 1.3% 1,665.60; 5.9% 1,763.80; 8.7% 1,917.20;
+// 3.2% 1,978.50; 2.5% 2,027.90; 2.8% 2,084.60.
+// Maximum in 2026 (his disability benefit converted at full retirement age in
+// 2003, so the retirement and survivor maximum), on the 2000 family-maximum
+// bend points 679 / 980 / 1,278:
+//   1.5 × 679 + 2.72 × 301 + 1.34 × 298 + 1.75 × 806.60
+//   = 1,018.50 + 818.72 + 399.32 + 1,411.55 = 3,648.09 → 3,648.00
+// Priced on 1978, a year the table has no triplet for, it fell back to the
+// 2026 bend points 1,643 / 2,371 / 3,093:
+//   1.5 × 1,643 + 2.72 × 441.60 = 2,464.50 + 1,201.152 = 3,665.652 → 3,665.60
+// The spouse, born 1940-06-15, no benefit of her own, claimed at 67 (after
+// her full retirement age of 65 and 6 months), is owed half the PIA,
+// 1,042.30. The room is 3,648.00 − 2,084.60 = 1,563.40 (1,581.00 on the
+// fallback), so she is paid in full either way: a single spouse under the
+// retirement and survivor maximum, at least 150 percent of the PIA, always is
+// (#capAuxiliaryForFamilyMaximum). 2026, zero inflation:
+//   12 × (2,084.60 + 1,042.30) = 25,015.20 + 12,507.60 = 37,522.80.
+describeRule('usc-42-403-a-2-D-family-maximum-eligibility-after-disability', {
+  readings: {
+    yearOfSixtyTwoAsThePiaUses: 3_648,
+    onsetYearFallingBackToLatestBendPoints: 3_665.6,
+  },
+  accepted: 'yearOfSixtyTwoAsThePiaUses',
+  note: 'a worker disabled before 1979, with a spouse',
+}, ({ accepted, readings }) => {
+  it('prices the maximum on the year of 62 the PIA was computed for', () => {
+    const plan: Plan = createEmptyPlan({ newId: testIds, now: () => new Date('2026-06-11T00:00:00.000Z') })
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [person('p1', '1938-06-15'), person('p2', '1940-06-15')]
+    const stream = {
+      type: 'socialSecurity' as const, id: testIds(), personId: 'p1', piaMonthly: null,
+      earnings: Array.from({ length: 35 }, (_, index) => ({ year: 1963 + index, amount: AWI_BY_YEAR[1963 + index]! })),
+      disability: { onsetAge: 40 }, claimAge: { years: 62, months: 0 },
+    }
+    plan.incomes = [
+      stream,
+      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+    ]
+    plan.accounts = [cashAccount()]
+
+    const resolved = resolveStreamPiaMonthly(stream, { dob: '1938-06-15', retirementAge: null }, { startYear: 2026, colaAssumptionPct: 0 })
+    if (resolved.status !== 'fromEarnings') throw new Error(`expected an earnings PIA, received ${resolved.status}`)
+    expect([resolved.detail.eligibilityYear, resolved.detail.disabilityComputation, resolved.detail.aime]).toEqual([2000, false, 2_405])
+    expect(resolved.piaMonthly).toBeCloseTo(2_084.6, 9)
+
+    const dob = { year: 1938, month: 6, day: 15 }
+    expect(familyMaximumEligibilityYear(dob, 1978)).toBe(2000)
+    const disability = {
+      onsetYear: 1978, firstPayableMonthIndex: 1978 * 12 + 11, fraMonthIndex: 2003 * 12 + 7, disabilityMaximumMonthly: 0,
+    }
+    const maximum = workerFamilyMaximumMonthlyAt({ piaMonthly: resolved.piaMonthly, dob, disability }, 2026 * 12)
+    expect(maximum).toBeCloseTo(accepted, 9)
+    expect(maximum).not.toBeCloseTo(readings.onsetYearFallingBackToLatestBendPoints, 6)
+
+    const paid = run(plan).years.find((y) => y.year === 2026)!.incomes.socialSecurity
+    expect(paid).toBeCloseTo(37_522.8, 6)
   })
 })

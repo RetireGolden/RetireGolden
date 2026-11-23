@@ -17,7 +17,7 @@
 import type { ClaimAge } from './claimFactor.js'
 import { spouseDualEntitlementMonthly } from './dualEntitlement.js'
 import { effectiveBirthYear } from './nra.js'
-import { type PiaAsOf, type ResolvedStreamPia } from './piaFromEarnings.js'
+import { type PiaAsOf, type ResolvedStreamPia, yearOfEligibilityWithDisability } from './piaFromEarnings.js'
 import { COLA_PCT_BY_YEAR } from './ssaWageData.js'
 import { familyMaximumBendPointsForEligibilityYearOrLatest } from './ssaWageData.js'
 
@@ -42,6 +42,10 @@ export function familyMaximumEligibilityYearFromDobParts(year: number, month: nu
  * of eligibility is the earlier of the year the disability began and the year
  * he attains 62: before 62 the disability year counts either way, and a
  * disability that begins after the year of 62 leaves that year in place.
+ * A disability that began before 1979 also leaves the year of 62, as the PIA
+ * computation does (piaFromEarnings.ts#yearOfEligibilityWithDisability, which
+ * both share): the maximum for a year of eligibility before 1979 is out of
+ * scope, and pricing it on that year would fall back to the latest bend points.
  * `disabilityOnsetYear` is null for a worker the plan gives no disability
  * benefit (no disability month payable before full retirement age).
  */
@@ -49,8 +53,7 @@ export function familyMaximumEligibilityYear(
   dob: { year: number; month: number; day: number },
   disabilityOnsetYear: number | null,
 ): number {
-  const attainsSixtyTwo = familyMaximumEligibilityYearFromDobParts(dob.year, dob.month, dob.day)
-  return disabilityOnsetYear === null ? attainsSixtyTwo : Math.min(disabilityOnsetYear, attainsSixtyTwo)
+  return yearOfEligibilityWithDisability(familyMaximumEligibilityYearFromDobParts(dob.year, dob.month, dob.day), disabilityOnsetYear)
 }
 
 /**
