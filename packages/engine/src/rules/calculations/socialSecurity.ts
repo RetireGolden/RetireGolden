@@ -14,15 +14,18 @@ export const socialSecurityRecords = {
     outputs: [],
     feeds: ['social-security-benefit-annual'],
     statement:
-      'socialSecurity/piaFromEarnings.ts#computePiaFromEarnings caps each year\'s covered earnings at that year\'s contribution and benefit base, socialSecurity/ssaWageData.ts#WAGE_BASE_BY_YEAR (SSA\'s bases for every year from 1937 through 2026, read through #wageBaseForYearOrLatest, which uses the latest published base only for a later year SSA has not set), before wage-indexing them (42 U.S.C. 415(e)(1): "there shall not be counted the excess over $3,600 in the case of any calendar year after 1950 and before 1955", and so on through the section 430 base from 1975). Its window of years starts at 1951 (#FIRST_COMPUTATION_BASE_YEAR, the first of "the calendar years after 1950", 415(b)(2)(B)(ii)) or the year the worker turns 22, whichever is later, and ends with the year before 62; the five lowest indexed years are dropped and the rest averaged over their months, floored to a dollar. Units: nominal USD per year for earnings, per month for the average. Rounding: each indexed year floored to a dollar and the average floored to a dollar.',
+      'socialSecurity/piaFromEarnings.ts#computePiaFromEarnings caps each year\'s covered earnings at that year\'s contribution and benefit base, socialSecurity/ssaWageData.ts#WAGE_BASE_BY_YEAR (SSA\'s bases for every year from 1937 through 2026, read through #wageBaseForYearOrLatest, which uses the latest published base only for a later year SSA has not set), before wage-indexing them (42 U.S.C. 415(e)(1): "there shall not be counted the excess over $3,600 in the case of any calendar year after 1950 and before 1955", and so on through the section 430 base from 1975). Its window of years starts at 1951 (#FIRST_COMPUTATION_BASE_YEAR, the first of "the calendar years after 1950", 415(b)(2)(B)(ii)) or the year the worker turns 22, whichever is later, and ends with the year before the eligibility year; the lowest indexed years are dropped (five, or for a disability that began before 62 one per five window years, at most five, usc-42-415-b-2-b-disability-freeze-aime-exclusion), never leaving fewer than two, and the rest averaged over their months, floored to a dollar. Units: nominal USD per year for earnings, per month for the average. Rounding: each indexed year floored to a dollar and the average floored to a dollar.',
     formula: {
-      expression: 'counted(y) = min(earnings(y), base(y)); indexed(y) = floor(counted(y) x AWI(e - 2) / AWI(y)) for y <= e - 2, else counted(y); years y from max(1951, b + 22) to e - 1; AIME = floor(sum of all but the five lowest indexed / (12 x (count - 5)))',
+      expression: 'counted(y) = min(earnings(y), base(y)); indexed(y) = floor(counted(y) x AWI(e - 2) / AWI(y)) for y <= e - 2, else counted(y); years y from max(1951, b + 22) to e - 1, n of them; k = max(2, n - d); AIME = floor(sum of the k largest indexed / (12 x k))',
       variables: [
         { symbol: 'earnings(y)', meaning: 'Covered earnings reported or projected for year y', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'base(y)', meaning: 'Contribution and benefit base for year y: SSA\'s from 1937, the latest published for a later year', unit: 'usd/year', domain: 'positive from 1937' },
         { symbol: 'AWI(y)', meaning: 'National average wage index for year y, the latest published for a later year', unit: 'usd/year', domain: 'positive, from 1951' },
-        { symbol: 'e', meaning: 'Eligibility year, the year the worker turns 62 (effective birth year plus 62)', unit: 'year', domain: '1979 or later' },
+        { symbol: 'e', meaning: 'Eligibility year: the year the worker turns 62 (effective birth year plus 62), or the earlier year a disability the plan gives began', unit: 'year', domain: '1979 or later' },
         { symbol: 'b', meaning: 'Effective birth year (a January 1 birth counts in the prior year)', unit: 'year', domain: 'integer' },
+        { symbol: 'n', meaning: 'Number of window years, the elapsed years', unit: 'years', domain: 'positive integer' },
+        { symbol: 'd', meaning: 'Dropout years: 5, or min(5, floor(n / 5)) for a disability that began before 62', unit: 'years', domain: '0 to 5' },
+        { symbol: 'k', meaning: 'Computation years averaged', unit: 'years', domain: 'at least 2' },
       ],
       timing: 'once per earnings history, before the projection',
       rounding: 'each indexed year and the average floored to a whole dollar',
@@ -210,7 +213,7 @@ export const socialSecurityRecords = {
     formula: {
       expression: 'P(e - 1) = eligibility-year PIA; P(y) = floorToDime(P(y - 1) x (1 + c(y) / 100)) for y = e to t; result P(t), with t = startYear - 1',
       variables: [
-        { symbol: 'e', meaning: 'Eligibility year, the year the worker turns 62', unit: 'year', domain: '1979 or later' },
+        { symbol: 'e', meaning: 'Eligibility year: the year the worker turns 62, or the earlier year a disability the plan gives began', unit: 'year', domain: '1979 or later' },
         { symbol: 't', meaning: 'The year before the projection\'s first year', unit: 'year', domain: 'integer; no step when t < e' },
         { symbol: 'c(y)', meaning: 'Cost-of-living increase effective in year y: SSA\'s published figure, or the plan\'s COLA assumption for a year not yet announced', unit: 'percent', domain: 'nonnegative in the published series' },
       ],
@@ -386,7 +389,7 @@ export const socialSecurityRecords = {
       'The published source for the year that holds the FRA month reads own retirement, the benefit in force at the end of the year; the disability months in that year are in ssdiPaid',
       'The worksheet\'s claim at 70 pays 12 months in 2040 (29,760) under the engine\'s claim-year convention (social-security-payable-months); by statute that benefit starts with June 2040 and pays 17,360 that year',
       'The annual SGA test applies only in a year that pays disability months and no converted month, and suspends the whole year',
-      'The disability PIA is the PIA the plan gives or derives from earnings, not a PIA computed as if the worker were 62 at the start of the waiting period (20 CFR 404.317)',
+      'The disability PIA is the PIA the plan gives or derives from earnings; one derived from earnings is computed for the year the disability began when that is before the year of 62 (usc-42-415-b-2-b-disability-freeze-aime-exclusion)',
     ],
     implementedBy: [
       'packages/engine/src/socialSecurity/disability.ts',
@@ -994,7 +997,7 @@ export const socialSecurityRecords = {
       worksheet: 'DOCS/calculations/social-security/aime-zero-year-count.md',
     },
     limits: [
-      'Counts the years this computation averaged, so it follows its computation-year window: always 35 years for a worker whose window has 40, the base years from 22 to 61 (usc-42-415-b-2-b-ii-iii-initial-computation-base-window)',
+      'Counts the years this computation averaged, so it follows its computation-year window: always 35 years for a worker whose window has 40, the base years from 22 to 61 (usc-42-415-b-2-b-ii-iii-initial-computation-base-window), and fewer for a disability that began before 62, whose window ends with the year before the onset (usc-42-415-b-2-b-disability-freeze-aime-exclusion)',
     ],
     implementedBy: ['packages/engine/src/socialSecurity/piaFromEarnings.ts'],
     implementedByFunctions: ['packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings'],

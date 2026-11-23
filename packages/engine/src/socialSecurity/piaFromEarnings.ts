@@ -5,6 +5,7 @@
  */
 
 import { socialSecurityDobParts } from './annualTiming.js'
+import type { SsdiOnset } from './disability.js'
 import { effectiveBirthYear } from './nra.js'
 import {
   awiForYear,
@@ -55,6 +56,13 @@ export interface PiaFromEarningsInput {
   lastEarningsYear: number
   /** Optional: fill base years after `lastEarningsYear` with assumed earnings instead of zero. */
   projection?: EarningsProjection | null
+  /**
+   * The calendar year a disability began, for a worker the plan gives a
+   * disability benefit; null or omitted for none. A year before the one the
+   * worker attains 62 makes this the disability computation (see
+   * #computePiaFromEarnings); a later year leaves the ordinary one.
+   */
+  disabilityOnsetYear?: number | null
 }
 
 export interface IndexedYearDetail {
@@ -68,6 +76,12 @@ export interface IndexedYearDetail {
 }
 
 export interface PiaFromEarningsResult {
+  /**
+   * The year of eligibility the computation is made for: the year the worker
+   * attains 62, or the year a disability began when that is earlier. Its
+   * bend points price the PIA, the indexing year is two years before it, and
+   * cost-of-living increases run from it.
+   */
   eligibilityYear: number
   firstBaseYear: number
   lastBaseYear: number
@@ -76,6 +90,11 @@ export interface PiaFromEarningsResult {
   /** After dropout / top-35 selection, in eligibility-year dollars (indexed or nominal per rules). */
   yearsUsedInAime: number[]
   computationYearCount: number
+  /**
+   * True when the computation is the disability one: a disability began before
+   * the year the worker attains 62 (`disabilityOnsetYear`).
+   */
+  disabilityComputation: boolean
   /**
    * How many of `yearsUsedInAime` are $0: benefit computation years with no
    * indexed earnings, each one lowering the average. It counts the years this
@@ -147,8 +166,22 @@ function indexCoveredEarnings(
   return Math.floor((cappedEarnings * indexingYearAwi) / yearAwi)
 }
 
+/** The fewest benefit computation years 42 U.S.C. 415(b)(2)(A) and 20 CFR 404.211(e)(1) allow. */
+export const MINIMUM_COMPUTATION_YEARS = 2
+
 /**
- * Full earnings-history → AIME → PIA path for a retirement benefit illustration.
+ * Full earnings-history → AIME → PIA path.
+ *
+ * The ordinary computation is made for the year the worker attains 62. When
+ * `disabilityOnsetYear` is earlier, it is the disability computation
+ * (usc-42-415-b-2-b-disability-freeze-aime-exclusion): the onset year is the
+ * year of eligibility, so the indexing year is the second year before it
+ * (42 U.S.C. 415(b)(3)(A); 20 CFR 404.211(d)(1)) and its bend points price the
+ * PIA; the elapsed years end with the year before it, since the onset year
+ * and later years are partly or wholly within the period of disability
+ * (415(b)(2)(B)(iii); 20 CFR 404.211(e)(1)); and the dropout is one year per
+ * five elapsed years, at most five (415(b)(2)(A)(ii); 20 CFR 404.211(e)(3)).
+ * Either way at least two computation years are averaged.
  */
 export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarningsResult | PiaFromEarningsError {
   return computeWithReplacedYear(input, null)
@@ -164,7 +197,12 @@ function computeWithReplacedYear(
   replaced: { readonly year: number; readonly amount: number } | null,
 ): PiaFromEarningsResult | PiaFromEarningsError {
   const { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection } = input
-  const eligibilityYear = eligibilityYearFromDobParts(dobYear, dobMonth, dobDay)
+  const attainsSixtyTwoYear = eligibilityYearFromDobParts(dobYear, dobMonth, dobDay)
+  const onsetYear = input.disabilityOnsetYear ?? null
+  // A disability that begins before the year of 62 makes that year the year of
+  // eligibility; one beginning in or after it leaves the ordinary computation.
+  const disabilityComputation = onsetYear !== null && onsetYear < attainsSixtyTwoYear
+  const eligibilityYear = disabilityComputation ? onsetYear : attainsSixtyTwoYear
 
   if (eligibilityYear < 1979) {
     return {
@@ -176,15 +214,25 @@ function computeWithReplacedYear(
 
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
   // Elapsed-year span: 1951, or the year the worker turns 22 if later, through the
-  // year before 62 (42 U.S.C. 415(b)(2)(B)(iii)); not the computation-base years
-  // through the year before first entitlement (a registered approximation).
+  // year before the year of eligibility (42 U.S.C. 415(b)(2)(B)(iii)), which for
+  // the disability computation leaves out the onset year and every later one;
+  // not the computation-base years through the year before first entitlement
+  // (a registered approximation).
   const firstBaseYear = Math.max(effBirth + 22, FIRST_COMPUTATION_BASE_YEAR)
   const lastBaseYear = eligibilityYear - 1
 
-  if (lastEarningsYear < firstBaseYear || lastEarningsYear > lastBaseYear) {
+  // The reported history is checked against the ordinary window; for the
+  // disability computation its years from the onset year on are not used.
+  if (lastEarningsYear < firstBaseYear || lastEarningsYear > attainsSixtyTwoYear - 1) {
     return {
       code: 'last_earnings_year_out_of_range',
-      message: `Last earnings year must be between ${firstBaseYear} and ${lastBaseYear} for this date of birth.`,
+      message: `Last earnings year must be between ${firstBaseYear} and ${attainsSixtyTwoYear - 1} for this date of birth.`,
+    }
+  }
+  if (lastBaseYear < firstBaseYear) {
+    return {
+      code: 'no_computation_years',
+      message: 'The disability began before the first year this tool counts (1951, or the year the worker turns 22).',
     }
   }
 
@@ -253,21 +301,18 @@ function computeWithReplacedYear(
   }
 
   // 42 U.S.C. 415(b)(2)(A): the computation years are the elapsed years less
-  // five, the years with the largest indexed earnings. Elapsed years number at
-  // most 40 (age 22 through 61), so at most 35 remain, and fewer when they start
-  // at 1951.
-  annualIndexedList.sort((a, b) => a - b)
-  const afterDropout = annualIndexedList.slice(5)
-  if (afterDropout.length === 0) {
-    return {
-      code: 'no_computation_years',
-      message: 'Not enough covered earnings years in the base period after dropout (need at least one year).',
-    }
-  }
-
-  afterDropout.sort((a, b) => b - a)
-  const top = afterDropout
-  const computationYearCount = afterDropout.length
+  // the dropout, the years with the largest indexed earnings, and never fewer
+  // than two. The ordinary dropout is five (A)(i); elapsed years number at most
+  // 40 (age 22 through 61), so at most 35 remain, and fewer when they start at
+  // 1951. The disability dropout is one fifth of the elapsed years, fraction
+  // disregarded, at most five (A)(ii). Fewer window years than computation
+  // years leaves the rest at $0.
+  const elapsedYearCount = lastBaseYear - firstBaseYear + 1
+  const dropoutYearCount = disabilityComputation ? Math.min(5, Math.floor(elapsedYearCount / 5)) : 5
+  const computationYearCount = Math.max(MINIMUM_COMPUTATION_YEARS, elapsedYearCount - dropoutYearCount)
+  annualIndexedList.sort((a, b) => b - a)
+  const top = annualIndexedList.slice(0, computationYearCount)
+  while (top.length < computationYearCount) top.push(0)
   const sumTop = top.reduce((s, v) => s + v, 0)
   const divisorMonths = 12 * computationYearCount
   const aime = Math.floor(sumTop / divisorMonths)
@@ -282,6 +327,7 @@ function computeWithReplacedYear(
     indexedYears: indexedDetails,
     yearsUsedInAime: top,
     computationYearCount,
+    disabilityComputation,
     zeroYearsInAime: top.filter((value) => value === 0).length,
     projectedYearCount,
     aime,
@@ -349,7 +395,8 @@ export function isPiaFromEarningsError(
  * Assemble a {@link PiaFromEarningsInput} from a person's date of birth and an
  * earnings history, clamping `lastEarningsYear` into the AIME base window. Shared
  * by the projection engine and the planner UI so the windowing logic lives in
- * one place. Assumes `earnings` is non-empty (callers guard).
+ * one place. Assumes `earnings` is non-empty (callers guard). `disabilityOnsetYear`
+ * is the year a disability the plan pays began (#disabilityComputationOnsetYear).
  */
 export function piaInputFromEarnings(
   dobYear: number,
@@ -357,13 +404,26 @@ export function piaInputFromEarnings(
   dobDay: number,
   earnings: readonly YearEarning[],
   projection?: EarningsProjection | null,
+  disabilityOnsetYear: number | null = null,
 ): PiaFromEarningsInput {
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
   const firstBaseYear = Math.max(effBirth + 22, FIRST_COMPUTATION_BASE_YEAR)
   const lastBaseYear = effBirth + 61
   // Same elapsed-year clamp computePiaFromEarnings iterates; years outside it are ignored.
   const lastEarningsYear = Math.min(Math.max(...earnings.map((e) => e.year), firstBaseYear), lastBaseYear)
-  return { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection: projection ?? null }
+  return { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection: projection ?? null, disabilityOnsetYear }
+}
+
+/**
+ * The year a stream's disability began (the birth year plus `onsetAge`, the
+ * year the plan's disability schedule counts from), or null when the stream
+ * has no disability. #computePiaFromEarnings makes the disability computation
+ * only when that year is before the year the worker attains 62; such a
+ * disability always has months payable before full retirement age, so it is
+ * one the plan pays (#ssdiSchedule).
+ */
+export function disabilityComputationOnsetYear(dobYear: number, disability: SsdiOnset | null | undefined): number | null {
+  return disability ? dobYear + disability.onsetAge : null
 }
 
 /**
@@ -389,6 +449,8 @@ export interface StreamPiaInput {
     readonly assumedAnnualEarnings: number | null
     readonly throughAge: number | null
   } | null
+  /** The stream's disability onset, if any: a disability before 62 changes the computation. */
+  readonly disability?: SsdiOnset | null | undefined
 }
 
 /** The stream owner's date of birth (ISO) and retirement age, which the earnings projection defaults to. */
@@ -422,14 +484,15 @@ export type ResolvedStreamPia =
 
 /**
  * The earnings computation's input for a stream: its earnings history with its
- * projection (defaulting to the person's retirement age) and the person's date
- * of birth; null when the stream has no earnings history.
+ * projection (defaulting to the person's retirement age), the person's date
+ * of birth and the year the stream's disability began, if it has one; null
+ * when the stream has no earnings history.
  */
 export function streamPiaFromEarningsInput(stream: StreamPiaInput, person: StreamPiaPerson): PiaFromEarningsInput | null {
   if (!stream.earnings || stream.earnings.length === 0) return null
   const { y, m, d } = socialSecurityDobParts(person)
   const projection = resolveEarningsProjection(stream.earningsProjection, person.retirementAge)
-  return piaInputFromEarnings(y, m, d, stream.earnings, projection)
+  return piaInputFromEarnings(y, m, d, stream.earnings, projection, disabilityComputationOnsetYear(y, stream.disability))
 }
 
 /**
