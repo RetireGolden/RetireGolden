@@ -13,7 +13,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   before it (42 U.S.C. 415(b)(3)(A); 20 CFR 404.211(d)(1)), its bend points price the PIA and
   cost-of-living increases run from it, the elapsed years end with the year before it
   (415(b)(2)(B)(iii); 404.211(e)(1)), and one year is dropped per five elapsed years, at most five,
-  with at least two averaged (415(b)(2)(A)(ii); 404.211(e)(3)). A worker born 1964-06-15 with
+  with at least two averaged (415(b)(2)(A)(ii); 404.211(e)(3)); a first entitlement before July 1980
+  keeps the usual five. An onset before 1979 keeps the ordinary computation (the pre-1979 method is
+  out of scope), and a late-year onset is computed for the onset year, an unresolved limit the
+  record states. A worker born 1964-06-15 with
   earnings equal to the national average wage index for 1986 through 2018 and a disability that
   began in 2019 has an AIME of 4,198, was 5,487, and a PIA of 1,880.40 on the 2019 bend points,
   was 2,501.70 on the 2026 ones; raised by the 2019 to 2025 increases the 2026 disability benefit

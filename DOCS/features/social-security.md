@@ -373,11 +373,17 @@ disability that began before the year the worker attains 62 is the disability co
 (`piaFromEarnings.ts#computePiaFromEarnings` with `disabilityOnsetYear`, set by `streamPiaFromEarningsInput`
 from `disability.onsetAge`): the onset year is the year of eligibility (indexing year two years before it,
 its bend points, cost-of-living increases from it), the elapsed years end with the year before the onset,
-and one year per five elapsed years is dropped, at most five, with at least two averaged (42 U.S.C.
+and, for a first entitlement after June 1980, one year per five elapsed years is dropped, at most five
+(the usual five before July 1980), with at least two averaged; reported or projected earnings before the
+onset year count as usual (42 U.S.C.
 415(b)(2)(A)(ii), (b)(2)(B)(iii), (b)(3)(A); 20 CFR 404.211(d)(1), (e)(1), (e)(3);
 `usc-42-415-b-2-b-disability-freeze-aime-exclusion`, settled 2026-11-23). Born 1964-06-15 with AWI-level
 earnings 1986–2018 and an onset in 2019: AIME 4,198 and PIA 1,880.40 for 2019, 2,422.00 a month in 2026;
-until 2026-11-23 the engine used the 2026 age-62 computation (AIME 5,487, PIA 2,501.70). The onset is a
+until 2026-11-23 the engine used the 2026 age-62 computation (AIME 5,487, PIA 2,501.70). Stated limits: an
+onset before 1979 keeps the ordinary age-62 computation (the pre-1979 method is out of scope); a late-year
+onset whose waiting period begins the next January is still computed for the onset year (whether the
+waiting period's year should price the PIA is unresolved); and no later recomputation counts the period's
+years (`usc-42-415-f-2-post-entitlement-pia-recomputation`). The onset is a
 planning assumption, not an SSA disability or insured-status adjudication. Documented simplifications /
 registered gaps: the waiting period's
 stated limits (an onset on the 1st paid one month late, a timely application assumed, no re-entitlement or

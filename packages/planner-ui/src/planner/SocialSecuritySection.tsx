@@ -673,7 +673,10 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
               {colaFromYear !== null && resolved.detail !== null ? (
                 <>
                   , as the plan pays it from {piaAsOf.startYear}. Your earnings give{' '}
-                  {fmtMoney(resolved.detail.piaMonthly)}/mo for {colaFromYear}, the year you became eligible at 62,
+                  {fmtMoney(resolved.detail.piaMonthly)}/mo for {colaFromYear},{' '}
+                  {resolved.detail.disabilityComputation
+                    ? 'the year your disability began, which is your year of eligibility,'
+                    : 'the year you became eligible at 62,'}
                   and Social Security adds each cost-of-living increase from then, whether or not you have claimed:{' '}
                   {standInYears === null ? (
                     <>every increase through {colaThroughYear}.</>
@@ -701,8 +704,18 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           ) : null}
           {stream.earningsProjection != null && projectedYears === 0 && resolved.piaMonthly !== null ? (
             <p className="field-hint mt-xs" style={{ color: 'var(--warn)' }}>
-              No years were projected. Your reported earnings already reach your retirement age, or no retirement age is
-              set on the Household step.
+              {resolved.detail?.disabilityComputation ? (
+                <>
+                  No years were projected. The computation for your disability counts earnings only through{' '}
+                  {resolved.detail.lastBaseYear}, the year before it began, and your reported earnings already reach that
+                  year.
+                </>
+              ) : (
+                <>
+                  No years were projected. Your reported earnings already reach your retirement age, or no retirement age is
+                  set on the Household step.
+                </>
+              )}
             </p>
           ) : null}
 

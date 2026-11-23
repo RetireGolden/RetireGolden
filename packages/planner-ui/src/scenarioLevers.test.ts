@@ -3098,6 +3098,46 @@ describe('scenario lever contract', () => {
     expect(result.ok).toBe(true)
   })
 
+  // usc-42-415-b-2-b-disability-freeze-aime-exclusion through the lever: a
+  // disability that began in 2020, at 50, before the year of 62 (2032), makes
+  // the earnings computation the disability one, whose window ends in 2019,
+  // the year before the onset (42 U.S.C. 415(b)(2)(B)(iii); 20 CFR
+  // 404.211(e)(1)). The projection fills years after 2019 up to the
+  // retirement age, and none of them is in that window, so moving the
+  // retirement age from 60 to 61 cannot change the PIA. Without the onset
+  // the ordinary window runs to 2031 and the same move adds 2030 at 100,000,
+  // which the test above shows is a lever.
+  it('rejects a retirement-age change that the disability computation window cannot reach', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    plan.household.people = [person]
+    plan.household.filingStatus = 'single'
+    person.dob = '1970-06-15'
+    person.retirementAge = 60
+    plan.accounts = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+    plan.expenses.healthcare.ssa44 = { survivorYears: false, retirementYears: false }
+    const stream = (disability: { onsetAge: number } | undefined) => ({
+      type: 'socialSecurity' as const,
+      id: 'earnings-ss',
+      personId: person.id,
+      piaMonthly: null,
+      earnings: [{ year: 2019, amount: 100_000 }],
+      earningsProjection: { assumedAnnualEarnings: 100_000, throughAge: null },
+      ...(disability === undefined ? {} : { disability }),
+      claimAge: { years: 70, months: 0 },
+    })
+
+    plan.incomes = [stream(undefined)]
+    const ordinary = buildScenarioLever(plan, { id: 'retirementAge', yearsDelta: 1 }, context)
+    plan.incomes = [stream({ onsetAge: 50 })]
+    const disabled = buildScenarioLever(plan, { id: 'retirementAge', yearsDelta: 1 }, context)
+
+    expect(ordinary.ok).toBe(true)
+    expect(disabled.ok).toBe(false)
+  })
+
   it('recognizes employer-plan Rule-of-55 changes as retirement-age effects', () => {
     const plan = buildExampleCouple()
     const person = plan.household.people[0]!

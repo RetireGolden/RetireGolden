@@ -11,11 +11,12 @@
  * those frozen values on the identical earnings; produced pins are the scout-
  * observed engine AIMEs.
  */
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../describeRule.js'
 import {
   computePiaFromEarnings,
+  disabilityComputationFacts,
   isPiaFromEarningsError,
   piaInputFromEarnings,
   type PiaFromEarningsResult,
@@ -24,6 +25,7 @@ import {
 
 /** Official SSA AWI dollars, two-decimal series as published. */
 const AWI = {
+  1978: 10556.03,
   1979: 11479.46,
   1980: 12513.46,
   1981: 13773.10,
@@ -253,6 +255,8 @@ describeRule('usc-42-415-b-2-a-i-computation-years-five-year-dropout', {
 // (https://www.ssa.gov/oact/cola/bendpoints.html), frozen here rather than
 // imported from the engine table.
 const BEND_POINTS = {
+  1979: { first: 180, second: 1_085 },
+  1980: { first: 194, second: 1_171 },
   1987: { first: 310, second: 1_866 },
   2009: { first: 744, second: 4_483 },
   2019: { first: 926, second: 5_583 },
@@ -324,7 +328,7 @@ describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
       ...DISABILITY_DOB,
       earnings: awiEarnings(DISABILITY_EARNINGS_YEARS),
       lastEarningsYear: 2025,
-      disabilityOnsetYear: 2019,
+      disability: disabilityComputationFacts(1964, { onsetAge: 55 }),
     })
     expect(result.eligibilityYear).toBe(2019)
     expect(result.lastBaseYear).toBe(2018)
@@ -339,8 +343,8 @@ describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
 
   it('keeps the ordinary computation without an onset, and for an onset in the year of 62', () => {
     const base = { ...DISABILITY_DOB, earnings: awiEarnings(DISABILITY_EARNINGS_YEARS), lastEarningsYear: 2025 }
-    for (const disabilityOnsetYear of [null, 2026]) {
-      const result = disabilityResult({ ...base, disabilityOnsetYear })
+    for (const disability of [null, disabilityComputationFacts(1964, { onsetAge: 62 })]) {
+      const result = disabilityResult({ ...base, disability })
       expect(result.eligibilityYear).toBe(2026)
       expect(result.disabilityComputation).toBe(false)
       expect(result.aime).toBe(readings.retirementEligibilityProxy)
@@ -382,7 +386,7 @@ describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
       ...DISABILITY_DOB,
       earnings: awiEarnings(YOUNG_ONSET_EARNINGS_YEARS),
       lastEarningsYear: 2008,
-      disabilityOnsetYear: 2009,
+      disability: disabilityComputationFacts(1964, { onsetAge: 45 }),
     })
     expect(result.computationYearCount).toBe(19)
     expect(result.zeroYearsInAime).toBe(1)
@@ -420,12 +424,147 @@ describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
       ...DISABILITY_DOB,
       earnings: [{ year: 1986, amount: 20_000 }],
       lastEarningsYear: 1986,
-      disabilityOnsetYear: 1987,
+      disability: disabilityComputationFacts(1964, { onsetAge: 23 }),
     })
     expect(result.computationYearCount).toBe(2)
     expect(result.aime).toBe(accepted)
     expect(result.aime).not.toBe(readings.oneComputationYear)
     expect(Math.round(result.piaMonthly * 100)).toBe(piaCentsFromAime(accepted, BEND_POINTS[1987]))
     expect(Math.round(result.piaMonthly * 100)).toBe(44_630)
+  })
+})
+
+// Pre-July-1980 entitlement keeps the usual dropout (20 CFR 404.211(e)(3):
+// "Where the worker is first entitled to disability insurance benefits (DIB)
+// after June 1980, there is an exception to the usual 5 year dropout ...
+// (For entitlement before July 1980, we use the usual dropout.)"). A worker
+// born 1939-06-15 disabled from January 1979 (onsetAge 40, blank month read as
+// January 1) is first entitled in June 1979. Year of eligibility 1979,
+// indexing year 1977; elapsed years 1961 (age 22) through 1978, eighteen.
+// Only 1978 has earnings, 10,000, after the indexing year so used nominally.
+//   accepted, usual five-year dropout: 13 years, floor(10,000 / 156) = 64;
+//   one-for-five dropout (floor(18 / 5) = 3): 15 years, floor(10,000 / 180) = 55;
+//   old engine (onset ignored): eligibility 2001, 1999 index:
+//     10,000 × 30,469.84 / 10,556.03 = 28,864.47, floor(28,864.47 / 420) = 68.
+// PIA on the 1979 bend points (180, 1,085): 0.9 × 64 = 57.60 (55 would give 49.50).
+// The boundary itself: the same worker disabled from 1980 (onsetAge 41) has 19
+// elapsed years (1961-1979) and 1978's 10,000 at the 1978 index, factor 1.
+// January (blank month) is first entitled in June 1980, the usual five:
+// 14 years, floor(10,000 / 168) = 59; February is first entitled in August
+// 1980, floor(19 / 5) = 3 dropped: 16 years, floor(10,000 / 192) = 52.
+describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
+  readings: {
+    usualDropoutBeforeJuly1980: aimeFromCents(1_000_000, 13),
+    oneForFiveDropoutWhateverTheEntitlementMonth: aimeFromCents(1_000_000, 15),
+    retirementEligibilityProxy: aimeFromCents(nearerPennyCents(10_000, AWI[1978], AWI[1999]), 35),
+  },
+  accepted: 'usualDropoutBeforeJuly1980',
+  note: 'entitlement before July 1980',
+}, ({ accepted, readings }) => {
+  it('drops the usual five years for a 1979 onset and switches at the July 1980 entitlement month', () => {
+    expect([accepted, readings.oneForFiveDropoutWhateverTheEntitlementMonth, readings.retirementEligibilityProxy])
+      .toEqual([64, 55, 68])
+    const born1939 = { dobYear: 1939, dobMonth: 6, dobDay: 15, earnings: [{ year: 1978, amount: 10_000 }], lastEarningsYear: 1978 }
+    const onset1979 = disabilityResult({ ...born1939, disability: disabilityComputationFacts(1939, { onsetAge: 40 }) })
+    expect([onset1979.eligibilityYear, onset1979.dropoutYearCount, onset1979.computationYearCount]).toEqual([1979, 5, 13])
+    expect(onset1979.aime).toBe(accepted)
+    expect(onset1979.aime).not.toBe(readings.oneForFiveDropoutWhateverTheEntitlementMonth)
+    expect(Math.round(onset1979.piaMonthly * 100)).toBe(piaCentsFromAime(accepted, BEND_POINTS[1979]))
+    expect(Math.round(onset1979.piaMonthly * 100)).toBe(5_760)
+
+    const june1980 = disabilityResult({ ...born1939, disability: disabilityComputationFacts(1939, { onsetAge: 41 }) })
+    const august1980 = disabilityResult({ ...born1939, disability: disabilityComputationFacts(1939, { onsetAge: 41, onsetMonth: 2 }) })
+    expect([june1980.dropoutYearCount, june1980.aime]).toEqual([5, aimeFromCents(1_000_000, 14)])
+    expect([august1980.dropoutYearCount, august1980.aime]).toEqual([3, aimeFromCents(1_000_000, 16)])
+    expect([june1980.aime, august1980.aime]).toEqual([59, 52])
+    expect(Math.round(august1980.piaMonthly * 100)).toBe(piaCentsFromAime(52, BEND_POINTS[1980]))
+  })
+})
+
+// An onset before 1979 keeps the ordinary computation: the computation for a
+// year of eligibility before 1979 is out of scope (the record's stated
+// limit), and refusing it would leave the stream with no PIA at all. A worker
+// born 1938-06-15 disabled from 1978 (onsetAge 40) is computed for 2000, the
+// year of 62, with the 1998 index (28,861.44):
+//   ordinary: 10,000 × 28,861.44 / 10,556.03 = 27,341.36, floor(27,341.36 / 420) = 65;
+//   the refusal this replaces gave no AIME (eligibility_before_1979).
+describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
+  readings: {
+    ordinaryComputationForPre1979Onset: aimeFromCents(nearerPennyCents(10_000, AWI[1978], AWI[1998]), 35),
+    refusedAsEligibilityBefore1979: 'eligibility_before_1979',
+  },
+  accepted: 'ordinaryComputationForPre1979Onset',
+  note: 'onset before 1979, out of scope',
+}, ({ accepted, readings }) => {
+  it('computes a pre-1979 onset as the ordinary age-62 computation rather than refusing it', () => {
+    expect(accepted).toBe(65)
+    const result = computePiaFromEarnings({
+      dobYear: 1938, dobMonth: 6, dobDay: 15,
+      earnings: [{ year: 1978, amount: 10_000 }],
+      lastEarningsYear: 1978,
+      disability: disabilityComputationFacts(1938, { onsetAge: 40 }),
+    })
+    if (isPiaFromEarningsError(result)) {
+      expect(result.code).not.toBe(readings.refusedAsEligibilityBefore1979)
+      throw new Error(`expected PIA result, received ${result.code}`)
+    }
+    expect([result.eligibilityYear, result.disabilityComputation, result.aime]).toEqual([2000, false, accepted])
+  })
+})
+
+// Projected earnings before the onset count like reported ones. The window is
+// the elapsed years, which end with the year before the onset (415(b)(2)(B)(iii);
+// 20 CFR 404.211(e)(1)), and the projection fills window years after the last
+// reported one; the plan's onset says the worker was not disabled before it.
+// Same worker, onset 2019: reported AWI-level earnings 1986-2016 (31 years at
+// the 2017 index, 50,321.89 each) and a projection of 60,000 through age 65,
+// which fills 2017 (the indexing year, factor 1) and 2018 (nominal) and
+// nothing from 2019 on. Top 28 of 33:
+//   accepted: floor((2 × 60,000 + 26 × 50,321.89) / 336) = floor(4,251.10) = 4,251;
+//   projection left out of the disability window (28 of the 31 reported):
+//     floor(28 × 50,321.89 / 336) = floor(4,193.49) = 4,193.
+describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
+  readings: {
+    projectedYearsBeforeOnsetCount: aimeFromCents(2 * 6_000_000 + 26 * DISABILITY_INDEXED_2017_CENTS, 28),
+    projectionIgnoredInDisabilityWindow: aimeFromCents(28 * DISABILITY_INDEXED_2017_CENTS, 28),
+  },
+  accepted: 'projectedYearsBeforeOnsetCount',
+  note: 'projected earnings before the onset',
+}, ({ accepted, readings }) => {
+  it('fills 2017 and 2018 from the projection and stops at the onset year', () => {
+    expect([accepted, readings.projectionIgnoredInDisabilityWindow]).toEqual([4_251, 4_193])
+    const result = disabilityResult({
+      ...DISABILITY_DOB,
+      earnings: awiEarnings(DISABILITY_EARNINGS_YEARS.filter((year) => year <= 2016)),
+      lastEarningsYear: 2016,
+      projection: { assumedAnnualEarnings: 60_000, throughAge: 65 },
+      disability: disabilityComputationFacts(1964, { onsetAge: 55 }),
+    })
+    expect(result.projectedYearCount).toBe(2)
+    expect(result.indexedYears.filter((row) => row.projected).map((row) => row.year)).toEqual([2017, 2018])
+    expect(result.aime).toBe(accepted)
+    expect(result.aime).not.toBe(readings.projectionIgnoredInDisabilityWindow)
+  })
+})
+
+// Characterization, not a statutory pin: a late-year onset. The plan reads
+// onsetMonth 12 as an onset after December 1, so the waiting period begins in
+// January 2020 and the first payable month is June 2020. The record leaves
+// open whether the year of eligibility that prices the PIA is the onset year
+// or the year the waiting period begins; the engine takes the onset year,
+// 2019, so the result is the January-onset computation above (AIME 4,198 on
+// the 2019 bend points), and only the first month of entitlement moves.
+describe('usc-42-415-b-2-b-disability-freeze-aime-exclusion: December onset (characterization)', () => {
+  it('keeps the onset year, 2019, as the year of eligibility for a December onset', () => {
+    const facts = disabilityComputationFacts(1964, { onsetAge: 55, onsetMonth: 12 })
+    expect(facts).toEqual({ onsetYear: 2019, firstEntitlementMonthIndex: 2020 * 12 + 5 })
+    const result = disabilityResult({
+      ...DISABILITY_DOB,
+      earnings: awiEarnings(DISABILITY_EARNINGS_YEARS),
+      lastEarningsYear: 2025,
+      disability: facts,
+    })
+    expect([result.eligibilityYear, result.lastBaseYear, result.aime]).toEqual([2019, 2018, 4_198])
+    expect(Math.round(result.piaMonthly * 100)).toBe(188_040)
   })
 })

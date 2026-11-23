@@ -284,8 +284,11 @@
  *   earnings computation the disability one. The onset year is the year of
  *   eligibility, so the indexing year is the second year before it and its
  *   bend points price the PIA; the elapsed years end with the year before the
- *   onset; and one year is dropped for each five elapsed years, at most five,
- *   with at least two years averaged. Until then the onset only placed the
+ *   onset; and, for a first entitlement after June 1980, one year is dropped
+ *   for each five elapsed years, at most five, with at least two years
+ *   averaged. An onset before 1979 keeps the ordinary computation, a stated
+ *   limit, as is the onset year's use for a late-year onset whose waiting
+ *   period begins the next year. Until then the onset only placed the
  *   payments, and the PIA was the computation for the year of 62. Settled and
  *   removed from this list. The two other Social Security earnings records in
  *   that round stay fix: usc-42-415-b-2-b-ii-iii-initial-computation-base-window,
