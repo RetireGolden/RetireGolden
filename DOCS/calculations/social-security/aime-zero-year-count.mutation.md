@@ -1,15 +1,15 @@
 # Mutation receipt: aime-zero-year-count
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `a3310e82` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index c636100..f6da2c7 100644
+index 0274d1c..0568123 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -361,7 +361,7 @@ function computeWithReplacedYear(
+@@ -374,7 +374,7 @@ function computeWithReplacedYear(
      computationYearCount,
      disabilityComputation,
      dropoutYearCount,
@@ -35,9 +35,9 @@ Re-executed 2026-11-23 because the disability computation added lines above or b
 ```
 RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts (3 tests | 3 failed) 13ms
+ ❯ src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts (3 tests | 3 failed) 16ms
    ❯ aime-zero-year-count — Zero years in the averaged earnings (3)
-     × case A: 5 of the 35 averaged years are $0 (not the 10 zero base years) 9ms
+     × case A: 5 of the 35 averaged years are $0 (not the 10 zero base years) 12ms
      × case B: three $0 base years, all dropped, so none averaged 1ms
      × case C: five earning years leave 30 averaged $0 years 1ms
 

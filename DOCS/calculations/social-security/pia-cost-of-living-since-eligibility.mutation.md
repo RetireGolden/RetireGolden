@@ -1,15 +1,15 @@
 # Mutation receipt: pia-cost-of-living-since-eligibility
 
-Executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) for the new record under decision D-SS-LAW-2, and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `a3310e82` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index c636100..0d42f2f 100644
+index 0274d1c..595e654 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -397,7 +397,7 @@ export function piaWithCostOfLivingIncreases(
+@@ -410,7 +410,7 @@ export function piaWithCostOfLivingIncreases(
  ): PiaWithCostOfLivingIncreases {
    let pia = piaMonthly
    const standInYears: number[] = []
@@ -35,10 +35,10 @@ Re-executed 2026-11-23 because the disability computation added lines above or b
 ```
 RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.costOfLiving.evidence.test.ts (4 tests | 3 failed) 105ms
+ ❯ src/socialSecurity/piaFromEarnings.costOfLiving.evidence.test.ts (4 tests | 3 failed) 96ms
    ❯ pia-cost-of-living-since-eligibility — An earnings-history PIA raised by the cost-of-living increases since eligibility (4)
-     × cases A and B: the published chain, floored to the dime each year (3,364.40 and 3,379.20) 9ms
-     × case A: the ledger pays the start-year PIA (40,372.80 in 2027, not 34,156.80) 91ms
+     × cases A and B: the published chain, floored to the dime each year (3,364.40 and 3,379.20) 6ms
+     × case A: the ledger pays the start-year PIA (40,372.80 in 2027, not 34,156.80) 85ms
      × case C: unannounced years use the plan's COLA assumption, with a warning (42,002.40 in 2028) 1ms
 
  Test Files  1 failed (1)

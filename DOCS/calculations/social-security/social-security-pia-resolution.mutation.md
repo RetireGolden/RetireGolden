@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-pia-resolution
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `a3310e82` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index c636100..0b1075d 100644
+index 0274d1c..322c701 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -561,7 +561,7 @@ export function resolveStreamPiaMonthly(
+@@ -574,7 +574,7 @@ export function resolveStreamPiaMonthly(
    const result = computePiaFromEarnings(input)
    if (isPiaFromEarningsError(result)) return { status: 'earningsError', error: result }
    if (asOf === null) return { status: 'fromEarnings', piaMonthly: result.piaMonthly, detail: result, standInColaYears: [] }
@@ -35,10 +35,10 @@ Re-executed 2026-11-23 because the disability computation added lines above or b
 ```
 RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts (3 tests | 2 failed) 100ms
+ ❯ src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts (3 tests | 2 failed) 97ms
    ❯ social-security-pia-resolution — The PIA a Social Security stream is paid from (3)
-     × an entered PIA as entered; an earnings history's PIA raised by the increases since eligibility (2,846.40 to 3,364.40) 10ms
-     × the projection pays from the resolved PIA: 12 x 3,364.40 in 2027 for a claim at 67, with no COLA after the start 88ms
+     × an entered PIA as entered; an earnings history's PIA raised by the increases since eligibility (2,846.40 to 3,364.40) 8ms
+     × the projection pays from the resolved PIA: 12 x 3,364.40 in 2027 for a claim at 67, with no COLA after the start 86ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 1 passed (3)
