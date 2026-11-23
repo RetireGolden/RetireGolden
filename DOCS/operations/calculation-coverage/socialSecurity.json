@@ -581,7 +581,7 @@
       },
       "limits": [
         "The four band rates 150/272/134/175 percent are the retirement and survivor family maximum. While the worker is entitled to disability benefits the ledger uses the disability maximum instead (familyMaximum.ts#workerFamilyMaximumMonthlyAt, usc-42-403-a-6-ssdi-family-maximum)",
-        "The bend points are eligibility-year values (the year the worker attains 62, or the earlier year his disability began, under familyMaximumEligibilityYear; usc-42-403-a-2-D-family-maximum-eligibility-after-disability), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
+        "The bend points are eligibility-year values (the year the worker attains 62, or the earlier year his disability began if it began in 1979 or later, under familyMaximumEligibilityYear; usc-42-403-a-2-D-family-maximum-eligibility-after-disability), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
         "RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker's PIA (not above the benefit the worker is paid; cfr-20-404-404-family-maximum-counts-the-worker-pia) to the single current-spouse auxiliary. Under this retirement and survivor maximum that room holds a spouse's whole original benefit less the dime rounding of the maximum (under 10 cents a month); the disability maximum of a worker on SSDI can leave no room (usc-42-403-a-6-ssdi-family-maximum). The worker's own benefit is never reduced by this ceiling",
         "The dime floor is part of the published contract: the test compares the floored figure exactly and treats the unrounded sum as an intermediate"
       ],

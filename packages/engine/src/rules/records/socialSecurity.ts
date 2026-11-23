@@ -311,6 +311,7 @@ export const socialSecurityRecords = {
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/socialSecurity/householdYear.ts',
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumEligibilityYear',

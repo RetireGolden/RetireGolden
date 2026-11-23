@@ -28,11 +28,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             },
             {
               "name": "indexCoveredEarnings",
-              "line": 181
+              "line": 200
             }
           ]
         }
@@ -111,7 +111,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             }
           ]
         }
@@ -192,11 +192,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             },
             {
               "name": "piaInputFromEarnings",
-              "line": 434
+              "line": 447
             }
           ]
         }
@@ -275,7 +275,7 @@
             },
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             }
           ]
         },
@@ -379,7 +379,7 @@
           "functions": [
             {
               "name": "piaWithCostOfLivingIncreases",
-              "line": 392
+              "line": 405
             }
           ]
         },

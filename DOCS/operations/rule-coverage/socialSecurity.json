@@ -580,11 +580,11 @@
           "functions": [
             {
               "name": "capAuxiliaryForFamilyMaximum",
-              "line": 188
+              "line": 191
             },
             {
               "name": "currentSpouseMonthlyUnderFamilyMaximum",
-              "line": 228
+              "line": 231
             }
           ]
         }
@@ -1987,7 +1987,7 @@
           "functions": [
             {
               "name": "currentSpouseMonthlyUnderFamilyMaximum",
-              "line": 228
+              "line": 231
             }
           ]
         },
@@ -3367,7 +3367,8 @@
       "dueOn": "2027-11-09",
       "implementedBy": [
         "packages/engine/src/socialSecurity/familyMaximum.ts",
-        "packages/engine/src/socialSecurity/householdYear.ts"
+        "packages/engine/src/socialSecurity/householdYear.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
       ],
       "implementations": [
         {
@@ -3375,11 +3376,11 @@
           "functions": [
             {
               "name": "familyMaximumEligibilityYear",
-              "line": 48
+              "line": 52
             },
             {
               "name": "workerFamilyMaximumMonthlyAt",
-              "line": 144
+              "line": 147
             }
           ]
         },
@@ -3391,12 +3392,33 @@
               "line": 290
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "yearOfEligibilityWithDisability",
+              "line": 162
+            }
+          ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/socialSecurity/disability.computation.test.ts",
         "packages/engine/src/socialSecurity/familyMaximum.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
+          "line": 224,
+          "note": "a worker disabled before 1979, with a spouse",
+          "tests": [
+            {
+              "title": "prices the maximum on the year of 62 the PIA was computed for",
+              "line": 232
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
           "line": 221,
@@ -3456,7 +3478,7 @@
           "functions": [
             {
               "name": "familyMaximumMonthlyFromPia",
-              "line": 64
+              "line": 67
             }
           ]
         },
@@ -3543,15 +3565,15 @@
           "functions": [
             {
               "name": "disabilityFamilyMaximumAtStart",
-              "line": 109
+              "line": 112
             },
             {
               "name": "disabilityFamilyMaximumMonthly",
-              "line": 88
+              "line": 91
             },
             {
               "name": "workerFamilyMaximumMonthlyAt",
-              "line": 144
+              "line": 147
             }
           ]
         },
@@ -4333,7 +4355,7 @@
           "functions": [
             {
               "name": "piaMonthlyFromAime",
-              "line": 157
+              "line": 176
             }
           ]
         },
@@ -4396,19 +4418,23 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             },
             {
               "name": "disabilityComputationFacts",
-              "line": 462
+              "line": 475
             },
             {
               "name": "piaInputFromEarnings",
-              "line": 434
+              "line": 447
             },
             {
               "name": "streamPiaFromEarningsInput",
-              "line": 535
+              "line": 548
+            },
+            {
+              "name": "yearOfEligibilityWithDisability",
+              "line": 162
             }
           ]
         }
@@ -4490,23 +4516,23 @@
         },
         {
           "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
-          "line": 45,
+          "line": 46,
           "note": "SSDI paid in 2026 through simulatePlan",
           "tests": [
             {
               "title": "pays the PIA of the 2019 disability computation, raised by the increases since",
-              "line": 54
+              "line": 55
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
-          "line": 131,
+          "line": 132,
           "note": "disability family maximum with a spouse",
           "tests": [
             {
               "title": "holds the spouse to the maximum from the 2019 AIME and PIA, raised since 2019",
-              "line": 140
+              "line": 141
             }
           ]
         }
@@ -4616,7 +4642,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 210
+              "line": 229
             }
           ]
         }
