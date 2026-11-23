@@ -1,15 +1,15 @@
 # Mutation receipt: ssdi-payable-months
 
-Executed 2026-09-27 against RetireGolden base `ceb2799f` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet) for the new record under decision D-APPROX-FACTS, and re-executed 2026-09-27 against RetireGolden base `6628b1c8` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `ceb2799f` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet) for the new record under decision D-APPROX-FACTS, and re-executed 2026-09-27 against RetireGolden base `6628b1c8` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/disability.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/disability.ts b/packages/engine/src/socialSecurity/disability.ts
-index a6229bdc..89776864 100644
+index 6345199..fb4e9f4 100644
 --- a/packages/engine/src/socialSecurity/disability.ts
 +++ b/packages/engine/src/socialSecurity/disability.ts
-@@ -42,7 +42,7 @@ import {
+@@ -40,7 +40,7 @@ import {
   * consecutive calendar months ... throughout which the individual ... has been
   * under a disability".
   */
@@ -30,24 +30,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed for the independent review of decision D-APPROX-FACTS because its test file changed (the fall-through warning now names the person); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (disability.payableMonths.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-11-23 because the disability computation added lines above or beside its hunk in `packages/engine/src/socialSecurity/disability.ts`; the mutation is unchanged, and the hunk, capture, blob hashes and revert note are refreshed against this head. The baseline is green (disability.payableMonths.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0` under Node 24; stdout precedes stderr. Start time, duration, module-transform timing and worker-isolation lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/disability.payableMonths.evidence.test.ts (4 tests | 3 failed) 69ms
+ ❯ src/socialSecurity/disability.payableMonths.evidence.test.ts (4 tests | 3 failed) 247ms
    ❯ ssdi-payable-months — SSDI months paid in a year, from the onset month (4)
-     × the onset table: nothing for the five waiting months, the PIA from the sixth month after the onset month 42ms
-     × the November 2036 onset: one disability month, then the automatic conversion at FRA (16,000 in 2037, 2,000 of it SSDI) 9ms
-     × the December 2036 onset: no disability benefit, a warning, and the claim at 70 at the engine's claim-year convention (29,760 in 2040) 8ms
+     × the onset table: nothing for the five waiting months, the PIA from the sixth month after the onset month 145ms
+     × the November 2036 onset: one disability month, then the automatic conversion at FRA (16,000 in 2037, 2,000 of it SSDI) 36ms
+     × the December 2036 onset: no disability benefit, a warning, and the claim at 70 at the engine's claim-year convention (29,760 in 2040) 34ms
 
  Test Files  1 failed (1)
       Tests  3 failed | 1 passed (4)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/socialSecurity/disability.payableMonths.evidence.test.ts > ssdi-payable-months — SSDI months paid in a year, from the onset month > the onset table: nothing for the five waiting months, the PIA from the sixth month after the onset month

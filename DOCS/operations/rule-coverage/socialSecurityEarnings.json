@@ -28,11 +28,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 186
             },
             {
               "name": "indexCoveredEarnings",
-              "line": 142
+              "line": 161
             }
           ]
         }
@@ -43,12 +43,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 165,
+          "line": 168,
           "note": "2020 AWI year plus 2023 cents",
           "tests": [
             {
               "title": "floors the indexed 2020 year to a whole dollar and drops AIME from 152 to 151",
-              "line": 175
+              "line": 178
             }
           ]
         }
@@ -111,7 +111,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 186
             }
           ]
         }
@@ -122,12 +122,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 212,
+          "line": 215,
           "note": "modern 35-year vs 1951-floor 34-year",
           "tests": [
             {
               "title": "uses the elapsed years less five, 34 when elapsed years start at the 1951 floor",
-              "line": 231
+              "line": 234
             }
           ]
         }
@@ -192,11 +192,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 186
             },
             {
               "name": "piaInputFromEarnings",
-              "line": 354
+              "line": 401
             }
           ]
         }
@@ -207,12 +207,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 121,
+          "line": 124,
           "note": "three cells: age-21, explicit 2024, projected 2024 via throughAge63",
           "tests": [
             {
               "title": "omits age-21 and age-62 pre-entitlement years; three cells pin input clamp and compute loop independently",
-              "line": 139
+              "line": 142
             }
           ]
         }
@@ -271,11 +271,11 @@
           "functions": [
             {
               "name": "FIRST_COMPUTATION_BASE_YEAR",
-              "line": 101
+              "line": 120
             },
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 186
             }
           ]
         },
@@ -379,7 +379,7 @@
           "functions": [
             {
               "name": "piaWithCostOfLivingIncreases",
-              "line": 313
+              "line": 359
             }
           ]
         },

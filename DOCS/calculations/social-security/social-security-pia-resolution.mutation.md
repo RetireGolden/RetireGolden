@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-pia-resolution
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index d90a5df9..ee570aea 100644
+index 63f98d3..614914e 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -454,7 +454,7 @@ export function resolveStreamPiaMonthly(
+@@ -517,7 +517,7 @@ export function resolveStreamPiaMonthly(
    const result = computePiaFromEarnings(input)
    if (isPiaFromEarningsError(result)) return { status: 'earningsError', error: result }
    if (asOf === null) return { status: 'fromEarnings', piaMonthly: result.piaMonthly, detail: result, standInColaYears: [] }
@@ -30,23 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The baseline is green (piaFromEarnings.resolution.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-11-23 because the disability computation added lines above or beside its hunk in `packages/engine/src/socialSecurity/piaFromEarnings.ts`; the mutation is unchanged, and the hunk, capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.resolution.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0` under Node 24; stdout precedes stderr. Start time, duration, module-transform timing and worker-isolation lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts (3 tests | 2 failed) 45ms
+ ❯ src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts (3 tests | 2 failed) 97ms
    ❯ social-security-pia-resolution — The PIA a Social Security stream is paid from (3)
-     × an entered PIA as entered; an earnings history's PIA raised by the increases since eligibility (2,846.40 to 3,364.40) 5ms
-     × the projection pays from the resolved PIA: 12 x 3,364.40 in 2027 for a claim at 67, with no COLA after the start 40ms
+     × an entered PIA as entered; an earnings history's PIA raised by the increases since eligibility (2,846.40 to 3,364.40) 9ms
+     × the projection pays from the resolved PIA: 12 x 3,364.40 in 2027 for a claim at 67, with no COLA after the start 86ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 1 passed (3)
-
-             persist transforms across runs with fsModuleCache: true
-             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/socialSecurity/piaFromEarnings.resolution.evidence.test.ts > social-security-pia-resolution — The PIA a Social Security stream is paid from > an entered PIA as entered; an earnings history's PIA raised by the increases since eligibility (2,846.40 to 3,364.40)

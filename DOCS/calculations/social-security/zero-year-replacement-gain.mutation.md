@@ -1,15 +1,15 @@
 # Mutation receipt: zero-year-replacement-gain
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index 2e637f4f..47aab868 100644
+index 63f98d3..c63c2f2 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -523,7 +523,7 @@ export function zeroYearReplacementGain(input: PiaFromEarningsInput, amount: num
+@@ -586,7 +586,7 @@ export function zeroYearReplacementGain(
    const before = computePiaFromEarnings(input)
    if (isPiaFromEarningsError(before) || before.zeroYearsInAime === 0) return null
    let year: number | null = null
@@ -30,22 +30,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The slice's review fixes moved the lines around its hunk, renamed its module or changed its test file, so it is re-executed on the current code. The baseline is green (piaFromEarnings.zeroYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-11-23 because the disability computation added lines above or beside its hunk in `packages/engine/src/socialSecurity/piaFromEarnings.ts`; the mutation is unchanged, and the hunk, capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.zeroYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0` under Node 24; stdout precedes stderr. Start time, duration, module-transform timing and worker-isolation lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts (5 tests | 4 failed) 7ms
+ ❯ src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts (5 tests | 4 failed) 14ms
    ❯ zero-year-replacement-gain — PIA gain from replacing a year with no earnings (5)
-     × case A: 2027 at $60,000, unindexed, adds $45.70 (3,141.70 to 3,187.40) 4ms
-     × case B: $300,000 is capped at the base and crosses the second bend point: $110.40, not $228.57 0ms
-     × case C: above the second bend point the capped year adds $66.00 0ms
-     × case O: past 61 the latest $0 year, 2019, has passed; its 17.90 for 2020 is 22.50 in 2026 dollars 0ms
+     × case A: 2027 at $60,000, unindexed, adds $45.70 (3,141.70 to 3,187.40) 9ms
+     × case B: $300,000 is capped at the base and crosses the second bend point: $110.40, not $228.57 1ms
+     × case C: above the second bend point the capped year adds $66.00 1ms
+     × case O: past 61 the latest $0 year, 2019, has passed; its 17.90 for 2020 is 22.50 in 2026 dollars 1ms
 
  Test Files  1 failed (1)
       Tests  4 failed | 1 passed (5)
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/socialSecurity/piaFromEarnings.zeroYear.evidence.test.ts > zero-year-replacement-gain — PIA gain from replacing a year with no earnings > case A: 2027 at $60,000, unindexed, adds $45.70 (3,141.70 to 3,187.40)
