@@ -1,18 +1,18 @@
 # Mutation receipt: aime-zero-year-count
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `92fbc55a` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `96639648` (branch `claude/project-thread-o6j8od`; no pull request is open yet) and re-executed 2026-11-23 against RetireGolden base `a3310e82` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/piaFromEarnings.ts b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-index d90a5df9..1e4011f0 100644
+index 0274d1c..0568123 100644
 --- a/packages/engine/src/socialSecurity/piaFromEarnings.ts
 +++ b/packages/engine/src/socialSecurity/piaFromEarnings.ts
-@@ -282,7 +282,7 @@ function computeWithReplacedYear(
-     indexedYears: indexedDetails,
-     yearsUsedInAime: top,
+@@ -374,7 +374,7 @@ function computeWithReplacedYear(
      computationYearCount,
+     disabilityComputation,
+     dropoutYearCount,
 -    zeroYearsInAime: top.filter((value) => value === 0).length,
 +    zeroYearsInAime: annualIndexedList.filter((value) => value === 0).length,
      projectedYearCount,
@@ -30,21 +30,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-The baseline is green (piaFromEarnings.zeroYearCount.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-11-23 because the disability computation added lines above or beside its hunk in `packages/engine/src/socialSecurity/piaFromEarnings.ts`; the mutation is unchanged, and the hunk, capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.zeroYearCount.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0` under Node 24; stdout precedes stderr. Start time, duration, module-transform timing and worker-isolation lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.0 packages/engine
+RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts (3 tests | 3 failed) 7ms
+ ❯ src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts (3 tests | 3 failed) 16ms
    ❯ aime-zero-year-count — Zero years in the averaged earnings (3)
-     × case A: 5 of the 35 averaged years are $0 (not the 10 zero base years) 5ms
+     × case A: 5 of the 35 averaged years are $0 (not the 10 zero base years) 12ms
      × case B: three $0 base years, all dropped, so none averaged 1ms
-     × case C: five earning years leave 30 averaged $0 years 0ms
+     × case C: five earning years leave 30 averaged $0 years 1ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/socialSecurity/piaFromEarnings.zeroYearCount.evidence.test.ts > aime-zero-year-count — Zero years in the averaged earnings > case A: 5 of the 35 averaged years are $0 (not the 10 zero base years)

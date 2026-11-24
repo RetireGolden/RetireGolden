@@ -1,17 +1,19 @@
 # Mutation receipt: family-maximum-bend-points
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `89c0fe4a` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `96da3ad0` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `66f13d51` (branch `claude/project-thread-o6j8od`, pull request #855) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `89c0fe4a` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `96da3ad0` (branch `claude/ssdi-month-and-roth-clock`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `b152c8fb` (branch `claude/project-thread-o6j8od`; no pull request is open yet), and re-executed 2026-11-09 against RetireGolden base `66f13d51` (branch `claude/project-thread-o6j8od`, pull request #855) and re-executed 2026-11-23 against RetireGolden base `a3310e82` (branch `claude/project-thread-o6j8od`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/familyMaximum.ts`
 
 ```diff
-@@ -68,5 +68,5 @@ export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear:
+@@ -71,7 +71,7 @@ export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear:
    const second = Math.max(0, Math.min(piaMonthly, bp.second) - bp.first)
    const third = Math.max(0, Math.min(piaMonthly, bp.third) - bp.second)
    const above = Math.max(0, piaMonthly - bp.third)
 -  return floorToDime(first * 1.5 + second * 2.72 + third * 1.34 + above * 1.75)
 +  return floorToDime(first * 1.5 + second * 2.72 + third * 1.34)
  }
+ 
+ /**
 ```
 
 This drops the 175% band above the third bend point, publishing $5,412.10 — the worksheet's first wrong reading.
@@ -24,19 +26,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed after the first review round of #855 (the disability family maximum and the SSDI spouse auxiliary), because its fixes moved the lines this receipt quotes; the mutation is unchanged, and the hunk header and capture are refreshed against this head. The baseline is green (familyMaximum.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
+Re-executed 2026-11-23 because the disability computation added lines above or beside its hunk in `packages/engine/src/socialSecurity/familyMaximum.ts`; the mutation is unchanged, and the hunk, capture, blob hashes and revert note are refreshed against this head. The baseline is green (familyMaximum.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0` under Node 24; stdout precedes stderr. Start time, duration, module-transform timing and worker-isolation lines were removed, and the checkout's path is written from the repository root. Exit code: 1.
 
 ```
-RUN  v5.0.5 packages/engine
+RUN  v5.1.0 packages/engine
 
- ❯ src/socialSecurity/familyMaximum.evidence.test.ts (3 tests | 1 failed) 18ms
+ ❯ src/socialSecurity/familyMaximum.evidence.test.ts (3 tests | 1 failed) 10ms
    ❯ family-maximum-bend-points — Retirement/survivor family maximum from PIA (3)
-     × crosses all three bend points to a dime-floored 6999.30 13ms
+     × crosses all three bend points to a dime-floored 6999.30 6ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 2 passed (3)
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/socialSecurity/familyMaximum.evidence.test.ts > family-maximum-bend-points — Retirement/survivor family maximum from PIA > crosses all three bend points to a dime-floored 6999.30

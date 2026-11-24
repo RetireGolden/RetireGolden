@@ -11,6 +11,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { AWI_BY_YEAR } from '@retiregolden/engine/socialSecurity/ssaWageData'
 
 import { PlanCtx } from './planContextCore'
 import { SocialSecuritySection } from './SocialSecuritySection'
@@ -34,14 +35,23 @@ afterEach(async () => {
   vi.useRealTimers()
 })
 
-function plan(dob: string, earnings: { year: number; amount: number }[]): Plan {
+function plan(
+  dob: string,
+  earnings: { year: number; amount: number }[],
+  disabled: { onsetAge: number; retirementAge: number } | null = null,
+): Plan {
   const draft = createEmptyPlan({ newId: id })
   draft.household.people[0] = {
-    id: 'p1', name: 'Pat', dob, sex: 'male', retirementAge: null, longevity: { planningAge: 92, source: 'manual' },
+    id: 'p1', name: 'Pat', dob, sex: 'male', retirementAge: disabled?.retirementAge ?? null, longevity: { planningAge: 92, source: 'manual' },
   }
   draft.assumptions.inflationPct = 0
   draft.assumptions.ssCola = { mode: 'matchInflation' }
-  draft.incomes = [{ type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 67, months: 0 } }]
+  draft.incomes = [{
+    type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 67, months: 0 },
+    ...(disabled === null
+      ? {}
+      : { disability: { onsetAge: disabled.onsetAge }, earningsProjection: { assumedAnnualEarnings: 60_000, throughAge: null } }),
+  }]
   const parsed = parsePlan(draft)
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))
   return parsed.plan
@@ -126,5 +136,22 @@ describe('Social Security step: computed PIA', () => {
     const text = computedPiaLine(await mount(plan('1970-03-10', earnings)))
     expect(text).toMatch(/^Computed PIA: \$[\d,]+\/mo at full retirement age\./u)
     expect(text).not.toContain('Your earnings give')
+  })
+
+  it('names the disability year as the year of eligibility, and the onset as where projection stops', async () => {
+    // usc-42-415-b-2-b-disability-freeze-aime-exclusion: born 1964-06-15,
+    // earnings equal to each year's AWI for 1986-2018, disability from 2019
+    // (age 55): the computation is made for 2019, AIME 4,198 and PIA 1,880.40,
+    // raised by the 2019-2025 increases to 2,422.00 (the engine worksheet).
+    // A projection through the retirement age, 67, has nothing to fill: the
+    // window ends with 2018, the year before the onset.
+    const earnings = Array.from({ length: 33 }, (_, i) => ({ year: 1986 + i, amount: AWI_BY_YEAR[1986 + i]! }))
+    const host = await mount(plan('1964-06-15', earnings, { onsetAge: 55, retirementAge: 67 }))
+    const text = computedPiaLine(host)
+    expect(text).toContain('Computed PIA: $2,422/mo at full retirement age, as the plan pays it from 2026.')
+    expect(text).toContain('Your earnings give $1,880/mo for 2019, the year your disability began, which is your year of eligibility,')
+    expect(text).not.toContain('eligible at 62')
+    const warning = [...host.querySelectorAll<HTMLElement>('.field-hint')].find((p) => p.textContent?.startsWith('No years were projected.'))
+    expect(warning?.textContent?.replace(/\s+/gu, ' ')).toContain('counts earnings only through 2018, the year before it began')
   })
 })

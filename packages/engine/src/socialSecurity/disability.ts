@@ -13,14 +13,12 @@
  * paid). Pre-FRA, earnings above **Substantial Gainful Activity (SGA)** suspend
  * SSDI (SSA replaces the retirement earnings test with SGA for disabled workers).
  *
- * Documented simplifications: a true disability computation can use a different
- * indexing year and computation-year count, and the disability freeze excludes
- * qualifying years (computation-base years wholly within an established period,
- * and elapsed years wholly or partly within it) unless counting them yields a
- * higher PIA — see 20 CFR 404.211. The planner does not adjudicate disability,
- * insured status, or the established period; `onsetAge` and `onsetMonth` only
- * place the SSDI payment path. The earnings→PIA helper keeps ordinary retirement
- * indexing and year selection (the freeze is not recomputed). The waiting period
+ * Documented simplifications: the planner does not adjudicate disability,
+ * insured status, or the established period. `onsetAge` and `onsetMonth` place
+ * the SSDI payment path, and an onset before the year of 62 also makes an
+ * earnings-history PIA the disability computation (piaFromEarnings.ts
+ * #computePiaFromEarnings: the onset year's indexing and bend points, elapsed
+ * years ending before it, the one-for-five dropout; 20 CFR 404.211). The waiting period
  * is always applied (no re-entitlement within five years, no ALS exception), and
  * the application is taken as timely (423(b) retroactivity and the 17-month
  * limit of 20 CFR 404.315(a)(4) never bind). Other documented limitations

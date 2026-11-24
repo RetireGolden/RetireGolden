@@ -4,14 +4,14 @@
   "registry": {
     "total": 608,
     "byClassification": {
-      "approximated": 118,
+      "approximated": 117,
       "outOfScope": 78,
-      "settled": 404,
+      "settled": 405,
       "unsettled": 8
     },
     "approximatedByKind": {
       "convention": 25,
-      "fix": 62,
+      "fix": 61,
       "needs-fact": 31
     },
     "byVolatility": {
@@ -478,8 +478,8 @@
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
-      "sweptOn": "2026-09-27",
-      "note": "Initial-computation base window and annual indexed-earnings penny rounding registered as approximations on records/socialSecurityEarnings.ts; the computation-year count with the 1951 floor, the contribution and benefit base cap and the cost-of-living increases since eligibility are settled there. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
+      "sweptOn": "2026-11-23",
+      "note": "Initial-computation base window and annual indexed-earnings penny rounding registered as approximations on records/socialSecurityEarnings.ts; the computation-year count with the 1951 floor, the contribution and benefit base cap and the cost-of-living increases since eligibility are settled there. The disability computation for an onset from 1979 and before the year of 62 (the onset year's eligibility, indexing and bend points, the elapsed years ending before the onset, and the one-for-five dropout after June 1980) is settled as usc-42-415-b-2-b-disability-freeze-aime-exclusion on the socialSecurity shard, which also states its limits. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; an onset before 1979 keeps the ordinary computation; prior-entitlement termination gaps, the childcare dropout, and alternative widow indexing remain unmodeled; post-entitlement recomputation stays on the socialSecurity shard as an approximation."
     },
     {
       "path": "strategies/accountEligibility.ts",

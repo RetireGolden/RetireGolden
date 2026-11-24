@@ -368,10 +368,26 @@ payable month is at or after the month FRA is attained there is no disability be
 as a retirement claim at its claim age and the projection says so. An off-by-default `disability` input on
 the SS stream drives the pure `socialSecurity/disability.ts` helper (`ssdiSchedule`, `ssdiMonthsInYear`) and
 the year function `socialSecurity/householdYear.ts` (called by the `projection/internal/annualSocialSecurity.ts` annual phase); `simulatePlan` still owns the annual
-input/effect wiring, and SGA lives in the parameter pack. Documented simplifications / registered gaps: the
-onset date changes the SSDI payment path but does not change the earnings helper's ordinary retirement
-indexing year, computation-year count, or bend points — it is a planning assumption, not an SSA disability
-or insured-status adjudication (`usc-42-415-b-2-b-disability-freeze-aime-exclusion`); the waiting period's
+input/effect wiring, and SGA lives in the parameter pack. A PIA computed from an earnings history for a
+disability that began before the year the worker attains 62 is the disability computation
+(`piaFromEarnings.ts#computePiaFromEarnings` with its `disability` facts, the onset year and the first entitlement
+month that `disabilityComputationFacts` derives from `disability.onsetAge` for `streamPiaFromEarningsInput`): the onset year is the year of eligibility (indexing year two years before it,
+its bend points, cost-of-living increases from it), the elapsed years end with the year before the onset,
+and, for a first entitlement after June 1980, one year per five elapsed years is dropped, at most five
+(the usual five before July 1980), with at least two averaged; reported or projected earnings before the
+onset year count as usual (42 U.S.C.
+415(b)(2)(A)(ii), (b)(2)(B)(iii), (b)(3)(A); 20 CFR 404.211(d)(1), (e)(1), (e)(3);
+`usc-42-415-b-2-b-disability-freeze-aime-exclusion`, settled 2026-11-23). Born 1964-06-15 with AWI-level
+earnings 1986–2018 and an onset in 2019: AIME 4,198 and PIA 1,880.40 for 2019, 2,422.00 a month in 2026;
+until 2026-11-23 the engine used the 2026 age-62 computation (AIME 5,487, PIA 2,501.70). Stated limits: an
+onset before 1979 keeps the ordinary age-62 computation (the pre-1979 method is out of scope), and the family
+maximum on that record is priced on the same year of 62 (`piaFromEarnings.ts#yearOfEligibilityWithDisability`
+serves both); a late-year
+onset whose waiting period begins the next January is still computed for the onset year (whether the
+waiting period's year should price the PIA is unresolved); and no later recomputation counts the period's
+years (`usc-42-415-f-2-post-entitlement-pia-recomputation`). The onset is a
+planning assumption, not an SSA disability or insured-status adjudication. Documented simplifications /
+registered gaps: the waiting period's
 stated limits (an onset on the 1st paid one month late, a timely application assumed, no re-entitlement or
 ALS exception; `usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
 (`cfr-20-404-1592-trial-work-period`, `cfr-20-404-1592a-extended-period-of-eligibility`), the 24-month
@@ -400,7 +416,8 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
 ## Documented simplifications / deferred
 
 - **Disability (SSDI)** is modeled (worker's own SSDI from the first month after the five-month waiting
-  period + FRA conversion; see above). The disability freeze, the waiting period's day-of-month and
+  period + FRA conversion; see above), with the disability computation of an earnings-derived PIA. The
+  waiting period's day-of-month and
   application-timing limits, trial-work / EPE, and 24-month Medicare wait are registered approximations or
   note-only absences; living-child auxiliaries remain out of scope. The spouse auxiliary and the disability
   family maximum on SSDI are modeled (see above); the maximum for an entered PIA, which has no AIME, is a

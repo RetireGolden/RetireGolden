@@ -278,6 +278,24 @@
  *   since the plan has no disabled widow(er) fact; both records disclose
  *   them. Both settled and removed from this list.
  *
+ * Settled in the calculation validation round of 2026-11-23:
+ * - usc-42-415-b-2-b-disability-freeze-aime-exclusion, fix: a disability the
+ *   plan gives that began before the year the worker attains 62 now makes the
+ *   earnings computation the disability one. The onset year is the year of
+ *   eligibility, so the indexing year is the second year before it and its
+ *   bend points price the PIA; the elapsed years end with the year before the
+ *   onset; and, for a first entitlement after June 1980, one year is dropped
+ *   for each five elapsed years, at most five, with at least two years
+ *   averaged. An onset before 1979 keeps the ordinary computation, a stated
+ *   limit, as is the onset year's use for a late-year onset whose waiting
+ *   period begins the next year. Until then the onset only placed the
+ *   payments, and the PIA was the computation for the year of 62. Settled and
+ *   removed from this list. The two other Social Security earnings records in
+ *   that round stay fix: usc-42-415-b-2-b-ii-iii-initial-computation-base-window,
+ *   which also bounds the disability computation's window, and
+ *   usc-42-415-f-2-post-entitlement-pia-recomputation, which needs the PIA
+ *   recomputed inside the projection from the wages of later years.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -416,7 +434,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'needs-fact', missingInput: 'the average indexed monthly earnings behind a disabled worker\'s benefit amount when that amount is entered directly rather than computed from an earnings history' },
   'usc-42-403-f-5-earnings-counted': { kind: 'needs-fact', missingInput: 'whose work a recurring income pays for, if any: the person it is earned by' },
-  'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': { kind: 'fix' },

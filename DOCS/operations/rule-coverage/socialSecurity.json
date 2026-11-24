@@ -56,7 +56,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 133
+              "line": 131
             }
           ]
         }
@@ -217,7 +217,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 133
+              "line": 131
             }
           ]
         }
@@ -309,7 +309,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 133
+              "line": 131
             }
           ]
         }
@@ -580,11 +580,11 @@
           "functions": [
             {
               "name": "capAuxiliaryForFamilyMaximum",
-              "line": 188
+              "line": 191
             },
             {
               "name": "currentSpouseMonthlyUnderFamilyMaximum",
-              "line": 228
+              "line": 231
             }
           ]
         }
@@ -1987,7 +1987,7 @@
           "functions": [
             {
               "name": "currentSpouseMonthlyUnderFamilyMaximum",
-              "line": 228
+              "line": 231
             }
           ]
         },
@@ -3367,7 +3367,8 @@
       "dueOn": "2027-11-09",
       "implementedBy": [
         "packages/engine/src/socialSecurity/familyMaximum.ts",
-        "packages/engine/src/socialSecurity/householdYear.ts"
+        "packages/engine/src/socialSecurity/householdYear.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
       ],
       "implementations": [
         {
@@ -3375,11 +3376,11 @@
           "functions": [
             {
               "name": "familyMaximumEligibilityYear",
-              "line": 48
+              "line": 52
             },
             {
               "name": "workerFamilyMaximumMonthlyAt",
-              "line": 144
+              "line": 147
             }
           ]
         },
@@ -3391,12 +3392,33 @@
               "line": 290
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "yearOfEligibilityWithDisability",
+              "line": 162
+            }
+          ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/socialSecurity/disability.computation.test.ts",
         "packages/engine/src/socialSecurity/familyMaximum.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
+          "line": 224,
+          "note": "a worker disabled before 1979, with a spouse",
+          "tests": [
+            {
+              "title": "prices the maximum on the year of 62 the PIA was computed for",
+              "line": 232
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
           "line": 221,
@@ -3456,7 +3478,7 @@
           "functions": [
             {
               "name": "familyMaximumMonthlyFromPia",
-              "line": 64
+              "line": 67
             }
           ]
         },
@@ -3505,7 +3527,7 @@
         "kind": "needs-fact",
         "missingInput": "the average indexed monthly earnings behind a disabled worker's benefit amount when that amount is entered directly rather than computed from an earnings history"
       },
-      "conventionRationale": "Section 403(a)(6)'s 85/100/150 percentages are the controlling disability-family formula; 20 CFR 404.403(d-1) states it the same way and rounds neither amount. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the retirement and survivor reading this record rejects). What stays approximated needs a fact: the AIME behind an entered PIA. Taking the ceiling can only overstate the maximum, by up to half the PIA when 85 percent of the AIME is below the PIA, but the sign is not one-sided in taxpayer-tax terms: a too-large Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used. An earnings-derived AIME is the ordinary age-62 computation, which a disability computation can change (usc-42-415-b-2-b-disability-freeze-aime-exclusion); the maximum is applied to the AIME and PIA that computation gives. An example on the earnings path: fourteen years of earnings equal to the national average wage index, for a worker who attains 62 and becomes disabled in 2026, give an AIME of 2,328 and a PIA of 1,490.80, so the maximum is 1,978.80 and a spouse at full retirement age with no benefit of her own is paid 488.00 a month, not 745.40.",
+      "conventionRationale": "Section 403(a)(6)'s 85/100/150 percentages are the controlling disability-family formula; 20 CFR 404.403(d-1) states it the same way and rounds neither amount. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the retirement and survivor reading this record rejects). What stays approximated needs a fact: the AIME behind an entered PIA. Taking the ceiling can only overstate the maximum, by up to half the PIA when 85 percent of the AIME is below the PIA, but the sign is not one-sided in taxpayer-tax terms: a too-large Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used. An earnings-derived AIME is that of the disability computation when the disability began before the year the worker attains 62 (usc-42-415-b-2-b-disability-freeze-aime-exclusion), and the maximum is applied to the AIME and PIA that computation gives. An example on the earnings path: fourteen years of earnings equal to the national average wage index, for a worker who attains 62 and becomes disabled in 2026, give an AIME of 2,328 and a PIA of 1,490.80, so the maximum is 1,978.80 and a spouse at full retirement age with no benefit of her own is paid 488.00 a month, not 745.40.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3543,15 +3565,15 @@
           "functions": [
             {
               "name": "disabilityFamilyMaximumAtStart",
-              "line": 109
+              "line": 112
             },
             {
               "name": "disabilityFamilyMaximumMonthly",
-              "line": 88
+              "line": 91
             },
             {
               "name": "workerFamilyMaximumMonthlyAt",
-              "line": 144
+              "line": 147
             }
           ]
         },
@@ -4333,7 +4355,7 @@
           "functions": [
             {
               "name": "piaMonthlyFromAime",
-              "line": 118
+              "line": 176
             }
           ]
         },
@@ -4376,19 +4398,17 @@
     {
       "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
       "title": "A disability computation changes AIME indexing and computation years",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The companion worksheet conditions the accepted value on an established 2019 period of disability, a 2019 DIB benchmark with insured status met no later than onset, first DIB entitlement after June 1980, and no prior-DIB, child-care-dropout, or higher-alternate-computation adjustment. Those are authority-side preconditions, not facts that `disability.onsetAge` proves. With 1986–2018 earnings equal to each year's published AWI, 2017 is the indexing year. The 32 earnings years through 2017 become 50,321.89 dollars each; 2018 remains its nominal 52,145.80 dollars. Thirty-three elapsed years yield five disability dropout years and 28 computation years, so the accepted AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198. A partial implementation that uses the 2017 index but retains an ordinary 35-year divisor gives 3,958. The current retirement-only helper instead uses 2026 age-62 eligibility, the 2024 index, and 35 years and produces the already observed 5,487. The old 5,820 figure was a fixed-2024-index diagnostic, not a statutory reading, and is not retained as the test’s accepted value. A wrong Social Security amount changes both taxable benefits and replacement funding, so taxpayer tax can move either way.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "A worker born 1964-06-15 whose disability began in 2019 (age 55), with covered earnings equal to each year's published national average wage index for 1986 through 2018 and none after. The year of eligibility is 2019 and the indexing year 2017, so the 32 years through 2017 become 50,321.89 dollars each and 2018 stays at its nominal 52,145.80. The 33 elapsed years 1986 through 2018 give min(floor(33 / 5), 5) = 5 dropout years and 28 computation years, so the AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198, and the 2019 bend points (926 and 5,583) give a PIA of 0.9 × 926 + 0.32 × (4,198 minus 926) = 1,880.44, rounded down to 1,880.40. Raised by the published increases for 2019 through 2025 (1.6, 1.3, 5.9, 8.7, 3.2, 2.5 and 2.8 percent, each rounded down to the dime) it is 2,422.00 a month in 2026, 29,064.00 a year. Until 2026-11-23 the engine ignored the onset: it indexed to 2024, averaged 35 of the 40 years 1986 through 2025 for an AIME of 5,487, priced it on the 2026 bend points at 2,501.70 and paid 30,020.40 a year. A reading that takes the 2017 index but keeps the ordinary 35-year divisor gives an AIME of 3,958. With earnings for 1991 through 2008 only and an onset in 2009 (age 45), the 23 elapsed years give four dropout years and 19 computation years, an AIME of 3,193 and, on the 2009 bend points, a PIA of 1,453.20; the ordinary five-year dropout would average 18 years, for 3,371. A worker born 1939-06-15 disabled from January 1979, first entitled in June 1979, keeps the usual five-year dropout: 10,000 of 1978 earnings over 13 of 18 elapsed years is an AIME of 64 and a 1979 PIA of 57.60, where one for five would give 15 years, 55 and 49.50.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-06",
-      "dueOn": "2027-09-06",
+      "verifiedOn": "2026-11-23",
+      "dueOn": "2027-11-23",
       "implementedBy": [
         "packages/engine/src/socialSecurity/piaFromEarnings.ts"
       ],
@@ -4398,23 +4418,121 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 229
+            },
+            {
+              "name": "disabilityComputationFacts",
+              "line": 475
+            },
+            {
+              "name": "piaInputFromEarnings",
+              "line": 447
+            },
+            {
+              "name": "streamPiaFromEarningsInput",
+              "line": 548
+            },
+            {
+              "name": "yearOfEligibilityWithDisability",
+              "line": 162
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts"
+        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+        "packages/engine/src/socialSecurity/disability.computation.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 271,
-          "note": "conditional 2019 DIB benchmark; unit AIME",
+          "line": 312,
+          "note": "2019 onset at 55; unit AIME",
           "tests": [
             {
-              "title": "uses retirement indexing and 35 years instead of the conditional disability computation",
-              "line": 284
+              "title": "indexes to 2017 and averages 28 years for a disability that began in 2019",
+              "line": 324
+            },
+            {
+              "title": "keeps the ordinary computation without an onset, and for an onset in the year of 62",
+              "line": 344
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 373,
+          "note": "2009 onset at 45; disability dropout",
+          "tests": [
+            {
+              "title": "drops four of 23 elapsed years and prices the PIA on the 2009 bend points",
+              "line": 382
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 412,
+          "note": "two computation year minimum",
+          "tests": [
+            {
+              "title": "averages a single elapsed year over two computation years",
+              "line": 421
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 455,
+          "note": "entitlement before July 1980",
+          "tests": [
+            {
+              "title": "drops the usual five years for a 1979 onset and switches at the July 1980 entitlement month",
+              "line": 464
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 491,
+          "note": "onset before 1979, out of scope",
+          "tests": [
+            {
+              "title": "computes a pre-1979 onset as the ordinary age-62 computation rather than refusing it",
+              "line": 499
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 526,
+          "note": "projected earnings before the onset",
+          "tests": [
+            {
+              "title": "fills 2017 and 2018 from the projection and stops at the onset year",
+              "line": 534
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
+          "line": 46,
+          "note": "SSDI paid in 2026 through simulatePlan",
+          "tests": [
+            {
+              "title": "pays the PIA of the 2019 disability computation, raised by the increases since",
+              "line": 55
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.computation.test.ts",
+          "line": 132,
+          "note": "disability family maximum with a spouse",
+          "tests": [
+            {
+              "title": "holds the spouse to the maximum from the 2019 AIME and PIA, raised since 2019",
+              "line": 141
             }
           ]
         }
@@ -4524,7 +4642,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 153
+              "line": 229
             }
           ]
         }
@@ -4891,7 +5009,7 @@
           "functions": [
             {
               "name": "ssdiMonthlyBenefit",
-              "line": 120
+              "line": 118
             }
           ]
         }
@@ -4999,15 +5117,15 @@
           "functions": [
             {
               "name": "ssdiFirstPayableMonthIndex",
-              "line": 67
+              "line": 65
             },
             {
               "name": "ssdiMonthsInYear",
-              "line": 108
+              "line": 106
             },
             {
               "name": "ssdiSchedule",
-              "line": 92
+              "line": 90
             }
           ]
         }
@@ -5146,7 +5264,7 @@
           "functions": [
             {
               "name": "assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts",
-              "line": 180
+              "line": 178
             }
           ]
         }

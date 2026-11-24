@@ -29,8 +29,7 @@ import { ssdiSchedule } from '@retiregolden/engine/socialSecurity/disability'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
-  piaInputFromEarnings,
-  resolveEarningsProjection,
+  streamPiaFromEarningsInput,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { claimYearOf, isClaimAlreadyMade, type AlreadyClaimed } from '@retiregolden/engine/socialSecurity/openClaims'
 import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText } from './planner/claimAgeCopy'
@@ -650,22 +649,16 @@ function resolvedSocialSecurityPia(
   retirementAgeOverride?: number,
 ): number | null {
   if (income.piaMonthly !== null) return income.piaMonthly
-  if (!income.earnings || income.earnings.length === 0) return null
   const person = personForSocialSecurity(plan, income)
   if (!person) return null
-  const projection = resolveEarningsProjection(
-    income.earningsProjection,
-    retirementAgeOverride ?? person.retirementAge,
-  )
-  const result = computePiaFromEarnings(
-    piaInputFromEarnings(
-      Number(person.dob.slice(0, 4)),
-      Number(person.dob.slice(5, 7)),
-      Number(person.dob.slice(8, 10)),
-      income.earnings,
-      projection,
-    ),
-  )
+  // The engine's own stream input, so a disability that began before 62 gets
+  // the disability computation here as it does in the projection.
+  const input = streamPiaFromEarningsInput(income, {
+    dob: person.dob,
+    retirementAge: retirementAgeOverride ?? person.retirementAge,
+  })
+  if (input === null) return null
+  const result = computePiaFromEarnings(input)
   return isPiaFromEarningsError(result) ? null : result.piaMonthly
 }
 
