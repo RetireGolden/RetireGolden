@@ -62,8 +62,8 @@ for (const [workflow, artifact, packageName] of [
     assert.match(publish, /actions\/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333/)
     assert.match(publish, /npm install -g 'npm@11\.5\.1'/)
     assert.match(publish, /sha256sum --check package\.sha256/)
-    assert.match(publish, new RegExp(`name: ${artifact}`))
-    assert.match(publish, new RegExp(packageName.replace('/', '\\/')))
+    assert.ok(publish.includes(`name: ${artifact}`), `missing artifact ${artifact}`)
+    assert.ok(publish.includes(packageName), `missing package ${packageName}`)
     assert.match(publish, /npm publish "\$TARBALL" --access public --provenance/)
     assert.match(publish, /if \[ "\$EVENT_NAME" = 'workflow_dispatch' \]; then\s+npm publish "\$TARBALL" --access public --dry-run\s+else\s+npm publish "\$TARBALL" --access public --provenance/s)
     assert.match(source, /if: github\.event_name == 'workflow_dispatch' && inputs\.dry_run == 'false'/)
@@ -80,10 +80,10 @@ test('planner smoke consumer dependency entries are exact and satisfy peer floor
   assert.notEqual(manifest, null)
 
   const entry = (block, name) => {
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const match = new RegExp(`^\\s+(?:'${escaped}'|${escaped}): '([^']+)',?$`, 'm').exec(block)
-    assert.notEqual(match, null, `missing scratch dependency ${name}`)
-    return match[1]
+    for (const [, key, version] of block.matchAll(/^\s+([^\s:]+): (?='([^']+)',?$)/gm)) {
+      if (key === name || key === `'${name}'`) return version
+    }
+    assert.fail(`missing scratch dependency ${name}`)
   }
   const exactDependencies = {
     react: '19.2.8',
@@ -252,10 +252,10 @@ test('review caller stages trusted default-branch events and exact gate publicat
   assert.match(source, /checks: write/)
   assert.doesNotMatch(source, /^  target-selection:\s*$/m)
   assert.match(review, /github\.event\.pull_request\.head\.repo\.full_name == github\.event\.repository\.full_name/)
-  assert.match(review, new RegExp(`openrouter-code-review\\.yml@${pin}`))
+  assert.ok(review.includes(`openrouter-code-review.yml@${pin}`), 'missing pinned review workflow')
   assert.doesNotMatch(review, /checks: write/)
   assert.match(review, /expected_head_sha: \$\{\{ github\.event\.client_payload\.head_sha \|\| '' \}\}/)
-  assert.match(gate, new RegExp(`openrouter-review-gate-check\\.yml@${pin}`))
+  assert.ok(gate.includes(`openrouter-review-gate-check.yml@${pin}`), 'missing pinned gate workflow')
   assert.match(gate, /checks: write/)
   assert.match(gate, /github\.event\.pull_request\.head\.repo\.full_name != github\.event\.repository\.full_name/)
   assert.match(gate, /head_sha: \$\{\{ needs\.review\.outputs\.gate_head_sha \|\| github\.event\.pull_request\.head\.sha \}\}/)
