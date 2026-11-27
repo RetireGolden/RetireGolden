@@ -6,11 +6,11 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  39 packages, sha256 5e9008792171083548cb2ffa5006dfdcd4cb4c752a093ebf414d603ad9049e70
+Attributed:  39 packages, sha256 baeb406c544f24aef50fa2ff80610ecc8a506a3265fceb490e22c39e6f7c8cbc
 
 ================================================================================
 
-@reduxjs/toolkit (2.14.0)
+@reduxjs/toolkit (2.15.0)
 License: MIT
 Author: Mark Erikson <mark@isquaredsoftware.com>
 Homepage: https://redux-toolkit.js.org
@@ -581,7 +581,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 
 --------------------------------------------------------------------------------
 
-immer (11.2.9)
+immer (11.2.10)
 License: MIT
 Author: Michel Weststrate <info@michel.codes>
 Homepage: https://github.com/immerjs/immer#readme
@@ -744,7 +744,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (8.5.1)
+react-router (8.5.2)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
